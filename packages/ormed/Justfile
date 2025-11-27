@@ -1,0 +1,7 @@
+set shell := ["bash", "-lc"]
+
+default: test
+
+# Run the ormed test suite
+test:
+	dart test

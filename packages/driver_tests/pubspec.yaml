@@ -1,0 +1,16 @@
+name: driver_tests
+description: Shared ORM driver integration test suites reused by ORM drivers.
+publish_to: none
+version: 0.1.0
+resolution: workspace
+
+environment:
+  sdk: ">=3.9.0 <4.0.0"
+
+dependencies:
+  ormed:
+  test: ^1.25.8
+
+dev_dependencies:
+  lints: ^6.0.0
+  build_runner: ^2.10.1

@@ -1,0 +1,13 @@
+enum DriverCapability {
+  joins,
+  insertUsing,
+  queryDeletes,
+  schemaIntrospection,
+  returning,
+  transactions,
+  threadCount,
+  adHocQueryUpdates,
+  advancedQueryBuilders,
+  sqlPreviews,
+  increment,
+}

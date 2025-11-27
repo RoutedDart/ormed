@@ -1,0 +1,389 @@
+import 'package:ormed/migrations.dart';
+
+/// Generates PostgreSQL-compatible SQL for schema mutations.
+class PostgresSchemaDialect extends SchemaDialect {
+  const PostgresSchemaDialect();
+
+  @override
+  String get driverName => 'postgres';
+
+  @override
+  List<SchemaStatement> compileMutation(SchemaMutation mutation) {
+    switch (mutation.operation) {
+      case SchemaMutationOperation.createTable:
+        return _compileCreateTable(mutation.blueprint!);
+      case SchemaMutationOperation.alterTable:
+        return _compileAlterTable(mutation.blueprint!);
+      case SchemaMutationOperation.dropTable:
+        return [SchemaStatement(_dropTableSql(mutation.dropOptions!))];
+      case SchemaMutationOperation.renameTable:
+        return [SchemaStatement(_renameTableSql(mutation.rename!))];
+      case SchemaMutationOperation.rawSql:
+        return [
+          SchemaStatement(mutation.sql!, parameters: mutation.parameters),
+        ];
+      default:
+        throw UnimplementedError(
+          'Schema mutation operation '
+          '${mutation.operation} is not supported by PostgresSchemaDialect.',
+        );
+    }
+  }
+
+  List<SchemaStatement> _compileCreateTable(TableBlueprint blueprint) {
+    final buffer = StringBuffer('CREATE TABLE ${_quote(blueprint.table)} (');
+
+    final columnSql = <String>[];
+    for (final column in blueprint.columns) {
+      if (column.kind == ColumnCommandKind.drop || column.definition == null) {
+        continue;
+      }
+      columnSql.add(_columnDefinitionSql(column.definition!));
+    }
+
+    final constraints = <String>[];
+    for (final foreign in blueprint.foreignKeys) {
+      final definition = foreign.definition;
+      if (definition == null) continue;
+      constraints.add(_foreignKeyConstraint(definition));
+    }
+
+    final segments = [...columnSql, ...constraints];
+    buffer
+      ..write('\n  ')
+      ..write(segments.join(',\n  '))
+      ..write('\n)');
+
+    final statements = <SchemaStatement>[SchemaStatement(buffer.toString())];
+
+    for (final index in blueprint.indexes) {
+      final definition = index.definition;
+      if (definition == null || definition.type == IndexType.primary) continue;
+      statements.add(
+        SchemaStatement(_createIndexSql(blueprint.table, definition)),
+      );
+    }
+
+    return statements;
+  }
+
+  List<SchemaStatement> _compileAlterTable(TableBlueprint blueprint) {
+    final statements = <SchemaStatement>[];
+
+    for (final column in blueprint.columns) {
+      switch (column.kind) {
+        case ColumnCommandKind.add:
+          final definition = column.definition;
+          if (definition == null) continue;
+          statements.add(
+            SchemaStatement(
+              'ALTER TABLE ${_quote(blueprint.table)} '
+              'ADD COLUMN ${_columnDefinitionSql(definition)}',
+            ),
+          );
+        case ColumnCommandKind.alter:
+          final definition = column.definition;
+          if (definition == null) continue;
+          statements.addAll(
+            _alterColumnStatements(blueprint.table, definition),
+          );
+        case ColumnCommandKind.drop:
+          statements.add(
+            SchemaStatement(
+              'ALTER TABLE ${_quote(blueprint.table)} '
+              'DROP COLUMN ${_quote(column.name)}',
+            ),
+          );
+      }
+    }
+
+    for (final rename in blueprint.renamedColumns) {
+      statements.add(
+        SchemaStatement(
+          'ALTER TABLE ${_quote(blueprint.table)} '
+          'RENAME COLUMN ${_quote(rename.from)} TO ${_quote(rename.to)}',
+        ),
+      );
+    }
+
+    for (final index in blueprint.indexes) {
+      final definition = index.definition;
+      switch (index.kind) {
+        case IndexCommandKind.add:
+          if (definition == null) continue;
+          statements.add(
+            SchemaStatement(_createIndexSql(blueprint.table, definition)),
+          );
+        case IndexCommandKind.drop:
+          statements.add(
+            SchemaStatement('DROP INDEX IF EXISTS ${_quote(index.name)}'),
+          );
+      }
+    }
+
+    for (final foreign in blueprint.foreignKeys) {
+      switch (foreign.kind) {
+        case ForeignKeyCommandKind.add:
+          final definition = foreign.definition;
+          if (definition == null) continue;
+          statements.add(
+            SchemaStatement(
+              'ALTER TABLE ${_quote(blueprint.table)} '
+              'ADD ${_foreignKeyConstraint(definition)}',
+            ),
+          );
+        case ForeignKeyCommandKind.drop:
+          statements.add(
+            SchemaStatement(
+              'ALTER TABLE ${_quote(blueprint.table)} '
+              'DROP CONSTRAINT IF EXISTS ${_quote(foreign.name)}',
+            ),
+          );
+      }
+    }
+
+    return statements;
+  }
+
+  String _dropTableSql(DropTableOptions options) {
+    final buffer = StringBuffer('DROP TABLE ');
+    if (options.ifExists) buffer.write('IF EXISTS ');
+    buffer.write(_quote(options.table));
+    if (options.cascade) buffer.write(' CASCADE');
+    return buffer.toString();
+  }
+
+  String _renameTableSql(RenameTableOptions options) {
+    return 'ALTER TABLE ${_quote(options.from)} RENAME TO ${_quote(options.to)}';
+  }
+
+  String _createIndexSql(String table, IndexDefinition definition) {
+    switch (definition.type) {
+      case IndexType.unique:
+      case IndexType.regular:
+      case IndexType.primary:
+        final prefix = definition.type == IndexType.unique ? 'UNIQUE ' : '';
+        final columns = definition.raw
+            ? definition.columns.join(', ')
+            : definition.columns.map(_quote).join(', ');
+        return 'CREATE ${prefix}INDEX ${_quote(definition.name)} '
+            'ON ${_quote(table)} ($columns)';
+      case IndexType.fullText:
+        final expression = _fullTextExpression(definition);
+        return 'CREATE INDEX ${_quote(definition.name)} ON ${_quote(table)} '
+            'USING GIN ($expression)';
+      case IndexType.spatial:
+        final columns = definition.columns.map(_quote).join(', ');
+        return 'CREATE INDEX ${_quote(definition.name)} ON ${_quote(table)} '
+            'USING GIST ($columns)';
+    }
+  }
+
+  String _fullTextExpression(IndexDefinition definition) {
+    if (definition.columns.length == 1 && !definition.raw) {
+      final column = _quote(definition.columns.first);
+      return "to_tsvector('simple', COALESCE($column::text, ''))";
+    }
+    final segments = definition.columns
+        .map((column) {
+          final value = definition.raw ? column : _quote(column);
+          final needsCast = definition.raw ? value : '$value::text';
+          return "COALESCE($needsCast, '')";
+        })
+        .join(', ');
+    return "to_tsvector('simple', concat_ws(' ', $segments))";
+  }
+
+  List<SchemaStatement> _alterColumnStatements(
+    String table,
+    ColumnDefinition definition,
+  ) {
+    final override = definition.overrideForDriver(driverName);
+    final statements = <SchemaStatement>[];
+    statements.add(
+      SchemaStatement(
+        'ALTER TABLE ${_quote(table)} '
+        'ALTER COLUMN ${_quote(definition.name)} TYPE '
+        '${_resolvedType(definition, override)}',
+      ),
+    );
+    final nullabilityClause = definition.nullable
+        ? 'ALTER COLUMN ${_quote(definition.name)} DROP NOT NULL'
+        : 'ALTER COLUMN ${_quote(definition.name)} SET NOT NULL';
+    statements.add(
+      SchemaStatement('ALTER TABLE ${_quote(table)} $nullabilityClause'),
+    );
+    final defaultValue = override?.defaultValue ?? definition.defaultValue;
+    if (defaultValue != null) {
+      statements.add(
+        SchemaStatement(
+          'ALTER TABLE ${_quote(table)} '
+          'ALTER COLUMN ${_quote(definition.name)} '
+          'SET DEFAULT ${_defaultExpression(defaultValue)}',
+        ),
+      );
+    }
+    return statements;
+  }
+
+  String _columnDefinitionSql(ColumnDefinition definition) {
+    final override = definition.overrideForDriver(driverName);
+    final buffer = StringBuffer()
+      ..write(
+        '${_quote(definition.name)} ${_resolvedType(definition, override)}',
+      );
+
+    if (!definition.nullable) buffer.write(' NOT NULL');
+    if (definition.primaryKey) buffer.write(' PRIMARY KEY');
+    if (definition.unique) buffer.write(' UNIQUE');
+    if (definition.autoIncrement) {
+      buffer.write(' GENERATED BY DEFAULT AS IDENTITY');
+    }
+    final defaultValue = override?.defaultValue ?? definition.defaultValue;
+    if (defaultValue != null) {
+      buffer.write(' DEFAULT ${_defaultExpression(defaultValue)}');
+    } else if (definition.useCurrentOnUpdate) {
+      buffer.write(' DEFAULT CURRENT_TIMESTAMP');
+    }
+    final collation = override?.collation ?? definition.collation;
+    if (collation != null && collation.isNotEmpty) {
+      buffer.write(' COLLATE $collation');
+    }
+    if (definition.virtualAs != null || definition.storedAs != null) {
+      final expression = definition.virtualAs ?? definition.storedAs;
+      buffer
+        ..write(' GENERATED ALWAYS AS (${expression!}) ')
+        ..write('STORED');
+    }
+    if (definition.comment != null && definition.comment!.isNotEmpty) {
+      buffer.write(' /* ${definition.comment} */');
+    }
+    return buffer.toString();
+  }
+
+  String _primaryKeyConstraint(IndexDefinition definition) {
+    final columns = definition.columns.map(_quote).join(', ');
+    return 'PRIMARY KEY ($columns)';
+  }
+
+  String _foreignKeyConstraint(ForeignKeyDefinition definition) {
+    final columns = definition.columns.map(_quote).join(', ');
+    final referenced = definition.referencedColumns.map(_quote).join(', ');
+    final buffer = StringBuffer()
+      ..write(
+        'CONSTRAINT ${_quote(definition.name)} '
+        'FOREIGN KEY ($columns) REFERENCES ${_quote(definition.referencedTable)} '
+        '($referenced)',
+      );
+    if (definition.onDelete != ReferenceAction.noAction) {
+      buffer.write(' ON DELETE ${_referentialAction(definition.onDelete)}');
+    }
+    if (definition.onUpdate != ReferenceAction.noAction) {
+      buffer.write(' ON UPDATE ${_referentialAction(definition.onUpdate)}');
+    }
+    return buffer.toString();
+  }
+
+  String _referentialAction(ReferenceAction action) {
+    return switch (action) {
+      ReferenceAction.cascade => 'CASCADE',
+      ReferenceAction.restrict => 'RESTRICT',
+      ReferenceAction.setNull => 'SET NULL',
+      ReferenceAction.noAction => 'NO ACTION',
+    };
+  }
+
+  String _mapType(ColumnType type) {
+    switch (type.name) {
+      case ColumnTypeName.bigInteger:
+        return 'BIGINT';
+      case ColumnTypeName.binary:
+        return 'BYTEA';
+      case ColumnTypeName.boolean:
+        return 'BOOLEAN';
+      case ColumnTypeName.date:
+        return 'DATE';
+      case ColumnTypeName.time:
+        return type.timezoneAware
+            ? 'TIME WITH TIME ZONE'
+            : 'TIME WITHOUT TIME ZONE';
+      case ColumnTypeName.dateTime:
+        return type.timezoneAware
+            ? 'TIMESTAMP WITH TIME ZONE'
+            : 'TIMESTAMP WITHOUT TIME ZONE';
+      case ColumnTypeName.decimal:
+        final precision = type.precision ?? 10;
+        final scale = type.scale ?? 0;
+        return 'DECIMAL($precision, $scale)';
+      case ColumnTypeName.doublePrecision:
+        return 'DOUBLE PRECISION';
+      case ColumnTypeName.float:
+        return 'REAL';
+      case ColumnTypeName.integer:
+        return 'INTEGER';
+      case ColumnTypeName.smallInteger:
+        return 'SMALLINT';
+      case ColumnTypeName.mediumInteger:
+        return 'INTEGER';
+      case ColumnTypeName.tinyInteger:
+        return 'SMALLINT';
+      case ColumnTypeName.json:
+        return 'JSONB';
+      case ColumnTypeName.jsonb:
+        return 'JSONB';
+      case ColumnTypeName.string:
+        final length = type.length ?? 255;
+        return 'VARCHAR($length)';
+      case ColumnTypeName.text:
+        return 'TEXT';
+      case ColumnTypeName.longText:
+        return 'TEXT';
+      case ColumnTypeName.enumType:
+      case ColumnTypeName.setType:
+        return 'TEXT';
+      case ColumnTypeName.uuid:
+        return 'UUID';
+      case ColumnTypeName.geometry:
+        return 'GEOMETRY';
+      case ColumnTypeName.geography:
+        return 'GEOGRAPHY';
+      case ColumnTypeName.vector:
+        final dimensions = type.length;
+        if (dimensions != null && dimensions > 0) {
+          return 'VECTOR($dimensions)';
+        }
+        return 'VECTOR';
+      case ColumnTypeName.custom:
+        return type.customName ?? 'TEXT';
+    }
+  }
+
+  String _resolvedType(
+    ColumnDefinition definition,
+    ColumnDriverOverride? override,
+  ) {
+    if (override?.sqlType != null) {
+      return override!.sqlType!;
+    }
+    final type = override?.type ?? definition.type;
+    return _mapType(type);
+  }
+
+  String _defaultExpression(ColumnDefault defaultValue) {
+    if (defaultValue.useCurrentTimestamp) {
+      return 'CURRENT_TIMESTAMP';
+    }
+    if (defaultValue.expression != null) {
+      return defaultValue.expression!;
+    }
+    final value = defaultValue.value;
+    if (value == null) return 'NULL';
+    if (value is num || value is bool) return value.toString();
+    return '\'${value.toString().replaceAll("'", "''")}\'';
+  }
+
+  String _quote(String identifier) {
+    final escaped = identifier.replaceAll('"', '""');
+    return '"$escaped"';
+  }
+}

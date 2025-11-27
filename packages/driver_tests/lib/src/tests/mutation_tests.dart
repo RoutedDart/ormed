@@ -1,0 +1,763 @@
+import 'dart:convert';
+
+import 'package:ormed/ormed.dart';
+import 'package:test/test.dart';
+
+import '../../models.dart';
+import '../config.dart';
+import '../harness/driver_test_harness.dart';
+import '../seed_data.dart';
+
+void runDriverMutationTests({
+  required DriverHarnessBuilder<DriverTestHarness> createHarness,
+  required DriverTestConfig config,
+}) {
+  if (config.driverName.toLowerCase().contains('mongo')) {
+    return;
+  }
+  group('${config.driverName} mutations', () {
+    String wrap(String value) =>
+        '${config.identifierQuote}$value${config.identifierQuote}';
+    late DriverTestHarness harness;
+    void expectPreviewMetadata(StatementPreview preview) {
+      final normalized = preview.normalized;
+      expect(normalized.command, isNotEmpty);
+      expect(normalized.type, isIn(['sql', 'document']));
+      expect(normalized.arguments, isNotNull);
+      expect(normalized.parameters, isNotNull);
+    }
+
+    setUp(() async {
+      harness = await createHarness();
+    });
+
+    tearDown(() async => harness.dispose());
+
+    test('insert + update + delete round trip', () async {
+      final repo = harness.context.repository<User>();
+      await repo.insert(
+        const User(id: 1, email: 'seed@example.com', active: true),
+      );
+
+      await repo.updateMany([
+        const User(id: 1, email: 'updated@example.com', active: false),
+      ]);
+
+      var users = await harness.context.query<User>().get();
+      expect(users.single.email, 'updated@example.com');
+      expect(users.single.active, isFalse);
+
+      final deleted = await repo.deleteByKeys([
+        {'id': 1},
+      ]);
+      expect(deleted, 1);
+
+      users = await harness.context.query<User>().get();
+      expect(users, isEmpty);
+    });
+
+    test('upsert inserts then updates', () async {
+      final repo = harness.context.repository<User>();
+      await repo.upsertMany([
+        const User(id: 5, email: 'upsert@example.com', active: true),
+      ]);
+
+      var users = await harness.context
+          .query<User>()
+          .whereEquals('id', 5)
+          .get();
+      expect(users.single.email, 'upsert@example.com');
+
+      await repo.upsertMany([
+        const User(id: 5, email: 'updated@upsert.com', active: true),
+      ]);
+
+      users = await harness.context.query<User>().whereEquals('id', 5).get();
+      expect(users.single.email, 'updated@upsert.com');
+    });
+
+    test('upsert honors custom unique and update columns', () async {
+      final repo = harness.context.repository<User>();
+      await repo.insert(
+        const User(id: 40, email: 'unique@example.com', active: false),
+      );
+
+      await repo.upsertMany(
+        [const User(id: 41, email: 'unique@example.com', active: true)],
+        uniqueBy: ['email'],
+        updateColumns: ['active'],
+      );
+
+      final refreshed = await harness.context
+          .query<User>()
+          .whereEquals('email', 'unique@example.com')
+          .firstOrFail();
+      expect(refreshed.id, 40);
+      expect(refreshed.active, isTrue);
+    });
+
+    test('insertOrIgnore skips duplicate rows', () async {
+      final repo = harness.context.repository<User>();
+      await repo.insert(
+        const User(id: 50, email: 'unique-insert@example.com', active: true),
+      );
+
+      final inserted = await repo.insertOrIgnoreMany([
+        const User(id: 51, email: 'second@example.com', active: true),
+        const User(id: 50, email: 'duplicate@example.com', active: false),
+      ]);
+      expect(inserted, 1);
+
+      final rows = await harness.context.query<User>().get();
+      expect(rows.length, 2);
+      expect(
+        rows.where((user) => user.id == 50).single.active,
+        isTrue,
+      );
+    });
+
+    if (config.supportsCapability(DriverCapability.insertUsing)) {
+      test('insertUsing copies rows from select queries', () async {
+        final repo = harness.context.repository<User>();
+        await repo.insertMany(const [
+          User(id: 2050, email: 'copy-source-a@example.com', active: true),
+          User(id: 2051, email: 'copy-source-b@example.com', active: false),
+        ]);
+
+        final offset = 400;
+        var source = harness.context
+            .query<User>()
+            .select([])
+            .selectRaw('${wrap('users')}.${wrap('id')} + $offset', alias: 'id');
+
+        final emailExpr =
+            config.driverName == 'MySqlDriverAdapter' ||
+                config.driverName == 'MariaDbDriverAdapter'
+            ? "CONCAT(${wrap('users')}.${wrap('email')}, '-copy')"
+            : "${wrap('users')}.${wrap('email')} || '-copy'";
+
+        source = source
+            .selectRaw(emailExpr, alias: 'email')
+            .addSelect('active')
+            .whereIn('id', const [2050, 2051]);
+
+        final inserted = await harness.context.query<User>().insertUsing([
+          'id',
+          'email',
+          'active',
+        ], source);
+        expect(inserted, 2);
+
+        final copies = await harness.context
+            .query<User>()
+            .whereIn('id', const [2450, 2451])
+            .orderBy('id')
+            .get();
+
+        expect(copies.length, 2);
+        expect(copies.first.email, 'copy-source-a@example.com-copy');
+        expect(copies.first.active, isTrue);
+        expect(copies.last.email, 'copy-source-b@example.com-copy');
+        expect(copies.last.active, isFalse);
+      });
+
+      test(
+        'insertOrIgnoreUsing suppresses duplicates from select queries',
+        () async {
+          final repo = harness.context.repository<User>();
+          await repo.insertMany(const [
+            User(id: 3100, email: 'ignore-select@example.com', active: true),
+          ]);
+
+          final source = harness.context
+              .query<User>()
+              .select([])
+              .selectRaw('${wrap('users')}.${wrap('id')}', alias: 'id')
+              .addSelect('email')
+              .addSelect('active')
+              .whereEquals('id', 3100);
+
+          final inserted = await harness.context
+              .query<User>()
+              .insertOrIgnoreUsing(['id', 'email', 'active'], source);
+          expect(inserted, 0);
+
+          final rows = await harness.context
+              .query<User>()
+              .whereEquals('id', 3100)
+              .get();
+          expect(rows.length, 1);
+          expect(rows.single.email, 'ignore-select@example.com');
+        },
+      );
+    }
+
+    test('jsonPatch merges payload columns without clobbering state', () async {
+      final repo = harness.context.repository<DriverOverrideEntry>();
+      await repo.insert(
+        const DriverOverrideEntry(
+          id: 900,
+          payload: {
+            'status': 'pending',
+            'meta': {'visits': 1},
+          },
+        ),
+      );
+
+      await repo.updateMany(
+        const [
+          DriverOverrideEntry(
+            id: 900,
+            payload: {
+              'status': 'pending',
+              'meta': {'visits': 1},
+            },
+          ),
+        ],
+        jsonUpdates: (_) => [
+          JsonUpdateDefinition.patch('payload', {
+            'meta': {'visits': 2},
+            'tags': ['beta'],
+          }),
+        ],
+      );
+
+      final refreshed = await harness.context
+          .query<DriverOverrideEntry>()
+          .whereEquals('id', 900)
+          .firstOrFail();
+      expect(refreshed.payload['status'], 'pending');
+      final meta = refreshed.payload['meta'] as Map<String, Object?>;
+      expect(meta['visits'], 2);
+      expect(refreshed.payload['tags'], ['beta']);
+    });
+
+    test('forceDelete honors ordering and limit clauses', () async {
+      await harness.seedUsers(buildDefaultUsers());
+
+      final removed = await harness.context
+          .query<User>()
+          .orderBy('id')
+          .limit(1)
+          .forceDelete();
+
+      expect(removed, 1);
+      final remaining = await harness.context.query<User>().orderBy('id').get();
+      expect(remaining.map((user) => user.id), equals([2, 3]));
+    });
+
+    print(
+      'skip preview tests for ${config.driverName}: ${config.driverName.toLowerCase().contains('mongo')}',
+    );
+    test(
+      'auto increment primary keys use driver defaults when omitted',
+      () async {
+        final plan = MutationPlan.insert(
+          definition: _serialTestDefinition,
+          rows: const [
+            {'label': 'first'},
+            {'label': 'second'},
+          ],
+          driverName: harness.adapter.metadata.name,
+          returning: config.supportsCapability(DriverCapability.returning),
+        );
+
+        final result = await harness.adapter.runMutation(plan);
+        expect(result.affectedRows, 2);
+
+        final inserted = await harness.adapter.queryRaw(
+          'SELECT id, label FROM serial_tests ORDER BY id',
+        );
+        expect(inserted.length, 2);
+        final firstId = (inserted.first['id'] as num).toInt();
+        final secondId = (inserted.last['id'] as num).toInt();
+        expect(inserted.first['label'], 'first');
+        expect(inserted.last['label'], 'second');
+        expect(firstId, greaterThan(0));
+        expect(secondId, greaterThan(firstId));
+
+        if (config.supportsCapability(DriverCapability.returning)) {
+          expect(result.returnedRows, isNotNull);
+          final returnedIds = result.returnedRows!
+              .map((row) => row['id'])
+              .whereType<num>();
+          expect(returnedIds, containsAll(<num>[firstId, secondId]));
+        }
+      },
+    );
+
+    test('query builder update applies mutations to matching rows', () async {
+      final repo = harness.context.repository<User>();
+      await repo.insertMany(const [
+        User(id: 5000, email: 'builder-update-a@example.com', active: true),
+        User(id: 5001, email: 'builder-update-b@example.com', active: true),
+      ]);
+
+      final affected = await harness.context
+          .query<User>()
+          .whereEquals('id', 5000)
+          .update({'active': false});
+
+      expect(affected, 1);
+
+      final first = await harness.context
+          .query<User>()
+          .whereEquals('id', 5000)
+          .firstOrFail();
+      final second = await harness.context
+          .query<User>()
+          .whereEquals('id', 5001)
+          .firstOrFail();
+
+      expect(first.active, isFalse);
+      expect(second.active, isTrue);
+    });
+
+    test('query builder update encodes values using model codecs', () async {
+      final repo = harness.context.repository<DriverOverrideEntry>();
+      await repo.insertMany(const [
+        DriverOverrideEntry(id: 9000, payload: {'mode': 'light'}),
+      ]);
+
+      final affected = await harness.context
+          .query<DriverOverrideEntry>()
+          .whereEquals('id', 9000)
+          .update({
+            'payload': {'mode': 'dark', 'count': 2},
+          });
+
+      expect(affected, 1);
+
+      final refreshed = await harness.context
+          .query<DriverOverrideEntry>()
+          .whereEquals('id', 9000)
+          .firstOrFail();
+
+      expect(refreshed.payload['mode'], 'dark');
+      expect(refreshed.payload['count'], 2);
+    });
+
+    print(
+      'skip preview event test for ${config.driverName}: ${config.driverName.toLowerCase().contains('mongo')}',
+    );
+    test(
+      'query builder update works without primary key when supported',
+      () async {
+        if (!config.supportsCapability(DriverCapability.adHocQueryUpdates)) {
+          return;
+        }
+        final repo = harness.context.repository<User>();
+        await repo.insertMany(const [
+          User(id: 7200, email: 'adhoc@example.com', active: true),
+        ]);
+
+        final affected = await harness.context
+            .table('users')
+            .whereEquals('email', 'adhoc@example.com')
+            .limit(1)
+            .update({'active': false});
+
+        expect(affected, 1);
+
+        final refreshed = await harness.context
+            .query<User>()
+            .whereEquals('email', 'adhoc@example.com')
+            .firstOrFail();
+
+        expect(refreshed.active, isFalse);
+      },
+    );
+
+    test(
+      'sqlite query updates encode json bindings for ad-hoc tables',
+      () async {
+        if (config.driverName != 'SqliteDriverAdapter') {
+          return;
+        }
+        final repo = harness.context.repository<DriverOverrideEntry>();
+        await repo.insertMany(const [
+          DriverOverrideEntry(id: 9050, payload: {'mode': 'legacy'}),
+        ]);
+
+        final affected = await harness.context
+            .table('settings')
+            .whereEquals('id', 9050)
+            .limit(1)
+            .update({
+              'payload': {'mode': 'encoded', 'count': 2},
+            });
+
+        expect(affected, 1);
+
+        final refreshed = await harness.context
+            .query<DriverOverrideEntry>()
+            .whereEquals('id', 9050)
+            .firstOrFail();
+
+        expect(refreshed.payload['mode'], 'encoded');
+        expect(refreshed.payload['count'], 2);
+      },
+    );
+
+    test('sqlite query updates support joins and limits', () async {
+      if (config.driverName != 'SqliteDriverAdapter') {
+        return;
+      }
+      await harness.seedUsers(buildDefaultUsers());
+      await harness.adapter.executeRaw(
+        'CREATE TABLE orm_test_join_updates ('
+        'user_id INTEGER NOT NULL, '
+        'label TEXT NOT NULL'
+        ')',
+      );
+      await harness.adapter.executeRaw(
+        'INSERT INTO orm_test_join_updates (user_id, label) VALUES (?, ?)',
+        [1, 'alpha'],
+      );
+      await harness.adapter.executeRaw(
+        'INSERT INTO orm_test_join_updates (user_id, label) VALUES (?, ?)',
+        [2, 'beta'],
+      );
+
+      final affected = await harness.context
+          .table('orm_test_join_updates')
+          .join('users', 'users.id', '=', 'orm_test_join_updates.user_id')
+          .orderBy('user_id')
+          .limit(1)
+          .update({'label': 'patched'});
+
+      expect(affected, 1);
+
+      final rows = await harness.adapter.queryRaw(
+        'SELECT user_id, label FROM orm_test_join_updates ORDER BY user_id',
+      );
+      expect(rows.length, 2);
+      expect(rows.first['label'], 'patched');
+      expect(rows.last['label'], 'beta');
+    });
+
+    test('sqlite query deletes support joins and limits', () async {
+      if (config.driverName != 'SqliteDriverAdapter') {
+        return;
+      }
+      await harness.seedUsers(buildDefaultUsers());
+      await harness.adapter.executeRaw(
+        'CREATE TABLE orm_test_join_deletes ('
+        'user_id INTEGER NOT NULL, '
+        'label TEXT NOT NULL'
+        ')',
+      );
+      await harness.adapter.executeRaw(
+        'INSERT INTO orm_test_join_deletes (user_id, label) VALUES (?, ?)',
+        [1, 'alpha'],
+      );
+      await harness.adapter.executeRaw(
+        'INSERT INTO orm_test_join_deletes (user_id, label) VALUES (?, ?)',
+        [2, 'beta'],
+      );
+      await harness.adapter.executeRaw(
+        'INSERT INTO orm_test_join_deletes (user_id, label) VALUES (?, ?)',
+        [3, 'gamma'],
+      );
+
+      final removed = await harness.context
+          .table('orm_test_join_deletes')
+          .join('users', 'users.id', '=', 'orm_test_join_deletes.user_id')
+          .orderBy('user_id')
+          .limit(1)
+          .forceDelete();
+
+      expect(removed, 1);
+
+      final rows = await harness.adapter.queryRaw(
+        'SELECT user_id FROM orm_test_join_deletes ORDER BY user_id',
+      );
+      expect(rows.map((row) => row['user_id']), equals([2, 3]));
+    });
+
+    test('query builder update json selectors patch nested payload', () async {
+      final repo = harness.context.repository<DriverOverrideEntry>();
+      await repo.insertMany(const [
+        DriverOverrideEntry(
+          id: 9100,
+          payload: {
+            'mode': 'light',
+            'meta': {'count': 1},
+          },
+        ),
+      ]);
+
+      MutationEvent? mutation;
+      harness.context.onMutation((event) => mutation = event);
+
+      final affected = await harness.context
+          .query<DriverOverrideEntry>()
+          .whereEquals('id', 9100)
+          .update({'payload->mode': 'dark', r'payload->$.meta.count': 5});
+
+      expect(affected, 1);
+
+      final refreshed = await harness.context
+          .query<DriverOverrideEntry>()
+          .whereEquals('id', 9100)
+          .firstOrFail();
+
+      expect(refreshed.payload['mode'], 'dark');
+      expect((refreshed.payload['meta'] as Map)['count'], 5);
+      expect(mutation, isNotNull);
+      expectPreviewMetadata(mutation!.preview);
+    });
+
+    test('repository previewInsert exposes metadata', () async {
+      final repo = harness.context.repository<User>();
+      final preview = repo.previewInsert(
+        const User(id: 9, email: 'preview@example.com', active: true),
+      );
+
+      expectPreviewMetadata(preview);
+      final normalized = preview.normalized;
+      expect(normalized.parameters, hasLength(3));
+      expect(normalized.parameters[0], 9);
+      expect(normalized.parameters[1], 'preview@example.com');
+      expect(
+        normalized.parameters[2],
+        anyOf(isTrue, equals(1)),
+        reason: 'boolean may be encoded as bool or int',
+      );
+    });
+
+    test('mutation events include normalized parameters', () async {
+      final events = <MutationEvent>[];
+      harness.context.onMutation(events.add);
+
+      final repo = harness.context.repository<User>();
+      await repo.insert(
+        const User(id: 11, email: 'events@example.com', active: true),
+      );
+
+      expect(events, isNotEmpty);
+      final event = events.single;
+      expectPreviewMetadata(event.preview);
+      final normalized = event.preview.normalized;
+      expect(normalized.parameters.length, 3);
+      expect(normalized.parameters[0], 11);
+      expect(normalized.parameters[1], 'events@example.com');
+      expect(
+        normalized.parameters[2],
+        anyOf(isTrue, equals(1)),
+        reason: 'boolean may be encoded as bool or int',
+      );
+      expect(event.affectedRows, 1);
+      expect(event.succeeded, isTrue);
+    });
+
+    test('mutation events capture driver errors', () async {
+      final events = <MutationEvent>[];
+      harness.context.onMutation(events.add);
+      await harness.adapter.executeRaw('DROP TABLE users');
+
+      await expectLater(
+        () => harness.context.repository<User>().insert(
+          const User(id: 12, email: 'broken@example.com', active: true),
+        ),
+        throwsA(isA<Exception>()),
+      );
+
+      expect(events, hasLength(1));
+      expect(events.single.error, isNotNull);
+      expect(events.single.succeeded, isFalse);
+    });
+
+    test('json updates patch nested payload columns', () async {
+      final docId = 9001;
+      await harness.adapter.executeRaw(
+        'INSERT INTO settings (id, payload) VALUES (?, ?)',
+        [
+          docId,
+          jsonEncode({
+            'mode': 'dark',
+            'meta': {'count': 1},
+          }),
+        ],
+      );
+
+      final repo = harness.context.repository<DriverOverrideEntry>();
+      await repo.updateMany(
+        [
+          DriverOverrideEntry(
+            id: docId,
+            payload: const {
+              'mode': 'dark',
+              'meta': {'count': 1},
+            },
+          ),
+        ],
+        jsonUpdates: (_) => [
+          JsonUpdateDefinition.selector('payload->mode', 'light'),
+          JsonUpdateDefinition.path('payload', r'$.meta.count', 5),
+        ],
+        returning: false,
+      );
+
+      final rows = await harness.adapter.queryRaw(
+        'SELECT payload FROM settings WHERE id = ?',
+        [docId],
+      );
+      expect(rows, hasLength(1));
+      final payload = _normalizeJsonPayload(rows.single['payload']);
+      expect(payload['mode'], equals('light'));
+      final meta = payload['meta'] as Map<String, Object?>?;
+      expect(meta, isNotNull);
+      expect(meta!['count'], equals(5));
+    });
+
+    test('sqlite truncate resets auto-increment sequences', () async {
+      if (config.driverName != 'SqliteDriverAdapter') {
+        return;
+      }
+      await harness.adapter.executeRaw('DELETE FROM serial_tests');
+      await harness.adapter.executeRaw(
+        'INSERT INTO serial_tests (label) VALUES (?)',
+        ['first'],
+      );
+      await harness.adapter.executeRaw(
+        'INSERT INTO serial_tests (label) VALUES (?)',
+        ['second'],
+      );
+
+      final connection = OrmConnection(
+        config: ConnectionConfig(
+          name: 'sqlite-testing',
+          tablePrefix: harness.context.connectionTablePrefix ?? '',
+        ),
+        driver: harness.adapter,
+        registry: harness.context.registry,
+        codecRegistry: harness.context.codecRegistry,
+        context: harness.context,
+      );
+      final seeder = OrmSeeder(connection);
+      await seeder.truncate('serial_tests');
+
+      await harness.adapter.executeRaw(
+        'INSERT INTO serial_tests (label) VALUES (?)',
+        ['reset'],
+      );
+
+      final rows = await harness.adapter.queryRaw(
+        'SELECT id FROM serial_tests ORDER BY id',
+      );
+      expect(rows.single['id'], 1);
+    });
+
+    test(
+      'insert/update/delete returning payloads',
+      () async {
+        final repo = harness.context.repository<User>();
+        final inserted = await repo.insert(
+          const User(id: 20, email: 'returning@example.com', active: true),
+          returning: true,
+        );
+        expect(inserted.email, 'returning@example.com');
+
+        final updated = await repo.updateMany([
+          const User(id: 20, email: 'updated@returning.com', active: false),
+        ], returning: true);
+        expect(updated.single.email, 'updated@returning.com');
+        expect(updated.single.active, isFalse);
+
+        final deleted = await repo.deleteByKeys([
+          {'id': 20},
+        ]);
+        expect(deleted, 1);
+      },
+      skip: config.supportsCapability(DriverCapability.returning)
+          ? false
+          : 'Driver does not support RETURNING mutations',
+    );
+
+    test(
+      'upsert returning payloads',
+      () async {
+        final repo = harness.context.repository<User>();
+        final first = await repo.upsertMany([
+          const User(id: 25, email: 'upsert@return.com', active: true),
+        ], returning: true);
+        expect(first.single.email, 'upsert@return.com');
+
+        final second = await repo.upsertMany([
+          const User(id: 25, email: 'new@upsert.com', active: true),
+        ], returning: true);
+        expect(second.single.email, 'new@upsert.com');
+      },
+      skip: config.supportsCapability(DriverCapability.returning)
+          ? false
+          : 'Driver does not support RETURNING mutations',
+    );
+  });
+}
+
+const FieldDefinition _serialIdField = FieldDefinition(
+  name: 'id',
+  columnName: 'id',
+  dartType: 'int',
+  resolvedType: 'int',
+  isPrimaryKey: true,
+  isNullable: false,
+  isUnique: false,
+  isIndexed: false,
+  autoIncrement: true,
+);
+
+const FieldDefinition _serialLabelField = FieldDefinition(
+  name: 'label',
+  columnName: 'label',
+  dartType: 'String',
+  resolvedType: 'String',
+  isPrimaryKey: false,
+  isNullable: false,
+  isUnique: false,
+  isIndexed: false,
+  autoIncrement: false,
+);
+
+final ModelDefinition<Map<String, Object?>> _serialTestDefinition =
+    ModelDefinition<Map<String, Object?>>(
+      modelName: 'SerialTest',
+      tableName: 'serial_tests',
+      fields: const [_serialIdField, _serialLabelField],
+      codec: const _PlainMapCodec(),
+    );
+
+class _PlainMapCodec extends ModelCodec<Map<String, Object?>> {
+  const _PlainMapCodec();
+
+  @override
+  Map<String, Object?> encode(
+    Map<String, Object?> model,
+    ValueCodecRegistry registry,
+  ) => Map<String, Object?>.from(model);
+
+  @override
+  Map<String, Object?> decode(
+    Map<String, Object?> data,
+    ValueCodecRegistry registry,
+  ) => Map<String, Object?>.from(data);
+}
+
+Map<String, Object?> _normalizeJsonPayload(Object? value) {
+  if (value == null) {
+    return const {};
+  }
+  if (value is String) {
+    final decoded = jsonDecode(value) as Map<String, dynamic>;
+    return Map<String, Object?>.from(decoded);
+  }
+  if (value is List<int>) {
+    final decoded = jsonDecode(utf8.decode(value)) as Map<String, dynamic>;
+    return Map<String, Object?>.from(decoded);
+  }
+  if (value is Map) {
+    return Map<String, Object?>.from(value.cast<String, Object?>());
+  }
+  throw StateError('Unsupported JSON payload type: ${value.runtimeType}.');
+}

@@ -1,0 +1,460 @@
+import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:ormed/ormed.dart';
+// ignore: unused_import
+import 'package:ormed_mongo/ormed_mongo.dart';
+// ignore: unused_import
+import 'package:ormed_mysql/ormed_mysql.dart';
+// ignore: unused_import
+import 'package:ormed_postgres/ormed_postgres.dart';
+import 'package:ormed_sqlite/ormed_sqlite.dart';
+import 'package:path/path.dart' as p;
+
+import '../config.dart';
+
+const String importsMarkerStart = '// <ORM-MIGRATION-IMPORTS>';
+const String importsMarkerEnd = '// </ORM-MIGRATION-IMPORTS>';
+const String registryMarkerStart = '// <ORM-MIGRATION-REGISTRY>';
+const String registryMarkerEnd = '// </ORM-MIGRATION-REGISTRY>';
+
+const String initialRegistryTemplate =
+    '''
+import 'dart:convert';
+
+import 'package:ormed/migrations.dart';
+
+$importsMarkerStart
+$importsMarkerEnd
+
+class _MigrationEntry {
+  const _MigrationEntry({required this.id, required this.migration});
+
+  final MigrationId id;
+  final Migration migration;
+}
+
+final List<_MigrationEntry> _entries = [
+  $registryMarkerStart
+  $registryMarkerEnd
+];
+
+List<MigrationDescriptor> buildMigrations() =>
+    List.unmodifiable(_entries.map(
+      (entry) => MigrationDescriptor.fromMigration(
+        id: entry.id,
+        migration: entry.migration,
+      ),
+    ));
+
+_MigrationEntry? _findEntry(String rawId) {
+  for (final entry in _entries) {
+    if (entry.id.toString() == rawId) return entry;
+  }
+  return null;
+}
+
+void main(List<String> args) {
+  if (args.contains('--dump-json')) {
+    final payload = buildMigrations().map((m) => m.toJson()).toList();
+    print(jsonEncode(payload));
+    return;
+  }
+
+  final planIndex = args.indexOf('--plan-json');
+  if (planIndex != -1) {
+    final id = args[planIndex + 1];
+    final entry = _findEntry(id);
+    if (entry == null) {
+      throw StateError('Unknown migration id \$id.');
+    }
+    final directionName = args[args.indexOf('--direction') + 1];
+    final direction = MigrationDirection.values.byName(directionName);
+    final snapshotIndex = args.indexOf('--schema-snapshot');
+    SchemaSnapshot? snapshot;
+    if (snapshotIndex != -1) {
+      final decoded =
+          utf8.decode(base64.decode(args[snapshotIndex + 1]));
+      final payload = jsonDecode(decoded) as Map<String, Object?>;
+      snapshot = SchemaSnapshot.fromJson(payload);
+    }
+    final plan = entry.migration.plan(direction, snapshot: snapshot);
+    print(jsonEncode(plan.toJson()));
+  }
+}
+''';
+
+const String defaultOrmYaml = '''
+driver:
+  type: sqlite
+  options:
+    database: database.sqlite
+migrations:
+  directory: database/migrations
+  registry: database/migrations.dart
+  ledger_table: orm_migrations
+  schema_dump: database/schema.sql
+seeds:
+  directory: database/seeders
+  registry: database/seeders.dart
+  default_class: DatabaseSeeder
+''';
+
+const String seedImportsMarkerStart = '// <ORM-SEED-IMPORTS>';
+const String seedImportsMarkerEnd = '// </ORM-SEED-IMPORTS>';
+const String seedRegistryMarkerStart = '// <ORM-SEED-REGISTRY>';
+const String seedRegistryMarkerEnd = '// </ORM-SEED-REGISTRY>';
+
+const String initialSeedRegistryTemplate =
+    '''
+import 'package:orm_cli/runtime.dart';
+import 'package:ormed/ormed.dart';
+
+import 'seeders/database_seeder.dart';
+$seedImportsMarkerStart
+$seedImportsMarkerEnd
+
+final List<SeederRegistration> _seeders = <SeederRegistration>[
+$seedRegistryMarkerStart
+  SeederRegistration(
+    name: 'DatabaseSeeder',
+    factory: DatabaseSeeder.new,
+  ),
+$seedRegistryMarkerEnd
+];
+
+Future<void> runProjectSeeds(
+  OrmConnection connection, {
+  List<String>? names,
+  bool pretend = false,
+}) => runSeedRegistryOnConnection(
+      connection,
+      _seeders,
+      names: names,
+      pretend: pretend,
+    );
+
+Future<void> main(List<String> args) => runSeedRegistryEntrypoint(
+      args: args,
+      seeds: _seeders,
+    );
+''';
+
+class OrmProjectContext {
+  OrmProjectContext({required this.root, required this.configFile});
+
+  final Directory root;
+  final File configFile;
+}
+
+Directory findProjectRoot([Directory? start]) {
+  var dir = start ?? Directory.current;
+  while (true) {
+    final pubspec = File(p.join(dir.path, 'pubspec.yaml'));
+    if (pubspec.existsSync()) return dir;
+    final parent = dir.parent;
+    if (parent.path == dir.path) {
+      throw StateError('Unable to locate pubspec.yaml.');
+    }
+    dir = parent;
+  }
+}
+
+OrmProjectContext resolveOrmProject({String? configPath}) {
+  if (configPath != null && configPath.trim().isNotEmpty) {
+    final normalized = p.normalize(
+      p.isAbsolute(configPath)
+          ? configPath
+          : p.join(Directory.current.path, configPath),
+    );
+    final file = File(normalized);
+    if (!file.existsSync()) {
+      throw StateError('Config file $normalized not found.');
+    }
+    final root = findProjectRoot(file.parent);
+    return OrmProjectContext(root: root, configFile: file);
+  }
+
+  final nearest = _findNearestOrmProjectConfig(Directory.current);
+  if (nearest != null) {
+    final root = findProjectRoot(nearest.parent);
+    return OrmProjectContext(root: root, configFile: nearest);
+  }
+
+  final root = findProjectRoot();
+  final fallback = File(p.join(root.path, 'orm.yaml'));
+  if (!fallback.existsSync()) {
+    throw StateError(
+      'Missing orm.yaml. Run `orm init` or provide --config path.',
+    );
+  }
+  return OrmProjectContext(root: root, configFile: fallback);
+}
+
+File? _findNearestOrmProjectConfig(Directory start) {
+  var dir = start;
+  while (true) {
+    final candidate = File(p.join(dir.path, 'orm.yaml'));
+    if (candidate.existsSync()) {
+      return candidate;
+    }
+    final parent = dir.parent;
+    if (parent.path == dir.path) {
+      return null;
+    }
+    dir = parent;
+  }
+}
+
+SchemaState? resolveSchemaState(
+  DriverAdapter driver,
+  OrmConnection connection,
+  String ledgerTable,
+) {
+  if (driver is SchemaStateProvider) {
+    final provider = driver as SchemaStateProvider;
+    return provider.createSchemaState(
+      connection: connection,
+      ledgerTable: ledgerTable,
+    );
+  }
+  return null;
+}
+
+Future<List<MigrationDescriptor>> loadMigrations(
+  Directory root,
+  OrmProjectConfig config, {
+  String? registryPath,
+}) async {
+  final path = registryPath ?? resolvePath(root, config.migrations.registry);
+  final script = File(path);
+  if (!script.existsSync()) {
+    throw StateError('Migration registry ${script.path} not found.');
+  }
+  final result = await Process.run(
+    'dart',
+    ['run', p.relative(script.path, from: root.path), '--dump-json'],
+    workingDirectory: root.path,
+    runInShell: Platform.isWindows,
+  );
+  if (result.exitCode != 0) {
+    throw StateError('Failed to load migrations:\n${result.stderr}');
+  }
+  final payload = jsonDecode(result.stdout as String) as List;
+  return payload
+      .map(
+        (entry) => MigrationDescriptor.fromJson(
+          Map<String, Object?>.from(entry as Map),
+        ),
+      )
+      .toList(growable: false);
+}
+
+Future<SchemaPlan> buildRuntimePlan({
+  required Directory root,
+  required OrmProjectConfig config,
+  required MigrationId id,
+  required MigrationDirection direction,
+  required SchemaSnapshot snapshot,
+  String? registryPath,
+}) async {
+  final path = registryPath ?? resolvePath(root, config.migrations.registry);
+  final script = File(path);
+  if (!script.existsSync()) {
+    throw StateError('Migration registry ${script.path} not found.');
+  }
+  final snapshotPayload = jsonEncode(snapshot.toJson());
+  final snapshotArg = base64.encode(utf8.encode(snapshotPayload));
+  final result = await Process.run(
+    'dart',
+    [
+      'run',
+      p.relative(script.path, from: root.path),
+      '--plan-json',
+      id.toString(),
+      '--direction',
+      direction.name,
+      '--schema-snapshot',
+      snapshotArg,
+    ],
+    workingDirectory: root.path,
+    runInShell: Platform.isWindows,
+  );
+  if (result.exitCode != 0) {
+    throw StateError('Failed to build migration plan:\n${result.stderr}');
+  }
+  final stdoutText = (result.stdout as String).trim();
+  if (stdoutText.isEmpty) {
+    throw StateError(
+      'Migration registry produced no plan output.\n${result.stderr}',
+    );
+  }
+  final payload = jsonDecode(stdoutText) as Map<String, Object?>;
+  return SchemaPlan.fromJson(payload);
+}
+
+Future<void> runSeedRegistry({
+  required OrmProjectContext project,
+  required OrmProjectConfig config,
+  required SeedSection seeds,
+  List<String>? overrideClasses,
+  bool pretend = false,
+  String? databaseOverride,
+  String? connection,
+}) async {
+  final scriptPath = resolvePath(project.root, seeds.registry);
+  final script = File(scriptPath);
+  if (!script.existsSync()) {
+    throw StateError('Seed registry ${script.path} not found. Run `orm init`.');
+  }
+  final relativeScript = p.relative(script.path, from: project.root.path);
+  final args = <String>['run', relativeScript];
+  final configPath = p.relative(
+    project.configFile.path,
+    from: project.root.path,
+  );
+  args
+    ..add('--config')
+    ..add(configPath);
+  for (final className in overrideClasses ?? const <String>[]) {
+    args
+      ..add('--run')
+      ..add(className);
+  }
+  if (pretend) {
+    args.add('--pretend');
+  }
+  if (databaseOverride != null) {
+    args
+      ..add('--database')
+      ..add(databaseOverride);
+  }
+  if (connection != null && connection.trim().isNotEmpty) {
+    args
+      ..add('--connection')
+      ..add(connection);
+  }
+
+  final process = await Process.start(
+    'dart',
+    args,
+    workingDirectory: project.root.path,
+    runInShell: Platform.isWindows,
+  );
+  await Future.wait([
+    stdout.addStream(process.stdout),
+    stderr.addStream(process.stderr),
+  ]);
+  final code = await process.exitCode;
+  if (code != 0) {
+    throw StateError('Seed registry exited with code $code.');
+  }
+}
+
+/// Registers [config]’s tenants and returns the handle for [targetConnection].
+Future<OrmConnectionHandle> createConnection(
+  Directory root,
+  OrmProjectConfig config, {
+  String? targetConnection,
+}) {
+  _bootstrapCliDrivers();
+  return registerConnectionsFromConfig(
+    root: root,
+    config: config,
+    targetConnection: targetConnection ?? config.connectionName,
+  );
+}
+
+var _cliDriversBootstrapped = false;
+
+void _bootstrapCliDrivers() {
+  if (_cliDriversBootstrapped) return;
+  _cliDriversBootstrapped = true;
+  ensureSqliteDriverRegistration();
+  ensureMySqlDriverRegistration();
+  ensurePostgresDriverRegistration();
+  ensureMongoDriverRegistration();
+}
+
+void printMigrationPlanPreview({
+  required MigrationDescriptor descriptor,
+  required MigrationDirection direction,
+  required SchemaDiff diff,
+  required SchemaPreview preview,
+  bool includeStatements = false,
+}) {
+  stdout.writeln('');
+  stdout.writeln('Migration ${descriptor.id} (${direction.name}) change set:');
+  if (diff.isEmpty) {
+    stdout.writeln('  • No schema changes detected');
+  } else {
+    for (final entry in diff.entries) {
+      stdout.writeln('  ${entry.symbol} ${entry.description}');
+      for (final note in entry.notes) {
+        stdout.writeln('      - $note');
+      }
+    }
+  }
+  stdout.writeln('  SQL statements: ${preview.statements.length}');
+  if (includeStatements && preview.statements.isNotEmpty) {
+    for (final statement in preview.statements) {
+      stdout.writeln('    • ${statement.sql}');
+    }
+  }
+}
+
+bool confirmToProceed({bool force = false}) {
+  if (force) return true;
+  if (!_isProductionEnvironment()) return true;
+  stdout.write('Application is running in production. Continue? (y/N) ');
+  final response = stdin.readLineSync();
+  return response != null && response.toLowerCase().startsWith('y');
+}
+
+bool _isProductionEnvironment() {
+  const envVars = ['ORM_ENV', 'DART_ENV', 'FLUTTER_ENV', 'ENV'];
+  for (final key in envVars) {
+    final value = Platform.environment[key];
+    if (value != null && value.toLowerCase() == 'production') {
+      return true;
+    }
+  }
+  return false;
+}
+
+String resolveRegistryFilePath(
+  Directory root,
+  OrmProjectConfig config, {
+  String? override,
+  bool realPath = false,
+}) {
+  if (override == null) {
+    return resolvePath(root, config.migrations.registry);
+  }
+  if (realPath || p.isAbsolute(override)) {
+    return p.normalize(override);
+  }
+  return resolvePath(root, override);
+}
+
+String insertBetweenMarkers(
+  String content,
+  String startMarker,
+  String endMarker,
+  String snippet, {
+  required String indent,
+}) {
+  final start = content.indexOf(startMarker);
+  final end = content.indexOf(endMarker);
+  if (start == -1 || end == -1 || end < start) {
+    throw StateError(
+      'Missing markers $startMarker / $endMarker in migrations.dart',
+    );
+  }
+  final before = content.substring(0, start + startMarker.length);
+  final between = content.substring(start + startMarker.length, end).trim();
+  final after = content.substring(end);
+  final newBetween = between.isEmpty ? snippet : '$between\n$indent$snippet';
+  return '$before\n$indent$newBetween$after';
+}

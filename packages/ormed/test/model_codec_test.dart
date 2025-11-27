@@ -1,0 +1,47 @@
+import 'dart:convert';
+
+import 'package:ormed/ormed.dart';
+import 'package:test/test.dart';
+
+import 'models/user.dart';
+
+void main() {
+  final registry = ValueCodecRegistry.standard()
+    ..registerCodecFor(JsonMapCodec, const JsonMapCodec());
+
+  test('encodes maps using registered codecs', () {
+    final user = User(
+      id: '42',
+      email: 'user@example.com',
+      profile: {'theme': 'dark', 'flags': 2},
+      createdAt: DateTime.utc(2024, 5, 1),
+    );
+
+    final encoded = UserOrmDefinition.definition.toMap(
+      user,
+      registry: registry,
+    );
+
+    expect(encoded['id'], '42');
+    expect(encoded['profile'], jsonEncode({'theme': 'dark', 'flags': 2}));
+  });
+
+  test('decodes rows into concrete models with codecs applied', () {
+    final now = DateTime.utc(2025, 1, 10);
+    final data = <String, Object?>{
+      'id': '100',
+      'email': 'decode@example.com',
+      'profile': jsonEncode({'lang': 'en'}),
+      'createdAt': now,
+    };
+
+    final model = UserOrmDefinition.definition.fromMap(
+      data,
+      registry: registry,
+    );
+
+    expect(model.id, '100');
+    expect(model.profile, {'lang': 'en'});
+    expect(model.createdAt, now);
+  });
+}

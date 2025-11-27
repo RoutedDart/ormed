@@ -1,0 +1,64 @@
+00:00 [32m+0[0m: [1m[90mloading test/mongo_driver_shared_test.dart[0m[0m
+00:00 [32m+0[0m: MongoDriverAdapter queries supports filtering, ordering, and pagination[0m
+00:01 [32m+1[0m: MongoDriverAdapter queries exposes statement previews for queries[0m
+00:02 [32m+2[0m: MongoDriverAdapter queries emits query events with metadata[0m
+00:03 [32m+3[0m: MongoDriverAdapter queries records query errors in events[0m
+00:04 [32m+4[0m: MongoDriverAdapter queries threadCount reports driver metric[0m
+00:05 [32m+5[0m: MongoDriverAdapter queries union combines results from separate queries[0m
+00:10 [32m+6[0m: MongoDriverAdapter queries date helpers filter by calendar components[0m
+00:19 [32m+7[0m: MongoDriverAdapter queries eager loads hasMany relations[0m
+00:29 [32m+8[0m: MongoDriverAdapter queries eager loads belongsTo relations[0m
+00:40 [32m+9[0m: MongoDriverAdapter queries eager loads manyToMany relations[0m
+00:51 [32m+10[0m: MongoDriverAdapter queries eager loads morphMany relations[0m
+01:03 [32m+11[0m: MongoDriverAdapter queries eager loads morphOne relations[0m
+01:23 [32m+12[0m: MongoDriverAdapter queries describes nested orderByRelation preview for morph paths[0m
+01:34 [32m+13[0m: MongoDriverAdapter queries withExists builds nested EXISTS preview for morph paths[0m
+01:48 [32m+14[0m: MongoDriverAdapter queries orderByRelation distinct preview metadata for nested pivot paths[0m
+01:57 [32m+15[0m: MongoDriverAdapter driver overrides repository encodes payload using driver-specific codec[0m
+01:58 [32m+16[0m: MongoDriverAdapter query builder Where Clauses tests whereEquals[0m
+02:00 [32m+17[0m: MongoDriverAdapter query builder Where Clauses tests whereNotEquals[0m
+02:03 [32m+18[0m: MongoDriverAdapter query builder Where Clauses tests whereIn[0m
+02:05 [32m+19[0m: MongoDriverAdapter query builder Where Clauses tests whereNotIn[0m
+02:08 [32m+20[0m: MongoDriverAdapter query builder Where Clauses tests whereGreaterThan[0m
+02:11 [32m+21[0m: MongoDriverAdapter query builder Where Clauses tests whereGreaterThanOrEqual[0m
+02:12 [32m+22[0m: MongoDriverAdapter query builder Where Clauses tests whereLessThan[0m
+02:14 [32m+23[0m: MongoDriverAdapter query builder Where Clauses tests whereLessThanOrEqual[0m
+02:15 [32m+24[0m: MongoDriverAdapter query builder Where Clauses tests whereBetween[0m
+02:18 [32m+25[0m: MongoDriverAdapter query builder Where Clauses tests whereNotBetween[0m
+02:20 [32m+26[0m: MongoDriverAdapter query builder Where Clauses tests whereNull[0m
+02:24 [32m+27[0m: MongoDriverAdapter query builder Where Clauses tests whereNotNull[0m
+02:26 [32m+28[0m: MongoDriverAdapter query builder Where Clauses tests orWhere[0m
+02:28 [32m+29[0m: MongoDriverAdapter query builder Where Clauses tests whereRaw[0m
+02:29 [32m+30[0m: MongoDriverAdapter query builder OrderBy Clauses tests orderBy[0m
+02:32 [32m+31[0m: MongoDriverAdapter query builder OrderBy Clauses tests orderBy descending[0m
+02:34 [32m+32[0m: MongoDriverAdapter query builder OrderBy Clauses tests multiple orderBy[0m
+02:36 [32m+33[0m: MongoDriverAdapter query builder OrderBy Clauses tests orderByRandom[0m
+02:40 [32m+33[0m[31m -1[0m: MongoDriverAdapter query builder OrderBy Clauses tests orderByRandom [1m[31m[E][0m[0m
+  Expected: a value greater than <1>
+    Actual: <1>
+     Which: is not a value greater than <1>
+  
+  package:matcher                                                                     expect
+  package:driver_tests/src/tests/query_builder/order_by_clauses_tests.dart 106:7  runOrderByClausesTests.<fn>.<fn>
+  
+02:40 [32m+33[0m[31m -1[0m: MongoDriverAdapter query builder Limit/Offset Clauses tests limit[0m
+02:43 [32m+34[0m[31m -1[0m: MongoDriverAdapter query builder Limit/Offset Clauses tests offset[0m
+02:45 [32m+35[0m[31m -1[0m: MongoDriverAdapter query builder Limit/Offset Clauses tests paginate[0m
+02:50 [32m+36[0m[31m -1[0m: MongoDriverAdapter query builder Limit/Offset Clauses tests simplePaginate[0m
+02:53 [32m+37[0m[31m -1[0m: MongoDriverAdapter query builder Select Clauses tests select[0m
+02:56 [32m+38[0m[31m -1[0m: MongoDriverAdapter query builder Select Clauses tests addSelect[0m
+02:58 [32m+39[0m[31m -1[0m: MongoDriverAdapter query builder Select Clauses tests selectRaw[0m
+02:59 [32m+40[0m[31m -1[0m: MongoDriverAdapter query builder Select Clauses tests distinct[0m
+03:00 [32m+41[0m[31m -1[0m: MongoDriverAdapter query builder Select Clauses tests distinct multiple columns[0m
+03:04 [32m+42[0m[31m -1[0m: MongoDriverAdapter query builder Select Clauses tests distinct with orderBy[0m
+03:06 [32m+43[0m[31m -1[0m: MongoDriverAdapter query builder Aggregation tests count[0m
+03:08 [32m+44[0m[31m -1[0m: MongoDriverAdapter query builder Aggregation tests sum[0m
+03:10 [32m+45[0m[31m -1[0m: MongoDriverAdapter query builder Aggregation tests avg[0m
+03:10 [32m+46[0m[31m -1[0m: MongoDriverAdapter query builder Aggregation tests min[0m
+03:13 [32m+47[0m[31m -1[0m: MongoDriverAdapter query builder Aggregation tests max[0m
+03:18 [32m+48[0m[31m -1[0m: MongoDriverAdapter query builder Aggregation tests groupBy[0m
+03:21 [32m+49[0m[31m -1[0m: MongoDriverAdapter query builder Aggregation tests having[0m
+03:22 [32m+50[0m[31m -1[0m: [31mSome tests failed.[0m
+
+Consider enabling the flag chain-stack-traces to receive more detailed exceptions.
+For example, 'dart test --chain-stack-traces'.

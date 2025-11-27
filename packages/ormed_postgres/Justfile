@@ -1,0 +1,15 @@
+set shell := ["bash", "-lc"]
+
+POSTGRES_URL := "postgres://postgres:postgres@localhost:6543/orm_test"
+
+# Run the postgres driver suite using the docker-compose definition in this package.
+test:
+	set -euo pipefail; \
+	docker compose up -d --wait --wait-timeout 120; \
+	trap 'docker compose down -v' EXIT; \
+	sleep 2; \
+	POSTGRES_URL={{POSTGRES_URL}} dart test -r expanded
+
+# Tear down any lingering containers.
+down:
+	docker compose down -v || true

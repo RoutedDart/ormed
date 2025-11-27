@@ -1,0 +1,30 @@
+default_connection: default
+connections:
+  default:
+    driver:
+      type: sqlite
+      options:
+        database: database.sqlite
+    migrations:
+      directory: database/migrations
+      registry: database/migrations.dart
+      ledger_table: orm_migrations
+      schema_dump: database/schema.sql
+    seeds:
+      directory: database/seeders
+      registry: database/seeders.dart
+      default_class: DatabaseSeeder
+  analytics:
+    driver:
+      type: sqlite
+      options:
+        database: database.analytics.sqlite
+    migrations:
+      directory: database/migrations
+      registry: database/migrations.dart
+      ledger_table: orm_migrations
+      schema_dump: database/schema.sql
+    seeds:
+      directory: database/seeders
+      registry: database/seeders.dart
+      default_class: DatabaseSeeder

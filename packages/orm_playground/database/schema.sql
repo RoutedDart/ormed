@@ -1,0 +1,57 @@
+CREATE TABLE IF NOT EXISTS "orm_migrations"(
+  "id" VARCHAR(255) NOT NULL PRIMARY KEY,
+  "checksum" VARCHAR(64) NOT NULL,
+  "applied_at" TEXT NOT NULL,
+  "batch" INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS "users"(
+  "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  "email" VARCHAR(255) NOT NULL UNIQUE,
+  "name" VARCHAR(255) NOT NULL,
+  "active" INTEGER NOT NULL DEFAULT 1,
+  "created_at" TEXT,
+  "updated_at" TEXT
+);
+CREATE UNIQUE INDEX "users_email_unique" ON "users"("email");
+CREATE TABLE IF NOT EXISTS "posts"(
+  "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  "user_id" INTEGER NOT NULL,
+  "title" VARCHAR(255) NOT NULL,
+  "body" TEXT,
+  "published_at" TEXT,
+  "published" INTEGER NOT NULL DEFAULT 0,
+  "created_at" TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updated_at" TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY("user_id") REFERENCES "users"("id") ON DELETE CASCADE
+);
+CREATE INDEX "posts_user_id_index" ON "posts"("user_id");
+CREATE TABLE IF NOT EXISTS "comments"(
+  "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  "post_id" INTEGER NOT NULL,
+  "user_id" INTEGER,
+  "body" TEXT NOT NULL,
+  "created_at" TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updated_at" TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY("post_id") REFERENCES "posts"("id") ON DELETE CASCADE,
+  FOREIGN KEY("user_id") REFERENCES "users"("id") ON DELETE SET NULL
+);
+CREATE INDEX "comments_post_id_index" ON "comments"("post_id");
+CREATE TABLE IF NOT EXISTS "post_tags"(
+  "post_id" INTEGER NOT NULL,
+  "tag_id" INTEGER NOT NULL,
+  PRIMARY KEY("post_id", "tag_id"),
+  FOREIGN KEY("post_id") REFERENCES "posts"("id") ON DELETE CASCADE,
+  FOREIGN KEY("tag_id") REFERENCES "tags"("id") ON DELETE CASCADE
+);
+CREATE TABLE IF NOT EXISTS "tags"(
+  "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  "name" VARCHAR(255) NOT NULL UNIQUE,
+  "created_at" TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updated_at" TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE UNIQUE INDEX "tags_name_unique" ON "tags"("name");
+INSERT INTO orm_migrations VALUES('2025_11_15_014501_create_users_table','9598082073d5acbdfebf3933dbb9b21771e51a36','2025-11-17T20:37:28.139671Z',1);
+INSERT INTO orm_migrations VALUES('2025_11_15_015021_create_posts_table','3e088fc9a14783629dfe75cd1dbbbd4e9307ae67','2025-11-17T20:37:28.563855Z',1);
+INSERT INTO orm_migrations VALUES('2025_11_15_015036_create_comments_table','76f4e6270fc16efc915c5686475fc2ce8d8c7ea2','2025-11-17T20:37:28.966549Z',1);
+INSERT INTO orm_migrations VALUES('2025_11_15_015055_create_post_tags_table','230f283fd26558bcbbd6804ec86706cb3a463453','2025-11-17T20:37:29.360669Z',1);
+INSERT INTO orm_migrations VALUES('2025_11_15_015222_create_tags_table','1d2bb4960a99de5c46bf3532b42a24bc605bdfa1','2025-11-17T20:37:29.754776Z',1);

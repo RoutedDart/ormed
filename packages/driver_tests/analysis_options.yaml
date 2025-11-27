@@ -1,0 +1,2 @@
+# Shared analysis options for orm_driver_tests.
+include: package:lints/recommended.yaml

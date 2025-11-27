@@ -1,0 +1,16 @@
+set shell := ["bash", "-lc"]
+
+MONGO_URL := "mongodb://root:example@localhost:27017/?authSource=admin"
+MONGO_DATABASE := "orm_test"
+
+docker-up:
+	docker compose up -d --wait --wait-timeout 120
+
+docker-down:
+	docker compose down -v || true
+
+test:
+	set -euo pipefail; \
+	MONGO_URL={{MONGO_URL}} \
+	MONGO_DATABASE={{MONGO_DATABASE}} \
+	dart test -r expanded

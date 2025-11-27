@@ -1,0 +1,3 @@
+# Postgres integration tests manipulate a shared database, so they must run
+# sequentially to avoid schema rebuild races.
+concurrency: 1
