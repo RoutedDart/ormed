@@ -31,6 +31,12 @@ abstract class Model<TModel extends Model<TModel>>
   static String _defaultConnectionName = 'default';
   static ConnectionRole _defaultConnectionRole = ConnectionRole.primary;
 
+  static final Expando<bool> _modelExists = Expando<bool>('_modelExists');
+
+  // ignore: unused_element
+  bool get _exists => _modelExists[this] ?? false;
+  set _exists(bool value) => _modelExists[this] = value;
+
   /// Binds a global resolver factory so model helpers know how to persist.
   static void bindConnectionResolver({
     ConnectionResolverFactory? resolveConnection,
@@ -222,15 +228,17 @@ abstract class Model<TModel extends Model<TModel>>
     final repository = _repositoryFor(def, resolver);
     final pkValue = _primaryKeyValue(def);
     List<TModel> persisted;
+
     if (def.primaryKeyField == null || pkValue == null) {
       persisted = await repository.insertMany(<TModel>[
         _self(),
       ], returning: returning);
     } else {
-      persisted = await repository.updateMany(<TModel>[
+      persisted = await repository.upsertMany(<TModel>[
         _self(),
       ], returning: returning);
     }
+
     final result = persisted.isNotEmpty ? persisted.first : _self();
     _syncFrom(result, def, resolver);
     return result;
@@ -457,6 +465,7 @@ abstract class Model<TModel extends Model<TModel>>
     _attachDefinition(definition);
     final values = Map<String, Object?>.from(source.attributes);
     replaceAttributes(values);
+    _exists = true;
   }
 
   void _attachDefinition(ModelDefinition<TModel> definition) {

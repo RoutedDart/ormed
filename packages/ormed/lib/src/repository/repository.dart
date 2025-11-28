@@ -181,6 +181,21 @@ class Repository<T> {
     return _mapResult(models, result, returning);
   }
 
+  /// Updates multiple [models] in the database and returns the raw result.
+  Future<MutationResult> updateManyRaw(
+    List<T> models, {
+    bool returning = false,
+    JsonUpdateBuilder<T>? jsonUpdates,
+  }) async {
+    if (models.isEmpty) return const MutationResult(affectedRows: 0);
+    final plan = _buildUpdatePlan(
+      models,
+      returning: returning,
+      jsonUpdates: jsonUpdates,
+    );
+    return _runMutation(plan);
+  }
+
   /// Returns the statement preview for updating [models].
   ///
   /// Example:

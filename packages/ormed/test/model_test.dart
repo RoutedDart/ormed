@@ -143,5 +143,55 @@ void main() {
       final meta = refreshed.settings['meta'] as Map<String, Object?>?;
       expect(meta?['count'], 5);
     });
+    test(
+      'save inserts new model instances even with user-assigned PK',
+      () async {
+        final user = ActiveUser(id: 100, email: 'assigned@example.com');
+        final saved = await user.save();
+        expect(saved.id, 100);
+
+        final rows = await Model.query<ActiveUser>()
+            .whereEquals('id', 100)
+            .get();
+        expect(rows, hasLength(1));
+      },
+    );
+
+    test('save updates models that were previously saved', () async {
+      final user = await ActiveUser(
+        id: 101,
+        email: 'original@example.com',
+      ).save();
+      user.email = 'changed@example.com';
+      await user.save();
+
+      final rows = await Model.query<ActiveUser>()
+          .whereEquals('id', user.id)
+          .get();
+      expect(rows.single.email, 'changed@example.com');
+      expect(rows, hasLength(1));
+    });
+
+    test('save falls back to insert if update affects 0 rows', () async {
+      final user = await ActiveUser(
+        id: 102,
+        email: 'fallback@example.com',
+      ).save();
+
+      // Simulate external deletion
+      await context.repository<ActiveUser>().deleteByKeys([
+        {'id': user.id},
+      ]);
+
+      // Save should re-insert
+      user.email = 'restored@example.com';
+      await user.save();
+
+      final rows = await Model.query<ActiveUser>()
+          .whereEquals('id', user.id)
+          .get();
+      expect(rows, hasLength(1));
+      expect(rows.single.email, 'restored@example.com');
+    });
   });
 }

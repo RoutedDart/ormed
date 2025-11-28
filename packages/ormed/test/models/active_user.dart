@@ -6,7 +6,7 @@ part 'active_user.orm.dart';
 
 @OrmModel(table: 'active_users', connection: 'analytics', softDeletes: true)
 class ActiveUser extends Model<ActiveUser> with SoftDeletes {
-  const ActiveUser({
+  ActiveUser({
     this.id,
     required this.email,
     this.name,
@@ -14,12 +14,12 @@ class ActiveUser extends Model<ActiveUser> with SoftDeletes {
   });
 
   @OrmField(isPrimaryKey: true, autoIncrement: true)
-  final int? id;
+  int? id;
 
-  final String email;
+  String email;
 
-  final String? name;
+  String? name;
 
   @OrmField(columnType: 'json')
-  final Map<String, Object?> settings;
+  Map<String, Object?> settings;
 }
