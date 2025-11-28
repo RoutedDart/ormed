@@ -90,7 +90,8 @@ class _$ImageModelCodec extends ModelCodec<Image> {
   }
 }
 
-class _$ImageModel extends Image with ModelAttributes, ModelConnection {
+class _$ImageModel extends Image
+    with ModelAttributes, ModelConnection, ModelRelations {
   _$ImageModel({required int id, required String label})
     : super.new(id: id, label: label) {
     _attachOrmRuntimeMetadata({'id': id, 'label': label});
@@ -101,6 +102,14 @@ class _$ImageModel extends Image with ModelAttributes, ModelConnection {
 
   @override
   String get label => getAttribute<String>('label') ?? super.label;
+
+  @override
+  Photo? get primaryPhoto {
+    if (relationLoaded('primaryPhoto')) {
+      return getRelation<Photo>('primaryPhoto');
+    }
+    return super.primaryPhoto;
+  }
 
   void _attachOrmRuntimeMetadata(Map<String, Object?> values) {
     replaceAttributes(values);

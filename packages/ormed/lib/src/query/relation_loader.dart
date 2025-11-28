@@ -1,4 +1,5 @@
 import '../annotations.dart';
+import '../model.dart';
 import '../model_definition.dart';
 import '../model_registry.dart';
 import '../value_codec.dart';
@@ -69,6 +70,19 @@ class RelationLoader {
         case RelationKind.manyToMany:
           await _loadManyToMany(parentDefinition, parents, load, segment);
           break;
+      }
+      // Sync relations to model cache
+      _syncRelationsToModels(parents, load.relation.name);
+    }
+  }
+
+  /// Syncs a loaded relation from QueryRow to the model's relation cache.
+  void _syncRelationsToModels<T>(List<QueryRow<T>> rows, String relationName) {
+    for (final row in rows) {
+      if (row.model is Model) {
+        final model = row.model as Model;
+        final relationValue = row.relations[relationName];
+        model.setRelation(relationName, relationValue);
       }
     }
   }

@@ -133,7 +133,7 @@ class _$SerialTestModelCodec extends ModelCodec<SerialTest> {
 
 class _$SerialTestModel extends SerialTest {
   _$SerialTestModel({required int id, required String label})
-    : super(id: id, label: label) {
+    : super.new(id: id, label: label) {
     _attachOrmRuntimeMetadata({'id': id, 'label': label});
   }
 

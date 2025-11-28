@@ -87,7 +87,8 @@ class _$TagModelCodec extends ModelCodec<Tag> {
   }
 }
 
-class _$TagModel extends Tag with ModelAttributes, ModelConnection {
+class _$TagModel extends Tag
+    with ModelAttributes, ModelConnection, ModelRelations {
   _$TagModel({required int id, required String label})
     : super.new(id: id, label: label) {
     _attachOrmRuntimeMetadata({'id': id, 'label': label});
@@ -98,6 +99,14 @@ class _$TagModel extends Tag with ModelAttributes, ModelConnection {
 
   @override
   String get label => getAttribute<String>('label') ?? super.label;
+
+  @override
+  List<Post> get posts {
+    if (relationLoaded('posts')) {
+      return getRelationList<Post>('posts');
+    }
+    return super.posts;
+  }
 
   void _attachOrmRuntimeMetadata(Map<String, Object?> values) {
     replaceAttributes(values);

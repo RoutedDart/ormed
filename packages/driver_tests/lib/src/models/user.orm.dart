@@ -146,7 +146,7 @@ class _$UserModelCodec extends ModelCodec<User> {
 
 class _$UserModel extends User {
   _$UserModel({required int id, required String email, required bool active})
-    : super(id: id, email: email, active: active) {
+    : super.new(id: id, email: email, active: active) {
     _attachOrmRuntimeMetadata({'id': id, 'email': email, 'active': active});
   }
 

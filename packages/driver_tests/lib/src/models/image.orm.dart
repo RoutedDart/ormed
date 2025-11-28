@@ -134,7 +134,7 @@ class _$ImageModelCodec extends ModelCodec<Image> {
 
 class _$ImageModel extends Image {
   _$ImageModel({required int id, required String label})
-    : super(id: id, label: label) {
+    : super.new(id: id, label: label) {
     _attachOrmRuntimeMetadata({'id': id, 'label': label});
   }
 
@@ -147,6 +147,14 @@ class _$ImageModel extends Image {
   String get label => getAttribute<String>('label') ?? super.label;
 
   set label(String value) => setAttribute('label', value);
+
+  @override
+  Photo? get primaryPhoto {
+    if (relationLoaded('primaryPhoto')) {
+      return getRelation<Photo>('primaryPhoto');
+    }
+    return super.primaryPhoto;
+  }
 
   void _attachOrmRuntimeMetadata(Map<String, Object?> values) {
     replaceAttributes(values);

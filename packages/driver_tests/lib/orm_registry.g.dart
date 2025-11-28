@@ -33,8 +33,8 @@ final List<ModelDefinition<dynamic>> _$ormModelDefinitions = [
   UserOrmDefinition.definition,
 ];
 
-ModelRegistry buildOrmRegistry() =>
-    ModelRegistry()..registerAll(_$ormModelDefinitions);
+ModelRegistry buildOrmRegistry() => ModelRegistry()
+  ..registerAll(_$ormModelDefinitions);
 
 List<ModelDefinition<dynamic>> get generatedOrmModelDefinitions =>
     List.unmodifiable(_$ormModelDefinitions);

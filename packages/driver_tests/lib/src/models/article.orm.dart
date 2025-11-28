@@ -290,7 +290,7 @@ class _$ArticleModel extends Article {
     required DateTime publishedAt,
     DateTime? reviewedAt,
     required int categoryId,
-  }) : super(
+  }) : super.new(
          id: id,
          title: title,
          body: body,

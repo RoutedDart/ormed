@@ -128,7 +128,7 @@ class _$PostTagModelCodec extends ModelCodec<PostTag> {
 
 class _$PostTagModel extends PostTag {
   _$PostTagModel({required int postId, required int tagId})
-    : super(postId: postId, tagId: tagId) {
+    : super.new(postId: postId, tagId: tagId) {
     _attachOrmRuntimeMetadata({'post_id': postId, 'tag_id': tagId});
   }
 

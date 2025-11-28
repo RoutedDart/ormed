@@ -194,7 +194,7 @@ class _$MutationTargetModel extends MutationTarget {
     String? name,
     bool? active,
     String? category,
-  }) : super(id: id, name: name, active: active, category: category) {
+  }) : super.new(id: id, name: name, active: active, category: category) {
     _attachOrmRuntimeMetadata({
       '_id': id,
       'name': name,

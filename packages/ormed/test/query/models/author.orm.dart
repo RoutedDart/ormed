@@ -110,7 +110,8 @@ class _$AuthorModelCodec extends ModelCodec<Author> {
   }
 }
 
-class _$AuthorModel extends Author with ModelAttributes, ModelConnection {
+class _$AuthorModel extends Author
+    with ModelAttributes, ModelConnection, ModelRelations {
   _$AuthorModel({required int id, required String name, required bool active})
     : super.new(id: id, name: name, active: active) {
     _attachOrmRuntimeMetadata({'id': id, 'name': name, 'active': active});
@@ -124,6 +125,14 @@ class _$AuthorModel extends Author with ModelAttributes, ModelConnection {
 
   @override
   bool get active => getAttribute<bool>('active') ?? super.active;
+
+  @override
+  List<Post> get posts {
+    if (relationLoaded('posts')) {
+      return getRelationList<Post>('posts');
+    }
+    return super.posts;
+  }
 
   void _attachOrmRuntimeMetadata(Map<String, Object?> values) {
     replaceAttributes(values);

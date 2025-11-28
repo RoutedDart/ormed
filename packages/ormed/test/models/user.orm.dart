@@ -130,7 +130,8 @@ class _$UserModelCodec extends ModelCodec<User> {
   }
 }
 
-class _$UserModel extends User with ModelAttributes, ModelConnection {
+class _$UserModel extends User
+    with ModelAttributes, ModelConnection, ModelRelations {
   _$UserModel({
     required String id,
     required String email,

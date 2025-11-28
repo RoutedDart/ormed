@@ -168,7 +168,7 @@ class _$DriverOverrideEntryModel extends DriverOverrideEntry {
   _$DriverOverrideEntryModel({
     required int id,
     required Map<String, Object?> payload,
-  }) : super(id: id, payload: payload) {
+  }) : super.new(id: id, payload: payload) {
     _attachOrmRuntimeMetadata({'id': id, 'payload': payload});
   }
 

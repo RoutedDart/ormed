@@ -36,6 +36,7 @@ export 'src/model_mixins/model_attributes.dart';
 export 'src/model_mixins/model_attribute_extensions.dart';
 export 'src/model_mixins/soft_deletes.dart';
 export 'src/model_mixins/model_connection.dart';
+export 'src/model_mixins/model_relations.dart';
 export 'src/model_factory_connection.dart';
 export 'src/model_factory.dart';
 export 'src/model_mixins/model_factory.dart';

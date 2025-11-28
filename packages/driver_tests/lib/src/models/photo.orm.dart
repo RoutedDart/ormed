@@ -185,7 +185,7 @@ class _$PhotoModel extends Photo {
     required int imageableId,
     required String imageableType,
     required String path,
-  }) : super(
+  }) : super.new(
          id: id,
          imageableId: imageableId,
          imageableType: imageableType,

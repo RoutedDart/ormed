@@ -161,7 +161,8 @@ class _$PostModelCodec extends ModelCodec<Post> {
   }
 }
 
-class _$PostModel extends Post with ModelAttributes, ModelConnection {
+class _$PostModel extends Post
+    with ModelAttributes, ModelConnection, ModelRelations {
   _$PostModel({
     required int id,
     required int authorId,
@@ -193,6 +194,30 @@ class _$PostModel extends Post with ModelAttributes, ModelConnection {
   @override
   DateTime get publishedAt =>
       getAttribute<DateTime>('publishedAt') ?? super.publishedAt;
+
+  @override
+  Author? get author {
+    if (relationLoaded('author')) {
+      return getRelation<Author>('author');
+    }
+    return super.author;
+  }
+
+  @override
+  List<Tag> get tags {
+    if (relationLoaded('tags')) {
+      return getRelationList<Tag>('tags');
+    }
+    return super.tags;
+  }
+
+  @override
+  List<Photo> get photos {
+    if (relationLoaded('photos')) {
+      return getRelationList<Photo>('photos');
+    }
+    return super.photos;
+  }
 
   void _attachOrmRuntimeMetadata(Map<String, Object?> values) {
     replaceAttributes(values);

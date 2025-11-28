@@ -209,7 +209,7 @@ class _$PostModel extends Post {
     required int authorId,
     required String title,
     required DateTime publishedAt,
-  }) : super(
+  }) : super.new(
          id: id,
          authorId: authorId,
          title: title,
@@ -243,6 +243,30 @@ class _$PostModel extends Post {
       getAttribute<DateTime>('published_at') ?? super.publishedAt;
 
   set publishedAt(DateTime value) => setAttribute('published_at', value);
+
+  @override
+  Author? get author {
+    if (relationLoaded('author')) {
+      return getRelation<Author>('author');
+    }
+    return super.author;
+  }
+
+  @override
+  List<Tag> get tags {
+    if (relationLoaded('tags')) {
+      return getRelationList<Tag>('tags');
+    }
+    return super.tags;
+  }
+
+  @override
+  List<Photo> get photos {
+    if (relationLoaded('photos')) {
+      return getRelationList<Photo>('photos');
+    }
+    return super.photos;
+  }
 
   void _attachOrmRuntimeMetadata(Map<String, Object?> values) {
     replaceAttributes(values);

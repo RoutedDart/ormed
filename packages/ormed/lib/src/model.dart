@@ -12,8 +12,11 @@ import 'model_definition.dart';
 import 'model_factory.dart';
 import 'model_mixins/model_attributes.dart';
 import 'model_mixins/model_connection.dart';
+import 'model_mixins/model_relations.dart';
 import 'model_registry.dart';
 import 'query/query.dart';
+import 'query/query_plan.dart';
+import 'query/relation_loader.dart';
 import 'repository/repository.dart';
 import 'value_codec.dart';
 
@@ -23,7 +26,7 @@ typedef ConnectionResolverFactory =
 /// Base class that unifies attribute storage, connection awareness, and
 /// self-persisting helpers for routed ORM models.
 abstract class Model<TModel extends Model<TModel>>
-    with ModelAttributes, ModelConnection {
+    with ModelAttributes, ModelConnection, ModelRelations {
   const Model();
 
   static ConnectionResolverFactory? _resolverFactory;
@@ -473,6 +476,255 @@ abstract class Model<TModel extends Model<TModel>>
     if (definition.usesSoftDeletes) {
       attachSoftDeleteColumn(definition.metadata.softDeleteColumn);
     }
+  }
+
+  // =========================================================================
+  // Lazy Loading Methods
+  // =========================================================================
+
+  /// Lazily loads a relation on this model instance.
+  ///
+  /// Similar to Laravel's `$model->load('relation')`.
+  ///
+  /// Example:
+  /// ```dart
+  /// final post = await Post.query().first();
+  /// await post.load('author'); // Lazy load author
+  /// print(post.author?.name);
+  /// ```
+  ///
+  /// With constraint:
+  /// ```dart
+  /// await post.load('comments', (q) => q.where('approved', true));
+  /// ```
+  ///
+  /// Throws [LazyLoadingViolationException] if [ModelRelations.preventsLazyLoading] is true.
+  Future<TModel> load(
+    String relation, [
+    PredicateCallback<dynamic>? constraint,
+  ]) async {
+    if (ModelRelations.preventsLazyLoading) {
+      throw LazyLoadingViolationException(runtimeType, relation);
+    }
+
+    final def = expectDefinition();
+    final resolver = _resolveResolverFor(def);
+    final context = _requireQueryContext(resolver);
+    
+    // Find the relation definition
+    final relationDef = def.relations.cast<RelationDefinition?>().firstWhere(
+      (r) => r?.name == relation,
+      orElse: () => null,
+    );
+    
+    if (relationDef == null) {
+      throw ArgumentError(
+        'Relation "$relation" not found on ${def.modelName}',
+      );
+    }
+
+    // Convert constraint callback to QueryPredicate
+    QueryPredicate? predicate;
+    if (constraint != null) {
+      final target = context.registry.expectByName(relationDef.targetModel);
+      final builder = PredicateBuilder<dynamic>(target);
+      constraint(builder);
+      predicate = builder.build();
+    }
+
+    // Create a synthetic QueryRow from current model
+    final row = QueryRow<TModel>(
+      model: _self(),
+      row: def.toMap(_self(), registry: context.codecRegistry),
+    );
+
+    // Load the relation using RelationLoader
+    final loader = RelationLoader(context);
+    final relationLoad = RelationLoad(
+      relation: relationDef,
+      predicate: predicate,
+    );
+
+    await loader.attach(def, [row], [relationLoad]);
+
+    // The relation should now be in row.relations and synced to model cache
+    return _self();
+  }
+
+  /// Lazily loads multiple relations that haven't been loaded yet.
+  ///
+  /// Similar to Laravel's `$model->loadMissing(['relation1', 'relation2'])`.
+  ///
+  /// Only loads relations that aren't already loaded.
+  ///
+  /// Example:
+  /// ```dart
+  /// await post.loadMissing(['author', 'tags', 'comments']);
+  /// ```
+  Future<TModel> loadMissing(Iterable<String> relations) async {
+    for (final relation in relations) {
+      if (!relationLoaded(relation)) {
+        await load(relation);
+      }
+    }
+    return _self();
+  }
+
+  /// Lazily loads multiple relations with optional constraints.
+  ///
+  /// Similar to Laravel's `$model->load(['relation1' => callback, ...])`.
+  ///
+  /// Example:
+  /// ```dart
+  /// await post.loadMany({
+  ///   'author': null,
+  ///   'comments': (q) => q.where('approved', true),
+  ///   'tags': (q) => q.orderBy('name'),
+  /// });
+  /// ```
+  Future<TModel> loadMany(
+    Map<String, PredicateCallback<dynamic>?> relations,
+  ) async {
+    for (final entry in relations.entries) {
+      await load(entry.key, entry.value);
+    }
+    return _self();
+  }
+
+  /// Lazily loads the count of a relation.
+  ///
+  /// Stores the count as an attribute with the suffix `_count`.
+  ///
+  /// Example:
+  /// ```dart
+  /// await post.loadCount('comments');
+  /// print(post.getAttribute<int>('comments_count')); // e.g., 5
+  /// ```
+  ///
+  /// With custom alias:
+  /// ```dart
+  /// await post.loadCount('comments', alias: 'total_comments');
+  /// print(post.getAttribute<int>('total_comments'));
+  /// ```
+  Future<TModel> loadCount(
+    String relation, {
+    String? alias,
+    PredicateCallback<dynamic>? constraint,
+  }) async {
+    if (ModelRelations.preventsLazyLoading) {
+      throw LazyLoadingViolationException(runtimeType, relation);
+    }
+
+    final def = expectDefinition();
+    final resolver = _resolveResolverFor(def);
+    final context = _requireQueryContext(resolver);
+    
+    // Find the relation definition
+    final relationDef = def.relations.cast<RelationDefinition?>().firstWhere(
+      (r) => r?.name == relation,
+      orElse: () => null,
+    );
+    
+    if (relationDef == null) {
+      throw ArgumentError(
+        'Relation "$relation" not found on ${def.modelName}',
+      );
+    }
+
+    final countAlias = alias ?? '${relation}_count';
+
+    // Build a query for this model with withCount
+    final query = context.queryFromDefinition(def);
+    
+    // Get the primary key value
+    final pkField = def.primaryKeyField;
+    if (pkField == null) {
+      throw StateError('Cannot load count on model without primary key');
+    }
+    
+    final pkValue = getAttribute(pkField.columnName);
+    if (pkValue == null) {
+      throw StateError('Cannot load count on model without primary key value');
+    }
+
+    // Query for this specific model with count
+    query.where(pkField.columnName, pkValue);
+    query.withCount(relation, alias: countAlias, constraint: constraint);
+    
+    final rows = await query.get();
+    if (rows.isNotEmpty) {
+      final result = rows.first;
+      final count = result.getAttribute<int>(countAlias) ?? 0;
+      setAttribute(countAlias, count);
+    }
+
+    return _self();
+  }
+
+  /// Lazily loads the existence of a relation.
+  ///
+  /// Stores the boolean result as an attribute with the suffix `_exists`.
+  ///
+  /// Example:
+  /// ```dart
+  /// await post.loadExists('comments');
+  /// if (post.getAttribute<bool>('comments_exists') == true) {
+  ///   print('Post has comments');
+  /// }
+  /// ```
+  Future<TModel> loadExists(
+    String relation, {
+    String? alias,
+    PredicateCallback<dynamic>? constraint,
+  }) async {
+    if (ModelRelations.preventsLazyLoading) {
+      throw LazyLoadingViolationException(runtimeType, relation);
+    }
+
+    final def = expectDefinition();
+    final resolver = _resolveResolverFor(def);
+    final context = _requireQueryContext(resolver);
+    
+    // Find the relation definition
+    final relationDef = def.relations.cast<RelationDefinition?>().firstWhere(
+      (r) => r?.name == relation,
+      orElse: () => null,
+    );
+    
+    if (relationDef == null) {
+      throw ArgumentError(
+        'Relation "$relation" not found on ${def.modelName}',
+      );
+    }
+
+    final existsAlias = alias ?? '${relation}_exists';
+
+    // Build a query for this model with withExists
+    final query = context.queryFromDefinition(def);
+    
+    // Get the primary key value
+    final pkField = def.primaryKeyField;
+    if (pkField == null) {
+      throw StateError('Cannot load exists on model without primary key');
+    }
+    
+    final pkValue = getAttribute(pkField.columnName);
+    if (pkValue == null) {
+      throw StateError('Cannot load exists on model without primary key value');
+    }
+
+    // Query for this specific model with exists
+    query.where(pkField.columnName, pkValue);
+    query.withExists(relation, alias: existsAlias, constraint: constraint);
+    
+    final rows = await query.get();
+    if (rows.isNotEmpty) {
+      final result = rows.first;
+      final exists = result.getAttribute<bool>(existsAlias) ?? false;
+      setAttribute(existsAlias, exists);
+    }
+
+    return _self();
   }
 }
 

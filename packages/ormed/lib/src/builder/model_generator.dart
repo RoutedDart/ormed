@@ -158,7 +158,7 @@ class _ModelEmitter {
         buffer.writeln("  codecType: '${field.codecType}',");
       }
       if (field.driverOverrides.isNotEmpty) {
-        buffer.writeln('  driverOverrides: const {');
+        buffer.writeln('  driverOverrides: {');
         field.driverOverrides.forEach((driver, override) {
           buffer.writeln("    '${_escape(driver)}': FieldDriverOverride(");
           if (override.columnType != null) {
@@ -327,6 +327,7 @@ class _ModelEmitter {
       _modelSubclass(
         constructor,
         fields,
+        relations,
         modelVar,
         effectiveSoftDeletes,
         metadataSoftDeleteColumn,
@@ -657,6 +658,7 @@ class _ModelEmitter {
         _RelationDescriptor(
           owner: className,
           name: field.displayName,
+          fieldType: field.type,
           kind: _readRelationKind(annotation.peek('kind')?.objectValue),
           targetModel: _typeOrDynamic(annotation.peek('target')?.typeValue),
           foreignKey: annotation.peek('foreignKey')?.stringValue,
@@ -752,6 +754,7 @@ class _ModelEmitter {
   String _modelSubclass(
     ConstructorElement constructor,
     List<_FieldDescriptor> fields,
+    List<_RelationDescriptor> relations,
     String modelDefinitionVar,
     bool usesSoftDeletes,
     String softDeleteColumn,
@@ -766,6 +769,11 @@ class _ModelEmitter {
     }
     if (!baseHasModelConnection) {
       mixins.add('ModelConnection');
+    }
+    // Add ModelRelations only if the base class doesn't extend Model
+    // (Model already has ModelRelations mixin)
+    if (!extendsModel) {
+      mixins.add('ModelRelations');
     }
     final mixinSuffix = mixins.isEmpty ? '' : ' with ${mixins.join(', ')}';
     buffer.writeln(
@@ -793,6 +801,41 @@ class _ModelEmitter {
         buffer.writeln('      setAttribute(\'${field.columnName}\', value);');
         buffer.writeln();
       }
+    }
+
+    // Generate relation getters
+    for (final relation in relations) {
+      buffer.writeln('  @override');
+      // Use the full field type including nullability
+      final fieldTypeName = _typeName(relation.fieldType);
+      if (relation.isList) {
+        // List relations (hasMany, manyToMany, morphMany)
+        buffer.writeln('  $fieldTypeName get ${relation.name} {');
+        buffer.writeln('    if (relationLoaded(\'${relation.name}\')) {');
+        // Extract the type parameter from List<T>
+        final listType = relation.fieldType;
+        String elementType = 'dynamic';
+        if (listType is InterfaceType && listType.typeArguments.isNotEmpty) {
+          elementType = _nonNullableTypeName(listType.typeArguments.first);
+        }
+        buffer.writeln(
+          '      return getRelationList<$elementType>(\'${relation.name}\');',
+        );
+        buffer.writeln('    }');
+        buffer.writeln('    return super.${relation.name};');
+        buffer.writeln('  }');
+      } else {
+        // Single relations (belongsTo, hasOne, morphOne)
+        buffer.writeln('  $fieldTypeName get ${relation.name} {');
+        buffer.writeln('    if (relationLoaded(\'${relation.name}\')) {');
+        buffer.writeln(
+          '      return getRelation<${relation.targetModel}>(\'${relation.name}\');',
+        );
+        buffer.writeln('    }');
+        buffer.writeln('    return super.${relation.name};');
+        buffer.writeln('  }');
+      }
+      buffer.writeln();
     }
 
     buffer.writeln('  void _attachOrmRuntimeMetadata(');
@@ -1046,6 +1089,7 @@ class _RelationDescriptor {
   _RelationDescriptor({
     required this.owner,
     required this.name,
+    required this.fieldType,
     required this.kind,
     required this.targetModel,
     this.foreignKey,
@@ -1059,6 +1103,7 @@ class _RelationDescriptor {
 
   final String owner;
   final String name;
+  final DartType fieldType;
   final RelationKind kind;
   final String targetModel;
   final String? foreignKey;
@@ -1070,6 +1115,18 @@ class _RelationDescriptor {
   final String? morphClass;
 
   String get identifier => '_\$$owner${_pascalize(name)}Relation';
+
+  /// Whether this is a list relation (hasMany, manyToMany, morphMany)
+  bool get isList =>
+      kind == RelationKind.hasMany ||
+      kind == RelationKind.manyToMany ||
+      kind == RelationKind.morphMany;
+
+  /// The resolved type string for the relation field
+  String get resolvedType => _nonNullableTypeName(fieldType);
+
+  /// Whether the relation field is nullable
+  bool get isNullable => fieldType.nullabilitySuffix != NullabilitySuffix.none;
 }
 
 const _annotationsLibraryUri = 'package:ormed/src/annotations.dart';
@@ -1118,6 +1175,8 @@ String? _maybeTypeName(DartType? type) =>
 
 String _typeOrDynamic(DartType? type) =>
     type == null ? 'dynamic' : _nonNullableTypeName(type);
+
+String _typeName(DartType type) => type.getDisplayString();
 
 String _nonNullableTypeName(DartType type) {
   final display = type.getDisplayString();

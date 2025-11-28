@@ -158,7 +158,7 @@ class _$UniqueUserModel extends UniqueUser {
     required int id,
     required String email,
     required bool active,
-  }) : super(id: id, email: email, active: active) {
+  }) : super.new(id: id, email: email, active: active) {
     _attachOrmRuntimeMetadata({'id': id, 'email': email, 'active': active});
   }
 

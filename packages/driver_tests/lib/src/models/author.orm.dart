@@ -133,7 +133,7 @@ class _$AuthorModelCodec extends ModelCodec<Author> {
 
 class _$AuthorModel extends Author {
   _$AuthorModel({required int id, required String name})
-    : super(id: id, name: name) {
+    : super.new(id: id, name: name) {
     _attachOrmRuntimeMetadata({'id': id, 'name': name});
   }
 
@@ -146,6 +146,14 @@ class _$AuthorModel extends Author {
   String get name => getAttribute<String>('name') ?? super.name;
 
   set name(String value) => setAttribute('name', value);
+
+  @override
+  List<Post> get posts {
+    if (relationLoaded('posts')) {
+      return getRelationList<Post>('posts');
+    }
+    return super.posts;
+  }
 
   void _attachOrmRuntimeMetadata(Map<String, Object?> values) {
     replaceAttributes(values);

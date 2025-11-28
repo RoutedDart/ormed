@@ -137,7 +137,8 @@ class _$PhotoModelCodec extends ModelCodec<Photo> {
   }
 }
 
-class _$PhotoModel extends Photo with ModelAttributes, ModelConnection {
+class _$PhotoModel extends Photo
+    with ModelAttributes, ModelConnection, ModelRelations {
   _$PhotoModel({
     required int id,
     required int imageableId,

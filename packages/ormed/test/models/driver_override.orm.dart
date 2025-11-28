@@ -115,7 +115,7 @@ class _$DriverOverrideModelModelCodec extends ModelCodec<DriverOverrideModel> {
 }
 
 class _$DriverOverrideModelModel extends DriverOverrideModel
-    with ModelAttributes, ModelConnection {
+    with ModelAttributes, ModelConnection, ModelRelations {
   _$DriverOverrideModelModel({
     required int id,
     required Map<String, Object?> payload,

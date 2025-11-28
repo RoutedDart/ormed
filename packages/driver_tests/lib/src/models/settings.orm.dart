@@ -132,7 +132,7 @@ class _$SettingModelCodec extends ModelCodec<Setting> {
 
 class _$SettingModel extends Setting {
   _$SettingModel({required int id, required Map<String, dynamic> payload})
-    : super(id: id, payload: payload) {
+    : super.new(id: id, payload: payload) {
     _attachOrmRuntimeMetadata({'id': id, 'payload': payload});
   }
 
