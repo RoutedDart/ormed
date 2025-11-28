@@ -59,6 +59,58 @@ The generator emits:
   connection decorator for each operation.
 - Extension helpers such as `UserOrmDefinition.definition` for registration.
 
+## Constructor Targeting
+
+By default, the generator uses the first generative (non-factory) constructor
+when creating the model subclass. You can override this behavior by specifying
+a named constructor in the `@OrmModel` annotation:
+
+```dart
+@OrmModel(
+  table: 'named_constructor_models',
+  constructor: 'fromDatabase', // Use this named constructor
+)
+class NamedConstructorModel extends Model<NamedConstructorModel> {
+  // Default constructor - NOT used by the generator
+  const NamedConstructorModel({
+    required this.id,
+    required this.name,
+    required this.value,
+  });
+
+  // Named constructor that the generator will use
+  const NamedConstructorModel.fromDatabase({
+    required this.id,
+    required this.name,
+    required this.value,
+  });
+
+  @OrmField(isPrimaryKey: true, autoIncrement: true)
+  final int? id;
+
+  final String name;
+  final int value;
+}
+```
+
+The generated subclass will call `super.fromDatabase(...)` instead of
+`super(...)`, allowing you to:
+
+- Use different parameter ordering or naming conventions for ORM hydration
+- Keep a user-facing constructor separate from the database constructor
+- Apply validation or transformation logic in specific constructors
+
+If the specified constructor doesn't exist, the generator emits a clear
+diagnostic error:
+
+```
+Constructor "fromDatabase" not found on NamedConstructorModel
+```
+
+When no `constructor` parameter is provided, the generator falls back to the
+unnamed constructor (or the first generative constructor if unnamed isn't
+available).
+
 ## Model Registry
 
 At runtime you register generated definitions with `ModelRegistry` so the query
@@ -275,6 +327,25 @@ will:
 If your `@OrmModel` mixes in `SoftDeletes` but omits a field, the generator
 adds a virtual column in the metadata so drivers know which column to touch.
 
+### Late Registration Support
+
+Soft delete scopes are automatically applied even when models are registered
+after `QueryContext` construction. The `ModelRegistry` emits notifications via
+`onRegistered` stream and `addOnRegisteredCallback()`, and `QueryContext`
+subscribes to these events to attach the soft-delete scope dynamically:
+
+```dart
+final registry = ModelRegistry();
+final driver = InMemoryQueryExecutor();
+final context = QueryContext(registry: registry, driver: driver);
+
+// Register model AFTER context creation - soft delete scope still applies
+registry.register(CommentOrmDefinition.definition);
+
+// Query automatically filters out soft-deleted records
+final activeComments = await context.query<Comment>().get();
+```
+
 Every generated subclass also mixes in (or inherits via `Model<T>`)
 `ModelConnection`. During hydration, `QueryContext` calls
 `attachConnectionResolver(this)`, so you can inspect the active driver
@@ -325,6 +396,37 @@ final emails = await Model.query<User>().orderBy('id').get();
   the attached resolver when possible, falling back to the configured default.
 - `ModelRegistry.registerModel()` is a convenience extension that mirrors
   `.register()` but reads more clearly when working with `Model<T>` subclasses.
+
+### Model.save Upsert Behavior
+
+The `save()` method uses upsert semantics to handle both new and existing
+models correctly:
+
+- **New models** (no primary key or `_exists` flag is false): performs an
+  `INSERT` operation.
+- **Existing models** (primary key present and model was hydrated from the
+  database): performs an `UPSERT` (insert-or-update) operation.
+
+This means you can safely call `save()` on models with user-assigned primary
+keys, and the ORM will insert them if they don't exist or update them if they
+do:
+
+```dart
+// Insert a new model with a user-assigned primary key
+final user = ActiveUser(id: 100, email: 'assigned@example.com');
+await user.save(); // Inserts the record
+
+// Update an existing model
+user.setAttribute('email', 'updated@example.com');
+await user.save(); // Updates the record
+
+// If the record was externally deleted, save() will re-insert it
+await user.save(); // Falls back to insert if update affects 0 rows
+```
+
+The `_exists` flag is automatically set when models are hydrated from the
+database (via queries, `refresh()`, etc.), ensuring that subsequent `save()`
+calls correctly identify them as existing records.
 
 These helpers are entirely opt-in—you can always keep using
 `QueryContext`/`Repository` directly, especially when you need explicit control
