@@ -11,9 +11,7 @@ import 'package:source_gen/source_gen.dart';
 
 import '../../ormed.dart';
 
-final _modelChecker = TypeChecker.fromUrl(
-  'package:ormed/src/model.dart#Model',
-);
+final _modelChecker = TypeChecker.fromUrl('package:ormed/src/model.dart#Model');
 
 class OrmModelGenerator extends GeneratorForAnnotation<OrmModel> {
   OrmModelGenerator(this.options);
@@ -40,7 +38,8 @@ class OrmModelGenerator extends GeneratorForAnnotation<OrmModel> {
 
 class _ModelEmitter {
   _ModelEmitter(this.element, ConstantReader annotation)
-    : className = element.displayName,
+    : annotation = annotation,
+      className = element.displayName,
       tableName = annotation.peek('table')?.stringValue,
       schema = annotation.peek('schema')?.stringValue,
       generateCodec = annotation.peek('generateCodec')?.boolValue ?? true,
@@ -67,7 +66,8 @@ class _ModelEmitter {
       castsAnnotation = _readStringMap(annotation.peek('casts')),
       driverAnnotations = _readStringList(annotation.peek('driverAnnotations')),
       annotationPrimaryKeys = _readStringList(annotation.peek('primaryKey')),
-      connectionAnnotation = annotation.peek('connection')?.stringValue {
+      connectionAnnotation = annotation.peek('connection')?.stringValue,
+      constructorOverride = _normalizeConstructorOverride(annotation) {
     if (tableName == null || tableName!.isEmpty) {
       throw InvalidGenerationSourceError(
         '@OrmModel requires a non-empty table name.',
@@ -76,6 +76,7 @@ class _ModelEmitter {
     }
   }
 
+  final ConstantReader annotation;
   final ClassElement element;
   final String className;
   final String? tableName;
@@ -96,6 +97,7 @@ class _ModelEmitter {
   final List<String> annotationPrimaryKeys;
   final Map<String, String> castsAnnotation;
   final String? connectionAnnotation;
+  final String? constructorOverride;
 
   Future<String> emit(BuildStep buildStep) async {
     final fields = _collectFields();
@@ -460,6 +462,23 @@ class _ModelEmitter {
   }
 
   ConstructorElement _resolveConstructor() {
+    final constructorName = constructorOverride;
+
+    if (constructorName != null && constructorName.isNotEmpty) {
+      // Look for named constructor
+      final namedConstructor = element.constructors.firstWhereOrNull(
+        (c) => c.name == constructorName,
+      );
+      if (namedConstructor == null) {
+        throw InvalidGenerationSourceError(
+          'Constructor "$constructorName" not found on ${element.name}',
+          element: element,
+        );
+      }
+      return namedConstructor;
+    }
+
+    // Default behavior: use first generative (non-factory) constructor
     final ctor = element.constructors.firstWhereOrNull(
       (constructor) => !constructor.isFactory,
     );
@@ -909,10 +928,21 @@ class _ModelEmitter {
   }
 
   String _superInvocation(ConstructorElement constructor) {
+    final effectiveConstructorName =
+        (constructorOverride != null && constructorOverride!.isNotEmpty)
+        ? constructorOverride!
+        : constructor.name;
+
+    final constructorSuffix =
+        (effectiveConstructorName == null || effectiveConstructorName.isEmpty)
+        ? ''
+        : '.$effectiveConstructorName';
+
     if (constructor.formalParameters.isEmpty) {
-      return '()';
+      return '$constructorSuffix()';
     }
     final buffer = StringBuffer();
+    buffer.write(constructorSuffix);
     if (constructor.formalParameters.every((param) => param.isNamed)) {
       buffer.writeln('(');
       for (final parameter in constructor.formalParameters) {
@@ -1176,4 +1206,13 @@ String _stringMapLiteral(Map<String, String> values) {
     (entry) => "'${_escape(entry.key)}': '${_escape(entry.value)}'",
   );
   return 'const <String, String>{${entries.join(', ')}}';
+}
+
+String? _normalizeConstructorOverride(ConstantReader annotation) {
+  final value = annotation.peek('constructor')?.stringValue;
+  if (value == null) {
+    return null;
+  }
+  final trimmed = value.trim();
+  return trimmed.isEmpty ? null : trimmed;
 }
