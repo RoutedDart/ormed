@@ -16,6 +16,8 @@ class Post extends Model<Post> with ModelFactoryCapable {
     required this.authorId,
     required this.title,
     required this.publishedAt,
+    this.content,
+    this.views,
   }) : author = null,
        tags = const [],
        photos = const [];
@@ -27,6 +29,10 @@ class Post extends Model<Post> with ModelFactoryCapable {
   final int authorId;
 
   final String title;
+
+  final String? content;
+
+  final int? views;
 
   @OrmField(columnName: 'published_at')
   final DateTime publishedAt;

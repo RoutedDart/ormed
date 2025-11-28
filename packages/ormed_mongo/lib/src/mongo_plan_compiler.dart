@@ -464,6 +464,12 @@ class MongoAggregatePipelineBuilder {
     if (matchStage != null) {
       pipeline.add(matchStage);
     }
+    
+    // Add $lookup stages for relation aggregates
+    if (plan.relationAggregates.isNotEmpty) {
+      _addRelationAggregateLookups(pipeline, plan);
+    }
+    
     if (plan.aggregates.isEmpty) {
       return pipeline;
     }
@@ -499,6 +505,99 @@ class MongoAggregatePipelineBuilder {
       }
     }
     return pipeline;
+  }
+  
+  void _addRelationAggregateLookups(
+    List<Map<String, Object?>> pipeline,
+    QueryPlan plan,
+  ) {
+    for (final aggregate in plan.relationAggregates) {
+      final segment = aggregate.path.segments.first;
+      final relation = segment.relation;
+      
+      // Build lookup stage
+      final lookup = <String, Object?>{};
+      lookup['from'] = segment.targetDefinition.tableName;
+      lookup['as'] = '__${aggregate.alias}_docs';
+      
+      // Build local and foreign field mappings
+      if (relation.kind == RelationKind.hasMany || 
+          relation.kind == RelationKind.hasOne) {
+        lookup['localField'] = segment.parentKey;
+        lookup['foreignField'] = segment.childKey;
+      } else if (relation.kind == RelationKind.belongsTo) {
+        lookup['localField'] = segment.parentKey;
+        lookup['foreignField'] = segment.childKey;
+      }
+      
+      // Add where clause if present
+      if (aggregate.where != null) {
+        final letVars = <String, String>{};
+        letVars['local_key'] = '\$${segment.parentKey}';
+        lookup['let'] = letVars;
+        
+        final subPipeline = <Map<String, Object?>>[];
+        // Match the relation key
+        subPipeline.add({
+          '\$match': {'\$expr': {'\$eq': ['\$${segment.childKey}', '\$\$local_key']}}
+        });
+        // TODO: Convert aggregate.where to MongoDB filter
+        // For now, this basic implementation will work
+        lookup['pipeline'] = subPipeline;
+      }
+      
+      pipeline.add({'\$lookup': lookup});
+      
+      // Add aggregation expression
+      final addFields = <String, Object?>{};
+      switch (aggregate.type) {
+        case RelationAggregateType.count:
+          addFields[aggregate.alias] = {'\$size': '\$__${aggregate.alias}_docs'};
+          break;
+        case RelationAggregateType.sum:
+          if (aggregate.column != null) {
+            addFields[aggregate.alias] = {
+              '\$sum': '\$__${aggregate.alias}_docs.${aggregate.column}'
+            };
+          }
+          break;
+        case RelationAggregateType.avg:
+          if (aggregate.column != null) {
+            addFields[aggregate.alias] = {
+              '\$avg': '\$__${aggregate.alias}_docs.${aggregate.column}'
+            };
+          }
+          break;
+        case RelationAggregateType.max:
+          if (aggregate.column != null) {
+            addFields[aggregate.alias] = {
+              '\$max': '\$__${aggregate.alias}_docs.${aggregate.column}'
+            };
+          }
+          break;
+        case RelationAggregateType.min:
+          if (aggregate.column != null) {
+            addFields[aggregate.alias] = {
+              '\$min': '\$__${aggregate.alias}_docs.${aggregate.column}'
+            };
+          }
+          break;
+        case RelationAggregateType.exists:
+          addFields[aggregate.alias] = {
+            '\$gt': [{'\$size': '\$__${aggregate.alias}_docs'}, 0]
+          };
+          break;
+      }
+      
+      if (addFields.isNotEmpty) {
+        pipeline.add({'\$addFields': addFields});
+      }
+      
+      // Clean up temporary field
+      pipeline.add({
+        '\$project': {'__${aggregate.alias}_docs': 0}
+      });
+    }
   }
 
   Map<String, Object?>? _buildMatch(QueryPlan plan) {

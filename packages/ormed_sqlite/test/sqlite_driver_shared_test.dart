@@ -12,6 +12,7 @@ void main() {
     DriverCapability.threadCount,
     DriverCapability.transactions,
     DriverCapability.adHocQueryUpdates,
+    DriverCapability.relationAggregates,
   };
   const config = DriverTestConfig(
     driverName: 'SqliteDriverAdapter',

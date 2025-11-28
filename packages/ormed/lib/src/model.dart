@@ -989,14 +989,160 @@ abstract class Model<TModel extends Model<TModel>>
     }
 
     // Query for this specific model with exists
-    query.where(pkField.columnName, pkValue);
-    query.withExists(relation, alias: existsAlias, constraint: constraint);
+    final queryWithAggregate = query
+        .where(pkField.columnName, pkValue)
+        .withExists(relation, alias: existsAlias, constraint: constraint);
 
-    final rows = await query.get();
+    final rows = await queryWithAggregate.get();
     if (rows.isNotEmpty) {
       final result = rows.first;
-      final exists = result.getAttribute<bool>(existsAlias) ?? false;
+      // SQL returns 1/0 for EXISTS, convert to boolean
+      final value = result.getAttribute(existsAlias);
+      final exists = value == true || value == 1;
       setAttribute(existsAlias, exists);
+    }
+
+    return _self();
+  }
+
+  /// Lazily loads the sum of a column in a relation.
+  ///
+  /// Stores the sum result as an attribute with the suffix `_sum_{column}`.
+  ///
+  /// Example:
+  /// ```dart
+  /// await post.loadSum('comments', 'likes');
+  /// final totalLikes = post.getAttribute<num>('comments_sum_likes') ?? 0;
+  /// ```
+  Future<TModel> loadSum(
+    String relation,
+    String column, {
+    String? alias,
+    PredicateCallback<dynamic>? constraint,
+  }) async {
+    return _loadAggregate('sum', relation, column,
+        alias: alias, constraint: constraint);
+  }
+
+  /// Lazily loads the average of a column in a relation.
+  ///
+  /// Stores the average result as an attribute with the suffix `_avg_{column}`.
+  ///
+  /// Example:
+  /// ```dart
+  /// await post.loadAvg('comments', 'rating');
+  /// final avgRating = post.getAttribute<num>('comments_avg_rating') ?? 0;
+  /// ```
+  Future<TModel> loadAvg(
+    String relation,
+    String column, {
+    String? alias,
+    PredicateCallback<dynamic>? constraint,
+  }) async {
+    return _loadAggregate('avg', relation, column,
+        alias: alias, constraint: constraint);
+  }
+
+  /// Lazily loads the maximum value of a column in a relation.
+  ///
+  /// Stores the max result as an attribute with the suffix `_max_{column}`.
+  ///
+  /// Example:
+  /// ```dart
+  /// await post.loadMax('comments', 'created_at');
+  /// final latestComment = post.getAttribute('comments_max_created_at');
+  /// ```
+  Future<TModel> loadMax(
+    String relation,
+    String column, {
+    String? alias,
+    PredicateCallback<dynamic>? constraint,
+  }) async {
+    return _loadAggregate('max', relation, column,
+        alias: alias, constraint: constraint);
+  }
+
+  /// Lazily loads the minimum value of a column in a relation.
+  ///
+  /// Stores the min result as an attribute with the suffix `_min_{column}`.
+  ///
+  /// Example:
+  /// ```dart
+  /// await post.loadMin('comments', 'created_at');
+  /// final earliestComment = post.getAttribute('comments_min_created_at');
+  /// ```
+  Future<TModel> loadMin(
+    String relation,
+    String column, {
+    String? alias,
+    PredicateCallback<dynamic>? constraint,
+  }) async {
+    return _loadAggregate('min', relation, column,
+        alias: alias, constraint: constraint);
+  }
+
+  /// Internal helper to load aggregates on relations.
+  Future<TModel> _loadAggregate(
+    String aggregateType,
+    String relation,
+    String column, {
+    String? alias,
+    PredicateCallback<dynamic>? constraint,
+  }) async {
+    if (ModelRelations.preventsLazyLoading) {
+      throw LazyLoadingViolationException(runtimeType, relation);
+    }
+
+    final def = expectDefinition();
+    final resolver = _resolveResolverFor(def);
+    final context = _requireQueryContext(resolver);
+
+    // Find the relation definition
+    final relationDef = def.relations.cast<RelationDefinition?>().firstWhere(
+      (r) => r?.name == relation,
+      orElse: () => null,
+    );
+
+    if (relationDef == null) {
+      throw ArgumentError('Relation "$relation" not found on ${def.modelName}');
+    }
+
+    final aggregateAlias =
+        alias ?? '${relation}_${aggregateType}_${column.replaceAll('.', '_')}';
+
+    // Build a query for this model with the aggregate
+    final query = context.queryFromDefinition(def);
+
+    // Get the primary key value
+    final pkField = def.primaryKeyField;
+    if (pkField == null) {
+      throw StateError(
+          'Cannot load $aggregateType on model without primary key');
+    }
+
+    final pkValue = getAttribute(pkField.columnName);
+    if (pkValue == null) {
+      throw StateError(
+          'Cannot load $aggregateType on model without primary key value');
+    }
+
+    // Query for this specific model with aggregate
+    var queryWithFilter = query.where(pkField.columnName, pkValue);
+
+    // Call the appropriate withAggregate method
+    final queryWithAggregate = switch (aggregateType) {
+      'sum' => queryWithFilter.withSum(relation, column, alias: aggregateAlias, constraint: constraint),
+      'avg' => queryWithFilter.withAvg(relation, column, alias: aggregateAlias, constraint: constraint),
+      'max' => queryWithFilter.withMax(relation, column, alias: aggregateAlias, constraint: constraint),
+      'min' => queryWithFilter.withMin(relation, column, alias: aggregateAlias, constraint: constraint),
+      _ => throw ArgumentError('Unsupported aggregate type: $aggregateType'),
+    };
+
+    final rows = await queryWithAggregate.get();
+    if (rows.isNotEmpty) {
+      final result = rows.first;
+      final value = result.getAttribute(aggregateAlias);
+      setAttribute(aggregateAlias, value);
     }
 
     return _self();

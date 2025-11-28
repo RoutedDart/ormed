@@ -11,4 +11,5 @@ enum DriverCapability {
   sqlPreviews,
   increment,
   rawSQL,
+  relationAggregates,
 }

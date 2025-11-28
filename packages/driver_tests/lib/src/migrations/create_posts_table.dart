@@ -9,6 +9,8 @@ class CreatePostsTable extends Migration {
       table.integer('id').primaryKey();
       table.integer('author_id');
       table.string('title');
+      table.text('content').nullable();
+      table.integer('views').nullable();
       table.dateTime('published_at');
     });
   }

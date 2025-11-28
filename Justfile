@@ -24,8 +24,12 @@ test-ormed_mysql:
 test-ormed_postgres:
 	cd packages/ormed_postgres && just test
 
+# Run ormed_mongo database-backed tests
+test-ormed_mongo:
+	cd packages/ormed_mongo && just test
+
 # Run all unit-test-only packages
 test-packages: test-ormed test-ormed_sqlite test-ormed_cli
 
 # Run all tests, including database-backed suites (requires Docker)
-test-all: test-packages test-ormed_postgres test-ormed_mysql
+test-all: test-packages test-ormed_postgres test-ormed_mysql test-ormed_mongo

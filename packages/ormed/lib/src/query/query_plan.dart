@@ -581,7 +581,7 @@ class RelationPredicate extends QueryPredicate {
   final int? maximum;
 }
 
-enum RelationAggregateType { count, exists }
+enum RelationAggregateType { count, exists, sum, avg, max, min }
 
 class RelationAggregate {
   RelationAggregate({
@@ -590,6 +590,7 @@ class RelationAggregate {
     required this.path,
     this.where,
     this.distinct = false,
+    this.column,
   });
 
   final RelationAggregateType type;
@@ -597,6 +598,9 @@ class RelationAggregate {
   final RelationPath path;
   final QueryPredicate? where;
   final bool distinct;
+  
+  /// The column to aggregate (used for sum, avg, max, min).
+  final String? column;
 }
 
 class RelationOrder {

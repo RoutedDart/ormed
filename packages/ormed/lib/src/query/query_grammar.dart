@@ -1338,6 +1338,18 @@ class _SelectCompilation {
           _baseTable,
         );
         return '(CASE WHEN EXISTS($existsSubquery) THEN 1 ELSE 0 END)';
+      case RelationAggregateType.sum:
+      case RelationAggregateType.avg:
+      case RelationAggregateType.max:
+      case RelationAggregateType.min:
+        final subquery = _buildRelationSubquery(
+          aggregate.path,
+          aggregate.where,
+          _baseTable,
+          aggregate: aggregate.type,
+          aggregateColumn: aggregate.column,
+        );
+        return '($subquery)';
     }
   }
 
@@ -1387,6 +1399,7 @@ class _SelectCompilation {
     String parentAlias, {
     RelationAggregateType? aggregate,
     bool distinct = false,
+    String? aggregateColumn,
   }) {
     if (path.segments.length == 1) {
       return _buildSingleSegmentSubquery(
@@ -1395,6 +1408,7 @@ class _SelectCompilation {
         parentAlias,
         aggregate: aggregate,
         distinct: distinct,
+        aggregateColumn: aggregateColumn,
       );
     }
     if (aggregate == RelationAggregateType.count) {
@@ -1403,6 +1417,15 @@ class _SelectCompilation {
         where,
         parentAlias,
         distinct: distinct,
+      );
+    }
+    if (aggregate != null && aggregate != RelationAggregateType.exists) {
+      return _buildMultiSegmentAggregateSubquery(
+        path,
+        where,
+        parentAlias,
+        aggregate: aggregate,
+        aggregateColumn: aggregateColumn,
       );
     }
     return _buildNestedExistsSubquery(path.segments, 0, parentAlias, where);
@@ -1593,11 +1616,14 @@ class _SelectCompilation {
     String parentAlias, {
     RelationAggregateType? aggregate,
     bool distinct = false,
+    String? aggregateColumn,
   }) {
     final targetAlias = _nextAlias('rel');
     final selectExpression = aggregate == RelationAggregateType.count
         ? _countExpressionForSegment(segment, targetAlias, distinct)
-        : '1';
+        : aggregate != null && aggregate != RelationAggregateType.exists
+            ? _aggregateExpressionForSegment(aggregate, aggregateColumn, targetAlias)
+            : '1';
     final buffer = StringBuffer('SELECT $selectExpression FROM ');
     if (segment.usesPivot) {
       final pivotAlias = _nextAlias('pivot');
@@ -1712,6 +1738,141 @@ class _SelectCompilation {
       return 'COUNT(*)';
     }
     return 'COUNT(DISTINCT $column)';
+  }
+
+  String _aggregateExpressionForSegment(
+    RelationAggregateType aggregate,
+    String? column,
+    String alias,
+  ) {
+    if (column == null) {
+      throw ArgumentError('Column is required for aggregate type: $aggregate');
+    }
+    final wrappedColumn = '$alias.${grammar.wrapIdentifier(column)}';
+    switch (aggregate) {
+      case RelationAggregateType.sum:
+        return 'COALESCE(SUM($wrappedColumn), 0)';
+      case RelationAggregateType.avg:
+        return 'AVG($wrappedColumn)';
+      case RelationAggregateType.max:
+        return 'MAX($wrappedColumn)';
+      case RelationAggregateType.min:
+        return 'MIN($wrappedColumn)';
+      case RelationAggregateType.count:
+      case RelationAggregateType.exists:
+        throw ArgumentError('Use _countExpressionForSegment for count/exists');
+    }
+  }
+
+  String _buildMultiSegmentAggregateSubquery(
+    RelationPath path,
+    QueryPredicate? where,
+    String baseAlias, {
+    required RelationAggregateType aggregate,
+    String? aggregateColumn,
+  }) {
+    final aliases = _assignRelationAliases(path, baseAlias);
+    final leaf = aliases.last;
+    final aggregateExpression = _aggregateExpressionForSegment(
+      aggregate,
+      aggregateColumn,
+      leaf.alias,
+    );
+    final buffer = StringBuffer('SELECT $aggregateExpression FROM ')
+      ..write(_qualifiedTable(leaf.segment.targetDefinition))
+      ..write(' AS ')
+      ..write(leaf.alias)
+      ..write(' ');
+
+    final joins = StringBuffer();
+    final whereClauses = <String>[];
+    final includedAliases = <String>{leaf.alias};
+    final includedPivots = <String>{};
+
+    for (var i = aliases.length - 1; i >= 0; i--) {
+      final aliasData = aliases[i];
+      final segment = aliasData.segment;
+      final parentAlias = aliasData.parentAlias;
+
+      if (segment.usesPivot) {
+        final pivotAlias = aliasData.pivotAlias!;
+        if (includedPivots.add(pivotAlias)) {
+          joins
+            ..write('JOIN ')
+            ..write(grammar.wrapIdentifier(segment.pivotTable!))
+            ..write(' AS ')
+            ..write(pivotAlias)
+            ..write(' ON ')
+            ..write(
+              '$pivotAlias.${grammar.wrapIdentifier(segment.pivotRelatedKey!)} = '
+              '${aliasData.alias}.${grammar.wrapIdentifier(segment.childKey)} ',
+            );
+        }
+
+        if (parentAlias == baseAlias) {
+          whereClauses.add(
+            '$pivotAlias.${grammar.wrapIdentifier(segment.pivotParentKey!)} = '
+            '$baseAlias.${grammar.wrapIdentifier(segment.parentKey)}',
+          );
+        } else {
+          final parentDefinition = aliases[i - 1].segment.targetDefinition;
+          if (includedAliases.add(parentAlias)) {
+            joins
+              ..write('JOIN ')
+              ..write(_qualifiedTable(parentDefinition))
+              ..write(' AS ')
+              ..write(parentAlias)
+              ..write(' ON ')
+              ..write(
+                '$pivotAlias.${grammar.wrapIdentifier(segment.pivotParentKey!)} = '
+                '$parentAlias.${grammar.wrapIdentifier(segment.parentKey)} ',
+              );
+          }
+        }
+      } else {
+        final condition = _nonPivotRelationCondition(
+          segment,
+          aliasData.alias,
+          parentAlias,
+        );
+        if (parentAlias == baseAlias) {
+          whereClauses.add(condition);
+        } else {
+          final parentDefinition = aliases[i - 1].segment.targetDefinition;
+          if (includedAliases.add(parentAlias)) {
+            joins
+              ..write('JOIN ')
+              ..write(_qualifiedTable(parentDefinition))
+              ..write(' AS ')
+              ..write(parentAlias)
+              ..write(' ON ')
+              ..write(condition)
+              ..write(' ');
+          }
+        }
+      }
+
+      if (segment.usesMorph) {
+        whereClauses.add(
+          '${aliasData.alias}.${grammar.wrapIdentifier(segment.morphTypeColumn!)} = '
+          '${grammar.parameterPlaceholder()}',
+        );
+        bindings.add(segment.morphClass);
+      }
+    }
+
+    final predicateSql = _compilePredicate(where, tableIdentifier: leaf.alias);
+    if (predicateSql != null && predicateSql.isNotEmpty) {
+      whereClauses.add(predicateSql);
+    }
+
+    buffer.write(joins.toString());
+    if (whereClauses.isNotEmpty) {
+      buffer
+        ..write('WHERE ')
+        ..write(whereClauses.join(' AND '));
+    }
+    return buffer.toString();
   }
 
   String? _distinctColumnReference(RelationSegment segment, String alias) {

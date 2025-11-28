@@ -20,6 +20,7 @@ const config = DriverTestConfig(
     DriverCapability.schemaIntrospection,
     DriverCapability.queryDeletes,
     DriverCapability.adHocQueryUpdates,
+    DriverCapability.relationAggregates,
   },
 );
 

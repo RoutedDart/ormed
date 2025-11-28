@@ -97,6 +97,8 @@ class MongoRelationHelper {
     }
     final totals = <int, int>{};
     final distinctValues = <int, Set<Object?>>{};
+    final aggregateValues = <int, List<num>>{}; // For sum, avg, min, max
+    
     for (
       var segmentIndex = 0;
       segmentIndex < segments.length && currentIndices.isNotEmpty;
@@ -109,6 +111,15 @@ class MongoRelationHelper {
         break;
       }
       final parentKeys = currentIndices.keys.toList();
+      
+      // Determine column to aggregate for sum, avg, min, max
+      final aggregateColumn = _getAggregateColumn(
+        aggregate,
+        segment,
+        segmentIndex,
+        segments.length,
+      );
+      
       final childPlan = QueryPlan(
         definition: segment.targetDefinition,
         driverName: driverName,
@@ -132,12 +143,27 @@ class MongoRelationHelper {
         for (final index in indices) {
           nextIndices.putIfAbsent(childPrimary, () => <int>{}).add(index);
           if (segmentIndex == segments.length - 1) {
-            if (aggregate.distinct) {
-              distinctValues
-                  .putIfAbsent(index, () => <Object?>{})
-                  .add(childPrimary);
+            // Handle different aggregate types
+            if (aggregate.type == RelationAggregateType.count ||
+                aggregate.type == RelationAggregateType.exists) {
+              if (aggregate.distinct) {
+                distinctValues
+                    .putIfAbsent(index, () => <Object?>{})
+                    .add(childPrimary);
+              } else {
+                totals[index] = (totals[index] ?? 0) + 1;
+              }
             } else {
-              totals[index] = (totals[index] ?? 0) + 1;
+              // sum, avg, min, max
+              final value = aggregateColumn != null 
+                  ? childRow[aggregateColumn] 
+                  : null;
+              if (value != null) {
+                final numValue = _toNum(value);
+                if (numValue != null) {
+                  aggregateValues.putIfAbsent(index, () => []).add(numValue);
+                }
+              }
             }
           }
         }
@@ -146,12 +172,79 @@ class MongoRelationHelper {
     }
     for (var index = 0; index < parents.length; index++) {
       final row = parents[index];
-      final total = aggregate.distinct
-          ? distinctValues[index]?.length ?? 0
-          : totals[index] ?? 0;
-      row.row[aggregate.alias] = aggregate.type == RelationAggregateType.exists
-          ? total > 0
-          : total;
+      final value = _computeAggregateValue(
+        aggregate,
+        index,
+        totals,
+        distinctValues,
+        aggregateValues,
+      );
+      row.row[aggregate.alias] = value;
+    }
+  }
+
+  String? _getAggregateColumn(
+    RelationAggregate aggregate,
+    RelationSegment segment,
+    int segmentIndex,
+    int totalSegments,
+  ) {
+    // Only get column for the final segment and numeric aggregates
+    if (segmentIndex != totalSegments - 1) return null;
+    
+    switch (aggregate.type) {
+      case RelationAggregateType.sum:
+      case RelationAggregateType.avg:
+      case RelationAggregateType.min:
+      case RelationAggregateType.max:
+        // Use the column from the aggregate if specified
+        return aggregate.column ?? segment.childKey;
+      default:
+        return null;
+    }
+  }
+
+  num? _toNum(Object? value) {
+    if (value == null) return null;
+    if (value is num) return value;
+    if (value is String) return num.tryParse(value);
+    return null;
+  }
+
+  Object _computeAggregateValue(
+    RelationAggregate aggregate,
+    int index,
+    Map<int, int> totals,
+    Map<int, Set<Object?>> distinctValues,
+    Map<int, List<num>> aggregateValues,
+  ) {
+    switch (aggregate.type) {
+      case RelationAggregateType.count:
+        return aggregate.distinct
+            ? distinctValues[index]?.length ?? 0
+            : totals[index] ?? 0;
+      case RelationAggregateType.exists:
+        final total = aggregate.distinct
+            ? distinctValues[index]?.length ?? 0
+            : totals[index] ?? 0;
+        return total > 0;
+      case RelationAggregateType.sum:
+        final values = aggregateValues[index];
+        if (values == null || values.isEmpty) return 0;
+        return values.reduce((a, b) => a + b);
+      case RelationAggregateType.avg:
+        final values = aggregateValues[index];
+        if (values == null || values.isEmpty) return 0;
+        final sum = values.reduce((a, b) => a + b);
+        return sum / values.length;
+      case RelationAggregateType.min:
+        final values = aggregateValues[index];
+        if (values == null || values.isEmpty) return 0;
+        return values.reduce((a, b) => a < b ? a : b);
+      case RelationAggregateType.max:
+        final values = aggregateValues[index];
+        if (values == null || values.isEmpty) return 0;
+        return values.reduce((a, b) => a > b ? a : b);
     }
   }
 

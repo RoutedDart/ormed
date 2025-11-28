@@ -265,25 +265,47 @@ await Model.loadRelationsMissing(posts, ['author', 'tags', 'comments']);
 
 ### Lazy Loading Aggregates
 
-Load counts and existence checks lazily:
+Load counts, sums, averages, and other aggregates lazily without fetching full collections:
 
 ```dart
 // Load comment count
 await post.loadCount('comments');
-print(post.getAttribute<int>('comments_count'));
+print(post.getAttribute<int>('comments_count')); // e.g., 42
 
 // With custom alias
 await post.loadCount('comments', alias: 'total_comments');
 print(post.getAttribute<int>('total_comments'));
 
-// With constraints
+// With constraints - count only approved comments
 await post.loadCount('comments', constraint: (query) =>
     query.whereEquals('approved', true));
 
-// Check existence
+// Check existence - does this post have an author?
 await post.loadExists('author');
-print(post.getAttribute<bool>('author_exists'));
+print(post.getAttribute<bool>('author_exists')); // true/false
+
+// Load sum of related values
+await post.loadSum('orderItems', 'amount');
+print(post.getAttribute<num>('order_items_sum_amount')); // e.g., 1250.50
+
+// Load average
+await post.loadAvg('ratings', 'score', alias: 'average_rating');
+print(post.getAttribute<num>('average_rating')); // e.g., 4.5
+
+// Load maximum value
+await post.loadMax('bids', 'amount');
+print(post.getAttribute<num>('bids_max_amount')); // e.g., 500.00
+
+// Load minimum value
+await post.loadMin('bids', 'amount');
+print(post.getAttribute<num>('bids_min_amount')); // e.g., 10.00
+
+// All aggregate methods support constraints
+await post.loadSum('orderItems', 'amount', constraint: (query) =>
+    query.whereEquals('status', 'completed'));
 ```
+
+**Performance Benefit:** Aggregate loaders execute a single aggregate query (COUNT, SUM, AVG, etc.) without loading the actual related models into memory. This is far more efficient than loading all related records just to count or sum them.
 
 ### Checking Loaded State
 
@@ -573,6 +595,206 @@ Future<void> main() async {
 
 ---
 
+## Lazy Loading Control
+
+### Preventing Lazy Loading in Development
+
+Similar to Laravel Eloquent, you can prevent lazy loading to catch N+1 query problems during development:
+
+```dart
+// In your application bootstrap or test setup
+Model.preventLazyLoading(shouldPrevent: true);
+
+// Now any attempt to lazily load will throw
+final post = await Post.query().first();
+// This will throw LazyLoadingViolationException!
+print(post.author?.name); 
+```
+
+**Best Practice**: Enable lazy loading prevention in development/test environments:
+
+```dart
+void main() async {
+  // Prevent lazy loading in non-production
+  if (environment != 'production') {
+    Model.preventLazyLoading(shouldPrevent: true);
+  }
+  
+  // Run your app
+  runApp(MyApp());
+}
+```
+
+### Checking Relation Load Status
+
+Before accessing relations, check if they're loaded to avoid lazy loading:
+
+```dart
+final post = await Post.query().first();
+
+// Check if loaded
+if (post.relationLoaded('author')) {
+  print(post.author!.name); // Safe - already loaded
+} else {
+  await post.load('author'); // Explicitly load
+}
+
+// Load only if missing
+await post.loadMissing(['author', 'tags']);
+
+// Get all loaded relations
+final loaded = post.loadedRelationNames; // Set<String>
+print('Loaded: ${loaded.join(', ')}');
+```
+
+---
+
+## Relation Aggregates
+
+Load aggregate values from relations without fetching the full collection.
+
+### Query Builder Aggregates
+
+```dart
+// Eager load aggregate values
+final authors = await context
+    .query<Author>()
+    .withSum('posts', 'views', alias: 'total_views')
+    .withCount('posts', alias: 'post_count')
+    .withAvg('posts', 'views', alias: 'avg_views')
+    .withMax('posts', 'views', alias: 'max_views')
+    .withMin('posts', 'views', alias: 'min_views')
+    .withExists('posts', alias: 'has_posts')
+    .get();
+
+for (final author in authors) {
+  final totalViews = author.getAttribute<num>('total_views');
+  final postCount = author.getAttribute<int>('post_count');
+  final avgViews = author.getAttribute<num>('avg_views');
+  print('${author.name}: $postCount posts, $totalViews total views, $avgViews avg');
+}
+```
+
+### Model Instance Aggregates
+
+```dart
+// Lazy load aggregates on model instances
+final author = await Author.query().first();
+
+await author.loadSum('posts', 'views', alias: 'total_views');
+await author.loadAvg('posts', 'views', alias: 'avg_views');
+await author.loadCount('posts', alias: 'post_count');
+await author.loadMax('posts', 'views', alias: 'max_views');
+await author.loadMin('posts', 'views', alias: 'min_views');
+await author.loadExists('posts', alias: 'has_posts');
+
+print('Total views: ${author.getAttribute<num>('total_views')}');
+print('Average views: ${author.getAttribute<num>('avg_views')}');
+print('Post count: ${author.getAttribute<int>('post_count')}');
+```
+
+### Aggregate Aliases
+
+If you don't provide an alias, one is generated automatically:
+
+```dart
+await context
+    .query<Author>()
+    .withSum('posts', 'views') // alias: 'posts_sum_views'
+    .withCount('posts')        // alias: 'posts_count'
+    .withAvg('posts', 'views') // alias: 'posts_avg_views'
+    .get();
+```
+
+### Aggregates with Constraints
+
+Apply query constraints to aggregates:
+
+```dart
+// Only count published posts
+final authors = await context
+    .query<Author>()
+    .withCount('posts', 
+      alias: 'published_count',
+      constraint: (q) => q.whereNotNull('published_at'),
+    )
+    .get();
+
+// Sum views only for popular posts
+await author.loadSum('posts', 'views',
+  alias: 'popular_views',
+  constraint: (q) => q.where('views', 1000, PredicateOperator.greaterThan),
+);
+```
+
+---
+
+## Driver Capabilities & Limitations
+
+Different database drivers support different features. The ORM uses a capability system to handle this gracefully.
+
+### MongoDB Limitations
+
+MongoDB does **not** support certain SQL-specific features:
+
+1. **Raw SQL Operations**: `selectRaw()`, `whereRaw()`, `havingRaw()` are not supported
+2. **Relation Aggregates**: `withSum()`, `withCount()`, `loadSum()`, etc. are not available
+   - This is because MongoDB doesn't support SQL-style subqueries
+   - Use MongoDB's aggregation pipeline directly for complex aggregations
+3. **JOINs**: Use nested document patterns or perform joins client-side
+
+These features are automatically skipped in tests and will throw descriptive errors if used.
+
+### SQLite Full Support
+
+SQLite supports all features including:
+- Raw SQL operations
+- Relation aggregates with subqueries
+- All join types (INNER, LEFT, RIGHT)
+- Transactions
+- Schema introspection
+
+### Checking Capabilities at Runtime
+
+```dart
+// Check if driver supports a capability
+final config = DriverTestConfig(
+  driverName: 'MongoDB',
+  capabilities: {
+    DriverCapability.schemaIntrospection,
+    DriverCapability.queryDeletes,
+    // Note: relationAggregates NOT included
+  },
+);
+
+if (config.supportsCapability(DriverCapability.relationAggregates)) {
+  // Use aggregate methods
+  await query.withSum('posts', 'views');
+} else {
+  // Fall back to manual aggregation
+  await query.withRelation('posts');
+  // Calculate sum client-side
+}
+```
+
+### Available Capabilities
+
+- `joins` - Supports SQL-style joins
+- `insertUsing` - INSERT ... SELECT statements
+- `queryDeletes` - DELETE with WHERE conditions
+- `schemaIntrospection` - Inspect database schema
+- `returning` - RETURNING clause support
+- `transactions` - Database transactions
+- `threadCount` - Multi-threaded operations
+- `adHocQueryUpdates` - UPDATE with arbitrary conditions
+- `advancedQueryBuilders` - Complex query features
+- `sqlPreviews` - SQL query preview/debug
+- `increment` - Atomic increment/decrement
+- `rawSQL` - Raw SQL expressions
+- **`relationAggregates`** - Relation aggregate queries (NEW)
+
+---
+
 ## API Reference
 
 ### Query Builder Methods
@@ -581,6 +803,10 @@ Future<void> main() async {
 |--------|-------------|
 | `withRelation(name, [constraint])` | Eager load a relation |
 | `withCount(relation, {alias, constraint})` | Eager load relation count |
+| `withSum(relation, column, {alias, constraint})` | Eager load sum of relation column values (SQL drivers only) |
+| `withAvg(relation, column, {alias, constraint})` | Eager load average of relation column values (SQL drivers only) |
+| `withMax(relation, column, {alias, constraint})` | Eager load maximum relation column value (SQL drivers only) |
+| `withMin(relation, column, {alias, constraint})` | Eager load minimum relation column value (SQL drivers only) |
 | `withExists(relation, {alias, constraint})` | Eager load relation existence |
 | `whereHas(relation, [constraint])` | Filter by relation existence |
 | `orWhereHas(relation, [constraint])` | OR filter by relation existence |
@@ -594,6 +820,10 @@ Future<void> main() async {
 | `loadMissing(relations)` | Load relations not already loaded |
 | `loadMany(relationsMap)` | Load multiple relations with constraints |
 | `loadCount(relation, {alias, constraint})` | Lazy load relation count |
+| `loadSum(relation, column, {alias, constraint})` | Lazy load sum of column values in relation |
+| `loadAvg(relation, column, {alias, constraint})` | Lazy load average of column values in relation |
+| `loadMax(relation, column, {alias, constraint})` | Lazy load maximum column value in relation |
+| `loadMin(relation, column, {alias, constraint})` | Lazy load minimum column value in relation |
 | `loadExists(relation, {alias, constraint})` | Lazy load relation existence |
 
 ### Model Batch Loading Methods (Static)

@@ -5,6 +5,7 @@ import 'query_builder/fresh_tests.dart';
 import 'query_builder/join_clauses_tests.dart';
 import 'query_builder/lazy_loading_tests.dart';
 import 'query_builder/limit_offset_clauses_tests.dart';
+import 'query_builder/relation_aggregate_tests.dart';
 import 'query_builder/relation_mutation_tests.dart';
 import 'query_builder/relation_resolver_cache_tests.dart';
 import 'query_builder/relations_accessor_tests.dart';
@@ -26,6 +27,7 @@ void runDriverQueryBuilderTests({
     runAggregationTests(createHarness, config);
     runJoinClausesTests(createHarness, config);
     runLazyLoadingTests(createHarness, config);
+    runRelationAggregateTests(createHarness, config);
     runRelationMutationTests(createHarness, config);
     runRefreshTests(createHarness, config);
     runFreshTests(createHarness, config);

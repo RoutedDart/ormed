@@ -43,6 +43,30 @@ const FieldDefinition _$PostTitleField = FieldDefinition(
   autoIncrement: false,
 );
 
+const FieldDefinition _$PostContentField = FieldDefinition(
+  name: 'content',
+  columnName: 'content',
+  dartType: 'String',
+  resolvedType: 'String?',
+  isPrimaryKey: false,
+  isNullable: true,
+  isUnique: false,
+  isIndexed: false,
+  autoIncrement: false,
+);
+
+const FieldDefinition _$PostViewsField = FieldDefinition(
+  name: 'views',
+  columnName: 'views',
+  dartType: 'int',
+  resolvedType: 'int?',
+  isPrimaryKey: false,
+  isNullable: true,
+  isUnique: false,
+  isIndexed: false,
+  autoIncrement: false,
+);
+
 const FieldDefinition _$PostPublishedAtField = FieldDefinition(
   name: 'publishedAt',
   columnName: 'published_at',
@@ -88,6 +112,8 @@ final ModelDefinition<Post> _$PostModelDefinition = ModelDefinition(
     _$PostIdField,
     _$PostAuthorIdField,
     _$PostTitleField,
+    _$PostContentField,
+    _$PostViewsField,
     _$PostPublishedAtField,
   ],
   relations: const [
@@ -163,6 +189,8 @@ class _$PostModelCodec extends ModelCodec<Post> {
       'id': registry.encodeField(_$PostIdField, model.id),
       'author_id': registry.encodeField(_$PostAuthorIdField, model.authorId),
       'title': registry.encodeField(_$PostTitleField, model.title),
+      'content': registry.encodeField(_$PostContentField, model.content),
+      'views': registry.encodeField(_$PostViewsField, model.views),
       'published_at': registry.encodeField(
         _$PostPublishedAtField,
         model.publishedAt,
@@ -181,6 +209,14 @@ class _$PostModelCodec extends ModelCodec<Post> {
     final String postTitleValue =
         registry.decodeField<String>(_$PostTitleField, data['title']) ??
         (throw StateError('Field title on Post cannot be null.'));
+    final String? postContentValue = registry.decodeField<String?>(
+      _$PostContentField,
+      data['content'],
+    );
+    final int? postViewsValue = registry.decodeField<int?>(
+      _$PostViewsField,
+      data['views'],
+    );
     final DateTime postPublishedAtValue =
         registry.decodeField<DateTime>(
           _$PostPublishedAtField,
@@ -192,11 +228,15 @@ class _$PostModelCodec extends ModelCodec<Post> {
       authorId: postAuthorIdValue,
       title: postTitleValue,
       publishedAt: postPublishedAtValue,
+      content: postContentValue,
+      views: postViewsValue,
     );
     model._attachOrmRuntimeMetadata({
       'id': postIdValue,
       'author_id': postAuthorIdValue,
       'title': postTitleValue,
+      'content': postContentValue,
+      'views': postViewsValue,
       'published_at': postPublishedAtValue,
     });
     return model;
@@ -209,16 +249,22 @@ class _$PostModel extends Post {
     required int authorId,
     required String title,
     required DateTime publishedAt,
+    String? content,
+    int? views,
   }) : super.new(
          id: id,
          authorId: authorId,
          title: title,
          publishedAt: publishedAt,
+         content: content,
+         views: views,
        ) {
     _attachOrmRuntimeMetadata({
       'id': id,
       'author_id': authorId,
       'title': title,
+      'content': content,
+      'views': views,
       'published_at': publishedAt,
     });
   }
@@ -237,6 +283,16 @@ class _$PostModel extends Post {
   String get title => getAttribute<String>('title') ?? super.title;
 
   set title(String value) => setAttribute('title', value);
+
+  @override
+  String? get content => getAttribute<String?>('content') ?? super.content;
+
+  set content(String? value) => setAttribute('content', value);
+
+  @override
+  int? get views => getAttribute<int?>('views') ?? super.views;
+
+  set views(int? value) => setAttribute('views', value);
 
   @override
   DateTime get publishedAt =>
@@ -278,5 +334,7 @@ extension PostAttributeSetters on Post {
   set id(int value) => setAttribute('id', value);
   set authorId(int value) => setAttribute('author_id', value);
   set title(String value) => setAttribute('title', value);
+  set content(String? value) => setAttribute('content', value);
+  set views(int? value) => setAttribute('views', value);
   set publishedAt(DateTime value) => setAttribute('published_at', value);
 }

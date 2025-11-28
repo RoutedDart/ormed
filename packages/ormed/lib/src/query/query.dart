@@ -13,6 +13,7 @@ import '../hook/query_builder_hook.dart';
 import '../model_definition.dart';
 import '../exceptions.dart';
 import '../model_registry.dart';
+import '../model_mixins/model_attributes.dart';
 import '../model_mixins/model_connection.dart';
 import '../repository/repository.dart';
 import '../value_codec.dart';

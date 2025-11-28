@@ -2248,6 +2248,130 @@ class Query<T> {
     return _copyWith(relationAggregates: [..._relationAggregates, aggregate]);
   }
 
+  /// Adds a `WITH SUM` aggregate for a relation.
+  ///
+  /// This method calculates the sum of a column in related models for each parent model.
+  ///
+  /// [relation] is the name of the relation.
+  /// [column] is the column to sum.
+  /// [alias] is an optional alias for the sum result (defaults to `relation_sum_column`).
+  /// [constraint] is an optional callback to apply conditions to the related models.
+  ///
+  /// Example:
+  /// ```dart
+  /// final postsWithTotalLikes = await context.query<Post>()
+  ///   .withSum('comments', 'likes', alias: 'totalCommentLikes')
+  ///   .get();
+  /// ```
+  Query<T> withSum(
+    String relation,
+    String column, {
+    String? alias,
+    PredicateCallback<dynamic>? constraint,
+  }) {
+    final aggregate = _buildRelationAggregate(
+      relation,
+      RelationAggregateType.sum,
+      alias ?? '${relation}_sum_${column.replaceAll('.', '_')}',
+      constraint,
+      column: column,
+    );
+    return _copyWith(relationAggregates: [..._relationAggregates, aggregate]);
+  }
+
+  /// Adds a `WITH AVG` aggregate for a relation.
+  ///
+  /// This method calculates the average of a column in related models for each parent model.
+  ///
+  /// [relation] is the name of the relation.
+  /// [column] is the column to average.
+  /// [alias] is an optional alias for the average result (defaults to `relation_avg_column`).
+  /// [constraint] is an optional callback to apply conditions to the related models.
+  ///
+  /// Example:
+  /// ```dart
+  /// final postsWithAvgRating = await context.query<Post>()
+  ///   .withAvg('comments', 'rating', alias: 'averageRating')
+  ///   .get();
+  /// ```
+  Query<T> withAvg(
+    String relation,
+    String column, {
+    String? alias,
+    PredicateCallback<dynamic>? constraint,
+  }) {
+    final aggregate = _buildRelationAggregate(
+      relation,
+      RelationAggregateType.avg,
+      alias ?? '${relation}_avg_${column.replaceAll('.', '_')}',
+      constraint,
+      column: column,
+    );
+    return _copyWith(relationAggregates: [..._relationAggregates, aggregate]);
+  }
+
+  /// Adds a `WITH MAX` aggregate for a relation.
+  ///
+  /// This method finds the maximum value of a column in related models for each parent model.
+  ///
+  /// [relation] is the name of the relation.
+  /// [column] is the column to find the maximum value.
+  /// [alias] is an optional alias for the max result (defaults to `relation_max_column`).
+  /// [constraint] is an optional callback to apply conditions to the related models.
+  ///
+  /// Example:
+  /// ```dart
+  /// final postsWithLatestComment = await context.query<Post>()
+  ///   .withMax('comments', 'created_at', alias: 'latestCommentDate')
+  ///   .get();
+  /// ```
+  Query<T> withMax(
+    String relation,
+    String column, {
+    String? alias,
+    PredicateCallback<dynamic>? constraint,
+  }) {
+    final aggregate = _buildRelationAggregate(
+      relation,
+      RelationAggregateType.max,
+      alias ?? '${relation}_max_${column.replaceAll('.', '_')}',
+      constraint,
+      column: column,
+    );
+    return _copyWith(relationAggregates: [..._relationAggregates, aggregate]);
+  }
+
+  /// Adds a `WITH MIN` aggregate for a relation.
+  ///
+  /// This method finds the minimum value of a column in related models for each parent model.
+  ///
+  /// [relation] is the name of the relation.
+  /// [column] is the column to find the minimum value.
+  /// [alias] is an optional alias for the min result (defaults to `relation_min_column`).
+  /// [constraint] is an optional callback to apply conditions to the related models.
+  ///
+  /// Example:
+  /// ```dart
+  /// final postsWithEarliestComment = await context.query<Post>()
+  ///   .withMin('comments', 'created_at', alias: 'earliestCommentDate')
+  ///   .get();
+  /// ```
+  Query<T> withMin(
+    String relation,
+    String column, {
+    String? alias,
+    PredicateCallback<dynamic>? constraint,
+  }) {
+    final aggregate = _buildRelationAggregate(
+      relation,
+      RelationAggregateType.min,
+      alias ?? '${relation}_min_${column.replaceAll('.', '_')}',
+      constraint,
+      column: column,
+    );
+    return _copyWith(relationAggregates: [..._relationAggregates, aggregate]);
+  }
+
   /// Orders results based on a relation aggregate.
   ///
   /// This method allows you to sort parent models based on an aggregate value
@@ -2710,6 +2834,20 @@ class Query<T> {
         batch,
         _relations,
       );
+      // Copy aggregate values from row to model after relation hook
+      // (since aggregates are computed by the relation hook)
+      if (plan.relationAggregates.isNotEmpty) {
+        for (final queryRow in batch) {
+          if (queryRow.model is ModelAttributes) {
+            final model = queryRow.model as ModelAttributes;
+            for (final aggregate in plan.relationAggregates) {
+              if (queryRow.row.containsKey(aggregate.alias)) {
+                model.setAttribute(aggregate.alias, queryRow.row[aggregate.alias]);
+              }
+            }
+          }
+        }
+      }
       return;
     }
     if (_relations.isEmpty) {
@@ -2723,6 +2861,17 @@ class Query<T> {
   QueryRow<T> _hydrateRow(Map<String, Object?> row, QueryPlan plan) {
     final model = definition.fromMap(row, registry: context.codecRegistry);
     context.attachRuntimeMetadata(model);
+    
+    // Copy aggregate columns (and other extra attributes) that aren't part of the model definition
+    // This includes withCount, withSum, withAvg, withMax, withMin, withExists results
+    if (plan.relationAggregates.isNotEmpty && model is ModelAttributes) {
+      for (final aggregate in plan.relationAggregates) {
+        if (row.containsKey(aggregate.alias)) {
+          model.setAttribute(aggregate.alias, row[aggregate.alias]);
+        }
+      }
+    }
+    
     return QueryRow<T>(model: model, row: _projectionRow(row, plan));
   }
 
@@ -4329,6 +4478,7 @@ class Query<T> {
     String? alias,
     PredicateCallback<dynamic>? constraint, {
     bool distinct = false,
+    String? column,
   }) {
     final path = _resolveRelationPath(relation);
     final where = _buildRelationPredicateConstraint(path, constraint);
@@ -4342,6 +4492,7 @@ class Query<T> {
       path: path,
       where: where,
       distinct: distinct,
+      column: column,
     );
   }
 

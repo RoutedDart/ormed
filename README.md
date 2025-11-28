@@ -15,10 +15,13 @@ Part of the [Routed](https://github.com/RoutedDart) ecosystem.
 - **Annotation-based models** — Define tables, columns, and relationships with `@OrmModel`, `@OrmField`, `@OrmRelation`
 - **Code generation** — Auto-generate model definitions, codecs, and factories via `build_runner`
 - **Fluent query builder** — Laravel-style API with `where`, `orderBy`, `join`, `limit`, and more
-- **Eager & lazy loading** — Load relations upfront or on-demand, just like Laravel Eloquent
+- **Eager & lazy loading** — Load relations upfront or on-demand, with nested paths (`'comments.author'`)
+- **Lazy loading prevention** — Catch N+1 queries in development with `ModelRelations.preventsLazyLoading`
+- **Aggregate loaders** — Load counts, sums, averages without fetching full collections (`loadCount()`, `loadSum()`, etc.)
 - **Relation mutations** — `associate()`, `attach()`, `detach()`, `sync()` for managing relationships
 - **Schema migrations** — CLI tooling for creating, applying, and rolling back migrations
 - **Multi-database support** — SQLite, PostgreSQL, MySQL/MariaDB, MongoDB
+- **Driver capabilities** — Runtime feature detection for cross-database compatibility
 - **Multi-tenant connections** — Manage multiple database connections with role-based routing
 - **Observability** — Structured logging, query instrumentation, and tracing hooks
 - **Soft deletes** — Built-in `SoftDeletes` mixin with scoped queries
@@ -205,6 +208,7 @@ See the [CLI Reference](docs/cli.md) for complete documentation of all commands 
 
 ## 📚 Documentation
 
+### Core Guides
 - [CLI Reference](docs/cli.md) — Complete CLI commands and options
 - [Query Builder](docs/query_builder.md) — Full query API reference
 - [Relations & Lazy Loading](docs/relations.md) — Eager/lazy loading and relation mutations
@@ -215,6 +219,10 @@ See the [CLI Reference](docs/cli.md) for complete documentation of all commands 
 - [Connectors](docs/connectors.md) — Connection management and multi-tenancy
 - [Observability](docs/observability.md) — Logging, instrumentation, and tracing
 - [Examples](docs/examples.md) — Common usage patterns
+
+### Advanced Topics
+- [Driver Capabilities](docs/driver_capabilities.md) — Cross-database compatibility and feature detection
+- [Recent Improvements](docs/RECENT_IMPROVEMENTS.md) — New features and enhancements
 - [Grammar Parity Matrix](docs/grammar_parity_matrix.md) — Laravel grammar compatibility
 
 ---

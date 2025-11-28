@@ -68,6 +68,8 @@ class DriverTestConfig {
         return _capabilities.contains(DriverCapability.transactions);
       case DriverCapability.rawSQL:
         return supportsWhereRaw && supportsSelectRaw;
+      case DriverCapability.relationAggregates:
+        return _capabilities.contains(DriverCapability.relationAggregates);
     }
   }
 }

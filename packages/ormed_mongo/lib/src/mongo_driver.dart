@@ -36,6 +36,7 @@ class MongoDriverAdapter implements DriverAdapter, SchemaDriver {
            DriverCapability.queryDeletes,
            DriverCapability.adHocQueryUpdates,
            DriverCapability.increment,
+           DriverCapability.relationAggregates,
          },
          queryUpdateRowIdentifier: QueryRowIdentifier(
            column: '_id',
