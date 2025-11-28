@@ -131,6 +131,7 @@ class InMemoryQueryExecutor implements DriverAdapter {
       case MutationOperation.update:
         final table = _table(plan.definition);
         var affected = 0;
+        final returnedRows = plan.returning ? <Map<String, Object?>>[] : null;
         for (final row in plan.rows) {
           final match = table.firstWhere(
             (candidate) => _matches(candidate, row.keys),
@@ -139,9 +140,15 @@ class InMemoryQueryExecutor implements DriverAdapter {
           if (match.isEmpty) continue;
           match.addAll(row.values);
           _applyJsonUpdates(match, row.jsonUpdates);
+          if (plan.returning) {
+            returnedRows!.add(Map<String, Object?>.from(match));
+          }
           affected++;
         }
-        return MutationResult(affectedRows: affected);
+        return MutationResult(
+          affectedRows: affected,
+          returnedRows: returnedRows,
+        );
       case MutationOperation.delete:
         final table = _table(plan.definition);
         table.removeWhere(
@@ -151,6 +158,7 @@ class InMemoryQueryExecutor implements DriverAdapter {
       case MutationOperation.upsert:
         final table = _table(plan.definition);
         var affected = 0;
+        final returnedRows = plan.returning ? <Map<String, Object?>>[] : null;
         for (final row in plan.rows) {
           final selector = _upsertSelector(plan, row);
           final index = table.indexWhere(
@@ -158,6 +166,9 @@ class InMemoryQueryExecutor implements DriverAdapter {
           );
           if (index == -1) {
             table.add(Map<String, Object?>.from(row.values));
+            if (plan.returning) {
+              returnedRows!.add(Map<String, Object?>.from(row.values));
+            }
           } else {
             final updates = _upsertColumnsToUpdate(
               plan,
@@ -172,10 +183,16 @@ class InMemoryQueryExecutor implements DriverAdapter {
               }
             }
             _applyJsonUpdates(table[index], row.jsonUpdates);
+            if (plan.returning) {
+              returnedRows!.add(Map<String, Object?>.from(table[index]));
+            }
           }
           affected++;
         }
-        return MutationResult(affectedRows: affected);
+        return MutationResult(
+          affectedRows: affected,
+          returnedRows: returnedRows,
+        );
       case MutationOperation.queryDelete:
         throw UnsupportedError('Query deletes are not supported in-memory');
       case MutationOperation.queryUpdate:
