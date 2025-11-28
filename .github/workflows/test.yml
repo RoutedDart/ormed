@@ -1,0 +1,148 @@
+name: Test All Packages
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+    branches: [main, master, develop]
+  workflow_dispatch:
+
+jobs:
+  test-unit-packages:
+    name: Test Unit Packages
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        package:
+          - ormed
+          - ormed_sqlite
+          - ormed_cli
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Dart
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+
+      - name: Install dependencies
+        working-directory: packages/${{ matrix.package }}
+        run: dart pub get
+
+      - name: Run tests
+        working-directory: packages/${{ matrix.package }}
+        run: dart test
+
+  test-postgres:
+    name: Test PostgreSQL Package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Dart
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+
+      - name: Install dependencies
+        working-directory: packages/ormed_postgres
+        run: dart pub get
+
+      - name: Start PostgreSQL
+        working-directory: packages/ormed_postgres
+        run: docker compose up -d --wait --wait-timeout 120
+
+      - name: Wait for PostgreSQL
+        run: sleep 2
+
+      - name: Run tests
+        working-directory: packages/ormed_postgres
+        env:
+          POSTGRES_URL: postgres://postgres:postgres@localhost:6543/orm_test
+        run: dart test -r expanded
+
+      - name: Stop PostgreSQL
+        if: always()
+        working-directory: packages/ormed_postgres
+        run: docker compose down -v
+
+  test-mysql:
+    name: Test MySQL/MariaDB Package
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        db:
+          - name: mariadb
+            compose_file: docker-compose.yml
+            url: mariadb://root:secret@localhost:6604/orm_test
+            test_file: test/mariadb_driver_shared_test.dart
+          - name: mysql
+            compose_file: docker-compose.mysql.yml
+            url: mysql://root:secret@localhost:6605/orm_test
+            test_file: test/mysql_driver_shared_test.dart
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Dart
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+
+      - name: Install dependencies
+        working-directory: packages/ormed_mysql
+        run: dart pub get
+
+      - name: Start ${{ matrix.db.name }}
+        working-directory: packages/ormed_mysql
+        run: docker compose -f ${{ matrix.db.compose_file }} up -d --wait --wait-timeout 120
+
+      - name: Wait for database
+        run: sleep 2
+
+      - name: Run tests
+        working-directory: packages/ormed_mysql
+        env:
+          MARIADB_URL: ${{ matrix.db.name == 'mariadb' && matrix.db.url || '' }}
+          MYSQL_URL: ${{ matrix.db.name == 'mysql' && matrix.db.url || '' }}
+        run: dart test ${{ matrix.db.test_file }} -r expanded
+
+      - name: Stop ${{ matrix.db.name }}
+        if: always()
+        working-directory: packages/ormed_mysql
+        run: docker compose -f ${{ matrix.db.compose_file }} down -v
+
+  test-mongo:
+    name: Test MongoDB Package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Dart
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+
+      - name: Install dependencies
+        working-directory: packages/ormed_mongo
+        run: dart pub get
+
+      - name: Start MongoDB
+        working-directory: packages/ormed_mongo
+        run: docker compose up -d --wait --wait-timeout 120
+
+      - name: Wait for MongoDB
+        run: sleep 2
+
+      - name: Run tests
+        working-directory: packages/ormed_mongo
+        env:
+          MONGO_URL: mongodb://root:example@localhost:27017/?authSource=admin
+          MONGO_DATABASE: orm_test
+        run: dart test -r expanded
+
+      - name: Stop MongoDB
+        if: always()
+        working-directory: packages/ormed_mongo
+        run: docker compose down -v
