@@ -98,7 +98,6 @@ void main() {
         descending: true,
         distinct: true,
       );
-      final plan = query.debugPlan();
       final rows = await query.rows();
       final streamed = await query.streamRows().toList();
       expect(
@@ -121,7 +120,6 @@ void main() {
       constraint: (builder) =>
           builder.where('id', 1, PredicateOperator.greaterThan),
     );
-    final plan = query.debugPlan();
     await query.rows();
     final tracked = trackedMongoPlans();
     expect(tracked, isNotEmpty);

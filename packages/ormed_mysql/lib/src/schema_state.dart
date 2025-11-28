@@ -16,12 +16,23 @@ class MySqlSchemaState implements SchemaState {
   final String ledgerTable;
 
   String get _database => _requireOption('database');
-  String get _username =>
-      _stringOption('username') ?? _stringOption('user') ?? 'root';
-  String? get _password => _stringOption('password');
-  String? get _host => _stringOption('host');
-  String? get _port => _stringOption('port');
-  String? get _socket => _stringOption('unix_socket');
+  String get _username => _stringOption(
+    key: 'username',
+    fallbackKeys: const ['user'],
+    defaultValue: 'root',
+  );
+  String? get _password => _stringOption(key: 'password');
+  String? get _host => _stringOption(
+    key: 'host',
+    fallbackKeys: const ['server'],
+    defaultValue: '127.0.0.1',
+  );
+  String? get _port => _stringOption(
+    key: 'port',
+    fallbackKeys: const ['serverport'],
+    defaultValue: '3306',
+  );
+  String? get _socket => _stringOption(key: 'unix_socket');
   bool get _isMaria => config.driver.contains('maria');
 
   @override
@@ -121,10 +132,28 @@ class MySqlSchemaState implements SchemaState {
     return env;
   }
 
-  String _stringOption(String key) => config.options[key]?.toString() ?? '';
+  String _stringOption({
+    required String key,
+    List<String> fallbackKeys = const [],
+    String defaultValue = '',
+  }) {
+    final value = config.options[key]?.toString();
+    if (value != null && value.isNotEmpty) {
+      return value;
+    }
+
+    //cycle through fallbacks until a non-empty value is found
+    for (final fallbackKey in fallbackKeys) {
+      final value = config.options[fallbackKey]?.toString();
+      if (value != null && value.isNotEmpty) {
+        return value;
+      }
+    }
+    return defaultValue;
+  }
 
   String _requireOption(String key) {
-    final value = _stringOption(key);
+    final value = _stringOption(key: key);
     if (value.isEmpty) {
       throw StateError('Missing $key option for MySQL schema state.');
     }

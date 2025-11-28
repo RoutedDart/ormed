@@ -1176,14 +1176,6 @@ class SqliteDriverAdapter
     return keys.keys.map((c) => '${_quote(c)} = ?').join(' AND ');
   }
 
-  String _primaryKey(ModelDefinition<dynamic> definition) {
-    final key = definition.primaryKeyField?.columnName;
-    if (key == null) {
-      throw StateError('Primary key required for ${definition.modelName}.');
-    }
-    return key;
-  }
-
   Iterable<String> _schemasToInspect(
     sqlite.Database database,
     String? schema,

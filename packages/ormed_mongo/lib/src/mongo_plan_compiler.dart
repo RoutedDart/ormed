@@ -1,5 +1,5 @@
 import 'package:ormed/ormed.dart';
-import 'package:ormed_sqlite/src/sqlite_grammar.dart';
+import 'package:ormed_sqlite/ormed_sqlite.dart';
 
 import 'mongo_codecs.dart';
 import 'mongo_query_plan_metadata.dart';
@@ -333,7 +333,6 @@ class MongoPlanCompiler implements PlanCompiler {
         }
         break;
       case PredicateOperator.like:
-      case PredicateOperator.like:
       case PredicateOperator.iLike:
         // MongoDB regex for LIKE
         // This is a simplification, real implementation needs to escape and convert %/_
@@ -341,18 +340,6 @@ class MongoPlanCompiler implements PlanCompiler {
         break;
       case PredicateOperator.isNotNull:
         selector[field] = {'\$ne': null};
-        break;
-      case PredicateOperator.between:
-        // Between is usually >= lower AND <= upper
-        // But here we return a single map entry.
-        // MongoDB allows multiple operators on same field: {field: {$gte: lower, $lte: upper}}
-        final lower = isIdField && predicate.lower is int
-            ? codec.encode(predicate.lower as int)
-            : predicate.lower;
-        final upper = isIdField && predicate.upper is int
-            ? codec.encode(predicate.upper as int)
-            : predicate.upper;
-        selector[field] = {'\$gte': lower, '\$lte': upper};
         break;
       default:
         break;

@@ -1,6 +1,3 @@
-/// Tests covering pagination and chunking helpers on Query<T>.
-library;
-
 import 'package:ormed/ormed.dart';
 import 'package:test/test.dart';
 

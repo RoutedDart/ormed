@@ -44,7 +44,7 @@ class MongoObjectIdToIntCodec extends ValueCodec<int> {
         // We use BigInt to handle potential overflow of standard int parsing if the hex is large,
         // though for our test cases it should fit in int.
         try {
-          return int.parse(objectId.toHexString(), radix: 16);
+          return int.parse(objectId.oid, radix: 16);
         } catch (_) {
           // Fallback
         }
@@ -81,7 +81,7 @@ class MongoObjectIdToStringCodec extends ValueCodec<String> {
     if (value == null) return null;
     if (value is String) return value;
     if (value is ObjectId) {
-      return value.toHexString();
+      return value.oid;
     }
     return value.toString();
   }

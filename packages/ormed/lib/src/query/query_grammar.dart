@@ -78,8 +78,6 @@ class DatePredicateCompilation {
 abstract class QueryGrammar {
   const QueryGrammar();
 
-  static final RegExp _jsonSimpleProperty = RegExp(r'^[A-Za-z0-9_]+$');
-
   /// Compiles a [QueryPlan] into a [QueryCompilation].
   ///
   /// Example:
@@ -1273,8 +1271,6 @@ class _SelectCompilation {
     }
     return expression;
   }
-
-  String _tableIdentifier() => _fromClause;
 
   bool _hasEmptyInClause(List<FilterClause> filters) {
     for (final filter in filters) {

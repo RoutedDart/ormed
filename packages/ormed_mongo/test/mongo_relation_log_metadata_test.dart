@@ -45,7 +45,7 @@ void main() {
   });
 
   test('pretend output includes relation metadata', () async {
-    final entries = await connection.pretend(() async {
+    final _ = await connection.pretend(() async {
       await loggingContext.query<Author>().withCount('posts').rows();
     });
     final entry = logEntries.last;

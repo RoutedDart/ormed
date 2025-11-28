@@ -287,13 +287,6 @@ class MySqlQueryGrammar extends QueryGrammar {
   String _jsonValueExpression(String column, String path) =>
       'JSON_UNQUOTE(JSON_EXTRACT($column, ${_jsonPathLiteral(path)}))';
 
-  String _jsonDocumentExpression(String column, String path) {
-    if (path == r'$') {
-      return column;
-    }
-    return 'JSON_EXTRACT($column, ${_jsonPathLiteral(path)})';
-  }
-
   List<Object?> _jsonOverlapValues(Object? value) {
     if (value is Iterable) {
       return value.toList(growable: false);

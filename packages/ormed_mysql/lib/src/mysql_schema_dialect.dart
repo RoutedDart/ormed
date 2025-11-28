@@ -376,7 +376,6 @@ class MySqlSchemaDialect extends SchemaDialect {
       case ColumnTypeName.custom:
         return type.customName ?? 'TEXT';
     }
-    return 'TEXT';
   }
 
   String _defaultExpression(ColumnDefault defaultValue) {

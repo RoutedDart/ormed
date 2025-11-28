@@ -8,6 +8,7 @@ environment:
   sdk: ">=3.9.0 <4.0.0"
 
 dependencies:
+  json_annotation: ^4.9.0
   ormed:
   test: ^1.25.8
 

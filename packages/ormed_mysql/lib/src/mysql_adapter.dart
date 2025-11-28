@@ -93,6 +93,7 @@ class MySqlDriverAdapter
     connections: connections,
   );
 
+  // ignore: unused_field
   final String _driverName;
   final DriverMetadata _metadata;
   final ValueCodecRegistry _codecs;
@@ -1070,14 +1071,6 @@ class MySqlDriverAdapter
       throw StateError('Mutation requires keys for WHERE clause.');
     }
     return keys.keys.map((c) => '${_quote(c)} = ?').join(' AND ');
-  }
-
-  String _primaryKey(ModelDefinition<dynamic> definition) {
-    final key = definition.primaryKeyField?.columnName;
-    if (key == null) {
-      throw StateError('Primary key required for ${definition.modelName}.');
-    }
-    return key;
   }
 
   Future<Set<String>> _primaryKeyColumns(String table, {String? schema}) async {

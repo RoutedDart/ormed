@@ -160,8 +160,6 @@ class PostgresQueryGrammar extends QueryGrammar {
           sql: sql,
           bindings: [clause.lengthValue],
         );
-      default:
-        throw UnsupportedError('JSON predicate not supported.');
     }
   }
 
@@ -319,11 +317,6 @@ class PostgresQueryGrammar extends QueryGrammar {
       normalized = jsonEncode(value);
     }
     return _JsonValueExpression('CAST(? AS jsonb)', [normalized]);
-  }
-
-  String _postgresPathLiteral(String path) {
-    final escaped = path.replaceAll("'", "''");
-    return "'$escaped'";
   }
 
   String _jsonbPathLiteral(String path) {

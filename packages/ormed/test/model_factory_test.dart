@@ -30,7 +30,7 @@ void main() {
     test('withGenerator overrides individual fields', () {
       final builder = Model.factory<AttributeUser>().withGenerator(
         'email',
-        (_, __) => 'forced@example.com',
+        (_, _) => 'forced@example.com',
       );
       final values = builder.values();
       expect(values['email'], 'forced@example.com');

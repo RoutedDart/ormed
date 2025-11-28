@@ -11,8 +11,6 @@ void runDriverQueryTests({
   required DriverTestConfig config,
 }) {
   group('${config.driverName} queries', () {
-    String wrap(String value) =>
-        '${config.identifierQuote}$value${config.identifierQuote}';
     late DriverTestHarness harness;
     late List<User> seededUsers; // Declare to store generated users
     void expectPreviewMetadata(StatementPreview preview) {

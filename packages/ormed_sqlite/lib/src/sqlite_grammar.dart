@@ -124,8 +124,6 @@ class SqliteQueryGrammar extends QueryGrammar {
           sql: sql,
           bindings: [clause.lengthValue],
         );
-      default:
-        throw UnsupportedError('JSON predicate not supported.');
     }
   }
 

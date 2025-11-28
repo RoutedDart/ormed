@@ -1,8 +1,6 @@
 import 'package:postgres/postgres.dart';
 
 void main() async {
-  final url = 'postgres://postgres:postgres@127.0.0.1:6543/orm_test';
-
   final connection = await Connection.open(
     Endpoint(
       host: '127.0.0.1',

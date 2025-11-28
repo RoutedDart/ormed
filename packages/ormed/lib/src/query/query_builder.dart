@@ -2686,9 +2686,9 @@ class Query<T> {
   /// ```
   Stream<T> streamModels() => streamRows().map((row) => row.model);
 
-  Future<void> _applyRelationHookBatch<T>(
+  Future<void> _applyRelationHookBatch<R>(
     QueryPlan plan,
-    List<QueryRow<T>> batch,
+    List<QueryRow<R>> batch,
   ) async {
     if (batch.isEmpty || (_relations.isEmpty && _relationAggregates.isEmpty)) {
       return;
@@ -3017,16 +3017,6 @@ class Query<T> {
       );
     }
     return field;
-  }
-
-  FieldDefinition _requirePrimaryKey(String method) {
-    final pk = definition.primaryKeyField;
-    if (pk == null) {
-      throw StateError(
-        '$method requires ${definition.modelName} to declare a primary key.',
-      );
-    }
-    return pk;
   }
 
   _UpdatePayload _normalizeUpdateValues(Map<String, Object?> input) {

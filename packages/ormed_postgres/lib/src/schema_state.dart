@@ -16,11 +16,22 @@ class PostgresSchemaState implements SchemaState {
   final String ledgerTable;
 
   String get _database => _requireOption('database');
-  String get _username =>
-      _stringOption('username') ?? _stringOption('user') ?? 'postgres';
-  String? get _password => _stringOption('password');
-  String get _host => _stringOption('host') ?? '127.0.0.1';
-  String? get _port => _stringOption('port');
+  String get _username => _stringOption(
+    key: 'username',
+    fallbackKeys: const ['user'],
+    defaultValue: 'postgres',
+  );
+  String? get _password => _stringOption(key: 'password');
+  String get _host => _stringOption(
+    key: 'host',
+    fallbackKeys: const ['server'],
+    defaultValue: '127.0.0.1',
+  );
+  String? get _port => _stringOption(
+    key: 'port',
+    fallbackKeys: const ['serverport'],
+    defaultValue: '5432',
+  );
 
   @override
   bool get canDump => true;
@@ -103,10 +114,28 @@ class PostgresSchemaState implements SchemaState {
       ? {'PGPASSWORD': _password!}
       : const {};
 
-  String _stringOption(String key) => config.options[key]?.toString() ?? '';
+  String _stringOption({
+    required String key,
+    List<String> fallbackKeys = const [],
+    String defaultValue = '',
+  }) {
+    final value = config.options[key]?.toString();
+    if (value != null && value.isNotEmpty) {
+      return value;
+    }
+
+    //cycle through fallbacks until a non-empty value is found
+    for (final fallbackKey in fallbackKeys) {
+      final value = config.options[fallbackKey]?.toString();
+      if (value != null && value.isNotEmpty) {
+        return value;
+      }
+    }
+    return defaultValue;
+  }
 
   String _requireOption(String key) {
-    final value = _stringOption(key);
+    final value = _stringOption(key: key);
     if (value.isEmpty) {
       throw StateError('Missing $key option for Postgres schema state.');
     }

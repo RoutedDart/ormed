@@ -9,8 +9,8 @@ environment:
 # Add regular dependencies here.
 dependencies:
   ormed:
-    path: ../ormed
   mongo_dart: ^0.10.0
+  ormed_sqlite: ^0.1.0-dev
 
 dev_dependencies:
   lints: ^6.0.0
