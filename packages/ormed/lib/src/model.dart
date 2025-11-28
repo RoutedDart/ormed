@@ -3,6 +3,8 @@ library;
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:ormed/src/annotations.dart';
+
 import 'connection/connection.dart';
 import 'connection/connection_manager.dart';
 import 'connection/connection_resolver.dart';
@@ -504,10 +506,6 @@ abstract class Model<TModel extends Model<TModel>>
     }
   }
 
-  // =========================================================================
-  // Lazy Loading Methods
-  // =========================================================================
-
   /// Lazily loads a relation on this model instance.
   ///
   /// Similar to Laravel's `$model->load('relation')`.
@@ -742,6 +740,312 @@ abstract class Model<TModel extends Model<TModel>>
       final result = rows.first;
       final exists = result.getAttribute<bool>(existsAlias) ?? false;
       setAttribute(existsAlias, exists);
+    }
+
+    return _self();
+  }
+
+  /// Associates a belongsTo parent model and updates the foreign key.
+  ///
+  /// This is a convenient helper that:
+  /// 1. Updates the foreign key field to match the parent's primary key
+  /// 2. Caches the parent model in the relation cache
+  /// 3. Marks the relation as loaded
+  ///
+  /// Example:
+  /// ```dart
+  /// final post = Post(id: 1, title: 'Hello');
+  /// final author = Author(id: 5, name: 'Alice');
+  /// await post.associate('author', author);
+  /// // post.authorId is now 5
+  /// // post.author is now the Alice instance
+  /// ```
+  Future<TModel> associate(String relationName, Model parent) async {
+    final def = expectDefinition();
+    final relationDef = def.relations.cast<RelationDefinition?>().firstWhere(
+      (r) => r?.name == relationName,
+      orElse: () => null,
+    );
+
+    if (relationDef == null) {
+      throw ArgumentError(
+        'Relation "$relationName" not found on ${def.modelName}',
+      );
+    }
+
+    if (relationDef.kind != RelationKind.belongsTo) {
+      throw ArgumentError(
+        'associate() can only be used with belongsTo relations. '
+        'Relation "$relationName" is ${relationDef.kind}',
+      );
+    }
+
+    // Get the parent's primary key value
+    final resolver = _resolveResolverFor(def);
+    final context = _requireQueryContext(resolver);
+    final parentDef = context.registry.expectByName(relationDef.targetModel);
+    final parentPk = parentDef.primaryKeyField;
+    if (parentPk == null) {
+      throw StateError(
+        'Parent model ${parentDef.modelName} must have a primary key',
+      );
+    }
+
+    final parentPkValue = parentDef.toMap(
+      parent as dynamic,
+      registry: context.codecRegistry,
+    )[parentPk.columnName];
+
+    if (parentPkValue == null) {
+      throw StateError(
+        'Parent model ${parentDef.modelName} primary key value is null',
+      );
+    }
+
+    // Find the foreign key field in this model
+    final foreignKeyName = relationDef.foreignKey;
+    final field = def.fields.firstWhere(
+      (f) => f.columnName == foreignKeyName || f.name == foreignKeyName,
+    );
+
+    // Update the foreign key attribute
+    setAttribute(field.columnName, parentPkValue);
+
+    // Cache the parent in relations
+    setRelation(relationName, parent);
+
+    return _self();
+  }
+
+  /// Dissociates a belongsTo parent model and clears the foreign key.
+  ///
+  /// This is a convenient helper that:
+  /// 1. Sets the foreign key field to null
+  /// 2. Removes the parent from the relation cache
+  /// 3. Marks the relation as not loaded
+  ///
+  /// Example:
+  /// ```dart
+  /// final post = Post(id: 1, authorId: 5, title: 'Hello');
+  /// await post.dissociate('author');
+  /// // post.authorId is now null
+  /// // post.author is now null
+  /// ```
+  Future<TModel> dissociate(String relationName) async {
+    final def = expectDefinition();
+    final relationDef = def.relations.cast<RelationDefinition?>().firstWhere(
+      (r) => r?.name == relationName,
+      orElse: () => null,
+    );
+
+    if (relationDef == null) {
+      throw ArgumentError(
+        'Relation "$relationName" not found on ${def.modelName}',
+      );
+    }
+
+    if (relationDef.kind != RelationKind.belongsTo) {
+      throw ArgumentError(
+        'dissociate() can only be used with belongsTo relations. '
+        'Relation "$relationName" is ${relationDef.kind}',
+      );
+    }
+
+    // Find the foreign key field and nullify it
+    final foreignKeyName = relationDef.foreignKey;
+    final field = def.fields.firstWhere(
+      (f) => f.columnName == foreignKeyName || f.name == foreignKeyName,
+    );
+
+    setAttribute(field.columnName, null);
+
+    // Remove from relation cache
+    unsetRelation(relationName);
+
+    return _self();
+  }
+
+  /// Attaches related models in a manyToMany relationship.
+  ///
+  /// Inserts new pivot table records to establish the many-to-many relationship.
+  /// Optionally accepts pivot data for additional columns on the pivot table.
+  ///
+  /// After attaching, the relation is reloaded to sync the cache.
+  ///
+  /// Example:
+  /// ```dart
+  /// final post = await Post.query().find(1);
+  /// await post.attach('tags', [1, 2, 3]);
+  /// // Pivot records created for tag IDs 1, 2, 3
+  ///
+  /// // With pivot data:
+  /// await post.attach('tags', [4], pivotData: {'order': 1});
+  /// ```
+  Future<TModel> attach(
+    String relationName,
+    List<dynamic> ids, {
+    Map<String, dynamic>? pivotData,
+  }) async {
+    final def = expectDefinition();
+    final resolver = _resolveResolverFor(def);
+    final context = _requireQueryContext(resolver);
+
+    final relationDef = def.relations.cast<RelationDefinition?>().firstWhere(
+      (r) => r?.name == relationName,
+      orElse: () => null,
+    );
+
+    if (relationDef == null) {
+      throw ArgumentError(
+        'Relation "$relationName" not found on ${def.modelName}',
+      );
+    }
+
+    if (relationDef.kind != RelationKind.manyToMany) {
+      throw ArgumentError(
+        'attach() can only be used with manyToMany relations. '
+        'Relation "$relationName" is ${relationDef.kind}',
+      );
+    }
+
+    if (ids.isEmpty) {
+      return _self();
+    }
+
+    // Get this model's primary key value
+    final pk = def.primaryKeyField;
+    if (pk == null) {
+      throw StateError('Model ${def.modelName} must have a primary key');
+    }
+
+    final pkValue = _primaryKeyValue(def);
+    if (pkValue == null) {
+      throw StateError('Model ${def.modelName} primary key value is null');
+    }
+
+    // Build pivot table rows
+    final pivotTable = relationDef.through;
+    final pivotForeignKey = relationDef.pivotForeignKey!;
+    final pivotRelatedKey = relationDef.pivotRelatedKey!;
+
+    final rows = ids.map((id) {
+      final row = <String, dynamic>{
+        pivotForeignKey: pkValue,
+        pivotRelatedKey: id,
+      };
+      if (pivotData != null) {
+        row.addAll(pivotData);
+      }
+      return row;
+    }).toList();
+
+    // Insert pivot records using raw query
+    for (final row in rows) {
+      final columns = row.keys.join(', ');
+      final placeholders = List.filled(row.length, '?').join(', ');
+      final sql = 'INSERT INTO $pivotTable ($columns) VALUES ($placeholders)';
+      await context.driver.executeRaw(sql, row.values.toList());
+    }
+
+    // Reload the relation to sync cache
+    await load(relationName);
+
+    return _self();
+  }
+
+  /// Detaches related models in a manyToMany relationship.
+  ///
+  /// Deletes pivot table records. If no IDs are provided, detaches all.
+  ///
+  /// After detaching, the relation is reloaded to sync the cache.
+  ///
+  /// Example:
+  /// ```dart
+  /// final post = await Post.query().find(1);
+  /// await post.detach('tags', [1, 2]); // Detach specific tags
+  /// await post.detach('tags'); // Detach all tags
+  /// ```
+  Future<TModel> detach(String relationName, [List<dynamic>? ids]) async {
+    final def = expectDefinition();
+    final resolver = _resolveResolverFor(def);
+    final context = _requireQueryContext(resolver);
+
+    final relationDef = def.relations.cast<RelationDefinition?>().firstWhere(
+      (r) => r?.name == relationName,
+      orElse: () => null,
+    );
+
+    if (relationDef == null) {
+      throw ArgumentError(
+        'Relation "$relationName" not found on ${def.modelName}',
+      );
+    }
+
+    if (relationDef.kind != RelationKind.manyToMany) {
+      throw ArgumentError(
+        'detach() can only be used with manyToMany relations. '
+        'Relation "$relationName" is ${relationDef.kind}',
+      );
+    }
+
+    // Get this model's primary key value
+    final pk = def.primaryKeyField;
+    if (pk == null) {
+      throw StateError('Model ${def.modelName} must have a primary key');
+    }
+
+    final pkValue = _primaryKeyValue(def);
+    if (pkValue == null) {
+      throw StateError('Model ${def.modelName} primary key value is null');
+    }
+
+    final pivotTable = relationDef.through;
+    final pivotForeignKey = relationDef.pivotForeignKey!;
+    final pivotRelatedKey = relationDef.pivotRelatedKey!;
+
+    // Delete pivot records
+    if (ids == null || ids.isEmpty) {
+      // Detach all
+      final sql = 'DELETE FROM $pivotTable WHERE $pivotForeignKey = ?';
+      await context.driver.executeRaw(sql, [pkValue]);
+    } else {
+      // Detach specific IDs
+      final placeholders = List.filled(ids.length, '?').join(', ');
+      final sql =
+          'DELETE FROM $pivotTable '
+          'WHERE $pivotForeignKey = ? AND $pivotRelatedKey IN ($placeholders)';
+      await context.driver.executeRaw(sql, [pkValue, ...ids]);
+    }
+
+    // Reload the relation to sync cache
+    await load(relationName);
+
+    return _self();
+  }
+
+  /// Syncs a manyToMany relationship to match the given IDs exactly.
+  ///
+  /// This replaces all existing pivot records with new ones for the given IDs.
+  /// Internally calls `detach()` (all) followed by `attach()`.
+  ///
+  /// Example:
+  /// ```dart
+  /// final post = await Post.query().find(1);
+  /// // Currently has tags: [1, 2, 3]
+  /// await post.sync('tags', [2, 3, 4]);
+  /// // Now has tags: [2, 3, 4]
+  /// ```
+  Future<TModel> sync(
+    String relationName,
+    List<dynamic> ids, {
+    Map<String, dynamic>? pivotData,
+  }) async {
+    // First detach all
+    await detach(relationName);
+
+    // Then attach the new IDs
+    if (ids.isNotEmpty) {
+      await attach(relationName, ids, pivotData: pivotData);
     }
 
     return _self();
