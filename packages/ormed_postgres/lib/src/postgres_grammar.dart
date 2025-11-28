@@ -149,14 +149,8 @@ class PostgresQueryGrammar extends QueryGrammar {
           bindings: [_encodeJsonValue(clause.value)],
         );
       case JsonPredicateType.containsKey:
-        // Normalize the path by parsing it as a selector
-        final selector = parseJsonSelector('dummy->${clause.path}');
-        final segments = jsonPathSegments(selector!.path);
-        final key = segments.last;
-        final parentPath = segments.take(segments.length - 1).join('.');
-        final target = _postgresJsonTarget(resolvedColumn, parentPath);
-        final escapedKey = _postgresPathLiteral(key);
-        final sql = 'coalesce($target ? $escapedKey, false)';
+        final jsonPath = _jsonbPathLiteral(clause.path);
+        final sql = 'jsonb_path_exists(($resolvedColumn)::jsonb, $jsonPath)';
         return JsonPredicateCompilation(sql: sql);
       case JsonPredicateType.length:
         final accessor = _postgresJsonTarget(resolvedColumn, clause.path);
@@ -329,6 +323,14 @@ class PostgresQueryGrammar extends QueryGrammar {
 
   String _postgresPathLiteral(String path) {
     final escaped = path.replaceAll("'", "''");
+    return "'$escaped'";
+  }
+
+  String _jsonbPathLiteral(String path) {
+    final normalized = path.trim().isEmpty
+        ? r'$'
+        : (path.startsWith(r'$') ? path : r'$.${path}');
+    final escaped = normalized.replaceAll("'", "''");
     return "'$escaped'";
   }
 
