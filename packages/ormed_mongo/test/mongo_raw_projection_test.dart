@@ -13,9 +13,15 @@ void main() {
 
   tearDownAll(() async => await harness.dispose());
 
-  test('executeRaw tolerates SHOW and DESCRIBE', () async {
-    await harness.adapter.executeRaw('SHOW TABLES');
-    await harness.adapter.executeRaw('DESCRIBE authors');
+  test('executeRaw throws UnsupportedError for SQL', () async {
+    expect(
+      () => harness.adapter.executeRaw('SHOW TABLES'),
+      throwsUnsupportedError,
+    );
+    expect(
+      () => harness.adapter.executeRaw('DESCRIBE authors'),
+      throwsUnsupportedError,
+    );
   });
 
   test('select projection only returns requested fields', () async {

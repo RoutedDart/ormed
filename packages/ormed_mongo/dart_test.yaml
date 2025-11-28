@@ -1,0 +1,2 @@
+# Runs mongo integration tests serially to prevent overlapping database mutations.
+concurrency: 1

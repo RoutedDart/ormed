@@ -1,7 +1,7 @@
 import 'dart:async';
-import 'package:mongo_dart/mongo_dart.dart';
-import 'dart:convert';
+import 'dart:math';
 
+import 'package:mongo_dart/mongo_dart.dart';
 import 'package:ormed/ormed.dart';
 
 import 'mongo_codecs.dart';
@@ -72,6 +72,7 @@ class MongoDriverAdapter implements DriverAdapter, SchemaDriver {
   final DriverMetadata _metadata;
   final PlanCompiler _planCompiler;
   final SchemaPlanCompiler _schemaCompiler;
+  final Random _random = Random();
   ConnectionHandle<Db>? _primaryHandle;
   bool _closed = false;
   final Set<String> _droppedCollections = {};
@@ -80,11 +81,6 @@ class MongoDriverAdapter implements DriverAdapter, SchemaDriver {
   int _sessionCounter = 0;
   late final MongoSchemaInspector _schemaInspector = MongoSchemaInspector(this);
   static const _aggregateBuilder = MongoAggregatePipelineBuilder();
-
-  static final _dropTablePattern = RegExp(
-    r'''DROP\s+TABLE\s+(?:IF\s+EXISTS\s+)?[`"]?([A-Za-z0-9_]+)[`"]?''',
-    caseSensitive: false,
-  );
 
   @override
   DriverMetadata get metadata => _metadata;
@@ -145,169 +141,85 @@ class MongoDriverAdapter implements DriverAdapter, SchemaDriver {
     // Always include _id so we can map it to id
     projection['_id'] = 1;
 
-    // Auto-include required fields for hydration
-    for (final field in plan.definition.fields) {
-      if (!field.isNullable && !projection.containsKey(field.columnName)) {
-        projection[field.columnName] = 1;
-      }
-    }
+    // Don't auto-include non-nullable fields when explicit selects are specified
+    // The user has explicitly chosen which fields they want
 
     return projection;
   }
 
+  /// Executes raw SQL-like commands with LIMITED support for migration compatibility.
+  ///
+  /// ⚠️ WARNING: This is NOT true SQL support. Only basic INSERT/DELETE/DROP TABLE
+  /// statements are parsed for migration compatibility.
+  ///
+  /// For native MongoDB operations, use [runMongoCommand] instead.
+  ///
+  /// Supported patterns:
+  /// - INSERT INTO table (cols) VALUES (vals)
+  /// - DELETE FROM table [WHERE conditions]
+  /// - DROP TABLE table
+  /// - SHOW/DESCRIBE (no-op)
   @override
+  /// ⚠️ MongoDB does not support raw SQL execution.
+  ///
+  /// Use [runMongoCommand] instead for native MongoDB operations.
+  ///
+  /// Example:
+  /// ```dart
+  /// // Instead of: await adapter.executeRaw('DELETE FROM users WHERE age < 18');
+  /// // Use:
+  /// await adapter.runMongoCommand('users', (collection) async {
+  ///   await collection.remove({'age': {'\$lt': 18}});
+  /// });
+  /// ```
   Future<void> executeRaw(
     String sql, [
     List<Object?> parameters = const [],
   ]) async {
-    if (await _handleRawInsert(sql, parameters)) {
-      return;
-    }
-    if (await _handleRawDelete(sql)) {
-      return;
-    }
-    if (_handleRawSql(sql)) {
-      return;
-    }
-    final match = _dropTablePattern.firstMatch(sql);
-    if (match != null) {
-      final collection = match.group(1);
-      if (collection != null && collection.isNotEmpty) {
-        _droppedCollections.add(collection);
-        final db = await _database();
-        try {
-          await db.dropCollection(collection);
-        } on MongoDartError {
-          // ignore missing namespace
-        }
-        return;
-      }
-    }
-    _logRawUnsupported(sql);
+    throw UnsupportedError(
+      'MongoDB does not support raw SQL. Use runMongoCommand() for native MongoDB operations instead.',
+    );
   }
 
-  Future<bool> _handleRawInsert(String sql, List<Object?> parameters) async {
-    final trimmed = sql.trim();
-    final match = RegExp(
-      r'''^insert\s+into\s+([`"]?[A-Za-z0-9_]+[`"]?)\s*\(([^)]+)\)\s*values\s*\(([^)]+)\)$''',
-      caseSensitive: false,
-    ).firstMatch(trimmed);
-    if (match == null) {
-      return false;
-    }
-    final table = _stripQuotes(match.group(1)!);
-    final columns = match
-        .group(2)!
-        .split(',')
-        .map((column) => _stripQuotes(column))
-        .toList(growable: false);
-    final values = match
-        .group(3)!
-        .split(',')
-        .map((value) => value.trim())
-        .toList(growable: false);
-    final doc = <String, Object?>{};
-    var paramIndex = 0;
-    for (var i = 0; i < columns.length && i < values.length; i++) {
-      doc[columns[i]] = _parseRawInsertValue(values[i], parameters, () {
-        if (paramIndex >= parameters.length) {
-          throw StateError('Missing parameter for raw INSERT: $sql');
-        }
-        return parameters[paramIndex++];
-      });
-    }
-    final collection = await _collection(table);
-    await collection.insert(doc);
-    return true;
+  /// Executes a native MongoDB command on a collection.
+  ///
+  /// This provides direct access to MongoDB operations without SQL parsing.
+  ///
+  /// Example:
+  /// ```dart
+  /// // Get collection and run native operations
+  /// await driver.runMongoCommand('users', (collection) async {
+  ///   return await collection.find({'age': {'\$gt': 25}}).toList();
+  /// });
+  /// ```
+  Future<T> runMongoCommand<T>(
+    String collectionName,
+    Future<T> Function(DbCollection collection) command,
+  ) async {
+    final collection = await _collection(collectionName);
+    return await command(collection);
   }
 
-  Future<bool> _handleRawDelete(String sql) async {
-    final trimmed = sql.trim();
-    final match = RegExp(
-      r'^delete\s+from\s+([`"]?[A-Za-z0-9_]+[`"]?)$',
-      caseSensitive: false,
-    ).firstMatch(trimmed);
-    if (match == null) return false;
-    final table = _stripQuotes(match.group(1)!);
-    final collection = await _collection(table);
-    await collection.remove({});
-    return true;
-  }
-
-  bool _handleRawSql(String sql) {
-    final trimmed = sql.trim();
-    if (trimmed.isEmpty) {
-      return true;
-    }
-    final lowered = trimmed.toLowerCase();
-    if (lowered.startsWith('show ')) {
-      _logRaw('Ignored SHOW', trimmed);
-      return true;
-    }
-    if (lowered.startsWith('describe ') || lowered.startsWith('desc ')) {
-      final parts = trimmed.split(RegExp(r'\s+'));
-      if (parts.length >= 2) {
-        final table = parts[1];
-        _logRaw('Describe collection', table);
-      } else {
-        _logRaw('Describe ignored', trimmed);
-      }
-      return true;
-    }
-    return false;
-  }
-
-  void _logRaw(String label, String text) {
-    print('[mongo raw] $label: $text');
-  }
-
-  void _logRawUnsupported(String sql) {
-    print('[mongo raw] Unsupported SQL: $sql');
-  }
-
+  /// ⚠️ MongoDB does not support raw SQL queries.
+  ///
+  /// Use [runMongoCommand] instead for native MongoDB operations.
+  ///
+  /// Example:
+  /// ```dart
+  /// // Instead of: final rows = await adapter.queryRaw('SELECT * FROM users WHERE age > 18');
+  /// // Use:
+  /// final rows = await adapter.runMongoCommand('users', (collection) async {
+  ///   final docs = await collection.find({'age': {'\$gt': 18}}).toList();
+  ///   return docs.cast<Map<String, Object?>>();
+  /// });
+  /// ```
   @override
   Future<List<Map<String, Object?>>> queryRaw(
     String sql, [
     List<Object?> parameters = const [],
   ]) async {
-    final trimmed = sql.trim();
-    final lower = trimmed.toLowerCase();
-    if (!lower.startsWith('select ')) {
-      throw UnsupportedError('Raw SQL is not supported by the Mongo driver.');
-    }
-    const fromKeyword = ' from ';
-    final fromIndex = lower.indexOf(fromKeyword);
-    if (fromIndex < 0) {
-      throw UnsupportedError('Raw SQL is not supported by the Mongo driver.');
-    }
-    final selectClause = trimmed.substring(6, fromIndex).trim();
-    var remainder = trimmed.substring(fromIndex + fromKeyword.length).trim();
-    String? whereSegment;
-    String? orderSegment;
-    const orderKeyword = ' order by ';
-    final orderIndex = remainder.toLowerCase().indexOf(orderKeyword);
-    if (orderIndex >= 0) {
-      orderSegment = remainder
-          .substring(orderIndex + orderKeyword.length)
-          .trim();
-      remainder = remainder.substring(0, orderIndex).trim();
-    }
-    const whereKeyword = ' where ';
-    final whereIndex = remainder.toLowerCase().indexOf(whereKeyword);
-    final tableSegment = whereIndex >= 0
-        ? remainder.substring(0, whereIndex).trim()
-        : remainder;
-    if (whereIndex >= 0) {
-      whereSegment = remainder
-          .substring(whereIndex + whereKeyword.length)
-          .trim();
-    }
-    return _executeSelectRaw(
-      selectClause: selectClause,
-      tableSegment: tableSegment,
-      whereSegment: whereSegment,
-      orderSegment: orderSegment,
-      parameters: parameters,
+    throw UnsupportedError(
+      'MongoDB does not support raw SQL. Use runMongoCommand() for native MongoDB operations instead.',
     );
   }
 
@@ -353,6 +265,9 @@ class MongoDriverAdapter implements DriverAdapter, SchemaDriver {
     );
 
     final rows = await cursor.toList();
+    if (plan.randomOrder && rows.length > 1) {
+      rows.shuffle(_random);
+    }
     final mapped = rows.map((row) => Map<String, Object?>.from(row)).toList();
 
     // Map _id to id if needed
@@ -426,8 +341,7 @@ class MongoDriverAdapter implements DriverAdapter, SchemaDriver {
     return rows;
   }
 
-  bool _isAggregatePlan(QueryPlan plan) =>
-      plan.aggregates.isNotEmpty || plan.randomOrder;
+  bool _isAggregatePlan(QueryPlan plan) => plan.aggregates.isNotEmpty;
 
   String _nextSessionId() =>
       'mongo-tx-${DateTime.now().microsecondsSinceEpoch}-${_sessionCounter++}';
@@ -524,175 +438,8 @@ class MongoDriverAdapter implements DriverAdapter, SchemaDriver {
     return null;
   }
 
-  Future<List<Map<String, Object?>>> _executeSelectRaw({
-    required String selectClause,
-    required String tableSegment,
-    required String? whereSegment,
-    required String? orderSegment,
-    required List<Object?> parameters,
-  }) async {
-    final tableName = _stripQuotes(tableSegment);
-    final columns = _splitSelectColumns(selectClause);
-    final selector = _parseWhereClause(whereSegment, parameters);
-    final orders = _parseOrderClause(orderSegment);
-    final rows = await _queryCollection(tableName, selector);
-    if (orders.isNotEmpty) {
-      rows.sort((a, b) => _compareRows(a, b, orders));
-    }
-    if (columns.length == 1 && columns.first == '*') {
-      return rows;
-    }
-    return rows
-        .map((row) => _projectColumns(row, columns))
-        .toList(growable: false);
-  }
-
-  Future<List<Map<String, Object?>>> _queryCollection(
-    String table,
-    Map<String, Object?> selector,
-  ) async {
-    final collection = await _collection(table);
-    final cursor = collection.find(selector);
-    final docs = await cursor.toList();
-    return docs.map((doc) => Map<String, Object?>.from(doc)).toList();
-  }
-
-  Map<String, Object?> _projectColumns(
-    Map<String, Object?> row,
-    List<String> columns,
-  ) {
-    final projected = <String, Object?>{};
-    for (final column in columns) {
-      projected[column] = row[column];
-    }
-    return projected;
-  }
-
-  List<String> _splitSelectColumns(String clause) {
-    final columns = clause.split(',');
-    return columns
-        .map((column) => column.replaceAll(RegExp(r'[`"]'), '').trim())
-        .where((column) => column.isNotEmpty)
-        .toList(growable: false);
-  }
-
-  Map<String, Object?> _parseWhereClause(
-    String? clause,
-    List<Object?> parameters,
-  ) {
-    if (clause == null || clause.trim().isEmpty) return const {};
-    final selector = <String, Object?>{};
-    final parts = clause.split(RegExp(r'\s+and\s+', caseSensitive: false));
-    var paramIndex = 0;
-    Object? nextParameter() {
-      if (paramIndex >= parameters.length) {
-        throw StateError('Missing queryRaw parameters for "$clause".');
-      }
-      return parameters[paramIndex++];
-    }
-
-    for (final part in parts) {
-      final match = RegExp(
-        r'^[`"]?([A-Za-z0-9_]+)[`"]?\s*=\s*(.+)$',
-        caseSensitive: false,
-      ).firstMatch(part.trim());
-      if (match == null) continue;
-      var column = match.group(1)!;
-      final valueRaw = match.group(2)!.trim();
-      Object? value;
-      if (valueRaw == '?') {
-        value = nextParameter();
-      } else if (valueRaw.startsWith("'") && valueRaw.endsWith("'")) {
-        value = valueRaw.substring(1, valueRaw.length - 1);
-      } else if (valueRaw.startsWith('"') && valueRaw.endsWith('"')) {
-        value = valueRaw.substring(1, valueRaw.length - 1);
-      } else {
-        final parsed = num.tryParse(valueRaw);
-        value = parsed ?? valueRaw;
-      }
-
-      if (column == 'id') {
-        column = '_id';
-      }
-      if (column == '_id') {
-        if (value is int) {
-          value = MongoObjectIdToIntCodec().encode(value);
-        }
-      }
-
-      selector[column] = value;
-    }
-    return selector;
-  }
-
-  List<_RawOrder> _parseOrderClause(String? clause) {
-    if (clause == null || clause.trim().isEmpty) return const [];
-    return clause
-        .split(',')
-        .map((entry) {
-          final parts = entry.trim().split(RegExp(r'\s+'));
-          final column = parts.first.replaceAll(RegExp(r'[`"]'), '').trim();
-          final descending =
-              parts.length > 1 && parts[1].toLowerCase() == 'desc';
-          return _RawOrder(column, descending: descending);
-        })
-        .toList(growable: false);
-  }
-
-  int _compareRows(
-    Map<String, Object?> left,
-    Map<String, Object?> right,
-    List<_RawOrder> orders,
-  ) {
-    for (final order in orders) {
-      final a = left[order.column];
-      final b = right[order.column];
-      final result = _compareValues(a, b);
-      if (result != 0) {
-        return order.descending ? -result : result;
-      }
-    }
-    return 0;
-  }
-
-  int _compareValues(Object? a, Object? b) {
-    if (a == b) return 0;
-    if (a == null) return -1;
-    if (b == null) return 1;
-    if (a is Comparable && b is Comparable) {
-      return (a as Comparable<Object?>).compareTo(b as Comparable<Object?>);
-    }
-    return 0;
-  }
-
-  String _stripQuotes(String value) =>
-      value.replaceAll(RegExp(r'[`"]'), '').trim();
-
-  Object? _parseRawInsertValue(
-    String token,
-    List<Object?> parameters,
-    Object? Function() parameter,
-  ) {
-    if (token == '?') {
-      final value = parameter();
-      if (value is String && (value.startsWith('{') || value.startsWith('['))) {
-        try {
-          return jsonDecode(value);
-        } catch (error) {
-          // ignore invalid JSON in raw inserts
-        }
-      }
-      return value;
-    }
-    if (token.startsWith("'") && token.endsWith("'")) {
-      return token.substring(1, token.length - 1);
-    }
-    if (token.startsWith('"') && token.endsWith('"')) {
-      return token.substring(1, token.length - 1);
-    }
-    final parsed = num.tryParse(token);
-    return parsed ?? token;
-  }
+  num _secondsSinceMidnight(DateTime date) =>
+      date.hour * 3600 + date.minute * 60 + date.second;
 
   String _stripRawSelectAlias(String sql) {
     final trimmed = sql.trim();
@@ -713,9 +460,6 @@ class MongoDriverAdapter implements DriverAdapter, SchemaDriver {
     r'\s+AS\s+([A-Za-z0-9_]+)\s*$',
     caseSensitive: false,
   );
-
-  num _secondsSinceMidnight(DateTime date) =>
-      date.hour * 3600 + date.minute * 60 + date.second;
 
   bool _compare(num left, num right, String operator) {
     switch (operator) {
@@ -921,7 +665,24 @@ class MongoDriverAdapter implements DriverAdapter, SchemaDriver {
   }
 
   Map<String, Object?> _filterForRow(MutationRow row) =>
-      Map<String, Object?>.from(row.keys);
+      _normalizePrimaryKeyFilter(Map<String, Object?>.from(row.keys));
+
+  Map<String, Object?> _normalizePrimaryKeyFilter(Map<String, Object?> filter) {
+    if (filter.isEmpty) {
+      return filter;
+    }
+    final normalized = <String, Object?>{};
+    final codec = MongoObjectIdToIntCodec();
+    filter.forEach((key, value) {
+      var targetKey = key == 'id' ? '_id' : key;
+      var targetValue = value;
+      if (targetKey == '_id' && value is int) {
+        targetValue = codec.encode(value);
+      }
+      normalized[targetKey] = targetValue;
+    });
+    return normalized;
+  }
 
   Map<String, Object?> _updateValues(MutationRow row) {
     final values = Map<String, Object?>.from(row.values);
@@ -1105,11 +866,4 @@ class MongoDriverAdapter implements DriverAdapter, SchemaDriver {
 
   @override
   Future<int?> threadCount() async => null;
-}
-
-class _RawOrder {
-  const _RawOrder(this.column, {this.descending = false});
-
-  final String column;
-  final bool descending;
 }

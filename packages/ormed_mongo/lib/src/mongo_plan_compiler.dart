@@ -183,6 +183,16 @@ class MongoPlanCompiler implements PlanCompiler {
     if (plan.offset != null) {
       args['skip'] = plan.offset;
     }
+    // Handle explicit select projection
+    if (plan.selects.isNotEmpty) {
+      final projection = <String, Object?>{};
+      projection['_id'] = 1; // Always include MongoDB's _id
+      for (final select in plan.selects) {
+        final fieldName = select == 'id' ? '_id' : select;
+        projection[fieldName] = 1;
+      }
+      args['projection'] = projection;
+    }
     return args;
   }
 
@@ -532,6 +542,21 @@ class MongoAggregatePipelineBuilder {
     List<_MongoAggregateTarget> targets,
   ) {
     final projection = <String, Object?>{};
+    
+    // If explicit selects are specified (and not grouping), only project those
+    if (plan.selects.isNotEmpty && plan.groupBy.isEmpty) {
+      projection['_id'] = 1; // Always include MongoDB's _id
+      for (final select in plan.selects) {
+        final fieldName = select == 'id' ? '_id' : select;
+        projection[fieldName] = 1;
+      }
+      // Also include any aggregate targets
+      for (final target in targets) {
+        projection[target.alias] = 1;
+      }
+      return {'\$project': projection};
+    }
+    
     // Include _id (MongoDB's primary key) for model hydration
     // If we're grouping, _id contains the group key(s), so we need to project it appropriately
     if (plan.groupBy.isNotEmpty) {

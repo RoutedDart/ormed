@@ -73,6 +73,11 @@ void runDriverQueryTests({
     });
 
     test('records query errors in events', () async {
+      // Skip for MongoDB since it doesn't support raw SQL
+      if (config.driverName.toLowerCase().contains('mongo')) {
+        return;
+      }
+      
       final events = <QueryEvent>[];
       harness.context.onQuery(events.add);
       await harness.adapter.executeRaw('DROP TABLE users');
@@ -511,9 +516,6 @@ void runDriverQueryTests({
         });
 
         test('forceDelete honors order and limit clauses', () async {
-          if (!config.supportsCapability(DriverCapability.queryDeletes)) {
-            return;
-          }
           final affected = await harness.context
               .query<Comment>()
               .withTrashed()
@@ -528,7 +530,7 @@ void runDriverQueryTests({
               .orderBy('id')
               .get();
           expect(rows.map((c) => c.id), equals([1]));
-        });
+        }, skip: !config.supportsCapability(DriverCapability.queryDeletes));
       });
 
       group('json predicates', () {

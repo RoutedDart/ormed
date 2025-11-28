@@ -1,3 +1,4 @@
+import 'package:ormed/ormed.dart';
 import 'package:test/test.dart';
 
 import '../../models/models.dart';
@@ -355,10 +356,6 @@ void runWhereClausesTests(
     });
 
     test('whereRaw', () async {
-      if (!config.supportsWhereRaw) {
-        return;
-      }
-
       await harness.seedUsers([
         User(id: 1, email: 'test1@example.com', active: true),
         User(id: 2, email: 'test2@example.com', active: false),
@@ -369,6 +366,6 @@ void runWhereClausesTests(
       ]).get();
       expect(users, hasLength(1));
       expect(users.first.id, 1);
-    });
+    }, skip: !config.supportsCapability(DriverCapability.rawSQL));
   });
 }

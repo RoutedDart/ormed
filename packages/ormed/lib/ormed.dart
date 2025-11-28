@@ -26,6 +26,7 @@ export 'src/connection/connection_handle.dart';
 export 'src/connection/connection_factory.dart';
 export 'src/connection/orm_connection.dart';
 export 'src/driver/driver.dart';
+export 'src/driver/driver_capability.dart';
 export 'src/driver/schema_state.dart';
 export 'src/driver/schema_state_provider.dart';
 export 'src/repository/repository.dart';

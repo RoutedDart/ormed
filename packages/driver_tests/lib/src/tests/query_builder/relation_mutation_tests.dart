@@ -277,7 +277,7 @@ void runRelationMutationTests(
       });
     });
 
-    group('attach() - manyToMany', () {
+    group('attach() - manyToMany', skip: !config.supportsCapability(DriverCapability.rawSQL), () {
       test('attaches related models and creates pivot records', () async {
         await harness.seedPosts([
           Post(
@@ -394,7 +394,7 @@ void runRelationMutationTests(
       });
     });
 
-    group('detach() - manyToMany', () {
+    group('detach() - manyToMany', skip: !config.supportsCapability(DriverCapability.rawSQL), () {
       test('detaches specific related models', () async {
         await harness.seedPosts([
           Post(
@@ -546,7 +546,7 @@ void runRelationMutationTests(
       });
     });
 
-    group('sync() - manyToMany', () {
+    group('sync() - manyToMany', skip: !config.supportsCapability(DriverCapability.rawSQL), () {
       test('syncs to match given IDs exactly', () async {
         await harness.seedPosts([
           Post(
@@ -718,7 +718,7 @@ void runRelationMutationTests(
         expect(pivotRecords, hasLength(2));
         expect(pivotRecords[0]['tag_id'], equals(2));
         expect(pivotRecords[1]['tag_id'], equals(3));
-      });
+      }, skip: !config.supportsCapability(DriverCapability.rawSQL));
     });
   });
 }

@@ -58,6 +58,7 @@ class SqliteDriverAdapter
            DriverCapability.threadCount,
            DriverCapability.transactions,
            DriverCapability.adHocQueryUpdates,
+           DriverCapability.rawSQL,
          },
        ),
        _schemaCompiler = SchemaPlanCompiler(SqliteSchemaDialect()),

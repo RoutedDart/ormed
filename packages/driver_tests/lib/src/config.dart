@@ -66,6 +66,8 @@ class DriverTestConfig {
         return false;
       case DriverCapability.transactions:
         return _capabilities.contains(DriverCapability.transactions);
+      case DriverCapability.rawSQL:
+        return supportsWhereRaw && supportsSelectRaw;
     }
   }
 }

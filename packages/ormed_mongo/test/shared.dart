@@ -55,8 +55,55 @@ Future<void> waitForMongoReady() async {
 MongoDriverAdapter createAdapter() =>
     MongoDriverAdapter.custom(config: _databaseConfig);
 
-QueryContext createContext(MongoDriverAdapter adapter) =>
-    QueryContext(registry: ModelRegistry(), driver: adapter);
+QueryContext createContext(MongoDriverAdapter adapter) => QueryContext(
+  registry: ModelRegistry(),
+  driver: adapter,
+  codecRegistry: adapter.codecs,
+);
+
+class MongoTestContext {
+  MongoTestContext({
+    required this.adapter,
+    required this.registry,
+    required this.context,
+  });
+
+  final MongoDriverAdapter adapter;
+  final ModelRegistry registry;
+  final QueryContext context;
+
+  Future<void> dispose() => adapter.close();
+}
+
+Future<MongoTestContext> createTestContext({bool resetDatabase = true}) async {
+  if (resetDatabase) {
+    await clearDatabase();
+  }
+  final adapter = createAdapter();
+  final registry = ModelRegistry();
+  final context = QueryContext(
+    registry: registry,
+    driver: adapter,
+    codecRegistry: adapter.codecs,
+  );
+  return MongoTestContext(
+    adapter: adapter,
+    registry: registry,
+    context: context,
+  );
+}
+
+Future<T> runWithTestContext<T>(
+  FutureOr<T> Function(MongoTestContext ctx) action, {
+  bool resetDatabase = true,
+}) async {
+  final ctx = await createTestContext(resetDatabase: resetDatabase);
+  try {
+    return await action(ctx);
+  } finally {
+    await ctx.dispose();
+  }
+}
 
 Future<Db> openVerifier() async {
   final db = Db(_databaseUri);

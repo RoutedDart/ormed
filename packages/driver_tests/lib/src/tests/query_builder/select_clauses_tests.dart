@@ -1,3 +1,4 @@
+import 'package:ormed/ormed.dart';
 import 'package:test/test.dart';
 
 import '../../models/models.dart';
@@ -23,10 +24,12 @@ void runSelectClausesTests(
       ]);
 
       final users = await harness.context.query<User>().select([
+        'id',
         'email',
-      ]).rows();
+        'active',
+      ]).get();
       expect(users, hasLength(1));
-      expect(users.first.row.containsKey('email'), isTrue);
+      expect(users.first.email, 'a@example.com');
     });
 
     test('addSelect', () async {
@@ -36,32 +39,29 @@ void runSelectClausesTests(
 
       final users = await harness.context
           .query<User>()
-          .select(['id'])
+          .select(['id', 'email', 'active'])
           .addSelect('email')
-          .rows();
+          .get();
 
       expect(users, hasLength(1));
-      expect(users.first.row.containsKey('id'), isTrue);
-      expect(users.first.row.containsKey('email'), isTrue);
+      expect(users.first.id, 1);
+      expect(users.first.email, 'a@example.com');
     });
 
     test('selectRaw', () async {
-      if (!config.supportsSelectRaw) {
-        return;
-      }
       await harness.seedUsers([
         User(id: 1, email: 'a@example.com', active: true),
       ]);
 
-      final users = await harness.context
+      final results = await harness.context
           .query<User>()
-          .selectRaw('email as user_email')
+          .selectRaw('id, email as user_email, active')
           .rows();
 
-      expect(users, hasLength(1));
-      expect(users.first.row.containsKey('user_email'), isTrue);
-      expect(users.first.row['user_email'], 'a@example.com');
-    });
+      expect(results, hasLength(1));
+      expect(results.first.row.containsKey('user_email'), isTrue);
+      expect(results.first.row['user_email'], 'a@example.com');
+    }, skip: !config.supportsCapability(DriverCapability.rawSQL));
 
     test('distinct', () async {
       await harness.seedArticles([

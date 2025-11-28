@@ -243,12 +243,12 @@ void runDriverMutationTests({
       expect(remaining.map((user) => user.id), equals([2, 3]));
     });
 
-    print(
-      'skip preview tests for ${config.driverName}: ${config.driverName.toLowerCase().contains('mongo')}',
-    );
     test(
       'auto increment primary keys use driver defaults when omitted',
       () async {
+        if (!harness.supportsRawSQL) {
+          return;
+        }
         final plan = MutationPlan.insert(
           definition: _serialTestDefinition,
           rows: const [
@@ -334,15 +334,9 @@ void runDriverMutationTests({
       expect(refreshed.payload['count'], 2);
     });
 
-    print(
-      'skip preview event test for ${config.driverName}: ${config.driverName.toLowerCase().contains('mongo')}',
-    );
     test(
       'query builder update works without primary key when supported',
       () async {
-        if (!config.supportsCapability(DriverCapability.adHocQueryUpdates)) {
-          return;
-        }
         final repo = harness.context.repository<User>();
         await repo.insertMany(const [
           User(id: 7200, email: 'adhoc@example.com', active: true),
@@ -363,6 +357,7 @@ void runDriverMutationTests({
 
         expect(refreshed.active, isFalse);
       },
+      skip: !config.supportsCapability(DriverCapability.adHocQueryUpdates),
     );
 
     test(
@@ -549,6 +544,9 @@ void runDriverMutationTests({
     });
 
     test('mutation events capture driver errors', () async {
+      if (!harness.supportsRawSQL) {
+        return; // Skip for non-SQL drivers
+      }
       final events = <MutationEvent>[];
       harness.context.onMutation(events.add);
       await harness.adapter.executeRaw('DROP TABLE users');
@@ -566,6 +564,9 @@ void runDriverMutationTests({
     });
 
     test('json updates patch nested payload columns', () async {
+      if (!harness.supportsRawSQL) {
+        return; // Skip for non-SQL drivers
+      }
       final docId = 9001;
       await harness.adapter.executeRaw(
         'INSERT INTO settings (id, payload) VALUES (?, ?)',

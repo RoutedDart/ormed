@@ -10,4 +10,5 @@ enum DriverCapability {
   advancedQueryBuilders,
   sqlPreviews,
   increment,
+  rawSQL,
 }

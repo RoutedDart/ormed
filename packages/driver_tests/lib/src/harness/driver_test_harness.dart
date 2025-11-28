@@ -22,3 +22,10 @@ abstract class DriverTestHarness {
   Future<void> seedPhotos(Iterable<Photo> photos);
   Future<void> seedComments(Iterable<Comment> comments);
 }
+
+/// Extension providing capability checks for test harnesses
+extension DriverTestHarnessCapabilities on DriverTestHarness {
+  /// Check if the driver supports raw SQL execution
+  bool get supportsRawSQL =>
+      adapter.metadata.supportsCapability(DriverCapability.rawSQL);
+}
