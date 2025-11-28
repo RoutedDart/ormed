@@ -1,6 +1,29 @@
 part of 'query.dart';
 
 /// Holds the model, its raw row, and any eager-loaded relations.
+///
+/// When relations are eager loaded via `.withRelation()`, they are automatically
+/// synced to both the `QueryRow.relations` map AND the model instance's internal
+/// relation cache (accessible via `ModelRelations.relationLoaded()`).
+///
+/// This means eagerly loaded relations can be accessed in two ways:
+/// 1. Via the `QueryRow`: `queryRow.relation<User>('user')`
+/// 2. Via the model instance: `post.user`
+///
+/// Both approaches return the same object instances, maintaining referential equality.
+///
+/// Example:
+/// ```dart
+/// final queryRows = await context.query<Post>()
+///     .withRelation('author')
+///     .rows();
+///
+/// final queryRow = queryRows.first;
+/// final post = queryRow.model;
+///
+/// // Both return the same Author instance
+/// assert(identical(queryRow.relation<Author>('author'), post.author));
+/// ```
 class QueryRow<T> {
   /// Creates a new [QueryRow].
   QueryRow({
