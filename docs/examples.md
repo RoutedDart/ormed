@@ -236,6 +236,179 @@ support `joinLateral` for correlation-heavy queries. Use `joinRelation` to reuse
 relation metadata (pivots, morph columns, etc.) when you need SQL JOINs instead
 of eager loading the relation.
 
+## Working with Relations
+
+### Eager Loading Relations
+
+Load related models alongside the main query to avoid N+1 problems:
+
+```dart
+// Load posts with their authors and tags
+final posts = await context
+    .query<Post>()
+    .withRelation('author')
+    .withRelation('tags')
+    .withRelation('comments', (query) => query
+        .whereEquals('approved', true)
+        .orderBy('created_at', descending: true)
+        .limit(5))
+    .get();
+
+for (final post in posts) {
+  print('${post.title} by ${post.author?.name}');
+  print('Tags: ${post.tags.map((t) => t.name).join(', ')}');
+  print('Comments: ${post.comments.length}');
+}
+```
+
+### Eager Loading Aggregates
+
+Get counts or existence flags without loading full related models:
+
+```dart
+final posts = await context
+    .query<Post>()
+    .withCount('comments')
+    .withCount('tags', alias: 'tag_count')
+    .withExists('author', alias: 'has_author')
+    .orderBy('comments_count', descending: true)
+    .limit(10)
+    .rows();
+
+for (final row in posts) {
+  final post = row.model;
+  final commentCount = row.row['comments_count'] as int;
+  final tagCount = row.row['tag_count'] as int;
+  print('${post.title}: $commentCount comments, $tagCount tags');
+}
+```
+
+### Lazy Loading Relations
+
+Load relations on-demand after the model is hydrated (requires `Model<T>` base):
+
+```dart
+// Fetch post without relations
+final post = await Post.query().firstOrFail();
+
+// Lazy load when needed
+await post.load('author');
+print('Author: ${post.author?.name}');
+
+// Load multiple if not already loaded
+await post.loadMissing(['tags', 'comments']);
+
+// Load with constraints
+await post.load('comments', (query) => query
+    .whereEquals('approved', true)
+    .orderBy('created_at', descending: true));
+
+// Lazy aggregate loading
+await post.loadCount('comments');
+print('Comment count: ${post.getAttribute<int>('comments_count')}');
+
+await post.loadExists('author');
+print('Has author: ${post.getAttribute<bool>('author_exists')}');
+```
+
+### Managing BelongsTo Relations
+
+Use `associate()` and `dissociate()` for parent relationships:
+
+```dart
+final post = await Post.query().firstOrFail();
+final newAuthor = await Author.query().whereEquals('name', 'Jane').firstOrFail();
+
+// Associate sets the foreign key and caches the relation
+post.associate('author', newAuthor);
+await post.save();
+
+print(post.authorId);       // Updated to newAuthor.id
+print(post.author?.name);   // 'Jane' (cached)
+
+// Dissociate clears the relationship
+post.dissociate('author');
+await post.save();
+
+print(post.authorId);       // null
+print(post.author);         // null
+```
+
+### Managing ManyToMany Relations
+
+Use `attach()`, `detach()`, and `sync()` for pivot table relationships:
+
+```dart
+final post = await Post.query().firstOrFail();
+
+// Attach new tags (inserts pivot records)
+await post.attach('tags', [1, 2, 3]);
+
+// Attach with extra pivot data
+await post.attach('tags', [4, 5], pivotData: {
+  'created_at': DateTime.now(),
+  'added_by': currentUserId,
+});
+
+// Detach specific tags
+await post.detach('tags', [1, 2]);
+
+// Detach all tags
+await post.detach('tags');
+
+// Sync replaces all existing associations
+await post.sync('tags', [3, 4, 5]);
+
+// Access the updated relation
+print('Tags: ${post.tags.map((t) => t.name).join(', ')}');
+```
+
+### Preventing Accidental Lazy Loading
+
+In production, enable strict mode to catch N+1 problems:
+
+```dart
+void main() {
+  // Enable prevention globally
+  ModelRelations.preventsLazyLoading = true;
+
+  runApp(MyApp());
+}
+
+// Later, any lazy load throws LazyLoadingViolationException
+try {
+  await post.load('author'); // Throws!
+} on LazyLoadingViolationException catch (e) {
+  print('Blocked: ${e.relationName} on ${e.modelName}');
+}
+
+// Already-loaded relations still work
+final post = await Post.query().withRelation('author').first();
+print(post.author?.name); // OK - was eager loaded
+```
+
+### Checking Relation State
+
+Query whether relations have been loaded:
+
+```dart
+final post = await Post.query().withRelation('author').first();
+
+if (post.relationLoaded('author')) {
+  print('Author already loaded');
+}
+
+if (!post.relationLoaded('comments')) {
+  await post.load('comments');
+}
+
+// Get all loaded relation names
+print('Loaded: ${post.loadedRelationNames}');
+
+// Get all loaded relations as a map
+final relations = post.loadedRelations;
+```
+
 ## Testing Tips
 
 - Use `InMemoryQueryExecutor` from `orm_core/testing` to exercise the query

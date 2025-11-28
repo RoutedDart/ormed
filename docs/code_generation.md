@@ -153,9 +153,62 @@ targets:
 
 | File | Description |
 |------|-------------|
-| `<model>.orm.dart` | Generated model definition, codec, and factory |
+| `<model>.orm.dart` | Generated model definition, codec, factory, and relation getters |
 | `<model>.orm_model.json` | Intermediate metadata for auto-registry (can be gitignored) |
 | `lib/orm_registry.g.dart` | Auto-generated registry of all ORM models |
+
+### Generated Relation Getters
+
+For models with `@OrmRelation` annotations, the generator produces relation
+getters that integrate with the lazy loading system. These getters check the
+runtime relation cache before falling back to the base class default value.
+
+**Single relations** (`belongsTo`, `hasOne`, `morphOne`):
+
+```dart
+// Generated in _$PostModel
+@override
+Author? get author {
+  if (relationLoaded('author')) {
+    return getRelation<Author>('author');
+  }
+  return super.author;
+}
+```
+
+**List relations** (`hasMany`, `manyToMany`, `morphMany`):
+
+```dart
+// Generated in _$PostModel
+@override
+List<Tag> get tags {
+  if (relationLoaded('tags')) {
+    return getRelationList<Tag>('tags');
+  }
+  return super.tags;
+}
+```
+
+This enables transparent access to both eager-loaded and lazy-loaded relations:
+
+```dart
+// Eager loading - relations populated during query
+final post = await context.query<Post>().withRelation('author').first();
+print(post.author?.name);  // Works via generated getter
+
+// Lazy loading - relations populated on-demand
+final post = await Post.query().first();
+await post.load('author');
+print(post.author?.name);  // Same getter, now returns cached value
+```
+
+The generator automatically:
+- Detects nullable vs non-nullable relation types
+- Extracts the element type from `List<T>` for list relations
+- Mixes in `ModelRelations` when the base class doesn't extend `Model<T>`
+
+See [Relations & Lazy Loading](relations.md) for complete documentation on
+using eager loading, lazy loading, and relation mutation helpers.
 
 The `.orm_model.json` files are intermediate build artifacts that the
 `orm_registry` builder uses to discover and aggregate all ORM models. You can

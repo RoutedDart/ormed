@@ -15,6 +15,8 @@ Part of the [Routed](https://github.com/RoutedDart) ecosystem.
 - **Annotation-based models** — Define tables, columns, and relationships with `@OrmModel`, `@OrmField`, `@OrmRelation`
 - **Code generation** — Auto-generate model definitions, codecs, and factories via `build_runner`
 - **Fluent query builder** — Laravel-style API with `where`, `orderBy`, `join`, `limit`, and more
+- **Eager & lazy loading** — Load relations upfront or on-demand, just like Laravel Eloquent
+- **Relation mutations** — `associate()`, `attach()`, `detach()`, `sync()` for managing relationships
 - **Schema migrations** — CLI tooling for creating, applying, and rolling back migrations
 - **Multi-database support** — SQLite, PostgreSQL, MySQL/MariaDB, MongoDB
 - **Multi-tenant connections** — Manage multiple database connections with role-based routing
@@ -106,6 +108,18 @@ void main() async {
       .whereEquals('id', 1)
       .update({'name': 'Jane Doe'});
 
+  // Eager load relations
+  final posts = await ds.query<Post>()
+      .withRelation('author')
+      .withRelation('tags')
+      .withCount('comments')
+      .get();
+
+  // Lazy load relations
+  final post = await ds.query<Post>().firstOrFail();
+  await post.load('author');
+  await post.loadMissing(['tags', 'comments']);
+
   // Transaction
   await ds.transaction(() async {
     await ds.repo<User>().insert(user1);
@@ -193,6 +207,7 @@ See the [CLI Reference](docs/cli.md) for complete documentation of all commands 
 
 - [CLI Reference](docs/cli.md) — Complete CLI commands and options
 - [Query Builder](docs/query_builder.md) — Full query API reference
+- [Relations & Lazy Loading](docs/relations.md) — Eager/lazy loading and relation mutations
 - [Migrations](docs/migrations.md) — Schema migrations and schema builder API
 - [Data Source](docs/data_source.md) — Runtime database access patterns
 - [Code Generation](docs/code_generation.md) — Model annotations and generated code

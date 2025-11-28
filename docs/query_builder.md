@@ -243,11 +243,71 @@ final aggregated = await context
   a `SELECT * FROM (...)` subquery (mirroring Laravel’s `wrapUnion`) so order
   clauses and limits remain valid within every segment.
 
-## Relation Loader
+## Relation Loader (Eager Loading)
 
 When `withRelation` is specified, `RelationLoader` batches secondary queries or
 JOINs according to relation metadata. `QueryRow<T>` exposes
 `relation<R>('name')` and `relationList<R>('name')` helpers.
+
+```dart
+final posts = await context
+    .query<Post>()
+    .withRelation('author')
+    .withRelation('tags')
+    .withRelation('comments', (query) => query
+        .whereEquals('approved', true)
+        .orderBy('created_at', descending: true)
+        .limit(10))
+    .get();
+
+for (final post in posts) {
+  print('${post.title} by ${post.author?.name}');
+  print('Tags: ${post.tags.map((t) => t.name).join(', ')}');
+}
+```
+
+### Eager Loading Aggregates
+
+Load relation counts or existence flags without fetching full related models:
+
+```dart
+final posts = await context
+    .query<Post>()
+    .withCount('comments')
+    .withCount('tags', alias: 'tag_count')
+    .withExists('author', alias: 'has_author')
+    .rows();
+
+for (final row in posts) {
+  final commentCount = row.row['comments_count'] as int;
+  final hasAuthor = row.row['has_author'] as bool;
+}
+```
+
+### Lazy Loading
+
+Models extending `Model<T>` can load relations on-demand after hydration:
+
+```dart
+final post = await Post.query().firstOrFail();
+
+// Lazy load single relation
+await post.load('author');
+
+// Load if not already loaded
+await post.loadMissing(['author', 'tags', 'comments']);
+
+// Load with constraints
+await post.load('comments', (query) => query.whereEquals('approved', true));
+
+// Lazy aggregate loading
+await post.loadCount('comments');
+await post.loadExists('author');
+```
+
+See the [Relations & Lazy Loading](relations.md) documentation for complete
+coverage of relation definitions, eager/lazy loading strategies, and mutation
+helpers like `associate()`, `attach()`, `detach()`, and `sync()`.
 
 ## Structured Logging
 
