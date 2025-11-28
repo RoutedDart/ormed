@@ -326,7 +326,18 @@ abstract class Model<TModel extends Model<TModel>>
   }
 
   /// Reloads the latest row from the database, optionally including trashed.
-  Future<TModel> refresh({bool withTrashed = false}) async {
+  ///
+  /// The [withRelations] parameter allows you to specify which relations
+  /// should be eagerly loaded when refreshing the model.
+  ///
+  /// Example:
+  /// ```dart
+  /// await user.refresh(withRelations: ['posts', 'comments']);
+  /// ```
+  Future<TModel> refresh({
+    bool withTrashed = false,
+    Iterable<String>? withRelations,
+  }) async {
     final def = expectDefinition();
     final resolver = _resolveResolverFor(def);
     final pk = def.primaryKeyField;
@@ -345,9 +356,24 @@ abstract class Model<TModel extends Model<TModel>>
     if (withTrashed && def.usesSoftDeletes) {
       builder = builder.withTrashed();
     }
+    // Eager load relations if specified
+    if (withRelations != null) {
+      for (final relation in withRelations) {
+        builder = builder.withRelation(relation);
+      }
+    }
     final fresh = await builder.whereEquals(pk.name, key).firstOrFail(key: key);
     _syncFrom(fresh, def, resolver);
-    return fresh;
+    // Sync relations from the fresh model if any were loaded
+    if (withRelations != null && withRelations.isNotEmpty) {
+      for (final relationName in withRelations) {
+        if (fresh.relationLoaded(relationName)) {
+          final value = fresh.loadedRelations[relationName];
+          setRelation(relationName, value);
+        }
+      }
+    }
+    return _self();
   }
 
   TModel _self() => this as TModel;
@@ -510,17 +536,15 @@ abstract class Model<TModel extends Model<TModel>>
     final def = expectDefinition();
     final resolver = _resolveResolverFor(def);
     final context = _requireQueryContext(resolver);
-    
+
     // Find the relation definition
     final relationDef = def.relations.cast<RelationDefinition?>().firstWhere(
       (r) => r?.name == relation,
       orElse: () => null,
     );
-    
+
     if (relationDef == null) {
-      throw ArgumentError(
-        'Relation "$relation" not found on ${def.modelName}',
-      );
+      throw ArgumentError('Relation "$relation" not found on ${def.modelName}');
     }
 
     // Convert constraint callback to QueryPredicate
@@ -618,30 +642,28 @@ abstract class Model<TModel extends Model<TModel>>
     final def = expectDefinition();
     final resolver = _resolveResolverFor(def);
     final context = _requireQueryContext(resolver);
-    
+
     // Find the relation definition
     final relationDef = def.relations.cast<RelationDefinition?>().firstWhere(
       (r) => r?.name == relation,
       orElse: () => null,
     );
-    
+
     if (relationDef == null) {
-      throw ArgumentError(
-        'Relation "$relation" not found on ${def.modelName}',
-      );
+      throw ArgumentError('Relation "$relation" not found on ${def.modelName}');
     }
 
     final countAlias = alias ?? '${relation}_count';
 
     // Build a query for this model with withCount
     final query = context.queryFromDefinition(def);
-    
+
     // Get the primary key value
     final pkField = def.primaryKeyField;
     if (pkField == null) {
       throw StateError('Cannot load count on model without primary key');
     }
-    
+
     final pkValue = getAttribute(pkField.columnName);
     if (pkValue == null) {
       throw StateError('Cannot load count on model without primary key value');
@@ -650,7 +672,7 @@ abstract class Model<TModel extends Model<TModel>>
     // Query for this specific model with count
     query.where(pkField.columnName, pkValue);
     query.withCount(relation, alias: countAlias, constraint: constraint);
-    
+
     final rows = await query.get();
     if (rows.isNotEmpty) {
       final result = rows.first;
@@ -684,30 +706,28 @@ abstract class Model<TModel extends Model<TModel>>
     final def = expectDefinition();
     final resolver = _resolveResolverFor(def);
     final context = _requireQueryContext(resolver);
-    
+
     // Find the relation definition
     final relationDef = def.relations.cast<RelationDefinition?>().firstWhere(
       (r) => r?.name == relation,
       orElse: () => null,
     );
-    
+
     if (relationDef == null) {
-      throw ArgumentError(
-        'Relation "$relation" not found on ${def.modelName}',
-      );
+      throw ArgumentError('Relation "$relation" not found on ${def.modelName}');
     }
 
     final existsAlias = alias ?? '${relation}_exists';
 
     // Build a query for this model with withExists
     final query = context.queryFromDefinition(def);
-    
+
     // Get the primary key value
     final pkField = def.primaryKeyField;
     if (pkField == null) {
       throw StateError('Cannot load exists on model without primary key');
     }
-    
+
     final pkValue = getAttribute(pkField.columnName);
     if (pkValue == null) {
       throw StateError('Cannot load exists on model without primary key value');
@@ -716,7 +736,7 @@ abstract class Model<TModel extends Model<TModel>>
     // Query for this specific model with exists
     query.where(pkField.columnName, pkValue);
     query.withExists(relation, alias: existsAlias, constraint: constraint);
-    
+
     final rows = await query.get();
     if (rows.isNotEmpty) {
       final result = rows.first;

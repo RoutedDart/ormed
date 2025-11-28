@@ -7,6 +7,7 @@ import 'query_builder/limit_offset_clauses_tests.dart';
 import 'query_builder/order_by_clauses_tests.dart';
 import 'query_builder/select_clauses_tests.dart';
 import 'query_builder/where_clauses_tests.dart';
+import 'query_builder/refresh_tests.dart';
 
 void runDriverQueryBuilderTests({
   required DriverHarnessBuilder<DriverTestHarness> createHarness,
@@ -20,5 +21,6 @@ void runDriverQueryBuilderTests({
     runAggregationTests(createHarness, config);
     runJoinClausesTests(createHarness, config);
     runLazyLoadingTests(createHarness, config);
+    runRefreshTests(createHarness, config);
   });
 }
