@@ -23,25 +23,12 @@ class MongoRelationHelper {
         context,
       ).attach(parentDefinition, parents, loads, joinMap: joinMap);
     }
-    await _attachAggregates(
-      plan,
-      parents,
-      metadata?.relationAggregates ?? plan.relationAggregates,
-    );
+
+    // Relation aggregates are now handled by the MongoDB aggregation pipeline
+    // in MongoPlanCompiler.
+
     final orders = metadata?.relationOrders ?? plan.relationOrders;
     await _applyRelationOrders(plan, parents, orders);
-  }
-
-  Future<void> _attachAggregates<T>(
-    QueryPlan plan,
-    List<QueryRow<T>> parents,
-    List<RelationAggregate> aggregates,
-  ) async {
-    if (aggregates.isEmpty) return;
-    final driverName = context.driver.metadata.name;
-    for (final aggregate in aggregates) {
-      await _applyAggregate(plan, parents, aggregate, driverName);
-    }
   }
 
   Future<void> _applyRelationOrders<T>(
@@ -60,6 +47,7 @@ class MongoRelationHelper {
         where: order.where,
         distinct: order.distinct,
       );
+      // TODO: Move relation order sorting to the aggregation pipeline
       await _applyAggregate(plan, parents, aggregate, driverName);
       parents.sort((a, b) {
         final left = _orderComparable(a.row[alias]);
@@ -98,7 +86,7 @@ class MongoRelationHelper {
     final totals = <int, int>{};
     final distinctValues = <int, Set<Object?>>{};
     final aggregateValues = <int, List<num>>{}; // For sum, avg, min, max
-    
+
     for (
       var segmentIndex = 0;
       segmentIndex < segments.length && currentIndices.isNotEmpty;
@@ -111,7 +99,7 @@ class MongoRelationHelper {
         break;
       }
       final parentKeys = currentIndices.keys.toList();
-      
+
       // Determine column to aggregate for sum, avg, min, max
       final aggregateColumn = _getAggregateColumn(
         aggregate,
@@ -119,7 +107,7 @@ class MongoRelationHelper {
         segmentIndex,
         segments.length,
       );
-      
+
       final childPlan = QueryPlan(
         definition: segment.targetDefinition,
         driverName: driverName,
@@ -155,8 +143,8 @@ class MongoRelationHelper {
               }
             } else {
               // sum, avg, min, max
-              final value = aggregateColumn != null 
-                  ? childRow[aggregateColumn] 
+              final value = aggregateColumn != null
+                  ? childRow[aggregateColumn]
                   : null;
               if (value != null) {
                 final numValue = _toNum(value);
@@ -191,7 +179,7 @@ class MongoRelationHelper {
   ) {
     // Only get column for the final segment and numeric aggregates
     if (segmentIndex != totalSegments - 1) return null;
-    
+
     switch (aggregate.type) {
       case RelationAggregateType.sum:
       case RelationAggregateType.avg:

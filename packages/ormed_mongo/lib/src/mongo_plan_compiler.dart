@@ -383,7 +383,9 @@ class MongoPlanCompiler implements PlanCompiler {
   }
 
   static bool _isAggregatePlan(QueryPlan plan) =>
-      plan.aggregates.isNotEmpty || plan.randomOrder;
+      plan.aggregates.isNotEmpty ||
+      plan.randomOrder ||
+      plan.relationAggregates.isNotEmpty;
 
   static String _legacySqlForPlan(QueryPlan plan) =>
       const SqliteQueryGrammar().compileSelect(plan).sql;
@@ -464,13 +466,35 @@ class MongoAggregatePipelineBuilder {
     if (matchStage != null) {
       pipeline.add(matchStage);
     }
-    
+
     // Add $lookup stages for relation aggregates
     if (plan.relationAggregates.isNotEmpty) {
       _addRelationAggregateLookups(pipeline, plan);
     }
-    
+
     if (plan.aggregates.isEmpty) {
+      // If we only have relation aggregates but no main aggregates,
+      // we still need to project the results
+      if (plan.relationAggregates.isNotEmpty) {
+        pipeline.add(_buildProject(plan, []));
+      }
+
+      // Handle random order, limit, offset even without aggregates
+      if (plan.randomOrder) {
+        // Use $sample for random ordering
+        // If limit is not set, use a large number to effectively sample all documents
+        final size = plan.limit ?? 100000;
+        pipeline.add({
+          '\$sample': {'size': size},
+        });
+      } else {
+        if (plan.offset != null && plan.offset! > 0) {
+          pipeline.add({'\$skip': plan.offset});
+        }
+        if (plan.limit != null) {
+          pipeline.add({'\$limit': plan.limit});
+        }
+      }
       return pipeline;
     }
     final targets = _aggregateTargets(plan);
@@ -506,7 +530,7 @@ class MongoAggregatePipelineBuilder {
     }
     return pipeline;
   }
-  
+
   void _addRelationAggregateLookups(
     List<Map<String, Object?>> pipeline,
     QueryPlan plan,
@@ -514,88 +538,154 @@ class MongoAggregatePipelineBuilder {
     for (final aggregate in plan.relationAggregates) {
       final segment = aggregate.path.segments.first;
       final relation = segment.relation;
-      
+
       // Build lookup stage
       final lookup = <String, Object?>{};
       lookup['from'] = segment.targetDefinition.tableName;
       lookup['as'] = '__${aggregate.alias}_docs';
-      
+
+      var localField = segment.parentKey;
+      var foreignField = segment.childKey;
+
+      // Map id to _id
+      if (localField == 'id') localField = '_id';
+      if (foreignField == 'id') foreignField = '_id';
+
       // Build local and foreign field mappings
-      if (relation.kind == RelationKind.hasMany || 
+      if (relation.kind == RelationKind.hasMany ||
           relation.kind == RelationKind.hasOne) {
-        lookup['localField'] = segment.parentKey;
-        lookup['foreignField'] = segment.childKey;
+        lookup['localField'] = localField;
+        lookup['foreignField'] = foreignField;
       } else if (relation.kind == RelationKind.belongsTo) {
-        lookup['localField'] = segment.parentKey;
-        lookup['foreignField'] = segment.childKey;
+        lookup['localField'] = localField;
+        lookup['foreignField'] = foreignField;
       }
-      
-      // Add where clause if present
-      if (aggregate.where != null) {
-        final letVars = <String, String>{};
-        letVars['local_key'] = '\$${segment.parentKey}';
+
+      // Use pipeline for lookup if we have a where clause OR if we need robust ID matching
+      final needsRobustIdMatching = localField == '_id';
+
+      if (aggregate.where != null || needsRobustIdMatching) {
+        final letVars = <String, Object?>{};
+        letVars['local_key'] = '\$$localField';
+
+        // If local field is _id, it might be an ObjectId that needs to be matched against an int
+        if (localField == '_id') {
+          letVars['local_key_int'] = {
+            '\$function': {
+              'body':
+                  'function(oid) { '
+                  'if (oid instanceof ObjectId) return parseInt(oid.valueOf(), 16); '
+                  'return oid; '
+                  '}',
+              'args': ['\$$localField'],
+              'lang': 'js',
+            },
+          };
+        }
+
         lookup['let'] = letVars;
-        
+
         final subPipeline = <Map<String, Object?>>[];
-        // Match the relation key
-        subPipeline.add({
-          '\$match': {'\$expr': {'\$eq': ['\$${segment.childKey}', '\$\$local_key']}}
-        });
-        // TODO: Convert aggregate.where to MongoDB filter
-        // For now, this basic implementation will work
+        final foreignField = lookup['foreignField'] as String;
+
+        final matchExpr = <String, Object?>{
+          '\$eq': ['\$$foreignField', '\$\$local_key'],
+        };
+
+        if (localField == '_id') {
+          subPipeline.add({
+            '\$match': {
+              '\$expr': {
+                '\$or': [
+                  matchExpr,
+                  {
+                    '\$eq': ['\$$foreignField', '\$\$local_key_int'],
+                  },
+                ],
+              },
+            },
+          });
+        } else {
+          subPipeline.add({
+            '\$match': {'\$expr': matchExpr},
+          });
+        }
+
+        // Add the custom where clause if present
+        if (aggregate.where != null) {
+          final filter = MongoPlanCompiler.buildPredicate(aggregate.where);
+          if (filter.isNotEmpty) {
+            subPipeline.add({'\$match': filter});
+          }
+        }
+
         lookup['pipeline'] = subPipeline;
+
+        // Remove localField/foreignField as they are superseded by pipeline
+        lookup.remove('localField');
+        lookup.remove('foreignField');
       }
-      
+
       pipeline.add({'\$lookup': lookup});
-      
+
       // Add aggregation expression
       final addFields = <String, Object?>{};
+
+      // Determine column for aggregation
+      var column = aggregate.column;
+      if (column == 'id') column = '_id';
+
       switch (aggregate.type) {
         case RelationAggregateType.count:
-          addFields[aggregate.alias] = {'\$size': '\$__${aggregate.alias}_docs'};
+          addFields[aggregate.alias] = {
+            '\$size': '\$__${aggregate.alias}_docs',
+          };
           break;
         case RelationAggregateType.sum:
-          if (aggregate.column != null) {
+          if (column != null) {
             addFields[aggregate.alias] = {
-              '\$sum': '\$__${aggregate.alias}_docs.${aggregate.column}'
+              '\$sum': '\$__${aggregate.alias}_docs.$column',
             };
           }
           break;
         case RelationAggregateType.avg:
-          if (aggregate.column != null) {
+          if (column != null) {
             addFields[aggregate.alias] = {
-              '\$avg': '\$__${aggregate.alias}_docs.${aggregate.column}'
+              '\$avg': '\$__${aggregate.alias}_docs.$column',
             };
           }
           break;
         case RelationAggregateType.max:
-          if (aggregate.column != null) {
+          if (column != null) {
             addFields[aggregate.alias] = {
-              '\$max': '\$__${aggregate.alias}_docs.${aggregate.column}'
+              '\$max': '\$__${aggregate.alias}_docs.$column',
             };
           }
           break;
         case RelationAggregateType.min:
-          if (aggregate.column != null) {
+          if (column != null) {
             addFields[aggregate.alias] = {
-              '\$min': '\$__${aggregate.alias}_docs.${aggregate.column}'
+              '\$min': '\$__${aggregate.alias}_docs.$column',
             };
           }
           break;
         case RelationAggregateType.exists:
           addFields[aggregate.alias] = {
-            '\$gt': [{'\$size': '\$__${aggregate.alias}_docs'}, 0]
+            '\$gt': [
+              {'\$size': '\$__${aggregate.alias}_docs'},
+              0,
+            ],
           };
           break;
       }
-      
+
       if (addFields.isNotEmpty) {
         pipeline.add({'\$addFields': addFields});
       }
-      
+
       // Clean up temporary field
       pipeline.add({
-        '\$project': {'__${aggregate.alias}_docs': 0}
+        '\$project': {'__${aggregate.alias}_docs': 0},
       });
     }
   }
@@ -641,7 +731,7 @@ class MongoAggregatePipelineBuilder {
     List<_MongoAggregateTarget> targets,
   ) {
     final projection = <String, Object?>{};
-    
+
     // If explicit selects are specified (and not grouping), only project those
     if (plan.selects.isNotEmpty && plan.groupBy.isEmpty) {
       projection['_id'] = 1; // Always include MongoDB's _id
@@ -653,9 +743,13 @@ class MongoAggregatePipelineBuilder {
       for (final target in targets) {
         projection[target.alias] = 1;
       }
+      // Include relation aggregates
+      for (final aggregate in plan.relationAggregates) {
+        projection[aggregate.alias] = 1;
+      }
       return {'\$project': projection};
     }
-    
+
     // Include _id (MongoDB's primary key) for model hydration
     // If we're grouping, _id contains the group key(s), so we need to project it appropriately
     if (plan.groupBy.isNotEmpty) {
@@ -680,9 +774,21 @@ class MongoAggregatePipelineBuilder {
     } else {
       // When not grouping, include _id as-is
       projection['_id'] = 1;
+
+      // If no explicit selects, include all fields
+      if (plan.selects.isEmpty) {
+        for (final field in plan.definition.fields) {
+          if (field.isPrimaryKey) continue;
+          projection[field.columnName] = 1;
+        }
+      }
     }
     for (final target in targets) {
       projection[target.alias] = 1;
+    }
+    // Include relation aggregates
+    for (final aggregate in plan.relationAggregates) {
+      projection[aggregate.alias] = 1;
     }
     return {'\$project': projection};
   }

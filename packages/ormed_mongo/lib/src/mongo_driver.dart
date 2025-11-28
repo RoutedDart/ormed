@@ -242,8 +242,6 @@ class MongoDriverAdapter implements DriverAdapter, SchemaDriver {
     final sort = MongoPlanCompiler.buildSort(plan.orders);
     final projection = _projectionForPlan(plan);
 
-    // DEBUG
-
     final sortArguments = sort.isNotEmpty
         ? Map<String, Object>.fromEntries(
             sort.entries
@@ -342,7 +340,10 @@ class MongoDriverAdapter implements DriverAdapter, SchemaDriver {
     return rows;
   }
 
-  bool _isAggregatePlan(QueryPlan plan) => plan.aggregates.isNotEmpty;
+  bool _isAggregatePlan(QueryPlan plan) =>
+      plan.aggregates.isNotEmpty ||
+      plan.randomOrder ||
+      plan.relationAggregates.isNotEmpty;
 
   String _nextSessionId() =>
       'mongo-tx-${DateTime.now().microsecondsSinceEpoch}-${_sessionCounter++}';
