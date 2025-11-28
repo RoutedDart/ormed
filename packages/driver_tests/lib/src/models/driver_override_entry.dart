@@ -3,7 +3,8 @@ import 'package:ormed/ormed.dart';
 part 'driver_override_entry.orm.dart';
 
 @OrmModel(table: 'settings')
-class DriverOverrideEntry extends Model<DriverOverrideEntry> with ModelFactoryCapable{
+class DriverOverrideEntry extends Model<DriverOverrideEntry>
+    with ModelFactoryCapable {
   const DriverOverrideEntry({required this.id, required this.payload});
 
   @OrmField(isPrimaryKey: true)

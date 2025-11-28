@@ -230,8 +230,7 @@ abstract class QueryGrammar {
     Iterable<String> groupByColumns,
     Iterable<String> hydrationColumns,
     QueryPlan plan,
-  ) =>
-      groupByColumns;
+  ) => groupByColumns;
 
   /// SQL used to retrieve the number of open connections, when supported.
   String? compileThreadCount() => null;
@@ -618,9 +617,7 @@ class _SelectCompilation {
         );
       }
     } else if (plan.projectionOrder.isEmpty) {
-      projections.addAll(
-        plan.selects.map(grammar.wrapIdentifier),
-      );
+      projections.addAll(plan.selects.map(grammar.wrapIdentifier));
       for (final raw in plan.rawSelects) {
         bindings.addAll(raw.bindings);
         final alias = raw.alias != null
@@ -665,8 +662,9 @@ class _SelectCompilation {
     if (requiresHydrationColumns) {
       final aggregateHydration = plan.groupBy.isNotEmpty;
       _hydrationColumnNames = const [];
-      projections
-          .addAll(_hydrationColumns(plan.definition, coveredColumns, aggregateHydration));
+      projections.addAll(
+        _hydrationColumns(plan.definition, coveredColumns, aggregateHydration),
+      );
     } else {
       _hydrationColumnNames = const [];
     }
@@ -698,9 +696,11 @@ class _SelectCompilation {
         continue;
       }
       names.add(column);
-      columns.add(aggregateExpressions
-          ? _aggregationExpression(column)
-          : '${_qualifiedBaseColumn(column)} AS ${grammar.wrapIdentifier(column)}');
+      columns.add(
+        aggregateExpressions
+            ? _aggregationExpression(column)
+            : '${_qualifiedBaseColumn(column)} AS ${grammar.wrapIdentifier(column)}',
+      );
     }
     if (columns.isEmpty) {
       _hydrationColumnNames = const [];
@@ -897,8 +897,11 @@ class _SelectCompilation {
     return values.map(grammar.wrapIdentifier).join(', ');
   }
 
-  String? _havingClause() =>
-      _compilePredicate(plan.having, tableIdentifier: _baseTable, resolveAggregates: true);
+  String? _havingClause() => _compilePredicate(
+    plan.having,
+    tableIdentifier: _baseTable,
+    resolveAggregates: true,
+  );
 
   String? _orderClause() {
     final clauses = _orderExpressions();
@@ -1028,7 +1031,11 @@ class _SelectCompilation {
       );
     }
     if (predicate is FieldPredicate) {
-      return _compileFieldPredicate(predicate, tableIdentifier, resolveAggregates: resolveAggregates);
+      return _compileFieldPredicate(
+        predicate,
+        tableIdentifier,
+        resolveAggregates: resolveAggregates,
+      );
     }
     if (predicate is BitwisePredicate) {
       return _compileBitwisePredicate(predicate, tableIdentifier);
@@ -1093,7 +1100,8 @@ class _SelectCompilation {
       }
     }
 
-    final column = aggregateExpression ??
+    final column =
+        aggregateExpression ??
         (_isAggregateAlias(predicate.field)
             ? grammar.wrapIdentifier(predicate.field)
             : _resolvedColumnReference(

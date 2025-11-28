@@ -7,7 +7,7 @@ import 'migrations/2025_11_15_014501_create_users_table.dart';
 import 'migrations/2025_11_15_015021_create_posts_table.dart';
 import 'migrations/2025_11_15_015036_create_comments_table.dart';
 import 'migrations/2025_11_15_015055_create_post_tags_table.dart';
-import 'migrations/2025_11_15_015222_create_tags_table.dart';// </ORM-MIGRATION-IMPORTS>
+import 'migrations/2025_11_15_015222_create_tags_table.dart'; // </ORM-MIGRATION-IMPORTS>
 
 class _MigrationEntry {
   const _MigrationEntry({required this.id, required this.migration});
@@ -37,16 +37,17 @@ final List<_MigrationEntry> _entries = [
   _MigrationEntry(
     id: MigrationId.parse('2025_11_15_015222_create_tags_table'),
     migration: const CreateTagsTable(),
-  ),// </ORM-MIGRATION-REGISTRY>
+  ), // </ORM-MIGRATION-REGISTRY>
 ];
 
-List<MigrationDescriptor> buildMigrations() =>
-    List.unmodifiable(_entries.map(
-      (entry) => MigrationDescriptor.fromMigration(
-        id: entry.id,
-        migration: entry.migration,
-      ),
-    ));
+List<MigrationDescriptor> buildMigrations() => List.unmodifiable(
+  _entries.map(
+    (entry) => MigrationDescriptor.fromMigration(
+      id: entry.id,
+      migration: entry.migration,
+    ),
+  ),
+);
 
 _MigrationEntry? _findEntry(String rawId) {
   for (final entry in _entries) {
@@ -74,8 +75,7 @@ void main(List<String> args) {
     final snapshotIndex = args.indexOf('--schema-snapshot');
     SchemaSnapshot? snapshot;
     if (snapshotIndex != -1) {
-      final decoded =
-          utf8.decode(base64.decode(args[snapshotIndex + 1]));
+      final decoded = utf8.decode(base64.decode(args[snapshotIndex + 1]));
       final payload = jsonDecode(decoded) as Map<String, Object?>;
       snapshot = SchemaSnapshot.fromJson(payload);
     }

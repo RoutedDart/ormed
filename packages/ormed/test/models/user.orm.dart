@@ -136,7 +136,7 @@ class _$UserModel extends User with ModelAttributes, ModelConnection {
     required String email,
     Map<String, Object?>? profile,
     DateTime? createdAt,
-  }) : super(id: id, email: email, profile: profile, createdAt: createdAt) {
+  }) : super.new(id: id, email: email, profile: profile, createdAt: createdAt) {
     _attachOrmRuntimeMetadata({
       'id': id,
       'email': email,

@@ -6,7 +6,7 @@ import 'package:ormed/ormed.dart';
 part 'photo.orm.dart';
 
 @OrmModel(table: 'photos')
-class Photo  extends Model<Photo> with ModelFactoryCapable{
+class Photo extends Model<Photo> with ModelFactoryCapable {
   const Photo({
     required this.id,
     required this.imageableId,

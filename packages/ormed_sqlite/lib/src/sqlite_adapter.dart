@@ -157,9 +157,7 @@ class SqliteDriverAdapter
         rows.add(rowToMap(row, columnNames));
       }
       final decodedRows = rows
-          .map(
-            (row) => _decodeRowValues(plan.definition, row),
-          )
+          .map((row) => _decodeRowValues(plan.definition, row))
           .toList(growable: false);
       if (plan.randomOrder) {
         _shuffleRows(decodedRows, plan.randomSeed);
@@ -185,9 +183,7 @@ class SqliteDriverAdapter
         rows.add(rowToMap(row, columnNames));
       }
       final decodedRows = rows
-          .map(
-            (row) => _decodeRowValues(plan.definition, row),
-          )
+          .map((row) => _decodeRowValues(plan.definition, row))
           .toList(growable: false);
       if (plan.randomOrder) {
         _shuffleRows(decodedRows, plan.randomSeed);
@@ -1323,17 +1319,16 @@ class SqliteDriverAdapter
   Map<String, Object?> _decodeRowValues(
     ModelDefinition<dynamic> definition,
     Map<String, Object?> row,
-  ) =>
-      row.map(
-        (column, value) => MapEntry(
-          column,
-          _decodeValueForColumn(
-            definition: definition,
-            column: column,
-            value: value,
-          ),
-        ),
-      );
+  ) => row.map(
+    (column, value) => MapEntry(
+      column,
+      _decodeValueForColumn(
+        definition: definition,
+        column: column,
+        value: value,
+      ),
+    ),
+  );
 
   Object? _decodeValueForColumn({
     required ModelDefinition<dynamic> definition,
@@ -1360,7 +1355,6 @@ class SqliteDriverAdapter
     }
     return value;
   }
-
 }
 
 class _JsonUpdateTemplate {

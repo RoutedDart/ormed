@@ -125,7 +125,9 @@ class MongoPlanCompiler implements PlanCompiler {
         final ops = <Map<String, Object?>>[];
         if (plan.queryPlan != null) {
           final planFilter = filtersForPlan(plan.queryPlan!);
-          ops.add({'deleteOne': {'filter': planFilter}});
+          ops.add({
+            'deleteOne': {'filter': planFilter},
+          });
         } else {
           final planFilter = filtersForPlan(plan.queryPlan!);
           return StatementPreview(
@@ -190,14 +192,14 @@ class MongoPlanCompiler implements PlanCompiler {
     for (final clause in filters) {
       var field = clause.field;
       final isIdField = field == 'id' || field == '_id';
-      
+
       if (field == 'id') {
         field = '_id';
       }
-      
+
       switch (clause.operator) {
         case FilterOperator.equals:
-          final value = isIdField && clause.value is int 
+          final value = isIdField && clause.value is int
               ? codec.encode(clause.value as int)
               : clause.value;
           selector[field] = value;
@@ -210,25 +212,25 @@ class MongoPlanCompiler implements PlanCompiler {
           selector[field] = {'\$in': value};
           break;
         case FilterOperator.greaterThan:
-          final value = isIdField && clause.value is int 
+          final value = isIdField && clause.value is int
               ? codec.encode(clause.value as int)
               : clause.value;
           selector[field] = {'\$gt': value};
           break;
         case FilterOperator.greaterThanOrEqual:
-          final value = isIdField && clause.value is int 
+          final value = isIdField && clause.value is int
               ? codec.encode(clause.value as int)
               : clause.value;
           selector[field] = {'\$gte': value};
           break;
         case FilterOperator.lessThan:
-          final value = isIdField && clause.value is int 
+          final value = isIdField && clause.value is int
               ? codec.encode(clause.value as int)
               : clause.value;
           selector[field] = {'\$lt': value};
           break;
         case FilterOperator.lessThanOrEqual:
-          final value = isIdField && clause.value is int 
+          final value = isIdField && clause.value is int
               ? codec.encode(clause.value as int)
               : clause.value;
           selector[field] = {'\$lte': value};
@@ -261,7 +263,7 @@ class MongoPlanCompiler implements PlanCompiler {
     final codec = MongoObjectIdToIntCodec();
     var field = predicate.field;
     final isIdField = field == 'id' || field == '_id';
-    
+
     if (field == 'id') {
       field = '_id';
     }
@@ -269,13 +271,13 @@ class MongoPlanCompiler implements PlanCompiler {
 
     switch (predicate.operator) {
       case PredicateOperator.equals:
-        final value = isIdField && predicate.value is int 
+        final value = isIdField && predicate.value is int
             ? codec.encode(predicate.value as int)
             : predicate.value;
         selector[field] = value;
         break;
       case PredicateOperator.notEquals:
-        final value = isIdField && predicate.value is int 
+        final value = isIdField && predicate.value is int
             ? codec.encode(predicate.value as int)
             : predicate.value;
         selector[field] = {'\$ne': value};
@@ -288,29 +290,29 @@ class MongoPlanCompiler implements PlanCompiler {
         }
         selector[field] = {
           predicate.operator == PredicateOperator.inValues ? '\$in' : '\$nin':
-              values
+              values,
         };
         break;
       case PredicateOperator.greaterThan:
-        final value = isIdField && predicate.value is int 
+        final value = isIdField && predicate.value is int
             ? codec.encode(predicate.value as int)
             : predicate.value;
         selector[field] = {'\$gt': value};
         break;
       case PredicateOperator.greaterThanOrEqual:
-        final value = isIdField && predicate.value is int 
+        final value = isIdField && predicate.value is int
             ? codec.encode(predicate.value as int)
             : predicate.value;
         selector[field] = {'\$gte': value};
         break;
       case PredicateOperator.lessThan:
-        final value = isIdField && predicate.value is int 
+        final value = isIdField && predicate.value is int
             ? codec.encode(predicate.value as int)
             : predicate.value;
         selector[field] = {'\$lt': value};
         break;
       case PredicateOperator.lessThanOrEqual:
-        final value = isIdField && predicate.value is int 
+        final value = isIdField && predicate.value is int
             ? codec.encode(predicate.value as int)
             : predicate.value;
         selector[field] = {'\$lte': value};
@@ -344,10 +346,10 @@ class MongoPlanCompiler implements PlanCompiler {
         // Between is usually >= lower AND <= upper
         // But here we return a single map entry.
         // MongoDB allows multiple operators on same field: {field: {$gte: lower, $lte: upper}}
-        final lower = isIdField && predicate.lower is int 
+        final lower = isIdField && predicate.lower is int
             ? codec.encode(predicate.lower as int)
             : predicate.lower;
-        final upper = isIdField && predicate.upper is int 
+        final upper = isIdField && predicate.upper is int
             ? codec.encode(predicate.upper as int)
             : predicate.upper;
         selector[field] = {'\$gte': lower, '\$lte': upper};
@@ -359,10 +361,15 @@ class MongoPlanCompiler implements PlanCompiler {
   }
 
   static Map<String, Object?> _buildPredicateGroup(PredicateGroup group) {
-    final predicates = group.predicates.map(buildPredicate).where((p) => p.isNotEmpty).toList();
+    final predicates = group.predicates
+        .map(buildPredicate)
+        .where((p) => p.isNotEmpty)
+        .toList();
     if (predicates.isEmpty) return {};
-    
-    final op = group.logicalOperator == PredicateLogicalOperator.and ? '\$and' : '\$or';
+
+    final op = group.logicalOperator == PredicateLogicalOperator.and
+        ? '\$and'
+        : '\$or';
     return {op: predicates};
   }
 
@@ -378,23 +385,23 @@ class MongoPlanCompiler implements PlanCompiler {
     return map;
   }
 
-  static bool _isAggregatePlan(QueryPlan plan) => 
+  static bool _isAggregatePlan(QueryPlan plan) =>
       plan.aggregates.isNotEmpty || plan.randomOrder;
 
   static String _legacySqlForPlan(QueryPlan plan) =>
       const SqliteQueryGrammar().compileSelect(plan).sql;
 
   static Map<String, Object?> filtersForPlan(QueryPlan plan) {
-      // If a predicate is present, it contains the full query logic (including simple wheres).
-      // We should use it exclusively to avoid conflicting AND logic from 'filters' which
-      // are populated by QueryBuilder for backward compatibility but imply strict AND.
-      if (plan.predicate != null) {
-        final predicate = buildPredicate(plan.predicate);
-        if (predicate.isNotEmpty) {
-          return predicate;
-        }
+    // If a predicate is present, it contains the full query logic (including simple wheres).
+    // We should use it exclusively to avoid conflicting AND logic from 'filters' which
+    // are populated by QueryBuilder for backward compatibility but imply strict AND.
+    if (plan.predicate != null) {
+      final predicate = buildPredicate(plan.predicate);
+      if (predicate.isNotEmpty) {
+        return predicate;
       }
-      return buildFilter(plan.filters);
+    }
+    return buildFilter(plan.filters);
   }
 
   static Map<String, Object?>? _sessionMetadata(
@@ -419,21 +426,24 @@ class MongoPlanCompiler implements PlanCompiler {
     return map;
   }
 
-  static Map<String, Object?> documentFromRow(MutationRow row, [ModelDefinition? definition]) {
+  static Map<String, Object?> documentFromRow(
+    MutationRow row, [
+    ModelDefinition? definition,
+  ]) {
     final map = Map<String, Object?>.from(row.values);
-    
+
     if (definition != null) {
       final pk = definition.primaryKeyField;
       if (pk != null && map.containsKey(pk.name)) {
         final value = map.remove(pk.name);
         if (value is int) {
-           map['_id'] = MongoObjectIdToIntCodec().encode(value);
+          map['_id'] = MongoObjectIdToIntCodec().encode(value);
         } else {
-           map['_id'] = value;
+          map['_id'] = value;
         }
       }
     }
-    
+
     return map;
   }
 
@@ -476,7 +486,9 @@ class MongoAggregatePipelineBuilder {
       // Use $sample for random ordering
       // If limit is not set, use a large number to effectively sample all documents
       final size = plan.limit ?? 100000;
-      pipeline.add({'\$sample': {'size': size}});
+      pipeline.add({
+        '\$sample': {'size': size},
+      });
     } else {
       final sortStage = _buildSort(plan, targets);
       if (sortStage != null) {
@@ -506,22 +518,22 @@ class MongoAggregatePipelineBuilder {
   ) {
     final group = <String, Object?>{};
     group['_id'] = _groupIdExpression(plan.groupBy, plan);
-    
+
     // Always preserve the original document _id using $first,
     // so we can hydrate the model later.
     // We use a temporary name '__original_id' to avoid conflict with the group key '_id'.
     group['__original_id'] = {'\$first': '\$_id'};
-    
+
     // Auto-include required fields for hydration using $first
     for (final field in plan.definition.fields) {
       if (field.isPrimaryKey) continue;
-      if (!field.isNullable && 
-          !plan.groupBy.contains(field.name) && 
+      if (!field.isNullable &&
+          !plan.groupBy.contains(field.name) &&
           !targets.any((t) => t.alias == field.name)) {
         group[field.columnName] = {'\$first': '\$${field.columnName}'};
       }
     }
-    
+
     for (final target in targets) {
       group[target.alias] = target.accumulator;
     }
@@ -544,12 +556,12 @@ class MongoAggregatePipelineBuilder {
       }
       // Restore the original _id preserved in __original_id
       projection['_id'] = '\$__original_id';
-      
+
       // Include required fields that were preserved via $first
       for (final field in plan.definition.fields) {
         if (field.isPrimaryKey) continue;
-        if (!field.isNullable && 
-            !plan.groupBy.contains(field.name) && 
+        if (!field.isNullable &&
+            !plan.groupBy.contains(field.name) &&
             !targets.any((t) => t.alias == field.name)) {
           projection[field.columnName] = 1;
         }
@@ -780,7 +792,7 @@ class MongoAggregatePipelineBuilder {
       // My _buildProject uses plan.groupBy (which are field names).
       // So keys in _id MUST be field names (or whatever is in plan.groupBy).
       // And values must be column references.
-      
+
       // plan.groupBy contains field names.
       // So key = column (field name), value = _fieldReference(column, plan) (column name ref).
       id[column] = _fieldReference(column, plan);

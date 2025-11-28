@@ -89,7 +89,7 @@ class _$TagModelCodec extends ModelCodec<Tag> {
 
 class _$TagModel extends Tag with ModelAttributes, ModelConnection {
   _$TagModel({required int id, required String label})
-    : super(id: id, label: label) {
+    : super.new(id: id, label: label) {
     _attachOrmRuntimeMetadata({'id': id, 'label': label});
   }
 

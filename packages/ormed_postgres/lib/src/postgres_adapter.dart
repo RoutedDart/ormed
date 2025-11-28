@@ -679,7 +679,7 @@ class PostgresDriverAdapter
           if (jsonTemplates.isNotEmpty) {
             final clauses = row.jsonUpdates;
             _validateJsonUpdateShape(jsonTemplates, clauses);
-            
+
             // Group clauses by column to match template structure
             final grouped = <String, List<JsonUpdateClause>>{};
             for (final clause in clauses) {
@@ -687,12 +687,12 @@ class PostgresDriverAdapter
                   .putIfAbsent(clause.column, () => <JsonUpdateClause>[])
                   .add(clause);
             }
-            
+
             // Collect bindings for each template (column group)
             for (final template in jsonTemplates) {
               final columnClauses = grouped[template.column]!;
               var expression = template.resolvedColumn;
-              
+
               for (final clause in columnClauses) {
                 final compiled = clause.patch
                     ? _grammar.compileJsonPatch(
@@ -917,7 +917,7 @@ class PostgresDriverAdapter
     if (row.jsonUpdates.isEmpty) {
       return const <_JsonUpdateTemplate>[];
     }
-    
+
     // Group updates by base column to avoid multiple assignments
     final grouped = <String, List<JsonUpdateClause>>{};
     for (final clause in row.jsonUpdates) {
@@ -925,12 +925,12 @@ class PostgresDriverAdapter
           .putIfAbsent(clause.column, () => <JsonUpdateClause>[])
           .add(clause);
     }
-    
+
     final templates = <_JsonUpdateTemplate>[];
     grouped.forEach((column, clauses) {
       final resolved = _quote(column);
       var expression = resolved;
-      
+
       // Chain all updates for this column into a single expression
       for (final clause in clauses) {
         final compiled = clause.patch
@@ -943,19 +943,21 @@ class PostgresDriverAdapter
               );
         expression = _assignmentRhs(compiled.sql);
       }
-      
+
       // Create a single template for all updates to this column
       templates.add(
         _JsonUpdateTemplate(
           column: column,
-          path: clauses.map((c) => c.path).join(','), // Combined path for validation
+          path: clauses
+              .map((c) => c.path)
+              .join(','), // Combined path for validation
           sql: '$resolved = $expression',
           resolvedColumn: resolved,
           patch: clauses.any((c) => c.patch),
         ),
       );
     });
-    
+
     return templates;
   }
 
@@ -966,7 +968,7 @@ class PostgresDriverAdapter
     if (templates.isEmpty) {
       return;
     }
-    
+
     // Group clauses by column to match the template structure
     final grouped = <String, List<JsonUpdateClause>>{};
     for (final clause in clauses) {
@@ -974,13 +976,13 @@ class PostgresDriverAdapter
           .putIfAbsent(clause.column, () => <JsonUpdateClause>[])
           .add(clause);
     }
-    
+
     if (templates.length != grouped.length) {
       throw StateError(
         'All mutation rows must update the same ${templates.length} columns.',
       );
     }
-    
+
     // Validate that each template matches its corresponding group
     for (final template in templates) {
       final columnClauses = grouped[template.column];
@@ -989,7 +991,7 @@ class PostgresDriverAdapter
           'Row missing JSON updates for column ${template.column}.',
         );
       }
-      
+
       // Validate that the paths match what we expect
       final paths = columnClauses.map((c) => c.path).join(',');
       if (template.path != paths) {

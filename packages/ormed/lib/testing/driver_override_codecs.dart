@@ -28,10 +28,7 @@ class PostgresPayloadCodec extends ValueCodec<Map<String, Object?>> {
   @override
   Object? encode(Map<String, Object?>? value) {
     if (value == null) return null;
-    return {
-      ...value,
-      'encoded_by': 'postgres',
-    };
+    return {...value, 'encoded_by': 'postgres'};
   }
 
   @override

@@ -3,7 +3,7 @@ import 'package:ormed/ormed.dart';
 part 'mutation_target.orm.dart';
 
 @OrmModel(table: 'mutation_targets')
-class MutationTarget  extends Model<MutationTarget> with ModelFactoryCapable{
+class MutationTarget extends Model<MutationTarget> with ModelFactoryCapable {
   const MutationTarget({
     required this.id,
     this.name,

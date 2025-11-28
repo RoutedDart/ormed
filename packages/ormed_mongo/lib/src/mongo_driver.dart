@@ -116,19 +116,17 @@ class MongoDriverAdapter implements DriverAdapter, SchemaDriver {
   Future<Db> databaseInstance() => _database();
 
   Future<DbCollection> _collection(String name) async {
-  if (_droppedCollections.contains(name)) {
-    throw Exception('Collection $name has been dropped.');
+    if (_droppedCollections.contains(name)) {
+      throw Exception('Collection $name has been dropped.');
+    }
+    final db = await _database();
+    return db.collection(name);
   }
-  final db = await _database();
-  return db.collection(name);
-}
 
   Future<void> dropCollectionDirect(String name) async {
     final db = await _database();
     await db.dropCollection(name);
   }
-
-
 
   Map<String, Object>? _projectionForPlan(QueryPlan plan) {
     if (plan.selects.isEmpty) {
@@ -143,17 +141,17 @@ class MongoDriverAdapter implements DriverAdapter, SchemaDriver {
         projection[fieldName] = 1;
       }
     }
-    
+
     // Always include _id so we can map it to id
     projection['_id'] = 1;
-    
+
     // Auto-include required fields for hydration
     for (final field in plan.definition.fields) {
       if (!field.isNullable && !projection.containsKey(field.columnName)) {
-         projection[field.columnName] = 1;
+        projection[field.columnName] = 1;
       }
     }
-    
+
     return projection;
   }
 
@@ -325,14 +323,14 @@ class MongoDriverAdapter implements DriverAdapter, SchemaDriver {
     if (_isAggregatePlan(plan)) {
       return _executeAggregatePlan(plan);
     }
-    
+
     final collection = await _collection(plan.definition.tableName);
     final filter = MongoPlanCompiler.filtersForPlan(plan);
     final sort = MongoPlanCompiler.buildSort(plan.orders);
     final projection = _projectionForPlan(plan);
-    
+
     // DEBUG
-    
+
     final sortArguments = sort.isNotEmpty
         ? Map<String, Object>.fromEntries(
             sort.entries
@@ -343,7 +341,7 @@ class MongoDriverAdapter implements DriverAdapter, SchemaDriver {
     final skipValue = (plan.offset != null && plan.offset! > 0)
         ? plan.offset
         : null;
-    
+
     // Use modernFind if available, or standard find
     // Assuming modernFind is an extension or method on the collection object in this context
     final cursor = collection.modernFind(
@@ -353,18 +351,20 @@ class MongoDriverAdapter implements DriverAdapter, SchemaDriver {
       limit: plan.limit,
       skip: skipValue,
     );
-    
+
     final rows = await cursor.toList();
     final mapped = rows.map((row) => Map<String, Object?>.from(row)).toList();
-    
+
     // Map _id to id if needed
     final withId = _mapMongoIdToModelId(mapped);
-    
+
     final enriched = _applyRawSelects(withId, plan.rawSelects);
     return _applyDateWheres(enriched, plan.dateWheres);
   }
 
-  Future<List<Map<String, Object?>>> _executeAggregatePlan(QueryPlan plan) async {
+  Future<List<Map<String, Object?>>> _executeAggregatePlan(
+    QueryPlan plan,
+  ) async {
     final collection = await _collection(plan.definition.tableName);
     final pipeline = _aggregateBuilder.build(plan);
     final typedPipeline = pipeline
@@ -375,27 +375,29 @@ class MongoDriverAdapter implements DriverAdapter, SchemaDriver {
     final cursor = collection.aggregateToStream(typedPipeline);
     final rows = await cursor.toList();
     final mapped = rows.map((row) => Map<String, Object?>.from(row)).toList();
-    
+
     // Map _id to id if needed
     final withId = _mapMongoIdToModelId(mapped);
-    
+
     return _applyRawSelects(withId, plan.rawSelects);
   }
 
   /// Helper to map MongoDB's _id to the model's id field.
   /// Also handles type conversion (ObjectId -> int/String).
-  List<Map<String, Object?>> _mapMongoIdToModelId(List<Map<String, Object?>> rows) {
+  List<Map<String, Object?>> _mapMongoIdToModelId(
+    List<Map<String, Object?>> rows,
+  ) {
     final codec = MongoObjectIdToIntCodec();
     return rows.map((row) {
       // If _id exists but id doesn't, map it
       if (row.containsKey('_id') && !row.containsKey('id')) {
         final mapped = Map<String, Object?>.from(row);
         var idValue = row['_id'];
-        
+
         // Use the codec to decode the value
         // This handles ObjectId -> int conversion
         mapped['id'] = codec.decode(idValue);
-        
+
         return mapped;
       }
       return row;
@@ -424,7 +426,7 @@ class MongoDriverAdapter implements DriverAdapter, SchemaDriver {
     return rows;
   }
 
-  bool _isAggregatePlan(QueryPlan plan) => 
+  bool _isAggregatePlan(QueryPlan plan) =>
       plan.aggregates.isNotEmpty || plan.randomOrder;
 
   String _nextSessionId() =>
@@ -786,7 +788,9 @@ class MongoDriverAdapter implements DriverAdapter, SchemaDriver {
           return const MutationResult(affectedRows: 0);
         }
         final docs = plan.rows
-            .map((row) => MongoPlanCompiler.documentFromRow(row, plan.definition))
+            .map(
+              (row) => MongoPlanCompiler.documentFromRow(row, plan.definition),
+            )
             .toList();
         await collection.insertAll(docs);
         return MutationResult(affectedRows: docs.length);

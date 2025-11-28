@@ -222,7 +222,7 @@ class _$AttributeUserModel extends AttributeUser {
     required String secret,
     String? role,
     Map<String, Object?>? profile,
-  }) : super(
+  }) : super.new(
          id: id,
          email: email,
          secret: secret,

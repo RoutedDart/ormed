@@ -6,7 +6,9 @@ import 'harness/driver_test_harness.dart';
 final _random = Random();
 
 List<User> buildDefaultUsers({String? suffix}) {
-  suffix ??= _random.nextInt(1000000).toString(); // Generate random suffix if not provided
+  suffix ??= _random
+      .nextInt(1000000)
+      .toString(); // Generate random suffix if not provided
   return [
     User(id: 1, email: 'alice$suffix@example.com', active: true),
     User(id: 2, email: 'bob$suffix@example.com', active: true),
@@ -115,7 +117,9 @@ List<Post> buildDefaultPosts() => [
 ];
 
 Future<void> seedGraph(DriverTestHarness harness, {List<User>? users}) async {
-  await harness.seedUsers(users ?? buildDefaultUsers()); // Use provided users or generate new ones
+  await harness.seedUsers(
+    users ?? buildDefaultUsers(),
+  ); // Use provided users or generate new ones
   await harness.seedAuthors(defaultAuthors);
   await harness.seedPosts(buildDefaultPosts());
   await harness.seedTags(defaultTags);

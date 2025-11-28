@@ -3,8 +3,7 @@ import 'dart:convert';
 
 import 'package:collection/collection.dart';
 import 'package:meta/meta.dart';
-import 'package:ormed/src/query/plan/join_definition.dart'
-    show JoinDefinition;
+import 'package:ormed/src/query/plan/join_definition.dart' show JoinDefinition;
 import 'package:ormed/src/query/plan/join_target.dart';
 import 'package:ormed/src/query/plan/join_type.dart' show JoinType;
 

@@ -8,7 +8,7 @@ import 'photo.dart';
 part 'image.orm.dart';
 
 @OrmModel(table: 'images')
-class Image extends Model<Image> with ModelFactoryCapable{
+class Image extends Model<Image> with ModelFactoryCapable {
   const Image({required this.id, required this.label}) : primaryPhoto = null;
 
   @OrmField(isPrimaryKey: true)

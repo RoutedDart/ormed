@@ -161,7 +161,10 @@ class SqliteQueryGrammar extends QueryGrammar {
     );
   }
 
-  String _sqliteJsonContainsCondition(Object? candidate, List<Object?> bindings) {
+  String _sqliteJsonContainsCondition(
+    Object? candidate,
+    List<Object?> bindings,
+  ) {
     if (candidate == null) {
       return 'json_each.value IS NULL';
     }
@@ -213,8 +216,7 @@ class SqliteQueryGrammar extends QueryGrammar {
     final target = _jsonTarget(resolvedColumn, r'$');
     final literal = _jsonPathLiteral(path);
     final valueExpr = _sqliteJsonUpdateValue(value);
-    final expression =
-        'json_set($target, $literal, ${valueExpr.sql})';
+    final expression = 'json_set($target, $literal, ${valueExpr.sql})';
     final sql = '$resolvedColumn = $expression';
     return JsonUpdateCompilation(sql: sql, bindings: valueExpr.bindings);
   }

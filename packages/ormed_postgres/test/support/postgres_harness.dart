@@ -31,8 +31,7 @@ class PostgresTestHarness implements DriverTestHarness {
     adapter.codecs
       ..registerCodecFor(PostgresPayloadCodec, const PostgresPayloadCodec())
       ..registerCodecFor(SqlitePayloadCodec, const SqlitePayloadCodec());
-    final registry = ModelRegistry()
-      ..registerAll(driverTestModelDefinitions);
+    final registry = ModelRegistry()..registerAll(driverTestModelDefinitions);
     registerDriverTestFactories();
     final context = QueryContext(
       registry: registry,

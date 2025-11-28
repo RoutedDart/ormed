@@ -210,7 +210,7 @@ class _$DerivedForFactoryModel extends DerivedForFactory {
     String? baseName,
     Map<String, Object?>? layerOneNotes,
     bool? layerTwoFlag,
-  }) : super(
+  }) : super.new(
          id: id,
          baseName: baseName,
          layerOneNotes: layerOneNotes,

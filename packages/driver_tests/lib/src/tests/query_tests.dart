@@ -25,16 +25,19 @@ void runDriverQueryTests({
 
     setUp(() async {
       harness = await createHarness();
-      seededUsers = buildDefaultUsers(suffix: 'fixed'); // Generate users with fixed suffix
-      await seedGraph(harness, users: seededUsers); // Pass generated users to seedGraph
+      seededUsers = buildDefaultUsers(
+        suffix: 'fixed',
+      ); // Generate users with fixed suffix
+      await seedGraph(
+        harness,
+        users: seededUsers,
+      ); // Pass generated users to seedGraph
     });
 
     tearDown(() async => harness.dispose());
 
     test('supports filtering, ordering, and pagination', () async {
-      final expectedUser = seededUsers
-          .where((user) => user.active)
-          .toList()
+      final expectedUser = seededUsers.where((user) => user.active).toList()
         ..sort((a, b) => b.email.compareTo(a.email));
 
       final rows = await harness.context

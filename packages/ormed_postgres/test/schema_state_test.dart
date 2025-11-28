@@ -21,10 +21,7 @@ void main() {
     final provider = PostgresSchemaStateProvider(
       DatabaseConfig(
         driver: 'postgres',
-        options: {
-          'database': 'orm_test',
-          'username': 'postgres',
-        },
+        options: {'database': 'orm_test', 'username': 'postgres'},
       ),
     );
 

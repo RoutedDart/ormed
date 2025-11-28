@@ -20,7 +20,7 @@ class MongoObjectIdToIntCodec extends ValueCodec<int> {
   int? decode(Object? value) {
     if (value == null) return null;
     if (value is int) return value;
-    
+
     ObjectId? objectId;
     if (value is ObjectId) {
       objectId = value;
@@ -49,12 +49,12 @@ class MongoObjectIdToIntCodec extends ValueCodec<int> {
           // Fallback
         }
       }
-      
+
       // For real ObjectIds, use the timestamp
       // This provides a unique, sortable integer value
       return objectId.dateTime.millisecondsSinceEpoch;
     }
-    
+
     return null;
   }
 }

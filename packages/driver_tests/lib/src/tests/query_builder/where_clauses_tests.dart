@@ -364,9 +364,7 @@ void runWhereClausesTests(
         User(id: 2, email: 'test2@example.com', active: false),
       ]);
 
-      final users = await harness.context
-          .query<User>()
-          .whereRaw('active = ?', [
+      final users = await harness.context.query<User>().whereRaw('active = ?', [
         true,
       ]).get();
       expect(users, hasLength(1));

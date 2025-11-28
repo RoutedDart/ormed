@@ -1,4 +1,3 @@
-
 import 'package:ormed/ormed.dart';
 import 'package:ormed_sqlite/src/sqlite_grammar.dart';
 import 'package:test/test.dart';

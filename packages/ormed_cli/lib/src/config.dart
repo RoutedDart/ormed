@@ -5,7 +5,6 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 
-
 export 'package:ormed/ormed.dart'
     show
         OrmProjectConfig,

@@ -24,5 +24,5 @@ enum JoinType {
   /// Corresponds to `STRAIGHT_JOIN`. Forces the optimizer to join tables in
   /// the order in which they are listed in the `FROM` clause. This is a MySQL/MariaDB
   /// specific join type.
-  straight
+  straight,
 }

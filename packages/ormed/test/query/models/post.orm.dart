@@ -167,7 +167,7 @@ class _$PostModel extends Post with ModelAttributes, ModelConnection {
     required int authorId,
     required String title,
     required DateTime publishedAt,
-  }) : super(
+  }) : super.new(
          id: id,
          authorId: authorId,
          title: title,

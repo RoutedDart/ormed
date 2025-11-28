@@ -847,8 +847,7 @@ class MySqlDriverAdapter
     final columns = firstRow.values.keys.toList();
     final columnSql = columns.map(_quote).join(', ');
     final placeholders = List.filled(columns.length, '?').join(', ');
-    final insertSql =
-        'INSERT INTO $table ($columnSql) VALUES ($placeholders)';
+    final insertSql = 'INSERT INTO $table ($columnSql) VALUES ($placeholders)';
     final uniqueColumns = _resolveUpsertUniqueColumns(plan);
     final updateColumns = _resolveUpsertUpdateColumns(
       plan,
@@ -885,7 +884,9 @@ class MySqlDriverAdapter
         }
         continue;
       }
-      final values = columns.map((column) => row.values[column]).toList(growable: false);
+      final values = columns
+          .map((column) => row.values[column])
+          .toList(growable: false);
       final result = await _executeStatement(insertSql, values);
       affected += result.affectedRows.toInt();
     }

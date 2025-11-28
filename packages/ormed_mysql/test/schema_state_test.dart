@@ -21,10 +21,7 @@ void main() {
     final provider = MySqlSchemaStateProvider(
       DatabaseConfig(
         driver: 'mysql',
-        options: {
-          'database': 'orm_test',
-          'username': 'root',
-        },
+        options: {'database': 'orm_test', 'username': 'root'},
       ),
     );
 

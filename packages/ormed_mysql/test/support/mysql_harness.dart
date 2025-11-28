@@ -27,8 +27,7 @@ class MySqlTestHarness implements DriverTestHarness {
       ..registerCodecFor(PostgresPayloadCodec, const PostgresPayloadCodec())
       ..registerCodecFor(SqlitePayloadCodec, const SqlitePayloadCodec())
       ..registerCodecFor(MariaDbPayloadCodec, const MariaDbPayloadCodec());
-    final registry = ModelRegistry()
-      ..registerAll(driverTestModelDefinitions);
+    final registry = ModelRegistry()..registerAll(driverTestModelDefinitions);
     registerDriverTestFactories();
     final context = QueryContext(
       registry: registry,
@@ -101,5 +100,4 @@ class MySqlTestHarness implements DriverTestHarness {
   Future<void> seedComments(Iterable<Comment> comments) async {
     await context.repository<Comment>().insertMany(comments.toList());
   }
-
 }

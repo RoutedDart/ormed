@@ -3,14 +3,16 @@ import 'dart:convert';
 import 'package:build/build.dart';
 import 'package:glob/glob.dart';
 
-Builder ormRegistryBuilder(BuilderOptions options) => _OrmRegistryBuilder(options);
+Builder ormRegistryBuilder(BuilderOptions options) =>
+    _OrmRegistryBuilder(options);
 
 class _OrmRegistryBuilder implements Builder {
   static final _summaryGlob = Glob('lib/**.orm_model.json');
 
   _OrmRegistryBuilder(BuilderOptions options)
-      : outputPath = (options.config['output'] as String?)?.trim() ??
-            'lib/orm_registry.g.dart' {
+    : outputPath =
+          (options.config['output'] as String?)?.trim() ??
+          'lib/orm_registry.g.dart' {
     if (outputPath.isEmpty) {
       throw StateError('The orm_registry output path cannot be empty.');
     }
@@ -23,8 +25,8 @@ class _OrmRegistryBuilder implements Builder {
 
   @override
   Map<String, List<String>> get buildExtensions => {
-        'pubspec.yaml': [outputPath],
-      };
+    'pubspec.yaml': [outputPath],
+  };
 
   @override
   Future<void> build(BuildStep buildStep) async {

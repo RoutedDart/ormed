@@ -92,7 +92,7 @@ class _$ImageModelCodec extends ModelCodec<Image> {
 
 class _$ImageModel extends Image with ModelAttributes, ModelConnection {
   _$ImageModel({required int id, required String label})
-    : super(id: id, label: label) {
+    : super.new(id: id, label: label) {
     _attachOrmRuntimeMetadata({'id': id, 'label': label});
   }
 

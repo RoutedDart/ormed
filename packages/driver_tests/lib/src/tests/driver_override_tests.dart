@@ -26,10 +26,7 @@ void runDriverOverrideTests({
       final driverName = harness.adapter.metadata.name.toLowerCase();
       if (driverName.contains('sqlite')) {
         expect(value, isA<String>());
-        expect(
-          value,
-          equals(jsonEncode(entry.payload)),
-        );
+        expect(value, equals(jsonEncode(entry.payload)));
       } else if (driverName.contains('postgres')) {
         expect(value, isA<Map>());
         final decoded = (value as Map).cast<String, Object?>();

@@ -104,7 +104,7 @@ class _$TodoModelCodec extends ModelCodec<Todo> {
 
 class _$TodoModel extends Todo {
   _$TodoModel({required int id, required String title, bool completed = false})
-    : super(id: id, title: title, completed: completed) {
+    : super.new(id: id, title: title, completed: completed) {
     _attachOrmRuntimeMetadata({
       'id': id,
       'title': title,

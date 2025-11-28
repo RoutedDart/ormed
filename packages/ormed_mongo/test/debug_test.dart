@@ -23,7 +23,7 @@ void main() {
         .query<User>()
         .whereEquals('id', 2)
         .get();
-    
+
     print('DEBUG: id=2 users found: ${users.length}');
     expect(users, hasLength(1));
     expect(users.first.id, equals(2));

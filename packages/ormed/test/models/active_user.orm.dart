@@ -164,7 +164,7 @@ class _$ActiveUserModel extends ActiveUser {
     required String email,
     String? name,
     Map<String, Object?> settings = const <String, Object?>{},
-  }) : super(id: id, email: email, name: name, settings: settings) {
+  }) : super.new(id: id, email: email, name: name, settings: settings) {
     _attachOrmRuntimeMetadata({
       'id': id,
       'email': email,

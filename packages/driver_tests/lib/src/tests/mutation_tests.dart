@@ -110,10 +110,7 @@ void runDriverMutationTests({
 
       final rows = await harness.context.query<User>().get();
       expect(rows.length, 2);
-      expect(
-        rows.where((user) => user.id == 50).single.active,
-        isTrue,
-      );
+      expect(rows.where((user) => user.id == 50).single.active, isTrue);
     });
 
     if (config.supportsCapability(DriverCapability.insertUsing)) {

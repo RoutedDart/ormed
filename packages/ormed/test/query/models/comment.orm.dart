@@ -104,7 +104,7 @@ class _$CommentModelCodec extends ModelCodec<Comment> {
 
 class _$CommentModel extends Comment {
   _$CommentModel({required int id, required String body})
-    : super(id: id, body: body) {
+    : super.new(id: id, body: body) {
     _attachOrmRuntimeMetadata({'id': id, 'body': body});
   }
 

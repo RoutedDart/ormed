@@ -17,6 +17,7 @@ class OrmModel {
     this.softDeletesColumn = 'deleted_at',
     this.driverAnnotations = const [],
     this.primaryKey = const [],
+    this.constructor,
   });
 
   /// Database table/collection name.
@@ -57,6 +58,10 @@ class OrmModel {
 
   /// Column names that define the primary key.
   final List<String> primaryKey;
+
+  /// Optional constructor name to use for code generation.
+  /// If null, uses the default (unnamed) constructor.
+  final String? constructor;
 }
 
 /// Additional metadata for a field/column.

@@ -100,9 +100,7 @@ void runOrderByClausesTests(
         seen.add(users.map((u) => u.id).toList(growable: false));
       }
 
-      final uniqueOrders = {
-        for (final order in seen) order.join(',')
-      };
+      final uniqueOrders = {for (final order in seen) order.join(',')};
       expect(uniqueOrders.length, greaterThan(1));
     });
   });

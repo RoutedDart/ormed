@@ -60,10 +60,7 @@ class PostgresSchemaDialect extends SchemaDialect {
       final inlinePrimaryKey =
           !(definition.primaryKey && primaryColumns.contains(definition.name));
       columnSql.add(
-        _columnDefinitionSql(
-          definition,
-          inlinePrimaryKey: inlinePrimaryKey,
-        ),
+        _columnDefinitionSql(definition, inlinePrimaryKey: inlinePrimaryKey),
       );
     }
 

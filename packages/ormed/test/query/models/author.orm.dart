@@ -112,7 +112,7 @@ class _$AuthorModelCodec extends ModelCodec<Author> {
 
 class _$AuthorModel extends Author with ModelAttributes, ModelConnection {
   _$AuthorModel({required int id, required String name, required bool active})
-    : super(id: id, name: name, active: active) {
+    : super.new(id: id, name: name, active: active) {
     _attachOrmRuntimeMetadata({'id': id, 'name': name, 'active': active});
   }
 

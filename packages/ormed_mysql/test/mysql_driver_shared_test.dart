@@ -52,5 +52,8 @@ void main() {
     config: config,
   );
 
-  runDriverQueryBuilderTests(createHarness: MySqlTestHarness.connect, config: config);
+  runDriverQueryBuilderTests(
+    createHarness: MySqlTestHarness.connect,
+    config: config,
+  );
 }

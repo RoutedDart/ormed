@@ -161,7 +161,12 @@ class _$OrmMigrationRecordModel extends OrmMigrationRecord {
     required String checksum,
     required DateTime appliedAt,
     required int batch,
-  }) : super(id: id, checksum: checksum, appliedAt: appliedAt, batch: batch) {
+  }) : super.new(
+         id: id,
+         checksum: checksum,
+         appliedAt: appliedAt,
+         batch: batch,
+       ) {
     _attachOrmRuntimeMetadata({
       'id': id,
       'checksum': checksum,

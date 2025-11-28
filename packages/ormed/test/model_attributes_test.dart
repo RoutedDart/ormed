@@ -15,21 +15,16 @@ void main() {
       final metadata = ModelAttributesMetadata(
         fillable: const ['email', 'name'],
         guarded: const ['id'],
-        fieldOverrides: const {
-          'role': FieldAttributeMetadata(fillable: true),
-        },
+        fieldOverrides: const {'role': FieldAttributeMetadata(fillable: true)},
       );
       model.attachModelDefinition(_definitionWith(metadata));
 
-      model.fill(
-        {
-          'id': 1,
-          'email': 'user@example.com',
-          'role': 'editor',
-          'extra': 'ignored',
-        },
-        strict: false,
-      );
+      model.fill({
+        'id': 1,
+        'email': 'user@example.com',
+        'role': 'editor',
+        'extra': 'ignored',
+      }, strict: false);
 
       expect(model.getAttribute('email'), 'user@example.com');
       expect(model.getAttribute('role'), 'editor');
@@ -57,7 +52,9 @@ void main() {
     });
 
     test('fillIfAbsent only assigns missing entries', () {
-      final metadata = ModelAttributesMetadata(fillable: const ['email', 'name']);
+      final metadata = ModelAttributesMetadata(
+        fillable: const ['email', 'name'],
+      );
       model.attachModelDefinition(_definitionWith(metadata));
       model.setAttribute('email', 'existing@example.com');
 
@@ -85,7 +82,9 @@ void main() {
     });
 
     test('casts map drives fill and serialization', () {
-      final metadata = ModelAttributesMetadata(casts: const {'profile': 'json'});
+      final metadata = ModelAttributesMetadata(
+        casts: const {'profile': 'json'},
+      );
       model.attachModelDefinition(_definitionWith(metadata));
       final registry = ValueCodecRegistry.standard();
       registry.registerCodec(key: 'json', codec: _JsonCodec());
@@ -118,19 +117,25 @@ class _SimpleModelCodec extends ModelCodec<_SimpleModel> {
   const _SimpleModelCodec();
 
   @override
-  Map<String, Object?> encode(_SimpleModel model, ValueCodecRegistry registry) =>
-      Map<String, Object?>.from(model.attributes);
+  Map<String, Object?> encode(
+    _SimpleModel model,
+    ValueCodecRegistry registry,
+  ) => Map<String, Object?>.from(model.attributes);
 
   @override
   _SimpleModel decode(Map<String, Object?> data, ValueCodecRegistry registry) {
     final model = _SimpleModel();
     model.replaceAttributes(data);
-    model.attachModelDefinition(_definitionWith(const ModelAttributesMetadata()));
+    model.attachModelDefinition(
+      _definitionWith(const ModelAttributesMetadata()),
+    );
     return model;
   }
 }
 
-ModelDefinition<_SimpleModel> _definitionWith(ModelAttributesMetadata metadata) {
+ModelDefinition<_SimpleModel> _definitionWith(
+  ModelAttributesMetadata metadata,
+) {
   return ModelDefinition<_SimpleModel>(
     modelName: '_SimpleModel',
     tableName: 'simple_models',

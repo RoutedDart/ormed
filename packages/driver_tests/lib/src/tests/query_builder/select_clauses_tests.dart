@@ -22,7 +22,9 @@ void runSelectClausesTests(
         User(id: 1, email: 'a@example.com', active: true),
       ]);
 
-      final users = await harness.context.query<User>().select(['email']).rows();
+      final users = await harness.context.query<User>().select([
+        'email',
+      ]).rows();
       expect(users, hasLength(1));
       expect(users.first.row.containsKey('email'), isTrue);
     });
@@ -92,11 +94,10 @@ void runSelectClausesTests(
         ),
       ]);
 
-      final articles = await harness.context
-          .query<Article>()
-          .distinct(['status'])
-          .get();
-      
+      final articles = await harness.context.query<Article>().distinct([
+        'status',
+      ]).get();
+
       if (config.supportsDistinctOn) {
         expect(articles, hasLength(2));
         final statuses = articles.map((a) => a.status).toSet();
@@ -138,10 +139,10 @@ void runSelectClausesTests(
         ),
       ]);
 
-      final articles = await harness.context
-          .query<Article>()
-          .distinct(['status', 'priority'])
-          .get();
+      final articles = await harness.context.query<Article>().distinct([
+        'status',
+        'priority',
+      ]).get();
 
       if (config.supportsDistinctOn) {
         expect(articles, hasLength(2));

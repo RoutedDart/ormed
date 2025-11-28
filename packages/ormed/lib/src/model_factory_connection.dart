@@ -7,8 +7,8 @@ class ModelFactoryConnection<T> {
   const ModelFactoryConnection({
     required ModelDefinition<T> definition,
     required QueryContext context,
-  })  : _definition = definition,
-        _context = context;
+  }) : _definition = definition,
+       _context = context;
 
   final ModelDefinition<T> _definition;
   final QueryContext _context;
@@ -20,11 +20,7 @@ class ModelFactoryConnection<T> {
   ModelDefinition<T> get definition => _definition;
 
   /// Returns a query builder bound to this model definition/connection.
-  Query<T> query({
-    String? table,
-    String? schema,
-    String? alias,
-  }) =>
+  Query<T> query({String? table, String? schema, String? alias}) =>
       _context.queryFromDefinition(
         _definition,
         table: table,

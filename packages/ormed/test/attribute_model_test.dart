@@ -17,16 +17,13 @@ void main() {
       final registry = ValueCodecRegistry.standard();
       registry.registerCodec(key: 'json', codec: _JsonCodec());
 
-      final user = AttributeUserOrmDefinition.definition.codec.decode(
-        {
-          'id': 1,
-          'email': 'a@x.dev',
-          'secret': 'top',
-          'role': null,
-          'profile': null,
-        },
-        registry,
-      );
+      final user = AttributeUserOrmDefinition.definition.codec.decode({
+        'id': 1,
+        'email': 'a@x.dev',
+        'secret': 'top',
+        'role': null,
+        'profile': null,
+      }, registry);
       user.fill({
         'email': 'b@x.dev',
         'role': 'admin',
@@ -48,16 +45,13 @@ void main() {
 
     test('fillable guards drop unlisted attributes', () {
       final registry = ValueCodecRegistry.standard();
-      final user = AttributeUserOrmDefinition.definition.codec.decode(
-        {
-          'id': 2,
-          'email': 'c@x.dev',
-          'secret': 'hidden',
-          'role': null,
-          'profile': null,
-        },
-        registry,
-      );
+      final user = AttributeUserOrmDefinition.definition.codec.decode({
+        'id': 2,
+        'email': 'c@x.dev',
+        'secret': 'hidden',
+        'role': null,
+        'profile': null,
+      }, registry);
       user.fill({'id': 5, 'email': 'z@x.dev', 'secret': 'nope'}, strict: false);
       expect(user.getAttribute('id'), 2);
       expect(user.getAttribute('secret'), 'hidden');
@@ -69,16 +63,13 @@ void main() {
       // type, so we keep this test to ensure the helper API still syncs the
       // attribute bag when using the generated setter extension.
       final registry = ValueCodecRegistry.standard();
-      final user = AttributeUserOrmDefinition.definition.codec.decode(
-        {
-          'id': 3,
-          'email': 'd@x.dev',
-          'secret': 'hidden',
-          'role': null,
-          'profile': null,
-        },
-        registry,
-      );
+      final user = AttributeUserOrmDefinition.definition.codec.decode({
+        'id': 3,
+        'email': 'd@x.dev',
+        'secret': 'hidden',
+        'role': null,
+        'profile': null,
+      }, registry);
       user.setAttribute('email', 'updated@x.dev');
       user.setAttribute('id', 11);
 
@@ -101,29 +92,37 @@ void main() {
       expect(user.email, 'f@x.dev');
       expect(AttributeUserModelFactory.codec, isA<ModelCodec<AttributeUser>>());
 
-      final snapshot =
-          AttributeUserModelFactory.toMap(user, registry: ValueCodecRegistry.standard());
+      final snapshot = AttributeUserModelFactory.toMap(
+        user,
+        registry: ValueCodecRegistry.standard(),
+      );
       expect(snapshot['email'], 'f@x.dev');
       expect(snapshot['secret'], 'exposed');
-      expect(AttributeUserModelFactory.definition, AttributeUserOrmDefinition.definition);
-    });
-
-    test('ModelFactory.withConnection binds queries and repositories', () async {
-      final registry = ModelRegistry()
-        ..register(AttributeUserModelFactory.definition);
-      final context = QueryContext(
-        registry: registry,
-        driver: InMemoryQueryExecutor(),
+      expect(
+        AttributeUserModelFactory.definition,
+        AttributeUserOrmDefinition.definition,
       );
-
-      final binding = AttributeUserModelFactory.withConnection(context);
-      final query = binding.query();
-      expect(query.definition, AttributeUserModelFactory.definition);
-
-      final repository = binding.repository();
-      expect(repository.definition, AttributeUserModelFactory.definition);
-      expect(binding.context, context);
     });
+
+    test(
+      'ModelFactory.withConnection binds queries and repositories',
+      () async {
+        final registry = ModelRegistry()
+          ..register(AttributeUserModelFactory.definition);
+        final context = QueryContext(
+          registry: registry,
+          driver: InMemoryQueryExecutor(),
+        );
+
+        final binding = AttributeUserModelFactory.withConnection(context);
+        final query = binding.query();
+        expect(query.definition, AttributeUserModelFactory.definition);
+
+        final repository = binding.repository();
+        expect(repository.definition, AttributeUserModelFactory.definition);
+        expect(binding.context, context);
+      },
+    );
   });
 }
 

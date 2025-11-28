@@ -57,10 +57,7 @@ void main() {
     });
 
     test('non-opt-in models cannot resolve factories', () {
-      expect(
-        () => Model.factory<ActiveUser>().values(),
-        throwsStateError,
-      );
+      expect(() => Model.factory<ActiveUser>().values(), throwsStateError);
     });
 
     test('derived model inherits factory via mixin base', () {

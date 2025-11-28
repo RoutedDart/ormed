@@ -40,7 +40,10 @@ final List<MigrationDescriptor> driverTestMigrations = [
     migration: const CreateTagsTable(),
   ),
   MigrationDescriptor.fromMigration(
-    id: MigrationId(DateTime.utc(2023, 1, 1, 0, 0, 5), 'create_post_tags_table'),
+    id: MigrationId(
+      DateTime.utc(2023, 1, 1, 0, 0, 5),
+      'create_post_tags_table',
+    ),
     migration: const CreatePostTagsTable(),
   ),
   MigrationDescriptor.fromMigration(
@@ -60,23 +63,38 @@ final List<MigrationDescriptor> driverTestMigrations = [
     migration: const CreateCommentsTable(),
   ),
   MigrationDescriptor.fromMigration(
-    id: MigrationId(DateTime.utc(2023, 1, 1, 0, 0, 10), 'create_driver_override_entries_table'),
+    id: MigrationId(
+      DateTime.utc(2023, 1, 1, 0, 0, 10),
+      'create_driver_override_entries_table',
+    ),
     migration: const CreateDriverOverrideEntriesTable(),
   ),
   MigrationDescriptor.fromMigration(
-    id: MigrationId(DateTime.utc(2023, 1, 1, 0, 0, 11), 'create_settings_table'),
+    id: MigrationId(
+      DateTime.utc(2023, 1, 1, 0, 0, 11),
+      'create_settings_table',
+    ),
     migration: const CreateSettingsTable(),
   ),
   MigrationDescriptor.fromMigration(
-    id: MigrationId(DateTime.utc(2023, 1, 1, 0, 0, 12), 'create_serial_tests_table'),
+    id: MigrationId(
+      DateTime.utc(2023, 1, 1, 0, 0, 12),
+      'create_serial_tests_table',
+    ),
     migration: const CreateSerialTestsTable(),
   ),
   MigrationDescriptor.fromMigration(
-    id: MigrationId(DateTime.utc(2023, 1, 1, 0, 0, 13), 'create_mutation_targets_table'),
+    id: MigrationId(
+      DateTime.utc(2023, 1, 1, 0, 0, 13),
+      'create_mutation_targets_table',
+    ),
     migration: const CreateMutationTargetsTable(),
   ),
   MigrationDescriptor.fromMigration(
-    id: MigrationId(DateTime.utc(2023, 1, 1, 0, 0, 14), 'create_derived_for_factories_table'),
+    id: MigrationId(
+      DateTime.utc(2023, 1, 1, 0, 0, 14),
+      'create_derived_for_factories_table',
+    ),
     migration: const CreateDerivedForFactoriesTable(),
   ),
 ];
@@ -84,10 +102,10 @@ final List<MigrationDescriptor> driverTestMigrations = [
 const _driverTestLedgerTable = 'orm_migrations';
 
 MigrationRunner _createRunner(SchemaDriver driver) => MigrationRunner(
-      schemaDriver: driver,
-      ledger: SqlMigrationLedger(driver as DriverAdapter),
-      migrations: driverTestMigrations,
-    );
+  schemaDriver: driver,
+  ledger: SqlMigrationLedger(driver as DriverAdapter),
+  migrations: driverTestMigrations,
+);
 
 Future<void> _purgeDriverTestSchema(SchemaDriver driver) async {
   final builder = SchemaBuilder();
@@ -115,8 +133,7 @@ Future<void> resetDriverTestSchema(SchemaDriver driver) async {
 Future<void> dropDriverTestSchema(SchemaDriver driver) async {
   final runner = _createRunner(driver);
   final status = await runner.status();
-  final appliedCount =
-      status.where((migration) => migration.applied).length;
+  final appliedCount = status.where((migration) => migration.applied).length;
   if (appliedCount > 0) {
     await runner.rollback(steps: appliedCount);
   }

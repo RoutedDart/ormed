@@ -54,5 +54,8 @@ void main() {
     config: config,
   );
 
-  runDriverQueryBuilderTests(createHarness: MariaDbTestHarness.connect, config: config);
+  runDriverQueryBuilderTests(
+    createHarness: MariaDbTestHarness.connect,
+    config: config,
+  );
 }

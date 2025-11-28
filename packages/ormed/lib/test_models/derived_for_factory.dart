@@ -15,7 +15,8 @@ abstract class BaseForFactory<T extends Model<T>> extends Model<T>
   final String? baseName;
 }
 
-abstract class LevelOneForFactory<T extends Model<T>> extends BaseForFactory<T> {
+abstract class LevelOneForFactory<T extends Model<T>>
+    extends BaseForFactory<T> {
   const LevelOneForFactory({
     required super.id,
     super.baseName,

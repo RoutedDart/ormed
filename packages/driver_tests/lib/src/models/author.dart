@@ -8,7 +8,7 @@ import 'post.dart';
 part 'author.orm.dart';
 
 @OrmModel(table: 'authors')
-class Author extends Model<Author> with ModelFactoryCapable{
+class Author extends Model<Author> with ModelFactoryCapable {
   const Author({required this.id, required this.name}) : posts = const [];
 
   @OrmField(isPrimaryKey: true)

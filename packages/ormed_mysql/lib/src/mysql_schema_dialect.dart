@@ -47,10 +47,13 @@ class MySqlSchemaDialect extends SchemaDialect {
       final definition = indexCommand.definition;
       if (definition == null) continue;
       if (definition.type == IndexType.primary) {
-        final isAutoIncrement = definition.columns.length == 1 &&
-            blueprint.columns.any((c) =>
-                c.name == definition.columns.first &&
-                (c.definition?.autoIncrement ?? false));
+        final isAutoIncrement =
+            definition.columns.length == 1 &&
+            blueprint.columns.any(
+              (c) =>
+                  c.name == definition.columns.first &&
+                  (c.definition?.autoIncrement ?? false),
+            );
         if (!isAutoIncrement) {
           final columns = definition.columns.map(_quote).join(', ');
           constraints.add('PRIMARY KEY ($columns)');

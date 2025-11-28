@@ -123,7 +123,7 @@ class _$CustomSoftDeleteModelCodec extends ModelCodec<CustomSoftDelete> {
 
 class _$CustomSoftDeleteModel extends CustomSoftDelete {
   _$CustomSoftDeleteModel({required int id, required String title})
-    : super(id: id, title: title) {
+    : super.new(id: id, title: title) {
     _attachOrmRuntimeMetadata({'id': id, 'title': title});
   }
 

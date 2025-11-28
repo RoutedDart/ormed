@@ -5,7 +5,7 @@ part 'settings.orm.dart';
 
 @OrmModel(table: 'settings')
 @JsonSerializable()
-class Setting  extends Model<Setting> with ModelFactoryCapable{
+class Setting extends Model<Setting> with ModelFactoryCapable {
   const Setting({required this.id, required this.payload});
 
   @OrmField(isPrimaryKey: true)
