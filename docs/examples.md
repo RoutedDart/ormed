@@ -40,7 +40,7 @@ pieces work together.
    targets:
      $default:
        builders:
-         orm_core|orm_registry:
+         ormed|orm_registry:
            options:
              output: lib/generated/orm_registry.g.dart
    ```

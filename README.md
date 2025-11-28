@@ -196,6 +196,7 @@ See the [CLI Reference](docs/cli.md) for complete documentation of all commands 
 - [Migrations](docs/migrations.md) — Schema migrations and schema builder API
 - [Data Source](docs/data_source.md) — Runtime database access patterns
 - [Code Generation](docs/code_generation.md) — Model annotations and generated code
+- [Model Factories](docs/model_factories.md) — Test data generation and seeding
 - [Connectors](docs/connectors.md) — Connection management and multi-tenancy
 - [Observability](docs/observability.md) — Logging, instrumentation, and tracing
 - [Examples](docs/examples.md) — Common usage patterns

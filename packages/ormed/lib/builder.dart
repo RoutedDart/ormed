@@ -24,7 +24,6 @@ class _OrmPartBuilder implements Builder {
   };
 
   @override
-  @override
   Future<void> build(BuildStep buildStep) async {
     await _delegate.build(buildStep);
   }
