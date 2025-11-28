@@ -63,3 +63,4 @@ export 'src/blueprint/schema_diff.dart'
         SchemaDiffAction,
         SchemaDiffSeverity,
         SchemaDiffer;
+export 'src/data_source.dart';

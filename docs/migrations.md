@@ -4,6 +4,8 @@ Schema changes are managed by a combination of `orm_core`'s migration runtime
 (`MigrationRunner`, `MigrationLedger`, `SqlMigrationLedger`) and the standalone
 `ormed_cli` package for scaffolding/automation.
 
+> **See also:** [CLI Reference](cli.md) for complete command documentation and options.
+
 ## Runtime Concepts
 
 - **Migration** - A Dart class extending `Migration` from `orm_core`. Override
@@ -62,7 +64,10 @@ reporting).
 ## ORM CLI (`ormed_cli`)
 
 The CLI wraps the runtime and exposes developer-friendly commands. It lives in
-`packages/orm/ormed_cli` and ships an executable named `orm`.
+`packages/ormed_cli` and ships an executable named `orm`.
+
+For complete CLI documentation including all options and examples, see the
+[CLI Reference](cli.md).
 
 ### Configuration (`orm.yaml`)
 

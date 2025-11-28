@@ -1,4 +1,4 @@
-/// Manages the playground's configured connections and seeded registry.
+/// Manages the playground's configured connections using the DataSource API.
 library;
 
 import 'dart:io';
@@ -8,31 +8,47 @@ import 'package:orm_playground/orm_registry.g.dart';
 import 'package:ormed_sqlite/ormed_sqlite.dart';
 import 'package:path/path.dart' as p;
 
-final _ = registerSqliteOrmConnection;
+// Ensure SQLite driver is registered (referenced to prevent tree-shaking)
+// ignore: unused_element
+final _ensureRegistration = registerSqliteOrmConnection;
 
-/// Helper that wires the playground into `ConnectionManager` via `orm.yaml`.
+/// Helper that manages playground database connections using the DataSource API.
+///
+/// ## Single-tenant usage:
+/// ```dart
+/// final database = PlaygroundDatabase();
+/// final ds = await database.dataSource();
+///
+/// final users = await ds.query<User>().get();
+/// await ds.repo<Post>().insert(post);
+///
+/// await database.dispose();
+/// ```
+///
+/// ## Multi-tenant usage:
+/// ```dart
+/// final database = PlaygroundDatabase();
+///
+/// final mainDs = await database.dataSource(tenant: 'default');
+/// final analyticsDs = await database.dataSource(tenant: 'analytics');
+///
+/// await database.dispose();
+/// ```
 class PlaygroundDatabase {
-  /// Creates a helper that wires every connection defined in [orm.yaml].
+  /// Creates a helper that manages playground database connections.
   factory PlaygroundDatabase({Directory? workspaceRoot}) {
     final root = workspaceRoot ?? Directory.current;
     final configFile = File(p.join(root.path, 'orm.yaml'));
     final config = loadOrmProjectConfig(configFile);
     final path = _deriveDatabasePath(root, config);
-    return PlaygroundDatabase._(
-      root: root,
-      config: config,
-      registry: buildOrmRegistry(),
-      databasePath: path,
-    );
+    return PlaygroundDatabase._(root: root, config: config, databasePath: path);
   }
 
   PlaygroundDatabase._({
     required this.root,
     required OrmProjectConfig config,
-    required ModelRegistry registry,
     required this.databasePath,
-  }) : _config = config,
-       _registry = registry;
+  }) : _config = config;
 
   /// Directory that contains `orm.yaml`.
   final Directory root;
@@ -41,53 +57,73 @@ class PlaygroundDatabase {
   final String databasePath;
 
   final OrmProjectConfig _config;
-  final ModelRegistry _registry;
-  final Set<String> _registeredConnections = {};
-  bool _connectionsRegistered = false;
+  final Map<String, DataSource> _dataSources = {};
+
+  /// Returns all tenant/connection names defined in the configuration.
+  ///
+  /// This allows iterating over available tenants without hardcoding names:
+  /// ```dart
+  /// final database = PlaygroundDatabase();
+  /// for (final tenant in database.tenantNames) {
+  ///   final ds = await database.dataSource(tenant: tenant);
+  ///   // ...
+  /// }
+  /// ```
+  Iterable<String> get tenantNames => _config.connections.keys;
+
+  /// Returns a [DataSource] for the given [tenant].
+  ///
+  /// The DataSource is lazily created and cached. Multiple calls with the
+  /// same tenant return the same instance.
+  Future<DataSource> dataSource({String tenant = 'default'}) async {
+    if (_dataSources.containsKey(tenant)) {
+      return _dataSources[tenant]!;
+    }
+
+    ensureSqliteDriverRegistration();
+
+    final tenantConfig = _config.withConnection(tenant);
+    final driverConfig = tenantConfig.activeConnection.driver;
+    final dbPath = _resolveDatabasePath(driverConfig);
+
+    final ds = DataSource(
+      DataSourceOptions(
+        driver: SqliteDriverAdapter.file(dbPath),
+        entities: generatedOrmModelDefinitions,
+        name: tenant,
+        database: dbPath,
+      ),
+    );
+
+    await ds.init();
+    _dataSources[tenant] = ds;
+    return ds;
+  }
 
   /// Opens the configured connection for [tenant].
+  ///
+  /// This is a convenience method that returns the underlying [OrmConnection]
+  /// from the [DataSource]. For new code, prefer using [dataSource] directly.
+  @Deprecated('Use dataSource() instead for new code')
   Future<OrmConnection> open({String tenant = 'default'}) async {
-    await _ensureRegistered();
-    final connectionName = _connectionNameForTenant(tenant);
-    return ConnectionManager.defaultManager.connection(connectionName);
+    final ds = await dataSource(tenant: tenant);
+    return ds.connection;
   }
 
-  /// Releases every registered connection.
+  /// Releases all managed data sources.
   Future<void> dispose() async {
-    if (!_connectionsRegistered) return;
-    final manager = ConnectionManager.defaultManager;
-    final names = List<String>.from(_registeredConnections);
-    for (final connectionName in names) {
-      await manager.unregister(connectionName);
-      _registeredConnections.remove(connectionName);
+    for (final ds in _dataSources.values) {
+      await ds.dispose();
     }
-    _connectionsRegistered = false;
+    _dataSources.clear();
   }
 
-  Future<void> _ensureRegistered() async {
-    if (_connectionsRegistered) return;
-    _bootstrapPlaygroundDrivers();
-    final manager = ConnectionManager.defaultManager;
-    final before = manager.registeredConnectionNames.toSet();
-    await registerConnectionsFromConfig(
-      root: root,
-      config: _config,
-      registry: _registry,
-    );
-    final after = manager.registeredConnectionNames.toSet();
-    _registeredConnections.addAll(after.difference(before));
-    _connectionsRegistered = true;
-  }
-
-  String _connectionNameForTenant(String tenant) =>
-      connectionNameForConfig(root, _config.withConnection(tenant));
-
-  bool _playgroundDriversBootstrapped = false;
-
-  void _bootstrapPlaygroundDrivers() {
-    if (_playgroundDriversBootstrapped) return;
-    _playgroundDriversBootstrapped = true;
-    ensureSqliteDriverRegistration();
+  String _resolveDatabasePath(DriverConfig driverConfig) {
+    final configured = driverConfig.option('database');
+    if (configured != null && configured.isNotEmpty) {
+      return p.normalize(p.join(root.path, configured));
+    }
+    return databasePath;
   }
 
   static String _deriveDatabasePath(Directory root, OrmProjectConfig config) {

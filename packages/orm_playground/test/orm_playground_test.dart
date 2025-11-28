@@ -21,19 +21,73 @@ void main() {
     expect(registry.contains<Comment>(), isTrue);
   });
 
-  test('open registers every tenant configured in orm.yaml', () async {
+  test('dataSource creates and caches instances per tenant', () async {
     final database = PlaygroundDatabase();
-    final defaultConnection = await database.open();
-    final analyticsConnection = await database.open(tenant: 'analytics');
+
     try {
-      final manager = ConnectionManager.defaultManager;
-      expect(manager.isRegistered(defaultConnection.name), isTrue);
-      expect(manager.isRegistered(analyticsConnection.name), isTrue);
+      final defaultDs = await database.dataSource();
+      final analyticsDs = await database.dataSource(tenant: 'analytics');
+
+      // Verify they are initialized
+      expect(defaultDs.isInitialized, isTrue);
+      expect(analyticsDs.isInitialized, isTrue);
+
+      // Verify they have different names
+      expect(defaultDs.name, 'default');
+      expect(analyticsDs.name, 'analytics');
+
+      // Verify caching - same tenant returns same instance
+      final defaultDs2 = await database.dataSource();
+      expect(identical(defaultDs, defaultDs2), isTrue);
     } finally {
       await database.dispose();
     }
-    final manager = ConnectionManager.defaultManager;
-    expect(manager.isRegistered(defaultConnection.name), isFalse);
-    expect(manager.isRegistered(analyticsConnection.name), isFalse);
+  });
+
+  test('dataSource provides query and repo helpers', () async {
+    final database = PlaygroundDatabase();
+
+    try {
+      final ds = await database.dataSource();
+
+      // Verify query<T>() returns a Query
+      final query = ds.query<User>();
+      expect(query, isA<Query<User>>());
+
+      // Verify repo<T>() returns a Repository
+      final repo = ds.repo<User>();
+      expect(repo, isA<Repository<User>>());
+
+      // Verify table() returns an ad-hoc query
+      final tableQuery = ds.table('users');
+      expect(tableQuery, isA<Query<Map<String, Object?>>>());
+    } finally {
+      await database.dispose();
+    }
+  });
+
+  test('dispose releases all data sources', () async {
+    final database = PlaygroundDatabase();
+
+    final defaultDs = await database.dataSource();
+    final analyticsDs = await database.dataSource(tenant: 'analytics');
+
+    expect(defaultDs.isInitialized, isTrue);
+    expect(analyticsDs.isInitialized, isTrue);
+
+    await database.dispose();
+
+    expect(defaultDs.isInitialized, isFalse);
+    expect(analyticsDs.isInitialized, isFalse);
+  });
+
+  test('generatedOrmModelDefinitions contains all models', () {
+    final definitions = generatedOrmModelDefinitions;
+
+    expect(definitions, isNotEmpty);
+    expect(definitions.any((d) => d.modelName == 'User'), isTrue);
+    expect(definitions.any((d) => d.modelName == 'Post'), isTrue);
+    expect(definitions.any((d) => d.modelName == 'Comment'), isTrue);
+    expect(definitions.any((d) => d.modelName == 'Tag'), isTrue);
   });
 }

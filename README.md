@@ -78,32 +78,63 @@ dart run build_runner build
 ### 4. Query your data
 
 ```dart
+import 'package:ormed/ormed.dart';
 import 'package:ormed_sqlite/ormed_sqlite.dart';
 
 void main() async {
-  // Setup
-  final registry = ModelRegistry()..register(UserOrmDefinition.definition);
-  final adapter = SqliteDriverAdapter.file('app.sqlite');
-  final context = QueryContext(registry: registry, driver: adapter);
+  // Setup with DataSource (recommended)
+  final ds = DataSource(DataSourceOptions(
+    driver: SqliteDriverAdapter.file('app.sqlite'),
+    entities: [UserOrmDefinition.definition],
+  ));
+  await ds.init();
 
   // Query
-  final users = await context.query<User>()
+  final users = await ds.query<User>()
       .whereEquals('active', true)
       .orderBy('created_at', descending: true)
       .limit(10)
       .get();
 
   // Create
-  final user = await context.insert<User>(
+  await ds.repo<User>().insert(
     const User(id: 0, email: 'hello@example.com', name: 'Jane'),
   );
 
   // Update
-  await context.query<User>()
-      .whereEquals('id', user.id)
+  await ds.query<User>()
+      .whereEquals('id', 1)
       .update({'name': 'Jane Doe'});
+
+  // Transaction
+  await ds.transaction(() async {
+    await ds.repo<User>().insert(user1);
+    await ds.repo<User>().insert(user2);
+  });
+
+  // Cleanup
+  await ds.dispose();
 }
 ```
+
+<details>
+<summary>Alternative: Manual Setup (advanced)</summary>
+
+```dart
+import 'package:ormed_sqlite/ormed_sqlite.dart';
+
+void main() async {
+  final registry = ModelRegistry()..register(UserOrmDefinition.definition);
+  final adapter = SqliteDriverAdapter.file('app.sqlite');
+  final context = QueryContext(registry: registry, driver: adapter);
+
+  final users = await context.query<User>()
+      .whereEquals('active', true)
+      .get();
+}
+```
+
+</details>
 
 ---
 
@@ -124,9 +155,6 @@ void main() async {
 
 ## 🛠️ CLI Commands
 
-<details>
-<summary>Click to expand CLI reference</summary>
-
 ```bash
 # Initialize project structure
 dart run ormed_cli:orm init
@@ -137,24 +165,36 @@ dart run ormed_cli:orm make --name create_users_table
 # Apply pending migrations
 dart run ormed_cli:orm apply
 
+# Apply to a specific connection (multi-tenant)
+dart run ormed_cli:orm apply --connection analytics
+
+# Preview migrations without executing
+dart run ormed_cli:orm apply --pretend
+
 # Rollback migrations
 dart run ormed_cli:orm rollback --steps 1
 
 # Check migration status
 dart run ormed_cli:orm status
 
+# Describe current schema
+dart run ormed_cli:orm schema:describe
+
 # Run database seeders
-dart run ormed_cli:orm seed --class DatabaseSeeder
+dart run ormed_cli:orm seed
+dart run ormed_cli:orm seed --class DemoContentSeeder
 ```
 
-</details>
+See the [CLI Reference](docs/cli.md) for complete documentation of all commands and options.
 
 ---
 
 ## 📚 Documentation
 
+- [CLI Reference](docs/cli.md) — Complete CLI commands and options
 - [Query Builder](docs/query_builder.md) — Full query API reference
-- [Migrations](docs/migrations.md) — Schema migrations and CLI usage
+- [Migrations](docs/migrations.md) — Schema migrations and schema builder API
+- [Data Source](docs/data_source.md) — Runtime database access patterns
 - [Code Generation](docs/code_generation.md) — Model annotations and generated code
 - [Connectors](docs/connectors.md) — Connection management and multi-tenancy
 - [Observability](docs/observability.md) — Logging, instrumentation, and tracing
