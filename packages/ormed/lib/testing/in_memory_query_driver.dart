@@ -42,15 +42,17 @@ class InMemoryQueryExecutor implements DriverAdapter {
     final source =
         _tables[plan.definition.tableName] ?? const <Map<String, Object?>>[];
     var rows = source.map((row) => Map<String, Object?>.from(row)).toList();
-    
+
     // Apply legacy filters
     rows = rows.where((row) => _matchesFilters(row, plan.filters)).toList();
-    
+
     // Apply predicate if present
     if (plan.predicate != null) {
-      rows = rows.where((row) => _matchesPredicate(row, plan.predicate!)).toList();
+      rows = rows
+          .where((row) => _matchesPredicate(row, plan.predicate!))
+          .toList();
     }
-    
+
     if (plan.orders.isNotEmpty) {
       rows.sort((a, b) => _compareByOrder(a, b, plan.orders));
     }
@@ -325,16 +327,18 @@ class InMemoryQueryExecutor implements DriverAdapter {
   /// Evaluates a QueryPredicate against a row.
   bool _matchesPredicate(Map<String, Object?> row, QueryPredicate predicate) {
     if (predicate is PredicateGroup) {
-      final results = predicate.predicates.map((p) => _matchesPredicate(row, p));
+      final results = predicate.predicates.map(
+        (p) => _matchesPredicate(row, p),
+      );
       return predicate.logicalOperator == PredicateLogicalOperator.and
           ? results.every((r) => r)
           : results.any((r) => r);
     }
-    
+
     if (predicate is FieldPredicate) {
       return _matchesFieldPredicate(row, predicate);
     }
-    
+
     // For other predicate types (RelationPredicate, RawPredicate, etc.)
     // we can't evaluate them in memory, so we just return true
     // This is a limitation of the in-memory driver
@@ -347,18 +351,30 @@ class InMemoryQueryExecutor implements DriverAdapter {
     FieldPredicate predicate,
   ) {
     final value = row[predicate.field];
-    
+
     return switch (predicate.operator) {
       PredicateOperator.equals => value == predicate.value,
       PredicateOperator.notEquals => value != predicate.value,
-      PredicateOperator.greaterThan =>
-        _compareComparable(value, predicate.value, (c) => c > 0),
-      PredicateOperator.greaterThanOrEqual =>
-        _compareComparable(value, predicate.value, (c) => c >= 0),
-      PredicateOperator.lessThan =>
-        _compareComparable(value, predicate.value, (c) => c < 0),
-      PredicateOperator.lessThanOrEqual =>
-        _compareComparable(value, predicate.value, (c) => c <= 0),
+      PredicateOperator.greaterThan => _compareComparable(
+        value,
+        predicate.value,
+        (c) => c > 0,
+      ),
+      PredicateOperator.greaterThanOrEqual => _compareComparable(
+        value,
+        predicate.value,
+        (c) => c >= 0,
+      ),
+      PredicateOperator.lessThan => _compareComparable(
+        value,
+        predicate.value,
+        (c) => c < 0,
+      ),
+      PredicateOperator.lessThanOrEqual => _compareComparable(
+        value,
+        predicate.value,
+        (c) => c <= 0,
+      ),
       PredicateOperator.between => () {
         if (predicate.lower == null || predicate.upper == null) return false;
         return _compareComparable(value, predicate.lower, (c) => c >= 0) &&
@@ -370,11 +386,11 @@ class InMemoryQueryExecutor implements DriverAdapter {
             _compareComparable(value, predicate.upper, (c) => c <= 0));
       }(),
       PredicateOperator.inValues => () {
-        final values = (predicate.value as Iterable?)?.toSet() ?? const {};
+        final values = predicate.values?.toSet() ?? const {};
         return values.contains(value);
       }(),
       PredicateOperator.notInValues => () {
-        final values = (predicate.value as Iterable?)?.toSet() ?? const {};
+        final values = predicate.values?.toSet() ?? const {};
         return !values.contains(value);
       }(),
       PredicateOperator.like ||
@@ -383,13 +399,16 @@ class InMemoryQueryExecutor implements DriverAdapter {
       PredicateOperator.notILike => () {
         final pattern = predicate.value?.toString() ?? '';
         final target = value?.toString() ?? '';
-        final regex = _likeToRegex(pattern, 
-            caseSensitive: predicate.operator == PredicateOperator.like || 
-                          predicate.operator == PredicateOperator.notLike);
+        final regex = _likeToRegex(
+          pattern,
+          caseSensitive:
+              predicate.operator == PredicateOperator.like ||
+              predicate.operator == PredicateOperator.notLike,
+        );
         final matches = regex.hasMatch(target);
-        return (predicate.operator == PredicateOperator.like || 
-                predicate.operator == PredicateOperator.iLike) 
-            ? matches 
+        return (predicate.operator == PredicateOperator.like ||
+                predicate.operator == PredicateOperator.iLike)
+            ? matches
             : !matches;
       }(),
       PredicateOperator.isNull => value == null,
@@ -402,9 +421,9 @@ class InMemoryQueryExecutor implements DriverAdapter {
   /// Converts a SQL LIKE pattern to a RegExp.
   RegExp _likeToRegex(String pattern, {bool caseSensitive = true}) {
     // Escape regex special characters except % and _
-    var regexPattern = RegExp.escape(pattern)
-        .replaceAll('%', '.*')
-        .replaceAll('_', '.');
+    var regexPattern = RegExp.escape(
+      pattern,
+    ).replaceAll('%', '.*').replaceAll('_', '.');
     return RegExp('^$regexPattern\$', caseSensitive: caseSensitive);
   }
 
