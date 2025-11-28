@@ -10,10 +10,49 @@ import '../model_definition.dart';
 ///
 /// This class extracts shared logic for relation resolution used by both
 /// the query builder and lazy loading on models.
+///
+/// Relation paths are cached to avoid redundant lookups when the same
+/// relation is accessed multiple times.
 class RelationResolver {
-  const RelationResolver(this.context);
+  /// Creates a new [RelationResolver] with caching enabled.
+  ///
+  /// The resolver will cache resolved relation paths to avoid redundant
+  /// lookups when the same relation is accessed multiple times.
+  RelationResolver(this.context) : _enableCaching = true;
+
+  /// Creates a [RelationResolver] without caching.
+  ///
+  /// Useful for one-off lookups where caching overhead isn't worthwhile.
+  const RelationResolver.uncached(this.context) : _enableCaching = false;
 
   final QueryContext context;
+
+  /// Whether caching is enabled for this resolver.
+  final bool _enableCaching;
+
+  /// Storage for mutable caches per resolver instance.
+  ///
+  /// Keys are formatted as `{modelName}:{relationPath}` to ensure uniqueness.
+  static final Expando<Map<String, RelationPath>> _resolverCaches =
+      Expando<Map<String, RelationPath>>('_resolverCaches');
+
+  /// Returns the cached path cache, lazily creating it if needed.
+  Map<String, RelationPath> get _cache {
+    if (!_enableCaching) return const {};
+    return _resolverCaches[this] ??= <String, RelationPath>{};
+  }
+
+  /// Clears the relation path cache for this resolver.
+  ///
+  /// Useful when model definitions change at runtime (rare).
+  void clearCache() {
+    _resolverCaches[this]?.clear();
+  }
+
+  /// Returns cache statistics for debugging/profiling.
+  ///
+  /// Returns a map with 'size' indicating the number of cached paths.
+  Map<String, int> get cacheStats => {'size': _cache.length};
 
   /// Resolves a dotted relation path (e.g., "posts.comments") into segments.
   ///
@@ -28,6 +67,28 @@ class RelationResolver {
   ///
   /// Throws [ArgumentError] if any part of the relation path is invalid.
   RelationPath resolvePath(
+    ModelDefinition<dynamic> startDefinition,
+    String relation,
+  ) {
+    // Check cache first (only for cached resolvers)
+    if (_enableCaching) {
+      final cacheKey = '${startDefinition.modelName}:$relation';
+      final cache = _cache;
+      final cached = cache[cacheKey];
+      if (cached != null) return cached;
+
+      // Resolve and cache
+      final path = _resolvePathUncached(startDefinition, relation);
+      cache[cacheKey] = path;
+      return path;
+    }
+
+    // Uncached resolver - resolve directly
+    return _resolvePathUncached(startDefinition, relation);
+  }
+
+  /// Internal method that performs the actual path resolution without caching.
+  RelationPath _resolvePathUncached(
     ModelDefinition<dynamic> startDefinition,
     String relation,
   ) {

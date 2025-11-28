@@ -8,11 +8,30 @@ part of 'query.dart';
 ///
 /// This means eagerly loaded relations can be accessed in two ways:
 /// 1. Via the `QueryRow`: `queryRow.relation<User>('user')`
-/// 2. Via the model instance: `post.user`
+/// 2. Via the model instance: `post.user` (preferred)
 ///
 /// Both approaches return the same object instances, maintaining referential equality.
 ///
-/// Example:
+/// **Recommended Pattern:**
+///
+/// For new code, prefer accessing relations directly on the model instance
+/// using the generated relation getters. This provides better type safety
+/// and integrates seamlessly with lazy loading:
+///
+/// ```dart
+/// // Preferred: Access via model (type-safe, works with lazy loading)
+/// final post = await context.query<Post>().withRelation('author').first();
+/// print(post.author?.name);
+///
+/// // Also works: Access via QueryRow (useful when you need the raw row)
+/// final queryRow = await context.query<Post>().withRelation('author').firstRow();
+/// print(queryRow?.relation<Author>('author')?.name);
+/// ```
+///
+/// The `QueryRow.relations` map is maintained for backwards compatibility
+/// and for cases where you need access to the raw row data alongside relations.
+///
+/// Example showing both access patterns:
 /// ```dart
 /// final queryRows = await context.query<Post>()
 ///     .withRelation('author')
@@ -39,9 +58,19 @@ class QueryRow<T> {
   final Map<String, Object?> row;
 
   /// Relation name to resolved value map.
+  ///
+  /// **Note:** For type-safe access to relations, prefer using the generated
+  /// relation getters on the model instance (e.g., `post.author`) rather than
+  /// this map. The model's relation cache is automatically synced with this map
+  /// during eager loading.
+  ///
+  /// This map is maintained for backwards compatibility and for advanced use
+  /// cases where direct map access is needed.
   final Map<String, dynamic> relations;
 
   /// Whether the relation named [name] exists in [relations].
+  ///
+  /// **Tip:** You can also check via the model: `model.relationLoaded('user')`
   ///
   /// Example:
   /// ```dart
@@ -53,6 +82,9 @@ class QueryRow<T> {
 
   /// Returns a relation value typed as [R].
   ///
+  /// **Tip:** For type-safe access, prefer using generated getters on the model
+  /// (e.g., `post.author` instead of `queryRow.relation<Author>('author')`).
+  ///
   /// Example:
   /// ```dart
   /// final user = queryRow.relation<User>('user');
@@ -60,6 +92,9 @@ class QueryRow<T> {
   R? relation<R>(String name) => relations[name] as R?;
 
   /// Returns a list relation typed as [R], or an empty list when absent.
+  ///
+  /// **Tip:** For type-safe access, prefer using generated getters on the model
+  /// (e.g., `author.posts` instead of `queryRow.relationList<Post>('posts')`).
   ///
   /// Example:
   /// ```dart

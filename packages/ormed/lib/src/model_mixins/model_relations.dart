@@ -148,6 +148,19 @@ mixin ModelRelations {
     );
   }
 
+  /// Shorthand alias for [loadedRelations].
+  ///
+  /// Returns a snapshot of all currently loaded relations.
+  ///
+  /// Example:
+  /// ```dart
+  /// final allRelations = post.relations;
+  /// for (final entry in allRelations.entries) {
+  ///   print('${entry.key}: ${entry.value}');
+  /// }
+  /// ```
+  Map<String, dynamic> get relations => loadedRelations;
+
   /// Syncs relations from a [QueryRow] into this model's cache.
   ///
   /// This is called internally after eager loading to make relations

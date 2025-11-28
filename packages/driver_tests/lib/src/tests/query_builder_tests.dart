@@ -1,10 +1,13 @@
 import 'package:test/test.dart';
 import '../../driver_tests.dart';
 import 'query_builder/aggregation_tests.dart';
+import 'query_builder/fresh_tests.dart';
 import 'query_builder/join_clauses_tests.dart';
 import 'query_builder/lazy_loading_tests.dart';
 import 'query_builder/limit_offset_clauses_tests.dart';
 import 'query_builder/relation_mutation_tests.dart';
+import 'query_builder/relation_resolver_cache_tests.dart';
+import 'query_builder/relations_accessor_tests.dart';
 import 'query_builder/order_by_clauses_tests.dart';
 import 'query_builder/select_clauses_tests.dart';
 import 'query_builder/where_clauses_tests.dart';
@@ -25,6 +28,9 @@ void runDriverQueryBuilderTests({
     runLazyLoadingTests(createHarness, config);
     runRelationMutationTests(createHarness, config);
     runRefreshTests(createHarness, config);
+    runFreshTests(createHarness, config);
     runQueryRowSyncTests(createHarness, config);
+    runRelationsAccessorTests(createHarness, config);
+    runRelationResolverCacheTests(createHarness, config);
   });
 }

@@ -328,6 +328,52 @@ abstract class Model<TModel extends Model<TModel>>
     setAttribute(column, null);
   }
 
+  /// Returns a fresh instance of this model from the database.
+  ///
+  /// Unlike [refresh], this method returns a new model instance without
+  /// modifying the current one. Useful when you need the latest database
+  /// state but want to preserve the current instance.
+  ///
+  /// The [withRelations] parameter allows you to specify which relations
+  /// should be eagerly loaded on the fresh instance.
+  ///
+  /// Example:
+  /// ```dart
+  /// final freshUser = await user.fresh(withRelations: ['posts']);
+  /// print(user.name); // Still has old value
+  /// print(freshUser.name); // Has latest value from database
+  /// ```
+  Future<TModel> fresh({
+    bool withTrashed = false,
+    Iterable<String>? withRelations,
+  }) async {
+    final def = expectDefinition();
+    final resolver = _resolveResolverFor(def);
+    final pk = def.primaryKeyField;
+    if (pk == null) {
+      throw StateError(
+        'Model ${def.modelName} must declare a primary key to get fresh.',
+      );
+    }
+    final key = _primaryKeyValue(def);
+    if (key == null) {
+      throw StateError(
+        'Model ${def.modelName} is missing primary key ${pk.name}.',
+      );
+    }
+    var builder = _requireQueryContext(resolver).queryFromDefinition(def);
+    if (withTrashed && def.usesSoftDeletes) {
+      builder = builder.withTrashed();
+    }
+    // Eager load relations if specified
+    if (withRelations != null) {
+      for (final relation in withRelations) {
+        builder = builder.withRelation(relation);
+      }
+    }
+    return await builder.whereEquals(pk.name, key).firstOrFail(key: key);
+  }
+
   /// Reloads the latest row from the database, optionally including trashed.
   ///
   /// The [withRelations] parameter allows you to specify which relations

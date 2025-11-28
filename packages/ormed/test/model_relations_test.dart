@@ -5,7 +5,7 @@ import 'package:test/test.dart';
 // Model already has ModelRelations, no need to add it again
 class TestModel extends Model<TestModel> {
   const TestModel({required this.id, required this.name});
-  
+
   final int id;
   final String name;
 }
@@ -14,30 +14,30 @@ void main() {
   group('ModelRelations mixin', () {
     test('setRelation and getRelation work correctly', () {
       final model = const TestModel(id: 1, name: 'Test');
-      
+
       expect(model.getRelation<String>('title'), isNull);
       expect(model.relationLoaded('title'), isFalse);
-      
+
       model.setRelation('title', 'Hello World');
-      
+
       expect(model.relationLoaded('title'), isTrue);
       expect(model.getRelation<String>('title'), equals('Hello World'));
     });
 
     test('getRelationList returns empty list when not loaded', () {
       final model = const TestModel(id: 1, name: 'Test');
-      
+
       expect(model.getRelationList<String>('items'), isEmpty);
       expect(model.relationLoaded('items'), isFalse);
     });
 
     test('getRelationList returns cached list when loaded', () {
       final model = const TestModel(id: 1, name: 'Test');
-      
+
       final items = ['item1', 'item2', 'item3'];
-      
+
       model.setRelation('items', items);
-      
+
       final retrieved = model.getRelationList<String>('items');
       expect(retrieved, hasLength(3));
       expect(retrieved.first, equals('item1'));
@@ -45,12 +45,12 @@ void main() {
 
     test('unsetRelation clears data and loaded flag', () {
       final model = const TestModel(id: 1, name: 'Test');
-      
+
       final items = ['item1', 'item2'];
-      
+
       model.setRelation('items', items);
       expect(model.relationLoaded('items'), isTrue);
-      
+
       model.unsetRelation('items');
       expect(model.relationLoaded('items'), isFalse);
       expect(model.getRelation<List<String>>('items'), isNull);
@@ -58,12 +58,12 @@ void main() {
 
     test('setRelations bulk sets multiple relations', () {
       final model = const TestModel(id: 1, name: 'Test');
-      
+
       model.setRelations({
         'items': ['item1', 'item2'],
         'featured': 'item1',
       });
-      
+
       expect(model.relationLoaded('items'), isTrue);
       expect(model.relationLoaded('featured'), isTrue);
       expect(model.getRelationList<String>('items'), hasLength(2));
@@ -72,13 +72,13 @@ void main() {
 
     test('loadedRelations returns snapshot of all loaded relations', () {
       final model = TestModel(id: 42, name: 'Snapshot');
-      
+
       expect(model.loadedRelations, isEmpty);
-      
+
       final items = ['item1', 'item2'];
-      
+
       model.setRelation('items', items);
-      
+
       final loaded = model.loadedRelations;
       expect(loaded, hasLength(1));
       expect(loaded.containsKey('items'), isTrue);
@@ -87,16 +87,16 @@ void main() {
 
     test('clearRelations removes all cached relations', () {
       final model = TestModel(id: 99, name: 'Clear');
-      
+
       model.setRelations({
         'items': ['item1', 'item2'],
         'featured': 'item1',
       });
-      
+
       expect(model.loadedRelationNames, hasLength(2));
-      
+
       model.clearRelations();
-      
+
       expect(model.loadedRelationNames, isEmpty);
       expect(model.relationLoaded('items'), isFalse);
       expect(model.relationLoaded('featured'), isFalse);
@@ -106,14 +106,14 @@ void main() {
   group('syncRelationsFromQueryRow', () {
     test('syncs relations from QueryRow map', () {
       final model = TestModel(id: 55, name: 'Sync');
-      
+
       final rowRelations = {
         'items': ['item1', 'item2'],
         'featured': 'item1',
       };
-      
+
       model.syncRelationsFromQueryRow(rowRelations);
-      
+
       expect(model.relationLoaded('items'), isTrue);
       expect(model.relationLoaded('featured'), isTrue);
       expect(model.getRelationList<String>('items'), hasLength(2));
@@ -122,9 +122,9 @@ void main() {
 
     test('handles empty relation map', () {
       final model = TestModel(id: 77, name: 'Empty');
-      
+
       model.syncRelationsFromQueryRow({});
-      
+
       expect(model.loadedRelationNames, isEmpty);
     });
   });
@@ -140,12 +140,57 @@ void main() {
 
     test('preventsLazyLoading can be toggled', () {
       expect(ModelRelations.preventsLazyLoading, isFalse);
-      
+
       ModelRelations.preventsLazyLoading = true;
       expect(ModelRelations.preventsLazyLoading, isTrue);
-      
+
       ModelRelations.preventsLazyLoading = false;
       expect(ModelRelations.preventsLazyLoading, isFalse);
+    });
+  });
+
+  group('relations getter (shorthand alias)', () {
+    test('relations getter returns same as loadedRelations', () {
+      final model = TestModel(id: 100, name: 'Alias Test');
+
+      model.setRelation('author', 'Alice');
+      model.setRelation('tags', ['dart', 'flutter']);
+
+      // Both should return the same data
+      expect(model.relations, equals(model.loadedRelations));
+      expect(model.relations['author'], equals('Alice'));
+      expect(model.relations['tags'], equals(['dart', 'flutter']));
+    });
+
+    test('relations getter returns empty map when no relations loaded', () {
+      final model = TestModel(id: 101, name: 'Empty');
+
+      expect(model.relations, isEmpty);
+      expect(model.relations, equals(model.loadedRelations));
+    });
+
+    test('relations getter reflects changes after setRelation', () {
+      final model = TestModel(id: 102, name: 'Dynamic');
+
+      expect(model.relations, isEmpty);
+
+      model.setRelation('posts', [1, 2, 3]);
+      expect(model.relations, hasLength(1));
+      expect(model.relations['posts'], equals([1, 2, 3]));
+
+      model.setRelation('comments', [4, 5]);
+      expect(model.relations, hasLength(2));
+    });
+
+    test('relations getter reflects changes after unsetRelation', () {
+      final model = TestModel(id: 103, name: 'Unset');
+
+      model.setRelations({'a': 1, 'b': 2, 'c': 3});
+      expect(model.relations, hasLength(3));
+
+      model.unsetRelation('b');
+      expect(model.relations, hasLength(2));
+      expect(model.relations.containsKey('b'), isFalse);
     });
   });
 }
