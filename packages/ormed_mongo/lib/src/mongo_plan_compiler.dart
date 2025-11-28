@@ -5,18 +5,23 @@ import 'mongo_codecs.dart';
 import 'mongo_query_plan_metadata.dart';
 import 'mongo_update_utils.dart';
 import 'mongo_transaction_context.dart';
+import 'mongo_query_formatter.dart';
 
 /// Converts ORM plans into MongoDB command payloads.
 class MongoPlanCompiler implements PlanCompiler {
   const MongoPlanCompiler();
 
   static const _aggregateBuilder = MongoAggregatePipelineBuilder();
+  static const _formatter = MongoQueryFormatter();
 
   @override
   StatementPreview compileSelect(QueryPlan plan) {
     final sql = _legacySqlForPlan(plan);
     final metadata = metadataForPlan(plan);
-    final statementMetadata = <String, Object?>{'sql': sql};
+    final statementMetadata = <String, Object?>{
+      'sql': sql,
+      'table': plan.definition.tableName,
+    };
     final relationAggregateMetadata = metadata != null
         ? null
         : serializeRelationAggregates(plan.relationAggregates);
@@ -43,20 +48,24 @@ class MongoPlanCompiler implements PlanCompiler {
       if (pipeline.isNotEmpty) {
         statementMetadata['mongo_pipeline'] = pipeline;
       }
+      final payload = DocumentStatementPayload(
+        command: 'aggregate',
+        arguments: {'pipeline': pipeline},
+        metadata: statementMetadata,
+      );
       return StatementPreview(
-        payload: DocumentStatementPayload(
-          command: 'aggregate',
-          arguments: {'pipeline': pipeline},
-          metadata: statementMetadata,
-        ),
+        payload: payload,
+        resolvedText: _formatter.format(payload),
       );
     }
+    final payload = DocumentStatementPayload(
+      command: 'find',
+      arguments: _buildFindArguments(plan),
+      metadata: statementMetadata,
+    );
     return StatementPreview(
-      payload: DocumentStatementPayload(
-        command: 'find',
-        arguments: _buildFindArguments(plan),
-        metadata: statementMetadata,
-      ),
+      payload: payload,
+      resolvedText: _formatter.format(payload),
     );
   }
 
@@ -65,11 +74,14 @@ class MongoPlanCompiler implements PlanCompiler {
     switch (plan.operation) {
       case MutationOperation.insert:
         if (plan.rows.isEmpty) break;
+        final payload = DocumentStatementPayload(
+          command: 'insertMany',
+          arguments: {'documents': plan.rows.map(documentFromRow).toList()},
+          metadata: {'table': plan.definition.tableName},
+        );
         return StatementPreview(
-          payload: DocumentStatementPayload(
-            command: 'insertMany',
-            arguments: {'documents': plan.rows.map(documentFromRow).toList()},
-          ),
+          payload: payload,
+          resolvedText: _formatter.format(payload),
         );
       case MutationOperation.update:
         final updates = plan.rows
@@ -78,11 +90,14 @@ class MongoPlanCompiler implements PlanCompiler {
             .cast<Map<String, Object?>>()
             .toList();
         if (updates.isNotEmpty) {
+          final payload = DocumentStatementPayload(
+            command: 'updateMany',
+            arguments: {'updates': updates},
+            metadata: {'table': plan.definition.tableName},
+          );
           return StatementPreview(
-            payload: DocumentStatementPayload(
-              command: 'updateMany',
-              arguments: {'updates': updates},
-            ),
+            payload: payload,
+            resolvedText: _formatter.format(payload),
           );
         }
         break;
@@ -91,11 +106,14 @@ class MongoPlanCompiler implements PlanCompiler {
             .map((row) => {'filter': mutationRowFilter(row)})
             .toList();
         if (deletes.isNotEmpty) {
+          final payload = DocumentStatementPayload(
+            command: 'deleteMany',
+            arguments: {'deletes': deletes},
+            metadata: {'table': plan.definition.tableName},
+          );
           return StatementPreview(
-            payload: DocumentStatementPayload(
-              command: 'deleteMany',
-              arguments: {'deletes': deletes},
-            ),
+            payload: payload,
+            resolvedText: _formatter.format(payload),
           );
         }
         break;
@@ -107,17 +125,21 @@ class MongoPlanCompiler implements PlanCompiler {
           plan.queryIncrementValues,
         );
         if (updateDoc.isNotEmpty) {
-          final metadata = <String, Object?>{};
+          final metadata = <String, Object?>{
+            'table': plan.definition.tableName,
+          };
           final identifier = plan.queryPrimaryKey;
           if (identifier != null) {
             metadata['identifier_column'] = identifier;
           }
+          final payload = DocumentStatementPayload(
+            command: 'updateMany',
+            arguments: {'filter': planFilter, 'update': updateDoc},
+            metadata: metadata,
+          );
           return StatementPreview(
-            payload: DocumentStatementPayload(
-              command: 'updateMany',
-              arguments: {'filter': planFilter, 'update': updateDoc},
-              metadata: metadata.isEmpty ? null : metadata,
-            ),
+            payload: payload,
+            resolvedText: _formatter.format(payload),
           );
         }
         break;
@@ -130,11 +152,14 @@ class MongoPlanCompiler implements PlanCompiler {
           });
         } else {
           final planFilter = filtersForPlan(plan.queryPlan!);
+          final payload = DocumentStatementPayload(
+            command: 'deleteMany',
+            arguments: {'filter': planFilter},
+            metadata: {'table': plan.definition.tableName},
+          );
           return StatementPreview(
-            payload: DocumentStatementPayload(
-              command: 'deleteMany',
-              arguments: {'filter': planFilter},
-            ),
+            payload: payload,
+            resolvedText: _formatter.format(payload),
           );
         }
         break;
@@ -151,22 +176,28 @@ class MongoPlanCompiler implements PlanCompiler {
             .cast<Map<String, Object?>>()
             .toList();
         if (operations.isNotEmpty) {
+          final payload = DocumentStatementPayload(
+            command: 'bulkWrite',
+            arguments: {'operations': operations},
+            metadata: {'table': plan.definition.tableName},
+          );
           return StatementPreview(
-            payload: DocumentStatementPayload(
-              command: 'bulkWrite',
-              arguments: {'operations': operations},
-            ),
+            payload: payload,
+            resolvedText: _formatter.format(payload),
           );
         }
         break;
       default:
         break;
     }
+    final payload = DocumentStatementPayload(
+      command: 'unsupported',
+      arguments: {'operation': plan.operation.name},
+      metadata: {'table': plan.definition.tableName},
+    );
     return StatementPreview(
-      payload: DocumentStatementPayload(
-        command: 'unsupported',
-        arguments: {'operation': plan.operation.name},
-      ),
+      payload: payload,
+      resolvedText: _formatter.format(payload),
     );
   }
 
