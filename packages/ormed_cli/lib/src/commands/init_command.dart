@@ -109,7 +109,7 @@ class InitCommand extends Command<void> {
 
 const String schemaDumpTemplate = '''
 -- Schema dump created by orm init.
--- Run `dart run orm_cli:orm schema:describe` to refresh this file.
+-- Run `dart run ormed_cli:orm schema:describe` to refresh this file.
 ''';
 
 const String _defaultSeederTemplate = '''

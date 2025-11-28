@@ -2,7 +2,7 @@
 
 Schema changes are managed by a combination of `orm_core`'s migration runtime
 (`MigrationRunner`, `MigrationLedger`, `SqlMigrationLedger`) and the standalone
-`orm_cli` package for scaffolding/automation.
+`ormed_cli` package for scaffolding/automation.
 
 ## Runtime Concepts
 
@@ -59,10 +59,10 @@ The runner enforces checksum validation (detects drift), keeps migrations
 ordered by timestamp, and records `MigrationAction`s (operation, duration,
 reporting).
 
-## ORM CLI (`orm_cli`)
+## ORM CLI (`ormed_cli`)
 
 The CLI wraps the runtime and exposes developer-friendly commands. It lives in
-`packages/orm/orm_cli` and ships an executable named `orm`.
+`packages/orm/ormed_cli` and ships an executable named `orm`.
 
 ### Configuration (`orm.yaml`)
 
@@ -112,7 +112,7 @@ option, so you can apply migrations, rollback, or seed any connection without
 switching config files.
 
 > The CLI automatically walks up from the current working directory looking for
-> the nearest `orm.yaml`, so running `dart run orm_cli:apply` inside a package
+> the nearest `orm.yaml`, so running `dart run ormed_cli:apply` inside a package
 > that contains `orm.yaml` “just works”. Use `--config` only when you need to
 > override the detected file.
 
@@ -132,10 +132,10 @@ All commands accept `--config <path>` (or `-c`) so you can target a specific
 root.
 ### Schema Diff & Change Set Preview
 
-Beginning with `orm_cli` vNext, every `apply`/`rollback` invocation captures a
+Beginning with `ormed_cli` vNext, every `apply`/`rollback` invocation captures a
 `SchemaSnapshot`, computes a diff via `SchemaDiffer`, and prints a readable
 "change set" before executing SQL. This mirrors the output seen in
-`packages/orm/orm_cli/test/migration_commands_test.dart` and helps you catch
+`packages/orm/ormed_cli/test/migration_commands_test.dart` and helps you catch
 breaking drops or unexpected renames **before** they hit the database.
 
 Example:
@@ -173,14 +173,14 @@ MigrationDescriptor.fromMigration(
 
 ### Running in CI
 
-Because `orm_cli` is pure Dart, you can run migrations during deploys. For
+Because `ormed_cli` is pure Dart, you can run migrations during deploys. For
 SQLite projects the default configuration works out of the box. For Postgres,
 ensure `POSTGRES_URL` or the `driver.options.url` value points at an accessible
 database before invoking the CLI.
 
 ```
 export POSTGRES_URL=postgres://postgres:postgres@db.internal/orm_prod
-dart run orm_cli:apply --limit 10
+dart run ormed_cli:apply --limit 10
 ```
 
 ## Schema Builder Cheatsheet

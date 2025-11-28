@@ -21,7 +21,7 @@ void main() {
     setUp(() async {
       repoRoot = Directory.current;
       final scratchParent = Directory(
-        p.join(repoRoot.path, '.dart_tool', 'orm_cli_tests'),
+        p.join(repoRoot.path, '.dart_tool', 'ormed_cli_tests'),
       );
       if (!scratchParent.existsSync()) {
         scratchParent.createSync(recursive: true);
@@ -298,7 +298,7 @@ Directory _locateOrmCliPackage(Directory start) {
   var cursor = normalized;
   while (true) {
     final candidate = Directory(
-      p.join(cursor.path, 'packages', 'orm', 'orm_cli'),
+      p.join(cursor.path, 'packages', 'orm', 'ormed_cli'),
     );
     if (_isOrmCliPackage(candidate)) {
       return candidate;
@@ -306,7 +306,7 @@ Directory _locateOrmCliPackage(Directory start) {
     final parent = cursor.parent;
     if (parent.path == cursor.path) {
       throw StateError(
-        'Unable to locate packages/orm/orm_cli relative to ${start.path}',
+        'Unable to locate packages/orm/ormed_cli relative to ${start.path}',
       );
     }
     cursor = parent;
@@ -319,7 +319,7 @@ bool _isOrmCliPackage(Directory directory) {
     return false;
   }
   final contents = pubspec.readAsStringSync();
-  return RegExp(r'^name:\s+orm_cli\b', multiLine: true).hasMatch(contents);
+  return RegExp(r'^name:\s+ormed_cli\b', multiLine: true).hasMatch(contents);
 }
 
 String _ormYaml({
@@ -568,7 +568,7 @@ void main(List<String> args) {
 const _seedRegistryLibrary = r'''
 import 'dart:io';
 
-import 'package:orm_cli/runtime.dart';
+import 'package:ormed_cli/runtime.dart';
 import 'package:ormed/ormed.dart';
 
 final List<SeederRegistration> _seeders = [

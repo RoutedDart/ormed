@@ -2,7 +2,7 @@
 
 REPO_ROOT := $(abspath .)
 # Packages with self-contained `dart test` suites.
-ORM_PACKAGES := ormed ormed_sqlite orm_cli
+ORM_PACKAGES := ormed ormed_sqlite ormed_cli
 MARIADB_COMPOSE := $(REPO_ROOT)/packages/ormed_mysql/docker-compose.yml
 MYSQL_COMPOSE := $(REPO_ROOT)/packages/ormed_mysql/docker-compose.mysql.yml
 POSTGRES_COMPOSE := $(REPO_ROOT)/packages/ormed_postgres/docker-compose.yml
@@ -43,7 +43,7 @@ test-ormed-sqlite:
 	dart test packages/ormed_sqlite
 
 test-orm-cli:
-	dart test packages/orm_cli
+	dart test packages/ormed_cli
 
 test-orm-mysql:
 	dart test packages/ormed_mysql

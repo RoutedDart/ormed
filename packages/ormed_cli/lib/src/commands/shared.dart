@@ -4,8 +4,6 @@ import 'dart:io';
 
 import 'package:ormed/ormed.dart';
 // ignore: unused_import
-import 'package:ormed_mongo/ormed_mongo.dart';
-// ignore: unused_import
 import 'package:ormed_mysql/ormed_mysql.dart';
 // ignore: unused_import
 import 'package:ormed_postgres/ormed_postgres.dart';
@@ -108,7 +106,7 @@ const String seedRegistryMarkerEnd = '// </ORM-SEED-REGISTRY>';
 
 const String initialSeedRegistryTemplate =
     '''
-import 'package:orm_cli/runtime.dart';
+import 'package:ormed_cli/runtime.dart';
 import 'package:ormed/ormed.dart';
 
 import 'seeders/database_seeder.dart';
@@ -374,7 +372,6 @@ void _bootstrapCliDrivers() {
   ensureSqliteDriverRegistration();
   ensureMySqlDriverRegistration();
   ensurePostgresDriverRegistration();
-  ensureMongoDriverRegistration();
 }
 
 void printMigrationPlanPreview({

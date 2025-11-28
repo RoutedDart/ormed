@@ -3,7 +3,6 @@ import 'dart:io';
 
 import 'package:args/command_runner.dart';
 import 'package:ormed/ormed.dart';
-import 'package:ormed_mongo/ormed_mongo.dart';
 import 'package:path/path.dart' as p;
 
 import '../config.dart';
@@ -99,23 +98,6 @@ void _writeSchemaDump(Directory root, String path, String contents) {
 }
 
 Future<List<Map<String, Object?>>> schemaMetadata(DriverAdapter driver) async {
-  if (driver is MongoDriverAdapter) {
-    final inspector = MongoSchemaInspector(driver);
-    final tables = await inspector.listTables();
-    final results = <Map<String, Object?>>[];
-    for (final table in tables) {
-      final indexes = await inspector.listIndexes(table.name);
-      final tableMeta = <String, Object?>{
-        'name': table.name,
-        'schema': table.schema,
-        'type': table.type,
-        'validator': table.comment,
-        'indexCount': indexes.length,
-      };
-      results.add(tableMeta);
-    }
-    return results;
-  }
   if (driver is SchemaDriver) {
     final schemaDriver = driver as SchemaDriver;
     final inspector = SchemaInspector(schemaDriver);

@@ -12,7 +12,7 @@ pieces work together.
      ormed_sqlite:
    dev_dependencies:
      build_runner:
-     orm_cli:
+     ormed_cli:
    ```
 2. **Model (`lib/user.dart`)**
    ```dart
@@ -46,8 +46,8 @@ pieces work together.
    ```
 
    The path is relative to the package root and defaults to `lib/orm_registry.g.dart`.
-4. **Bootstrap CLI** - `dart run orm_cli:init` (creates `orm.yaml`, registry, and migrations directory).
-5. **Create/Apply migrations** - `dart run orm_cli:make --name create_users`, edit the file, then `dart run orm_cli:apply`.
+4. **Bootstrap CLI** - `dart run ormed_cli:init` (creates `orm.yaml`, registry, and migrations directory).
+5. **Create/Apply migrations** - `dart run ormed_cli:make --name create_users`, edit the file, then `dart run ormed_cli:apply`.
 6. **Query** - reuse the generated models inside `QueryContext`:
 
 ```dart
@@ -93,7 +93,7 @@ Future<void> main() async {
 > keeping sample code concise. Call `Model.unbindConnectionResolver()` when
 > you're done (e.g., in tests).
 
-> **CLI preview** - `orm_cli` prints a "change set" before each migration runs,
+> **CLI preview** - `ormed_cli` prints a "change set" before each migration runs,
 > highlighting columns/indexes/foreign keys that will be created or dropped.
 
 ## Connecting to File-Based SQLite via ConnectionFactory
@@ -113,16 +113,16 @@ final adapter = SqliteDriverAdapter.custom(
 - Register additional connectors in the factory to prepare for Postgres or
   MySQL once those adapters exist.
 
-## Running Migrations with orm_cli
+## Running Migrations with ormed_cli
 
 ### SQLite Project
 
-1. Initialize scaffolding - `dart run orm_cli:init`.
-2. Create a migration - `dart run orm_cli:make --name create_users_table`.
+1. Initialize scaffolding - `dart run ormed_cli:init`.
+2. Create a migration - `dart run ormed_cli:make --name create_users_table`.
 3. Edit the generated file (under `database/migrations/`).
-4. Apply pending migrations - `dart run orm_cli:apply`.
-5. Verify status / ledger - `dart run orm_cli:status`.
-6. Roll back if needed - `dart run orm_cli:rollback`.
+4. Apply pending migrations - `dart run ormed_cli:apply`.
+5. Verify status / ledger - `dart run ormed_cli:status`.
+6. Roll back if needed - `dart run ormed_cli:rollback`.
 
 ### Postgres Project
 
@@ -151,7 +151,7 @@ preloaded with migrations. You can run the CLI against it from the workspace
 root without changing directories:
 
 ```
-dart run packages/orm/orm_cli/bin/orm.dart apply --config orm_playground/orm.yaml
+dart run packages/orm/ormed_cli/bin/orm.dart apply --config orm_playground/orm.yaml
 ```
 
 After applying migrations, inspect the data via
@@ -287,7 +287,7 @@ prints per-tenant user counts through `UserModelFactory.withConnection`.
 
 ## Auto-registering connections from orm.yaml
 
-`orm_cli` already relies on `registerConnectionsFromConfig` to bootstrap
+`ormed_cli` already relies on `registerConnectionsFromConfig` to bootstrap
 `ConnectionManager.defaultManager` for every entry in `orm.yaml`. Each driver
 package (`ormed_sqlite`, `ormed_mysql`, `ormed_postgres`, `ormed_mongo`) registers
 itself with `DriverRegistry`, so the helper simply selects the right callback,

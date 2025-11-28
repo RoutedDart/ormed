@@ -14,11 +14,11 @@ From the workspace root you can run the CLI against this package without
 changing directories by pointing `--config` at the bundled `orm.yaml`:
 
 ```bash
-dart run packages/orm/orm_cli/bin/orm.dart apply --config orm_playground/orm.yaml
+dart run packages/orm/ormed_cli/bin/orm.dart apply --config orm_playground/orm.yaml
 # Run a single seeder (defaults to DatabaseSeeder when omitted)
-dart run packages/orm/orm_cli/bin/orm.dart seed --config orm_playground/orm.yaml --class DatabaseSeeder
+dart run packages/orm/ormed_cli/bin/orm.dart seed --config orm_playground/orm.yaml --class DatabaseSeeder
 # Run multiple seeders in sequence, Laravel style
-dart run packages/orm/orm_cli/bin/orm.dart seed --config orm_playground/orm.yaml --class DatabaseSeeder --class DemoContentSeeder
+dart run packages/orm/ormed_cli/bin/orm.dart seed --config orm_playground/orm.yaml --class DatabaseSeeder --class DemoContentSeeder
 ```
 
 Use `status`/`rollback` the same way (just swap the subcommand). The `seed`
@@ -47,8 +47,8 @@ and exposes `bin/multi_tenant_demo.dart` to highlight how to bind multiple
 databases. After applying migrations against each tenant, run:
 
 ```bash
-dart run packages/orm/orm_cli/bin/orm.dart apply --config orm_playground/orm.yaml
-dart run packages/orm/orm_cli/bin/orm.dart apply \
+dart run packages/orm/ormed_cli/bin/orm.dart apply --config orm_playground/orm.yaml
+dart run packages/orm/ormed_cli/bin/orm.dart apply \
   --config orm_playground/orm.yaml \
   --connection analytics
 dart run bin/multi_tenant_demo.dart

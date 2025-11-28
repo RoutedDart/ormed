@@ -145,7 +145,7 @@ class $className extends Migration {
 
 String _seederFileTemplate(String className) =>
     '''
-import 'package:orm_cli/runtime.dart';
+import 'package:ormed_cli/runtime.dart';
 import 'package:ormed/ormed.dart';
 
 class $className extends Seeder {

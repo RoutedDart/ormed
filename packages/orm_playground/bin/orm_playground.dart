@@ -17,7 +17,7 @@ Future<void> main(List<String> arguments) async {
     if (!await _schemaReady(connection)) {
       stdout.writeln(
         'Run the ORM CLI to apply migrations:\n'
-        '  dart run packages/orm/orm_cli/bin/orm.dart apply '
+        '  dart run packages/orm/ormed_cli/bin/orm.dart apply '
         '--config orm_playground/orm.yaml',
       );
       return;

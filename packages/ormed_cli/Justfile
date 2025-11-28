@@ -2,6 +2,6 @@ set shell := ["bash", "-lc"]
 
 default: test
 
-# Run the orm_cli package tests
+# Run the ormed_cli package tests
 test:
 	dart test

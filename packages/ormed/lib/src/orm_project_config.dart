@@ -7,7 +7,7 @@ class DriverConfig {
   /// Creates a driver descriptor with a [type] (e.g., `sqlite`) and [options].
   DriverConfig({required this.type, required this.options});
 
-  /// The driver identifier that `orm_cli` and `ConnectionManager` consume.
+  /// The driver identifier that `ormed_cli` and `ConnectionManager` consume.
   final String type;
 
   /// Arbitrary key/value pairs that flow into a `DatabaseConfig`.

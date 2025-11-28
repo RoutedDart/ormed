@@ -120,7 +120,7 @@ Object? _normalizeOptionValue(Object? value) {
 }
 
 String _connectionName(String driver, Object salt) =>
-    'orm_cli.$driver.${salt.hashCode}';
+    'ormed_cli.$driver.${salt.hashCode}';
 
 String _stableFingerprint(Map<String, Object?> options) {
   if (options.isEmpty) return 'default';

@@ -12,9 +12,9 @@ test-driver_tests:
 test-ormed_sqlite:
 	cd packages/ormed_sqlite && just test
 
-# Run orm_cli unit tests
-test-orm_cli:
-	cd packages/orm_cli && just test
+# Run ormed_cli unit tests
+test-ormed_cli:
+	cd packages/ormed_cli && just test
 
 # Run ormed_mysql database-backed tests (defaults to running both MySQL & MariaDB suites)
 test-ormed_mysql:
@@ -25,7 +25,7 @@ test-ormed_postgres:
 	cd packages/ormed_postgres && just test
 
 # Run all unit-test-only packages
-test-packages: test-ormed test-ormed_sqlite test-orm_cli
+test-packages: test-ormed test-ormed_sqlite test-ormed_cli
 
 # Run all tests, including database-backed suites (requires Docker)
 test-all: test-packages test-ormed_postgres test-ormed_mysql

@@ -60,25 +60,19 @@ void main() {
 
       expect(
         postgresMap['payload'],
-        equals({
-          'encoded_by': 'postgres',
-          'data': {'mode': 'dark'},
-        }),
+        equals({'mode': 'dark', 'encoded_by': 'postgres'}),
       );
-    final expectedSqlite = jsonEncode({'mode': 'dark'});
-    expect(sqliteMap['payload'], equals(expectedSqlite));
+      final expectedSqlite = jsonEncode({'mode': 'dark'});
+      expect(sqliteMap['payload'], equals(expectedSqlite));
     });
 
     test('decode consults driver override metadata', () {
       final decoded = definition.fromMap({
         'id': 5,
-        'payload': {
-          'encoded_by': 'postgres',
-          'data': {'mode': 'dark'},
-        },
+        'payload': {'mode': 'dark', 'encoded_by': 'postgres'},
       }, registry: baseRegistry.forDriver('postgres'));
       expect(decoded.payload['mode'], equals('dark'));
-      expect(decoded.payload['encoded_by'], equals('postgres'));
+      expect(decoded.payload.containsKey('encoded_by'), isFalse);
     });
   });
 }
