@@ -7,7 +7,7 @@ part 'custom_soft_delete.orm.dart';
   softDeletes: true,
   softDeletesColumn: 'removed_on',
 )
-class CustomSoftDelete with ModelAttributes, ModelConnection, SoftDeletes {
+class CustomSoftDelete extends Model<CustomSoftDelete> with SoftDeletes {
   const CustomSoftDelete({required this.id, required this.title});
 
   @OrmField(isPrimaryKey: true)

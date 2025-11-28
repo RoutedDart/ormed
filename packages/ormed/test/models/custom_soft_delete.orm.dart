@@ -143,3 +143,8 @@ class _$CustomSoftDeleteModel extends CustomSoftDelete {
     attachSoftDeleteColumn('removed_on');
   }
 }
+
+extension CustomSoftDeleteAttributeSetters on CustomSoftDelete {
+  set id(int value) => setAttribute('id', value);
+  set title(String value) => setAttribute('title', value);
+}

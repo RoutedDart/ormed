@@ -64,6 +64,7 @@ class QueryContext implements ConnectionResolver {
        _queryLogHook = queryLogHook,
        _pretendResolver = pretendResolver {
     _registerSoftDeleteScopes();
+    registry.addOnRegisteredCallback(_handleLateRegistration);
   }
 
   /// The model registry containing all model definitions.
@@ -133,7 +134,7 @@ class QueryContext implements ConnectionResolver {
     String? table,
     String? schema,
     String? alias,
-        List<String>? scopes,
+    List<String>? scopes,
   }) {
     final overridden = (table == null && schema == null)
         ? definition
@@ -866,6 +867,16 @@ class QueryContext implements ConnectionResolver {
         (query) => query._applySoftDeleteFilter(field),
       );
     }
+  }
+
+  void _handleLateRegistration(ModelDefinition<dynamic> definition) {
+    final field = definition.softDeleteField;
+    if (field == null) return;
+    scopeRegistry.addGlobalScopeForType(
+      definition.modelType,
+      ScopeRegistry.softDeleteScopeIdentifier,
+      (query) => query._applySoftDeleteFilter(field),
+    );
   }
 }
 

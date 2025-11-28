@@ -162,7 +162,7 @@ void main() {
         id: 101,
         email: 'original@example.com',
       ).save();
-      user.email = 'changed@example.com';
+      user.setAttribute('email', 'changed@example.com');
       await user.save();
 
       final rows = await Model.query<ActiveUser>()
@@ -184,7 +184,7 @@ void main() {
       ]);
 
       // Save should re-insert
-      user.email = 'restored@example.com';
+      user.setAttribute('email', 'restored@example.com');
       await user.save();
 
       final rows = await Model.query<ActiveUser>()

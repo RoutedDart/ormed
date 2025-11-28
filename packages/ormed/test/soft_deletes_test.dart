@@ -26,5 +26,26 @@ void main() {
       expect(attrs.getAttribute<DateTime?>('removed_on'), equals(removedOn));
       expect(attrs.getSoftDeleteColumn(), equals('removed_on'));
     });
+
+    test('applies soft delete scope to late-registered models', () async {
+      final registry = ModelRegistry();
+      final driver = InMemoryQueryExecutor();
+      final context = QueryContext(registry: registry, driver: driver);
+
+      // Register AFTER context creation
+      registry.register(CustomSoftDeleteOrmDefinition.definition);
+
+      // Add test data with deleted and non-deleted records
+      driver.register(CustomSoftDeleteOrmDefinition.definition, [
+        CustomSoftDelete(id: 1, title: 'Active'),
+        CustomSoftDelete(id: 2, title: 'Deleted')
+          ..setAttribute('removed_on', DateTime.utc(2024)),
+      ]);
+
+      // Query should filter out soft-deleted records
+      final results = await context.query<CustomSoftDelete>().get();
+      expect(results, hasLength(1));
+      expect(results.first.title, 'Active');
+    });
   });
 }

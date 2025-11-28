@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'exceptions.dart';
 import 'model_definition.dart';
 
@@ -5,16 +7,36 @@ import 'model_definition.dart';
 class ModelRegistry {
   final Map<Type, ModelDefinition<dynamic>> _definitions = {};
   final Map<String, ModelDefinition<dynamic>> _definitionsByName = {};
+  final StreamController<ModelDefinition<dynamic>> _onRegistered =
+      StreamController.broadcast();
+  final List<void Function(ModelDefinition<dynamic>)> _onRegisteredCallbacks =
+      [];
+
+  Stream<ModelDefinition<dynamic>> get onRegistered => _onRegistered.stream;
+
+  void addOnRegisteredCallback(
+    void Function(ModelDefinition<dynamic>) callback,
+  ) {
+    _onRegisteredCallbacks.add(callback);
+  }
 
   void register<T>(ModelDefinition<T> definition) {
     _definitions[definition.modelType] = definition;
     _definitionsByName[definition.modelName] = definition;
+    _onRegistered.add(definition);
+    for (final callback in _onRegisteredCallbacks) {
+      callback(definition);
+    }
   }
 
   void registerAll(Iterable<ModelDefinition<dynamic>> definitions) {
     for (final definition in definitions) {
       _definitions[definition.modelType] = definition;
       _definitionsByName[definition.modelName] = definition;
+      _onRegistered.add(definition);
+      for (final callback in _onRegisteredCallbacks) {
+        callback(definition);
+      }
     }
   }
 
