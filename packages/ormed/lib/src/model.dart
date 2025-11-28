@@ -19,6 +19,7 @@ import 'model_registry.dart';
 import 'query/query.dart';
 import 'query/query_plan.dart';
 import 'query/relation_loader.dart';
+import 'query/relation_resolver.dart';
 import 'repository/repository.dart';
 import 'value_codec.dart';
 
@@ -545,14 +546,9 @@ abstract class Model<TModel extends Model<TModel>>
       throw ArgumentError('Relation "$relation" not found on ${def.modelName}');
     }
 
-    // Convert constraint callback to QueryPredicate
-    QueryPredicate? predicate;
-    if (constraint != null) {
-      final target = context.registry.expectByName(relationDef.targetModel);
-      final builder = PredicateBuilder<dynamic>(target);
-      constraint(builder);
-      predicate = builder.build();
-    }
+    // Convert constraint callback to QueryPredicate using RelationResolver
+    final relationResolver = RelationResolver(context);
+    final predicate = relationResolver.predicateFor(relationDef, constraint);
 
     // Create a synthetic QueryRow from current model
     final row = QueryRow<TModel>(

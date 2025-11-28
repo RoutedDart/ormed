@@ -17,6 +17,7 @@ export 'src/hook/query_builder_hook.dart';
 export 'src/hook/relation_hook.dart';
 export 'src/query/query_grammar.dart';
 export 'src/query/relation_loader.dart';
+export 'src/query/relation_resolver.dart';
 export 'src/query/query_logger.dart';
 export 'src/connection/connection.dart';
 export 'src/connection/connection_resolver.dart';
