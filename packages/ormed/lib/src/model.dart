@@ -511,6 +511,11 @@ abstract class Model<TModel extends Model<TModel>>
   ///
   /// Similar to Laravel's `$model->load('relation')`.
   ///
+  /// Supports nested relation paths using dot notation:
+  /// ```dart
+  /// await post.load('comments.author'); // Load comments, then their authors
+  /// ```
+  ///
   /// Example:
   /// ```dart
   /// final post = await Post.query().first();
@@ -518,7 +523,7 @@ abstract class Model<TModel extends Model<TModel>>
   /// print(post.author?.name);
   /// ```
   ///
-  /// With constraint:
+  /// With constraint (applies to the final relation in nested paths):
   /// ```dart
   /// await post.load('comments', (q) => q.where('approved', true));
   /// ```
@@ -535,6 +540,12 @@ abstract class Model<TModel extends Model<TModel>>
     final def = expectDefinition();
     final resolver = _resolveResolverFor(def);
     final context = _requireQueryContext(resolver);
+
+    // Check if this is a nested relation path
+    if (relation.contains('.')) {
+      await _loadNestedRelation(relation, constraint, def, context);
+      return _self();
+    }
 
     // Find the relation definition
     final relationDef = def.relations.cast<RelationDefinition?>().firstWhere(
@@ -567,6 +578,69 @@ abstract class Model<TModel extends Model<TModel>>
 
     // The relation should now be in row.relations and synced to model cache
     return _self();
+  }
+
+  /// Internal helper for loading nested relation paths.
+  ///
+  /// Splits the path and recursively loads each segment.
+  Future<void> _loadNestedRelation(
+    String path,
+    PredicateCallback<dynamic>? constraint,
+    ModelDefinition<TModel> def,
+    QueryContext context,
+  ) async {
+    final parts = path.split('.');
+    final firstRelation = parts.first;
+    final remainingPath = parts.skip(1).join('.');
+
+    // Load the first relation on this model (no constraint for intermediate relations)
+    final relationDef = def.relations.cast<RelationDefinition?>().firstWhere(
+      (r) => r?.name == firstRelation,
+      orElse: () => null,
+    );
+
+    if (relationDef == null) {
+      throw ArgumentError(
+        'Relation "$firstRelation" not found on ${def.modelName}',
+      );
+    }
+
+    // Load the first relation if not already loaded
+    if (!relationLoaded(firstRelation)) {
+      final row = QueryRow<TModel>(
+        model: _self(),
+        row: def.toMap(_self(), registry: context.codecRegistry),
+      );
+
+      final loader = RelationLoader(context);
+      final relationLoad = RelationLoad(relation: relationDef);
+      await loader.attach(def, [row], [relationLoad]);
+    }
+
+    // If there's more path to load, recurse into the loaded relations
+    if (remainingPath.isNotEmpty) {
+      final loadedValue = getRelation<dynamic>(firstRelation);
+
+      if (loadedValue == null) {
+        return; // Nothing to recurse into
+      }
+
+      // Determine the constraint to pass (only for the final segment)
+      final isLastSegment = !remainingPath.contains('.');
+      final nextConstraint = isLastSegment ? constraint : null;
+
+      if (loadedValue is List) {
+        // Load nested relations on each item in the list
+        for (final item in loadedValue) {
+          if (item is Model) {
+            await item.load(remainingPath, nextConstraint);
+          }
+        }
+      } else if (loadedValue is Model) {
+        // Load nested relation on the single model
+        await loadedValue.load(remainingPath, nextConstraint);
+      }
+    }
   }
 
   /// Lazily loads multiple relations that haven't been loaded yet.
@@ -607,6 +681,147 @@ abstract class Model<TModel extends Model<TModel>>
       await load(entry.key, entry.value);
     }
     return _self();
+  }
+
+  /// Lazily loads a relation on multiple models efficiently.
+  ///
+  /// This static method batches relation loading across multiple models,
+  /// executing a single query per resolver group instead of N+1 queries.
+  ///
+  /// Similar to Laravel's collection-based `load()`.
+  ///
+  /// Example:
+  /// ```dart
+  /// final posts = await Post.query().get();
+  /// await Model.loadRelations(posts, 'author');
+  /// // All posts now have their authors loaded with a single query
+  /// ```
+  ///
+  /// With constraint:
+  /// ```dart
+  /// await Model.loadRelations(posts, 'comments', (q) => q.where('approved', true));
+  /// ```
+  ///
+  /// Throws [LazyLoadingViolationException] if [ModelRelations.preventsLazyLoading] is true.
+  static Future<void> loadRelations<T extends Model<T>>(
+    Iterable<T> models,
+    String relation, [
+    PredicateCallback<dynamic>? constraint,
+  ]) async {
+    if (ModelRelations.preventsLazyLoading) {
+      if (models.isNotEmpty) {
+        throw LazyLoadingViolationException(models.first.runtimeType, relation);
+      }
+      return;
+    }
+
+    final modelList = models.toList();
+    if (modelList.isEmpty) return;
+
+    // Group models by their connection resolver
+    final groups = <ConnectionResolver, List<T>>{};
+    for (final model in modelList) {
+      final def = model.expectDefinition();
+      final resolver = model._resolveResolverFor(def);
+      groups.putIfAbsent(resolver, () => <T>[]).add(model);
+    }
+
+    // Load relations for each group
+    for (final entry in groups.entries) {
+      final resolver = entry.key;
+      final groupModels = entry.value;
+
+      if (groupModels.isEmpty) continue;
+
+      final context = _requireQueryContext(resolver);
+      final def = groupModels.first.expectDefinition();
+
+      // Check for nested path
+      if (relation.contains('.')) {
+        // For nested paths, load on each model individually
+        // (batch loading nested paths is complex and deferred)
+        for (final model in groupModels) {
+          await model.load(relation, constraint);
+        }
+        continue;
+      }
+
+      // Find the relation definition
+      final relationDef = def.relations.cast<RelationDefinition?>().firstWhere(
+        (r) => r?.name == relation,
+        orElse: () => null,
+      );
+
+      if (relationDef == null) {
+        throw ArgumentError(
+          'Relation "$relation" not found on ${def.modelName}',
+        );
+      }
+
+      // Convert constraint callback to QueryPredicate
+      final relationResolver = RelationResolver(context);
+      final predicate = relationResolver.predicateFor(relationDef, constraint);
+
+      // Create synthetic QueryRows for all models in the group
+      final rows = groupModels.map((model) {
+        return QueryRow<T>(
+          model: model,
+          row: def.toMap(model, registry: context.codecRegistry),
+        );
+      }).toList();
+
+      // Batch load the relation using RelationLoader
+      final loader = RelationLoader(context);
+      final relationLoad = RelationLoad(
+        relation: relationDef,
+        predicate: predicate,
+      );
+
+      await loader.attach(def, rows, [relationLoad]);
+    }
+  }
+
+  /// Lazily loads multiple relations on multiple models efficiently.
+  ///
+  /// This is a convenience wrapper around [loadRelations] for loading
+  /// multiple relations in sequence.
+  ///
+  /// Example:
+  /// ```dart
+  /// final posts = await Post.query().get();
+  /// await Model.loadRelationsMany(posts, ['author', 'tags', 'comments']);
+  /// ```
+  static Future<void> loadRelationsMany<T extends Model<T>>(
+    Iterable<T> models,
+    Iterable<String> relations,
+  ) async {
+    for (final relation in relations) {
+      await loadRelations(models, relation);
+    }
+  }
+
+  /// Lazily loads relations on multiple models if not already loaded.
+  ///
+  /// Only loads relations that aren't already loaded on each model.
+  ///
+  /// Example:
+  /// ```dart
+  /// final posts = await Post.query().get();
+  /// await Model.loadRelationsMissing(posts, ['author', 'tags']);
+  /// ```
+  static Future<void> loadRelationsMissing<T extends Model<T>>(
+    Iterable<T> models,
+    Iterable<String> relations,
+  ) async {
+    for (final relation in relations) {
+      // Filter to models that don't have this relation loaded
+      final needsLoading = models
+          .where((m) => !m.relationLoaded(relation))
+          .toList();
+      if (needsLoading.isNotEmpty) {
+        await loadRelations(needsLoading, relation);
+      }
+    }
   }
 
   /// Lazily loads the count of a relation.

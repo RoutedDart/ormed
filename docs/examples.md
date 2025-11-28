@@ -387,6 +387,46 @@ final post = await Post.query().withRelation('author').first();
 print(post.author?.name); // OK - was eager loaded
 ```
 
+### Nested Relation Paths
+
+Load nested relations using dot notation:
+
+```dart
+final post = await Post.query().firstOrFail();
+
+// Load comments and their authors in one call
+await post.load('comments.author');
+
+// Access nested data
+for (final comment in post.comments) {
+  print('Comment by: ${comment.author?.name}');
+}
+
+// Constraint applies to the final relation
+await post.load('comments.author', (query) => query.whereEquals('active', true));
+```
+
+### Batch Loading on Collections
+
+Efficiently load relations on multiple models with a single query:
+
+```dart
+final posts = await Post.query().get();
+
+// Single query loads all authors (avoids N+1)
+await Model.loadRelations(posts, 'author');
+
+// Load multiple relations
+await Model.loadRelationsMany(posts, ['author', 'tags', 'comments']);
+
+// Load only missing relations (skips already loaded)
+await Model.loadRelationsMissing(posts, ['author', 'tags']);
+
+// With constraints
+await Model.loadRelations(posts, 'comments', (query) =>
+    query.whereEquals('approved', true));
+```
+
 ### Checking Relation State
 
 Query whether relations have been loaded:

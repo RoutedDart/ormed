@@ -195,6 +195,74 @@ await post.loadMany({
 });
 ```
 
+### Nested Relation Paths
+
+Load nested relations using dot notation, similar to Laravel:
+
+```dart
+// Load comments and their authors in one call
+await post.load('comments.author');
+
+// The constraint applies to the final relation in the path
+await post.load('comments.author', (query) => query.whereEquals('active', true));
+
+// Access nested loaded data
+for (final comment in post.comments) {
+  print('Comment by: ${comment.author?.name}');
+}
+```
+
+Nested loading works recursively:
+1. Loads the first relation on the parent model
+2. For each loaded child, loads the next relation in the path
+3. Continues until the full path is loaded
+
+---
+
+## Batch Loading on Collections
+
+When working with multiple models, use static batch loading methods to avoid
+N+1 query problems. These methods execute a single query per resolver group.
+
+### Load Single Relation on Multiple Models
+
+```dart
+final posts = await Post.query().get();
+
+// Single query loads all authors
+await Model.loadRelations(posts, 'author');
+
+for (final post in posts) {
+  print('${post.title} by ${post.author?.name}');
+}
+```
+
+### With Constraints
+
+```dart
+await Model.loadRelations(posts, 'comments', (query) =>
+    query.whereEquals('approved', true));
+```
+
+### Load Multiple Relations
+
+```dart
+final posts = await Post.query().get();
+
+// Load multiple relations in sequence
+await Model.loadRelationsMany(posts, ['author', 'tags', 'comments']);
+```
+
+### Load Missing Relations Only
+
+```dart
+// Some posts may already have relations from eager loading
+final posts = await Post.query().withRelation('author').get();
+
+// Only loads tags and comments (skips author since already loaded)
+await Model.loadRelationsMissing(posts, ['author', 'tags', 'comments']);
+```
+
 ### Lazy Loading Aggregates
 
 Load counts and existence checks lazily:
@@ -518,15 +586,23 @@ Future<void> main() async {
 | `orWhereHas(relation, [constraint])` | OR filter by relation existence |
 | `joinRelation(name, {type})` | Join relation without eager loading |
 
-### Model Lazy Loading Methods
+### Model Lazy Loading Methods (Instance)
 
 | Method | Description |
 |--------|-------------|
-| `load(relation, [constraint])` | Lazy load a single relation |
+| `load(relation, [constraint])` | Lazy load a single relation (supports nested paths like `'comments.author'`) |
 | `loadMissing(relations)` | Load relations not already loaded |
 | `loadMany(relationsMap)` | Load multiple relations with constraints |
 | `loadCount(relation, {alias, constraint})` | Lazy load relation count |
 | `loadExists(relation, {alias, constraint})` | Lazy load relation existence |
+
+### Model Batch Loading Methods (Static)
+
+| Method | Description |
+|--------|-------------|
+| `Model.loadRelations(models, relation, [constraint])` | Batch load a relation on multiple models |
+| `Model.loadRelationsMany(models, relations)` | Batch load multiple relations on multiple models |
+| `Model.loadRelationsMissing(models, relations)` | Batch load only missing relations on multiple models |
 
 ### Model Relation State Methods
 
