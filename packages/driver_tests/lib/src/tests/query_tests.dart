@@ -72,25 +72,24 @@ void runDriverQueryTests({
       expect(event.succeeded, isTrue);
     });
 
-    test('records query errors in events', () async {
-      // Skip for MongoDB since it doesn't support raw SQL
-      if (config.driverName.toLowerCase().contains('mongo')) {
-        return;
-      }
-      
-      final events = <QueryEvent>[];
-      harness.context.onQuery(events.add);
-      await harness.adapter.executeRaw('DROP TABLE users');
+    test(
+      'records query errors in events',
+      () async {
+        final events = <QueryEvent>[];
+        harness.context.onQuery(events.add);
+        await harness.adapter.executeRaw('DROP TABLE users');
 
-      await expectLater(
-        () => harness.context.query<User>().get(),
-        throwsA(isA<Exception>()),
-      );
+        await expectLater(
+          () => harness.context.query<User>().get(),
+          throwsA(isA<Exception>()),
+        );
 
-      expect(events, hasLength(1));
-      expect(events.single.error, isNotNull);
-      expect(events.single.succeeded, isFalse);
-    });
+        expect(events, hasLength(1));
+        expect(events.single.error, isNotNull);
+        expect(events.single.succeeded, isFalse);
+      },
+      skip: !config.supportsCapability(DriverCapability.rawSQL),
+    );
 
     test('threadCount reports driver metric', () async {
       final count = await harness.context.threadCount();
@@ -515,22 +514,26 @@ void runDriverQueryTests({
           expect(remaining.single.id, 2);
         });
 
-        test('forceDelete honors order and limit clauses', () async {
-          final affected = await harness.context
-              .query<Comment>()
-              .withTrashed()
-              .orderBy('id', descending: true)
-              .limit(1)
-              .forceDelete();
+        test(
+          'forceDelete honors order and limit clauses',
+          () async {
+            final affected = await harness.context
+                .query<Comment>()
+                .withTrashed()
+                .orderBy('id', descending: true)
+                .limit(1)
+                .forceDelete();
 
-          expect(affected, 1);
-          final rows = await harness.context
-              .query<Comment>()
-              .withTrashed()
-              .orderBy('id')
-              .get();
-          expect(rows.map((c) => c.id), equals([1]));
-        }, skip: !config.supportsCapability(DriverCapability.queryDeletes));
+            expect(affected, 1);
+            final rows = await harness.context
+                .query<Comment>()
+                .withTrashed()
+                .orderBy('id')
+                .get();
+            expect(rows.map((c) => c.id), equals([1]));
+          },
+          skip: !config.supportsCapability(DriverCapability.queryDeletes),
+        );
       });
 
       group('json predicates', () {

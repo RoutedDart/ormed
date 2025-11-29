@@ -312,6 +312,74 @@ class _ModelEmitter {
     buffer.writeln(
       '  static ModelDefinition<$className> get definition => $modelVar;',
     );
+    
+    // Always generate static query helpers
+    // (static methods cannot be inherited in Dart)
+    buffer.writeln();
+    buffer.writeln('  // Static Query Helpers');
+    buffer.writeln(
+      '  static Query<$className> query({String? connection}) =>',
+    );
+    buffer.writeln('      Model.query<$className>(connection: connection);');
+    buffer.writeln();
+    buffer.writeln('  static Future<List<$className>> all({String? connection}) =>');
+    buffer.writeln('      Model.all<$className>(connection: connection);');
+    buffer.writeln();
+    buffer.writeln('  static Future<$className?> find(dynamic id, {String? connection}) =>');
+    buffer.writeln('      Model.find<$className>(id, connection: connection);');
+    buffer.writeln();
+    buffer.writeln('  static Future<$className> findOrFail(dynamic id, {String? connection}) =>');
+    buffer.writeln('      Model.findOrFail<$className>(id, connection: connection);');
+    buffer.writeln();
+    buffer.writeln('  static Future<$className?> first({String? connection}) =>');
+    buffer.writeln('      Model.first<$className>(connection: connection);');
+    buffer.writeln();
+    buffer.writeln('  static Future<$className> firstOrFail({String? connection}) =>');
+    buffer.writeln('      Model.firstOrFail<$className>(connection: connection);');
+    buffer.writeln();
+    buffer.writeln('  static Query<$className> where(String column, String operator, dynamic value, {String? connection}) =>');
+    buffer.writeln('      Model.where<$className>(column, operator, value, connection: connection);');
+    buffer.writeln();
+    buffer.writeln('  static Query<$className> whereIn(String column, List<dynamic> values, {String? connection}) =>');
+    buffer.writeln('      Model.whereIn<$className>(column, values, connection: connection);');
+    buffer.writeln();
+    buffer.writeln('  static Query<$className> orderBy(String column, {String direction = \'asc\', String? connection}) =>');
+    buffer.writeln('      Model.orderBy<$className>(column, direction: direction, connection: connection);');
+    buffer.writeln();
+    buffer.writeln('  static Query<$className> limit(int count, {String? connection}) =>');
+    buffer.writeln('      Model.limit<$className>(count, connection: connection);');
+    buffer.writeln();
+    buffer.writeln('  static Future<int> count({String? connection}) =>');
+    buffer.writeln('      Model.count<$className>(connection: connection);');
+    buffer.writeln();
+    buffer.writeln('  static Future<bool> exists({String? connection}) =>');
+    buffer.writeln('      Model.exists<$className>(connection: connection);');
+    buffer.writeln();
+    buffer.writeln('  static Future<bool> doesntExist({String? connection}) =>');
+    buffer.writeln('      Model.doesntExist<$className>(connection: connection);');
+    // Only generate create/insert for models that extend Model (have save() method)
+    if (extendsModel) {
+      buffer.writeln();
+      buffer.writeln('  static Future<$className> create(');
+      buffer.writeln('    Map<String, dynamic> attributes, {');
+      buffer.writeln('    String? connection,');
+      buffer.writeln('  }) async {');
+      buffer.writeln('    final q = query(connection: connection);');
+      buffer.writeln('    final codec = const _\$${className}ModelCodec();');
+      buffer.writeln('    final model = codec.decode(attributes, q.context.codecRegistry);');
+      buffer.writeln('    return await model.save();');
+      buffer.writeln('  }');
+      buffer.writeln();
+      buffer.writeln('  static Future<void> insert(');
+      buffer.writeln('    List<Map<String, dynamic>> records, {');
+      buffer.writeln('    String? connection,');
+      buffer.writeln('  }) async {');
+      buffer.writeln('    for (final record in records) {');
+      buffer.writeln('      await create(record, connection: connection);');
+      buffer.writeln('    }');
+      buffer.writeln('  }');
+    }
+    
     buffer.writeln('}\n');
     if (mixinModelFactory) {
       buffer.writeln(_modelHelperClass());

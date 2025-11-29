@@ -63,6 +63,76 @@ final ModelDefinition<Todo> _$TodoModelDefinition = ModelDefinition(
 
 extension TodoOrmDefinition on Todo {
   static ModelDefinition<Todo> get definition => _$TodoModelDefinition;
+
+  // Static Query Helpers
+  static Query<Todo> query({String? connection}) =>
+      Model.query<Todo>(connection: connection);
+
+  static Future<List<Todo>> all({String? connection}) =>
+      Model.all<Todo>(connection: connection);
+
+  static Future<Todo?> find(dynamic id, {String? connection}) =>
+      Model.find<Todo>(id, connection: connection);
+
+  static Future<Todo> findOrFail(dynamic id, {String? connection}) =>
+      Model.findOrFail<Todo>(id, connection: connection);
+
+  static Future<Todo?> first({String? connection}) =>
+      Model.first<Todo>(connection: connection);
+
+  static Future<Todo> firstOrFail({String? connection}) =>
+      Model.firstOrFail<Todo>(connection: connection);
+
+  static Query<Todo> where(
+    String column,
+    String operator,
+    dynamic value, {
+    String? connection,
+  }) => Model.where<Todo>(column, operator, value, connection: connection);
+
+  static Query<Todo> whereIn(
+    String column,
+    List<dynamic> values, {
+    String? connection,
+  }) => Model.whereIn<Todo>(column, values, connection: connection);
+
+  static Query<Todo> orderBy(
+    String column, {
+    String direction = 'asc',
+    String? connection,
+  }) =>
+      Model.orderBy<Todo>(column, direction: direction, connection: connection);
+
+  static Query<Todo> limit(int count, {String? connection}) =>
+      Model.limit<Todo>(count, connection: connection);
+
+  static Future<int> count({String? connection}) =>
+      Model.count<Todo>(connection: connection);
+
+  static Future<bool> exists({String? connection}) =>
+      Model.exists<Todo>(connection: connection);
+
+  static Future<bool> doesntExist({String? connection}) =>
+      Model.doesntExist<Todo>(connection: connection);
+
+  static Future<Todo> create(
+    Map<String, dynamic> attributes, {
+    String? connection,
+  }) async {
+    final q = query(connection: connection);
+    final codec = const _$TodoModelCodec();
+    final model = codec.decode(attributes, q.context.codecRegistry);
+    return await model.save();
+  }
+
+  static Future<void> insert(
+    List<Map<String, dynamic>> records, {
+    String? connection,
+  }) async {
+    for (final record in records) {
+      await create(record, connection: connection);
+    }
+  }
 }
 
 class _$TodoModelCodec extends ModelCodec<Todo> {

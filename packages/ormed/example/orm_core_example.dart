@@ -3,9 +3,16 @@ import 'package:ormed/ormed.dart';
 import 'models/todo.dart';
 
 Future<void> main() async {
-  final registry = ModelRegistry()..registerModel(TodoOrmDefinition.definition);
-  final driver = InMemoryQueryExecutor();
-  final context = QueryContext(registry: registry, driver: driver);
+  final dataSource = DataSource(
+    DataSourceOptions(
+      entities: [TodoOrmDefinition.definition],
+      driver: InMemoryQueryExecutor(),
+    ),
+  );
+
+  await dataSource.init();
+
+  final context = dataSource.connection;
 
   // Seed a few todos using the repository helpers.
   await context.repository<Todo>().insertMany(const [

@@ -71,6 +71,60 @@ final ModelDefinition<Author> _$AuthorModelDefinition = ModelDefinition(
 
 extension AuthorOrmDefinition on Author {
   static ModelDefinition<Author> get definition => _$AuthorModelDefinition;
+
+  // Static Query Helpers
+  static Query<Author> query({String? connection}) =>
+      Model.query<Author>(connection: connection);
+
+  static Future<List<Author>> all({String? connection}) =>
+      Model.all<Author>(connection: connection);
+
+  static Future<Author?> find(dynamic id, {String? connection}) =>
+      Model.find<Author>(id, connection: connection);
+
+  static Future<Author> findOrFail(dynamic id, {String? connection}) =>
+      Model.findOrFail<Author>(id, connection: connection);
+
+  static Future<Author?> first({String? connection}) =>
+      Model.first<Author>(connection: connection);
+
+  static Future<Author> firstOrFail({String? connection}) =>
+      Model.firstOrFail<Author>(connection: connection);
+
+  static Query<Author> where(
+    String column,
+    String operator,
+    dynamic value, {
+    String? connection,
+  }) => Model.where<Author>(column, operator, value, connection: connection);
+
+  static Query<Author> whereIn(
+    String column,
+    List<dynamic> values, {
+    String? connection,
+  }) => Model.whereIn<Author>(column, values, connection: connection);
+
+  static Query<Author> orderBy(
+    String column, {
+    String direction = 'asc',
+    String? connection,
+  }) => Model.orderBy<Author>(
+    column,
+    direction: direction,
+    connection: connection,
+  );
+
+  static Query<Author> limit(int count, {String? connection}) =>
+      Model.limit<Author>(count, connection: connection);
+
+  static Future<int> count({String? connection}) =>
+      Model.count<Author>(connection: connection);
+
+  static Future<bool> exists({String? connection}) =>
+      Model.exists<Author>(connection: connection);
+
+  static Future<bool> doesntExist({String? connection}) =>
+      Model.doesntExist<Author>(connection: connection);
 }
 
 class _$AuthorModelCodec extends ModelCodec<Author> {

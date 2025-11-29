@@ -82,6 +82,57 @@ final ModelDefinition<User> _$UserModelDefinition = ModelDefinition(
 
 extension UserOrmDefinition on User {
   static ModelDefinition<User> get definition => _$UserModelDefinition;
+
+  // Static Query Helpers
+  static Query<User> query({String? connection}) =>
+      Model.query<User>(connection: connection);
+
+  static Future<List<User>> all({String? connection}) =>
+      Model.all<User>(connection: connection);
+
+  static Future<User?> find(dynamic id, {String? connection}) =>
+      Model.find<User>(id, connection: connection);
+
+  static Future<User> findOrFail(dynamic id, {String? connection}) =>
+      Model.findOrFail<User>(id, connection: connection);
+
+  static Future<User?> first({String? connection}) =>
+      Model.first<User>(connection: connection);
+
+  static Future<User> firstOrFail({String? connection}) =>
+      Model.firstOrFail<User>(connection: connection);
+
+  static Query<User> where(
+    String column,
+    String operator,
+    dynamic value, {
+    String? connection,
+  }) => Model.where<User>(column, operator, value, connection: connection);
+
+  static Query<User> whereIn(
+    String column,
+    List<dynamic> values, {
+    String? connection,
+  }) => Model.whereIn<User>(column, values, connection: connection);
+
+  static Query<User> orderBy(
+    String column, {
+    String direction = 'asc',
+    String? connection,
+  }) =>
+      Model.orderBy<User>(column, direction: direction, connection: connection);
+
+  static Query<User> limit(int count, {String? connection}) =>
+      Model.limit<User>(count, connection: connection);
+
+  static Future<int> count({String? connection}) =>
+      Model.count<User>(connection: connection);
+
+  static Future<bool> exists({String? connection}) =>
+      Model.exists<User>(connection: connection);
+
+  static Future<bool> doesntExist({String? connection}) =>
+      Model.doesntExist<User>(connection: connection);
 }
 
 class _$UserModelCodec extends ModelCodec<User> {

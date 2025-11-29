@@ -51,6 +51,60 @@ final ModelDefinition<PostTag> _$PostTagModelDefinition = ModelDefinition(
 
 extension PostTagOrmDefinition on PostTag {
   static ModelDefinition<PostTag> get definition => _$PostTagModelDefinition;
+
+  // Static Query Helpers
+  static Query<PostTag> query({String? connection}) =>
+      Model.query<PostTag>(connection: connection);
+
+  static Future<List<PostTag>> all({String? connection}) =>
+      Model.all<PostTag>(connection: connection);
+
+  static Future<PostTag?> find(dynamic id, {String? connection}) =>
+      Model.find<PostTag>(id, connection: connection);
+
+  static Future<PostTag> findOrFail(dynamic id, {String? connection}) =>
+      Model.findOrFail<PostTag>(id, connection: connection);
+
+  static Future<PostTag?> first({String? connection}) =>
+      Model.first<PostTag>(connection: connection);
+
+  static Future<PostTag> firstOrFail({String? connection}) =>
+      Model.firstOrFail<PostTag>(connection: connection);
+
+  static Query<PostTag> where(
+    String column,
+    String operator,
+    dynamic value, {
+    String? connection,
+  }) => Model.where<PostTag>(column, operator, value, connection: connection);
+
+  static Query<PostTag> whereIn(
+    String column,
+    List<dynamic> values, {
+    String? connection,
+  }) => Model.whereIn<PostTag>(column, values, connection: connection);
+
+  static Query<PostTag> orderBy(
+    String column, {
+    String direction = 'asc',
+    String? connection,
+  }) => Model.orderBy<PostTag>(
+    column,
+    direction: direction,
+    connection: connection,
+  );
+
+  static Query<PostTag> limit(int count, {String? connection}) =>
+      Model.limit<PostTag>(count, connection: connection);
+
+  static Future<int> count({String? connection}) =>
+      Model.count<PostTag>(connection: connection);
+
+  static Future<bool> exists({String? connection}) =>
+      Model.exists<PostTag>(connection: connection);
+
+  static Future<bool> doesntExist({String? connection}) =>
+      Model.doesntExist<PostTag>(connection: connection);
 }
 
 class _$PostTagModelCodec extends ModelCodec<PostTag> {

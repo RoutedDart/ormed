@@ -63,6 +63,60 @@ final ModelDefinition<Comment> _$CommentModelDefinition = ModelDefinition(
 
 extension CommentOrmDefinition on Comment {
   static ModelDefinition<Comment> get definition => _$CommentModelDefinition;
+
+  // Static Query Helpers
+  static Query<Comment> query({String? connection}) =>
+      Model.query<Comment>(connection: connection);
+
+  static Future<List<Comment>> all({String? connection}) =>
+      Model.all<Comment>(connection: connection);
+
+  static Future<Comment?> find(dynamic id, {String? connection}) =>
+      Model.find<Comment>(id, connection: connection);
+
+  static Future<Comment> findOrFail(dynamic id, {String? connection}) =>
+      Model.findOrFail<Comment>(id, connection: connection);
+
+  static Future<Comment?> first({String? connection}) =>
+      Model.first<Comment>(connection: connection);
+
+  static Future<Comment> firstOrFail({String? connection}) =>
+      Model.firstOrFail<Comment>(connection: connection);
+
+  static Query<Comment> where(
+    String column,
+    String operator,
+    dynamic value, {
+    String? connection,
+  }) => Model.where<Comment>(column, operator, value, connection: connection);
+
+  static Query<Comment> whereIn(
+    String column,
+    List<dynamic> values, {
+    String? connection,
+  }) => Model.whereIn<Comment>(column, values, connection: connection);
+
+  static Query<Comment> orderBy(
+    String column, {
+    String direction = 'asc',
+    String? connection,
+  }) => Model.orderBy<Comment>(
+    column,
+    direction: direction,
+    connection: connection,
+  );
+
+  static Query<Comment> limit(int count, {String? connection}) =>
+      Model.limit<Comment>(count, connection: connection);
+
+  static Future<int> count({String? connection}) =>
+      Model.count<Comment>(connection: connection);
+
+  static Future<bool> exists({String? connection}) =>
+      Model.exists<Comment>(connection: connection);
+
+  static Future<bool> doesntExist({String? connection}) =>
+      Model.doesntExist<Comment>(connection: connection);
 }
 
 class _$CommentModelCodec extends ModelCodec<Comment> {

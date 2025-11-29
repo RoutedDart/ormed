@@ -67,6 +67,71 @@ _$DriverOverrideModelModelDefinition = ModelDefinition(
 extension DriverOverrideModelOrmDefinition on DriverOverrideModel {
   static ModelDefinition<DriverOverrideModel> get definition =>
       _$DriverOverrideModelModelDefinition;
+
+  // Static Query Helpers
+  static Query<DriverOverrideModel> query({String? connection}) =>
+      Model.query<DriverOverrideModel>(connection: connection);
+
+  static Future<List<DriverOverrideModel>> all({String? connection}) =>
+      Model.all<DriverOverrideModel>(connection: connection);
+
+  static Future<DriverOverrideModel?> find(dynamic id, {String? connection}) =>
+      Model.find<DriverOverrideModel>(id, connection: connection);
+
+  static Future<DriverOverrideModel> findOrFail(
+    dynamic id, {
+    String? connection,
+  }) => Model.findOrFail<DriverOverrideModel>(id, connection: connection);
+
+  static Future<DriverOverrideModel?> first({String? connection}) =>
+      Model.first<DriverOverrideModel>(connection: connection);
+
+  static Future<DriverOverrideModel> firstOrFail({String? connection}) =>
+      Model.firstOrFail<DriverOverrideModel>(connection: connection);
+
+  static Query<DriverOverrideModel> where(
+    String column,
+    String operator,
+    dynamic value, {
+    String? connection,
+  }) => Model.where<DriverOverrideModel>(
+    column,
+    operator,
+    value,
+    connection: connection,
+  );
+
+  static Query<DriverOverrideModel> whereIn(
+    String column,
+    List<dynamic> values, {
+    String? connection,
+  }) => Model.whereIn<DriverOverrideModel>(
+    column,
+    values,
+    connection: connection,
+  );
+
+  static Query<DriverOverrideModel> orderBy(
+    String column, {
+    String direction = 'asc',
+    String? connection,
+  }) => Model.orderBy<DriverOverrideModel>(
+    column,
+    direction: direction,
+    connection: connection,
+  );
+
+  static Query<DriverOverrideModel> limit(int count, {String? connection}) =>
+      Model.limit<DriverOverrideModel>(count, connection: connection);
+
+  static Future<int> count({String? connection}) =>
+      Model.count<DriverOverrideModel>(connection: connection);
+
+  static Future<bool> exists({String? connection}) =>
+      Model.exists<DriverOverrideModel>(connection: connection);
+
+  static Future<bool> doesntExist({String? connection}) =>
+      Model.doesntExist<DriverOverrideModel>(connection: connection);
 }
 
 class _$DriverOverrideModelModelCodec extends ModelCodec<DriverOverrideModel> {

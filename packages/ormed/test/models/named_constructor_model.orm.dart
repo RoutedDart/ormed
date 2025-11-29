@@ -69,6 +69,92 @@ _$NamedConstructorModelModelDefinition = ModelDefinition(
 extension NamedConstructorModelOrmDefinition on NamedConstructorModel {
   static ModelDefinition<NamedConstructorModel> get definition =>
       _$NamedConstructorModelModelDefinition;
+
+  // Static Query Helpers
+  static Query<NamedConstructorModel> query({String? connection}) =>
+      Model.query<NamedConstructorModel>(connection: connection);
+
+  static Future<List<NamedConstructorModel>> all({String? connection}) =>
+      Model.all<NamedConstructorModel>(connection: connection);
+
+  static Future<NamedConstructorModel?> find(
+    dynamic id, {
+    String? connection,
+  }) => Model.find<NamedConstructorModel>(id, connection: connection);
+
+  static Future<NamedConstructorModel> findOrFail(
+    dynamic id, {
+    String? connection,
+  }) => Model.findOrFail<NamedConstructorModel>(id, connection: connection);
+
+  static Future<NamedConstructorModel?> first({String? connection}) =>
+      Model.first<NamedConstructorModel>(connection: connection);
+
+  static Future<NamedConstructorModel> firstOrFail({String? connection}) =>
+      Model.firstOrFail<NamedConstructorModel>(connection: connection);
+
+  static Query<NamedConstructorModel> where(
+    String column,
+    String operator,
+    dynamic value, {
+    String? connection,
+  }) => Model.where<NamedConstructorModel>(
+    column,
+    operator,
+    value,
+    connection: connection,
+  );
+
+  static Query<NamedConstructorModel> whereIn(
+    String column,
+    List<dynamic> values, {
+    String? connection,
+  }) => Model.whereIn<NamedConstructorModel>(
+    column,
+    values,
+    connection: connection,
+  );
+
+  static Query<NamedConstructorModel> orderBy(
+    String column, {
+    String direction = 'asc',
+    String? connection,
+  }) => Model.orderBy<NamedConstructorModel>(
+    column,
+    direction: direction,
+    connection: connection,
+  );
+
+  static Query<NamedConstructorModel> limit(int count, {String? connection}) =>
+      Model.limit<NamedConstructorModel>(count, connection: connection);
+
+  static Future<int> count({String? connection}) =>
+      Model.count<NamedConstructorModel>(connection: connection);
+
+  static Future<bool> exists({String? connection}) =>
+      Model.exists<NamedConstructorModel>(connection: connection);
+
+  static Future<bool> doesntExist({String? connection}) =>
+      Model.doesntExist<NamedConstructorModel>(connection: connection);
+
+  static Future<NamedConstructorModel> create(
+    Map<String, dynamic> attributes, {
+    String? connection,
+  }) async {
+    final q = query(connection: connection);
+    final codec = const _$NamedConstructorModelModelCodec();
+    final model = codec.decode(attributes, q.context.codecRegistry);
+    return await model.save();
+  }
+
+  static Future<void> insert(
+    List<Map<String, dynamic>> records, {
+    String? connection,
+  }) async {
+    for (final record in records) {
+      await create(record, connection: connection);
+    }
+  }
 }
 
 class _$NamedConstructorModelModelCodec

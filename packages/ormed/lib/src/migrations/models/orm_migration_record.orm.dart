@@ -82,6 +82,87 @@ final ModelDefinition<OrmMigrationRecord> _$OrmMigrationRecordModelDefinition =
 extension OrmMigrationRecordOrmDefinition on OrmMigrationRecord {
   static ModelDefinition<OrmMigrationRecord> get definition =>
       _$OrmMigrationRecordModelDefinition;
+
+  // Static Query Helpers
+  static Query<OrmMigrationRecord> query({String? connection}) =>
+      Model.query<OrmMigrationRecord>(connection: connection);
+
+  static Future<List<OrmMigrationRecord>> all({String? connection}) =>
+      Model.all<OrmMigrationRecord>(connection: connection);
+
+  static Future<OrmMigrationRecord?> find(dynamic id, {String? connection}) =>
+      Model.find<OrmMigrationRecord>(id, connection: connection);
+
+  static Future<OrmMigrationRecord> findOrFail(
+    dynamic id, {
+    String? connection,
+  }) => Model.findOrFail<OrmMigrationRecord>(id, connection: connection);
+
+  static Future<OrmMigrationRecord?> first({String? connection}) =>
+      Model.first<OrmMigrationRecord>(connection: connection);
+
+  static Future<OrmMigrationRecord> firstOrFail({String? connection}) =>
+      Model.firstOrFail<OrmMigrationRecord>(connection: connection);
+
+  static Query<OrmMigrationRecord> where(
+    String column,
+    String operator,
+    dynamic value, {
+    String? connection,
+  }) => Model.where<OrmMigrationRecord>(
+    column,
+    operator,
+    value,
+    connection: connection,
+  );
+
+  static Query<OrmMigrationRecord> whereIn(
+    String column,
+    List<dynamic> values, {
+    String? connection,
+  }) =>
+      Model.whereIn<OrmMigrationRecord>(column, values, connection: connection);
+
+  static Query<OrmMigrationRecord> orderBy(
+    String column, {
+    String direction = 'asc',
+    String? connection,
+  }) => Model.orderBy<OrmMigrationRecord>(
+    column,
+    direction: direction,
+    connection: connection,
+  );
+
+  static Query<OrmMigrationRecord> limit(int count, {String? connection}) =>
+      Model.limit<OrmMigrationRecord>(count, connection: connection);
+
+  static Future<int> count({String? connection}) =>
+      Model.count<OrmMigrationRecord>(connection: connection);
+
+  static Future<bool> exists({String? connection}) =>
+      Model.exists<OrmMigrationRecord>(connection: connection);
+
+  static Future<bool> doesntExist({String? connection}) =>
+      Model.doesntExist<OrmMigrationRecord>(connection: connection);
+
+  static Future<OrmMigrationRecord> create(
+    Map<String, dynamic> attributes, {
+    String? connection,
+  }) async {
+    final q = query(connection: connection);
+    final codec = const _$OrmMigrationRecordModelCodec();
+    final model = codec.decode(attributes, q.context.codecRegistry);
+    return await model.save();
+  }
+
+  static Future<void> insert(
+    List<Map<String, dynamic>> records, {
+    String? connection,
+  }) async {
+    for (final record in records) {
+      await create(record, connection: connection);
+    }
+  }
 }
 
 class _$OrmMigrationRecordModelCodec extends ModelCodec<OrmMigrationRecord> {

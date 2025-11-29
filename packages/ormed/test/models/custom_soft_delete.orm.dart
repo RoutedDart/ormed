@@ -69,6 +69,86 @@ final ModelDefinition<CustomSoftDelete> _$CustomSoftDeleteModelDefinition =
 extension CustomSoftDeleteOrmDefinition on CustomSoftDelete {
   static ModelDefinition<CustomSoftDelete> get definition =>
       _$CustomSoftDeleteModelDefinition;
+
+  // Static Query Helpers
+  static Query<CustomSoftDelete> query({String? connection}) =>
+      Model.query<CustomSoftDelete>(connection: connection);
+
+  static Future<List<CustomSoftDelete>> all({String? connection}) =>
+      Model.all<CustomSoftDelete>(connection: connection);
+
+  static Future<CustomSoftDelete?> find(dynamic id, {String? connection}) =>
+      Model.find<CustomSoftDelete>(id, connection: connection);
+
+  static Future<CustomSoftDelete> findOrFail(
+    dynamic id, {
+    String? connection,
+  }) => Model.findOrFail<CustomSoftDelete>(id, connection: connection);
+
+  static Future<CustomSoftDelete?> first({String? connection}) =>
+      Model.first<CustomSoftDelete>(connection: connection);
+
+  static Future<CustomSoftDelete> firstOrFail({String? connection}) =>
+      Model.firstOrFail<CustomSoftDelete>(connection: connection);
+
+  static Query<CustomSoftDelete> where(
+    String column,
+    String operator,
+    dynamic value, {
+    String? connection,
+  }) => Model.where<CustomSoftDelete>(
+    column,
+    operator,
+    value,
+    connection: connection,
+  );
+
+  static Query<CustomSoftDelete> whereIn(
+    String column,
+    List<dynamic> values, {
+    String? connection,
+  }) => Model.whereIn<CustomSoftDelete>(column, values, connection: connection);
+
+  static Query<CustomSoftDelete> orderBy(
+    String column, {
+    String direction = 'asc',
+    String? connection,
+  }) => Model.orderBy<CustomSoftDelete>(
+    column,
+    direction: direction,
+    connection: connection,
+  );
+
+  static Query<CustomSoftDelete> limit(int count, {String? connection}) =>
+      Model.limit<CustomSoftDelete>(count, connection: connection);
+
+  static Future<int> count({String? connection}) =>
+      Model.count<CustomSoftDelete>(connection: connection);
+
+  static Future<bool> exists({String? connection}) =>
+      Model.exists<CustomSoftDelete>(connection: connection);
+
+  static Future<bool> doesntExist({String? connection}) =>
+      Model.doesntExist<CustomSoftDelete>(connection: connection);
+
+  static Future<CustomSoftDelete> create(
+    Map<String, dynamic> attributes, {
+    String? connection,
+  }) async {
+    final q = query(connection: connection);
+    final codec = const _$CustomSoftDeleteModelCodec();
+    final model = codec.decode(attributes, q.context.codecRegistry);
+    return await model.save();
+  }
+
+  static Future<void> insert(
+    List<Map<String, dynamic>> records, {
+    String? connection,
+  }) async {
+    for (final record in records) {
+      await create(record, connection: connection);
+    }
+  }
 }
 
 class _$CustomSoftDeleteModelCodec extends ModelCodec<CustomSoftDelete> {

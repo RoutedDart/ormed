@@ -94,6 +94,87 @@ final _DerivedForFactoryModelDefinitionRegistration =
 extension DerivedForFactoryOrmDefinition on DerivedForFactory {
   static ModelDefinition<DerivedForFactory> get definition =>
       _$DerivedForFactoryModelDefinition;
+
+  // Static Query Helpers
+  static Query<DerivedForFactory> query({String? connection}) =>
+      Model.query<DerivedForFactory>(connection: connection);
+
+  static Future<List<DerivedForFactory>> all({String? connection}) =>
+      Model.all<DerivedForFactory>(connection: connection);
+
+  static Future<DerivedForFactory?> find(dynamic id, {String? connection}) =>
+      Model.find<DerivedForFactory>(id, connection: connection);
+
+  static Future<DerivedForFactory> findOrFail(
+    dynamic id, {
+    String? connection,
+  }) => Model.findOrFail<DerivedForFactory>(id, connection: connection);
+
+  static Future<DerivedForFactory?> first({String? connection}) =>
+      Model.first<DerivedForFactory>(connection: connection);
+
+  static Future<DerivedForFactory> firstOrFail({String? connection}) =>
+      Model.firstOrFail<DerivedForFactory>(connection: connection);
+
+  static Query<DerivedForFactory> where(
+    String column,
+    String operator,
+    dynamic value, {
+    String? connection,
+  }) => Model.where<DerivedForFactory>(
+    column,
+    operator,
+    value,
+    connection: connection,
+  );
+
+  static Query<DerivedForFactory> whereIn(
+    String column,
+    List<dynamic> values, {
+    String? connection,
+  }) =>
+      Model.whereIn<DerivedForFactory>(column, values, connection: connection);
+
+  static Query<DerivedForFactory> orderBy(
+    String column, {
+    String direction = 'asc',
+    String? connection,
+  }) => Model.orderBy<DerivedForFactory>(
+    column,
+    direction: direction,
+    connection: connection,
+  );
+
+  static Query<DerivedForFactory> limit(int count, {String? connection}) =>
+      Model.limit<DerivedForFactory>(count, connection: connection);
+
+  static Future<int> count({String? connection}) =>
+      Model.count<DerivedForFactory>(connection: connection);
+
+  static Future<bool> exists({String? connection}) =>
+      Model.exists<DerivedForFactory>(connection: connection);
+
+  static Future<bool> doesntExist({String? connection}) =>
+      Model.doesntExist<DerivedForFactory>(connection: connection);
+
+  static Future<DerivedForFactory> create(
+    Map<String, dynamic> attributes, {
+    String? connection,
+  }) async {
+    final q = query(connection: connection);
+    final codec = const _$DerivedForFactoryModelCodec();
+    final model = codec.decode(attributes, q.context.codecRegistry);
+    return await model.save();
+  }
+
+  static Future<void> insert(
+    List<Map<String, dynamic>> records, {
+    String? connection,
+  }) async {
+    for (final record in records) {
+      await create(record, connection: connection);
+    }
+  }
 }
 
 class DerivedForFactoryModelFactory {

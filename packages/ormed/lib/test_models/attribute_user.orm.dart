@@ -107,6 +107,84 @@ final _AttributeUserModelDefinitionRegistration =
 extension AttributeUserOrmDefinition on AttributeUser {
   static ModelDefinition<AttributeUser> get definition =>
       _$AttributeUserModelDefinition;
+
+  // Static Query Helpers
+  static Query<AttributeUser> query({String? connection}) =>
+      Model.query<AttributeUser>(connection: connection);
+
+  static Future<List<AttributeUser>> all({String? connection}) =>
+      Model.all<AttributeUser>(connection: connection);
+
+  static Future<AttributeUser?> find(dynamic id, {String? connection}) =>
+      Model.find<AttributeUser>(id, connection: connection);
+
+  static Future<AttributeUser> findOrFail(dynamic id, {String? connection}) =>
+      Model.findOrFail<AttributeUser>(id, connection: connection);
+
+  static Future<AttributeUser?> first({String? connection}) =>
+      Model.first<AttributeUser>(connection: connection);
+
+  static Future<AttributeUser> firstOrFail({String? connection}) =>
+      Model.firstOrFail<AttributeUser>(connection: connection);
+
+  static Query<AttributeUser> where(
+    String column,
+    String operator,
+    dynamic value, {
+    String? connection,
+  }) => Model.where<AttributeUser>(
+    column,
+    operator,
+    value,
+    connection: connection,
+  );
+
+  static Query<AttributeUser> whereIn(
+    String column,
+    List<dynamic> values, {
+    String? connection,
+  }) => Model.whereIn<AttributeUser>(column, values, connection: connection);
+
+  static Query<AttributeUser> orderBy(
+    String column, {
+    String direction = 'asc',
+    String? connection,
+  }) => Model.orderBy<AttributeUser>(
+    column,
+    direction: direction,
+    connection: connection,
+  );
+
+  static Query<AttributeUser> limit(int count, {String? connection}) =>
+      Model.limit<AttributeUser>(count, connection: connection);
+
+  static Future<int> count({String? connection}) =>
+      Model.count<AttributeUser>(connection: connection);
+
+  static Future<bool> exists({String? connection}) =>
+      Model.exists<AttributeUser>(connection: connection);
+
+  static Future<bool> doesntExist({String? connection}) =>
+      Model.doesntExist<AttributeUser>(connection: connection);
+
+  static Future<AttributeUser> create(
+    Map<String, dynamic> attributes, {
+    String? connection,
+  }) async {
+    final q = query(connection: connection);
+    final codec = const _$AttributeUserModelCodec();
+    final model = codec.decode(attributes, q.context.codecRegistry);
+    return await model.save();
+  }
+
+  static Future<void> insert(
+    List<Map<String, dynamic>> records, {
+    String? connection,
+  }) async {
+    for (final record in records) {
+      await create(record, connection: connection);
+    }
+  }
 }
 
 class AttributeUserModelFactory {

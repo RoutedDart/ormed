@@ -277,396 +277,407 @@ void runRelationMutationTests(
       });
     });
 
-    group('attach() - manyToMany', skip: !config.supportsCapability(DriverCapability.rawSQL), () {
-      test('attaches related models and creates pivot records', () async {
-        await harness.seedPosts([
-          Post(
-            id: 1,
-            authorId: 1,
-            title: 'Post 1',
-            publishedAt: DateTime(2024),
-          ),
-        ]);
-        await harness.seedTags([
-          const Tag(id: 1, label: 'dart'),
-          const Tag(id: 2, label: 'flutter'),
-          const Tag(id: 3, label: 'web'),
-        ]);
-
-        final rows = await harness.context.query<Post>().where('id', 1).get();
-        final post = rows.first;
-
-        await post.attach('tags', [1, 2, 3]);
-
-        // Verify pivot records were created
-        final pivotRecords = await harness.context.driver.queryRaw(
-          'SELECT * FROM post_tags WHERE post_id = ?',
-          [1],
-        );
-
-        expect(pivotRecords, hasLength(3));
-        expect(pivotRecords.any((r) => r['tag_id'] == 1), isTrue);
-        expect(pivotRecords.any((r) => r['tag_id'] == 2), isTrue);
-        expect(pivotRecords.any((r) => r['tag_id'] == 3), isTrue);
-      });
-
-      test('attach with empty list does nothing', () async {
-        await harness.seedPosts([
-          Post(
-            id: 1,
-            authorId: 1,
-            title: 'Post 1',
-            publishedAt: DateTime(2024),
-          ),
-        ]);
-
-        final rows = await harness.context.query<Post>().where('id', 1).get();
-        final post = rows.first;
-
-        await post.attach('tags', []);
-
-        final pivotRecords = await harness.context.driver.queryRaw(
-          'SELECT * FROM post_tags WHERE post_id = ?',
-          [1],
-        );
-
-        expect(pivotRecords, isEmpty);
-      });
-
-      test('throws ArgumentError for invalid relation name', () async {
-        await harness.seedPosts([
-          Post(
-            id: 1,
-            authorId: 1,
-            title: 'Post 1',
-            publishedAt: DateTime(2024),
-          ),
-        ]);
-
-        final rows = await harness.context.query<Post>().where('id', 1).get();
-        final post = rows.first;
-
-        expect(() => post.attach('invalid', [1, 2]), throwsArgumentError);
-      });
-
-      test('throws ArgumentError for non-manyToMany relation', () async {
-        await harness.seedPosts([
-          Post(
-            id: 1,
-            authorId: 1,
-            title: 'Post 1',
-            publishedAt: DateTime(2024),
-          ),
-        ]);
-
-        final rows = await harness.context.query<Post>().where('id', 1).get();
-        final post = rows.first;
-
-        expect(
-          () => post.attach('author', [1]),
-          throwsA(
-            isA<ArgumentError>().having(
-              (e) => e.message,
-              'message',
-              contains('manyToMany'),
+    group(
+      'attach() - manyToMany',
+      () {
+        test('attaches related models and creates pivot records', () async {
+          await harness.seedPosts([
+            Post(
+              id: 1,
+              authorId: 1,
+              title: 'Post 1',
+              publishedAt: DateTime(2024),
             ),
-          ),
-        );
-      });
+          ]);
+          await harness.seedTags([
+            const Tag(id: 1, label: 'dart'),
+            const Tag(id: 2, label: 'flutter'),
+            const Tag(id: 3, label: 'web'),
+          ]);
 
-      test('returns self for method chaining', () async {
-        await harness.seedPosts([
-          Post(
-            id: 1,
-            authorId: 1,
-            title: 'Post 1',
-            publishedAt: DateTime(2024),
-          ),
-        ]);
-        await harness.seedTags([const Tag(id: 1, label: 'dart')]);
+          final rows = await harness.context.query<Post>().where('id', 1).get();
+          final post = rows.first;
 
-        final rows = await harness.context.query<Post>().where('id', 1).get();
-        final post = rows.first;
+          await post.attach('tags', [1, 2, 3]);
 
-        final result = await post.attach('tags', [1]);
+          // Verify pivot records were created
+          final pivotRecords = await harness.context
+              .query<PostTag>()
+              .where('post_id', 1)
+              .get();
 
-        expect(identical(result, post), isTrue);
-      });
-    });
+          expect(pivotRecords, hasLength(3));
+          expect(pivotRecords.any((r) => r.tagId == 1), isTrue);
+          expect(pivotRecords.any((r) => r.tagId == 2), isTrue);
+          expect(pivotRecords.any((r) => r.tagId == 3), isTrue);
+        });
 
-    group('detach() - manyToMany', skip: !config.supportsCapability(DriverCapability.rawSQL), () {
-      test('detaches specific related models', () async {
-        await harness.seedPosts([
-          Post(
-            id: 1,
-            authorId: 1,
-            title: 'Post 1',
-            publishedAt: DateTime(2024),
-          ),
-        ]);
-        await harness.seedTags([
-          const Tag(id: 1, label: 'dart'),
-          const Tag(id: 2, label: 'flutter'),
-          const Tag(id: 3, label: 'web'),
-        ]);
-        await harness.seedPostTags([
-          const PostTag(postId: 1, tagId: 1),
-          const PostTag(postId: 1, tagId: 2),
-          const PostTag(postId: 1, tagId: 3),
-        ]);
-
-        final rows = await harness.context.query<Post>().where('id', 1).get();
-        final post = rows.first;
-
-        // Detach tags 1 and 2
-        await post.detach('tags', [1, 2]);
-
-        final pivotRecords = await harness.context.driver.queryRaw(
-          'SELECT * FROM post_tags WHERE post_id = ?',
-          [1],
-        );
-
-        expect(pivotRecords, hasLength(1));
-        expect(pivotRecords.first['tag_id'], equals(3));
-      });
-
-      test('detaches all related models when no IDs provided', () async {
-        await harness.seedPosts([
-          Post(
-            id: 1,
-            authorId: 1,
-            title: 'Post 1',
-            publishedAt: DateTime(2024),
-          ),
-        ]);
-        await harness.seedTags([
-          const Tag(id: 1, label: 'dart'),
-          const Tag(id: 2, label: 'flutter'),
-        ]);
-        await harness.seedPostTags([
-          const PostTag(postId: 1, tagId: 1),
-          const PostTag(postId: 1, tagId: 2),
-        ]);
-
-        final rows = await harness.context.query<Post>().where('id', 1).get();
-        final post = rows.first;
-
-        await post.detach('tags');
-
-        final pivotRecords = await harness.context.driver.queryRaw(
-          'SELECT * FROM post_tags WHERE post_id = ?',
-          [1],
-        );
-
-        expect(pivotRecords, isEmpty);
-      });
-
-      test('detach with empty list detaches all', () async {
-        await harness.seedPosts([
-          Post(
-            id: 1,
-            authorId: 1,
-            title: 'Post 1',
-            publishedAt: DateTime(2024),
-          ),
-        ]);
-        await harness.seedTags([const Tag(id: 1, label: 'dart')]);
-        await harness.seedPostTags([const PostTag(postId: 1, tagId: 1)]);
-
-        final rows = await harness.context.query<Post>().where('id', 1).get();
-        final post = rows.first;
-
-        await post.detach('tags', []);
-
-        final pivotRecords = await harness.context.driver.queryRaw(
-          'SELECT * FROM post_tags WHERE post_id = ?',
-          [1],
-        );
-
-        expect(pivotRecords, isEmpty);
-      });
-
-      test('throws ArgumentError for invalid relation name', () async {
-        await harness.seedPosts([
-          Post(
-            id: 1,
-            authorId: 1,
-            title: 'Post 1',
-            publishedAt: DateTime(2024),
-          ),
-        ]);
-
-        final rows = await harness.context.query<Post>().where('id', 1).get();
-        final post = rows.first;
-
-        expect(() => post.detach('invalid'), throwsArgumentError);
-      });
-
-      test('throws ArgumentError for non-manyToMany relation', () async {
-        await harness.seedPosts([
-          Post(
-            id: 1,
-            authorId: 1,
-            title: 'Post 1',
-            publishedAt: DateTime(2024),
-          ),
-        ]);
-
-        final rows = await harness.context.query<Post>().where('id', 1).get();
-        final post = rows.first;
-
-        expect(
-          () => post.detach('author'),
-          throwsA(
-            isA<ArgumentError>().having(
-              (e) => e.message,
-              'message',
-              contains('manyToMany'),
+        test('attach with empty list does nothing', () async {
+          await harness.seedPosts([
+            Post(
+              id: 1,
+              authorId: 1,
+              title: 'Post 1',
+              publishedAt: DateTime(2024),
             ),
-          ),
-        );
-      });
+          ]);
 
-      test('returns self for method chaining', () async {
-        await harness.seedPosts([
-          Post(
-            id: 1,
-            authorId: 1,
-            title: 'Post 1',
-            publishedAt: DateTime(2024),
-          ),
-        ]);
+          final rows = await harness.context.query<Post>().where('id', 1).get();
+          final post = rows.first;
 
-        final rows = await harness.context.query<Post>().where('id', 1).get();
-        final post = rows.first;
+          await post.attach('tags', []);
 
-        final result = await post.detach('tags');
+          final pivotRecords = await harness.context
+              .query<PostTag>()
+              .where('post_id', 1)
+              .get();
 
-        expect(identical(result, post), isTrue);
-      });
-    });
+          expect(pivotRecords, isEmpty);
+        });
 
-    group('sync() - manyToMany', skip: !config.supportsCapability(DriverCapability.rawSQL), () {
-      test('syncs to match given IDs exactly', () async {
-        await harness.seedPosts([
-          Post(
-            id: 1,
-            authorId: 1,
-            title: 'Post 1',
-            publishedAt: DateTime(2024),
-          ),
-        ]);
-        await harness.seedTags([
-          const Tag(id: 1, label: 'dart'),
-          const Tag(id: 2, label: 'flutter'),
-          const Tag(id: 3, label: 'web'),
-          const Tag(id: 4, label: 'mobile'),
-        ]);
-        await harness.seedPostTags([
-          const PostTag(postId: 1, tagId: 1),
-          const PostTag(postId: 1, tagId: 2),
-          const PostTag(postId: 1, tagId: 3),
-        ]);
+        test('throws ArgumentError for invalid relation name', () async {
+          await harness.seedPosts([
+            Post(
+              id: 1,
+              authorId: 1,
+              title: 'Post 1',
+              publishedAt: DateTime(2024),
+            ),
+          ]);
 
-        final rows = await harness.context.query<Post>().where('id', 1).get();
-        final post = rows.first;
+          final rows = await harness.context.query<Post>().where('id', 1).get();
+          final post = rows.first;
 
-        // Currently has tags 1, 2, 3
-        // Sync to have tags 2, 3, 4
-        await post.sync('tags', [2, 3, 4]);
+          expect(() => post.attach('invalid', [1, 2]), throwsArgumentError);
+        });
 
-        final pivotRecords = await harness.context.driver.queryRaw(
-          'SELECT tag_id FROM post_tags WHERE post_id = ? ORDER BY tag_id',
-          [1],
-        );
+        test('throws ArgumentError for non-manyToMany relation', () async {
+          await harness.seedPosts([
+            Post(
+              id: 1,
+              authorId: 1,
+              title: 'Post 1',
+              publishedAt: DateTime(2024),
+            ),
+          ]);
 
-        expect(pivotRecords, hasLength(3));
-        expect(pivotRecords[0]['tag_id'], equals(2));
-        expect(pivotRecords[1]['tag_id'], equals(3));
-        expect(pivotRecords[2]['tag_id'], equals(4));
-      });
+          final rows = await harness.context.query<Post>().where('id', 1).get();
+          final post = rows.first;
 
-      test('sync with empty list removes all', () async {
-        await harness.seedPosts([
-          Post(
-            id: 1,
-            authorId: 1,
-            title: 'Post 1',
-            publishedAt: DateTime(2024),
-          ),
-        ]);
-        await harness.seedTags([
-          const Tag(id: 1, label: 'dart'),
-          const Tag(id: 2, label: 'flutter'),
-        ]);
-        await harness.seedPostTags([
-          const PostTag(postId: 1, tagId: 1),
-          const PostTag(postId: 1, tagId: 2),
-        ]);
+          expect(
+            () => post.attach('author', [1]),
+            throwsA(
+              isA<ArgumentError>().having(
+                (e) => e.message,
+                'message',
+                contains('manyToMany'),
+              ),
+            ),
+          );
+        });
 
-        final rows = await harness.context.query<Post>().where('id', 1).get();
-        final post = rows.first;
+        test('returns self for method chaining', () async {
+          await harness.seedPosts([
+            Post(
+              id: 1,
+              authorId: 1,
+              title: 'Post 1',
+              publishedAt: DateTime(2024),
+            ),
+          ]);
+          await harness.seedTags([const Tag(id: 1, label: 'dart')]);
 
-        await post.sync('tags', []);
+          final rows = await harness.context.query<Post>().where('id', 1).get();
+          final post = rows.first;
 
-        final pivotRecords = await harness.context.driver.queryRaw(
-          'SELECT * FROM post_tags WHERE post_id = ?',
-          [1],
-        );
+          final result = await post.attach('tags', [1]);
 
-        expect(pivotRecords, isEmpty);
-      });
+          expect(identical(result, post), isTrue);
+        });
+      },
+    );
 
-      test('sync replaces all existing with new IDs', () async {
-        await harness.seedPosts([
-          Post(
-            id: 1,
-            authorId: 1,
-            title: 'Post 1',
-            publishedAt: DateTime(2024),
-          ),
-        ]);
-        await harness.seedTags([
-          const Tag(id: 1, label: 'dart'),
-          const Tag(id: 2, label: 'flutter'),
-          const Tag(id: 3, label: 'web'),
-        ]);
-        await harness.seedPostTags([const PostTag(postId: 1, tagId: 1)]);
+    group(
+      'detach() - manyToMany',
+      () {
+        test('detaches specific related models', () async {
+          await harness.seedPosts([
+            Post(
+              id: 1,
+              authorId: 1,
+              title: 'Post 1',
+              publishedAt: DateTime(2024),
+            ),
+          ]);
+          await harness.seedTags([
+            const Tag(id: 1, label: 'dart'),
+            const Tag(id: 2, label: 'flutter'),
+            const Tag(id: 3, label: 'web'),
+          ]);
+          await harness.seedPostTags([
+            const PostTag(postId: 1, tagId: 1),
+            const PostTag(postId: 1, tagId: 2),
+            const PostTag(postId: 1, tagId: 3),
+          ]);
 
-        final rows = await harness.context.query<Post>().where('id', 1).get();
-        final post = rows.first;
+          final rows = await harness.context.query<Post>().where('id', 1).get();
+          final post = rows.first;
 
-        await post.sync('tags', [2, 3]);
+          // Detach tags 1 and 2
+          await post.detach('tags', [1, 2]);
 
-        final pivotRecords = await harness.context.driver.queryRaw(
-          'SELECT tag_id FROM post_tags WHERE post_id = ? ORDER BY tag_id',
-          [1],
-        );
+          final pivotRecords = await harness.context
+              .query<PostTag>()
+              .where('post_id', 1)
+              .get();
 
-        expect(pivotRecords, hasLength(2));
-        expect(pivotRecords[0]['tag_id'], equals(2));
-        expect(pivotRecords[1]['tag_id'], equals(3));
-      });
+          expect(pivotRecords, hasLength(1));
+          expect(pivotRecords.first.tagId, equals(3));
+        });
 
-      test('returns self for method chaining', () async {
-        await harness.seedPosts([
-          Post(
-            id: 1,
-            authorId: 1,
-            title: 'Post 1',
-            publishedAt: DateTime(2024),
-          ),
-        ]);
-        await harness.seedTags([const Tag(id: 1, label: 'dart')]);
+        test('detaches all related models when no IDs provided', () async {
+          await harness.seedPosts([
+            Post(
+              id: 1,
+              authorId: 1,
+              title: 'Post 1',
+              publishedAt: DateTime(2024),
+            ),
+          ]);
+          await harness.seedTags([
+            const Tag(id: 1, label: 'dart'),
+            const Tag(id: 2, label: 'flutter'),
+          ]);
+          await harness.seedPostTags([
+            const PostTag(postId: 1, tagId: 1),
+            const PostTag(postId: 1, tagId: 2),
+          ]);
 
-        final rows = await harness.context.query<Post>().where('id', 1).get();
-        final post = rows.first;
+          final rows = await harness.context.query<Post>().where('id', 1).get();
+          final post = rows.first;
 
-        final result = await post.sync('tags', [1]);
+          await post.detach('tags');
 
-        expect(identical(result, post), isTrue);
-      });
-    });
+          final pivotRecords = await harness.context
+              .query<PostTag>()
+              .where('post_id', 1)
+              .get();
+
+          expect(pivotRecords, isEmpty);
+        });
+
+        test('detach with empty list detaches all', () async {
+          await harness.seedPosts([
+            Post(
+              id: 1,
+              authorId: 1,
+              title: 'Post 1',
+              publishedAt: DateTime(2024),
+            ),
+          ]);
+          await harness.seedTags([const Tag(id: 1, label: 'dart')]);
+          await harness.seedPostTags([const PostTag(postId: 1, tagId: 1)]);
+
+          final rows = await harness.context.query<Post>().where('id', 1).get();
+          final post = rows.first;
+
+          await post.detach('tags', []);
+
+          final pivotRecords = await harness.context
+              .query<PostTag>()
+              .where('post_id', 1)
+              .get();
+
+          expect(pivotRecords, isEmpty);
+        });
+
+        test('throws ArgumentError for invalid relation name', () async {
+          await harness.seedPosts([
+            Post(
+              id: 1,
+              authorId: 1,
+              title: 'Post 1',
+              publishedAt: DateTime(2024),
+            ),
+          ]);
+
+          final rows = await harness.context.query<Post>().where('id', 1).get();
+          final post = rows.first;
+
+          expect(() => post.detach('invalid'), throwsArgumentError);
+        });
+
+        test('throws ArgumentError for non-manyToMany relation', () async {
+          await harness.seedPosts([
+            Post(
+              id: 1,
+              authorId: 1,
+              title: 'Post 1',
+              publishedAt: DateTime(2024),
+            ),
+          ]);
+
+          final rows = await harness.context.query<Post>().where('id', 1).get();
+          final post = rows.first;
+
+          expect(
+            () => post.detach('author'),
+            throwsA(
+              isA<ArgumentError>().having(
+                (e) => e.message,
+                'message',
+                contains('manyToMany'),
+              ),
+            ),
+          );
+        });
+
+        test('returns self for method chaining', () async {
+          await harness.seedPosts([
+            Post(
+              id: 1,
+              authorId: 1,
+              title: 'Post 1',
+              publishedAt: DateTime(2024),
+            ),
+          ]);
+
+          final rows = await harness.context.query<Post>().where('id', 1).get();
+          final post = rows.first;
+
+          final result = await post.detach('tags');
+
+          expect(identical(result, post), isTrue);
+        });
+      },
+    );
+
+    group(
+      'sync() - manyToMany',
+      () {
+        test('syncs to match given IDs exactly', () async {
+          await harness.seedPosts([
+            Post(
+              id: 1,
+              authorId: 1,
+              title: 'Post 1',
+              publishedAt: DateTime(2024),
+            ),
+          ]);
+          await harness.seedTags([
+            const Tag(id: 1, label: 'dart'),
+            const Tag(id: 2, label: 'flutter'),
+            const Tag(id: 3, label: 'web'),
+            const Tag(id: 4, label: 'mobile'),
+          ]);
+          await harness.seedPostTags([
+            const PostTag(postId: 1, tagId: 1),
+            const PostTag(postId: 1, tagId: 2),
+            const PostTag(postId: 1, tagId: 3),
+          ]);
+
+          final rows = await harness.context.query<Post>().where('id', 1).get();
+          final post = rows.first;
+
+          // Currently has tags 1, 2, 3
+          // Sync to have tags 2, 3, 4
+          await post.sync('tags', [2, 3, 4]);
+
+          final pivotRecords = await harness.context
+              .query<PostTag>()
+              .where('post_id', 1)
+              .orderBy('tag_id')
+              .get();
+
+          expect(pivotRecords, hasLength(3));
+          expect(pivotRecords[0].tagId, equals(2));
+          expect(pivotRecords[1].tagId, equals(3));
+          expect(pivotRecords[2].tagId, equals(4));
+        });
+
+        test('sync with empty list removes all', () async {
+          await harness.seedPosts([
+            Post(
+              id: 1,
+              authorId: 1,
+              title: 'Post 1',
+              publishedAt: DateTime(2024),
+            ),
+          ]);
+          await harness.seedTags([
+            const Tag(id: 1, label: 'dart'),
+            const Tag(id: 2, label: 'flutter'),
+          ]);
+          await harness.seedPostTags([
+            const PostTag(postId: 1, tagId: 1),
+            const PostTag(postId: 1, tagId: 2),
+          ]);
+
+          final rows = await harness.context.query<Post>().where('id', 1).get();
+          final post = rows.first;
+
+          await post.sync('tags', []);
+
+          final pivotRecords = await harness.context
+              .query<PostTag>()
+              .where('post_id', 1)
+              .get();
+
+          expect(pivotRecords, isEmpty);
+        });
+
+        test('sync replaces all existing with new IDs', () async {
+          await harness.seedPosts([
+            Post(
+              id: 1,
+              authorId: 1,
+              title: 'Post 1',
+              publishedAt: DateTime(2024),
+            ),
+          ]);
+          await harness.seedTags([
+            const Tag(id: 1, label: 'dart'),
+            const Tag(id: 2, label: 'flutter'),
+            const Tag(id: 3, label: 'web'),
+          ]);
+          await harness.seedPostTags([const PostTag(postId: 1, tagId: 1)]);
+
+          final rows = await harness.context.query<Post>().where('id', 1).get();
+          final post = rows.first;
+
+          await post.sync('tags', [2, 3]);
+
+          final pivotRecords = await harness.context
+              .query<PostTag>()
+              .where('post_id', 1)
+              .orderBy('tag_id')
+              .get();
+
+          expect(pivotRecords, hasLength(2));
+          expect(pivotRecords[0].tagId, equals(2));
+          expect(pivotRecords[1].tagId, equals(3));
+        });
+
+        test('returns self for method chaining', () async {
+          await harness.seedPosts([
+            Post(
+              id: 1,
+              authorId: 1,
+              title: 'Post 1',
+              publishedAt: DateTime(2024),
+            ),
+          ]);
+          await harness.seedTags([const Tag(id: 1, label: 'dart')]);
+
+          final rows = await harness.context.query<Post>().where('id', 1).get();
+          final post = rows.first;
+
+          final result = await post.sync('tags', [1]);
+
+          expect(identical(result, post), isTrue);
+        });
+      },
+    );
 
     group('Method chaining with mutations', () {
       test('can chain associate with other operations', () async {
@@ -690,35 +701,39 @@ void runRelationMutationTests(
         expect(post.getAttribute<int>('author_id'), equals(1));
       });
 
-      test('can chain attach, sync operations', () async {
-        await harness.seedPosts([
-          Post(
-            id: 1,
-            authorId: 1,
-            title: 'Post 1',
-            publishedAt: DateTime(2024),
-          ),
-        ]);
-        await harness.seedTags([
-          const Tag(id: 1, label: 'dart'),
-          const Tag(id: 2, label: 'flutter'),
-          const Tag(id: 3, label: 'web'),
-        ]);
+      test(
+        'can chain attach, sync operations',
+        () async {
+          await harness.seedPosts([
+            Post(
+              id: 1,
+              authorId: 1,
+              title: 'Post 1',
+              publishedAt: DateTime(2024),
+            ),
+          ]);
+          await harness.seedTags([
+            const Tag(id: 1, label: 'dart'),
+            const Tag(id: 2, label: 'flutter'),
+            const Tag(id: 3, label: 'web'),
+          ]);
 
-        final rows = await harness.context.query<Post>().where('id', 1).get();
-        final post = rows.first;
+          final rows = await harness.context.query<Post>().where('id', 1).get();
+          final post = rows.first;
 
-        await post.attach('tags', [1, 2]).then((p) => p.sync('tags', [2, 3]));
+          await post.attach('tags', [1, 2]).then((p) => p.sync('tags', [2, 3]));
 
-        final pivotRecords = await harness.context.driver.queryRaw(
-          'SELECT tag_id FROM post_tags WHERE post_id = ? ORDER BY tag_id',
-          [1],
-        );
+          final pivotRecords = await harness.context
+              .query<PostTag>()
+              .where('post_id', 1)
+              .orderBy('tag_id')
+              .get();
 
-        expect(pivotRecords, hasLength(2));
-        expect(pivotRecords[0]['tag_id'], equals(2));
-        expect(pivotRecords[1]['tag_id'], equals(3));
-      }, skip: !config.supportsCapability(DriverCapability.rawSQL));
+          expect(pivotRecords, hasLength(2));
+          expect(pivotRecords[0].tagId, equals(2));
+          expect(pivotRecords[1].tagId, equals(3));
+        },
+      );
     });
   });
 }

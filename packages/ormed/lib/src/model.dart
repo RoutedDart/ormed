@@ -10,6 +10,8 @@ import 'connection/connection_manager.dart';
 import 'connection/connection_resolver.dart';
 import 'connection/orm_connection.dart';
 import 'driver/driver.dart';
+import 'driver/mutation_plan.dart';
+import 'driver/mutation_row.dart';
 import 'model_definition.dart';
 import 'model_factory.dart';
 import 'model_mixins/model_attributes.dart';
@@ -65,7 +67,7 @@ abstract class Model<TModel extends Model<TModel>>
   }
 
   /// Starts a [Query] for [TModel], honoring the model's preferred connection.
-  static Query<TModel> query<TModel extends Model<TModel>>({
+  static Query<TModel> query<TModel>({
     String? connection,
   }) {
     final initialResolver = _resolveBoundResolver(connection);
@@ -92,12 +94,140 @@ abstract class Model<TModel extends Model<TModel>>
   }
 
   /// Convenience to fetch every model instance.
-  static Future<List<TModel>> all<TModel extends Model<TModel>>() =>
-      query<TModel>().get();
+  static Future<List<TModel>> all<TModel>({String? connection}) =>
+      query<TModel>(connection: connection).get();
 
-  /// Creates and immediately persists [model], returning the stored instance.
-  static Future<TModel> create<TModel extends Model<TModel>>(TModel model) =>
-      model.save();
+  /// Creates and immediately persists a new model from attributes map.
+  /// Note: This is a placeholder - actual implementation requires codec access.
+  /// Use the generated static helper on your model class instead.
+  static Future<TModel> create<TModel extends Model<TModel>>(
+    Map<String, dynamic> attributes, {
+    String? connection,
+  }) async {
+    throw UnimplementedError(
+      'Model.create() requires code generation. Use YourModel.create() instead.',
+    );
+  }
+
+  /// Inserts multiple records without returning model instances.
+  /// Note: This is a placeholder - actual implementation requires codec access.
+  /// Use the generated static helper on your model class instead.
+  static Future<void> insert<TModel>(
+    List<Map<String, dynamic>> records, {
+    String? connection,
+  }) async {
+    throw UnimplementedError(
+      'Model.insert() requires code generation. Use YourModel.insert() instead.',
+    );
+  }
+
+  /// Starts a query with a where clause.
+  static Query<TModel> where<TModel>(
+    String column,
+    String operator,
+    dynamic value, {
+    String? connection,
+  }) =>
+      query<TModel>(connection: connection).where(column, operator, value);
+
+  /// Starts a query with a whereIn clause.
+  static Query<TModel> whereIn<TModel>(
+    String column,
+    List<dynamic> values, {
+    String? connection,
+  }) =>
+      query<TModel>(connection: connection).whereIn(column, values);
+
+  /// Starts a query with an orderBy clause.
+  static Query<TModel> orderBy<TModel>(
+    String column, {
+    String direction = 'asc',
+    String? connection,
+  }) =>
+      query<TModel>(connection: connection).orderBy(
+            column,
+            descending: direction.toLowerCase() == 'desc',
+          );
+
+  /// Starts a query with a limit clause.
+  static Query<TModel> limit<TModel>(
+    int count, {
+    String? connection,
+  }) =>
+      query<TModel>(connection: connection).limit(count);
+
+  /// Find a model by its primary key, returns null if not found.
+  static Future<TModel?> find<TModel>(
+    Object id, {
+    String? connection,
+  }) =>
+      query<TModel>(connection: connection).find(id);
+
+  /// Find a model by its primary key, throws if not found.
+  static Future<TModel> findOrFail<TModel>(
+    Object id, {
+    String? connection,
+  }) async {
+    final result = await find<TModel>(id, connection: connection);
+    if (result == null) {
+      throw StateError('Model not found with id: $id');
+    }
+    return result;
+  }
+
+  /// Find multiple models by their primary keys.
+  static Future<List<TModel>> findMany<TModel>(
+    List<Object> ids, {
+    String? connection,
+  }) =>
+      query<TModel>(connection: connection).findMany(ids);
+
+  /// Get the first model matching the query, or null.
+  static Future<TModel?> first<TModel>({
+    String? connection,
+  }) =>
+      query<TModel>(connection: connection).first();
+
+  /// Get the first model matching the query, or throw.
+  static Future<TModel> firstOrFail<TModel>({
+    String? connection,
+  }) async {
+    final result = await first<TModel>(connection: connection);
+    if (result == null) {
+      throw StateError('No model found');
+    }
+    return result;
+  }
+
+  /// Count the number of models.
+  static Future<int> count<TModel>({
+    String? connection,
+  }) =>
+      query<TModel>(connection: connection).count();
+
+  /// Check if any models exist.
+  static Future<bool> exists<TModel>({
+    String? connection,
+  }) async =>
+      await count<TModel>(connection: connection) > 0;
+
+  /// Check if no models exist.
+  static Future<bool> doesntExist<TModel>({
+    String? connection,
+  }) async =>
+      !await exists<TModel>(connection: connection);
+
+  /// Delete all models matching a condition (dangerous!).
+  static Future<int> destroy<TModel extends Model<TModel>>(
+    List<Object> ids, {
+    String? connection,
+  }) async {
+    final models = await findMany<TModel>(ids, connection: connection);
+    for (final model in models) {
+      await model.delete();
+    }
+    return models.length;
+  }
 
   /// Typed accessor to the attached [ModelDefinition], when available.
   ModelDefinition<TModel>? get definition =>
@@ -1020,8 +1150,13 @@ abstract class Model<TModel extends Model<TModel>>
     String? alias,
     PredicateCallback<dynamic>? constraint,
   }) async {
-    return _loadAggregate('sum', relation, column,
-        alias: alias, constraint: constraint);
+    return _loadAggregate(
+      'sum',
+      relation,
+      column,
+      alias: alias,
+      constraint: constraint,
+    );
   }
 
   /// Lazily loads the average of a column in a relation.
@@ -1039,8 +1174,13 @@ abstract class Model<TModel extends Model<TModel>>
     String? alias,
     PredicateCallback<dynamic>? constraint,
   }) async {
-    return _loadAggregate('avg', relation, column,
-        alias: alias, constraint: constraint);
+    return _loadAggregate(
+      'avg',
+      relation,
+      column,
+      alias: alias,
+      constraint: constraint,
+    );
   }
 
   /// Lazily loads the maximum value of a column in a relation.
@@ -1058,8 +1198,13 @@ abstract class Model<TModel extends Model<TModel>>
     String? alias,
     PredicateCallback<dynamic>? constraint,
   }) async {
-    return _loadAggregate('max', relation, column,
-        alias: alias, constraint: constraint);
+    return _loadAggregate(
+      'max',
+      relation,
+      column,
+      alias: alias,
+      constraint: constraint,
+    );
   }
 
   /// Lazily loads the minimum value of a column in a relation.
@@ -1077,8 +1222,13 @@ abstract class Model<TModel extends Model<TModel>>
     String? alias,
     PredicateCallback<dynamic>? constraint,
   }) async {
-    return _loadAggregate('min', relation, column,
-        alias: alias, constraint: constraint);
+    return _loadAggregate(
+      'min',
+      relation,
+      column,
+      alias: alias,
+      constraint: constraint,
+    );
   }
 
   /// Internal helper to load aggregates on relations.
@@ -1117,13 +1267,15 @@ abstract class Model<TModel extends Model<TModel>>
     final pkField = def.primaryKeyField;
     if (pkField == null) {
       throw StateError(
-          'Cannot load $aggregateType on model without primary key');
+        'Cannot load $aggregateType on model without primary key',
+      );
     }
 
     final pkValue = getAttribute(pkField.columnName);
     if (pkValue == null) {
       throw StateError(
-          'Cannot load $aggregateType on model without primary key value');
+        'Cannot load $aggregateType on model without primary key value',
+      );
     }
 
     // Query for this specific model with aggregate
@@ -1131,10 +1283,30 @@ abstract class Model<TModel extends Model<TModel>>
 
     // Call the appropriate withAggregate method
     final queryWithAggregate = switch (aggregateType) {
-      'sum' => queryWithFilter.withSum(relation, column, alias: aggregateAlias, constraint: constraint),
-      'avg' => queryWithFilter.withAvg(relation, column, alias: aggregateAlias, constraint: constraint),
-      'max' => queryWithFilter.withMax(relation, column, alias: aggregateAlias, constraint: constraint),
-      'min' => queryWithFilter.withMin(relation, column, alias: aggregateAlias, constraint: constraint),
+      'sum' => queryWithFilter.withSum(
+        relation,
+        column,
+        alias: aggregateAlias,
+        constraint: constraint,
+      ),
+      'avg' => queryWithFilter.withAvg(
+        relation,
+        column,
+        alias: aggregateAlias,
+        constraint: constraint,
+      ),
+      'max' => queryWithFilter.withMax(
+        relation,
+        column,
+        alias: aggregateAlias,
+        constraint: constraint,
+      ),
+      'min' => queryWithFilter.withMin(
+        relation,
+        column,
+        alias: aggregateAlias,
+        constraint: constraint,
+      ),
       _ => throw ArgumentError('Unsupported aggregate type: $aggregateType'),
     };
 
@@ -1291,7 +1463,6 @@ abstract class Model<TModel extends Model<TModel>>
   }) async {
     final def = expectDefinition();
     final resolver = _resolveResolverFor(def);
-    final context = _requireQueryContext(resolver);
 
     final relationDef = def.relations.cast<RelationDefinition?>().firstWhere(
       (r) => r?.name == relationName,
@@ -1328,8 +1499,23 @@ abstract class Model<TModel extends Model<TModel>>
 
     // Build pivot table rows
     final pivotTable = relationDef.through;
+    if (pivotTable == null) {
+      throw StateError(
+        'Relation "$relationName" is missing pivot table name (through)',
+      );
+    }
+    
     final pivotForeignKey = relationDef.pivotForeignKey!;
     final pivotRelatedKey = relationDef.pivotRelatedKey!;
+
+    // Get the related model definition to determine column types
+    final relatedModelName = relationDef.targetModel;
+    final relatedDef = resolver.registry.expectByName(relatedModelName);
+    
+    final relatedPk = relatedDef.primaryKeyField;
+    if (relatedPk == null) {
+      throw StateError('Related model $relatedModelName must have a primary key');
+    }
 
     final rows = ids.map((id) {
       final row = <String, dynamic>{
@@ -1342,13 +1528,23 @@ abstract class Model<TModel extends Model<TModel>>
       return row;
     }).toList();
 
-    // Insert pivot records using raw query
-    for (final row in rows) {
-      final columns = row.keys.join(', ');
-      final placeholders = List.filled(row.length, '?').join(', ');
-      final sql = 'INSERT INTO $pivotTable ($columns) VALUES ($placeholders)';
-      await context.driver.executeRaw(sql, row.values.toList());
-    }
+    // Build pivot table definition with proper column types
+    final pivotDef = _createPivotDefinition(
+      pivotTable,
+      def.schema,
+      {
+        pivotForeignKey: pk,
+        pivotRelatedKey: relatedPk,
+        ...?pivotData?.map((key, _) => MapEntry(key, null)),
+      },
+    );
+    
+    final plan = MutationPlan.insert(
+      definition: pivotDef,
+      rows: rows,
+    );
+    
+    await resolver.runMutation(plan);
 
     // Reload the relation to sync cache
     await load(relationName);
@@ -1371,7 +1567,6 @@ abstract class Model<TModel extends Model<TModel>>
   Future<TModel> detach(String relationName, [List<dynamic>? ids]) async {
     final def = expectDefinition();
     final resolver = _resolveResolverFor(def);
-    final context = _requireQueryContext(resolver);
 
     final relationDef = def.relations.cast<RelationDefinition?>().firstWhere(
       (r) => r?.name == relationName,
@@ -1403,21 +1598,82 @@ abstract class Model<TModel extends Model<TModel>>
     }
 
     final pivotTable = relationDef.through;
+    if (pivotTable == null) {
+      throw StateError(
+        'Relation "$relationName" is missing pivot table name (through)',
+      );
+    }
+    
     final pivotForeignKey = relationDef.pivotForeignKey!;
     final pivotRelatedKey = relationDef.pivotRelatedKey!;
 
-    // Delete pivot records
-    if (ids == null || ids.isEmpty) {
-      // Detach all
-      final sql = 'DELETE FROM $pivotTable WHERE $pivotForeignKey = ?';
-      await context.driver.executeRaw(sql, [pkValue]);
-    } else {
+    // Get the related model definition to determine column types
+    final relatedModelName = relationDef.targetModel;
+    final relatedDef = resolver.registry.expectByName(relatedModelName);
+    
+    final relatedPk = relatedDef.primaryKeyField;
+    if (relatedPk == null) {
+      throw StateError('Related model $relatedModelName must have a primary key');
+    }
+
+    // Build delete keys
+    final List<Map<String, Object?>> deleteKeys;
+    
+    if (ids != null && ids.isNotEmpty) {
       // Detach specific IDs
-      final placeholders = List.filled(ids.length, '?').join(', ');
-      final sql =
-          'DELETE FROM $pivotTable '
-          'WHERE $pivotForeignKey = ? AND $pivotRelatedKey IN ($placeholders)';
-      await context.driver.executeRaw(sql, [pkValue, ...ids]);
+      deleteKeys = ids.map((id) => {
+        pivotForeignKey: pkValue,
+        pivotRelatedKey: id,
+      }).toList();
+    } else {
+      // Detach all - query for existing pivot records first
+      final pivotDef = _createPivotDefinition(
+        pivotTable,
+        def.schema,
+        {
+          pivotForeignKey: pk,
+          pivotRelatedKey: relatedPk,
+        },
+      );
+      
+      final selectPlan = QueryPlan(
+        definition: pivotDef,
+        filters: [
+          FilterClause(
+            field: pivotForeignKey,
+            operator: FilterOperator.equals,
+            value: pkValue,
+          ),
+        ],
+      );
+      
+      final results = await resolver.runSelect(selectPlan);
+      deleteKeys = results.map((row) => {
+        pivotForeignKey: row[pivotForeignKey],
+        pivotRelatedKey: row[pivotRelatedKey],
+      }).toList();
+    }
+    
+    if (deleteKeys.isNotEmpty) {
+      final pivotDef = _createPivotDefinition(
+        pivotTable,
+        def.schema,
+        {
+          pivotForeignKey: pk,
+          pivotRelatedKey: relatedPk,
+        },
+      );
+      
+      final deleteRows = deleteKeys
+          .map((keys) => MutationRow(values: const {}, keys: keys))
+          .toList();
+      
+      final plan = MutationPlan.delete(
+        definition: pivotDef,
+        rows: deleteRows,
+      );
+      
+      await resolver.runMutation(plan);
     }
 
     // Reload the relation to sync cache
@@ -1453,6 +1709,52 @@ abstract class Model<TModel extends Model<TModel>>
 
     return _self();
   }
+
+  /// Creates a minimal ModelDefinition for a pivot table.
+  ///
+  /// Uses 'int' as the type for all columns since pivot keys are typically integers.
+  /// The codec handles conversion appropriately.
+  static ModelDefinition<Map<String, dynamic>> _createPivotDefinition(
+    String tableName,
+    String? schema,
+    Map<String, FieldDefinition?> columnFields,
+  ) {
+    final fields = columnFields.entries.map((entry) {
+      final colName = entry.key;
+      final fieldDef = entry.value;
+      
+      // Use the field definition's types if available, otherwise default to dynamic
+      return FieldDefinition(
+        name: colName,
+        columnName: colName,
+        dartType: fieldDef?.dartType ?? 'dynamic',
+        resolvedType: fieldDef?.resolvedType ?? 'dynamic',
+        isPrimaryKey: false,
+        isNullable: true,
+      );
+    }).toList();
+    
+    return ModelDefinition<Map<String, dynamic>>(
+      modelName: tableName,
+      tableName: tableName,
+      schema: schema,
+      fields: fields,
+      relations: const [],
+      codec: const _PivotTableCodec(),
+    );
+  }
+}
+
+/// Simple codec for pivot table operations (raw maps).
+class _PivotTableCodec extends ModelCodec<Map<String, dynamic>> {
+  const _PivotTableCodec();
+  
+  @override
+  Map<String, Object?> encode(Map<String, dynamic> model, ValueCodecRegistry registry) => model;
+  
+  @override
+  Map<String, dynamic> decode(Map<String, Object?> data, ValueCodecRegistry registry) => 
+      Map<String, dynamic>.from(data);
 }
 
 extension ModelRegistryX on ModelRegistry {

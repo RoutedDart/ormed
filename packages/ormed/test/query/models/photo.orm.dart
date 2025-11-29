@@ -80,6 +80,60 @@ final ModelDefinition<Photo> _$PhotoModelDefinition = ModelDefinition(
 
 extension PhotoOrmDefinition on Photo {
   static ModelDefinition<Photo> get definition => _$PhotoModelDefinition;
+
+  // Static Query Helpers
+  static Query<Photo> query({String? connection}) =>
+      Model.query<Photo>(connection: connection);
+
+  static Future<List<Photo>> all({String? connection}) =>
+      Model.all<Photo>(connection: connection);
+
+  static Future<Photo?> find(dynamic id, {String? connection}) =>
+      Model.find<Photo>(id, connection: connection);
+
+  static Future<Photo> findOrFail(dynamic id, {String? connection}) =>
+      Model.findOrFail<Photo>(id, connection: connection);
+
+  static Future<Photo?> first({String? connection}) =>
+      Model.first<Photo>(connection: connection);
+
+  static Future<Photo> firstOrFail({String? connection}) =>
+      Model.firstOrFail<Photo>(connection: connection);
+
+  static Query<Photo> where(
+    String column,
+    String operator,
+    dynamic value, {
+    String? connection,
+  }) => Model.where<Photo>(column, operator, value, connection: connection);
+
+  static Query<Photo> whereIn(
+    String column,
+    List<dynamic> values, {
+    String? connection,
+  }) => Model.whereIn<Photo>(column, values, connection: connection);
+
+  static Query<Photo> orderBy(
+    String column, {
+    String direction = 'asc',
+    String? connection,
+  }) => Model.orderBy<Photo>(
+    column,
+    direction: direction,
+    connection: connection,
+  );
+
+  static Query<Photo> limit(int count, {String? connection}) =>
+      Model.limit<Photo>(count, connection: connection);
+
+  static Future<int> count({String? connection}) =>
+      Model.count<Photo>(connection: connection);
+
+  static Future<bool> exists({String? connection}) =>
+      Model.exists<Photo>(connection: connection);
+
+  static Future<bool> doesntExist({String? connection}) =>
+      Model.doesntExist<Photo>(connection: connection);
 }
 
 class _$PhotoModelCodec extends ModelCodec<Photo> {

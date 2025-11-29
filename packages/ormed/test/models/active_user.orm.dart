@@ -96,6 +96,80 @@ final ModelDefinition<ActiveUser> _$ActiveUserModelDefinition = ModelDefinition(
 extension ActiveUserOrmDefinition on ActiveUser {
   static ModelDefinition<ActiveUser> get definition =>
       _$ActiveUserModelDefinition;
+
+  // Static Query Helpers
+  static Query<ActiveUser> query({String? connection}) =>
+      Model.query<ActiveUser>(connection: connection);
+
+  static Future<List<ActiveUser>> all({String? connection}) =>
+      Model.all<ActiveUser>(connection: connection);
+
+  static Future<ActiveUser?> find(dynamic id, {String? connection}) =>
+      Model.find<ActiveUser>(id, connection: connection);
+
+  static Future<ActiveUser> findOrFail(dynamic id, {String? connection}) =>
+      Model.findOrFail<ActiveUser>(id, connection: connection);
+
+  static Future<ActiveUser?> first({String? connection}) =>
+      Model.first<ActiveUser>(connection: connection);
+
+  static Future<ActiveUser> firstOrFail({String? connection}) =>
+      Model.firstOrFail<ActiveUser>(connection: connection);
+
+  static Query<ActiveUser> where(
+    String column,
+    String operator,
+    dynamic value, {
+    String? connection,
+  }) =>
+      Model.where<ActiveUser>(column, operator, value, connection: connection);
+
+  static Query<ActiveUser> whereIn(
+    String column,
+    List<dynamic> values, {
+    String? connection,
+  }) => Model.whereIn<ActiveUser>(column, values, connection: connection);
+
+  static Query<ActiveUser> orderBy(
+    String column, {
+    String direction = 'asc',
+    String? connection,
+  }) => Model.orderBy<ActiveUser>(
+    column,
+    direction: direction,
+    connection: connection,
+  );
+
+  static Query<ActiveUser> limit(int count, {String? connection}) =>
+      Model.limit<ActiveUser>(count, connection: connection);
+
+  static Future<int> count({String? connection}) =>
+      Model.count<ActiveUser>(connection: connection);
+
+  static Future<bool> exists({String? connection}) =>
+      Model.exists<ActiveUser>(connection: connection);
+
+  static Future<bool> doesntExist({String? connection}) =>
+      Model.doesntExist<ActiveUser>(connection: connection);
+
+  static Future<ActiveUser> create(
+    Map<String, dynamic> attributes, {
+    String? connection,
+  }) async {
+    final q = query(connection: connection);
+    final codec = const _$ActiveUserModelCodec();
+    final model = codec.decode(attributes, q.context.codecRegistry);
+    return await model.save();
+  }
+
+  static Future<void> insert(
+    List<Map<String, dynamic>> records, {
+    String? connection,
+  }) async {
+    for (final record in records) {
+      await create(record, connection: connection);
+    }
+  }
 }
 
 class _$ActiveUserModelCodec extends ModelCodec<ActiveUser> {

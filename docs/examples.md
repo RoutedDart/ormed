@@ -21,11 +21,20 @@ pieces work together.
 
    @OrmModel(table: 'users')
    class User extends Model<User> {
-     const User({required this.id, required this.email});
+     const User({required this.id, required this.email, this.posts = const []});
 
      @OrmField(isPrimaryKey: true)
      final int id;
      final String email;
+
+     @OrmField(ignore: true)
+     @OrmRelation(
+       kind: RelationKind.hasMany,
+       target: Post,
+       foreignKey: 'user_id',
+       localKey: 'id',
+     )
+     final List<Post> posts;
    }
    ```
 3. **Generate** - `dart run build_runner build --delete-conflicting-outputs`.
@@ -217,8 +226,7 @@ final recentPosts = await context
       join.where('authors.active', true);
     })
     .joinRelation('tags')
-    .selectRaw('authors.name AS author_name')
-    .selectRaw('rel_tags_0.label AS tag_label')
+    .select(['authors.name', 'rel_tags_0.label'])
     .orderBy('posts.published_at', descending: true)
     .limit(5)
     .rows();
@@ -297,6 +305,113 @@ print('Author: ${post.author?.name}');
 
 // Load multiple if not already loaded
 await post.loadMissing(['tags', 'comments']);
+
+// Nested relation loading
+await post.load('comments.author');
+for (final comment in post.comments) {
+  print('Comment by: ${comment.author?.name}');
+}
+```
+
+### Lazy Loading Aggregates
+
+Load counts, sums, and other aggregates without fetching full collections:
+
+```dart
+final post = await Post.query().firstOrFail();
+
+// Load comment count
+await post.loadCount('comments');
+print('Comments: ${post.getAttribute<int>('comments_count')}');
+
+// Load sum of order amounts
+await post.loadSum('orders', 'total', alias: 'order_total');
+print('Total: \$${post.getAttribute<num>('order_total')}');
+
+// Load average rating
+await post.loadAvg('ratings', 'score');
+print('Rating: ${post.getAttribute<num>('ratings_avg_score')}');
+
+// With constraints
+await post.loadCount('comments', constraint: (query) =>
+    query.whereEquals('approved', true));
+```
+
+### Preventing Lazy Loading (Development)
+
+Catch N+1 query problems during development:
+
+```dart
+// Enable globally
+ModelRelations.preventsLazyLoading = true;
+
+// Now any lazy load throws LazyLoadingViolationException
+try {
+  final post = await Post.query().first();
+  await post.load('author'); // Throws!
+} on LazyLoadingViolationException catch (e) {
+  print('Lazy loading blocked: ${e.relationName} on ${e.modelName}');
+}
+
+// Best practice: enable in dev/test only
+if (environment != 'production') {
+  ModelRelations.preventsLazyLoading = true;
+}
+```
+
+### Relation Mutations
+
+Manage associations without manual foreign key manipulation:
+
+```dart
+final post = await Post.query().firstOrFail();
+
+// BelongsTo: Associate & Dissociate
+final author = await Author.query().whereEquals('email', 'john@example.com').firstOrFail();
+post.associate('author', author);
+await post.save();
+print(post.authorId); // Updated to author.id
+
+post.dissociate('author');
+await post.save();
+print(post.authorId); // null
+
+// ManyToMany: Attach, Detach & Sync
+await post.attach('tags', [1, 2, 3]);
+print(post.tags.length); // 3
+
+await post.detach('tags', [1]);
+print(post.tags.length); // 2
+
+// Sync replaces all associations
+await post.sync('tags', [4, 5, 6]);
+print(post.tags.length); // 3 (only 4, 5, 6)
+
+// With pivot data
+await post.attach('tags', [7], pivotData: {
+  'created_at': DateTime.now(),
+  'priority': 'high',
+});
+```
+
+### Batch Loading on Collections
+
+Load relations for multiple models efficiently:
+
+```dart
+// Get posts from different sources
+final posts = await Post.query().limit(10).get();
+
+// Single query loads all authors
+await Model.loadRelations(posts, 'author');
+
+// Load multiple relations
+await Model.loadRelationsMany(posts, ['author', 'tags', 'comments']);
+
+// Load only missing relations
+final postsWithAuthors = await Post.query().withRelation('author').get();
+await Model.loadRelationsMissing(postsWithAuthors, ['author', 'tags']);
+// Only loads 'tags' since 'author' is already present
 
 // Load with constraints
 await post.load('comments', (query) => query

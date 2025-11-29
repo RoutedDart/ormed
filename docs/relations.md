@@ -428,6 +428,23 @@ await post.sync('tags', [6, 7], pivotData: {
 });
 ```
 
+**Driver Compatibility:**
+
+The `attach()`, `detach()`, and `sync()` methods require raw SQL support for pivot table operations. These methods are **not supported on MongoDB** and other non-SQL drivers.
+
+If you attempt to use these methods on an unsupported driver, an `UnsupportedError` will be thrown:
+
+```dart
+// On MongoDB driver, this throws UnsupportedError
+await post.attach('tags', [1, 2, 3]);
+// Error: attach() requires raw SQL support. Driver "mongodb" does not support pivot table operations.
+```
+
+**Workaround for MongoDB:** MongoDB doesn't use traditional pivot tables. Instead, consider:
+- Storing arrays of IDs directly in the document (e.g., `post.tagIds = [1, 2, 3]`)
+- Using embedded documents for complex many-to-many relationships
+- Implementing manual relation management with array updates
+
 ### Manual Relation Cache Management
 
 Directly manipulate the relation cache when needed:
@@ -733,17 +750,32 @@ await author.loadSum('posts', 'views',
 
 Different database drivers support different features. The ORM uses a capability system to handle this gracefully.
 
-### MongoDB Limitations
+### MongoDB Implementation Details
 
-MongoDB does **not** support certain SQL-specific features:
+MongoDB has different capabilities compared to SQL databases:
 
-1. **Raw SQL Operations**: `selectRaw()`, `whereRaw()`, `havingRaw()` are not supported
-2. **Relation Aggregates**: `withSum()`, `withCount()`, `loadSum()`, etc. are not available
-   - This is because MongoDB doesn't support SQL-style subqueries
-   - Use MongoDB's aggregation pipeline directly for complex aggregations
-3. **JOINs**: Use nested document patterns or perform joins client-side
+1. **Raw SQL Operations**: ❌ `selectRaw()`, `whereRaw()`, `havingRaw()` are not supported
+   - These are SQL-specific and don't apply to document databases
+   
+2. **Relation Aggregates**: ✅ Fully supported via aggregation pipeline
+   - `withSum()`, `withCount()`, `withAvg()`, `loadSum()`, etc. work seamlessly
+   - Implemented using MongoDB's native `$lookup` + `$group` pipeline stages
+   - Example: `withSum('posts', 'views')` translates to:
+     ```json
+     [
+       { "$lookup": { "from": "posts", "localField": "_id", "foreignField": "author_id", "as": "posts" } },
+       { "$unwind": { "path": "$posts", "preserveNullAndEmptyArrays": true } },
+       { "$group": { "_id": "$_id", "posts_sum_views": { "$sum": "$posts.views" }, "doc": { "$first": "$$ROOT" } } },
+       { "$replaceRoot": { "newRoot": { "$mergeObjects": ["$doc", { "posts_sum_views": "$posts_sum_views" }] } } }
+     ]
+     ```
+   
+3. **JOINs**: ⚠️ Limited support
+   - Use `$lookup` for simple joins via `withRelation()`
+   - Complex multi-table joins may require client-side processing
+   - Consider denormalization for frequently accessed relationships
 
-These features are automatically skipped in tests and will throw descriptive errors if used.
+Tests automatically skip unsupported features using the capability system.
 
 ### SQLite Full Support
 

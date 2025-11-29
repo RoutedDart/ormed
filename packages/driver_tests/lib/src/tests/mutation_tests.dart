@@ -12,9 +12,12 @@ void runDriverMutationTests({
   required DriverHarnessBuilder<DriverTestHarness> createHarness,
   required DriverTestConfig config,
 }) {
-  if (config.driverName.toLowerCase().contains('mongo')) {
+  // Skip entire group for drivers that don't support raw SQL,
+  // as these tests use executeRaw, queryRaw, and SQL-specific features
+  if (!config.supportsCapability(DriverCapability.rawSQL)) {
     return;
   }
+
   group('${config.driverName} mutations', () {
     String wrap(String value) =>
         '${config.identifierQuote}$value${config.identifierQuote}';
