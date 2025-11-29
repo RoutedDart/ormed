@@ -70,9 +70,12 @@ consistent and avoids materializing large lists when you only need iteration.
 
 ## Fluent Query API
 
-Example:
+### Basic Queries
+
+The query builder can be accessed via `QueryContext.query<T>()` or directly from model classes using the static `query()` helper:
 
 ```dart
+// Via context
 final activeUsers = await context
     .query<User>()
     .whereEquals('active', true)
@@ -80,7 +83,21 @@ final activeUsers = await context
     .orderBy('email')
     .limit(20)
     .get();
+
+// Via static helper (more ergonomic)
+final recentUsers = await User.query()
+    .whereGreaterThan('created_at', DateTime(2024))
+    .orderBy('email', descending: true)
+    .limit(10)
+    .get();
+
+// With custom connection
+final adminUsers = await User.query(connection: 'admin')
+    .whereEquals('role', 'admin')
+    .get();
 ```
+
+The static `query()` helper is automatically generated for all models and provides a cleaner API similar to Laravel's Eloquent.
 
 Supported clauses:
 
@@ -191,15 +208,14 @@ final rows = await context
       join.where('authors.active', true);
     })
     .joinRelation('tags')
-    .selectRaw('authors.name AS author_name')
-    .selectRaw('rel_tags_0.label AS tag_label')
+    .select(['authors.name', 'rel_tags_0.label'])
     .orderBy('posts.id')
     .rows();
 
 final counts = context
     .query<Post>()
-    .selectRaw('author_id')
-    .selectRaw('COUNT(*) AS total_posts')
+    .select(['author_id'])
+    .selectCount('id', alias: 'total_posts')
     .groupBy(['author_id']);
 
 final aggregated = await context

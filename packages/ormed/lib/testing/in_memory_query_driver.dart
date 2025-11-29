@@ -8,6 +8,7 @@ class InMemoryQueryExecutor implements DriverAdapter {
 
   final ValueCodecRegistry codecRegistry;
   final Map<String, List<Map<String, Object?>>> _tables = {};
+  final Map<String, int> _autoIncrementCounters = {};
 
   @override
   DriverMetadata get metadata => const DriverMetadata(
@@ -35,7 +36,10 @@ class InMemoryQueryExecutor implements DriverAdapter {
   }
 
   /// Removes all registered tables and rows.
-  void clear() => _tables.clear();
+  void clear() {
+    _tables.clear();
+    _autoIncrementCounters.clear();
+  }
 
   @override
   Future<List<Map<String, Object?>>> execute(QueryPlan plan) async {
@@ -107,15 +111,22 @@ class InMemoryQueryExecutor implements DriverAdapter {
       case MutationOperation.insert:
         final table = _table(plan.definition);
         var affected = 0;
+        final returnedRows = plan.returning ? <Map<String, Object?>>[] : null;
         for (final row in plan.rows) {
           if (_shouldSkipInsert(plan, row.values)) {
             continue;
           }
-          table.add(Map<String, Object?>.from(row.values));
+          final values = Map<String, Object?>.from(row.values);
+          _generatePrimaryKey(plan.definition, values);
+          table.add(values);
+          if (plan.returning) {
+            returnedRows!.add(Map<String, Object?>.from(values));
+          }
           affected++;
         }
         return MutationResult(
           affectedRows: plan.ignoreConflicts ? affected : plan.rows.length,
+          returnedRows: returnedRows,
         );
       case MutationOperation.insertUsing:
         final queryPlan = plan.queryPlan;
@@ -125,6 +136,7 @@ class InMemoryQueryExecutor implements DriverAdapter {
         final sourceRows = _queryMatches(queryPlan);
         final table = _table(plan.definition);
         var affected = 0;
+        final returnedRows = plan.returning ? <Map<String, Object?>>[] : null;
         for (final source in sourceRows) {
           final values = <String, Object?>{
             for (final column in plan.insertColumns) column: source[column],
@@ -132,11 +144,16 @@ class InMemoryQueryExecutor implements DriverAdapter {
           if (_shouldSkipInsert(plan, values)) {
             continue;
           }
+          _generatePrimaryKey(plan.definition, values);
           table.add(Map<String, Object?>.from(values));
+          if (plan.returning) {
+            returnedRows!.add(Map<String, Object?>.from(values));
+          }
           affected++;
         }
         return MutationResult(
           affectedRows: plan.ignoreConflicts ? affected : sourceRows.length,
+          returnedRows: returnedRows,
         );
       case MutationOperation.update:
         final table = _table(plan.definition);
@@ -175,9 +192,11 @@ class InMemoryQueryExecutor implements DriverAdapter {
             (candidate) => _matches(candidate, selector),
           );
           if (index == -1) {
-            table.add(Map<String, Object?>.from(row.values));
+            final values = Map<String, Object?>.from(row.values);
+            _generatePrimaryKey(plan.definition, values);
+            table.add(values);
             if (plan.returning) {
-              returnedRows!.add(Map<String, Object?>.from(row.values));
+              returnedRows!.add(Map<String, Object?>.from(values));
             }
           } else {
             final updates = _upsertColumnsToUpdate(
@@ -566,5 +585,31 @@ class InMemoryQueryExecutor implements DriverAdapter {
       return current.cast<Object?>();
     }
     return <Object?>[];
+  }
+
+  /// Generates a primary key value if the field is null and is auto-incrementing.
+  void _generatePrimaryKey(
+    ModelDefinition<dynamic> definition,
+    Map<String, Object?> values,
+  ) {
+    final pkField = definition.primaryKeyField;
+    if (pkField == null) return;
+
+    final pkColumn = pkField.columnName;
+    
+    // Only generate if the value is not already set
+    if (values[pkColumn] != null) return;
+
+    // Only generate for integer primary keys (common auto-increment pattern)
+    if (pkField.dartType != "int") {
+      return;
+    }
+
+    final tableName = definition.tableName;
+    final counter = _autoIncrementCounters[tableName] ?? 0;
+    final nextId = counter + 1;
+    
+    _autoIncrementCounters[tableName] = nextId;
+    values[pkColumn] = nextId;
   }
 }

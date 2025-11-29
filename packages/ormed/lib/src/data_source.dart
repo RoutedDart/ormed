@@ -4,6 +4,7 @@ import 'connection/connection.dart';
 import 'connection/connection_manager.dart';
 import 'connection/orm_connection.dart';
 import 'driver/driver.dart';
+import 'model.dart';
 import 'model_definition.dart';
 import 'model_registry.dart';
 import 'query/query.dart';
@@ -186,11 +187,17 @@ class DataSource {
   /// Initializes the data source by registering all entities and
   /// establishing the database connection.
   ///
+  /// Automatically registers this DataSource with ConnectionManager.
+  /// If this is the first DataSource registered, it becomes the default.
+  ///
   /// Must be called before using [query], [repo], or other database operations.
   ///
   /// ```dart
   /// final ds = DataSource(options);
-  /// await ds.init();
+  /// await ds.init(); // Auto-registers and sets as default if first
+  /// 
+  /// // Static helpers now work
+  /// final users = await User.query().get();
   /// ```
   Future<void> init() async {
     if (_initialized) {
@@ -221,7 +228,60 @@ class DataSource {
       _connection!.enableQueryLog();
     }
 
+    // Mark as initialized BEFORE registering (registration may access connection)
     _initialized = true;
+    
+    // Auto-register with ConnectionManager
+    ConnectionManager.instance.registerDataSource(this);
+    
+    // If this is the first DataSource, set it as default
+    if (!ConnectionManager.instance.hasDefaultConnection) {
+      setAsDefault();
+    }
+  }
+  
+  /// Sets this DataSource as the default connection for Model static helpers.
+  ///
+  /// This enables usage of static methods like `User.query()`, `Post.find()`, etc.
+  /// without explicitly passing a connection.
+  ///
+  /// ```dart
+  /// final ds = DataSource(options);
+  /// await ds.init();
+  /// ds.setAsDefault(); // Now User.query() works
+  /// 
+  /// final users = await User.query().get();
+  /// ```
+  void setAsDefault() {
+    _ensureInitialized();
+    // Register if not already registered
+    if (!ConnectionManager.instance.isRegistered(options.name)) {
+      ConnectionManager.instance.registerDataSource(this);
+    }
+    ConnectionManager.instance.setDefaultConnection(options.name);
+    // Update Model's default connection name so static helpers work
+    Model.bindConnectionResolver(
+      defaultConnection: options.name,
+      connectionManager: ConnectionManager.instance,
+    );
+    _defaultDataSource = this;
+  }
+  
+  static DataSource? _defaultDataSource;
+  
+  /// Returns the current default DataSource, or null if none is set.
+  ///
+  /// ```dart
+  /// final ds = DataSource.getDefault();
+  /// if (ds != null) {
+  ///   final users = await ds.query<User>().get();
+  /// }
+  /// ```
+  static DataSource? getDefault() => _defaultDataSource;
+  
+  /// Clears the default DataSource. Useful for testing.
+  static void clearDefault() {
+    _defaultDataSource = null;
   }
 
   /// Creates a typed query builder for the specified model type.
@@ -408,5 +468,34 @@ extension DataSourceManagerExtension on ConnectionManager {
       (config) => dataSource.connection,
       singleton: true,
     );
+  }
+
+  /// Sets a default data source for convenience when using static Model helpers.
+  ///
+  /// This registers the data source under the 'default' connection name,
+  /// which is used by Model static helpers like `User.all()`, `User.find()`, etc.
+  ///
+  /// ```dart
+  /// final ds = DataSource(DataSourceOptions(
+  ///   driver: SqliteDriverAdapter.file('app.sqlite'),
+  ///   entities: [UserOrmDefinition.definition],
+  /// ));
+  /// await ds.init();
+  ///
+  /// // Register as default
+  /// ConnectionManager.instance.setDefaultDataSource(ds);
+  ///
+  /// // Now you can use static helpers
+  /// final users = await User.all();
+  /// final user = await User.find(1);
+  /// ```
+  void setDefaultDataSource(DataSource dataSource) {
+    if (dataSource.name != 'default') {
+      throw ArgumentError(
+        'DataSource must have name "default" to be set as default. '
+        'Current name: "${dataSource.name}"',
+      );
+    }
+    registerDataSource(dataSource);
   }
 }

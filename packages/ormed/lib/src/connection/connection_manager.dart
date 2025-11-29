@@ -11,9 +11,14 @@ class ConnectionManager {
   ConnectionManager();
 
   static final ConnectionManager defaultManager = ConnectionManager();
+  
+  /// Convenience getter for accessing the default manager instance.
+  static ConnectionManager get instance => defaultManager;
 
   final Map<String, Map<ConnectionRole?, _ConnectionRegistration>>
   _registrations = {};
+  
+  String? _defaultConnectionName;
 
   void register(
     String name,
@@ -77,6 +82,42 @@ class ConnectionManager {
   /// Returns every registered connection name.
   Iterable<String> get registeredConnectionNames =>
       List.unmodifiable(_registrations.keys);
+  
+  /// Sets the default connection name used by Model static helpers.
+  /// This connection will be used when no connection is explicitly specified.
+  void setDefaultConnection(String name) {
+    final normalized = name.trim();
+    if (!isRegistered(normalized)) {
+      throw ArgumentError.value(
+        name,
+        'name',
+        'Connection must be registered before setting as default',
+      );
+    }
+    _defaultConnectionName = normalized;
+  }
+  
+  /// Gets the default connection name, or null if none is set.
+  String? get defaultConnectionName => _defaultConnectionName;
+  
+  /// Returns true if a default connection has been set.
+  bool get hasDefaultConnection => _defaultConnectionName != null;
+  
+  /// Gets the default connection, or throws if none is set.
+  OrmConnection get defaultConnection {
+    final name = _defaultConnectionName;
+    if (name == null) {
+      throw StateError(
+        'No default connection set. Call setDefaultConnection() first.',
+      );
+    }
+    return connection(name);
+  }
+  
+  /// Clears the default connection (useful for testing).
+  void clearDefault() {
+    _defaultConnectionName = null;
+  }
 
   Future<T> use<T>(
     String name,

@@ -75,6 +75,40 @@ await ds.init();
 
 The `init()` method is idempotent—calling it multiple times has no effect after the first successful initialization.
 
+### Setting Default DataSource
+
+For convenience with static model helpers (like `User.query()`), set a default data source:
+
+```dart
+final ds = DataSource(DataSourceOptions(
+  name: 'default', // Important: must be 'default' for static helpers
+  driver: SqliteDriverAdapter.file('app.sqlite'),
+  entities: [UserOrmDefinition.definition, PostOrmDefinition.definition],
+));
+await ds.init();
+
+// Set as default - enables User.query(), Post.find(), etc.
+ConnectionManager.instance.setDefaultDataSource(ds);
+
+// Now static helpers work automatically
+final users = await User.query().get();
+final post = await Post.find(1);
+```
+
+This eliminates the need for manual binding or passing contexts around. The default data source is used when:
+- Using static model helpers (`User.query()`, `Post.find()`, etc.)
+- No explicit connection is specified
+- No manual binding has been set up
+
+You can also retrieve the default data source later:
+
+```dart
+final ds = DataSource.getDefault();
+if (ds != null) {
+  // Use the default data source
+}
+```
+
 ### Querying Data
 
 Use `query<T>()` to create a typed query builder:

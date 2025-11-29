@@ -314,7 +314,6 @@ class _ModelEmitter {
     );
     
     // Always generate static query helpers
-    // (static methods cannot be inherited in Dart)
     buffer.writeln();
     buffer.writeln('  // Static Query Helpers');
     buffer.writeln(

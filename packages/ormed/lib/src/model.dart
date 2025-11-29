@@ -70,14 +70,20 @@ abstract class Model<TModel extends Model<TModel>>
   static Query<TModel> query<TModel>({
     String? connection,
   }) {
-    final initialResolver = _resolveBoundResolver(connection);
+    // Try to resolve and get definition
+    final initialResolver = _resolveBoundResolverFlexible<TModel>(connection);
     final definition = initialResolver.registry.expect<TModel>();
-    final metadataConnection = connection ?? definition.metadata.connection;
-    if (_shouldRebindResolver(connection, metadataConnection)) {
-      final resolver = _resolveBoundResolver(metadataConnection);
+    
+    // Determine the effective connection: explicit param > model's configured connection
+    final effectiveConnection = connection ?? definition.metadata.connection;
+    
+    // If we need a different connection than what we initially resolved, re-resolve
+    if (_shouldRebindResolver(connection, effectiveConnection)) {
+      final resolver = _resolveBoundResolver(effectiveConnection);
       final context = _requireQueryContext(resolver);
       return context.queryFromDefinition(definition);
     }
+    
     final context = _requireQueryContext(initialResolver);
     return context.queryFromDefinition(definition);
   }
@@ -600,6 +606,40 @@ abstract class Model<TModel extends Model<TModel>>
     }
     final connection = manager.connection(name, role: _defaultConnectionRole);
     return connection.context;
+  }
+
+  /// Flexible resolver that tries to find a connection with the model definition
+  static ConnectionResolver _resolveBoundResolverFlexible<TModel>(String? preferred) {
+    final manager = _connectionManager ?? ConnectionManager.defaultManager;
+    final builder = _resolverFactory;
+    
+    // If custom resolver is set, use it
+    if (builder != null) {
+      final name = _effectiveConnectionName(preferred);
+      return builder(name);
+    }
+    
+    // Try preferred/default connection first
+    final preferredName = _effectiveConnectionName(preferred);
+    if (manager.isRegistered(preferredName)) {
+      final connection = manager.connection(preferredName, role: _defaultConnectionRole);
+      if (connection.context.registry.contains<TModel>()) {
+        return connection.context;
+      }
+    }
+    
+    // Search all registered connections for one that has this model
+    for (final name in manager.registeredConnectionNames) {
+      final connection = manager.connection(name, role: _defaultConnectionRole);
+      if (connection.context.registry.contains<TModel>()) {
+        return connection.context;
+      }
+    }
+    
+    throw StateError(
+      'No ORM connection found with definition for ${TModel}. '
+      'Register a DataSource containing this model on ConnectionManager.',
+    );
   }
 
   static String _effectiveConnectionName(String? value) {

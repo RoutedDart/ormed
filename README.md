@@ -94,9 +94,17 @@ void main() async {
   ));
   await ds.init();
 
-  // Query
+  // Insert
+  await ds.repository<User>().insert(const User(
+    id: 1,
+    email: 'john@example.com',
+    name: 'John Doe',
+  ));
+
+  // Query with eager loading
   final users = await ds.query<User>()
-      .whereEquals('active', true)
+      .withRelation('posts')
+      .withCount('posts', alias: 'post_count')
       .orderBy('created_at', descending: true)
       .limit(10)
       .get();
@@ -199,6 +207,7 @@ dart run ormed_cli:orm schema:describe
 
 # Run database seeders
 dart run ormed_cli:orm seed
+dart run ormed_cli:orm seed
 dart run ormed_cli:orm seed --class DemoContentSeeder
 ```
 
@@ -222,6 +231,8 @@ See the [CLI Reference](docs/cli.md) for complete documentation of all commands 
 
 ### Advanced Topics
 - [Driver Capabilities](docs/driver_capabilities.md) — Cross-database compatibility and feature detection
+- [MongoDB Guide](docs/mongodb.md) — MongoDB-specific features, limitations, and best practices
+- [Best Practices](docs/best_practices.md) — Optimization strategies, patterns, and anti-patterns
 - [Recent Improvements](docs/RECENT_IMPROVEMENTS.md) — New features and enhancements
 - [Grammar Parity Matrix](docs/grammar_parity_matrix.md) — Laravel grammar compatibility
 
