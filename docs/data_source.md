@@ -68,36 +68,51 @@ Always call `init()` before using the data source:
 
 ```dart
 final ds = DataSource(options);
-await ds.init();
+await ds.init(); // Automatically registers with ConnectionManager
 
 // Now safe to use
 ```
 
-The `init()` method is idempotent—calling it multiple times has no effect after the first successful initialization.
+The `init()` method:
+- Is idempotent—calling it multiple times has no effect after the first successful initialization
+- **Automatically registers** the DataSource with `ConnectionManager`
+- **Automatically sets it as default** if it's the first DataSource initialized
 
-### Setting Default DataSource
+### Using Static Model Helpers
 
-For convenience with static model helpers (like `User.query()`), set a default data source:
+Once initialized, the first DataSource automatically becomes the default, enabling static helpers:
 
 ```dart
 final ds = DataSource(DataSourceOptions(
-  name: 'default', // Important: must be 'default' for static helpers
+  name: 'myapp', // Can be any name
   driver: SqliteDriverAdapter.file('app.sqlite'),
   entities: [UserOrmDefinition.definition, PostOrmDefinition.definition],
 ));
-await ds.init();
 
-// Set as default - enables User.query(), Post.find(), etc.
-ConnectionManager.instance.setDefaultDataSource(ds);
+await ds.init(); // Auto-registers and sets as default
 
-// Now static helpers work automatically
+// Static helpers now work automatically!
 final users = await User.query().get();
 final post = await Post.find(1);
 ```
 
-This eliminates the need for manual binding or passing contexts around. The default data source is used when:
-- Using static model helpers (`User.query()`, `Post.find()`, etc.)
-- No explicit connection is specified
+**For multiple DataSources**, explicitly set your preferred default:
+
+```dart
+final primary = DataSource(DataSourceOptions(name: 'primary', ...));
+final analytics = DataSource(DataSourceOptions(name: 'analytics', ...));
+
+await primary.init();    // Becomes default (first initialized)
+await analytics.init();  // Also registered
+
+// To change default:
+analytics.setAsDefault(); // Now User.query() uses analytics
+
+// Or query specific DataSource:
+final primaryUsers = await User.query(connection: 'primary').get();
+```
+
+This eliminates the need for manual binding or passing contexts around.
 - No manual binding has been set up
 
 You can also retrieve the default data source later:
@@ -290,13 +305,56 @@ final analyticsDs = DataSource(DataSourceOptions(
 await mainDs.init();
 await analyticsDs.init();
 
+// Set main as default for convenience
+mainDs.setAsDefault();
+
 // Query specific databases
 final users = await mainDs.query<User>().get();
 final events = await analyticsDs.query<Event>().get();
 
+// Use static helpers (routes to 'main' via default)
+final allUsers = await User.query().get();
+
+// Or explicitly specify a connection
+final analyticsUsers = await User.query(connection: 'analytics').get();
+
 // Cleanup
 await mainDs.dispose();
 await analyticsDs.dispose();
+```
+
+### Named Connections with Static Helpers
+
+Static model helpers support the `connection` parameter to target specific data sources:
+
+```dart
+// Setup multiple data sources
+final primary = DataSource(DataSourceOptions(
+  name: 'primary',
+  driver: SqliteDriverAdapter.file('primary.sqlite'),
+  entities: [UserOrmDefinition.definition],
+));
+
+final replica = DataSource(DataSourceOptions(
+  name: 'replica',
+  driver: SqliteDriverAdapter.file('replica.sqlite'),
+  entities: [UserOrmDefinition.definition],
+));
+
+await primary.init();
+await replica.init();
+primary.setAsDefault();
+
+// Uses 'primary' (default)
+final user1 = await User.find(1);
+
+// Explicitly use 'replica'
+final user2 = await User.find(1, connection: 'replica');
+
+// Query builder also supports connection parameter
+final users = await User.query(connection: 'replica')
+    .whereEquals('active', true)
+    .get();
 ```
 
 ### Integration with ConnectionManager
@@ -304,13 +362,21 @@ await analyticsDs.dispose();
 Register data sources with `ConnectionManager` for centralized access:
 
 ```dart
-final ds = DataSource(options);
+final ds = DataSource(DataSourceOptions(
+  name: 'myapp',
+  driver: SqliteDriverAdapter.file('app.sqlite'),
+  entities: [UserOrmDefinition.definition],
+));
 await ds.init();
 
 ConnectionManager.defaultManager.registerDataSource(ds);
 
 // Later, retrieve by name
-final connection = ConnectionManager.defaultManager.connection('default');
+final connection = ConnectionManager.defaultManager.connection('myapp');
+
+// Or use static helpers that automatically resolve connections
+final users = await User.query().get(); // Uses default connection
+final user = await User.find(1, connection: 'myapp'); // Uses named connection
 ```
 
 ## Lifecycle Management

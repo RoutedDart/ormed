@@ -427,15 +427,20 @@ composite key.
 
 The runtime helpers now mirror Laravel’s guardrails:
 
-- `Model.fill(...)` respects the `fillable`/`guarded` lists plus field-level
-  overrides and throws `MassAssignmentException` when strict mode rejects
-  attributes.
-- `Model.fillIfAbsent(...)` only fills missing entries, while `Model.forceFill`
-  temporarily disables guarding via an `unguarded` context.
-- `Model.toArray()` / `Model.toJson()` filter attributes through `hidden` +
-  `visible` and honor per-column `casts` entries when encoding the payload.
-- Use `Map<String, Object?>.filteredByAttributes(metadata, definition.fields)`
-  when you need to sanitize a raw payload before handing it to `Model.fill`.
+```dart
+// Mass assignment with guards
+user.fillAttributes({'name': 'John', 'email': 'john@example.com'});
+// Only fillable fields are accepted; guarded fields are rejected
+
+// Bypass guards temporarily
+ModelAttributes.unguarded(() {
+  user.fillAttributes({'admin': true}); // Now accepted even if guarded
+});
+
+// Serialization respects hidden/visible
+final data = user.serializableAttributes(); // Excludes hidden fields
+final allData = user.serializableAttributes(includeHidden: true);
+```
 
 Because `ModelAttributesMetadata` owns the metadata, downstream drivers and
 helpers (playgrounds, seeders, repositories) can inspect `definition.metadata`
