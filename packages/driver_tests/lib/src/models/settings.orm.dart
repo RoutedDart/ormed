@@ -51,7 +51,7 @@ final ModelDefinition<Setting> _$SettingModelDefinition = ModelDefinition(
 );
 
 // ignore: unused_element
-final _SettingModelDefinitionRegistration =
+final settingModelDefinitionRegistration =
     ModelFactoryRegistry.register<Setting>(_$SettingModelDefinition);
 
 extension SettingOrmDefinition on Setting {
@@ -82,18 +82,241 @@ class SettingModelFactory {
   static ModelFactoryConnection<Setting> withConnection(QueryContext context) =>
       ModelFactoryConnection<Setting>(definition: definition, context: context);
 
+  static Query<Setting> query([String? connection]) {
+    final connName = connection ?? definition.metadata.connection;
+    final conn = ConnectionManager.instance.connection(
+      connName ?? ConnectionManager.instance.defaultConnectionName ?? "default",
+    );
+    return conn.query<Setting>();
+  }
+
   static ModelFactoryBuilder<Setting> factory({
     GeneratorProvider? generatorProvider,
   }) => ModelFactoryBuilder<Setting>(
     definition: definition,
     generatorProvider: generatorProvider,
   );
+
+  static Future<List<Setting>> all([String? connection]) =>
+      query(connection).get();
+
+  static Future<Setting> create(
+    Map<String, dynamic> attributes, [
+    String? connection,
+  ]) async {
+    final model = const _$SettingModelCodec().decode(
+      attributes,
+      ValueCodecRegistry.standard(),
+    );
+    final connName = connection ?? definition.metadata.connection;
+    final conn = ConnectionManager.instance.connection(
+      connName ?? ConnectionManager.instance.defaultConnectionName ?? "default",
+    );
+    final repo = conn.context.repository<Setting>();
+    final result = await repo.insertMany([model], returning: true);
+    return result.first;
+  }
+
+  static Future<List<Setting>> createMany(
+    List<Map<String, dynamic>> records, [
+    String? connection,
+  ]) async {
+    final models = records
+        .map(
+          (r) => const _$SettingModelCodec().decode(
+            r,
+            ValueCodecRegistry.standard(),
+          ),
+        )
+        .toList();
+    final connName = connection ?? definition.metadata.connection;
+    final conn = ConnectionManager.instance.connection(
+      connName ?? ConnectionManager.instance.defaultConnectionName ?? "default",
+    );
+    final repo = conn.context.repository<Setting>();
+    return await repo.insertMany(models, returning: true);
+  }
+
+  static Future<void> insert(
+    List<Map<String, dynamic>> records, [
+    String? connection,
+  ]) async {
+    final models = records
+        .map(
+          (r) => const _$SettingModelCodec().decode(
+            r,
+            ValueCodecRegistry.standard(),
+          ),
+        )
+        .toList();
+    final connName = connection ?? definition.metadata.connection;
+    final conn = ConnectionManager.instance.connection(
+      connName ?? ConnectionManager.instance.defaultConnectionName ?? "default",
+    );
+    final repo = conn.context.repository<Setting>();
+    await repo.insertMany(models, returning: false);
+  }
+
+  static Future<Setting?> find(Object id, [String? connection]) =>
+      query(connection).find(id);
+
+  static Future<Setting> findOrFail(Object id, [String? connection]) async {
+    final result = await find(id, connection);
+    if (result == null) throw StateError("Model not found with id: $id");
+    return result;
+  }
+
+  static Future<List<Setting>> findMany(
+    List<Object> ids, [
+    String? connection,
+  ]) => query(connection).findMany(ids);
+
+  static Future<Setting?> first([String? connection]) =>
+      query(connection).first();
+
+  static Future<Setting> firstOrFail([String? connection]) async {
+    final result = await first(connection);
+    if (result == null) throw StateError("No model found");
+    return result;
+  }
+
+  static Future<int> count([String? connection]) => query(connection).count();
+
+  static Future<bool> exists([String? connection]) async =>
+      await count(connection) > 0;
+
+  static Future<int> destroy(List<Object> ids, [String? connection]) async {
+    final models = await findMany(ids, connection);
+    for (final model in models) {
+      await model.delete();
+    }
+    return models.length;
+  }
+
+  static Query<Setting> where(
+    String column,
+    dynamic value, [
+    String? connection,
+  ]) => query(connection).where(column, value);
+
+  static Query<Setting> whereIn(
+    String column,
+    List<dynamic> values, [
+    String? connection,
+  ]) => query(connection).whereIn(column, values);
+
+  static Query<Setting> orderBy(
+    String column, {
+    String direction = "asc",
+    String? connection,
+  }) => query(
+    connection,
+  ).orderBy(column, descending: direction.toLowerCase() == "desc");
+
+  static Query<Setting> limit(int count, [String? connection]) =>
+      query(connection).limit(count);
 }
 
-extension SettingModelFactoryExtension on Setting {
+extension SettingModelHelpers on Setting {
+  // Factory
   static ModelFactoryBuilder<Setting> factory({
     GeneratorProvider? generatorProvider,
   }) => SettingModelFactory.factory(generatorProvider: generatorProvider);
+
+  // Query builder
+  static Query<Setting> query([String? connection]) =>
+      SettingModelFactory.query(connection);
+
+  // CRUD operations
+  static Future<List<Setting>> all([String? connection]) =>
+      SettingModelFactory.all(connection);
+
+  static Future<Setting?> find(Object id, [String? connection]) =>
+      SettingModelFactory.find(id, connection);
+
+  static Future<Setting> findOrFail(Object id, [String? connection]) =>
+      SettingModelFactory.findOrFail(id, connection);
+
+  static Future<List<Setting>> findMany(
+    List<Object> ids, [
+    String? connection,
+  ]) => SettingModelFactory.findMany(ids, connection);
+
+  static Future<Setting?> first([String? connection]) =>
+      SettingModelFactory.first(connection);
+
+  static Future<Setting> firstOrFail([String? connection]) =>
+      SettingModelFactory.firstOrFail(connection);
+
+  static Future<Setting> create(
+    Map<String, dynamic> attributes, [
+    String? connection,
+  ]) => SettingModelFactory.create(attributes, connection);
+
+  static Future<List<Setting>> createMany(
+    List<Map<String, dynamic>> records, [
+    String? connection,
+  ]) => SettingModelFactory.createMany(records, connection);
+
+  static Future<void> insert(
+    List<Map<String, dynamic>> records, [
+    String? connection,
+  ]) => SettingModelFactory.insert(records, connection);
+
+  static Future<int> destroy(List<Object> ids, [String? connection]) =>
+      SettingModelFactory.destroy(ids, connection);
+
+  static Future<int> count([String? connection]) =>
+      SettingModelFactory.count(connection);
+
+  static Future<bool> exists([String? connection]) =>
+      SettingModelFactory.exists(connection);
+
+  static Query<Setting> where(
+    String column,
+    dynamic value, [
+    String? connection,
+  ]) => SettingModelFactory.where(column, value, connection);
+
+  static Query<Setting> whereIn(
+    String column,
+    List<dynamic> values, [
+    String? connection,
+  ]) => SettingModelFactory.whereIn(column, values, connection);
+
+  static Query<Setting> orderBy(
+    String column, {
+    String direction = "asc",
+    String? connection,
+  }) => SettingModelFactory.orderBy(
+    column,
+    direction: direction,
+    connection: connection,
+  );
+
+  static Query<Setting> limit(int count, [String? connection]) =>
+      SettingModelFactory.limit(count, connection);
+
+  // Instance method
+  Future<void> delete([String? connection]) async {
+    final connName =
+        connection ?? SettingModelFactory.definition.metadata.connection;
+    final conn = ConnectionManager.instance.connection(
+      connName ?? ConnectionManager.instance.defaultConnectionName ?? "default",
+    );
+    final repo = conn.context.repository<Setting>();
+    final primaryKeys = SettingModelFactory.definition.fields
+        .where((f) => f.isPrimaryKey)
+        .toList();
+    if (primaryKeys.isEmpty) {
+      throw StateError("Cannot delete model without primary key");
+    }
+    final keyMap = <String, Object?>{
+      for (final key in primaryKeys)
+        key.columnName: SettingModelFactory.toMap(this)[key.name],
+    };
+    await repo.deleteByKeys([keyMap]);
+  }
 }
 
 class _$SettingModelCodec extends ModelCodec<Setting> {

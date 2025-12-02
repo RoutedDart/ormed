@@ -2,29 +2,23 @@ import 'package:ormed/ormed.dart';
 import 'package:test/test.dart';
 
 import '../../models/models.dart';
-import '../../harness/driver_test_harness.dart';
+
 import '../../config.dart';
 
 void runWhereClausesTests(
-  DriverHarnessBuilder<DriverTestHarness> createHarness,
+  DataSource dataSource,
   DriverTestConfig config,
 ) {
   group('Where Clauses tests', () {
-    late DriverTestHarness harness;
 
-    setUp(() async {
-      harness = await createHarness();
-    });
-
-    tearDown(() async => harness.dispose());
 
     test('whereEquals', () async {
-      await harness.seedUsers([
+      await dataSource.repo<User>().insertMany([
         User(id: 1, email: 'test1@example.com', active: true),
         User(id: 2, email: 'test2@example.com', active: false),
       ]);
 
-      final users = await harness.context
+      final users = await dataSource.context
           .query<User>()
           .whereEquals('active', true)
           .get();
@@ -33,12 +27,12 @@ void runWhereClausesTests(
     });
 
     test('whereNotEquals', () async {
-      await harness.seedUsers([
+      await dataSource.repo<User>().insertMany([
         User(id: 1, email: 'test1@example.com', active: true),
         User(id: 2, email: 'test2@example.com', active: false),
       ]);
 
-      final users = await harness.context
+      final users = await dataSource.context
           .query<User>()
           .whereNotEquals('active', true)
           .get();
@@ -47,13 +41,13 @@ void runWhereClausesTests(
     });
 
     test('whereIn', () async {
-      await harness.seedUsers([
+      await dataSource.repo<User>().insertMany([
         User(id: 1, email: 'test1@example.com', active: true),
         User(id: 2, email: 'test2@example.com', active: false),
         User(id: 3, email: 'test3@example.com', active: true),
       ]);
 
-      final users = await harness.context.query<User>().whereIn('id', [
+      final users = await dataSource.context.query<User>().whereIn('id', [
         1,
         3,
       ]).get();
@@ -62,13 +56,13 @@ void runWhereClausesTests(
     });
 
     test('whereNotIn', () async {
-      await harness.seedUsers([
+      await dataSource.repo<User>().insertMany([
         User(id: 1, email: 'test1@example.com', active: true),
         User(id: 2, email: 'test2@example.com', active: false),
         User(id: 3, email: 'test3@example.com', active: true),
       ]);
 
-      final users = await harness.context.query<User>().whereNotIn('id', [
+      final users = await dataSource.context.query<User>().whereNotIn('id', [
         1,
         3,
       ]).get();
@@ -77,7 +71,7 @@ void runWhereClausesTests(
     });
 
     test('whereGreaterThan', () async {
-      await harness.seedArticles([
+      await dataSource.repo<Article>().insertMany([
         Article(
           id: 1,
           title: 'a',
@@ -98,7 +92,7 @@ void runWhereClausesTests(
         ),
       ]);
 
-      final articles = await harness.context
+      final articles = await dataSource.context
           .query<Article>()
           .whereGreaterThan('rating', 2.0)
           .get();
@@ -107,7 +101,7 @@ void runWhereClausesTests(
     });
 
     test('whereGreaterThanOrEqual', () async {
-      await harness.seedArticles([
+      await dataSource.repo<Article>().insertMany([
         Article(
           id: 1,
           title: 'a',
@@ -128,7 +122,7 @@ void runWhereClausesTests(
         ),
       ]);
 
-      final articles = await harness.context
+      final articles = await dataSource.context
           .query<Article>()
           .whereGreaterThanOrEqual('rating', 1.0)
           .get();
@@ -136,7 +130,7 @@ void runWhereClausesTests(
     });
 
     test('whereLessThan', () async {
-      await harness.seedArticles([
+      await dataSource.repo<Article>().insertMany([
         Article(
           id: 1,
           title: 'a',
@@ -157,7 +151,7 @@ void runWhereClausesTests(
         ),
       ]);
 
-      final articles = await harness.context
+      final articles = await dataSource.context
           .query<Article>()
           .whereLessThan('rating', 2.0)
           .get();
@@ -166,7 +160,7 @@ void runWhereClausesTests(
     });
 
     test('whereLessThanOrEqual', () async {
-      await harness.seedArticles([
+      await dataSource.repo<Article>().insertMany([
         Article(
           id: 1,
           title: 'a',
@@ -187,7 +181,7 @@ void runWhereClausesTests(
         ),
       ]);
 
-      final articles = await harness.context
+      final articles = await dataSource.context
           .query<Article>()
           .whereLessThanOrEqual('rating', 3.0)
           .get();
@@ -195,7 +189,7 @@ void runWhereClausesTests(
     });
 
     test('whereBetween', () async {
-      await harness.seedArticles([
+      await dataSource.repo<Article>().insertMany([
         Article(
           id: 1,
           title: 'a',
@@ -225,7 +219,7 @@ void runWhereClausesTests(
         ),
       ]);
 
-      final articles = await harness.context
+      final articles = await dataSource.context
           .query<Article>()
           .whereBetween('rating', 2.0, 4.0)
           .get();
@@ -235,7 +229,7 @@ void runWhereClausesTests(
     });
 
     test('whereNotBetween', () async {
-      await harness.seedArticles([
+      await dataSource.repo<Article>().insertMany([
         Article(
           id: 1,
           title: 'a',
@@ -265,7 +259,7 @@ void runWhereClausesTests(
         ),
       ]);
 
-      final articles = await harness.context
+      final articles = await dataSource.context
           .query<Article>()
           .whereNotBetween('rating', 2.0, 4.0)
           .get();
@@ -275,7 +269,7 @@ void runWhereClausesTests(
     });
 
     test('whereNull', () async {
-      await harness.seedArticles([
+      await dataSource.repo<Article>().insertMany([
         Article(
           id: 1,
           title: 'a',
@@ -298,7 +292,7 @@ void runWhereClausesTests(
         ),
       ]);
 
-      final articles = await harness.context
+      final articles = await dataSource.context
           .query<Article>()
           .whereNull('body')
           .get();
@@ -307,7 +301,7 @@ void runWhereClausesTests(
     });
 
     test('whereNotNull', () async {
-      await harness.seedArticles([
+      await dataSource.repo<Article>().insertMany([
         Article(
           id: 1,
           title: 'a',
@@ -330,7 +324,7 @@ void runWhereClausesTests(
         ),
       ]);
 
-      final articles = await harness.context
+      final articles = await dataSource.context
           .query<Article>()
           .whereNotNull('body')
           .get();
@@ -339,13 +333,13 @@ void runWhereClausesTests(
     });
 
     test('orWhere', () async {
-      await harness.seedUsers([
+      await dataSource.repo<User>().insertMany([
         User(id: 1, email: 'test1@example.com', active: true),
         User(id: 2, email: 'test2@example.com', active: false),
         User(id: 3, email: 'test3@example.com', active: false),
       ]);
 
-      final users = await harness.context
+      final users = await dataSource.context
           .query<User>()
           .whereEquals('active', true)
           .orWhere('id', 2)
@@ -356,12 +350,12 @@ void runWhereClausesTests(
     });
 
     test('whereRaw', () async {
-      await harness.seedUsers([
+      await dataSource.repo<User>().insertMany([
         User(id: 1, email: 'test1@example.com', active: true),
         User(id: 2, email: 'test2@example.com', active: false),
       ]);
 
-      final users = await harness.context.query<User>().whereRaw('active = ?', [
+      final users = await dataSource.context.query<User>().whereRaw('active = ?', [
         true,
       ]).get();
       expect(users, hasLength(1));

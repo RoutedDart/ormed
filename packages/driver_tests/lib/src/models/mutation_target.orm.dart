@@ -80,7 +80,7 @@ final ModelDefinition<MutationTarget> _$MutationTargetModelDefinition =
     );
 
 // ignore: unused_element
-final _MutationTargetModelDefinitionRegistration =
+final mutationtargetModelDefinitionRegistration =
     ModelFactoryRegistry.register<MutationTarget>(
       _$MutationTargetModelDefinition,
     );
@@ -118,19 +118,245 @@ class MutationTargetModelFactory {
     context: context,
   );
 
+  static Query<MutationTarget> query([String? connection]) {
+    final connName = connection ?? definition.metadata.connection;
+    final conn = ConnectionManager.instance.connection(
+      connName ?? ConnectionManager.instance.defaultConnectionName ?? "default",
+    );
+    return conn.query<MutationTarget>();
+  }
+
   static ModelFactoryBuilder<MutationTarget> factory({
     GeneratorProvider? generatorProvider,
   }) => ModelFactoryBuilder<MutationTarget>(
     definition: definition,
     generatorProvider: generatorProvider,
   );
+
+  static Future<List<MutationTarget>> all([String? connection]) =>
+      query(connection).get();
+
+  static Future<MutationTarget> create(
+    Map<String, dynamic> attributes, [
+    String? connection,
+  ]) async {
+    final model = const _$MutationTargetModelCodec().decode(
+      attributes,
+      ValueCodecRegistry.standard(),
+    );
+    final connName = connection ?? definition.metadata.connection;
+    final conn = ConnectionManager.instance.connection(
+      connName ?? ConnectionManager.instance.defaultConnectionName ?? "default",
+    );
+    final repo = conn.context.repository<MutationTarget>();
+    final result = await repo.insertMany([model], returning: true);
+    return result.first;
+  }
+
+  static Future<List<MutationTarget>> createMany(
+    List<Map<String, dynamic>> records, [
+    String? connection,
+  ]) async {
+    final models = records
+        .map(
+          (r) => const _$MutationTargetModelCodec().decode(
+            r,
+            ValueCodecRegistry.standard(),
+          ),
+        )
+        .toList();
+    final connName = connection ?? definition.metadata.connection;
+    final conn = ConnectionManager.instance.connection(
+      connName ?? ConnectionManager.instance.defaultConnectionName ?? "default",
+    );
+    final repo = conn.context.repository<MutationTarget>();
+    return await repo.insertMany(models, returning: true);
+  }
+
+  static Future<void> insert(
+    List<Map<String, dynamic>> records, [
+    String? connection,
+  ]) async {
+    final models = records
+        .map(
+          (r) => const _$MutationTargetModelCodec().decode(
+            r,
+            ValueCodecRegistry.standard(),
+          ),
+        )
+        .toList();
+    final connName = connection ?? definition.metadata.connection;
+    final conn = ConnectionManager.instance.connection(
+      connName ?? ConnectionManager.instance.defaultConnectionName ?? "default",
+    );
+    final repo = conn.context.repository<MutationTarget>();
+    await repo.insertMany(models, returning: false);
+  }
+
+  static Future<MutationTarget?> find(Object id, [String? connection]) =>
+      query(connection).find(id);
+
+  static Future<MutationTarget> findOrFail(
+    Object id, [
+    String? connection,
+  ]) async {
+    final result = await find(id, connection);
+    if (result == null) throw StateError("Model not found with id: $id");
+    return result;
+  }
+
+  static Future<List<MutationTarget>> findMany(
+    List<Object> ids, [
+    String? connection,
+  ]) => query(connection).findMany(ids);
+
+  static Future<MutationTarget?> first([String? connection]) =>
+      query(connection).first();
+
+  static Future<MutationTarget> firstOrFail([String? connection]) async {
+    final result = await first(connection);
+    if (result == null) throw StateError("No model found");
+    return result;
+  }
+
+  static Future<int> count([String? connection]) => query(connection).count();
+
+  static Future<bool> exists([String? connection]) async =>
+      await count(connection) > 0;
+
+  static Future<int> destroy(List<Object> ids, [String? connection]) async {
+    final models = await findMany(ids, connection);
+    for (final model in models) {
+      await model.delete();
+    }
+    return models.length;
+  }
+
+  static Query<MutationTarget> where(
+    String column,
+    dynamic value, [
+    String? connection,
+  ]) => query(connection).where(column, value);
+
+  static Query<MutationTarget> whereIn(
+    String column,
+    List<dynamic> values, [
+    String? connection,
+  ]) => query(connection).whereIn(column, values);
+
+  static Query<MutationTarget> orderBy(
+    String column, {
+    String direction = "asc",
+    String? connection,
+  }) => query(
+    connection,
+  ).orderBy(column, descending: direction.toLowerCase() == "desc");
+
+  static Query<MutationTarget> limit(int count, [String? connection]) =>
+      query(connection).limit(count);
 }
 
-extension MutationTargetModelFactoryExtension on MutationTarget {
+extension MutationTargetModelHelpers on MutationTarget {
+  // Factory
   static ModelFactoryBuilder<MutationTarget> factory({
     GeneratorProvider? generatorProvider,
   }) =>
       MutationTargetModelFactory.factory(generatorProvider: generatorProvider);
+
+  // Query builder
+  static Query<MutationTarget> query([String? connection]) =>
+      MutationTargetModelFactory.query(connection);
+
+  // CRUD operations
+  static Future<List<MutationTarget>> all([String? connection]) =>
+      MutationTargetModelFactory.all(connection);
+
+  static Future<MutationTarget?> find(Object id, [String? connection]) =>
+      MutationTargetModelFactory.find(id, connection);
+
+  static Future<MutationTarget> findOrFail(Object id, [String? connection]) =>
+      MutationTargetModelFactory.findOrFail(id, connection);
+
+  static Future<List<MutationTarget>> findMany(
+    List<Object> ids, [
+    String? connection,
+  ]) => MutationTargetModelFactory.findMany(ids, connection);
+
+  static Future<MutationTarget?> first([String? connection]) =>
+      MutationTargetModelFactory.first(connection);
+
+  static Future<MutationTarget> firstOrFail([String? connection]) =>
+      MutationTargetModelFactory.firstOrFail(connection);
+
+  static Future<MutationTarget> create(
+    Map<String, dynamic> attributes, [
+    String? connection,
+  ]) => MutationTargetModelFactory.create(attributes, connection);
+
+  static Future<List<MutationTarget>> createMany(
+    List<Map<String, dynamic>> records, [
+    String? connection,
+  ]) => MutationTargetModelFactory.createMany(records, connection);
+
+  static Future<void> insert(
+    List<Map<String, dynamic>> records, [
+    String? connection,
+  ]) => MutationTargetModelFactory.insert(records, connection);
+
+  static Future<int> destroy(List<Object> ids, [String? connection]) =>
+      MutationTargetModelFactory.destroy(ids, connection);
+
+  static Future<int> count([String? connection]) =>
+      MutationTargetModelFactory.count(connection);
+
+  static Future<bool> exists([String? connection]) =>
+      MutationTargetModelFactory.exists(connection);
+
+  static Query<MutationTarget> where(
+    String column,
+    dynamic value, [
+    String? connection,
+  ]) => MutationTargetModelFactory.where(column, value, connection);
+
+  static Query<MutationTarget> whereIn(
+    String column,
+    List<dynamic> values, [
+    String? connection,
+  ]) => MutationTargetModelFactory.whereIn(column, values, connection);
+
+  static Query<MutationTarget> orderBy(
+    String column, {
+    String direction = "asc",
+    String? connection,
+  }) => MutationTargetModelFactory.orderBy(
+    column,
+    direction: direction,
+    connection: connection,
+  );
+
+  static Query<MutationTarget> limit(int count, [String? connection]) =>
+      MutationTargetModelFactory.limit(count, connection);
+
+  // Instance method
+  Future<void> delete([String? connection]) async {
+    final connName =
+        connection ?? MutationTargetModelFactory.definition.metadata.connection;
+    final conn = ConnectionManager.instance.connection(
+      connName ?? ConnectionManager.instance.defaultConnectionName ?? "default",
+    );
+    final repo = conn.context.repository<MutationTarget>();
+    final primaryKeys = MutationTargetModelFactory.definition.fields
+        .where((f) => f.isPrimaryKey)
+        .toList();
+    if (primaryKeys.isEmpty) {
+      throw StateError("Cannot delete model without primary key");
+    }
+    final keyMap = <String, Object?>{
+      for (final key in primaryKeys)
+        key.columnName: MutationTargetModelFactory.toMap(this)[key.name],
+    };
+    await repo.deleteByKeys([keyMap]);
+  }
 }
 
 class _$MutationTargetModelCodec extends ModelCodec<MutationTarget> {

@@ -1,8 +1,6 @@
 import 'package:ormed/ormed.dart';
 import 'package:test/test.dart';
-
-import 'models/author.dart';
-import 'models/post.dart';
+import 'package:driver_tests/driver_tests.dart';
 
 void main() {
   group('QueryContext.table', () {

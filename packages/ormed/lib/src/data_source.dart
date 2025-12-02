@@ -195,7 +195,7 @@ class DataSource {
   /// ```dart
   /// final ds = DataSource(options);
   /// await ds.init(); // Auto-registers and sets as default if first
-  /// 
+  ///
   /// // Static helpers now work
   /// final users = await User.query().get();
   /// ```
@@ -230,16 +230,16 @@ class DataSource {
 
     // Mark as initialized BEFORE registering (registration may access connection)
     _initialized = true;
-    
+
     // Auto-register with ConnectionManager
     ConnectionManager.instance.registerDataSource(this);
-    
+
     // If this is the first DataSource, set it as default
     if (!ConnectionManager.instance.hasDefaultConnection) {
       setAsDefault();
     }
   }
-  
+
   /// Sets this DataSource as the default connection for Model static helpers.
   ///
   /// This enables usage of static methods like `User.query()`, `Post.find()`, etc.
@@ -249,7 +249,7 @@ class DataSource {
   /// final ds = DataSource(options);
   /// await ds.init();
   /// ds.setAsDefault(); // Now User.query() works
-  /// 
+  ///
   /// final users = await User.query().get();
   /// ```
   void setAsDefault() {
@@ -266,9 +266,24 @@ class DataSource {
     );
     _defaultDataSource = this;
   }
-  
+
   static DataSource? _defaultDataSource;
-  
+
+  /// Sets a DataSource as the default for Model static helpers.
+  ///
+  /// This is a convenience method equivalent to calling `dataSource.setAsDefault()`.
+  ///
+  /// ```dart
+  /// final ds = DataSource(options);
+  /// await ds.init();
+  /// DataSource.setDefault(ds); // Same as ds.setAsDefault()
+  ///
+  /// final users = await User.query().get();
+  /// ```
+  static void setDefault(DataSource dataSource) {
+    dataSource.setAsDefault();
+  }
+
   /// Returns the current default DataSource, or null if none is set.
   ///
   /// ```dart
@@ -278,7 +293,7 @@ class DataSource {
   /// }
   /// ```
   static DataSource? getDefault() => _defaultDataSource;
-  
+
   /// Clears the default DataSource. Useful for testing.
   static void clearDefault() {
     _defaultDataSource = null;
@@ -311,6 +326,9 @@ class DataSource {
     return _connection!.repository<T>();
   }
 
+  /// Alias for [repo]. Returns a repository for the specified model type.
+  Repository<T> getRepository<T>() => repo<T>();
+
   /// Executes the provided callback within a database transaction.
   ///
   /// If the callback completes successfully, the transaction is committed.
@@ -326,6 +344,38 @@ class DataSource {
   Future<R> transaction<R>(Future<R> Function() callback) {
     _ensureInitialized();
     return _connection!.transaction(callback);
+  }
+
+  /// Begins a new database transaction.
+  ///
+  /// Use this for manual transaction control. Must be paired with
+  /// [commit] or [rollback].
+  ///
+  /// ```dart
+  /// await ds.beginTransaction();
+  /// try {
+  ///   await ds.repo<User>().insert(user);
+  ///   await ds.commit();
+  /// } catch (e) {
+  ///   await ds.rollback();
+  ///   rethrow;
+  /// }
+  /// ```
+  Future<void> beginTransaction() {
+    _ensureInitialized();
+    return _connection!.driver.beginTransaction();
+  }
+
+  /// Commits the active database transaction.
+  Future<void> commit() {
+    _ensureInitialized();
+    return _connection!.driver.commitTransaction();
+  }
+
+  /// Rolls back the active database transaction.
+  Future<void> rollback() {
+    _ensureInitialized();
+    return _connection!.driver.rollbackTransaction();
   }
 
   /// Builds a query against an arbitrary table name.

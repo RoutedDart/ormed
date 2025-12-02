@@ -867,5 +867,30 @@ class MongoDriverAdapter implements DriverAdapter, SchemaDriver {
   }
 
   @override
+  Future<void> beginTransaction() async {
+    // MongoDB transactions require sessions and are more complex
+    // For now, this is a no-op
+  }
+
+  @override
+  Future<void> commitTransaction() async {
+    // MongoDB transactions require sessions
+    // For now, this is a no-op
+  }
+
+  @override
+  Future<void> rollbackTransaction() async {
+    // MongoDB transactions require sessions
+    // For now, this is a no-op
+  }
+
+  @override
+  Future<void> truncateTable(String tableName) async {
+    final db = await _database();
+    // MongoDB: drop all documents from collection
+    await db.collection(tableName).deleteMany({});
+  }
+
+  @override
   Future<int?> threadCount() async => null;
 }

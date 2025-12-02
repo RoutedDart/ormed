@@ -8,6 +8,7 @@ class CreateAuthorsTable extends Migration {
     schema.create('authors', (table) {
       table.integer('id').primaryKey();
       table.string('name');
+      table.boolean('active').defaultValue(false);
     });
   }
 

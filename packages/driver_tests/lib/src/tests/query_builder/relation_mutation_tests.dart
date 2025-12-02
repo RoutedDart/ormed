@@ -4,30 +4,30 @@ import 'package:test/test.dart';
 import '../../../driver_tests.dart';
 
 void runRelationMutationTests(
-  DriverHarnessBuilder<DriverTestHarness> createHarness,
+  DataSource dataSource,
   DriverTestConfig config,
 ) {
   group('${config.driverName} relation mutations', () {
-    late DriverTestHarness harness;
+    
 
     setUp(() async {
-      harness = await createHarness();
+      
 
       // Bind connection resolver for Model methods
       Model.bindConnectionResolver(
-        resolveConnection: (name) => harness.context,
+        resolveConnection: (name) => dataSource.context,
       );
     });
 
     tearDown(() async {
       Model.unbindConnectionResolver();
-      await harness.dispose();
+      
     });
 
     group('setRelation / unsetRelation / clearRelations', () {
       test('setRelation caches a relation and marks it loaded', () async {
-        await harness.seedAuthors([const Author(id: 1, name: 'Alice')]);
-        await harness.seedPosts([
+        await dataSource.repo<Author>().insertMany([const Author(id: 1, name: 'Alice')]);
+        await dataSource.repo<Post>().insertMany([
           Post(
             id: 1,
             authorId: 1,
@@ -36,7 +36,7 @@ void runRelationMutationTests(
           ),
         ]);
 
-        final rows = await harness.context.query<Post>().where('id', 1).get();
+        final rows = await dataSource.context.query<Post>().where('id', 1).get();
         final post = rows.first;
 
         final author = const Author(id: 1, name: 'Alice');
@@ -47,8 +47,8 @@ void runRelationMutationTests(
       });
 
       test('unsetRelation removes from cache and marks unloaded', () async {
-        await harness.seedAuthors([const Author(id: 1, name: 'Alice')]);
-        await harness.seedPosts([
+        await dataSource.repo<Author>().insertMany([const Author(id: 1, name: 'Alice')]);
+        await dataSource.repo<Post>().insertMany([
           Post(
             id: 1,
             authorId: 1,
@@ -57,7 +57,7 @@ void runRelationMutationTests(
           ),
         ]);
 
-        final rows = await harness.context.query<Post>().where('id', 1).get();
+        final rows = await dataSource.context.query<Post>().where('id', 1).get();
         final post = rows.first;
 
         final author = const Author(id: 1, name: 'Alice');
@@ -71,8 +71,8 @@ void runRelationMutationTests(
       });
 
       test('clearRelations removes all cached relations', () async {
-        await harness.seedAuthors([const Author(id: 1, name: 'Alice')]);
-        await harness.seedPosts([
+        await dataSource.repo<Author>().insertMany([const Author(id: 1, name: 'Alice')]);
+        await dataSource.repo<Post>().insertMany([
           Post(
             id: 1,
             authorId: 1,
@@ -80,9 +80,9 @@ void runRelationMutationTests(
             publishedAt: DateTime(2024),
           ),
         ]);
-        await harness.seedTags([const Tag(id: 1, label: 'dart')]);
+        await dataSource.repo<Tag>().insertMany([const Tag(id: 1, label: 'dart')]);
 
-        final rows = await harness.context.query<Post>().where('id', 1).get();
+        final rows = await dataSource.context.query<Post>().where('id', 1).get();
         final post = rows.first;
 
         post.setRelation('author', const Author(id: 1, name: 'Alice'));
@@ -101,8 +101,8 @@ void runRelationMutationTests(
 
     group('associate() - belongsTo', () {
       test('associates parent and updates foreign key', () async {
-        await harness.seedAuthors([const Author(id: 5, name: 'Alice')]);
-        await harness.seedPosts([
+        await dataSource.repo<Author>().insertMany([const Author(id: 5, name: 'Alice')]);
+        await dataSource.repo<Post>().insertMany([
           Post(
             id: 1,
             authorId: 999,
@@ -111,7 +111,7 @@ void runRelationMutationTests(
           ),
         ]);
 
-        final rows = await harness.context.query<Post>().where('id', 1).get();
+        final rows = await dataSource.context.query<Post>().where('id', 1).get();
         final post = rows.first;
 
         final author = const Author(id: 5, name: 'Alice');
@@ -126,7 +126,7 @@ void runRelationMutationTests(
       });
 
       test('throws ArgumentError for invalid relation name', () async {
-        await harness.seedPosts([
+        await dataSource.repo<Post>().insertMany([
           Post(
             id: 1,
             authorId: 1,
@@ -135,7 +135,7 @@ void runRelationMutationTests(
           ),
         ]);
 
-        final rows = await harness.context.query<Post>().where('id', 1).get();
+        final rows = await dataSource.context.query<Post>().where('id', 1).get();
         final post = rows.first;
 
         expect(
@@ -145,9 +145,9 @@ void runRelationMutationTests(
       });
 
       test('throws ArgumentError for non-belongsTo relation', () async {
-        await harness.seedAuthors([const Author(id: 1, name: 'Alice')]);
+        await dataSource.repo<Author>().insertMany([const Author(id: 1, name: 'Alice')]);
 
-        final rows = await harness.context.query<Author>().where('id', 1).get();
+        final rows = await dataSource.context.query<Author>().where('id', 1).get();
         final author = rows.first;
 
         // 'posts' is hasMany, not belongsTo
@@ -172,8 +172,8 @@ void runRelationMutationTests(
       });
 
       test('returns self for method chaining', () async {
-        await harness.seedAuthors([const Author(id: 1, name: 'Alice')]);
-        await harness.seedPosts([
+        await dataSource.repo<Author>().insertMany([const Author(id: 1, name: 'Alice')]);
+        await dataSource.repo<Post>().insertMany([
           Post(
             id: 1,
             authorId: 999,
@@ -182,7 +182,7 @@ void runRelationMutationTests(
           ),
         ]);
 
-        final rows = await harness.context.query<Post>().where('id', 1).get();
+        final rows = await dataSource.context.query<Post>().where('id', 1).get();
         final post = rows.first;
 
         final result = await post.associate(
@@ -196,8 +196,8 @@ void runRelationMutationTests(
 
     group('dissociate() - belongsTo', () {
       test('dissociates parent and nullifies foreign key', () async {
-        await harness.seedAuthors([const Author(id: 1, name: 'Alice')]);
-        await harness.seedPosts([
+        await dataSource.repo<Author>().insertMany([const Author(id: 1, name: 'Alice')]);
+        await dataSource.repo<Post>().insertMany([
           Post(
             id: 1,
             authorId: 1,
@@ -206,7 +206,7 @@ void runRelationMutationTests(
           ),
         ]);
 
-        final rows = await harness.context.query<Post>().where('id', 1).get();
+        final rows = await dataSource.context.query<Post>().where('id', 1).get();
         final post = rows.first;
 
         // First associate
@@ -225,7 +225,7 @@ void runRelationMutationTests(
       });
 
       test('throws ArgumentError for invalid relation name', () async {
-        await harness.seedPosts([
+        await dataSource.repo<Post>().insertMany([
           Post(
             id: 1,
             authorId: 1,
@@ -234,16 +234,16 @@ void runRelationMutationTests(
           ),
         ]);
 
-        final rows = await harness.context.query<Post>().where('id', 1).get();
+        final rows = await dataSource.context.query<Post>().where('id', 1).get();
         final post = rows.first;
 
         expect(() => post.dissociate('invalid'), throwsArgumentError);
       });
 
       test('throws ArgumentError for non-belongsTo relation', () async {
-        await harness.seedAuthors([const Author(id: 1, name: 'Alice')]);
+        await dataSource.repo<Author>().insertMany([const Author(id: 1, name: 'Alice')]);
 
-        final rows = await harness.context.query<Author>().where('id', 1).get();
+        final rows = await dataSource.context.query<Author>().where('id', 1).get();
         final author = rows.first;
 
         expect(
@@ -259,7 +259,7 @@ void runRelationMutationTests(
       });
 
       test('returns self for method chaining', () async {
-        await harness.seedPosts([
+        await dataSource.repo<Post>().insertMany([
           Post(
             id: 1,
             authorId: 1,
@@ -268,7 +268,7 @@ void runRelationMutationTests(
           ),
         ]);
 
-        final rows = await harness.context.query<Post>().where('id', 1).get();
+        final rows = await dataSource.context.query<Post>().where('id', 1).get();
         final post = rows.first;
 
         final result = await post.dissociate('author');
@@ -281,7 +281,7 @@ void runRelationMutationTests(
       'attach() - manyToMany',
       () {
         test('attaches related models and creates pivot records', () async {
-          await harness.seedPosts([
+          await dataSource.repo<Post>().insertMany([
             Post(
               id: 1,
               authorId: 1,
@@ -289,19 +289,19 @@ void runRelationMutationTests(
               publishedAt: DateTime(2024),
             ),
           ]);
-          await harness.seedTags([
+          await dataSource.repo<Tag>().insertMany([
             const Tag(id: 1, label: 'dart'),
             const Tag(id: 2, label: 'flutter'),
             const Tag(id: 3, label: 'web'),
           ]);
 
-          final rows = await harness.context.query<Post>().where('id', 1).get();
+          final rows = await dataSource.context.query<Post>().where('id', 1).get();
           final post = rows.first;
 
           await post.attach('tags', [1, 2, 3]);
 
           // Verify pivot records were created
-          final pivotRecords = await harness.context
+          final pivotRecords = await dataSource.context
               .query<PostTag>()
               .where('post_id', 1)
               .get();
@@ -313,7 +313,7 @@ void runRelationMutationTests(
         });
 
         test('attach with empty list does nothing', () async {
-          await harness.seedPosts([
+          await dataSource.repo<Post>().insertMany([
             Post(
               id: 1,
               authorId: 1,
@@ -322,12 +322,12 @@ void runRelationMutationTests(
             ),
           ]);
 
-          final rows = await harness.context.query<Post>().where('id', 1).get();
+          final rows = await dataSource.context.query<Post>().where('id', 1).get();
           final post = rows.first;
 
           await post.attach('tags', []);
 
-          final pivotRecords = await harness.context
+          final pivotRecords = await dataSource.context
               .query<PostTag>()
               .where('post_id', 1)
               .get();
@@ -336,7 +336,7 @@ void runRelationMutationTests(
         });
 
         test('throws ArgumentError for invalid relation name', () async {
-          await harness.seedPosts([
+          await dataSource.repo<Post>().insertMany([
             Post(
               id: 1,
               authorId: 1,
@@ -345,14 +345,14 @@ void runRelationMutationTests(
             ),
           ]);
 
-          final rows = await harness.context.query<Post>().where('id', 1).get();
+          final rows = await dataSource.context.query<Post>().where('id', 1).get();
           final post = rows.first;
 
           expect(() => post.attach('invalid', [1, 2]), throwsArgumentError);
         });
 
         test('throws ArgumentError for non-manyToMany relation', () async {
-          await harness.seedPosts([
+          await dataSource.repo<Post>().insertMany([
             Post(
               id: 1,
               authorId: 1,
@@ -361,7 +361,7 @@ void runRelationMutationTests(
             ),
           ]);
 
-          final rows = await harness.context.query<Post>().where('id', 1).get();
+          final rows = await dataSource.context.query<Post>().where('id', 1).get();
           final post = rows.first;
 
           expect(
@@ -377,7 +377,7 @@ void runRelationMutationTests(
         });
 
         test('returns self for method chaining', () async {
-          await harness.seedPosts([
+          await dataSource.repo<Post>().insertMany([
             Post(
               id: 1,
               authorId: 1,
@@ -385,9 +385,9 @@ void runRelationMutationTests(
               publishedAt: DateTime(2024),
             ),
           ]);
-          await harness.seedTags([const Tag(id: 1, label: 'dart')]);
+          await dataSource.repo<Tag>().insertMany([const Tag(id: 1, label: 'dart')]);
 
-          final rows = await harness.context.query<Post>().where('id', 1).get();
+          final rows = await dataSource.context.query<Post>().where('id', 1).get();
           final post = rows.first;
 
           final result = await post.attach('tags', [1]);
@@ -401,7 +401,7 @@ void runRelationMutationTests(
       'detach() - manyToMany',
       () {
         test('detaches specific related models', () async {
-          await harness.seedPosts([
+          await dataSource.repo<Post>().insertMany([
             Post(
               id: 1,
               authorId: 1,
@@ -409,24 +409,24 @@ void runRelationMutationTests(
               publishedAt: DateTime(2024),
             ),
           ]);
-          await harness.seedTags([
+          await dataSource.repo<Tag>().insertMany([
             const Tag(id: 1, label: 'dart'),
             const Tag(id: 2, label: 'flutter'),
             const Tag(id: 3, label: 'web'),
           ]);
-          await harness.seedPostTags([
+          await dataSource.repo<PostTag>().insertMany([
             const PostTag(postId: 1, tagId: 1),
             const PostTag(postId: 1, tagId: 2),
             const PostTag(postId: 1, tagId: 3),
           ]);
 
-          final rows = await harness.context.query<Post>().where('id', 1).get();
+          final rows = await dataSource.context.query<Post>().where('id', 1).get();
           final post = rows.first;
 
           // Detach tags 1 and 2
           await post.detach('tags', [1, 2]);
 
-          final pivotRecords = await harness.context
+          final pivotRecords = await dataSource.context
               .query<PostTag>()
               .where('post_id', 1)
               .get();
@@ -436,7 +436,7 @@ void runRelationMutationTests(
         });
 
         test('detaches all related models when no IDs provided', () async {
-          await harness.seedPosts([
+          await dataSource.repo<Post>().insertMany([
             Post(
               id: 1,
               authorId: 1,
@@ -444,21 +444,21 @@ void runRelationMutationTests(
               publishedAt: DateTime(2024),
             ),
           ]);
-          await harness.seedTags([
+          await dataSource.repo<Tag>().insertMany([
             const Tag(id: 1, label: 'dart'),
             const Tag(id: 2, label: 'flutter'),
           ]);
-          await harness.seedPostTags([
+          await dataSource.repo<PostTag>().insertMany([
             const PostTag(postId: 1, tagId: 1),
             const PostTag(postId: 1, tagId: 2),
           ]);
 
-          final rows = await harness.context.query<Post>().where('id', 1).get();
+          final rows = await dataSource.context.query<Post>().where('id', 1).get();
           final post = rows.first;
 
           await post.detach('tags');
 
-          final pivotRecords = await harness.context
+          final pivotRecords = await dataSource.context
               .query<PostTag>()
               .where('post_id', 1)
               .get();
@@ -467,7 +467,7 @@ void runRelationMutationTests(
         });
 
         test('detach with empty list detaches all', () async {
-          await harness.seedPosts([
+          await dataSource.repo<Post>().insertMany([
             Post(
               id: 1,
               authorId: 1,
@@ -475,15 +475,15 @@ void runRelationMutationTests(
               publishedAt: DateTime(2024),
             ),
           ]);
-          await harness.seedTags([const Tag(id: 1, label: 'dart')]);
-          await harness.seedPostTags([const PostTag(postId: 1, tagId: 1)]);
+          await dataSource.repo<Tag>().insertMany([const Tag(id: 1, label: 'dart')]);
+          await dataSource.repo<PostTag>().insertMany([const PostTag(postId: 1, tagId: 1)]);
 
-          final rows = await harness.context.query<Post>().where('id', 1).get();
+          final rows = await dataSource.context.query<Post>().where('id', 1).get();
           final post = rows.first;
 
           await post.detach('tags', []);
 
-          final pivotRecords = await harness.context
+          final pivotRecords = await dataSource.context
               .query<PostTag>()
               .where('post_id', 1)
               .get();
@@ -492,7 +492,7 @@ void runRelationMutationTests(
         });
 
         test('throws ArgumentError for invalid relation name', () async {
-          await harness.seedPosts([
+          await dataSource.repo<Post>().insertMany([
             Post(
               id: 1,
               authorId: 1,
@@ -501,14 +501,14 @@ void runRelationMutationTests(
             ),
           ]);
 
-          final rows = await harness.context.query<Post>().where('id', 1).get();
+          final rows = await dataSource.context.query<Post>().where('id', 1).get();
           final post = rows.first;
 
           expect(() => post.detach('invalid'), throwsArgumentError);
         });
 
         test('throws ArgumentError for non-manyToMany relation', () async {
-          await harness.seedPosts([
+          await dataSource.repo<Post>().insertMany([
             Post(
               id: 1,
               authorId: 1,
@@ -517,7 +517,7 @@ void runRelationMutationTests(
             ),
           ]);
 
-          final rows = await harness.context.query<Post>().where('id', 1).get();
+          final rows = await dataSource.context.query<Post>().where('id', 1).get();
           final post = rows.first;
 
           expect(
@@ -533,7 +533,7 @@ void runRelationMutationTests(
         });
 
         test('returns self for method chaining', () async {
-          await harness.seedPosts([
+          await dataSource.repo<Post>().insertMany([
             Post(
               id: 1,
               authorId: 1,
@@ -542,7 +542,7 @@ void runRelationMutationTests(
             ),
           ]);
 
-          final rows = await harness.context.query<Post>().where('id', 1).get();
+          final rows = await dataSource.context.query<Post>().where('id', 1).get();
           final post = rows.first;
 
           final result = await post.detach('tags');
@@ -556,7 +556,7 @@ void runRelationMutationTests(
       'sync() - manyToMany',
       () {
         test('syncs to match given IDs exactly', () async {
-          await harness.seedPosts([
+          await dataSource.repo<Post>().insertMany([
             Post(
               id: 1,
               authorId: 1,
@@ -564,26 +564,26 @@ void runRelationMutationTests(
               publishedAt: DateTime(2024),
             ),
           ]);
-          await harness.seedTags([
+          await dataSource.repo<Tag>().insertMany([
             const Tag(id: 1, label: 'dart'),
             const Tag(id: 2, label: 'flutter'),
             const Tag(id: 3, label: 'web'),
             const Tag(id: 4, label: 'mobile'),
           ]);
-          await harness.seedPostTags([
+          await dataSource.repo<PostTag>().insertMany([
             const PostTag(postId: 1, tagId: 1),
             const PostTag(postId: 1, tagId: 2),
             const PostTag(postId: 1, tagId: 3),
           ]);
 
-          final rows = await harness.context.query<Post>().where('id', 1).get();
+          final rows = await dataSource.context.query<Post>().where('id', 1).get();
           final post = rows.first;
 
           // Currently has tags 1, 2, 3
           // Sync to have tags 2, 3, 4
           await post.sync('tags', [2, 3, 4]);
 
-          final pivotRecords = await harness.context
+          final pivotRecords = await dataSource.context
               .query<PostTag>()
               .where('post_id', 1)
               .orderBy('tag_id')
@@ -596,7 +596,7 @@ void runRelationMutationTests(
         });
 
         test('sync with empty list removes all', () async {
-          await harness.seedPosts([
+          await dataSource.repo<Post>().insertMany([
             Post(
               id: 1,
               authorId: 1,
@@ -604,21 +604,21 @@ void runRelationMutationTests(
               publishedAt: DateTime(2024),
             ),
           ]);
-          await harness.seedTags([
+          await dataSource.repo<Tag>().insertMany([
             const Tag(id: 1, label: 'dart'),
             const Tag(id: 2, label: 'flutter'),
           ]);
-          await harness.seedPostTags([
+          await dataSource.repo<PostTag>().insertMany([
             const PostTag(postId: 1, tagId: 1),
             const PostTag(postId: 1, tagId: 2),
           ]);
 
-          final rows = await harness.context.query<Post>().where('id', 1).get();
+          final rows = await dataSource.context.query<Post>().where('id', 1).get();
           final post = rows.first;
 
           await post.sync('tags', []);
 
-          final pivotRecords = await harness.context
+          final pivotRecords = await dataSource.context
               .query<PostTag>()
               .where('post_id', 1)
               .get();
@@ -627,7 +627,7 @@ void runRelationMutationTests(
         });
 
         test('sync replaces all existing with new IDs', () async {
-          await harness.seedPosts([
+          await dataSource.repo<Post>().insertMany([
             Post(
               id: 1,
               authorId: 1,
@@ -635,19 +635,19 @@ void runRelationMutationTests(
               publishedAt: DateTime(2024),
             ),
           ]);
-          await harness.seedTags([
+          await dataSource.repo<Tag>().insertMany([
             const Tag(id: 1, label: 'dart'),
             const Tag(id: 2, label: 'flutter'),
             const Tag(id: 3, label: 'web'),
           ]);
-          await harness.seedPostTags([const PostTag(postId: 1, tagId: 1)]);
+          await dataSource.repo<PostTag>().insertMany([const PostTag(postId: 1, tagId: 1)]);
 
-          final rows = await harness.context.query<Post>().where('id', 1).get();
+          final rows = await dataSource.context.query<Post>().where('id', 1).get();
           final post = rows.first;
 
           await post.sync('tags', [2, 3]);
 
-          final pivotRecords = await harness.context
+          final pivotRecords = await dataSource.context
               .query<PostTag>()
               .where('post_id', 1)
               .orderBy('tag_id')
@@ -659,7 +659,7 @@ void runRelationMutationTests(
         });
 
         test('returns self for method chaining', () async {
-          await harness.seedPosts([
+          await dataSource.repo<Post>().insertMany([
             Post(
               id: 1,
               authorId: 1,
@@ -667,9 +667,9 @@ void runRelationMutationTests(
               publishedAt: DateTime(2024),
             ),
           ]);
-          await harness.seedTags([const Tag(id: 1, label: 'dart')]);
+          await dataSource.repo<Tag>().insertMany([const Tag(id: 1, label: 'dart')]);
 
-          final rows = await harness.context.query<Post>().where('id', 1).get();
+          final rows = await dataSource.context.query<Post>().where('id', 1).get();
           final post = rows.first;
 
           final result = await post.sync('tags', [1]);
@@ -681,8 +681,8 @@ void runRelationMutationTests(
 
     group('Method chaining with mutations', () {
       test('can chain associate with other operations', () async {
-        await harness.seedAuthors([const Author(id: 1, name: 'Alice')]);
-        await harness.seedPosts([
+        await dataSource.repo<Author>().insertMany([const Author(id: 1, name: 'Alice')]);
+        await dataSource.repo<Post>().insertMany([
           Post(
             id: 1,
             authorId: 999,
@@ -691,7 +691,7 @@ void runRelationMutationTests(
           ),
         ]);
 
-        final rows = await harness.context.query<Post>().where('id', 1).get();
+        final rows = await dataSource.context.query<Post>().where('id', 1).get();
         final post = rows.first;
 
         final author = const Author(id: 1, name: 'Alice');
@@ -704,7 +704,7 @@ void runRelationMutationTests(
       test(
         'can chain attach, sync operations',
         () async {
-          await harness.seedPosts([
+          await dataSource.repo<Post>().insertMany([
             Post(
               id: 1,
               authorId: 1,
@@ -712,18 +712,18 @@ void runRelationMutationTests(
               publishedAt: DateTime(2024),
             ),
           ]);
-          await harness.seedTags([
+          await dataSource.repo<Tag>().insertMany([
             const Tag(id: 1, label: 'dart'),
             const Tag(id: 2, label: 'flutter'),
             const Tag(id: 3, label: 'web'),
           ]);
 
-          final rows = await harness.context.query<Post>().where('id', 1).get();
+          final rows = await dataSource.context.query<Post>().where('id', 1).get();
           final post = rows.first;
 
           await post.attach('tags', [1, 2]).then((p) => p.sync('tags', [2, 3]));
 
-          final pivotRecords = await harness.context
+          final pivotRecords = await dataSource.context
               .query<PostTag>()
               .where('post_id', 1)
               .orderBy('tag_id')

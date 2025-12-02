@@ -2,36 +2,36 @@ import 'package:ormed/ormed.dart';
 import 'package:test/test.dart';
 
 import '../../models/models.dart';
-import '../../harness/driver_test_harness.dart';
+
 import '../../config.dart';
 
 void runAggregationTests(
-  DriverHarnessBuilder<DriverTestHarness> createHarness,
+  DataSource dataSource,
   DriverTestConfig config,
 ) {
   group('Aggregation tests', () {
-    late DriverTestHarness harness;
+    
 
     setUp(() async {
-      harness = await createHarness();
+      
     });
 
-    tearDown(() async => harness.dispose());
+    
 
-    // A test for 'count' using the provided harness and config
+    // A test for 'count' for aggregation functionality
     test('count', () async {
-      await harness.seedUsers([
+      await dataSource.repo<User>().insertMany([
         User(id: 1, email: 'a@example.com', active: true),
         User(id: 2, email: 'b@example.com', active: false),
       ]);
 
-      final count = await harness.context.query<User>().count();
+      final count = await dataSource.context.query<User>().count();
       expect(count, 2);
     });
 
-    // A test for 'sum' using the provided harness and config
+    // A test for 'sum' for aggregation functionality
     test('sum', () async {
-      await harness.seedArticles([
+      await dataSource.repo<Article>().insertMany([
         Article(
           id: 1,
           title: 'a',
@@ -52,13 +52,13 @@ void runAggregationTests(
         ),
       ]);
 
-      final sum = await harness.context.query<Article>().sumValue('priority');
+      final sum = await dataSource.context.query<Article>().sumValue('priority');
       expect(sum, 3);
     });
 
-    // A test for 'avg' using the provided harness and config
+    // A test for 'avg' for aggregation functionality
     test('avg', () async {
-      await harness.seedArticles([
+      await dataSource.repo<Article>().insertMany([
         Article(
           id: 1,
           title: 'a',
@@ -79,13 +79,13 @@ void runAggregationTests(
         ),
       ]);
 
-      final avg = await harness.context.query<Article>().avgValue('rating');
+      final avg = await dataSource.context.query<Article>().avgValue('rating');
       expect(avg, 2.0);
     });
 
-    // A test for 'min' using the provided harness and config
+    // A test for 'min' for aggregation functionality
     test('min', () async {
-      await harness.seedArticles([
+      await dataSource.repo<Article>().insertMany([
         Article(
           id: 1,
           title: 'a',
@@ -106,13 +106,13 @@ void runAggregationTests(
         ),
       ]);
 
-      final min = await harness.context.query<Article>().minValue('rating');
+      final min = await dataSource.context.query<Article>().minValue('rating');
       expect(min, 1.0);
     });
 
-    // A test for 'max' using the provided harness and config
+    // A test for 'max' for aggregation functionality
     test('max', () async {
-      await harness.seedArticles([
+      await dataSource.repo<Article>().insertMany([
         Article(
           id: 1,
           title: 'a',
@@ -133,13 +133,13 @@ void runAggregationTests(
         ),
       ]);
 
-      final max = await harness.context.query<Article>().maxValue('rating');
+      final max = await dataSource.context.query<Article>().maxValue('rating');
       expect(max, 3.0);
     });
 
-    // A test for 'groupBy' using the provided harness and config
+    // A test for 'groupBy' for aggregation functionality
     test('groupBy', () async {
-      await harness.seedArticles([
+      await dataSource.repo<Article>().insertMany([
         Article(
           id: 1,
           title: 'a',
@@ -169,7 +169,7 @@ void runAggregationTests(
         ),
       ]);
 
-      final results = await harness.context
+      final results = await dataSource.context
           .query<Article>()
           .select(['status'])
           .countAggregate(alias: 'count')
@@ -181,9 +181,9 @@ void runAggregationTests(
       expect(draft.row['count'], 2);
     });
 
-    // A test for 'having' using the provided harness and config
+    // A test for 'having' for aggregation functionality
     test('having', () async {
-      await harness.seedArticles([
+      await dataSource.repo<Article>().insertMany([
         Article(
           id: 1,
           title: 'a',
@@ -213,7 +213,7 @@ void runAggregationTests(
         ),
       ]);
 
-      final results = await harness.context
+      final results = await dataSource.context
           .query<Article>()
           .select(['status'])
           .countAggregate(alias: 'count')

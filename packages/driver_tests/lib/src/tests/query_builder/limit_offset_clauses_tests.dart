@@ -1,39 +1,40 @@
+import 'package:ormed/ormed.dart';
 import 'package:test/test.dart';
 
 import '../../models/models.dart';
-import '../../harness/driver_test_harness.dart';
+
 import '../../config.dart';
 
 void runLimitOffsetClausesTests(
-  DriverHarnessBuilder<DriverTestHarness> createHarness,
+  DataSource dataSource,
   DriverTestConfig config,
 ) {
   group('Limit/Offset Clauses tests', () {
-    late DriverTestHarness harness;
+    
 
     setUp(() async {
-      harness = await createHarness();
+      
     });
 
-    tearDown(() async => harness.dispose());
+    
 
     test('limit', () async {
-      await harness.seedUsers([
+      await dataSource.repo<User>().insertMany([
         User(id: 1, email: 'a@example.com', active: true),
         User(id: 2, email: 'b@example.com', active: false),
       ]);
 
-      final users = await harness.context.query<User>().limit(1).get();
+      final users = await dataSource.context.query<User>().limit(1).get();
       expect(users, hasLength(1));
     });
 
     test('offset', () async {
-      await harness.seedUsers([
+      await dataSource.repo<User>().insertMany([
         User(id: 1, email: 'a@example.com', active: true),
         User(id: 2, email: 'b@example.com', active: false),
       ]);
 
-      final users = await harness.context
+      final users = await dataSource.context
           .query<User>()
           .orderBy('id')
           .offset(1)
@@ -43,13 +44,13 @@ void runLimitOffsetClausesTests(
     });
 
     test('paginate', () async {
-      await harness.seedUsers([
+      await dataSource.repo<User>().insertMany([
         User(id: 1, email: 'a@example.com', active: true),
         User(id: 2, email: 'b@example.com', active: false),
         User(id: 3, email: 'c@example.com', active: true),
       ]);
 
-      final page1 = await harness.context
+      final page1 = await dataSource.context
           .query<User>()
           .orderBy('id')
           .paginate(perPage: 2, page: 1);
@@ -58,7 +59,7 @@ void runLimitOffsetClausesTests(
       expect(page1.total, 3);
       expect(page1.lastPage, 2);
 
-      final page2 = await harness.context
+      final page2 = await dataSource.context
           .query<User>()
           .orderBy('id')
           .paginate(perPage: 2, page: 2);
@@ -68,20 +69,20 @@ void runLimitOffsetClausesTests(
     });
 
     test('simplePaginate', () async {
-      await harness.seedUsers([
+      await dataSource.repo<User>().insertMany([
         User(id: 1, email: 'a@example.com', active: true),
         User(id: 2, email: 'b@example.com', active: false),
         User(id: 3, email: 'c@example.com', active: true),
       ]);
 
-      final page1 = await harness.context
+      final page1 = await dataSource.context
           .query<User>()
           .orderBy('id')
           .simplePaginate(perPage: 2, page: 1);
       expect(page1.items, hasLength(2));
       expect(page1.hasMorePages, isTrue);
 
-      final page2 = await harness.context
+      final page2 = await dataSource.context
           .query<User>()
           .orderBy('id')
           .simplePaginate(perPage: 2, page: 2);

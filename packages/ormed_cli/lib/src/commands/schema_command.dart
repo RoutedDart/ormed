@@ -8,6 +8,141 @@ import 'package:path/path.dart' as p;
 import '../config.dart';
 import 'shared.dart';
 
+class SchemaDumpCommand extends Command<void> {
+  SchemaDumpCommand() {
+    argParser.addOption(
+      'config',
+      abbr: 'c',
+      help: 'Path to orm.yaml (defaults to project root).',
+    );
+    argParser.addOption(
+      'database',
+      help: 'The database connection to use.',
+    );
+    argParser.addOption(
+      'path',
+      help: 'Custom output path for the schema dump.',
+    );
+    argParser.addFlag(
+      'prune',
+      negatable: false,
+      help: 'Delete all existing migration files after dumping the schema.',
+    );
+    argParser.addFlag(
+      'force',
+      abbr: 'f',
+      negatable: false,
+      help: 'Skip the production confirmation prompt.',
+    );
+  }
+
+  @override
+  String get name => 'schema:dump';
+
+  @override
+  String get description =>
+      'Dump the current database schema to a SQL file for faster test database creation.';
+
+  @override
+  Future<void> run() async {
+    final configArg = argResults?['config'] as String?;
+    final databaseOverride = argResults?['database'] as String?;
+    final pathOverride = argResults?['path'] as String?;
+    final prune = argResults?['prune'] == true;
+    final force = argResults?['force'] == true;
+
+    final context = resolveOrmProject(configPath: configArg);
+    final config = loadOrmProjectConfig(context.configFile);
+    
+    if (prune && !confirmToProceed(force: force, action: 'prune migrations')) {
+      stdout.writeln('Schema dump cancelled.');
+      return;
+    }
+
+    final handle = await createConnection(
+      context.root,
+      config,
+      targetConnection: databaseOverride,
+    );
+
+    try {
+      await handle.use((connection) async {
+        final driver = connection.driver;
+        
+        if (driver is! SchemaDriver) {
+          throw UsageException(
+            'Schema dump is not supported for ${driver.runtimeType}',
+            usage,
+          );
+        }
+
+        final state = resolveSchemaState(
+          driver,
+          connection,
+          config.migrations.ledgerTable,
+        );
+
+        if (state == null || !state.canDump) {
+          throw UsageException(
+            'Schema dump is not supported for this database driver.',
+            usage,
+          );
+        }
+
+        // Determine output path
+        final String outputPath;
+        if (pathOverride != null) {
+          outputPath = pathOverride;
+        } else {
+          // Use connection name for the schema file (like Laravel)
+          final connectionName = databaseOverride ?? config.connectionName;
+          final schemaDir = resolvePath(context.root, config.migrations.schemaDump);
+          final schemaDirObj = Directory(schemaDir);
+          schemaDirObj.createSync(recursive: true);
+          outputPath = p.join(schemaDir, '$connectionName-schema.sql');
+        }
+        
+        final schemaFile = File(outputPath);
+
+        // Dump the schema
+        await state.dump(schemaFile);
+        
+        final relativePath = p.relative(schemaFile.path, from: context.root.path);
+        stdout.writeln('Database schema dumped to: $relativePath');
+
+        if (prune) {
+          await _pruneMigrations(context, config);
+        }
+      });
+    } finally {
+      await handle.dispose();
+    }
+  }
+
+  Future<void> _pruneMigrations(
+    OrmProjectContext context,
+    OrmProjectConfig config,
+  ) async {
+    final migrationsPath = resolvePath(context.root, config.migrations.directory);
+    final migrationsDir = Directory(migrationsPath);
+    
+    if (!migrationsDir.existsSync()) {
+      stdout.writeln('No migrations directory found.');
+      return;
+    }
+
+    int deletedCount = 0;
+    await for (final entity in migrationsDir.list()) {
+      if (entity is File && entity.path.endsWith('.dart')) {
+        entity.deleteSync();
+        deletedCount++;
+      }
+    }
+
+    stdout.writeln('Pruned $deletedCount migration file(s).');
+  }
+}
+
 class SchemaDescribeCommand extends Command<void> {
   SchemaDescribeCommand() {
     argParser.addOption(
@@ -39,46 +174,20 @@ class SchemaDescribeCommand extends Command<void> {
       await handle.use((connection) async {
         final driver = connection.driver;
         final metadata = await schemaMetadata(driver);
-        final path = resolvePath(context.root, config.migrations.schemaDump);
-        final builder = StringBuffer();
-        for (final table in metadata) {
-          final name = table['name'];
-          stdout.writeln('Collection: $name');
-          builder.writeln('Collection: $name');
-          if (table['indexCount'] != null) {
-            stdout.writeln('  Indexes: ${table['indexCount']}');
-            builder.writeln('  Indexes: ${table['indexCount']}');
-          }
-          if (table['validator'] != null) {
-            stdout.writeln('  Validator: ${table['validator']}');
-            builder.writeln('  Validator: ${table['validator']}');
-          }
-        }
-        final schemaFile = File(path);
-        final state = resolveSchemaState(
-          driver,
-          connection,
-          config.migrations.ledgerTable,
-        );
+        
         if (asJson) {
           final payload = const JsonEncoder.withIndent('  ').convert(metadata);
           stdout.writeln(payload);
-          if (state?.canDump == true) {
-            await state!.dump(schemaFile);
-            stdout.writeln(
-              'Updated schema dump at ${p.relative(schemaFile.path, from: context.root.path)}',
-            );
-          } else {
-            _writeSchemaDump(context.root, path, payload);
-          }
         } else {
-          if (state?.canDump == true) {
-            await state!.dump(schemaFile);
-            stdout.writeln(
-              'Updated schema dump at ${p.relative(schemaFile.path, from: context.root.path)}',
-            );
-          } else {
-            _writeSchemaDump(context.root, path, builder.toString());
+          for (final table in metadata) {
+            final name = table['name'];
+            stdout.writeln('Table: $name');
+            if (table['indexCount'] != null) {
+              stdout.writeln('  Indexes: ${table['indexCount']}');
+            }
+            if (table['validator'] != null) {
+              stdout.writeln('  Validator: ${table['validator']}');
+            }
           }
         }
       });
@@ -86,15 +195,6 @@ class SchemaDescribeCommand extends Command<void> {
       await handle.dispose();
     }
   }
-}
-
-void _writeSchemaDump(Directory root, String path, String contents) {
-  final file = File(path);
-  file.parent.createSync(recursive: true);
-  file.writeAsStringSync(contents);
-  stdout.writeln(
-    'Updated schema dump at ${p.relative(file.path, from: root.path)}',
-  );
 }
 
 Future<List<Map<String, Object?>>> schemaMetadata(DriverAdapter driver) async {

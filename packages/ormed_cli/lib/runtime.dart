@@ -4,11 +4,14 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:ormed/ormed.dart';
 import 'package:meta/meta.dart';
+import 'package:ormed/ormed.dart';
+import 'package:ormed/testing.dart' show SeederRegistration;
 
 import 'src/commands/shared.dart';
 
+export 'src/commands/shared.dart'
+    show OrmProjectContext, resolveOrmProject, createConnection;
 export 'src/config.dart'
     show
         OrmProjectConfig,
@@ -16,41 +19,8 @@ export 'src/config.dart'
         MigrationSection,
         SeedSection,
         loadOrmProjectConfig;
-export 'src/commands/shared.dart'
-    show OrmProjectContext, resolveOrmProject, createConnection;
 
-typedef SeederRunner = FutureOr<void> Function(SeedContext context);
-typedef SeederFactory = Seeder Function(SeedContext context);
 
-class SeederRegistration {
-  const SeederRegistration({required this.name, required this.factory});
-
-  final String name;
-  final SeederFactory factory;
-}
-
-class SeedContext {
-  const SeedContext(this.connection);
-
-  final OrmConnection connection;
-
-  OrmSeeder get seeder => OrmSeeder(connection);
-}
-
-abstract class Seeder {
-  Seeder(this.context);
-
-  final SeedContext context;
-
-  Future<void> run();
-
-  Future<void> call(Iterable<SeederFactory> factories) async {
-    for (final factory in factories) {
-      final seeder = factory(context);
-      await seeder.run();
-    }
-  }
-}
 
 Future<void> runSeedRegistryOnConnection(
   OrmConnection connection,
@@ -68,23 +38,26 @@ Future<void> runSeedRegistryOnConnection(
   final queue = (names == null || names.isEmpty)
       ? <String>[seeds.first.name]
       : names;
-  final ctx = SeedContext(connection);
   final logger = log ?? (String message) => stdout.writeln(message);
+
   for (final target in queue) {
     final factory = lookup[target];
     if (factory == null) {
       throw StateError('Seeder $target is not registered.');
     }
-    final seeder = factory(ctx);
+    final seeder = factory(connection);
+
     if (pretend) {
+      // Use core's pretend functionality
       final statements = await connection.pretend(
-        () async => await Future.sync(() => seeder.run()),
+        () async => await seeder.run(),
       );
       for (final entry in statements) {
         logger('[pretend] ${formatPretendEntry(entry)}');
       }
     } else {
-      await Future.sync(() => seeder.run());
+      // Use core's seeding functionality
+      await seeder.run();
     }
   }
 }

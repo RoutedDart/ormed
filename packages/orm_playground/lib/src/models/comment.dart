@@ -5,7 +5,7 @@ import 'user.dart';
 part 'comment.orm.dart';
 
 @OrmModel(table: 'comments')
-class Comment {
+class Comment extends Model<Comment> {
   const Comment({
     this.id,
     required this.postId,

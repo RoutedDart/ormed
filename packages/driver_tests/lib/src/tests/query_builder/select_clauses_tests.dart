@@ -2,28 +2,28 @@ import 'package:ormed/ormed.dart';
 import 'package:test/test.dart';
 
 import '../../models/models.dart';
-import '../../harness/driver_test_harness.dart';
+
 import '../../config.dart';
 
 void runSelectClausesTests(
-  DriverHarnessBuilder<DriverTestHarness> createHarness,
+  DataSource dataSource,
   DriverTestConfig config,
 ) {
   group('Select Clauses tests', () {
-    late DriverTestHarness harness;
+    
 
     setUp(() async {
-      harness = await createHarness();
+      
     });
 
-    tearDown(() async => harness.dispose());
+    
 
     test('select', () async {
-      await harness.seedUsers([
+      await dataSource.repo<User>().insertMany([
         User(id: 1, email: 'a@example.com', active: true),
       ]);
 
-      final users = await harness.context.query<User>().select([
+      final users = await dataSource.context.query<User>().select([
         'id',
         'email',
         'active',
@@ -33,11 +33,11 @@ void runSelectClausesTests(
     });
 
     test('addSelect', () async {
-      await harness.seedUsers([
+      await dataSource.repo<User>().insertMany([
         User(id: 1, email: 'a@example.com', active: true),
       ]);
 
-      final users = await harness.context
+      final users = await dataSource.context
           .query<User>()
           .select(['id', 'email', 'active'])
           .addSelect('email')
@@ -49,11 +49,11 @@ void runSelectClausesTests(
     });
 
     test('selectRaw', () async {
-      await harness.seedUsers([
+      await dataSource.repo<User>().insertMany([
         User(id: 1, email: 'a@example.com', active: true),
       ]);
 
-      final results = await harness.context
+      final results = await dataSource.context
           .query<User>()
           .selectRaw('id, email as user_email, active')
           .rows();
@@ -64,7 +64,7 @@ void runSelectClausesTests(
     }, skip: !config.supportsCapability(DriverCapability.rawSQL));
 
     test('distinct', () async {
-      await harness.seedArticles([
+      await dataSource.repo<Article>().insertMany([
         Article(
           id: 1,
           title: 'a',
@@ -94,7 +94,7 @@ void runSelectClausesTests(
         ),
       ]);
 
-      final articles = await harness.context.query<Article>().distinct([
+      final articles = await dataSource.context.query<Article>().distinct([
         'status',
       ]).get();
 
@@ -109,7 +109,7 @@ void runSelectClausesTests(
     });
 
     test('distinct multiple columns', () async {
-      await harness.seedArticles([
+      await dataSource.repo<Article>().insertMany([
         Article(
           id: 1,
           title: 'a',
@@ -139,7 +139,7 @@ void runSelectClausesTests(
         ),
       ]);
 
-      final articles = await harness.context.query<Article>().distinct([
+      final articles = await dataSource.context.query<Article>().distinct([
         'status',
         'priority',
       ]).get();
@@ -154,7 +154,7 @@ void runSelectClausesTests(
     });
 
     test('distinct with orderBy', () async {
-      await harness.seedArticles([
+      await dataSource.repo<Article>().insertMany([
         Article(
           id: 1,
           title: 'a',
@@ -175,7 +175,7 @@ void runSelectClausesTests(
         ),
       ]);
 
-      final articles = await harness.context
+      final articles = await dataSource.context
           .query<Article>()
           .distinct(['status'])
           .orderBy('status')

@@ -227,12 +227,12 @@ class _CreateUsersMigration extends Migration {
   const _CreateUsersMigration();
 
   @override
-  void down(SchemaBuilder schema) {
+  Future<void> down(SchemaBuilder schema) async {
     schema.drop('users', ifExists: true, cascade: true);
   }
 
   @override
-  void up(SchemaBuilder schema) {
+  Future<void> up(SchemaBuilder schema) async {
     schema.create('users', (table) {
       table.increments('id');
       table.string('name');

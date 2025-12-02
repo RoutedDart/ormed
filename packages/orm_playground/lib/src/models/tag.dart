@@ -3,7 +3,7 @@ import 'package:ormed/ormed.dart';
 part 'tag.orm.dart';
 
 @OrmModel(table: 'tags')
-class Tag {
+class Tag extends Model<Tag> {
   const Tag({this.id, required this.name, this.createdAt, this.updatedAt});
 
   @OrmField(isPrimaryKey: true)

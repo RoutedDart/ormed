@@ -1,7 +1,7 @@
 import 'package:ormed/ormed.dart';
 import 'package:test/test.dart';
 
-import 'models/author.dart';
+import 'package:driver_tests/driver_tests.dart';
 
 void main() {
   group('queryFromDefinition', () {

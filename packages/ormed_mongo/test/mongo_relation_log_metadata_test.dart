@@ -4,33 +4,43 @@ import 'package:ormed/ormed.dart';
 import 'package:driver_tests/driver_tests.dart';
 import 'package:test/test.dart';
 
-import 'support/mongo_harness.dart';
+import 'shared.dart';
+import 'package:ormed_mongo/ormed_mongo.dart';
 
 void main() {
-  late MongoTestHarness harness;
+  late DataSource dataSource;
+  late MongoDriverAdapter driverAdapter;
   late QueryContext loggingContext;
   late OrmConnection connection;
   final logEntries = <QueryLogEntry>[];
 
   setUpAll(() async {
-    harness = await MongoTestHarness.create();
-    await seedGraph(harness);
+    await waitForMongoReady();
+    await clearDatabase();
+    driverAdapter = createAdapter();
+    registerDriverTestFactories();
+    dataSource = DataSource(DataSourceOptions(
+      driver: driverAdapter,
+      entities: generatedOrmModelDefinitions,
+    ));
+    await dataSource.init();
+    await seedGraph(dataSource);
     loggingContext = QueryContext(
-      registry: harness.registry,
-      driver: harness.adapter,
-      codecRegistry: harness.adapter.codecs,
+      registry: dataSource.registry,
+      driver: driverAdapter,
+      codecRegistry: driverAdapter.codecs,
       queryLogHook: (entry) => logEntries.add(entry),
     );
     connection = OrmConnection(
       config: ConnectionConfig(name: 'mongo-log'),
-      driver: harness.adapter,
-      registry: harness.registry,
+      driver: driverAdapter,
+      registry: dataSource.registry,
       context: loggingContext,
     );
   });
 
   tearDownAll(() async {
-    await harness.dispose();
+    await dataSource.dispose();
   });
 
   test('logged previews include relation aggregate metadata', () async {

@@ -1,8 +1,7 @@
 import 'package:ormed/ormed.dart';
 import 'package:test/test.dart';
 
-import 'models/active_user.dart';
-
+import 'package:driver_tests/driver_tests.dart';
 void main() {
   group('DataSource Multi-Connection', () {
     late DataSource primary;
@@ -19,7 +18,7 @@ void main() {
       secondaryDriver = InMemoryQueryExecutor();
 
       // Create two separate data sources
-      // Note: ActiveUser has connection: 'analytics' in its annotation
+      // Note: ActiveUser has 'analytics' in its annotation
       primary = DataSource(
         DataSourceOptions(
           name: 'analytics',
@@ -97,7 +96,7 @@ void main() {
       );
 
       // Static helper should use 'analytics' connection (which is primary/default)
-      final users = await ActiveUserOrmDefinition.query().get();
+      final users = await ActiveUserModelFactory.query().get();
 
       expect(users.length, 1);
       expect(users.first.email, 'default@example.com');
@@ -122,13 +121,13 @@ void main() {
       );
 
       // Default connection (analytics)
-      final analyticsUsers = await ActiveUserOrmDefinition.query().get();
+      final analyticsUsers = await ActiveUserModelFactory.query().get();
       expect(analyticsUsers.length, 1);
       expect(analyticsUsers.first.email, 'analytics@example.com');
 
       // Named connection (secondary)
-      final secondaryUsers = await ActiveUserOrmDefinition.query(
-        connection: 'secondary',
+      final secondaryUsers = await ActiveUserModelFactory.query(
+        'secondary',
       ).get();
       expect(secondaryUsers.length, 1);
       expect(secondaryUsers.first.email, 'secondary@example.com');
@@ -155,7 +154,7 @@ void main() {
       );
 
       // Find from default connection (analytics)
-      final fromAnalytics = await ActiveUserOrmDefinition.find(1);
+      final fromAnalytics = await ActiveUserModelFactory.find(1);
       expect(
         fromAnalytics,
         isNotNull,
@@ -164,10 +163,7 @@ void main() {
       expect(fromAnalytics?.email, 'analytics@example.com');
 
       // Find from named connection (secondary)
-      final fromSecondary = await ActiveUserOrmDefinition.find(
-        2,
-        connection: 'secondary',
-      );
+      final fromSecondary = await ActiveUserModelFactory.find(2, 'secondary');
       expect(
         fromSecondary,
         isNotNull,
@@ -184,12 +180,12 @@ void main() {
       );
 
       // Should succeed with default connection
-      final found1 = await ActiveUserOrmDefinition.findOrFail(10);
+      final found1 = await ActiveUserModelFactory.findOrFail(10);
       expect(found1.email, 'test@example.com');
 
       // Should fail with secondary connection (user not there)
       expect(
-        () => ActiveUserOrmDefinition.findOrFail(10, connection: 'secondary'),
+        () => ActiveUserModelFactory.findOrFail(10, 'secondary'),
         throwsA(isA<StateError>()),
       );
     });
@@ -207,13 +203,10 @@ void main() {
       ]);
 
       // Default connection (analytics)
-      final analyticsUsers = await ActiveUserOrmDefinition.all();
+      final analyticsUsers = await ActiveUserModelFactory.query().get();
       expect(analyticsUsers.length, 1);
-
       // Named connection (secondary)
-      final secondaryUsers = await ActiveUserOrmDefinition.all(
-        connection: 'secondary',
-      );
+      final secondaryUsers = await ActiveUserModelFactory.all('secondary');
       expect(secondaryUsers.length, 2);
     });
 
@@ -229,7 +222,7 @@ void main() {
       );
 
       // Initially uses analytics (primary)
-      var users = await ActiveUserOrmDefinition.query().get();
+      var users = await ActiveUserModelFactory.query().get();
       expect(users.length, 1);
       expect(users.first.email, 'analytics@example.com');
 
@@ -238,9 +231,7 @@ void main() {
 
       // Now uses secondary (but ActiveUser still wants 'analytics' connection!)
       // This should fail or we need to override the connection
-      users = await ActiveUserOrmDefinition.query(
-        connection: 'secondary',
-      ).get();
+      users = await ActiveUserModelFactory.query('secondary').get();
       expect(users.length, 1);
       expect(users.first.email, 'secondary@example.com');
     });

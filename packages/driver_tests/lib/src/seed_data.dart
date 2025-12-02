@@ -1,7 +1,8 @@
 import 'dart:math';
 
+import 'package:ormed/ormed.dart';
+
 import '../models.dart';
-import 'harness/driver_test_harness.dart';
 
 final _random = Random();
 
@@ -116,15 +117,16 @@ List<Post> buildDefaultPosts() => [
   ),
 ];
 
-Future<void> seedGraph(DriverTestHarness harness, {List<User>? users}) async {
-  await harness.seedUsers(
+/// Seeds the full test data graph into a DataSource.
+Future<void> seedGraph(DataSource dataSource, {List<User>? users}) async {
+  await dataSource.repo<User>().insertMany(
     users ?? buildDefaultUsers(),
   ); // Use provided users or generate new ones
-  await harness.seedAuthors(defaultAuthors);
-  await harness.seedPosts(buildDefaultPosts());
-  await harness.seedTags(defaultTags);
-  await harness.seedPostTags(defaultPostTags);
-  await harness.seedImages(defaultImages);
-  await harness.seedPhotos(defaultPhotos);
-  await harness.seedComments(defaultComments);
+  await dataSource.repo<Author>().insertMany(defaultAuthors.toList());
+  await dataSource.repo<Post>().insertMany(buildDefaultPosts());
+  await dataSource.repo<Tag>().insertMany(defaultTags.toList());
+  await dataSource.repo<PostTag>().insertMany(defaultPostTags.toList());
+  await dataSource.repo<Image>().insertMany(defaultImages.toList());
+  await dataSource.repo<Photo>().insertMany(defaultPhotos.toList());
+  await dataSource.repo<Comment>().insertMany(defaultComments.toList());
 }

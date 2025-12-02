@@ -1,31 +1,42 @@
 import 'package:driver_tests/driver_tests.dart';
+import 'package:ormed/ormed.dart';
 import 'package:test/test.dart';
 
-import 'support/mongo_harness.dart';
+import 'shared.dart';
+import 'package:ormed_mongo/ormed_mongo.dart';
 
 void main() {
-  late MongoTestHarness harness;
+  late DataSource dataSource;
+  late MongoDriverAdapter driverAdapter;
 
   setUpAll(() async {
-    harness = await MongoTestHarness.create();
-    await seedGraph(harness);
+    await waitForMongoReady();
+    await clearDatabase();
+    driverAdapter = createAdapter();
+    registerDriverTestFactories();
+    dataSource = DataSource(DataSourceOptions(
+      driver: driverAdapter,
+      entities: generatedOrmModelDefinitions,
+    ));
+    await dataSource.init();
+    await seedGraph(dataSource);
   });
 
-  tearDownAll(() async => await harness.dispose());
+  tearDownAll(() async => await dataSource.dispose());
 
   test('lists collections via inspector', () async {
-    final tables = await harness.adapter.listTables();
+    final tables = await driverAdapter.listTables();
     expect(tables.map((t) => t.name), contains('posts'));
     expect(tables.map((t) => t.name), contains('users'));
   });
 
   test('lists indexes for a collection', () async {
-    final indexes = await harness.adapter.listIndexes('posts');
+    final indexes = await driverAdapter.listIndexes('posts');
     expect(indexes.any((index) => index.columns.contains('_id')), isTrue);
   });
 
   test('exposes field metadata for collections', () async {
-    final tables = await harness.adapter.listTables();
+    final tables = await driverAdapter.listTables();
     final posts = tables.firstWhere((table) => table.name == 'posts');
     expect(posts.fields.any((field) => field.name == 'author_id'), isTrue);
     expect(

@@ -5,28 +5,52 @@ import 'package:test/test.dart';
 
 import '../../models.dart';
 import '../config.dart';
-import '../harness/driver_test_harness.dart';
+import '../support/driver_schema.dart';
 
 void runDriverOverrideTests({
-  required DriverHarnessBuilder<DriverTestHarness> createHarness,
+  required DataSource dataSource,
   required DriverTestConfig config,
 }) {
   group('${config.driverName} driver overrides', () {
+    late TestDatabaseManager manager;
+
+    setUpAll(() async {
+      await dataSource.init();
+      manager = TestDatabaseManager(
+        baseDataSource: dataSource,
+        migrationDescriptors: driverTestMigrationEntries
+            .map((e) => MigrationDescriptor.fromMigration(
+                  id: e.id,
+                  migration: e.migration,
+                ))
+            .toList(),
+        strategy: DatabaseIsolationStrategy.truncate,
+      );
+      await manager.initialize();
+    });
+
+    setUp(() async {
+      await manager.beginTest('driver_override_tests', dataSource);
+    });
+
+    tearDown(() async => manager.endTest('driver_override_tests', dataSource));
+
+    tearDownAll(() async {
+      // Schema cleanup is handled by outer test file
+    });
+
     test(
       'repository encodes payload using driver-specific codec',
       () async {
-        final harness = await createHarness();
-        addTearDown(harness.dispose);
-
-        final repo = harness.context.repository<DriverOverrideEntry>();
+        final repo = dataSource.context.repository<DriverOverrideEntry>();
         const entry = DriverOverrideEntry(id: 1, payload: {'mode': 'dark'});
         await repo.insert(entry);
 
-        final rows = await harness.adapter.queryRaw(
-          'SELECT payload FROM settings WHERE id = 1',
+        final rows = await dataSource.connection.driver.queryRaw(
+          'SELECT payload FROM driver_override_entries WHERE id = 1',
         );
         final value = rows.single['payload'];
-        final driverName = harness.adapter.metadata.name.toLowerCase();
+        final driverName = dataSource.connection.driver.metadata.name.toLowerCase();
         if (driverName.contains('sqlite')) {
           expect(value, isA<String>());
           expect(value, equals(jsonEncode(entry.payload)));
@@ -40,7 +64,7 @@ void runDriverOverrideTests({
           expect(decoded['mode'], equals('dark'));
         }
 
-        final fetched = await harness.context
+        final fetched = await dataSource.context
             .query<DriverOverrideEntry>()
             .whereEquals('id', 1)
             .firstOrFail();

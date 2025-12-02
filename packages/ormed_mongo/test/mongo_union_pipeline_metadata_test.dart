@@ -5,17 +5,26 @@ import 'package:ormed_mongo/src/mongo_transaction_context.dart';
 import 'package:ormed_mongo/ormed_mongo.dart';
 import 'package:test/test.dart';
 
-import 'support/mongo_harness.dart';
+import 'shared.dart';
 
 void main() {
-  late MongoTestHarness harness;
+  late DataSource dataSource;
+  late MongoDriverAdapter driverAdapter;
 
   setUpAll(() async {
-    harness = await MongoTestHarness.create();
-    await seedGraph(harness);
+    await waitForMongoReady();
+    await clearDatabase();
+    driverAdapter = createAdapter();
+    registerDriverTestFactories();
+    dataSource = DataSource(DataSourceOptions(
+      driver: driverAdapter,
+      entities: generatedOrmModelDefinitions,
+    ));
+    await dataSource.init();
+    await seedGraph(dataSource);
   });
 
-  tearDownAll(() async => await harness.dispose());
+  tearDownAll(() async => await dataSource.dispose());
 
   const stage = {
     '\$match': {
@@ -24,7 +33,7 @@ void main() {
   };
 
   test('Mongo aggregate builder appends recorded stages', () async {
-    final plan = harness.context
+    final plan = dataSource.context
         .query<Post>()
         .countAggregate(alias: 'post_count')
         .groupBy(['authorId'])
@@ -47,7 +56,7 @@ void main() {
   });
 
   test('Statement preview includes recorded stages after aggregation', () {
-    final plan = harness.context
+    final plan = dataSource.context
         .query<Post>()
         .countAggregate(alias: 'post_count')
         .groupBy(['authorId'])
@@ -59,7 +68,7 @@ void main() {
       sessionState: MongoTransactionState.idle,
     );
 
-    final preview = harness.context.describeQuery(plan);
+    final preview = dataSource.context.describeQuery(plan);
     final payload = preview.payload as DocumentStatementPayload;
     final pipeline = payload.arguments['pipeline'] as List<Object?>?;
 
@@ -73,14 +82,14 @@ void main() {
   });
 
   test('Mongo hook records pipeline stages automatically', () async {
-    final query = harness.context
+    final query = dataSource.context
         .query<Post>()
         .countAggregate(alias: 'post_count')
         .groupBy(['authorId'])
         .withMongoPipelineStage(stage);
     final plan = query.debugPlan();
 
-    await harness.context.runSelect(plan);
+    await dataSource.context.runSelect(plan);
 
     final metadata = metadataForPlan(plan);
     expect(metadata, isNotNull);
@@ -88,8 +97,8 @@ void main() {
   });
 
   test('Union metadata merges relation loads and pipeline stages', () async {
-    final base = harness.context.query<Post>().withRelation('author');
-    final union = harness.context.query<Post>().withRelation('tags');
+    final base = dataSource.context.query<Post>().withRelation('author');
+    final union = dataSource.context.query<Post>().withRelation('tags');
     final query = base.union(union).withMongoPipelineStage(stage);
 
     await query.rows();

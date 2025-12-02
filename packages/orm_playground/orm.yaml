@@ -6,13 +6,13 @@ connections:
       options:
         database: database.sqlite
     migrations:
-      directory: database/migrations
-      registry: database/migrations.dart
+      directory: lib/src/database/migrations
+      registry: lib/src/database/migrations.dart
       ledger_table: orm_migrations
-      schema_dump: database/schema.sql
+      schema_dump: lib/src/database/schema/schema.sql
     seeds:
-      directory: database/seeders
-      registry: database/seeders.dart
+      directory: lib/src/database/seeders
+      registry: lib/src/database/seeders.dart
       default_class: DatabaseSeeder
   analytics:
     driver:
@@ -20,11 +20,11 @@ connections:
       options:
         database: database.analytics.sqlite
     migrations:
-      directory: database/migrations
-      registry: database/migrations.dart
+      directory: lib/src/database/migrations
+      registry: lib/src/database/migrations.dart
       ledger_table: orm_migrations
-      schema_dump: database/schema.sql
+      schema_dump: lib/src/database/schema/schema.sql
     seeds:
-      directory: database/seeders
-      registry: database/seeders.dart
+      directory: lib/src/database/seeders
+      registry: lib/src/database/seeders.dart
       default_class: DatabaseSeeder

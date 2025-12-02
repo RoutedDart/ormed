@@ -1,20 +1,21 @@
+import 'package:ormed/ormed.dart';
 import 'package:test/test.dart';
 
 import '../../../driver_tests.dart';
 
 void runQueryRowSyncTests(
-  DriverHarnessBuilder<DriverTestHarness> createHarness,
+  DataSource dataSource,
   DriverTestConfig config,
 ) {
   group('${config.driverName} QueryRow relations sync', () {
-    late DriverTestHarness harness;
+    
 
     setUp(() async {
-      harness = await createHarness();
+      
 
       // Seed test data
-      await harness.seedAuthors([const Author(id: 1, name: 'Alice')]);
-      await harness.seedPosts([
+      await dataSource.repo<Author>().insertMany([const Author(id: 1, name: 'Alice')]);
+      await dataSource.repo<Post>().insertMany([
         Post(id: 1, authorId: 1, title: 'Post 1', publishedAt: DateTime(2024)),
         Post(
           id: 2,
@@ -23,16 +24,16 @@ void runQueryRowSyncTests(
           publishedAt: DateTime(2024, 2),
         ),
       ]);
-      await harness.seedTags([const Tag(id: 1, label: 'dart')]);
-      await harness.seedPostTags([const PostTag(postId: 1, tagId: 1)]);
+      await dataSource.repo<Tag>().insertMany([const Tag(id: 1, label: 'dart')]);
+      await dataSource.repo<PostTag>().insertMany([const PostTag(postId: 1, tagId: 1)]);
     });
 
     tearDown(() async {
-      await harness.dispose();
+      
     });
 
     test('eager loaded hasMany relations are synced to model', () async {
-      final queryRows = await harness.context
+      final queryRows = await dataSource.context
           .query<Author>()
           .withRelation('posts')
           .where('id', 1)
@@ -60,7 +61,7 @@ void runQueryRowSyncTests(
     });
 
     test('eager loaded belongsTo relations are synced to model', () async {
-      final queryRows = await harness.context
+      final queryRows = await dataSource.context
           .query<Post>()
           .withRelation('author')
           .where('id', 1)
@@ -85,7 +86,7 @@ void runQueryRowSyncTests(
     });
 
     test('multiple eager loaded relations are all synced', () async {
-      final queryRows = await harness.context
+      final queryRows = await dataSource.context
           .query<Post>()
           .withRelation('author')
           .withRelation('tags')
@@ -107,7 +108,7 @@ void runQueryRowSyncTests(
     });
 
     test('non-eager loaded relations are not marked as loaded', () async {
-      final queryRows = await harness.context
+      final queryRows = await dataSource.context
           .query<Author>()
           .where('id', 1)
           .rows();
@@ -124,7 +125,7 @@ void runQueryRowSyncTests(
     });
 
     test('QueryRow.relations and model relations stay in sync', () async {
-      final queryRows = await harness.context
+      final queryRows = await dataSource.context
           .query<Author>()
           .withRelation('posts')
           .where('id', 1)

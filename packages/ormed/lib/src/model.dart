@@ -10,8 +10,6 @@ import 'connection/connection_manager.dart';
 import 'connection/connection_resolver.dart';
 import 'connection/orm_connection.dart';
 import 'driver/driver.dart';
-import 'driver/mutation_plan.dart';
-import 'driver/mutation_row.dart';
 import 'model_definition.dart';
 import 'model_factory.dart';
 import 'model_mixins/model_attributes.dart';
@@ -67,23 +65,21 @@ abstract class Model<TModel extends Model<TModel>>
   }
 
   /// Starts a [Query] for [TModel], honoring the model's preferred connection.
-  static Query<TModel> query<TModel>({
-    String? connection,
-  }) {
+  static Query<TModel> query<TModel>({String? connection}) {
     // Try to resolve and get definition
     final initialResolver = _resolveBoundResolverFlexible<TModel>(connection);
     final definition = initialResolver.registry.expect<TModel>();
-    
+
     // Determine the effective connection: explicit param > model's configured connection
     final effectiveConnection = connection ?? definition.metadata.connection;
-    
+
     // If we need a different connection than what we initially resolved, re-resolve
     if (_shouldRebindResolver(connection, effectiveConnection)) {
       final resolver = _resolveBoundResolver(effectiveConnection);
       final context = _requireQueryContext(resolver);
       return context.queryFromDefinition(definition);
     }
-    
+
     final context = _requireQueryContext(initialResolver);
     return context.queryFromDefinition(definition);
   }
@@ -133,40 +129,30 @@ abstract class Model<TModel extends Model<TModel>>
     String operator,
     dynamic value, {
     String? connection,
-  }) =>
-      query<TModel>(connection: connection).where(column, operator, value);
+  }) => query<TModel>(connection: connection).where(column, operator, value);
 
   /// Starts a query with a whereIn clause.
   static Query<TModel> whereIn<TModel>(
     String column,
     List<dynamic> values, {
     String? connection,
-  }) =>
-      query<TModel>(connection: connection).whereIn(column, values);
+  }) => query<TModel>(connection: connection).whereIn(column, values);
 
   /// Starts a query with an orderBy clause.
   static Query<TModel> orderBy<TModel>(
     String column, {
     String direction = 'asc',
     String? connection,
-  }) =>
-      query<TModel>(connection: connection).orderBy(
-            column,
-            descending: direction.toLowerCase() == 'desc',
-          );
+  }) => query<TModel>(
+    connection: connection,
+  ).orderBy(column, descending: direction.toLowerCase() == 'desc');
 
   /// Starts a query with a limit clause.
-  static Query<TModel> limit<TModel>(
-    int count, {
-    String? connection,
-  }) =>
+  static Query<TModel> limit<TModel>(int count, {String? connection}) =>
       query<TModel>(connection: connection).limit(count);
 
   /// Find a model by its primary key, returns null if not found.
-  static Future<TModel?> find<TModel>(
-    Object id, {
-    String? connection,
-  }) =>
+  static Future<TModel?> find<TModel>(Object id, {String? connection}) =>
       query<TModel>(connection: connection).find(id);
 
   /// Find a model by its primary key, throws if not found.
@@ -185,19 +171,14 @@ abstract class Model<TModel extends Model<TModel>>
   static Future<List<TModel>> findMany<TModel>(
     List<Object> ids, {
     String? connection,
-  }) =>
-      query<TModel>(connection: connection).findMany(ids);
+  }) => query<TModel>(connection: connection).findMany(ids);
 
   /// Get the first model matching the query, or null.
-  static Future<TModel?> first<TModel>({
-    String? connection,
-  }) =>
+  static Future<TModel?> first<TModel>({String? connection}) =>
       query<TModel>(connection: connection).first();
 
   /// Get the first model matching the query, or throw.
-  static Future<TModel> firstOrFail<TModel>({
-    String? connection,
-  }) async {
+  static Future<TModel> firstOrFail<TModel>({String? connection}) async {
     final result = await first<TModel>(connection: connection);
     if (result == null) {
       throw StateError('No model found');
@@ -206,21 +187,15 @@ abstract class Model<TModel extends Model<TModel>>
   }
 
   /// Count the number of models.
-  static Future<int> count<TModel>({
-    String? connection,
-  }) =>
+  static Future<int> count<TModel>({String? connection}) =>
       query<TModel>(connection: connection).count();
 
   /// Check if any models exist.
-  static Future<bool> exists<TModel>({
-    String? connection,
-  }) async =>
+  static Future<bool> exists<TModel>({String? connection}) async =>
       await count<TModel>(connection: connection) > 0;
 
   /// Check if no models exist.
-  static Future<bool> doesntExist<TModel>({
-    String? connection,
-  }) async =>
+  static Future<bool> doesntExist<TModel>({String? connection}) async =>
       !await exists<TModel>(connection: connection);
 
   /// Delete all models matching a condition (dangerous!).
@@ -233,6 +208,52 @@ abstract class Model<TModel extends Model<TModel>>
       await model.delete();
     }
     return models.length;
+  }
+
+  /// Get a single model and throw if zero or more than one result is found.
+  static Future<TModel> sole<TModel>({String? connection}) =>
+      query<TModel>(connection: connection).sole();
+
+  /// Get first model or create new (but don't persist yet).
+  ///
+  /// Note: This is a placeholder - actual implementation requires codec access.
+  /// Use the generated static helper on your model class instead.
+  static Future<TModel> firstOrNew<TModel extends Model<TModel>>(
+    Map<String, dynamic> attributes, {
+    Map<String, dynamic> values = const {},
+    String? connection,
+  }) async {
+    throw UnimplementedError(
+      'Model.firstOrNew() requires code generation. Use YourModel.firstOrNew() instead.',
+    );
+  }
+
+  /// Get first model or create and persist it.
+  ///
+  /// Note: This is a placeholder - actual implementation requires codec access.
+  /// Use the generated static helper on your model class instead.
+  static Future<TModel> firstOrCreate<TModel extends Model<TModel>>(
+    Map<String, dynamic> attributes, {
+    Map<String, dynamic> values = const {},
+    String? connection,
+  }) async {
+    throw UnimplementedError(
+      'Model.firstOrCreate() requires code generation. Use YourModel.firstOrCreate() instead.',
+    );
+  }
+
+  /// Update existing model or create new one.
+  ///
+  /// Note: This is a placeholder - actual implementation requires codec access.
+  /// Use the generated static helper on your model class instead.
+  static Future<TModel> updateOrCreate<TModel extends Model<TModel>>(
+    Map<String, dynamic> attributes,
+    Map<String, dynamic> values, {
+    String? connection,
+  }) async {
+    throw UnimplementedError(
+      'Model.updateOrCreate() requires code generation. Use YourModel.updateOrCreate() instead.',
+    );
   }
 
   /// Typed accessor to the attached [ModelDefinition], when available.
@@ -609,25 +630,30 @@ abstract class Model<TModel extends Model<TModel>>
   }
 
   /// Flexible resolver that tries to find a connection with the model definition
-  static ConnectionResolver _resolveBoundResolverFlexible<TModel>(String? preferred) {
+  static ConnectionResolver _resolveBoundResolverFlexible<TModel>(
+    String? preferred,
+  ) {
     final manager = _connectionManager ?? ConnectionManager.defaultManager;
     final builder = _resolverFactory;
-    
+
     // If custom resolver is set, use it
     if (builder != null) {
       final name = _effectiveConnectionName(preferred);
       return builder(name);
     }
-    
+
     // Try preferred/default connection first
     final preferredName = _effectiveConnectionName(preferred);
     if (manager.isRegistered(preferredName)) {
-      final connection = manager.connection(preferredName, role: _defaultConnectionRole);
+      final connection = manager.connection(
+        preferredName,
+        role: _defaultConnectionRole,
+      );
       if (connection.context.registry.contains<TModel>()) {
         return connection.context;
       }
     }
-    
+
     // Search all registered connections for one that has this model
     for (final name in manager.registeredConnectionNames) {
       final connection = manager.connection(name, role: _defaultConnectionRole);
@@ -635,9 +661,9 @@ abstract class Model<TModel extends Model<TModel>>
         return connection.context;
       }
     }
-    
+
     throw StateError(
-      'No ORM connection found with definition for ${TModel}. '
+      'No ORM connection found with definition for $TModel. '
       'Register a DataSource containing this model on ConnectionManager.',
     );
   }
@@ -1544,17 +1570,19 @@ abstract class Model<TModel extends Model<TModel>>
         'Relation "$relationName" is missing pivot table name (through)',
       );
     }
-    
+
     final pivotForeignKey = relationDef.pivotForeignKey!;
     final pivotRelatedKey = relationDef.pivotRelatedKey!;
 
     // Get the related model definition to determine column types
     final relatedModelName = relationDef.targetModel;
     final relatedDef = resolver.registry.expectByName(relatedModelName);
-    
+
     final relatedPk = relatedDef.primaryKeyField;
     if (relatedPk == null) {
-      throw StateError('Related model $relatedModelName must have a primary key');
+      throw StateError(
+        'Related model $relatedModelName must have a primary key',
+      );
     }
 
     final rows = ids.map((id) {
@@ -1569,21 +1597,14 @@ abstract class Model<TModel extends Model<TModel>>
     }).toList();
 
     // Build pivot table definition with proper column types
-    final pivotDef = _createPivotDefinition(
-      pivotTable,
-      def.schema,
-      {
-        pivotForeignKey: pk,
-        pivotRelatedKey: relatedPk,
-        ...?pivotData?.map((key, _) => MapEntry(key, null)),
-      },
-    );
-    
-    final plan = MutationPlan.insert(
-      definition: pivotDef,
-      rows: rows,
-    );
-    
+    final pivotDef = _createPivotDefinition(pivotTable, def.schema, {
+      pivotForeignKey: pk,
+      pivotRelatedKey: relatedPk,
+      ...?pivotData?.map((key, _) => MapEntry(key, null)),
+    });
+
+    final plan = MutationPlan.insert(definition: pivotDef, rows: rows);
+
     await resolver.runMutation(plan);
 
     // Reload the relation to sync cache
@@ -1643,39 +1664,36 @@ abstract class Model<TModel extends Model<TModel>>
         'Relation "$relationName" is missing pivot table name (through)',
       );
     }
-    
+
     final pivotForeignKey = relationDef.pivotForeignKey!;
     final pivotRelatedKey = relationDef.pivotRelatedKey!;
 
     // Get the related model definition to determine column types
     final relatedModelName = relationDef.targetModel;
     final relatedDef = resolver.registry.expectByName(relatedModelName);
-    
+
     final relatedPk = relatedDef.primaryKeyField;
     if (relatedPk == null) {
-      throw StateError('Related model $relatedModelName must have a primary key');
+      throw StateError(
+        'Related model $relatedModelName must have a primary key',
+      );
     }
 
     // Build delete keys
     final List<Map<String, Object?>> deleteKeys;
-    
+
     if (ids != null && ids.isNotEmpty) {
       // Detach specific IDs
-      deleteKeys = ids.map((id) => {
-        pivotForeignKey: pkValue,
-        pivotRelatedKey: id,
-      }).toList();
+      deleteKeys = ids
+          .map((id) => {pivotForeignKey: pkValue, pivotRelatedKey: id})
+          .toList();
     } else {
       // Detach all - query for existing pivot records first
-      final pivotDef = _createPivotDefinition(
-        pivotTable,
-        def.schema,
-        {
-          pivotForeignKey: pk,
-          pivotRelatedKey: relatedPk,
-        },
-      );
-      
+      final pivotDef = _createPivotDefinition(pivotTable, def.schema, {
+        pivotForeignKey: pk,
+        pivotRelatedKey: relatedPk,
+      });
+
       final selectPlan = QueryPlan(
         definition: pivotDef,
         filters: [
@@ -1686,33 +1704,30 @@ abstract class Model<TModel extends Model<TModel>>
           ),
         ],
       );
-      
+
       final results = await resolver.runSelect(selectPlan);
-      deleteKeys = results.map((row) => {
-        pivotForeignKey: row[pivotForeignKey],
-        pivotRelatedKey: row[pivotRelatedKey],
-      }).toList();
+      deleteKeys = results
+          .map(
+            (row) => {
+              pivotForeignKey: row[pivotForeignKey],
+              pivotRelatedKey: row[pivotRelatedKey],
+            },
+          )
+          .toList();
     }
-    
+
     if (deleteKeys.isNotEmpty) {
-      final pivotDef = _createPivotDefinition(
-        pivotTable,
-        def.schema,
-        {
-          pivotForeignKey: pk,
-          pivotRelatedKey: relatedPk,
-        },
-      );
-      
+      final pivotDef = _createPivotDefinition(pivotTable, def.schema, {
+        pivotForeignKey: pk,
+        pivotRelatedKey: relatedPk,
+      });
+
       final deleteRows = deleteKeys
           .map((keys) => MutationRow(values: const {}, keys: keys))
           .toList();
-      
-      final plan = MutationPlan.delete(
-        definition: pivotDef,
-        rows: deleteRows,
-      );
-      
+
+      final plan = MutationPlan.delete(definition: pivotDef, rows: deleteRows);
+
       await resolver.runMutation(plan);
     }
 
@@ -1762,7 +1777,7 @@ abstract class Model<TModel extends Model<TModel>>
     final fields = columnFields.entries.map((entry) {
       final colName = entry.key;
       final fieldDef = entry.value;
-      
+
       // Use the field definition's types if available, otherwise default to dynamic
       return FieldDefinition(
         name: colName,
@@ -1773,7 +1788,7 @@ abstract class Model<TModel extends Model<TModel>>
         isNullable: true,
       );
     }).toList();
-    
+
     return ModelDefinition<Map<String, dynamic>>(
       modelName: tableName,
       tableName: tableName,
@@ -1788,13 +1803,18 @@ abstract class Model<TModel extends Model<TModel>>
 /// Simple codec for pivot table operations (raw maps).
 class _PivotTableCodec extends ModelCodec<Map<String, dynamic>> {
   const _PivotTableCodec();
-  
+
   @override
-  Map<String, Object?> encode(Map<String, dynamic> model, ValueCodecRegistry registry) => model;
-  
+  Map<String, Object?> encode(
+    Map<String, dynamic> model,
+    ValueCodecRegistry registry,
+  ) => model;
+
   @override
-  Map<String, dynamic> decode(Map<String, Object?> data, ValueCodecRegistry registry) => 
-      Map<String, dynamic>.from(data);
+  Map<String, dynamic> decode(
+    Map<String, Object?> data,
+    ValueCodecRegistry registry,
+  ) => Map<String, dynamic>.from(data);
 }
 
 extension ModelRegistryX on ModelRegistry {

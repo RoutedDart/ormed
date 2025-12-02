@@ -4,25 +4,34 @@ import 'package:ormed_mongo/src/mongo_query_plan_metadata.dart';
 import 'package:test/test.dart';
 
 import 'shared.dart';
-import 'support/mongo_harness.dart';
+import 'package:ormed_mongo/ormed_mongo.dart';
 
 void main() {
-  late MongoTestHarness harness;
+  late DataSource dataSource;
+  late MongoDriverAdapter driverAdapter;
 
   setUpAll(() async {
-    harness = await MongoTestHarness.create();
+    await waitForMongoReady();
+    await clearDatabase();
+    driverAdapter = createAdapter();
+    registerDriverTestFactories();
+    dataSource = DataSource(DataSourceOptions(
+      driver: driverAdapter,
+      entities: generatedOrmModelDefinitions,
+    ));
+    await dataSource.init();
   });
 
   setUp(() async {
     await clearDatabase();
-    await seedGraph(harness);
+    await seedGraph(dataSource);
   });
 
-  tearDownAll(() async => await harness.dispose());
+  tearDownAll(() async => await dataSource.dispose());
 
   test('nested relation counts and metadata', () async {
-    final posts = await harness.context.query<Post>().get();
-    final photos = await harness.context.query<Photo>().get();
+    final posts = await dataSource.context.query<Post>().get();
+    final photos = await dataSource.context.query<Photo>().get();
     final postIdsByAuthor = <int, List<int>>{};
     for (final post in posts) {
       postIdsByAuthor.putIfAbsent(post.authorId, () => <int>[]).add(post.id);
@@ -38,7 +47,7 @@ void main() {
     }
 
     consumeTrackedMongoPlans();
-    final query = harness.context
+    final query = dataSource.context
         .query<Author>()
         .withCount('posts.photos')
         .orderBy('id');
@@ -67,7 +76,7 @@ void main() {
 
   test('streaming exists keeps boolean alias and metadata', () async {
     consumeTrackedMongoPlans();
-    final streamed = await harness.context
+    final streamed = await dataSource.context
         .query<Author>()
         .withExists('posts')
         .streamRows()
@@ -92,7 +101,7 @@ void main() {
     'relation ordering with distinct sorts buffered and streamed rows',
     () async {
       consumeTrackedMongoPlans();
-      final query = harness.context.query<Author>().orderByRelation(
+      final query = dataSource.context.query<Author>().orderByRelation(
         'posts',
         aggregate: RelationAggregateType.count,
         descending: true,
@@ -115,7 +124,7 @@ void main() {
 
   test('predicate-based counts store predicate in metadata', () async {
     consumeTrackedMongoPlans();
-    final query = harness.context.query<Author>().withCount(
+    final query = dataSource.context.query<Author>().withCount(
       'posts',
       constraint: (builder) =>
           builder.where('id', 1, PredicateOperator.greaterThan),
@@ -141,7 +150,7 @@ void main() {
 
   test('nested relation ordering tracks descriptors', () async {
     consumeTrackedMongoPlans();
-    final _ = harness.context
+    final _ = dataSource.context
         .query<Author>()
         .orderByRelation(
           'posts.photos',
@@ -149,7 +158,7 @@ void main() {
           descending: true,
         )
         .debugPlan();
-    await harness.context
+    await dataSource.context
         .query<Author>()
         .orderByRelation(
           'posts.photos',

@@ -3,11 +3,11 @@ import 'package:test/test.dart';
 
 import '../../models.dart';
 import '../config.dart';
-import '../harness/driver_test_harness.dart';
 import '../seed_data.dart';
+import '../support/driver_schema.dart';
 
 void runDriverJoinTests({
-  required DriverHarnessBuilder<DriverTestHarness> createHarness,
+  required DataSource dataSource,
   required DriverTestConfig config,
 }) {
   if (!config.supportsCapability(DriverCapability.joins)) {
@@ -15,17 +15,44 @@ void runDriverJoinTests({
   }
 
   group('${config.driverName} manual joins', () {
-    late DriverTestHarness harness;
+    late TestDatabaseManager manager;
 
-    setUp(() async {
-      harness = await createHarness();
-      await seedGraph(harness);
+    setUpAll(() async {
+      await dataSource.init();
+      manager = TestDatabaseManager(
+        baseDataSource: dataSource,
+        migrationDescriptors: driverTestMigrationEntries
+            .map((e) => MigrationDescriptor.fromMigration(
+                  id: e.id,
+                  migration: e.migration,
+                ))
+            .toList(),
+        strategy: DatabaseIsolationStrategy.truncate,
+      );
+      await manager.initialize();
     });
 
-    tearDown(() async => harness.dispose());
+    setUp(() async {
+      await manager.beginTest('join_tests', dataSource);
+      // Seed data directly via repository
+      await dataSource.repo<User>().insertMany(buildDefaultUsers());
+      await dataSource.repo<Author>().insertMany(defaultAuthors.toList());
+      await dataSource.repo<Post>().insertMany(buildDefaultPosts());
+      await dataSource.repo<Tag>().insertMany(defaultTags.toList());
+      await dataSource.repo<PostTag>().insertMany(defaultPostTags.toList());
+      await dataSource.repo<Image>().insertMany(defaultImages.toList());
+      await dataSource.repo<Photo>().insertMany(defaultPhotos.toList());
+      await dataSource.repo<Comment>().insertMany(defaultComments.toList());
+    });
+
+    tearDown(() async => manager.endTest('join_tests', dataSource));
+
+    tearDownAll(() async {
+      // Schema cleanup is handled by outer test file
+    });
 
     test('inner join hydrates related rows', () async {
-      final rows = await harness.context
+      final rows = await dataSource.context
           .query<Post>()
           .selectRaw('posts.id AS id')
           .selectRaw('posts.author_id AS author_id')
@@ -43,7 +70,7 @@ void runDriverJoinTests({
     });
 
     test('join builder supports additional constraints', () async {
-      final preview = harness.context.query<Post>().join('authors', (join) {
+      final preview = dataSource.context.query<Post>().join('authors', (join) {
         join.on('authors.id', '=', 'posts.author_id');
         join.where('authors.name', 'Alice');
       }).toSql();
@@ -57,7 +84,7 @@ void runDriverJoinTests({
     });
 
     test('joinRelation exposes relation aliases for selects', () async {
-      final rows = await harness.context
+      final rows = await dataSource.context
           .query<Author>()
           .selectRaw('authors.id AS id')
           .selectRaw('authors.name AS name')
@@ -73,13 +100,13 @@ void runDriverJoinTests({
     });
 
     test('joinSub merges aggregation results', () async {
-      final postCounts = harness.context
+      final postCounts = dataSource.context
           .query<Post>()
           .selectRaw('author_id')
           .selectRaw('COUNT(*) AS total_posts')
           .groupBy(['author_id']);
 
-      final rows = await harness.context
+      final rows = await dataSource.context
           .query<Author>()
           .selectRaw('authors.id AS id')
           .selectRaw('authors.name AS name')

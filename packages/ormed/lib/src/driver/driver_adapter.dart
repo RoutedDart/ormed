@@ -33,6 +33,25 @@ abstract class DriverAdapter implements QueryExecutor {
   /// Starts a new transaction boundary.
   Future<R> transaction<R>(Future<R> Function() action);
 
+  /// Begins a new database transaction.
+  ///
+  /// Must be paired with [commitTransaction] or [rollbackTransaction].
+  /// Supports nested transactions via savepoints if the driver supports them.
+  Future<void> beginTransaction();
+
+  /// Commits the active database transaction.
+  Future<void> commitTransaction();
+
+  /// Rolls back the active database transaction.
+  Future<void> rollbackTransaction();
+
+  /// Truncates a table, removing all rows and resetting auto-increment counters.
+  ///
+  /// This is more efficient than deleting all rows and properly resets
+  /// sequences/auto-increment values. Each driver implements this using
+  /// its native truncate mechanism.
+  Future<void> truncateTable(String tableName);
+
   /// Executes a raw SQL query and returns the resulting rows.
   Future<List<Map<String, Object?>>> queryRaw(
     String sql, [

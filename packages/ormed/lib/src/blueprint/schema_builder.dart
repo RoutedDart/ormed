@@ -5,9 +5,12 @@ import 'table_blueprint.dart';
 
 /// Fluent builder that collects schema commands for a migration direction.
 class SchemaBuilder {
-  SchemaBuilder({SchemaSnapshot? snapshot}) : _snapshot = snapshot;
+  SchemaBuilder({SchemaSnapshot? snapshot, String? defaultSchema}) 
+      : _snapshot = snapshot,
+        _defaultSchema = defaultSchema;
 
   final SchemaSnapshot? _snapshot;
+  final String? _defaultSchema;
   SchemaInspector? _inspector;
   final List<SchemaMutation> _mutations = [];
 
@@ -27,9 +30,11 @@ class SchemaBuilder {
   /// Builds a `CREATE TABLE` command.
   TableBlueprint create(
     String table,
-    void Function(TableBlueprint table) definition,
-  ) {
-    final blueprint = TableBlueprint.create(table);
+    void Function(TableBlueprint table) definition, {
+    String? schema,
+  }) {
+    final effectiveSchema = schema ?? _defaultSchema;
+    final blueprint = TableBlueprint.create(table, schema: effectiveSchema);
     definition(blueprint);
     _mutations.add(SchemaMutation.createTable(blueprint));
     return blueprint;
@@ -38,9 +43,11 @@ class SchemaBuilder {
   /// Builds an `ALTER TABLE` command.
   TableBlueprint table(
     String table,
-    void Function(TableBlueprint table) definition,
-  ) {
-    final blueprint = TableBlueprint.alter(table);
+    void Function(TableBlueprint table) definition, {
+    String? schema,
+  }) {
+    final effectiveSchema = schema ?? _defaultSchema;
+    final blueprint = TableBlueprint.alter(table, schema: effectiveSchema);
     definition(blueprint);
     _mutations.add(SchemaMutation.alterTable(blueprint));
     return blueprint;

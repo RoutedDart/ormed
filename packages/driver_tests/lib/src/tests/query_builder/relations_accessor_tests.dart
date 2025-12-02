@@ -4,26 +4,26 @@ import 'package:test/test.dart';
 import '../../../driver_tests.dart';
 
 void runRelationsAccessorTests(
-  DriverHarnessBuilder<DriverTestHarness> createHarness,
+  DataSource dataSource,
   DriverTestConfig config,
 ) {
   group('${config.driverName} relations getter (shorthand accessor)', () {
-    late DriverTestHarness harness;
+    
 
     setUp(() async {
-      harness = await createHarness();
+      
 
       // Bind connection resolver for Model methods to work
       Model.bindConnectionResolver(
-        resolveConnection: (name) => harness.context,
+        resolveConnection: (name) => dataSource.context,
       );
 
       // Seed test data
-      await harness.seedAuthors([
+      await dataSource.repo<Author>().insertMany([
         const Author(id: 1, name: 'Alice'),
         const Author(id: 2, name: 'Bob'),
       ]);
-      await harness.seedPosts([
+      await dataSource.repo<Post>().insertMany([
         Post(id: 1, authorId: 1, title: 'Post 1', publishedAt: DateTime(2024)),
         Post(
           id: 2,
@@ -38,11 +38,11 @@ void runRelationsAccessorTests(
           publishedAt: DateTime(2024, 3),
         ),
       ]);
-      await harness.seedTags([
+      await dataSource.repo<Tag>().insertMany([
         const Tag(id: 1, label: 'dart'),
         const Tag(id: 2, label: 'flutter'),
       ]);
-      await harness.seedPostTags([
+      await dataSource.repo<PostTag>().insertMany([
         const PostTag(postId: 1, tagId: 1),
         const PostTag(postId: 1, tagId: 2),
       ]);
@@ -50,14 +50,14 @@ void runRelationsAccessorTests(
 
     tearDown(() async {
       Model.unbindConnectionResolver();
-      await harness.dispose();
+      
     });
 
     group('basic functionality', () {
       test(
         'relations getter returns empty map when no relations loaded',
         () async {
-          final rows = await harness.context
+          final rows = await dataSource.context
               .query<Author>()
               .where('id', 1)
               .get();
@@ -69,7 +69,7 @@ void runRelationsAccessorTests(
       );
 
       test('relations getter equals loadedRelations', () async {
-        final rows = await harness.context
+        final rows = await dataSource.context
             .query<Author>()
             .withRelation('posts')
             .where('id', 1)
@@ -81,7 +81,7 @@ void runRelationsAccessorTests(
       });
 
       test('relations getter contains eager loaded hasMany relation', () async {
-        final rows = await harness.context
+        final rows = await dataSource.context
             .query<Author>()
             .withRelation('posts')
             .where('id', 1)
@@ -97,7 +97,7 @@ void runRelationsAccessorTests(
       test(
         'relations getter contains eager loaded belongsTo relation',
         () async {
-          final rows = await harness.context
+          final rows = await dataSource.context
               .query<Post>()
               .withRelation('author')
               .where('id', 1)
@@ -113,7 +113,7 @@ void runRelationsAccessorTests(
       test(
         'relations getter contains multiple eager loaded relations',
         () async {
-          final rows = await harness.context
+          final rows = await dataSource.context
               .query<Post>()
               .withRelation('author')
               .withRelation('tags')
@@ -130,7 +130,7 @@ void runRelationsAccessorTests(
 
     group('with lazy loading', () {
       test('relations getter reflects lazy loaded relations', () async {
-        final rows = await harness.context.query<Author>().where('id', 1).get();
+        final rows = await dataSource.context.query<Author>().where('id', 1).get();
         final author = rows.first;
 
         expect(author.relations, isEmpty);
@@ -142,7 +142,7 @@ void runRelationsAccessorTests(
       });
 
       test('relations getter updates after loadMissing', () async {
-        final rows = await harness.context.query<Post>().where('id', 1).get();
+        final rows = await dataSource.context.query<Post>().where('id', 1).get();
         final post = rows.first;
 
         expect(post.relations, isEmpty);
@@ -154,7 +154,7 @@ void runRelationsAccessorTests(
       });
 
       test('relations getter updates after loadMany', () async {
-        final rows = await harness.context.query<Post>().where('id', 1).get();
+        final rows = await dataSource.context.query<Post>().where('id', 1).get();
         final post = rows.first;
 
         await post.loadMany({'author': null, 'tags': (q) => q.where('id', 1)});
@@ -167,7 +167,7 @@ void runRelationsAccessorTests(
 
     group('with manual relation management', () {
       test('relations getter reflects setRelation', () async {
-        final rows = await harness.context.query<Post>().where('id', 1).get();
+        final rows = await dataSource.context.query<Post>().where('id', 1).get();
         final post = rows.first;
 
         expect(post.relations, isEmpty);
@@ -180,7 +180,7 @@ void runRelationsAccessorTests(
       });
 
       test('relations getter reflects setRelations bulk', () async {
-        final rows = await harness.context.query<Post>().where('id', 1).get();
+        final rows = await dataSource.context.query<Post>().where('id', 1).get();
         final post = rows.first;
 
         post.setRelations({
@@ -193,7 +193,7 @@ void runRelationsAccessorTests(
       });
 
       test('relations getter reflects unsetRelation', () async {
-        final rows = await harness.context
+        final rows = await dataSource.context
             .query<Post>()
             .withRelation('author')
             .withRelation('tags')
@@ -211,7 +211,7 @@ void runRelationsAccessorTests(
       });
 
       test('relations getter reflects clearRelations', () async {
-        final rows = await harness.context
+        final rows = await dataSource.context
             .query<Post>()
             .withRelation('author')
             .withRelation('tags')
@@ -229,7 +229,7 @@ void runRelationsAccessorTests(
 
     group('snapshot behavior', () {
       test('relations getter returns a snapshot copy', () async {
-        final rows = await harness.context
+        final rows = await dataSource.context
             .query<Author>()
             .withRelation('posts')
             .where('id', 1)
@@ -248,7 +248,7 @@ void runRelationsAccessorTests(
       });
 
       test('relations getter reflects state at call time', () async {
-        final rows = await harness.context.query<Author>().where('id', 1).get();
+        final rows = await dataSource.context.query<Author>().where('id', 1).get();
         final author = rows.first;
 
         final beforeLoad = author.relations;
@@ -264,12 +264,12 @@ void runRelationsAccessorTests(
 
     group('different models independently', () {
       test('each model instance has its own relations', () async {
-        final author1Rows = await harness.context
+        final author1Rows = await dataSource.context
             .query<Author>()
             .withRelation('posts')
             .where('id', 1)
             .get();
-        final author2Rows = await harness.context
+        final author2Rows = await dataSource.context
             .query<Author>()
             .where('id', 2)
             .get();
@@ -286,11 +286,11 @@ void runRelationsAccessorTests(
       });
 
       test('loading relation on one model does not affect others', () async {
-        final author1Rows = await harness.context
+        final author1Rows = await dataSource.context
             .query<Author>()
             .where('id', 1)
             .get();
-        final author2Rows = await harness.context
+        final author2Rows = await dataSource.context
             .query<Author>()
             .where('id', 2)
             .get();
@@ -307,7 +307,7 @@ void runRelationsAccessorTests(
 
     group('integration with loadedRelationNames', () {
       test('relations keys match loadedRelationNames', () async {
-        final rows = await harness.context
+        final rows = await dataSource.context
             .query<Post>()
             .withRelation('author')
             .withRelation('tags')
@@ -322,7 +322,7 @@ void runRelationsAccessorTests(
       });
 
       test('relations and loadedRelationNames stay in sync', () async {
-        final rows = await harness.context.query<Post>().where('id', 1).get();
+        final rows = await dataSource.context.query<Post>().where('id', 1).get();
         final post = rows.first;
 
         expect(post.relations.keys.toSet(), equals(post.loadedRelationNames));
@@ -340,7 +340,7 @@ void runRelationsAccessorTests(
 
     group('use cases', () {
       test('iterate over all loaded relations', () async {
-        final rows = await harness.context
+        final rows = await dataSource.context
             .query<Post>()
             .withRelation('author')
             .withRelation('tags')
@@ -359,7 +359,7 @@ void runRelationsAccessorTests(
       });
 
       test('check specific relation in relations map', () async {
-        final rows = await harness.context
+        final rows = await dataSource.context
             .query<Author>()
             .withRelation('posts')
             .where('id', 1)
@@ -377,7 +377,7 @@ void runRelationsAccessorTests(
       });
 
       test('use relations for serialization context', () async {
-        final rows = await harness.context
+        final rows = await dataSource.context
             .query<Post>()
             .withRelation('author')
             .withRelation('tags')

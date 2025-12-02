@@ -3,10 +3,10 @@ import 'package:test/test.dart';
 
 import '../../models.dart';
 import '../config.dart';
-import '../harness/driver_test_harness.dart';
+import '../support/driver_schema.dart';
 
 void runDriverTransactionTests({
-  required DriverHarnessBuilder<DriverTestHarness> createHarness,
+  required DataSource dataSource,
   required DriverTestConfig config,
 }) {
   if (!config.supportsCapability(DriverCapability.transactions)) {
@@ -14,18 +14,37 @@ void runDriverTransactionTests({
   }
 
   group('${config.driverName} transactions', () {
-    late DriverTestHarness harness;
+    late TestDatabaseManager manager;
 
-    setUp(() async {
-      harness = await createHarness();
+    setUpAll(() async {
+      await dataSource.init();
+      manager = TestDatabaseManager(
+        baseDataSource: dataSource,
+        migrationDescriptors: driverTestMigrationEntries
+            .map((e) => MigrationDescriptor.fromMigration(
+                  id: e.id,
+                  migration: e.migration,
+                ))
+            .toList(),
+        strategy: DatabaseIsolationStrategy.truncate,
+      );
+      await manager.initialize();
     });
 
-    tearDown(() async => harness.dispose());
+    setUp(() async {
+      await manager.beginTest('transaction_tests', dataSource);
+    });
+
+    tearDown(() async => manager.endTest('transaction_tests', dataSource));
+
+    tearDownAll(() async {
+      // Schema cleanup is handled by outer test file
+    });
 
     test('rolls back when transaction throws', () async {
-      final repo = harness.context.repository<User>();
+      final repo = dataSource.context.repository<User>();
       await expectLater(
-        () => harness.adapter.transaction(() async {
+        () => dataSource.connection.driver.transaction(() async {
           await repo.insert(
             const User(id: 1, email: 'dave@example.com', active: true),
           );
@@ -34,19 +53,19 @@ void runDriverTransactionTests({
         throwsStateError,
       );
 
-      final users = await harness.context.query<User>().get();
+      final users = await dataSource.context.query<User>().get();
       expect(users, isEmpty);
     });
 
     test('commits when transaction completes', () async {
-      final repo = harness.context.repository<User>();
-      await harness.adapter.transaction(() async {
+      final repo = dataSource.context.repository<User>();
+      await dataSource.connection.driver.transaction(() async {
         await repo.insert(
           const User(id: 2, email: 'eve@example.com', active: true),
         );
       });
 
-      final users = await harness.context.query<User>().get();
+      final users = await dataSource.context.query<User>().get();
       expect(users.single.email, 'eve@example.com');
     });
   });

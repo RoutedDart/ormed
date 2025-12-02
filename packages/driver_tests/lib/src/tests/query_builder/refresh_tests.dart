@@ -4,23 +4,23 @@ import 'package:test/test.dart';
 import '../../../driver_tests.dart';
 
 void runRefreshTests(
-  DriverHarnessBuilder<DriverTestHarness> createHarness,
+  DataSource dataSource,
   DriverTestConfig config,
 ) {
   group('${config.driverName} Model.refresh() with relations', () {
-    late DriverTestHarness harness;
+    
 
     setUp(() async {
-      harness = await createHarness();
+      
 
       // Bind connection resolver for Model methods to work
       Model.bindConnectionResolver(
-        resolveConnection: (name) => harness.context,
+        resolveConnection: (name) => dataSource.context,
       );
 
       // Seed test data
-      await harness.seedAuthors([const Author(id: 1, name: 'Alice')]);
-      await harness.seedPosts([
+      await dataSource.repo<Author>().insertMany([const Author(id: 1, name: 'Alice')]);
+      await dataSource.repo<Post>().insertMany([
         Post(id: 1, authorId: 1, title: 'Post 1', publishedAt: DateTime(2024)),
         Post(
           id: 2,
@@ -29,18 +29,18 @@ void runRefreshTests(
           publishedAt: DateTime(2024, 2),
         ),
       ]);
-      await harness.seedTags([const Tag(id: 1, label: 'dart')]);
-      await harness.seedPostTags([const PostTag(postId: 1, tagId: 1)]);
+      await dataSource.repo<Tag>().insertMany([const Tag(id: 1, label: 'dart')]);
+      await dataSource.repo<PostTag>().insertMany([const PostTag(postId: 1, tagId: 1)]);
     });
 
     tearDown(() async {
       Model.unbindConnectionResolver();
-      await harness.dispose();
+      
     });
 
     test('reloads model with specified relations', () async {
       // Load author without relations
-      final rows = await harness.context.query<Author>().where('id', 1).get();
+      final rows = await dataSource.context.query<Author>().where('id', 1).get();
       final author = rows.first;
 
       expect(author.relationLoaded('posts'), isFalse);
@@ -55,7 +55,7 @@ void runRefreshTests(
 
     test('refreshes attributes and relations together', () async {
       // Load author with relations
-      final rows = await harness.context
+      final rows = await dataSource.context
           .query<Author>()
           .withRelation('posts')
           .where('id', 1)
@@ -66,18 +66,18 @@ void runRefreshTests(
       expect(author.posts, hasLength(2));
 
       // Update author in database (simulate external change)
-      await harness.context.runMutation(
+      await dataSource.context.runMutation(
         MutationPlan.update(
           definition: AuthorOrmDefinition.definition,
           rows: [
             MutationRow(values: {'name': 'Updated Name'}, keys: {'id': 1}),
           ],
-          driverName: harness.adapter.metadata.name,
+          driverName: dataSource.connection.driver.metadata.name,
         ),
       );
 
       // Add another post
-      await harness.seedPosts([
+      await dataSource.repo<Post>().insertMany([
         Post(
           id: 3,
           authorId: 1,
@@ -97,10 +97,10 @@ void runRefreshTests(
 
     test('works with empty relations', () async {
       // Seed author without posts
-      await harness.seedAuthors([const Author(id: 2, name: 'Bob')]);
+      await dataSource.repo<Author>().insertMany([const Author(id: 2, name: 'Bob')]);
 
       // Load author
-      final rows = await harness.context.query<Author>().where('id', 2).get();
+      final rows = await dataSource.context.query<Author>().where('id', 2).get();
       final author = rows.first;
 
       // Refresh with relations
@@ -112,19 +112,19 @@ void runRefreshTests(
 
     test('refresh without relations still works', () async {
       // Ensure backward compatibility
-      final rows = await harness.context.query<Author>().where('id', 1).get();
+      final rows = await dataSource.context.query<Author>().where('id', 1).get();
       final author = rows.first;
 
       final originalName = author.name;
 
       // Update in database
-      await harness.context.runMutation(
+      await dataSource.context.runMutation(
         MutationPlan.update(
           definition: AuthorOrmDefinition.definition,
           rows: [
             MutationRow(values: {'name': 'New Name'}, keys: {'id': 1}),
           ],
-          driverName: harness.adapter.metadata.name,
+          driverName: dataSource.connection.driver.metadata.name,
         ),
       );
 

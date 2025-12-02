@@ -3,20 +3,29 @@ import 'package:driver_tests/driver_tests.dart';
 import 'package:ormed_mongo/ormed_mongo.dart';
 import 'package:test/test.dart';
 
-import 'support/mongo_harness.dart';
+import 'shared.dart';
 
 void main() {
-  late MongoTestHarness harness;
+  late DataSource dataSource;
+  late MongoDriverAdapter driverAdapter;
 
   setUpAll(() async {
-    harness = await MongoTestHarness.create();
-    await seedGraph(harness);
+    await waitForMongoReady();
+    await clearDatabase();
+    driverAdapter = createAdapter();
+    registerDriverTestFactories();
+    dataSource = DataSource(DataSourceOptions(
+      driver: driverAdapter,
+      entities: generatedOrmModelDefinitions,
+    ));
+    await dataSource.init();
+    await seedGraph(dataSource);
   });
 
-  tearDownAll(() async => await harness.dispose());
+  tearDownAll(() async => await dataSource.dispose());
 
   test('aggregates counts by author with a raw pipeline stage', () async {
-    final query = harness.context
+    final query = dataSource.context
         .query<Post>()
         .select(['authorId'])
         .countAggregate(alias: 'post_count')
@@ -28,12 +37,12 @@ void main() {
         })
         .orderBy('authorId');
     final plan = query.debugPlan();
-    final rows = await harness.context.runSelect(plan);
+    final rows = await dataSource.context.runSelect(plan);
     expect(rows, isNotEmpty);
   });
 
   test('preview exposes pipeline metadata for aggregates', () {
-    final preview = harness.context
+    final preview = dataSource.context
         .query<Post>()
         .countAggregate(alias: 'total_posts')
         .groupBy(['authorId'])
@@ -50,7 +59,7 @@ void main() {
   });
 
   test('aggregate pipeline respects HAVING predicates', () {
-    final query = harness.context
+    final query = dataSource.context
         .query<Post>()
         .countAggregate(alias: 'total_posts')
         .groupBy(['authorId'])

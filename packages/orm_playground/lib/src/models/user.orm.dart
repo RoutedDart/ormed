@@ -108,10 +108,55 @@ extension UserOrmDefinition on User {
   static ModelDefinition<User> get definition => _$UserModelDefinition;
 }
 
+class Users {
+  const Users._();
+
+  static Query<User> query([String? connection]) =>
+      Model.query<User>(connection: connection);
+
+  static Future<User?> find(Object id, {String? connection}) =>
+      Model.find<User>(id, connection: connection);
+
+  static Future<User> findOrFail(Object id, {String? connection}) =>
+      Model.findOrFail<User>(id, connection: connection);
+
+  static Future<List<User>> all({String? connection}) =>
+      Model.all<User>(connection: connection);
+
+  static Future<int> count({String? connection}) =>
+      Model.count<User>(connection: connection);
+
+  static Future<bool> exists({String? connection}) =>
+      Model.exists<User>(connection: connection);
+
+  static Query<User> where(
+    String column,
+    String operator,
+    dynamic value, {
+    String? connection,
+  }) => Model.where<User>(column, operator, value, connection: connection);
+
+  static Query<User> whereIn(
+    String column,
+    List<dynamic> values, {
+    String? connection,
+  }) => Model.whereIn<User>(column, values, connection: connection);
+
+  static Query<User> orderBy(
+    String column, {
+    String direction = "asc",
+    String? connection,
+  }) =>
+      Model.orderBy<User>(column, direction: direction, connection: connection);
+
+  static Query<User> limit(int count, {String? connection}) =>
+      Model.limit<User>(count, connection: connection);
+}
+
 class UserModelFactory {
   const UserModelFactory._();
 
-  static ModelDefinition<User> get definition => UserOrmDefinition.definition;
+  static ModelDefinition<User> get definition => _$UserModelDefinition;
 
   static ModelCodec<User> get codec => definition.codec;
 
@@ -128,8 +173,12 @@ class UserModelFactory {
   static void registerWith(ModelRegistry registry) =>
       registry.register(definition);
 
-  static ModelFactoryConnection<User> withConnection(QueryContext context) =>
-      ModelFactoryConnection<User>(definition: definition, context: context);
+  static ModelFactoryBuilder<User> factory({
+    GeneratorProvider? generatorProvider,
+  }) => ModelFactoryBuilder<User>(
+    definition: definition,
+    generatorProvider: generatorProvider,
+  );
 }
 
 class _$UserModelCodec extends ModelCodec<User> {
@@ -190,15 +239,15 @@ class _$UserModelCodec extends ModelCodec<User> {
   }
 }
 
-class _$UserModel extends User with ModelAttributes, ModelConnection {
+class _$UserModel extends User {
   _$UserModel({
     int? id,
     required String email,
     required String name,
-    bool active = true,
+    required bool active,
     DateTime? createdAt,
     DateTime? updatedAt,
-  }) : super(
+  }) : super.new(
          id: id,
          email: email,
          name: name,
@@ -219,25 +268,46 @@ class _$UserModel extends User with ModelAttributes, ModelConnection {
   @override
   int? get id => getAttribute<int?>('id') ?? super.id;
 
+  set id(int? value) => setAttribute('id', value);
+
   @override
   String get email => getAttribute<String>('email') ?? super.email;
+
+  set email(String value) => setAttribute('email', value);
 
   @override
   String get name => getAttribute<String>('name') ?? super.name;
 
+  set name(String value) => setAttribute('name', value);
+
   @override
   bool get active => getAttribute<bool>('active') ?? super.active;
+
+  set active(bool value) => setAttribute('active', value);
 
   @override
   DateTime? get createdAt =>
       getAttribute<DateTime?>('created_at') ?? super.createdAt;
 
+  set createdAt(DateTime? value) => setAttribute('created_at', value);
+
   @override
   DateTime? get updatedAt =>
       getAttribute<DateTime?>('updated_at') ?? super.updatedAt;
+
+  set updatedAt(DateTime? value) => setAttribute('updated_at', value);
 
   void _attachOrmRuntimeMetadata(Map<String, Object?> values) {
     replaceAttributes(values);
     attachModelDefinition(_$UserModelDefinition);
   }
+}
+
+extension UserAttributeSetters on User {
+  set id(int? value) => setAttribute('id', value);
+  set email(String value) => setAttribute('email', value);
+  set name(String value) => setAttribute('name', value);
+  set active(bool value) => setAttribute('active', value);
+  set createdAt(DateTime? value) => setAttribute('created_at', value);
+  set updatedAt(DateTime? value) => setAttribute('updated_at', value);
 }

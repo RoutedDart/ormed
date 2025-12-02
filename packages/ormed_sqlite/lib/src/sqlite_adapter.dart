@@ -59,6 +59,8 @@ class SqliteDriverAdapter
            DriverCapability.transactions,
            DriverCapability.adHocQueryUpdates,
            DriverCapability.rawSQL,
+           DriverCapability.increment,
+           DriverCapability.returning,
          },
        ),
        _schemaCompiler = SchemaPlanCompiler(SqliteSchemaDialect()),
@@ -89,6 +91,7 @@ class SqliteDriverAdapter
   ConnectionHandle<sqlite.Database>? _primaryHandle;
   final Random _random = Random();
   bool _closed = false;
+  int _transactionDepth = 0;
 
   @override
   PlanCompiler get planCompiler => _planCompiler;
@@ -264,15 +267,97 @@ class SqliteDriverAdapter
   @override
   Future<R> transaction<R>(Future<R> Function() action) async {
     final database = await _database();
-    database.execute('BEGIN');
-    try {
-      final result = await action();
-      database.execute('COMMIT');
-      return result;
-    } catch (_) {
-      database.execute('ROLLBACK');
-      rethrow;
+    if (_transactionDepth == 0) {
+      _transactionDepth++;
+      database.execute('BEGIN');
+      try {
+        final result = await action();
+        database.execute('COMMIT');
+        return result;
+      } catch (_) {
+        database.execute('ROLLBACK');
+        rethrow;
+      } finally {
+        _transactionDepth--;
+      }
+    } else {
+      // SQLite supports savepoints for nested transactions
+      final savepoint = 'sp_${_transactionDepth + 1}';
+      _transactionDepth++;
+      database.execute('SAVEPOINT $savepoint');
+      try {
+        final result = await action();
+        database.execute('RELEASE SAVEPOINT $savepoint');
+        return result;
+      } catch (_) {
+        database.execute('ROLLBACK TO SAVEPOINT $savepoint');
+        rethrow;
+      } finally {
+        _transactionDepth--;
+      }
     }
+  }
+
+  @override
+  Future<void> beginTransaction() async {
+    final database = await _database();
+    if (_transactionDepth == 0) {
+      database.execute('BEGIN');
+      _transactionDepth++;
+    } else {
+      // Use savepoint for nested transactions
+      final savepoint = 'sp_${_transactionDepth + 1}';
+      database.execute('SAVEPOINT $savepoint');
+      _transactionDepth++;
+    }
+  }
+
+  @override
+  Future<void> commitTransaction() async {
+    if (_transactionDepth == 0) {
+      throw StateError('No active transaction to commit');
+    }
+
+    final database = await _database();
+    if (_transactionDepth == 1) {
+      database.execute('COMMIT');
+      _transactionDepth--;
+    } else {
+      // Release savepoint for nested transactions
+      final savepoint = 'sp_$_transactionDepth';
+      database.execute('RELEASE SAVEPOINT $savepoint');
+      _transactionDepth--;
+    }
+  }
+
+  @override
+  Future<void> rollbackTransaction() async {
+    if (_transactionDepth == 0) {
+      throw StateError('No active transaction to rollback');
+    }
+
+    final database = await _database();
+    if (_transactionDepth == 1) {
+      database.execute('ROLLBACK');
+      _transactionDepth--;
+    } else {
+      // Rollback to savepoint for nested transactions
+      final savepoint = 'sp_$_transactionDepth';
+      database.execute('ROLLBACK TO SAVEPOINT $savepoint');
+      _transactionDepth--;
+    }
+  }
+
+  @override
+  Future<void> truncateTable(String tableName) async {
+    final database = await _database();
+    // SQLite doesn't have TRUNCATE, use DELETE and reset sequence
+    database.execute('DELETE FROM $tableName');
+    // Reset auto-increment counter
+    database.execute(
+      "DELETE FROM sqlite_sequence WHERE name = ?",
+      [tableName],
+    );
   }
 
   @override
@@ -504,9 +589,6 @@ class SqliteDriverAdapter
   }
 
   Future<MutationResult> _runInsert(MutationPlan plan) async {
-    if (plan.returning) {
-      throw UnsupportedError('SQLite driver does not yet support RETURNING.');
-    }
     final shape = _buildInsertShape(plan);
     if (shape.parameterSets.isEmpty) {
       return const MutationResult(affectedRows: 0);
@@ -515,11 +597,33 @@ class SqliteDriverAdapter
     final stmt = _prepareStatement(database, shape.sql);
     try {
       var affected = 0;
-      for (final parameters in shape.parameterSets) {
+      final insertedRows = <Map<String, dynamic>>[];
+      
+      for (int i = 0; i < shape.parameterSets.length; i++) {
+        final parameters = shape.parameterSets[i];
         stmt.execute(normalizeSqliteParameters(parameters));
         affected += database.updatedRows;
+        
+        // If returning is requested and insert succeeded, return a row with the PK value
+        // SQLite doesn't support RETURNING, so we simulate it by returning just the PK
+        if (plan.returning && database.updatedRows > 0) {
+          final pkField = plan.definition.primaryKeyField;
+          if (pkField != null) {
+            final lastId = database.lastInsertRowId;
+            // Return a minimal row with just the primary key
+            // The repository will merge this with the original model data
+            insertedRows.add({pkField.columnName: lastId});
+          } else {
+            // No PK field, return the original data from the plan
+            insertedRows.add(plan.rows[i].values);
+          }
+        }
       }
-      return MutationResult(affectedRows: affected);
+      
+      return MutationResult(
+        affectedRows: affected,
+        returnedRows: plan.returning ? insertedRows : null,
+      );
     } finally {
       stmt.dispose();
     }
@@ -645,7 +749,7 @@ class SqliteDriverAdapter
     final selectSql = 'SELECT 1 FROM $table WHERE $whereClause LIMIT 1';
     final selectStmt = _prepareStatement(database, selectSql);
 
-    var updateStmt;
+    dynamic updateStmt;
     if (updateColumns.isNotEmpty) {
       final updateClause = updateColumns
           .map((c) => '${_quote(c)} = ?')
@@ -755,15 +859,24 @@ class SqliteDriverAdapter
     if (plan.rows.isEmpty) {
       return _emptyShape;
     }
-    final columns = plan.definition.fields.map((f) => f.columnName).toList();
-    final columnSql = columns.map(_quote).join(', ');
-    final placeholders = List.filled(columns.length, '?').join(', ');
+    // Filter out auto-increment fields with value 0 or null - let SQLite generate them
+    final columnsToInsert = plan.definition.fields
+        .where((f) {
+          if (!f.autoIncrement) return true;
+          final firstRowValue = plan.rows.first.values[f.columnName];
+          return firstRowValue != null && firstRowValue != 0;
+        })
+        .map((f) => f.columnName)
+        .toList();
+    
+    final columnSql = columnsToInsert.map(_quote).join(', ');
+    final placeholders = List.filled(columnsToInsert.length, '?').join(', ');
     final verb = plan.ignoreConflicts ? 'INSERT OR IGNORE' : 'INSERT';
     final sql =
         '$verb INTO ${_tableIdentifier(plan.definition)} ($columnSql) VALUES ($placeholders)';
     final parameters = plan.rows
         .map(
-          (row) => columns
+          (row) => columnsToInsert
               .map(
                 (column) => _encodeValueForColumn(
                   definition: plan.definition,
@@ -785,9 +898,15 @@ class SqliteDriverAdapter
     final compilation = _grammar.compileSelect(queryPlan);
     final verb = plan.ignoreConflicts ? 'INSERT OR IGNORE' : 'INSERT';
     final columns = plan.insertColumns.map(_quote).join(', ');
+    
+    // Wrap the source query in a subquery that only selects the columns we're inserting
+    // This handles cases where the source query selects more columns than we need
+    final projectedColumns = plan.insertColumns.map((col) => _quote(col)).join(', ');
+    final wrappedSelect = 'SELECT $projectedColumns FROM (${compilation.sql}) AS __source__';
+    
     final sql = StringBuffer()
       ..write('$verb INTO ${_tableIdentifier(plan.definition)} ($columns) ')
-      ..write(compilation.sql);
+      ..write(wrappedSelect);
     return _SqliteMutationShape(
       sql: sql.toString(),
       parameterSets: [compilation.bindings.toList(growable: false)],
@@ -887,17 +1006,18 @@ class SqliteDriverAdapter
     final compilation = _grammar.compileSelect(projectionPlan);
     final table = _tableIdentifier(plan.definition);
     final pkIdentifier = _quote(primaryKey);
+    // For SQLite, we need to use ROWID for the outer reference since
+    // unqualified column names in EXISTS subqueries can be ambiguous
+    final outerRef = primaryKey == 'rowid' ? 'ROWID' : pkIdentifier;
     final sql = StringBuffer('DELETE FROM ')
       ..write(table)
-      ..write(' WHERE EXISTS (SELECT 1 FROM (')
+      ..write(' WHERE ')
+      ..write(outerRef)
+      ..write(' IN (SELECT ')
+      ..write(pkIdentifier)
+      ..write(' FROM (')
       ..write(compilation.sql)
-      ..write(') AS "__orm_delete_source" WHERE ')
-      ..write(table)
-      ..write('.')
-      ..write(pkIdentifier)
-      ..write(' = "__orm_delete_source".')
-      ..write(pkIdentifier)
-      ..write(')');
+      ..write(') AS "__orm_delete_source")');
     return _SqliteMutationShape(
       sql: sql.toString(),
       parameterSets: [compilation.bindings.toList(growable: false)],
@@ -908,7 +1028,8 @@ class SqliteDriverAdapter
     final queryPlan = plan.queryPlan;
     final hasColumns = plan.queryUpdateValues.isNotEmpty;
     final hasJson = plan.queryJsonUpdates.isNotEmpty;
-    if (queryPlan == null || (!hasColumns && !hasJson)) {
+    final hasIncrements = plan.queryIncrementValues.isNotEmpty;
+    if (queryPlan == null || (!hasColumns && !hasJson && !hasIncrements)) {
       return _emptyShape;
     }
     final key =
@@ -937,6 +1058,14 @@ class SqliteDriverAdapter
           ),
         ),
       );
+    }
+    if (hasIncrements) {
+      for (final entry in plan.queryIncrementValues.entries) {
+        final column = entry.key;
+        final amount = entry.value;
+        assignments.add('"$column" = "$column" + ?');
+        parameters.add(amount);
+      }
     }
     if (hasJson) {
       final grouped = <String, List<JsonUpdateClause>>{};

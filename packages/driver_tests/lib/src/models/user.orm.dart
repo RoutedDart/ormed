@@ -16,7 +16,7 @@ const FieldDefinition _$UserIdField = FieldDefinition(
   isNullable: false,
   isUnique: false,
   isIndexed: false,
-  autoIncrement: false,
+  autoIncrement: true,
 );
 
 const FieldDefinition _$UserEmailField = FieldDefinition(
@@ -41,20 +41,78 @@ const FieldDefinition _$UserActiveField = FieldDefinition(
   isUnique: false,
   isIndexed: false,
   autoIncrement: false,
+  defaultValueSql: '1',
+);
+
+const FieldDefinition _$UserNameField = FieldDefinition(
+  name: 'name',
+  columnName: 'name',
+  dartType: 'String',
+  resolvedType: 'String?',
+  isPrimaryKey: false,
+  isNullable: true,
+  isUnique: false,
+  isIndexed: false,
+  autoIncrement: false,
+);
+
+const FieldDefinition _$UserAgeField = FieldDefinition(
+  name: 'age',
+  columnName: 'age',
+  dartType: 'int',
+  resolvedType: 'int?',
+  isPrimaryKey: false,
+  isNullable: true,
+  isUnique: false,
+  isIndexed: false,
+  autoIncrement: false,
+);
+
+const FieldDefinition _$UserCreatedAtField = FieldDefinition(
+  name: 'createdAt',
+  columnName: 'createdAt',
+  dartType: 'DateTime',
+  resolvedType: 'DateTime?',
+  isPrimaryKey: false,
+  isNullable: true,
+  isUnique: false,
+  isIndexed: false,
+  autoIncrement: false,
+);
+
+const FieldDefinition _$UserProfileField = FieldDefinition(
+  name: 'profile',
+  columnName: 'profile',
+  dartType: 'Map<String, Object?>',
+  resolvedType: 'Map<String, Object?>?',
+  isPrimaryKey: false,
+  isNullable: true,
+  isUnique: false,
+  isIndexed: false,
+  autoIncrement: false,
+  codecType: 'JsonMapCodec',
 );
 
 final ModelDefinition<User> _$UserModelDefinition = ModelDefinition(
   modelName: 'User',
   tableName: 'users',
-  fields: const [_$UserIdField, _$UserEmailField, _$UserActiveField],
+  fields: const [
+    _$UserIdField,
+    _$UserEmailField,
+    _$UserActiveField,
+    _$UserNameField,
+    _$UserAgeField,
+    _$UserCreatedAtField,
+    _$UserProfileField,
+  ],
   relations: const [],
   softDeleteColumn: 'deleted_at',
   metadata: ModelAttributesMetadata(
-    hidden: const <String>[],
+    hidden: const <String>['profile'],
     visible: const <String>[],
-    fillable: const <String>[],
-    guarded: const <String>[],
-    casts: const <String, String>{},
+    fillable: const <String>['email'],
+    guarded: const <String>['id'],
+    casts: const <String, String>{'createdAt': 'datetime'},
     softDeletes: false,
     softDeleteColumn: 'deleted_at',
   ),
@@ -62,7 +120,7 @@ final ModelDefinition<User> _$UserModelDefinition = ModelDefinition(
 );
 
 // ignore: unused_element
-final _UserModelDefinitionRegistration = ModelFactoryRegistry.register<User>(
+final userModelDefinitionRegistration = ModelFactoryRegistry.register<User>(
   _$UserModelDefinition,
 );
 
@@ -93,18 +151,232 @@ class UserModelFactory {
   static ModelFactoryConnection<User> withConnection(QueryContext context) =>
       ModelFactoryConnection<User>(definition: definition, context: context);
 
+  static Query<User> query([String? connection]) {
+    final connName = connection ?? definition.metadata.connection;
+    final conn = ConnectionManager.instance.connection(
+      connName ?? ConnectionManager.instance.defaultConnectionName ?? "default",
+    );
+    return conn.query<User>();
+  }
+
   static ModelFactoryBuilder<User> factory({
     GeneratorProvider? generatorProvider,
   }) => ModelFactoryBuilder<User>(
     definition: definition,
     generatorProvider: generatorProvider,
   );
+
+  static Future<List<User>> all([String? connection]) =>
+      query(connection).get();
+
+  static Future<User> create(
+    Map<String, dynamic> attributes, [
+    String? connection,
+  ]) async {
+    final model = const _$UserModelCodec().decode(
+      attributes,
+      ValueCodecRegistry.standard(),
+    );
+    final connName = connection ?? definition.metadata.connection;
+    final conn = ConnectionManager.instance.connection(
+      connName ?? ConnectionManager.instance.defaultConnectionName ?? "default",
+    );
+    final repo = conn.context.repository<User>();
+    final result = await repo.insertMany([model], returning: true);
+    return result.first;
+  }
+
+  static Future<List<User>> createMany(
+    List<Map<String, dynamic>> records, [
+    String? connection,
+  ]) async {
+    final models = records
+        .map(
+          (r) =>
+              const _$UserModelCodec().decode(r, ValueCodecRegistry.standard()),
+        )
+        .toList();
+    final connName = connection ?? definition.metadata.connection;
+    final conn = ConnectionManager.instance.connection(
+      connName ?? ConnectionManager.instance.defaultConnectionName ?? "default",
+    );
+    final repo = conn.context.repository<User>();
+    return await repo.insertMany(models, returning: true);
+  }
+
+  static Future<void> insert(
+    List<Map<String, dynamic>> records, [
+    String? connection,
+  ]) async {
+    final models = records
+        .map(
+          (r) =>
+              const _$UserModelCodec().decode(r, ValueCodecRegistry.standard()),
+        )
+        .toList();
+    final connName = connection ?? definition.metadata.connection;
+    final conn = ConnectionManager.instance.connection(
+      connName ?? ConnectionManager.instance.defaultConnectionName ?? "default",
+    );
+    final repo = conn.context.repository<User>();
+    await repo.insertMany(models, returning: false);
+  }
+
+  static Future<User?> find(Object id, [String? connection]) =>
+      query(connection).find(id);
+
+  static Future<User> findOrFail(Object id, [String? connection]) async {
+    final result = await find(id, connection);
+    if (result == null) throw StateError("Model not found with id: $id");
+    return result;
+  }
+
+  static Future<List<User>> findMany(List<Object> ids, [String? connection]) =>
+      query(connection).findMany(ids);
+
+  static Future<User?> first([String? connection]) => query(connection).first();
+
+  static Future<User> firstOrFail([String? connection]) async {
+    final result = await first(connection);
+    if (result == null) throw StateError("No model found");
+    return result;
+  }
+
+  static Future<int> count([String? connection]) => query(connection).count();
+
+  static Future<bool> exists([String? connection]) async =>
+      await count(connection) > 0;
+
+  static Future<int> destroy(List<Object> ids, [String? connection]) async {
+    final models = await findMany(ids, connection);
+    for (final model in models) {
+      await model.delete();
+    }
+    return models.length;
+  }
+
+  static Query<User> where(
+    String column,
+    dynamic value, [
+    String? connection,
+  ]) => query(connection).where(column, value);
+
+  static Query<User> whereIn(
+    String column,
+    List<dynamic> values, [
+    String? connection,
+  ]) => query(connection).whereIn(column, values);
+
+  static Query<User> orderBy(
+    String column, {
+    String direction = "asc",
+    String? connection,
+  }) => query(
+    connection,
+  ).orderBy(column, descending: direction.toLowerCase() == "desc");
+
+  static Query<User> limit(int count, [String? connection]) =>
+      query(connection).limit(count);
 }
 
-extension UserModelFactoryExtension on User {
+extension UserModelHelpers on User {
+  // Factory
   static ModelFactoryBuilder<User> factory({
     GeneratorProvider? generatorProvider,
   }) => UserModelFactory.factory(generatorProvider: generatorProvider);
+
+  // Query builder
+  static Query<User> query([String? connection]) =>
+      UserModelFactory.query(connection);
+
+  // CRUD operations
+  static Future<List<User>> all([String? connection]) =>
+      UserModelFactory.all(connection);
+
+  static Future<User?> find(Object id, [String? connection]) =>
+      UserModelFactory.find(id, connection);
+
+  static Future<User> findOrFail(Object id, [String? connection]) =>
+      UserModelFactory.findOrFail(id, connection);
+
+  static Future<List<User>> findMany(List<Object> ids, [String? connection]) =>
+      UserModelFactory.findMany(ids, connection);
+
+  static Future<User?> first([String? connection]) =>
+      UserModelFactory.first(connection);
+
+  static Future<User> firstOrFail([String? connection]) =>
+      UserModelFactory.firstOrFail(connection);
+
+  static Future<User> create(
+    Map<String, dynamic> attributes, [
+    String? connection,
+  ]) => UserModelFactory.create(attributes, connection);
+
+  static Future<List<User>> createMany(
+    List<Map<String, dynamic>> records, [
+    String? connection,
+  ]) => UserModelFactory.createMany(records, connection);
+
+  static Future<void> insert(
+    List<Map<String, dynamic>> records, [
+    String? connection,
+  ]) => UserModelFactory.insert(records, connection);
+
+  static Future<int> destroy(List<Object> ids, [String? connection]) =>
+      UserModelFactory.destroy(ids, connection);
+
+  static Future<int> count([String? connection]) =>
+      UserModelFactory.count(connection);
+
+  static Future<bool> exists([String? connection]) =>
+      UserModelFactory.exists(connection);
+
+  static Query<User> where(
+    String column,
+    dynamic value, [
+    String? connection,
+  ]) => UserModelFactory.where(column, value, connection);
+
+  static Query<User> whereIn(
+    String column,
+    List<dynamic> values, [
+    String? connection,
+  ]) => UserModelFactory.whereIn(column, values, connection);
+
+  static Query<User> orderBy(
+    String column, {
+    String direction = "asc",
+    String? connection,
+  }) => UserModelFactory.orderBy(
+    column,
+    direction: direction,
+    connection: connection,
+  );
+
+  static Query<User> limit(int count, [String? connection]) =>
+      UserModelFactory.limit(count, connection);
+
+  // Instance method
+  Future<void> delete([String? connection]) async {
+    final connName =
+        connection ?? UserModelFactory.definition.metadata.connection;
+    final conn = ConnectionManager.instance.connection(
+      connName ?? ConnectionManager.instance.defaultConnectionName ?? "default",
+    );
+    final repo = conn.context.repository<User>();
+    final primaryKeys = UserModelFactory.definition.fields
+        .where((f) => f.isPrimaryKey)
+        .toList();
+    if (primaryKeys.isEmpty) {
+      throw StateError("Cannot delete model without primary key");
+    }
+    final keyMap = <String, Object?>{
+      for (final key in primaryKeys)
+        key.columnName: UserModelFactory.toMap(this)[key.name],
+    };
+    await repo.deleteByKeys([keyMap]);
+  }
 }
 
 class _$UserModelCodec extends ModelCodec<User> {
@@ -116,38 +388,88 @@ class _$UserModelCodec extends ModelCodec<User> {
       'id': registry.encodeField(_$UserIdField, model.id),
       'email': registry.encodeField(_$UserEmailField, model.email),
       'active': registry.encodeField(_$UserActiveField, model.active),
+      'name': registry.encodeField(_$UserNameField, model.name),
+      'age': registry.encodeField(_$UserAgeField, model.age),
+      'createdAt': registry.encodeField(_$UserCreatedAtField, model.createdAt),
+      'profile': registry.encodeField(_$UserProfileField, model.profile),
     };
   }
 
   @override
   User decode(Map<String, Object?> data, ValueCodecRegistry registry) {
     final int userIdValue =
-        registry.decodeField<int>(_$UserIdField, data['id']) ??
-        (throw StateError('Field id on User cannot be null.'));
+        registry.decodeField<int>(_$UserIdField, data['id']) ?? 0;
     final String userEmailValue =
         registry.decodeField<String>(_$UserEmailField, data['email']) ??
         (throw StateError('Field email on User cannot be null.'));
     final bool userActiveValue =
-        registry.decodeField<bool>(_$UserActiveField, data['active']) ??
-        (throw StateError('Field active on User cannot be null.'));
+        registry.decodeField<bool>(_$UserActiveField, data['active']) ?? false;
+    final String? userNameValue = registry.decodeField<String?>(
+      _$UserNameField,
+      data['name'],
+    );
+    final int? userAgeValue = registry.decodeField<int?>(
+      _$UserAgeField,
+      data['age'],
+    );
+    final DateTime? userCreatedAtValue = registry.decodeField<DateTime?>(
+      _$UserCreatedAtField,
+      data['createdAt'],
+    );
+    final Map<String, Object?>? userProfileValue = registry
+        .decodeField<Map<String, Object?>?>(
+          _$UserProfileField,
+          data['profile'],
+        );
     final model = _$UserModel(
       id: userIdValue,
       email: userEmailValue,
       active: userActiveValue,
+      name: userNameValue,
+      age: userAgeValue,
+      profile: userProfileValue,
+      createdAt: userCreatedAtValue,
     );
     model._attachOrmRuntimeMetadata({
       'id': userIdValue,
       'email': userEmailValue,
       'active': userActiveValue,
+      'name': userNameValue,
+      'age': userAgeValue,
+      'createdAt': userCreatedAtValue,
+      'profile': userProfileValue,
     });
     return model;
   }
 }
 
 class _$UserModel extends User {
-  _$UserModel({required int id, required String email, required bool active})
-    : super.new(id: id, email: email, active: active) {
-    _attachOrmRuntimeMetadata({'id': id, 'email': email, 'active': active});
+  _$UserModel({
+    required int id,
+    required String email,
+    bool active = false,
+    String? name,
+    int? age,
+    Map<String, Object?>? profile,
+    DateTime? createdAt,
+  }) : super.new(
+         id: id,
+         email: email,
+         active: active,
+         name: name,
+         age: age,
+         profile: profile,
+         createdAt: createdAt,
+       ) {
+    _attachOrmRuntimeMetadata({
+      'id': id,
+      'email': email,
+      'active': active,
+      'name': name,
+      'age': age,
+      'createdAt': createdAt,
+      'profile': profile,
+    });
   }
 
   @override
@@ -165,6 +487,28 @@ class _$UserModel extends User {
 
   set active(bool value) => setAttribute('active', value);
 
+  @override
+  String? get name => getAttribute<String?>('name') ?? super.name;
+
+  set name(String? value) => setAttribute('name', value);
+
+  @override
+  int? get age => getAttribute<int?>('age') ?? super.age;
+
+  set age(int? value) => setAttribute('age', value);
+
+  @override
+  DateTime? get createdAt =>
+      getAttribute<DateTime?>('createdAt') ?? super.createdAt;
+
+  set createdAt(DateTime? value) => setAttribute('createdAt', value);
+
+  @override
+  Map<String, Object?>? get profile =>
+      getAttribute<Map<String, Object?>?>('profile') ?? super.profile;
+
+  set profile(Map<String, Object?>? value) => setAttribute('profile', value);
+
   void _attachOrmRuntimeMetadata(Map<String, Object?> values) {
     replaceAttributes(values);
     attachModelDefinition(_$UserModelDefinition);
@@ -175,4 +519,8 @@ extension UserAttributeSetters on User {
   set id(int value) => setAttribute('id', value);
   set email(String value) => setAttribute('email', value);
   set active(bool value) => setAttribute('active', value);
+  set name(String? value) => setAttribute('name', value);
+  set age(int? value) => setAttribute('age', value);
+  set createdAt(DateTime? value) => setAttribute('createdAt', value);
+  set profile(Map<String, Object?>? value) => setAttribute('profile', value);
 }

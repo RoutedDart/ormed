@@ -1,424 +1,461 @@
 # Testing with Ormed
 
-This guide covers best practices for testing applications that use Ormed.
+Ormed provides comprehensive testing facilities to make it easy to write isolated, reliable database tests. This guide covers best practices for testing applications that use Ormed.
 
-## Test Database Setup
+## Overview
 
-### Using In-Memory SQLite
+Testing database-driven applications requires careful handling of test isolation, data setup, and cleanup. Ormed provides tools to:
 
-The fastest option for tests:
+- Create isolated test databases
+- Run migrations before tests
+- Seed test data
+- Clean up after tests
+- Support parallel test execution
+
+## Basic Test Setup
+
+The simplest way to test with Ormed is to create a fresh DataSource for each test suite:
 
 ```dart
 import 'package:ormed/ormed.dart';
-import 'package:ormed_sqlite/ormed_sqlite.dart';
 import 'package:test/test.dart';
 
-DataSource? testDb;
-
-Future<DataSource> setupTestDatabase() async {
-  final ds = DataSource(DataSourceOptions(
-    name: 'test',
-    driver: SqliteDriverAdapter.memory(), // In-memory database
-    entities: [
-      UserOrmDefinition.definition,
-      PostOrmDefinition.definition,
-    ],
-  ));
-
-  await ds.init();
-  // Note: Migration support coming soon
-  
-  return ds;
-}
-
 void main() {
-  setUp(() async {
-    testDb = await setupTestDatabase();
-    DataSource.setDefault(testDb!);
-  });
-
-  tearDown(() async {
-    await testDb?.close();
-    testDb = null;
-  });
-
-  test('can create and retrieve users', () async {
-    final user = await User.create({
-      'name': 'Test User',
-      'email': 'test@example.com',
-    });
-
-    final retrieved = await User.find(user.id!);
-    expect(retrieved?.name, equals('Test User'));
-  });
-}
-```
-
-### Using Test Databases
-
-For integration tests, use separate test databases:
-
-```dart
-Future<DataSource> setupTestDatabase() async {
-  final ds = DataSource(DataSourceOptions(
-    name: 'test',
-    driver: PostgresDriverAdapter(
-      host: 'localhost',
-      port: 5432,
-      database: 'app_test', // Separate test database
-      username: 'test_user',
-      password: 'test_pass',
-    ),
-    entities: [...],
-  ));
-
-  await ds.init();
-  
-  // Note: Migration support coming soon
-  // For now, use driver-specific schema setup
-  
-  return ds;
-}
-```
-
-## Database Transactions for Test Isolation
-
-Roll back after each test to keep database clean:
-
-```dart
-void main() {
-  late DataSource db;
-  Transaction? tx;
+  late DataSource dataSource;
 
   setUp(() async {
-    db = await setupTestDatabase();
-    DataSource.setDefault(db);
-    
-    // Start transaction
-    tx = await db.beginTransaction();
-  });
-
-  tearDown(() async {
-    // Roll back transaction - undoes all changes
-    await tx?.rollback();
-    await db.close();
-  });
-
-  test('user creation', () async {
-    await User.create({'name': 'Alice', 'email': 'alice@example.com'});
-    final count = await User.query().count();
-    expect(count, equals(1));
-    // Automatically rolled back after test
-  });
-
-  test('database is clean', () async {
-    // Previous test's user doesn't exist
-    final count = await User.query().count();
-    expect(count, equals(0));
-  });
-}
-```
-
-## Factories and Seeders
-
-Create test data easily with factories:
-
-```dart
-class UserFactory {
-  static int _counter = 0;
-
-  static Future<User> create({
-    String? name,
-    String? email,
-    String? role,
-  }) async {
-    _counter++;
-    
-    return await User.create({
-      'name': name ?? 'User $_counter',
-      'email': email ?? 'user$_counter@example.com',
-      'role': role ?? 'user',
-      'created_at': DateTime.now(),
-    });
-  }
-
-  static Future<List<User>> createMany(int count, {String? role}) async {
-    return await Future.wait(
-      List.generate(count, (_) => create(role: role))
+    // Create an in-memory database for testing
+    dataSource = DataSource(
+      DataSourceOptions(
+        name: 'test_db',
+        driver: InMemoryQueryExecutor(),
+        entities: [UserOrmDefinition.definition],
+      ),
     );
+    await dataSource.init();
+  });
+
+  tearDown(() async {
+    // Clean up is automatic with in-memory databases
+  });
+
+  test('can create and query users', () async {
+    final user = User(name: 'Test', email: 'test@example.com');
+    await user.save();
+
+    final found = await Model.query<User>().where('email', 'test@example.com').first();
+    expect(found?.name, equals('Test'));
+  });
+}
+```
+
+## Using the InMemoryQueryExecutor
+
+For fast, isolated tests, use the `InMemoryQueryExecutor`. It provides a lightweight in-memory database that doesn't require external dependencies:
+
+```dart
+final dataSource = DataSource(
+  DataSourceOptions(
+    name: 'test',
+    driver: InMemoryQueryExecutor(),
+    entities: [UserOrmDefinition.definition, PostOrmDefinition.definition],
+  ),
+);
+await dataSource.init();
+```
+
+The in-memory executor automatically:
+- Generates auto-increment IDs
+- Maintains referential integrity
+- Resets between test runs
+- Supports basic query operations
+
+## Test Data with Seeders
+
+Seeders help you create consistent test data. Define a seeder class and use it in your tests:
+
+```dart
+class UserSeeder extends Seeder {
+  @override
+  Future<void> run(DataSource dataSource) async {
+    // Set the DataSource as default so Model.save() works
+    DataSource.setDefault(dataSource);
+    
+    final users = [
+      User(name: 'Admin', email: 'admin@example.com'),
+      User(name: 'User', email: 'user@example.com'),
+    ];
+
+    for (final user in users) {
+      await user.save();
+    }
   }
 }
 
-// Usage in tests
-test('can list users', () async {
-  await UserFactory.createMany(5);
+// In your test
+setUp(() async {
+  dataSource = DataSource(DataSourceOptions(...));
+  await dataSource.init();
   
-  final users = await User.all();
-  expect(users.length, equals(5));
+  final seeder = UserSeeder();
+  await seeder.run(dataSource);
+});
+
+test('seeded data is available', () async {
+  final users = await Model.query<User>().all();
+  expect(users.length, equals(2));
 });
 ```
 
-## Testing Relationships
+## Testing with Real Databases
+
+For integration tests, you may want to use real database drivers:
 
 ```dart
-test('user has many posts', () async {
-  final user = await UserFactory.create();
+import 'package:ormed_sqlite/ormed_sqlite.dart';
+
+setUp(() async {
+  // Use a test-specific database file
+  final testDbPath = 'test_${DateTime.now().millisecondsSinceEpoch}.db';
   
-  await Post.create({'user_id': user.id, 'title': 'Post 1'});
-  await Post.create({'user_id': user.id, 'title': 'Post 2'});
-  
-  final userWithPosts = await User.query()
-      .with_('posts')
-      .find(user.id!);
-  
-  expect(userWithPosts?.posts.length, equals(2));
-});
-
-test('post belongs to user', () async {
-  final user = await UserFactory.create(name: 'Author');
-  final post = await Post.create({
-    'user_id': user.id,
-    'title': 'Test Post',
-  });
-  
-  final postWithUser = await Post.query()
-      .with_('user')
-      .find(post.id!);
-  
-  expect(postWithUser?.user?.name, equals('Author'));
-});
-```
-
-## Testing Queries
-
-```dart
-group('User queries', () {
-  setUp(() async {
-    await UserFactory.create(name: 'Alice', role: 'admin');
-    await UserFactory.create(name: 'Bob', role: 'user');
-    await UserFactory.create(name: 'Charlie', role: 'user');
-  });
-
-  test('filters by role', () async {
-    final admins = await User.query()
-        .where('role', '=', 'admin')
-        .get();
-    
-    expect(admins.length, equals(1));
-    expect(admins.first.name, equals('Alice'));
-  });
-
-  test('orders by name', () async {
-    final users = await User.query()
-        .orderBy('name')
-        .get();
-    
-    expect(users.map((u) => u.name).toList(), 
-           equals(['Alice', 'Bob', 'Charlie']));
-  });
-
-  test('paginates results', () async {
-    final page1 = await User.query()
-        .limit(2)
-        .get();
-    
-    expect(page1.length, equals(2));
-  });
-});
-```
-
-## Testing Hooks and Events
-
-```dart
-test('user password is hashed on save', () async {
-  final user = User(
-    name: 'Test',
-    email: 'test@example.com',
-    password: 'plain_password',
+  dataSource = DataSource(
+    DataSourceOptions(
+      name: 'integration_test',
+      driver: SqliteDriverAdapter.file(testDbPath),
+      entities: [/* your entities */],
+    ),
   );
+  await dataSource.init();
+});
+
+tearDown() async {
+  // Clean up the test database file
+  final file = File(testDbPath);
+  if (await file.exists()) {
+    await file.delete();
+  }
+});
+```
+
+## Multiple DataSources
+
+You can test applications that use multiple databases by creating separate DataSources:
+
+```dart
+late DataSource mainDb;
+late DataSource analyticsDb;
+
+setUp(() async {
+  mainDb = DataSource(
+    DataSourceOptions(
+      name: 'main',
+      driver: InMemoryQueryExecutor(),
+      entities: [UserOrmDefinition.definition],
+    ),
+  );
+  await mainDb.init();
+
+  analyticsDb = DataSource(
+    DataSourceOptions(
+      name: 'analytics',
+      driver: InMemoryQueryExecutor(),
+      entities: [EventOrmDefinition.definition],
+    ),
+  );
+  await analyticsDb.init();
+});
+
+test('can use multiple databases', () async {
+  // Use named connections
+  final user = User(name: 'Test', email: 'test@example.com');
+  await user.save(); // Uses default connection
+
+  final event = Event(name: 'login');
+  await event.on('analytics').save(); // Uses analytics connection
+});
+```
+
+## Static Helpers in Tests
+
+When using Model static helpers like `User.query()`, you need to set a default DataSource:
+
+```dart
+setUp(() async {
+  dataSource = DataSource(DataSourceOptions(...));
+  await dataSource.init();
   
+  // First DataSource initialized automatically becomes default
+  // Or explicitly set it:
+  DataSource.setDefault(dataSource);
+  
+  // Now static helpers work
+  await User.query().delete(); // Clear any existing data
+});
+
+test('static helpers work', () async {
+  final user = User(name: 'Test', email: 'test@example.com');
   await user.save();
   
-  // Password should be hashed
-  expect(user.password, isNot(equals('plain_password')));
-  expect(user.password!.length, greaterThan(20));
-});
-
-test('sends email on user creation', () async {
-  final emailsSent = <String>[];
+  // Use static helpers
+  final found = await User.find(user.id);
+  expect(found, isNotNull);
   
-  // Mock email service
-  User.creating((user) {
-    emailsSent.add(user.email);
-  });
-  
-  await UserFactory.create(email: 'new@example.com');
-  
-  expect(emailsSent, contains('new@example.com'));
+  final all = await User.all();
+  expect(all.length, equals(1));
 });
 ```
 
-## Testing Migrations
+## Testing Relations
+
+When testing models with relations, ensure all related entities are registered:
 
 ```dart
-// Note: Migration testing support coming soon
-// For now, test schema setup directly with driver
-```
+setUp(() async {
+  dataSource = DataSource(
+    DataSourceOptions(
+      name: 'test',
+      driver: InMemoryQueryExecutor(),
+      entities: [
+        UserOrmDefinition.definition,
+        PostOrmDefinition.definition,
+        CommentOrmDefinition.definition,
+      ],
+    ),
+  );
+  await dataSource.init();
+  DataSource.setDefault(dataSource);
+});
 
-## Mocking and Stubbing
-
-### Mock Driver for Unit Tests
-
-```dart
-class MockDriver implements Driver {
-  final _data = <String, List<Map<String, dynamic>>>{};
-
-  @override
-  Future<List<Map<String, dynamic>>> execute(Query query) async {
-    final table = query.table;
-    return _data[table] ?? [];
-  }
-
-  void addRows(String table, List<Map<String, dynamic>> rows) {
-    _data[table] = [..._data[table] ?? [], ...rows];
-  }
-}
-
-test('user query with mock driver', () async {
-  final mockDriver = MockDriver();
-  mockDriver.addRows('users', [
-    {'id': 1, 'name': 'Alice', 'email': 'alice@example.com'},
-    {'id': 2, 'name': 'Bob', 'email': 'bob@example.com'},
-  ]);
-
-  // Use mock in test...
+test('can load relations', () async {
+  final user = User(name: 'Author', email: 'author@example.com');
+  await user.save();
+  
+  final post = Post(title: 'Test Post', userId: user.id);
+  await post.save();
+  
+  // Test eager loading
+  final users = await User.query().with_('posts').get();
+  expect(users.first.posts?.length, equals(1));
+  
+  // Test lazy loading
+  final foundUser = await User.find(user.id);
+  final posts = await foundUser?.posts;
+  expect(posts?.length, equals(1));
 });
 ```
 
-## Testing Static Helpers
+## Parallel Testing
+
+Dart's test runner supports parallel test execution. To avoid conflicts:
+
+1. **Use in-memory databases** - Each test gets its own isolated database
+2. **Use unique database names** - Include timestamps or random IDs
+3. **Clean up properly** - Always clean up resources in `tearDown`
 
 ```dart
-group('User static helpers', () {
+// Each test file creates isolated databases
+void main() {
+  late DataSource dataSource;
+  
   setUp(() async {
-    testDb = await setupTestDatabase();
-    DataSource.setDefault(testDb!);
+    // Unique name per test suite
+    dataSource = DataSource(
+      DataSourceOptions(
+        name: 'test_${DateTime.now().microsecondsSinceEpoch}',
+        driver: InMemoryQueryExecutor(),
+        entities: [...],
+      ),
+    );
+    await dataSource.init();
   });
-
-  test('User.all() returns all users', () async {
-    await UserFactory.createMany(3);
-    
-    final users = await User.all();
-    expect(users.length, equals(3));
-  });
-
-  test('User.find() retrieves by ID', () async {
-    final user = await UserFactory.create(name: 'Alice');
-    
-    final found = await User.find(user.id!);
-    expect(found?.name, equals('Alice'));
-  });
-
-  test('User.query() returns query builder', () async {
-    await UserFactory.create(role: 'admin');
-    await UserFactory.create(role: 'user');
-    
-    final admins = await User.query()
-        .where('role', '=', 'admin')
-        .get();
-    
-    expect(admins.length, equals(1));
-  });
-});
-```
-
-## Performance Testing
-
-```dart
-test('bulk insert performance', () async {
-  final stopwatch = Stopwatch()..start();
   
-  // Create 1000 users
-  await UserFactory.createMany(1000);
-  
-  stopwatch.stop();
-  
-  print('Bulk insert took: ${stopwatch.elapsedMilliseconds}ms');
-  expect(stopwatch.elapsedMilliseconds, lessThan(5000)); // Should be under 5s
-});
-
-test('query performance with indexes', () async {
-  await UserFactory.createMany(10000);
-  
-  final stopwatch = Stopwatch()..start();
-  
-  final users = await User.query()
-      .where('email', '=', 'user5000@example.com')
-      .get();
-  
-  stopwatch.stop();
-  
-  print('Indexed query took: ${stopwatch.elapsedMilliseconds}ms');
-  expect(stopwatch.elapsedMilliseconds, lessThan(100)); // Should be fast
-});
+  // Tests run in parallel without conflicts
+}
 ```
 
 ## Best Practices
 
-1. **Use in-memory databases for unit tests** - Fast and isolated
-2. **Use transactions for test isolation** - Clean database between tests
-3. **Create factories for test data** - Reusable and maintainable
-4. **Test relationships explicitly** - Don't assume they work
-5. **Test edge cases** - Empty results, null values, large datasets
-6. **Mock external services** - Don't hit real APIs in tests
-7. **Test migrations** - Both up and down
-8. **Measure performance** - Catch regressions early
-9. **Clean up after tests** - Close connections, reset state
-10. **Use descriptive test names** - Make failures easy to understand
+### 1. Use In-Memory for Unit Tests
 
-## Testing with Different Drivers
+For fast unit tests, prefer `InMemoryQueryExecutor`:
 
 ```dart
-// Run same tests against multiple drivers
-void runDriverTests(String driverName, Future<DataSource> Function() setup) {
-  group('$driverName driver', () {
-    late DataSource db;
+// Fast and isolated
+driver: InMemoryQueryExecutor()
+```
 
-    setUp(() async {
-      db = await setup();
-      DataSource.setDefault(db);
-    });
+### 2. Use Real Databases for Integration Tests
 
-    tearDown(() async {
-      await db.close();
-    });
+For integration tests, use actual database drivers to catch database-specific issues:
 
-    test('basic CRUD operations', () async {
-      final user = await User.create({'name': 'Test', 'email': 'test@example.com'});
-      expect(user.id, isNotNull);
+```dart
+// More realistic but slower
+driver: SqliteDriverAdapter.memory()  // or .file() for persistence
+```
 
-      final found = await User.find(user.id!);
-      expect(found?.name, equals('Test'));
+### 3. Keep Tests Isolated
 
-      await user.update({'name': 'Updated'});
-      expect(user.name, equals('Updated'));
+Each test should be independent and not rely on other tests:
 
-      await user.delete();
-      final deleted = await User.find(user.id!);
-      expect(deleted, isNull);
-    });
-  });
-}
+```dart
+setUp() async {
+  // Fresh database for each test
+  dataSource = DataSource(DataSourceOptions(...));
+  await dataSource.init();
+});
 
-void main() {
-  runDriverTests('SQLite', () => setupSqliteDb());
-  runDriverTests('PostgreSQL', () => setupPostgresDb());
-  runDriverTests('MySQL', () => setupMysqlDb());
+test('test 1', () async {
+  // This test's data won't affect test 2
+});
+
+test('test 2', () async {
+  // This test starts with clean database
+});
+```
+
+### 4. Use Seeders for Complex Data
+
+For complex test scenarios, use seeders to set up consistent test data:
+
+```dart
+class CompleteDataSeeder extends Seeder {
+  @override
+  Future<void> run(DataSource dataSource) async {
+    DataSource.setDefault(dataSource);
+    
+    // Create users
+    final admin = User(name: 'Admin', email: 'admin@example.com');
+    await admin.save();
+    
+    // Create posts
+    final post = Post(title: 'Post 1', userId: admin.id);
+    await post.save();
+    
+    // Create comments
+    final comment = Comment(body: 'Comment 1', postId: post.id);
+    await comment.save();
+  }
 }
 ```
 
-## See Also
+### 5. Test Both Success and Failure Cases
 
-- [Getting Started](getting-started.md)
-- [Factories Pattern](factories.md)
-- [Continuous Integration](ci.md)
-- [Driver Tests Package](../packages/driver_tests/README.md)
+Test not only successful operations but also error conditions:
+
+```dart
+test('throws on duplicate email', () async {
+  final user1 = User(name: 'User', email: 'test@example.com');
+  await user1.save();
+  
+  final user2 = User(name: 'User2', email: 'test@example.com');
+  
+  // Expect the save to fail due to unique constraint
+  expect(() => user2.save(), throwsException);
+});
+```
+
+### 6. Clean Up Resources
+
+Always clean up in `tearDown` to prevent resource leaks:
+
+```dart
+tearDown(() async {
+  // For file-based databases
+  if (testDbFile.existsSync()) {
+    testDbFile.deleteSync();
+  }
+});
+```
+
+## Example Test Suite
+
+Here's a complete example of a well-structured test suite:
+
+```dart
+import 'package:ormed/ormed.dart';
+import 'package:test/test.dart';
+
+void main() {
+  late DataSource dataSource;
+
+  setUp(() async {
+    dataSource = DataSource(
+      DataSourceOptions(
+        name: 'test_${DateTime.now().microsecondsSinceEpoch}',
+        driver: InMemoryQueryExecutor(),
+        entities: [
+          UserOrmDefinition.definition,
+          PostOrmDefinition.definition,
+        ],
+      ),
+    );
+    await dataSource.init();
+    DataSource.setDefault(dataSource);
+  });
+
+  group('User model', () {
+    test('can create user', () async {
+      final user = User(name: 'Test', email: 'test@example.com');
+      await user.save();
+      
+      expect(user.id, isNotNull);
+    });
+
+    test('can find user by id', () async {
+      final user = User(name: 'Test', email: 'test@example.com');
+      await user.save();
+      
+      final found = await User.find(user.id);
+      expect(found?.email, equals('test@example.com'));
+    });
+
+    test('can update user', () async {
+      final user = User(name: 'Test', email: 'test@example.com');
+      await user.save();
+      
+      user.name = 'Updated';
+      await user.save();
+      
+      final found = await User.find(user.id);
+      expect(found?.name, equals('Updated'));
+    });
+
+    test('can delete user', () async {
+      final user = User(name: 'Test', email: 'test@example.com');
+      await user.save();
+      
+      await user.delete();
+      
+      final found = await User.find(user.id);
+      expect(found, isNull);
+    });
+  });
+
+  group('User relations', () {
+    test('user has many posts', () async {
+      final user = User(name: 'Author', email: 'author@example.com');
+      await user.save();
+      
+      final post1 = Post(title: 'Post 1', userId: user.id);
+      final post2 = Post(title: 'Post 2', userId: user.id);
+      await post1.save();
+      await post2.save();
+      
+      final posts = await user.posts;
+      expect(posts?.length, equals(2));
+    });
+  });
+}
+```
+
+## Summary
+
+Ormed provides flexible testing tools that work with various testing strategies:
+
+- **InMemoryQueryExecutor** for fast, isolated unit tests
+- **Real database drivers** for integration tests  
+- **Seeders** for consistent test data setup
+- **Multiple DataSources** for testing multi-database scenarios
+- **Static helpers** with proper DataSource registration
+
+Choose the approach that best fits your testing needs, keeping tests fast, isolated, and reliable.

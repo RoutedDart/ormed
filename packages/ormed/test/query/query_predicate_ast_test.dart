@@ -1,10 +1,8 @@
+import 'package:driver_tests/driver_tests.dart';
 import 'package:ormed/ormed.dart';
 import 'package:test/test.dart';
 
-import 'models/author.dart';
-import 'models/post.dart';
-import 'models/post_tag.dart';
-import 'models/tag.dart';
+
 
 void main() {
   group('Query predicate AST', () {
@@ -13,12 +11,7 @@ void main() {
 
     setUp(() {
       registry = ModelRegistry()
-        ..registerAll([
-          AuthorOrmDefinition.definition,
-          PostOrmDefinition.definition,
-          TagOrmDefinition.definition,
-          PostTagOrmDefinition.definition,
-        ]);
+        ..registerAll(generatedOrmModelDefinitions);
       context = QueryContext(
         registry: registry,
         driver: InMemoryQueryExecutor(),
@@ -219,7 +212,7 @@ void main() {
 
         final maxAgg = plan.aggregates.last;
         expect(maxAgg.function, AggregateFunction.max);
-        expect(maxAgg.expression, 'publishedAt');
+        expect(maxAgg.expression, 'published_at');
         expect(maxAgg.alias, 'latest_published');
       });
     });

@@ -1,23 +1,50 @@
-import 'package:ormed/migrations.dart';
-import 'package:ormed/ormed.dart';
-import 'package:test/test.dart';
+import 'dart:io';
 
-import 'support/postgres_harness.dart';
+import 'package:driver_tests/driver_tests.dart';
+import 'package:ormed/ormed.dart';
+import 'package:ormed_postgres/ormed_postgres.dart';
+import 'package:test/test.dart';
 
 void main() {
   group('Postgres schema integration', () {
-    late PostgresTestHarness harness;
+    late DataSource dataSource;
+    late PostgresDriverAdapter driverAdapter;
+    late String testSchema;
 
-    setUp(() async {
-      harness = await PostgresTestHarness.connect();
+    setUpAll(() async {
+      final url =
+          Platform.environment['POSTGRES_URL'] ??
+          'postgres://postgres:postgres@localhost:6543/orm_test';
+
+      driverAdapter = PostgresDriverAdapter.custom(
+        config: DatabaseConfig(driver: 'postgres', options: {'url': url}),
+      );
+
+      driverAdapter.codecs
+        ..registerCodecFor(PostgresPayloadCodec, const PostgresPayloadCodec())
+        ..registerCodecFor(SqlitePayloadCodec, const SqlitePayloadCodec());
+
+      dataSource = DataSource(DataSourceOptions(
+        driver: driverAdapter,
+        entities: generatedOrmModelDefinitions,
+      ));
+
+      await dataSource.init();
+      registerDriverTestFactories();
+
+      // Create a unique schema for this test run
+      testSchema = 'test_schema_${DateTime.now().millisecondsSinceEpoch}';
+      await driverAdapter.executeRaw('CREATE SCHEMA IF NOT EXISTS "$testSchema"');
+      await driverAdapter.executeRaw('SET search_path TO "$testSchema", public');
     });
 
-    tearDown(() async {
-      await harness.dispose();
+    tearDownAll(() async {
+      await driverAdapter.executeRaw('DROP SCHEMA IF EXISTS "$testSchema" CASCADE');
+      await dataSource.dispose();
     });
 
     test('applies complex schema plans against a real database', () async {
-      final schemaDriver = harness.adapter as SchemaDriver;
+      final schemaDriver = driverAdapter as SchemaDriver;
 
       final createLibraries = SchemaBuilder()
         ..create('libraries', (table) {
@@ -71,10 +98,10 @@ void main() {
       await schemaDriver.applySchemaPlan(addForeignKeys.build());
 
       Future<List<Map<String, Object?>>> columnsFor(String table) {
-        return harness.adapter.queryRaw(
+        return driverAdapter.queryRaw(
           'SELECT column_name FROM information_schema.columns'
           ' WHERE table_schema = ? AND table_name = ? ORDER BY ordinal_position',
-          [harness.schema, table],
+          [testSchema, table],
         );
       }
 
@@ -109,17 +136,17 @@ void main() {
         ]),
       );
 
-      final bookConstraints = await harness.adapter.queryRaw(
+      final bookConstraints = await driverAdapter.queryRaw(
         'SELECT constraint_name, constraint_type '
         'FROM information_schema.table_constraints '
         'WHERE table_schema = ? AND table_name = ? AND constraint_type = ?',
-        [harness.schema, 'books', 'FOREIGN KEY'],
+        [testSchema, 'books', 'FOREIGN KEY'],
       );
       expect(bookConstraints, isNotEmpty);
 
-      final indexes = await harness.adapter.queryRaw(
+      final indexes = await driverAdapter.queryRaw(
         'SELECT indexname FROM pg_indexes WHERE schemaname = ? AND tablename = ?',
-        [harness.schema, 'books'],
+        [testSchema, 'books'],
       );
       final indexNames = indexes
           .map((row) => row['indexname'])
@@ -151,15 +178,15 @@ void main() {
       expect(renamedNames, containsAll(['headline', 'subtitle']));
       expect(renamedNames, isNot(contains('body')));
 
-      final renamedTableColumns = await harness.adapter.queryRaw(
+      final renamedTableColumns = await driverAdapter.queryRaw(
         'SELECT table_name FROM information_schema.tables WHERE table_schema = ? AND table_name = ?',
-        [harness.schema, 'archives'],
+        [testSchema, 'archives'],
       );
       expect(renamedTableColumns, isNotEmpty);
 
-      final newIndexes = await harness.adapter.queryRaw(
+      final newIndexes = await driverAdapter.queryRaw(
         'SELECT indexname FROM pg_indexes WHERE schemaname = ? AND tablename = ?',
-        [harness.schema, 'books'],
+        [testSchema, 'books'],
       );
       final newIndexNames = newIndexes
           .map((row) => row['indexname'])
@@ -173,16 +200,16 @@ void main() {
       dropBuilder.drop('archives', ifExists: true, cascade: true);
       await schemaDriver.applySchemaPlan(dropBuilder.build());
 
-      final remaining = await harness.adapter.queryRaw(
+      final remaining = await driverAdapter.queryRaw(
         'SELECT table_name FROM information_schema.tables '
         'WHERE table_schema = ? AND table_name IN (?, ?)',
-        [harness.schema, 'books', 'archives'],
+        [testSchema, 'books', 'archives'],
       );
       expect(remaining, isEmpty);
     });
 
     test('drops foreign keys and indexes using schema driver', () async {
-      final schemaDriver = harness.adapter as SchemaDriver;
+      final schemaDriver = driverAdapter as SchemaDriver;
 
       final createBuilder = SchemaBuilder()
         ..create('customers', (table) {
@@ -205,10 +232,10 @@ void main() {
         });
       await schemaDriver.applySchemaPlan(createBuilder.build());
 
-      final fkBefore = await harness.adapter.queryRaw(
+      final fkBefore = await driverAdapter.queryRaw(
         'SELECT constraint_name FROM information_schema.table_constraints '
         'WHERE table_schema = ? AND table_name = ? AND constraint_type = ? AND constraint_name = ?',
-        [harness.schema, 'orders', 'FOREIGN KEY', 'orders_customer_id_foreign'],
+        [testSchema, 'orders', 'FOREIGN KEY', 'orders_customer_id_foreign'],
       );
       expect(fkBefore, isNotEmpty);
 
@@ -219,16 +246,16 @@ void main() {
         });
       await schemaDriver.applySchemaPlan(dropBuilder.build());
 
-      final fkAfter = await harness.adapter.queryRaw(
+      final fkAfter = await driverAdapter.queryRaw(
         'SELECT constraint_name FROM information_schema.table_constraints '
         'WHERE table_schema = ? AND table_name = ? AND constraint_type = ? AND constraint_name = ?',
-        [harness.schema, 'orders', 'FOREIGN KEY', 'orders_customer_id_foreign'],
+        [testSchema, 'orders', 'FOREIGN KEY', 'orders_customer_id_foreign'],
       );
       expect(fkAfter, isEmpty);
 
-      final indexAfter = await harness.adapter.queryRaw(
+      final indexAfter = await driverAdapter.queryRaw(
         'SELECT indexname FROM pg_indexes WHERE schemaname = ? AND tablename = ? AND indexname = ?',
-        [harness.schema, 'orders', 'orders_customer_index'],
+        [testSchema, 'orders', 'orders_customer_index'],
       );
       expect(indexAfter, isEmpty);
 
@@ -239,7 +266,7 @@ void main() {
     });
 
     test('exposes live metadata through the schema inspector', () async {
-      final schemaDriver = harness.adapter as SchemaDriver;
+      final schemaDriver = driverAdapter as SchemaDriver;
       final builder = SchemaBuilder()
         ..create('libraries', (table) {
           table.increments('id');
@@ -265,33 +292,33 @@ void main() {
           );
         });
       await schemaDriver.applySchemaPlan(builder.build());
-      await harness.adapter.executeRaw(
-        'CREATE VIEW "${harness.schema}".recent_books AS '
-        'SELECT title FROM "${harness.schema}".books WHERE featured = true',
+      await driverAdapter.executeRaw(
+        'CREATE VIEW "$testSchema".recent_books AS '
+        'SELECT title FROM "$testSchema".books WHERE featured = true',
       );
 
       final inspector = SchemaInspector(schemaDriver);
       expect(
-        await inspector.hasTable('libraries', schema: harness.schema),
+        await inspector.hasTable('libraries', schema: testSchema),
         isTrue,
       );
       expect(
         await inspector.hasColumn(
           'books',
           'library_id',
-          schema: harness.schema,
+          schema: testSchema,
         ),
         isTrue,
       );
       expect(
-        await inspector.columnType('books', 'featured', schema: harness.schema),
+        await inspector.columnType('books', 'featured', schema: testSchema),
         equals('boolean'),
       );
 
       final schemas = await schemaDriver.listSchemas();
-      expect(schemas.map((schema) => schema.name), contains(harness.schema));
+      expect(schemas.map((schema) => schema.name), contains(testSchema));
 
-      final tables = await schemaDriver.listTables(schema: harness.schema);
+      final tables = await schemaDriver.listTables(schema: testSchema);
       expect(
         tables.map((table) => table.name),
         containsAll(['libraries', 'books']),
@@ -299,7 +326,7 @@ void main() {
 
       final columns = await schemaDriver.listColumns(
         'books',
-        schema: harness.schema,
+        schema: testSchema,
       );
       final idColumn = columns.firstWhere((column) => column.name == 'id');
       expect(idColumn.primaryKey, isTrue);
@@ -307,7 +334,7 @@ void main() {
 
       final indexes = await schemaDriver.listIndexes(
         'books',
-        schema: harness.schema,
+        schema: testSchema,
       );
       expect(
         indexes.map((index) => index.name),
@@ -316,19 +343,19 @@ void main() {
 
       final foreignKeys = await schemaDriver.listForeignKeys(
         'books',
-        schema: harness.schema,
+        schema: testSchema,
       );
       expect(foreignKeys, isNotEmpty);
       expect(foreignKeys.first.referencedTable, equals('libraries'));
 
-      final views = await schemaDriver.listViews(schema: harness.schema);
+      final views = await schemaDriver.listViews(schema: testSchema);
       final recentBooks = views.firstWhere(
         (view) => view.name == 'recent_books',
       );
       expect(recentBooks.definition, contains('SELECT title'));
 
-      await harness.adapter.executeRaw(
-        'DROP VIEW IF EXISTS "${harness.schema}".recent_books',
+      await driverAdapter.executeRaw(
+        'DROP VIEW IF EXISTS "$testSchema".recent_books',
       );
 
       final drop = SchemaBuilder()

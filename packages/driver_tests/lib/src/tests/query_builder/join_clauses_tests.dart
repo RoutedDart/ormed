@@ -1,11 +1,12 @@
+import 'package:ormed/ormed.dart';
 import 'package:test/test.dart';
 
 import '../../models/models.dart';
-import '../../harness/driver_test_harness.dart';
+
 import '../../config.dart';
 
 void runJoinClausesTests(
-  DriverHarnessBuilder<DriverTestHarness> createHarness,
+  DataSource dataSource,
   DriverTestConfig config,
 ) {
   if (!config.supportsJoins) {
@@ -13,21 +14,21 @@ void runJoinClausesTests(
   }
 
   group('Join Clauses tests', () {
-    late DriverTestHarness harness;
+    
 
     setUp(() async {
-      harness = await createHarness();
+      
     });
 
-    tearDown(() async => harness.dispose());
+    
 
     test('join', () async {
-      await harness.seedAuthors([Author(id: 1, name: 'author1')]);
-      await harness.seedPosts([
+      await dataSource.repo<Author>().insertMany([Author(id: 1, name: 'author1')]);
+      await dataSource.repo<Post>().insertMany([
         Post(id: 1, authorId: 1, title: 'post1', publishedAt: DateTime.now()),
       ]);
 
-      final results = await harness.context
+      final results = await dataSource.context
           .query<Post>()
           .join('authors', 'authors.id', '=', 'posts.author_id')
           .get();
@@ -36,13 +37,13 @@ void runJoinClausesTests(
     });
 
     test('leftJoin', () async {
-      await harness.seedAuthors([Author(id: 1, name: 'author1')]);
-      await harness.seedPosts([
+      await dataSource.repo<Author>().insertMany([Author(id: 1, name: 'author1')]);
+      await dataSource.repo<Post>().insertMany([
         Post(id: 1, authorId: 1, title: 'post1', publishedAt: DateTime.now()),
         Post(id: 2, authorId: 2, title: 'post2', publishedAt: DateTime.now()),
       ]);
 
-      final results = await harness.context
+      final results = await dataSource.context
           .query<Post>()
           .leftJoin('authors', 'authors.id', '=', 'posts.author_id')
           .get();
@@ -55,16 +56,16 @@ void runJoinClausesTests(
         return;
       }
 
-      await harness.seedAuthors([
+      await dataSource.repo<Author>().insertMany([
         Author(id: 1, name: 'author1'),
         Author(id: 2, name: 'author2'),
       ]);
-      await harness.seedPosts([
+      await dataSource.repo<Post>().insertMany([
         Post(id: 1, authorId: 1, title: 'post1', publishedAt: DateTime.now()),
         Post(id: 2, authorId: 2, title: 'post2', publishedAt: DateTime.now()),
       ]);
 
-      final results = await harness.context
+      final results = await dataSource.context
           .query<Author>()
           .rightJoin('posts', 'posts.author_id', '=', 'authors.id')
           .get();
@@ -73,10 +74,10 @@ void runJoinClausesTests(
     });
 
     test('crossJoin', () async {
-      await harness.seedAuthors([Author(id: 1, name: 'author1')]);
-      await harness.seedTags([Tag(id: 1, label: 'tag1')]);
+      await dataSource.repo<Author>().insertMany([Author(id: 1, name: 'author1')]);
+      await dataSource.repo<Tag>().insertMany([Tag(id: 1, label: 'tag1')]);
 
-      final results = await harness.context
+      final results = await dataSource.context
           .query<Author>()
           .crossJoin('tags')
           .get();
@@ -84,12 +85,12 @@ void runJoinClausesTests(
     });
 
     test('joinRelation', () async {
-      await harness.seedAuthors([Author(id: 1, name: 'author1')]);
-      await harness.seedPosts([
+      await dataSource.repo<Author>().insertMany([Author(id: 1, name: 'author1')]);
+      await dataSource.repo<Post>().insertMany([
         Post(id: 1, authorId: 1, title: 'post1', publishedAt: DateTime.now()),
       ]);
 
-      final results = await harness.context
+      final results = await dataSource.context
           .query<Author>()
           .joinRelation('posts')
           .get();

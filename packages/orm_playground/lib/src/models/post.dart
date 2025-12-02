@@ -7,7 +7,7 @@ import 'user.dart';
 part 'post.orm.dart';
 
 @OrmModel(table: 'posts')
-class Post {
+class Post extends Model<Post> {
   const Post({
     this.id,
     required this.userId,

@@ -14,6 +14,7 @@ class MigrationRunner {
     required MigrationLedger ledger,
     required List<MigrationDescriptor> migrations,
     MigrationPlanResolver? planResolver,
+    String? defaultSchema,
   }) : _schemaDriver = schemaDriver,
        _ledger = ledger,
        _migrations = List.unmodifiable(
@@ -23,13 +24,15 @@ class MigrationRunner {
          for (final descriptor in migrations)
            descriptor.id.toString(): descriptor,
        },
-       _planResolver = planResolver ?? _defaultPlanResolver;
+       _planResolver = planResolver ?? _defaultPlanResolver,
+       _defaultSchema = defaultSchema;
 
   final SchemaDriver _schemaDriver;
   final MigrationLedger _ledger;
   final List<MigrationDescriptor> _migrations;
   final Map<String, MigrationDescriptor> _descriptorById;
   final MigrationPlanResolver _planResolver;
+  final String? _defaultSchema;
 
   /// Applies all pending migrations (or up to [limit]).
   Future<MigrationReport> applyAll({int? limit}) async {
@@ -42,12 +45,19 @@ class MigrationRunner {
     final appliedById = {
       for (final record in applied) record.id.toString(): record,
     };
+    // Also index by timestamp for backward compatibility with old naming format
+    final appliedByTimestamp = {
+      for (final record in applied) record.id.timestamp.toString(): record,
+    };
     final batch = await _ledger.nextBatchNumber();
 
     final actions = <MigrationAction>[];
     for (final descriptor in _migrations) {
       final key = descriptor.id.toString();
-      final existing = appliedById[key];
+      // Check both by full ID and by timestamp for backward compatibility
+      final existing =
+          appliedById[key] ??
+          appliedByTimestamp[descriptor.id.timestamp.toString()];
       if (existing != null) {
         if (existing.checksum != descriptor.checksum) {
           throw StateError(

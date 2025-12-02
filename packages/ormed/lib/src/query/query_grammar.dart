@@ -6,10 +6,8 @@ import 'package:ormed/src/query/plan/join_type.dart';
 
 import '../driver/driver.dart';
 import '../model_definition.dart';
-import 'json_path.dart' as json_path;
+import 'json_path.dart';
 import 'query_plan.dart';
-
-typedef JsonSelector = json_path.JsonSelector;
 
 /// Result of compiling a [QueryPlan] into SQL + bindings.
 class QueryCompilation {
@@ -326,12 +324,12 @@ abstract class QueryGrammar {
   }
 
   /// Checks if a column is a JSON selector.
-  bool isJsonSelector(String column) => json_path.hasJsonSelector(column);
+  bool isJsonSelector(String column) => hasJsonSelector(column);
 
   /// Parses a JSON selector expression.
   @protected
   JsonSelector? parseJsonSelector(String column) =>
-      json_path.parseJsonSelectorExpression(column);
+      parseJsonSelectorExpression(column);
 
   /// Wraps a JSON selector reference.
   @protected
@@ -394,7 +392,7 @@ abstract class QueryGrammar {
   /// Returns the segments of a normalized JSON path.
   @protected
   List<String> jsonPathSegments(String normalizedPath) =>
-      json_path.jsonPathSegments(normalizedPath);
+      jsonPathSegments(normalizedPath);
 
   /// Join types supported by this grammar.
   Set<JoinType> get supportedJoinTypes => const {
@@ -657,7 +655,7 @@ class _SelectCompilation {
       projections.add(_rowNumberProjection());
     }
 
-    if (requiresHydrationColumns) {
+    if (requiresHydrationColumns && !plan.disableAutoHydration) {
       final aggregateHydration = plan.groupBy.isNotEmpty;
       _hydrationColumnNames = const [];
       projections.addAll(
@@ -1622,8 +1620,12 @@ class _SelectCompilation {
     final selectExpression = aggregate == RelationAggregateType.count
         ? _countExpressionForSegment(segment, targetAlias, distinct)
         : aggregate != null && aggregate != RelationAggregateType.exists
-            ? _aggregateExpressionForSegment(aggregate, aggregateColumn, targetAlias)
-            : '1';
+        ? _aggregateExpressionForSegment(
+            aggregate,
+            aggregateColumn,
+            targetAlias,
+          )
+        : '1';
     final buffer = StringBuffer('SELECT $selectExpression FROM ');
     if (segment.usesPivot) {
       final pivotAlias = _nextAlias('pivot');

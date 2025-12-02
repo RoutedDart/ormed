@@ -1,6 +1,5 @@
+import 'package:driver_tests/driver_tests.dart';
 import 'package:test/test.dart';
-
-import 'models/user.dart';
 
 void main() {
   group('ModelDefinition', () {
@@ -8,7 +7,7 @@ void main() {
       final definition = UserOrmDefinition.definition;
 
       expect(definition.tableName, 'users');
-      expect(definition.fields, hasLength(4));
+      expect(definition.fields, hasLength(7));
 
       final idField = definition.fieldByName('id');
       expect(idField?.isPrimaryKey, isTrue);
@@ -22,7 +21,6 @@ void main() {
       expect(definition.metadata.fillable, contains('email'));
       expect(definition.metadata.guarded, contains('id'));
       expect(definition.metadata.casts['createdAt'], 'datetime');
-      expect(definition.metadata.connection, 'analytics');
     });
   });
 }

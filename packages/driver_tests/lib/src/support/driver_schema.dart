@@ -1,96 +1,82 @@
 library;
 
+import 'package:driver_tests/orm_registry.g.dart';
 import 'package:ormed/ormed.dart';
-import 'package:ormed/test_models/derived_for_factory.dart';
+import 'package:driver_tests/src/models/derived_for_factory.dart';
+import 'package:ormed/testing.dart';
 
-import '../../models.dart';
 import '../migrations/migrations.dart';
 
-final List<ModelDefinition> driverTestModelDefinitions = [
-  UserOrmDefinition.definition,
-  AuthorOrmDefinition.definition,
-  PostOrmDefinition.definition,
-  TagOrmDefinition.definition,
-  PostTagOrmDefinition.definition,
-  ArticleOrmDefinition.definition,
-  PhotoOrmDefinition.definition,
-  ImageOrmDefinition.definition,
-  CommentOrmDefinition.definition,
-  DriverOverrideEntryOrmDefinition.definition,
-  SettingOrmDefinition.definition,
-  SerialTestOrmDefinition.definition,
-  DerivedForFactoryOrmDefinition.definition,
-];
-
-final List<MigrationDescriptor> driverTestMigrations = [
-  MigrationDescriptor.fromMigration(
+/// Migration entries used in driver tests
+final List<MigrationEntry> driverTestMigrationEntries = [
+  MigrationEntry(
     id: MigrationId(DateTime.utc(2023, 1, 1, 0, 0, 1), 'create_users_table'),
     migration: const CreateUsersTable(),
   ),
-  MigrationDescriptor.fromMigration(
+  MigrationEntry(
     id: MigrationId(DateTime.utc(2023, 1, 1, 0, 0, 2), 'create_authors_table'),
     migration: const CreateAuthorsTable(),
   ),
-  MigrationDescriptor.fromMigration(
+  MigrationEntry(
     id: MigrationId(DateTime.utc(2023, 1, 1, 0, 0, 3), 'create_posts_table'),
     migration: const CreatePostsTable(),
   ),
-  MigrationDescriptor.fromMigration(
+  MigrationEntry(
     id: MigrationId(DateTime.utc(2023, 1, 1, 0, 0, 4), 'create_tags_table'),
     migration: const CreateTagsTable(),
   ),
-  MigrationDescriptor.fromMigration(
+  MigrationEntry(
     id: MigrationId(
       DateTime.utc(2023, 1, 1, 0, 0, 5),
       'create_post_tags_table',
     ),
     migration: const CreatePostTagsTable(),
   ),
-  MigrationDescriptor.fromMigration(
+  MigrationEntry(
     id: MigrationId(DateTime.utc(2023, 1, 1, 0, 0, 6), 'create_articles_table'),
     migration: const CreateArticlesTable(),
   ),
-  MigrationDescriptor.fromMigration(
+  MigrationEntry(
     id: MigrationId(DateTime.utc(2023, 1, 1, 0, 0, 7), 'create_photos_table'),
     migration: const CreatePhotosTable(),
   ),
-  MigrationDescriptor.fromMigration(
+  MigrationEntry(
     id: MigrationId(DateTime.utc(2023, 1, 1, 0, 0, 8), 'create_images_table'),
     migration: const CreateImagesTable(),
   ),
-  MigrationDescriptor.fromMigration(
+  MigrationEntry(
     id: MigrationId(DateTime.utc(2023, 1, 1, 0, 0, 9), 'create_comments_table'),
     migration: const CreateCommentsTable(),
   ),
-  MigrationDescriptor.fromMigration(
+  MigrationEntry(
     id: MigrationId(
       DateTime.utc(2023, 1, 1, 0, 0, 10),
       'create_driver_override_entries_table',
     ),
     migration: const CreateDriverOverrideEntriesTable(),
   ),
-  MigrationDescriptor.fromMigration(
+  MigrationEntry(
     id: MigrationId(
       DateTime.utc(2023, 1, 1, 0, 0, 11),
       'create_settings_table',
     ),
     migration: const CreateSettingsTable(),
   ),
-  MigrationDescriptor.fromMigration(
+  MigrationEntry(
     id: MigrationId(
       DateTime.utc(2023, 1, 1, 0, 0, 12),
       'create_serial_tests_table',
     ),
     migration: const CreateSerialTestsTable(),
   ),
-  MigrationDescriptor.fromMigration(
+  MigrationEntry(
     id: MigrationId(
       DateTime.utc(2023, 1, 1, 0, 0, 13),
       'create_mutation_targets_table',
     ),
     migration: const CreateMutationTargetsTable(),
   ),
-  MigrationDescriptor.fromMigration(
+  MigrationEntry(
     id: MigrationId(
       DateTime.utc(2023, 1, 1, 0, 0, 14),
       'create_derived_for_factories_table',
@@ -99,47 +85,78 @@ final List<MigrationDescriptor> driverTestMigrations = [
   ),
 ];
 
-const _driverTestLedgerTable = 'orm_migrations';
+/// Create a test schema manager for driver tests
+///
+/// This creates a configured [TestSchemaManager] with all driver test
+/// migrations and model definitions.
+///
+/// Example:
+/// ```dart
+/// final manager = createDriverTestSchemaManager(driver);
+/// await manager.setup();
+/// ```
+TestSchemaManager createDriverTestSchemaManager(
+  SchemaDriver driver, {
+  String? schema,
+}) {
+  // Build migration descriptors with optional schema support
+  final migrations = driverTestMigrationEntries.map((entry) {
+    return MigrationDescriptor.fromMigration(
+      id: entry.id,
+      migration: entry.migration,
+      defaultSchema: schema,
+    );
+  }).toList();
 
-MigrationRunner _createRunner(SchemaDriver driver) => MigrationRunner(
-  schemaDriver: driver,
-  ledger: SqlMigrationLedger(driver as DriverAdapter),
-  migrations: driverTestMigrations,
-);
-
-Future<void> _purgeDriverTestSchema(SchemaDriver driver) async {
-  final builder = SchemaBuilder();
-  final seenTables = <String>{};
-  for (final definition in driverTestModelDefinitions) {
-    final table = definition.tableName;
-    if (seenTables.add(table)) {
-      builder.drop(table, ifExists: true, cascade: true);
-    }
-  }
-  builder.drop(_driverTestLedgerTable, ifExists: true, cascade: true);
-  if (builder.isEmpty) {
-    return;
-  }
-  final plan = builder.build(description: 'purge-driver-test-schema');
-  await driver.applySchemaPlan(plan);
+  return TestSchemaManager(
+    schemaDriver: driver,
+    modelDefinitions: generatedOrmModelDefinitions,
+    migrations: migrations,
+    ledgerTable: 'orm_migrations',
+  );
 }
 
-Future<void> resetDriverTestSchema(SchemaDriver driver) async {
-  await dropDriverTestSchema(driver);
-  final runner = _createRunner(driver);
-  await runner.applyAll();
+/// Reset the driver test schema by tearing down and setting up again
+///
+/// This is equivalent to dropping all migrations and re-applying them.
+/// Uses [TestSchemaManager] internally.
+///
+/// Example:
+/// ```dart
+/// await resetDriverTestSchema(driver);
+/// ```
+Future<void> resetDriverTestSchema(SchemaDriver driver, {String? schema}) async {
+  final manager = createDriverTestSchemaManager(driver, schema: schema);
+  await manager.teardown();
+  await manager.setup();
 }
 
-Future<void> dropDriverTestSchema(SchemaDriver driver) async {
-  final runner = _createRunner(driver);
-  final status = await runner.status();
-  final appliedCount = status.where((migration) => migration.applied).length;
-  if (appliedCount > 0) {
-    await runner.rollback(steps: appliedCount);
-  }
-  await _purgeDriverTestSchema(driver);
+/// Drop the driver test schema completely
+///
+/// This rolls back all applied migrations and purges any remaining tables.
+/// Uses [TestSchemaManager] internally.
+///
+/// Example:
+/// ```dart
+/// await dropDriverTestSchema(driver);
+/// ```
+Future<void> dropDriverTestSchema(SchemaDriver driver, {String? schema}) async {
+  final manager = createDriverTestSchemaManager(driver, schema: schema);
+  await manager.teardown();
+  await manager.purge();
 }
 
+/// Register model factories used in driver tests
+///
+/// Call this before running tests that use model factories.
+///
+/// Example:
+/// ```dart
+/// void main() {
+///   registerDriverTestFactories();
+///   // ... your tests
+/// }
+/// ```
 void registerDriverTestFactories() {
   ModelFactoryRegistry.register<DerivedForFactory>(
     DerivedForFactoryOrmDefinition.definition,

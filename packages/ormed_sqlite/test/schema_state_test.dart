@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:driver_tests/driver_tests.dart';
 import 'package:ormed/ormed.dart';
 import 'package:ormed_sqlite/src/schema_state.dart';
 import 'package:path/path.dart' as p;

@@ -1,3 +1,4 @@
+import 'package:driver_tests/driver_tests.dart';
 import 'package:ormed/ormed.dart';
 import 'package:test/test.dart';
 
@@ -109,10 +110,10 @@ MigrationDescriptor _descriptor(String id) {
 
 class _TestMigration extends Migration {
   @override
-  void down(SchemaBuilder schema) {}
+  Future<void> down(SchemaBuilder schema) async {}
 
   @override
-  void up(SchemaBuilder schema) {}
+  Future<void> up(SchemaBuilder schema) async {}
 }
 
 class _FakeDriverAdapter extends DriverAdapter {
@@ -174,6 +175,18 @@ class _FakeDriverAdapter extends DriverAdapter {
 
   @override
   Future<R> transaction<R>(Future<R> Function() action) => action();
+
+  @override
+  Future<void> beginTransaction() async {}
+
+  @override
+  Future<void> commitTransaction() async {}
+
+  @override
+  Future<void> rollbackTransaction() async {}
+
+  @override
+  Future<void> truncateTable(String tableName) async {}
 
   @override
   Future<int?> threadCount() async => null;

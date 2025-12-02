@@ -5,26 +5,26 @@ import '../../../driver_tests.dart';
 /// Tests for relation aggregate loading methods like loadSum, loadAvg, loadMax, loadMin
 /// Note: MongoDB supports these via client-side aggregation, while SQL drivers use database-level aggregation.
 void runRelationAggregateTests(
-  DriverHarnessBuilder<DriverTestHarness> createHarness,
+  DataSource dataSource,
   DriverTestConfig config,
 ) {
   group('${config.driverName} relation aggregates', () {
-    late DriverTestHarness harness;
+    
 
     setUp(() async {
-      harness = await createHarness();
+      
 
       // Bind connection resolver for Model.load() to work
       Model.bindConnectionResolver(
-        resolveConnection: (name) => harness.context,
+        resolveConnection: (name) => dataSource.context,
       );
 
       // Seed test data
-      await harness.seedAuthors([
+      await dataSource.repo<Author>().insertMany([
         const Author(id: 1, name: 'Alice'),
         const Author(id: 2, name: 'Bob'),
       ]);
-      await harness.seedPosts([
+      await dataSource.repo<Post>().insertMany([
         Post(
           id: 1,
           authorId: 1,
@@ -58,11 +58,11 @@ void runRelationAggregateTests(
 
     tearDown(() async {
       Model.unbindConnectionResolver();
-      await harness.dispose();
+      
     });
 
     test('loadSum calculates sum of relation column', () async {
-      final rows = await harness.context.query<Author>().where('id', 1).get();
+      final rows = await dataSource.context.query<Author>().where('id', 1).get();
       final author = rows.first;
 
       // Load sum of views
@@ -74,9 +74,9 @@ void runRelationAggregateTests(
 
     test('loadSum returns 0 for empty relations', () async {
       // Create author with no posts
-      await harness.seedAuthors([const Author(id: 99, name: 'Lonely')]);
+      await dataSource.repo<Author>().insertMany([const Author(id: 99, name: 'Lonely')]);
       final rows =
-          await harness.context.query<Author>().where('id', 99).get();
+          await dataSource.context.query<Author>().where('id', 99).get();
       final author = rows.first;
 
       await author.loadSum('posts', 'views', alias: 'total_views');
@@ -86,7 +86,7 @@ void runRelationAggregateTests(
     }, skip: !config.supportsCapability(DriverCapability.relationAggregates));
 
     test('query builder withSum works', () async {
-      final authors = await harness.context
+      final authors = await dataSource.context
           .query<Author>()
           .withSum('posts', 'views', alias: 'total_views')
           .orderBy('id')
@@ -98,7 +98,7 @@ void runRelationAggregateTests(
     }, skip: !config.supportsCapability(DriverCapability.relationAggregates));
 
     test('withSum default alias naming', () async {
-      final authors = await harness.context
+      final authors = await dataSource.context
           .query<Author>()
           .withSum('posts', 'views')
           .where('id', 1)
@@ -111,7 +111,7 @@ void runRelationAggregateTests(
 
     test('withSum with constraints', () async {
       // Add a low-view post
-      await harness.seedPosts([
+      await dataSource.repo<Post>().insertMany([
         Post(
           id: 5,
           authorId: 1,
@@ -121,7 +121,7 @@ void runRelationAggregateTests(
         ),
       ]);
 
-      final authors = await harness.context
+      final authors = await dataSource.context
           .query<Author>()
           .withSum(
             'posts',

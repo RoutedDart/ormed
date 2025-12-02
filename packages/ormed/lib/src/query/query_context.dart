@@ -112,7 +112,7 @@ class QueryContext implements ConnectionResolver {
   /// ```
   Query<T> query<T>() {
     final definition = registry.expect<T>();
-    final defaultQuery = Query._(definition: definition, context: this);
+    final defaultQuery = Query(definition: definition, context: this);
     final hook = _resolveQueryBuilderHook(definition);
     if (hook != null && hook.handles(definition)) {
       return hook.build(definition, this, defaultQuery);
@@ -142,7 +142,7 @@ class QueryContext implements ConnectionResolver {
             tableName: table ?? definition.tableName,
             schema: schema ?? definition.schema,
           );
-    return Query._(
+    return Query(
       definition: overridden,
       context: this,
       tableAlias: alias,
@@ -175,7 +175,7 @@ class QueryContext implements ConnectionResolver {
       alias: as,
       columns: columns,
     );
-    return Query._(
+    return Query(
       definition: definition,
       context: this,
       tableAlias: as,
@@ -864,7 +864,7 @@ class QueryContext implements ConnectionResolver {
       scopeRegistry.addGlobalScopeForType(
         definition.modelType,
         ScopeRegistry.softDeleteScopeIdentifier,
-        (query) => query._applySoftDeleteFilter(field),
+        (query) => query.applySoftDeleteFilter(field),
       );
     }
   }
@@ -875,7 +875,7 @@ class QueryContext implements ConnectionResolver {
     scopeRegistry.addGlobalScopeForType(
       definition.modelType,
       ScopeRegistry.softDeleteScopeIdentifier,
-      (query) => query._applySoftDeleteFilter(field),
+      (query) => query.applySoftDeleteFilter(field),
     );
   }
 }

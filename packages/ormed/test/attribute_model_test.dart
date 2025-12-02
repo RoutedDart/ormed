@@ -1,9 +1,9 @@
 import 'dart:convert';
 
+import 'package:driver_tests/driver_tests.dart';
 import 'package:ormed/ormed.dart';
 import 'package:test/test.dart';
 
-import 'package:ormed/test_models/attribute_user.dart';
 
 void main() {
   group('Generated AttributeUser', () {
@@ -24,6 +24,8 @@ void main() {
         'role': null,
         'profile': null,
       }, registry);
+
+
       user.fill({
         'email': 'b@x.dev',
         'role': 'admin',

@@ -1,4 +1,5 @@
 import 'package:ormed/ormed.dart';
+import 'package:driver_tests/driver_tests.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -102,6 +103,18 @@ class _DisposableDriver extends DriverAdapter {
 
   @override
   Future<R> transaction<R>(Future<R> Function() action) => Future.sync(action);
+
+  @override
+  Future<void> beginTransaction() async {}
+
+  @override
+  Future<void> commitTransaction() async {}
+
+  @override
+  Future<void> rollbackTransaction() async {}
+
+  @override
+  Future<void> truncateTable(String tableName) async {}
 
   @override
   Future<int?> threadCount() async => null;

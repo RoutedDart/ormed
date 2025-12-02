@@ -30,7 +30,7 @@ void main() {
           'CREATE TABLE authors (id INTEGER PRIMARY KEY, name TEXT, active INTEGER)',
         );
         await adapter.executeRaw(
-          'INSERT INTO authors (id, name, active) VALUES (1, "Alice", 1)',
+          "INSERT INTO authors (id, name, active) VALUES (1, 'Alice', 1)",
         );
 
         final authors = await connection.query<Author>().get();

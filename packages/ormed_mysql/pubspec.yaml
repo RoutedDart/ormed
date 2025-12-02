@@ -6,14 +6,14 @@ repository: https://github.com/routedart/routed
 resolution: workspace
 
 environment:
-  sdk: ^3.9.0
+  sdk: ">=3.10.0 <4.0.0"
 
 dependencies:
   ormed:
   mysql_client_plus: ^0.1.2
-  meta: ^1.15.0
+  meta: ^1.17.0
 
 dev_dependencies:
   lints: ^6.0.0
-  test: ^1.27.0
+  test: ^1.28.0
   driver_tests:

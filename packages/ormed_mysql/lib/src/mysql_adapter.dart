@@ -36,6 +36,7 @@ class MySqlDriverAdapter
            DriverCapability.threadCount,
            DriverCapability.transactions,
            DriverCapability.adHocQueryUpdates,
+           DriverCapability.increment,
          },
        ),
        _schemaCompiler = SchemaPlanCompiler(
@@ -293,6 +294,63 @@ class MySqlDriverAdapter
         _transactionDepth--;
       }
     }
+  }
+
+  @override
+  Future<void> beginTransaction() async {
+    final connection = await _connection();
+    if (_transactionDepth == 0) {
+      await connection.execute('START TRANSACTION');
+      _transactionDepth++;
+    } else {
+      // Use savepoint for nested transactions
+      final savepoint = 'sp_${_transactionDepth + 1}';
+      await connection.execute('SAVEPOINT $savepoint');
+      _transactionDepth++;
+    }
+  }
+
+  @override
+  Future<void> commitTransaction() async {
+    if (_transactionDepth == 0) {
+      throw StateError('No active transaction to commit');
+    }
+
+    final connection = await _connection();
+    if (_transactionDepth == 1) {
+      await connection.execute('COMMIT');
+      _transactionDepth--;
+    } else {
+      // Release savepoint for nested transactions
+      final savepoint = 'sp_$_transactionDepth';
+      await connection.execute('RELEASE SAVEPOINT $savepoint');
+      _transactionDepth--;
+    }
+  }
+
+  @override
+  Future<void> rollbackTransaction() async {
+    if (_transactionDepth == 0) {
+      throw StateError('No active transaction to rollback');
+    }
+
+    final connection = await _connection();
+    if (_transactionDepth == 1) {
+      await connection.execute('ROLLBACK');
+      _transactionDepth--;
+    } else {
+      // Rollback to savepoint for nested transactions
+      final savepoint = 'sp_$_transactionDepth';
+      await connection.execute('ROLLBACK TO SAVEPOINT $savepoint');
+      _transactionDepth--;
+    }
+  }
+
+  @override
+  Future<void> truncateTable(String tableName) async {
+    final connection = await _connection();
+    // MySQL supports TRUNCATE TABLE which is faster and resets auto-increment
+    await connection.execute('TRUNCATE TABLE $tableName');
   }
 
   @override
@@ -555,6 +613,8 @@ class MySqlDriverAdapter
     }
     final connection = await _connection();
     var affected = 0;
+    final returnedRows = <Map<String, Object?>>[];
+    
     for (final parameters in shape.parameterSets) {
       final statement = _prepareStatement(shape.sql, parameters);
       final result = await connection.execute(
@@ -562,8 +622,23 @@ class MySqlDriverAdapter
         statement.parameters.isEmpty ? null : statement.parameters,
       );
       affected += result.affectedRows.toInt();
+      
+      // For INSERTs, capture the last insert ID as a returned row
+      if (shape.isInsert && result.lastInsertID.toInt() > 0 && shape.definition != null) {
+        // Find the primary key field name from the plan
+        try {
+          final pkField = shape.definition!.fields.firstWhere((f) => f.isPrimaryKey);
+          returnedRows.add({pkField.columnName: result.lastInsertID.toInt()});
+        } catch (_) {
+          // No primary key found, skip
+        }
+      }
     }
-    return MutationResult(affectedRows: affected);
+    
+    return MutationResult(
+      affectedRows: affected,
+      returnedRows: returnedRows.isEmpty ? null : returnedRows,
+    );
   }
 
   _MySqlMutationShape _shapeForPlan(MutationPlan plan) {
@@ -589,7 +664,9 @@ class MySqlDriverAdapter
     if (plan.rows.isEmpty) {
       return _MySqlMutationShape.empty();
     }
-    final columns = plan.definition.fields.map((f) => f.columnName).toList();
+    // Use columns from the first row to determine which fields are actually being inserted
+    // This handles cases where auto-increment PKs are filtered out
+    final columns = plan.rows.first.values.keys.toList();
     final columnSql = columns.map(_quote).join(', ');
     final placeholders = List.filled(columns.length, '?').join(', ');
     final verb = plan.ignoreConflicts ? 'INSERT IGNORE' : 'INSERT';
@@ -598,7 +675,12 @@ class MySqlDriverAdapter
     final parameterSets = plan.rows
         .map((row) => columns.map((column) => row.values[column]).toList())
         .toList(growable: false);
-    return _MySqlMutationShape(sql: sql, parameterSets: parameterSets);
+    return _MySqlMutationShape(
+      sql: sql,
+      parameterSets: parameterSets,
+      isInsert: true,
+      definition: plan.definition,
+    );
   }
 
   _MySqlMutationShape _buildInsertUsingShape(MutationPlan plan) {
@@ -615,6 +697,8 @@ class MySqlDriverAdapter
     return _MySqlMutationShape(
       sql: sql.toString(),
       parameterSets: [compilation.bindings.toList(growable: false)],
+      isInsert: true,
+      definition: plan.definition,
     );
   }
 
@@ -723,7 +807,8 @@ class MySqlDriverAdapter
     final queryPlan = plan.queryPlan;
     final hasColumns = plan.queryUpdateValues.isNotEmpty;
     final hasJson = plan.queryJsonUpdates.isNotEmpty;
-    if (queryPlan == null || (!hasColumns && !hasJson)) {
+    final hasIncrements = plan.queryIncrementValues.isNotEmpty;
+    if (queryPlan == null || (!hasColumns && !hasJson && !hasIncrements)) {
       return _MySqlMutationShape.empty();
     }
     final metadata = _metadata;
@@ -744,6 +829,14 @@ class MySqlDriverAdapter
         plan.queryUpdateValues.keys.map((column) => '${_quote(column)} = ?'),
       );
       parameters.addAll(plan.queryUpdateValues.values);
+    }
+    if (hasIncrements) {
+      for (final entry in plan.queryIncrementValues.entries) {
+        final column = entry.key;
+        final amount = entry.value;
+        assignments.add('${_quote(column)} = ${_quote(column)} + ?');
+        parameters.add(amount);
+      }
     }
     if (hasJson) {
       final grouped = <String, List<JsonUpdateClause>>{};
@@ -1225,10 +1318,17 @@ class _MySqlStatement {
 }
 
 class _MySqlMutationShape {
-  const _MySqlMutationShape({required this.sql, required this.parameterSets});
+  const _MySqlMutationShape({
+    required this.sql,
+    required this.parameterSets,
+    this.isInsert = false,
+    this.definition,
+  });
 
   final String sql;
   final List<List<Object?>> parameterSets;
+  final bool isInsert;
+  final ModelDefinition<dynamic>? definition;
 
   static _MySqlMutationShape empty() =>
       const _MySqlMutationShape(sql: '<no-op>', parameterSets: []);

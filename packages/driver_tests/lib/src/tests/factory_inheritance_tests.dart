@@ -1,22 +1,41 @@
 import 'package:ormed/ormed.dart';
 import 'package:test/test.dart';
 
-import 'package:ormed/test_models/derived_for_factory.dart';
+import 'package:driver_tests/src/models/derived_for_factory.dart';
 import '../config.dart';
-import '../harness/driver_test_harness.dart';
+import '../support/driver_schema.dart';
 
 void runDriverFactoryInheritanceTests({
-  required DriverHarnessBuilder<DriverTestHarness> createHarness,
+  required DataSource dataSource,
   required DriverTestConfig config,
 }) {
   group('${config.driverName} factory inheritance', () {
-    late DriverTestHarness harness;
+    late TestDatabaseManager manager;
 
-    setUp(() async {
-      harness = await createHarness();
+    setUpAll(() async {
+      await dataSource.init();
+      manager = TestDatabaseManager(
+        baseDataSource: dataSource,
+        migrationDescriptors: driverTestMigrationEntries
+            .map((e) => MigrationDescriptor.fromMigration(
+                  id: e.id,
+                  migration: e.migration,
+                ))
+            .toList(),
+        strategy: DatabaseIsolationStrategy.truncate,
+      );
+      await manager.initialize();
     });
 
-    tearDown(() async => harness.dispose());
+    setUp(() async {
+      await manager.beginTest('factory_inheritance_tests', dataSource);
+    });
+
+    tearDown(() async => manager.endTest('factory_inheritance_tests', dataSource));
+
+    tearDownAll(() async {
+      // Schema cleanup is handled by outer test file
+    });
 
     test('multi-level derived factory includes ancestor fields', () {
       final builder = Model.factory<DerivedForFactory>().withOverrides({
@@ -37,9 +56,9 @@ void runDriverFactoryInheritanceTests({
         'layerTwoFlag': true,
       }).make();
 
-      await harness.context.repository<DerivedForFactory>().insert(derived);
+      await dataSource.context.repository<DerivedForFactory>().insert(derived);
 
-      final fetched = await harness.context.query<DerivedForFactory>().get();
+      final fetched = await dataSource.context.query<DerivedForFactory>().get();
       expect(fetched, isNotEmpty);
       expect(fetched.first.baseName, 'root');
       expect(fetched.first.layerOneNotes, {'notes': true});

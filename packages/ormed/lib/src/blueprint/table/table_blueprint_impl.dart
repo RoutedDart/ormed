@@ -14,13 +14,13 @@ import 'sqlite_spatial_index_options.dart';
 
 /// Mutable blueprint that records the operations to perform against a table.
 class TableBlueprint {
-  TableBlueprint._(this.table, this.operation);
+  TableBlueprint._(this.table, this.operation, {this.schema});
 
-  factory TableBlueprint.create(String table) =>
-      TableBlueprint._(table, TableOperationKind.create);
+  factory TableBlueprint.create(String table, {String? schema}) =>
+      TableBlueprint._(table, TableOperationKind.create, schema: schema);
 
-  factory TableBlueprint.alter(String table) =>
-      TableBlueprint._(table, TableOperationKind.alter);
+  factory TableBlueprint.alter(String table, {String? schema}) =>
+      TableBlueprint._(table, TableOperationKind.alter, schema: schema);
 
   factory TableBlueprint.fromJson(Map<String, Object?> json) {
     final operation = TableOperationKind.values.byName(
@@ -88,6 +88,9 @@ class TableBlueprint {
 
   /// Name of the table being created or altered by this blueprint.
   final String table;
+
+  /// Optional schema name for the table.
+  final String? schema;
 
   /// Operation kind describing whether this is a create or alter.
   final TableOperationKind operation;

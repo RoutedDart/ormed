@@ -31,7 +31,7 @@ class PostgresSchemaDialect extends SchemaDialect {
   }
 
   List<SchemaStatement> _compileCreateTable(TableBlueprint blueprint) {
-    final buffer = StringBuffer('CREATE TABLE ${_quote(blueprint.table)} (');
+    final buffer = StringBuffer('CREATE TABLE ${_tableNameFromBlueprint(blueprint)} (');
 
     final indexCommands = blueprint.indexes;
     final primaryDefinitions = <String, IndexDefinition>{};
@@ -87,7 +87,7 @@ class PostgresSchemaDialect extends SchemaDialect {
       final definition = index.definition;
       if (definition == null || definition.type == IndexType.primary) continue;
       statements.add(
-        SchemaStatement(_createIndexSql(blueprint.table, definition)),
+        SchemaStatement(_createIndexSqlForBlueprint(blueprint, definition)),
       );
     }
 
@@ -96,6 +96,7 @@ class PostgresSchemaDialect extends SchemaDialect {
 
   List<SchemaStatement> _compileAlterTable(TableBlueprint blueprint) {
     final statements = <SchemaStatement>[];
+    final tableName = _tableNameFromBlueprint(blueprint);
 
     for (final column in blueprint.columns) {
       switch (column.kind) {
@@ -104,7 +105,7 @@ class PostgresSchemaDialect extends SchemaDialect {
           if (definition == null) continue;
           statements.add(
             SchemaStatement(
-              'ALTER TABLE ${_quote(blueprint.table)} '
+              'ALTER TABLE $tableName '
               'ADD COLUMN ${_columnDefinitionSql(definition)}',
             ),
           );
@@ -112,12 +113,12 @@ class PostgresSchemaDialect extends SchemaDialect {
           final definition = column.definition;
           if (definition == null) continue;
           statements.addAll(
-            _alterColumnStatements(blueprint.table, definition),
+            _alterColumnStatements(tableName, definition),
           );
         case ColumnCommandKind.drop:
           statements.add(
             SchemaStatement(
-              'ALTER TABLE ${_quote(blueprint.table)} '
+              'ALTER TABLE $tableName '
               'DROP COLUMN ${_quote(column.name)}',
             ),
           );
@@ -127,7 +128,7 @@ class PostgresSchemaDialect extends SchemaDialect {
     for (final rename in blueprint.renamedColumns) {
       statements.add(
         SchemaStatement(
-          'ALTER TABLE ${_quote(blueprint.table)} '
+          'ALTER TABLE $tableName '
           'RENAME COLUMN ${_quote(rename.from)} TO ${_quote(rename.to)}',
         ),
       );
@@ -139,7 +140,7 @@ class PostgresSchemaDialect extends SchemaDialect {
         case IndexCommandKind.add:
           if (definition == null) continue;
           statements.add(
-            SchemaStatement(_createIndexSql(blueprint.table, definition)),
+            SchemaStatement(_createIndexSqlForBlueprint(blueprint, definition)),
           );
         case IndexCommandKind.drop:
           statements.add(
@@ -155,14 +156,14 @@ class PostgresSchemaDialect extends SchemaDialect {
           if (definition == null) continue;
           statements.add(
             SchemaStatement(
-              'ALTER TABLE ${_quote(blueprint.table)} '
+              'ALTER TABLE $tableName '
               'ADD ${_foreignKeyConstraint(definition)}',
             ),
           );
         case ForeignKeyCommandKind.drop:
           statements.add(
             SchemaStatement(
-              'ALTER TABLE ${_quote(blueprint.table)} '
+              'ALTER TABLE $tableName '
               'DROP CONSTRAINT IF EXISTS ${_quote(foreign.name)}',
             ),
           );
@@ -202,6 +203,29 @@ class PostgresSchemaDialect extends SchemaDialect {
       case IndexType.spatial:
         final columns = definition.columns.map(_quote).join(', ');
         return 'CREATE INDEX ${_quote(definition.name)} ON ${_quote(table)} '
+            'USING GIST ($columns)';
+    }
+  }
+
+  String _createIndexSqlForBlueprint(TableBlueprint blueprint, IndexDefinition definition) {
+    final tableName = _tableNameFromBlueprint(blueprint);
+    switch (definition.type) {
+      case IndexType.unique:
+      case IndexType.regular:
+      case IndexType.primary:
+        final prefix = definition.type == IndexType.unique ? 'UNIQUE ' : '';
+        final columns = definition.raw
+            ? definition.columns.join(', ')
+            : definition.columns.map(_quote).join(', ');
+        return 'CREATE ${prefix}INDEX ${_quote(definition.name)} '
+            'ON $tableName ($columns)';
+      case IndexType.fullText:
+        final expression = _fullTextExpression(definition);
+        return 'CREATE INDEX ${_quote(definition.name)} ON $tableName '
+            'USING GIN ($expression)';
+      case IndexType.spatial:
+        final columns = definition.columns.map(_quote).join(', ');
+        return 'CREATE INDEX ${_quote(definition.name)} ON $tableName '
             'USING GIST ($columns)';
     }
   }
@@ -418,5 +442,19 @@ class PostgresSchemaDialect extends SchemaDialect {
   String _quote(String identifier) {
     final escaped = identifier.replaceAll('"', '""');
     return '"$escaped"';
+  }
+
+  String _tableName(String table, {String? schema}) {
+    if (schema != null && schema.isNotEmpty) {
+      return '${_quote(schema)}.${_quote(table)}';
+    }
+    if (table.contains('.')) {
+      return table.split('.').map(_quote).join('.');
+    }
+    return _quote(table);
+  }
+  
+  String _tableNameFromBlueprint(TableBlueprint blueprint) {
+    return _tableName(blueprint.table, schema: blueprint.schema);
   }
 }

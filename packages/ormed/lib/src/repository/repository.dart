@@ -357,16 +357,32 @@ class Repository<T> {
   }
 
   List<T> _mapResult(List<T> original, MutationResult result, bool returning) {
-    if (!returning || result.returnedRows == null) {
+    // If driver returned data (e.g., lastInsertID), merge it even if returning wasn't explicitly requested
+    if (result.returnedRows == null || result.returnedRows!.isEmpty) {
       return original;
     }
-    return result.returnedRows!
-        .map((row) {
-          final model = definition.fromMap(row, registry: _codecs);
-          _attachRuntimeMetadata(model);
-          return model;
-        })
-        .toList(growable: false);
+
+    // Merge returned data with original models
+    // Some drivers (like MySQL) only return PKs via lastInsertID, not full rows
+    final returned = <T>[];
+    for (int i = 0; i < result.returnedRows!.length; i++) {
+      final returnedRow = result.returnedRows![i];
+      final originalModel = i < original.length ? original[i] : null;
+
+      final Map<String, Object?> mergedData;
+      if (originalModel != null) {
+        // Merge returned data (e.g., auto-generated PK) with original model data
+        final originalData = definition.toMap(originalModel, registry: _codecs);
+        mergedData = {...originalData, ...returnedRow};
+      } else {
+        mergedData = returnedRow;
+      }
+
+      final model = definition.fromMap(mergedData, registry: _codecs);
+      _attachRuntimeMetadata(model);
+      returned.add(model);
+    }
+    return returned;
   }
 
   MutationPlan _buildInsertPlan(
@@ -374,9 +390,24 @@ class Repository<T> {
     required bool returning,
     bool ignoreConflicts = false,
   }) {
-    final rows = models
-        .map((model) => definition.toMap(model, registry: _codecs))
-        .toList(growable: false);
+    final rows = models.map((model) {
+      final map = definition.toMap(model, registry: _codecs);
+      
+      // Filter out auto-increment primary keys with default/zero values
+      // to allow the database to generate them
+      final filtered = Map<String, Object?>.from(map);
+      for (final field in definition.fields) {
+        if (field.isPrimaryKey && field.autoIncrement) {
+          final value = map[field.columnName];
+          // Remove if null, 0, or empty string (common sentinel values)
+          if (value == null || value == 0 || value == '') {
+            filtered.remove(field.columnName);
+          }
+        }
+      }
+      return filtered;
+    }).toList(growable: false);
+    
     return MutationPlan.insert(
       definition: definition,
       rows: rows,

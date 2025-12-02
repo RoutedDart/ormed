@@ -4,7 +4,7 @@ This document tracks the implementation of Laravel Eloquent-style lazy loading a
 
 ---
 
-## 🎉 Current Status: All Phases Complete + Deferred Features Done! (as of 2025-11-28)
+## 🎉 Current Status: All Phases Complete + Enhanced! (as of 2025-11-28)
 
 ### ✅ Completed Features
 
@@ -12,9 +12,12 @@ This document tracks the implementation of Laravel Eloquent-style lazy loading a
 - Runtime relation cache with `ModelRelations` mixin
 - Code generator producing relation getters
 - Lazy loading APIs: `load()`, `loadMissing()`, `loadMany()`
-- Aggregate loading: `loadCount()`, `loadExists()`
+- Aggregate loading: `loadCount()`, `loadExists()`, `loadSum()`, `loadAvg()`, `loadMax()`, `loadMin()`
+- Query builder aggregates: `withSum()`, `withAvg()`, `withMax()`, `withMin()`
 - Laravel-style lazy loading prevention mechanism
 - **NEW:** Shared `RelationResolver` utility class (eliminates code duplication)
+- **NEW:** Public `relationLoaded()` API to check if relation is cached
+- **NEW:** Relation state methods: `clearRelations()`, `setRelation()`, `unsetRelation()`
 - 48+ comprehensive tests in driver_tests package
 
 **Phase 5: Relation Mutation Helpers** ✅
@@ -24,12 +27,31 @@ This document tracks the implementation of Laravel Eloquent-style lazy loading a
 - Method chaining support
 - 30+ comprehensive tests in driver_tests package
 
-**Phase 6: Documentation** ✅ (Complete)
-- Comprehensive `docs/relations.md` created covering all lazy loading & relation features
-- Updated `README.md` with lazy loading examples and feature descriptions
-- Updated `docs/query_builder.md` with expanded relation loading section
-- Updated `docs/code_generation.md` with generated relation getters documentation
-- Updated `docs/examples.md` with comprehensive relation examples
+**Phase 6: Documentation** ✅ (Enhanced)
+- Comprehensive `docs/relations.md` with:
+  - Lazy loading control & prevention
+  - Relation aggregates documentation
+  - Driver capabilities & limitations
+  - MongoDB vs SQL driver differences
+  - Complete API reference
+- Updated `README.md` with lazy loading examples
+- Updated query builder and code generation docs
+
+**Phase 7: Driver Capability System** ✅ (NEW)
+- Added `DriverCapability.relationAggregates` capability
+- MongoDB driver properly reports unsupported features
+- SQLite driver supports all relation aggregates
+- Tests automatically skip unsupported features per driver
+- Follows Laravel MongoDB approach for feature support
+
+**Phase 8: MongoDB Aggregation Pipeline for Relations** ✅ (2025-11-28)
+- Implemented server-side relation aggregates using MongoDB's `$lookup` + aggregation operators
+- Relation aggregates (loadCount, loadSum, loadAvg, loadMax, loadMin, loadExists) now execute in database
+- No more client-side computation for MongoDB relation aggregates
+- Full support for hasMany, hasOne, and belongsTo relations
+- Proper field mapping using parentKey/childKey from RelationSegment
+- Automatic cleanup of temporary lookup fields
+- All 265+ MongoDB tests passing including relation aggregate tests
 
 **Deferred Features (Phase 3)** ✅ (Complete)
 - Nested relation paths: `post.load('comments.author')`
@@ -38,12 +60,15 @@ This document tracks the implementation of Laravel Eloquent-style lazy loading a
 
 ### 📊 Implementation Statistics
 
-- **Total Tests**: 78+ comprehensive tests across all features
-- **Code Quality**: Clean dart analyze (0 errors, 27 pre-existing info warnings)
-- **Database Support**: MySQL, PostgreSQL, SQLite
-- **Lines of Code**: ~1,050 lines of production code + ~1,200 lines of tests
-- **API Methods**: 16 public methods added to Model class
-- **Documentation**: 5 doc files updated, 560+ lines of new documentation
+- **Total Tests**: 80+ comprehensive tests across all features
+- **Code Quality**: Clean dart analyze (0 errors)
+- **Database Support**: 
+  - **Full Support**: SQLite (all features including relation aggregates)
+  - **Partial Support**: MongoDB (basic relations, no aggregate subqueries)
+- **Lines of Code**: ~1,200 lines of production code + ~1,400 lines of tests
+- **API Methods**: 20+ public methods added to Model class
+- **Documentation**: Comprehensive docs with driver-specific guidance
+- **Driver Capabilities**: 14 distinct capabilities tracked
 
 ### 🚀 Production Ready Features
 
@@ -600,10 +625,84 @@ post.unsetRelation('tags');
 **Phases 1-6 Total:** ~6 days of focused development
 **Current Status:** All core features and documentation complete! 🎉
 
+### Additional Enhancements Completed
+
+#### Relation Resolution Utilities (Task 3.1)
+- [x] Created `RelationResolver` utility class in `lib/src/query/relation_resolution.dart`
+- [x] Extracted and refactored relation resolution logic from `Query`
+- [x] Implemented `segmentFor()`, `predicateFor()`, and `resolvePath()` methods
+- [x] Updated `Query` class to use the new shared utilities
+
+#### Driver Capabilities System
+- [x] Implemented capability-based feature detection system
+- [x] Added `DriverCapability` enum for feature flags
+- [x] Updated MongoDB driver to report limited capabilities
+- [x] Added test skip logic based on driver capabilities
+- [x] Created comprehensive `DRIVER_CAPABILITIES.md` documentation
+
+#### API Completeness
+- [x] `loadMissing()` - loads relations only if not already loaded
+- [x] `relationLoaded()` - checks if a relation is cached
+- [x] `loadCount()` - loads aggregate count for a relation
+- [x] `loadExists()` - loads existence check for a relation
+- [x] Static batch loading: `Model.loadRelations()`, `loadRelationsMany()`, `loadRelationsMissing()`
+
 ### Documentation Deliverables
 - `docs/relations.md` — Comprehensive relations guide (560 lines)
+- `DRIVER_CAPABILITIES.md` — Driver differences and capability system guide
 - `README.md` — Updated with lazy loading features and examples
 - `docs/query_builder.md` — Expanded relation loading section
 - `docs/code_generation.md` — Generated relation getters documentation
 - `docs/examples.md` — Working with Relations examples section
 - All public APIs have dartdoc comments with examples
+
+### Additional Enhancements - Aggregate Loaders
+
+#### Aggregate Loaders (✅ Complete)
+- [x] `loadMax(relation, column)` - load maximum value from relation
+- [x] `loadMin(relation, column)` - load minimum value from relation
+- [x] `loadSum(relation, column)` - load sum of column values
+- [x] `loadAvg(relation, column)` - load average of column values
+- [x] `loadCount(relation)` - count related models
+- [x] `loadExists(relation)` - check if related models exist
+
+**Implementation Notes:**
+- All aggregate loaders implemented in `model.dart`
+- Query builder methods (`withSum`, `withAvg`, `withMax`, `withMin`) were already implemented
+- Fixed aggregate attribute hydration to properly transfer aggregate columns from query results to model attributes
+- Added proper type conversion for EXISTS results (int 1/0 to boolean)
+- Comprehensive tests added to `driver_tests/src/tests/query_builder/relation_aggregate_tests.dart`
+- All 311 tests passing in SQLite driver
+
+### Future Enhancements
+
+#### Performance Optimizations
+- [ ] Cache relation paths to avoid repeated resolution
+- [ ] Optimize batch loading for large collections
+- [ ] Add configurable eager loading depth limits
+
+#### Advanced Features
+- [ ] N+1 query detection in development mode
+- [ ] Automatic eager loading suggestions
+- [ ] Relation autoloading callbacks
+
+### Latest Ergonomic Enhancements (✅ Complete)
+
+#### Static Query Helpers (✅ Complete)
+- [x] Added `static Query<T> query({String? connection})` to generated models
+- [x] Allows `User.query()` instead of `context.query<User>()`
+- [x] Supports custom connection parameter
+- [x] Updated documentation in `docs/query_builder.md`
+- [x] Created comprehensive `docs/ERGONOMIC_FEATURES.md`
+
+**Implementation Notes:**
+- Generator now adds static query helper to model extension
+- Provides Laravel-style ergonomics: `User.query().whereEquals(...).get()`
+- Works seamlessly with all existing query builder methods
+- All 311 tests passing in SQLite driver
+- No breaking changes to existing API
+
+**Documentation Deliverables:**
+- `docs/ERGONOMIC_FEATURES.md` — Comprehensive guide to all ergonomic features
+- `docs/query_builder.md` — Updated with static query helper examples
+- Comparison table with Laravel Eloquent showing feature parity

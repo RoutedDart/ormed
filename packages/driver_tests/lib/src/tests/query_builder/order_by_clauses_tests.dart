@@ -1,29 +1,30 @@
+import 'package:ormed/ormed.dart';
 import 'package:test/test.dart';
 
 import '../../models/models.dart';
-import '../../harness/driver_test_harness.dart';
+
 import '../../config.dart';
 
 void runOrderByClausesTests(
-  DriverHarnessBuilder<DriverTestHarness> createHarness,
+  DataSource dataSource,
   DriverTestConfig config,
 ) {
   group('OrderBy Clauses tests', () {
-    late DriverTestHarness harness;
+    
 
     setUp(() async {
-      harness = await createHarness();
+      
     });
 
-    tearDown(() async => harness.dispose());
+    
 
     test('orderBy', () async {
-      await harness.seedUsers([
+      await dataSource.repo<User>().insertMany([
         User(id: 1, email: 'b@example.com', active: true),
         User(id: 2, email: 'a@example.com', active: false),
       ]);
 
-      final users = await harness.context.query<User>().orderBy('email').get();
+      final users = await dataSource.context.query<User>().orderBy('email').get();
 
       expect(users, hasLength(2));
       expect(users.first.id, 2);
@@ -31,12 +32,12 @@ void runOrderByClausesTests(
     });
 
     test('orderBy descending', () async {
-      await harness.seedUsers([
+      await dataSource.repo<User>().insertMany([
         User(id: 1, email: 'a@example.com', active: true),
         User(id: 2, email: 'b@example.com', active: false),
       ]);
 
-      final users = await harness.context
+      final users = await dataSource.context
           .query<User>()
           .orderBy('email', descending: true)
           .get();
@@ -47,7 +48,7 @@ void runOrderByClausesTests(
     });
 
     test('multiple orderBy', () async {
-      await harness.seedArticles([
+      await dataSource.repo<Article>().insertMany([
         Article(
           id: 1,
           title: 'a',
@@ -77,7 +78,7 @@ void runOrderByClausesTests(
         ),
       ]);
 
-      final articles = await harness.context
+      final articles = await dataSource.context
           .query<Article>()
           .orderBy('status')
           .orderBy('id', descending: true)
@@ -88,7 +89,7 @@ void runOrderByClausesTests(
     });
 
     test('orderByRandom', () async {
-      await harness.seedUsers([
+      await dataSource.repo<User>().insertMany([
         User(id: 1, email: 'a@example.com', active: true),
         User(id: 2, email: 'b@example.com', active: false),
         User(id: 3, email: 'c@example.com', active: true),
@@ -96,7 +97,7 @@ void runOrderByClausesTests(
 
       final seen = <List<int>>[];
       for (var i = 0; i < 5; i++) {
-        final users = await harness.context.query<User>().orderByRandom().get();
+        final users = await dataSource.context.query<User>().orderByRandom().get();
         seen.add(users.map((u) => u.id).toList(growable: false));
       }
 

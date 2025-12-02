@@ -103,12 +103,12 @@ class _TestMigration extends Migration {
   final String slug;
 
   @override
-  void down(SchemaBuilder schema) {
+  Future<void> down(SchemaBuilder schema) async {
     schema.raw('down:$slug');
   }
 
   @override
-  void up(SchemaBuilder schema) {
+  Future<void> up(SchemaBuilder schema) async {
     schema.raw('up:$slug');
   }
 }

@@ -1,13 +1,10 @@
+import 'package:driver_tests/driver_tests.dart';
 import 'package:ormed/ormed.dart';
 import 'package:ormed_mysql/ormed_mysql.dart' show MySqlQueryGrammar;
 import 'package:ormed_postgres/ormed_postgres.dart' show PostgresQueryGrammar;
 import 'package:ormed_sqlite/src/sqlite_grammar.dart' show SqliteQueryGrammar;
 import 'package:test/test.dart';
 
-import 'models/author.dart';
-import 'models/post.dart';
-import 'models/tag.dart';
-import 'models/post_tag.dart';
 
 class PreviewDriver extends InMemoryQueryExecutor {
   PreviewDriver(this._name);

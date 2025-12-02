@@ -1,21 +1,44 @@
+import 'dart:io';
+
 import 'package:driver_tests/driver_tests.dart';
+import 'package:ormed/ormed.dart';
 import 'package:ormed_mysql/ormed_mysql.dart';
 import 'package:test/test.dart';
 
-import 'support/mysql_harness.dart';
-
 void main() {
   group('MySQL-specific joins', () {
-    late MySqlTestHarness harness;
+    late DataSource dataSource;
+    late MySqlDriverAdapter driverAdapter;
 
-    setUp(() async {
-      harness = await MySqlTestHarness.connect();
+    setUpAll(() async {
+      final url =
+          Platform.environment['MYSQL_URL'] ??
+          'mysql://root:secret@localhost:6605/orm_test';
+
+      driverAdapter = MySqlDriverAdapter.custom(
+        config: DatabaseConfig(
+          driver: 'mysql',
+          options: {'url': url, 'ssl': true},
+        ),
+      );
+
+      dataSource = DataSource(DataSourceOptions(
+        driver: driverAdapter,
+        entities: generatedOrmModelDefinitions,
+      ));
+
+      await dataSource.init();
+      registerDriverTestFactories();
+      await resetDriverTestSchema(driverAdapter, schema: null);
     });
 
-    tearDown(() async => harness.dispose());
+    tearDownAll(() async {
+      await dropDriverTestSchema(driverAdapter, schema: null);
+      await dataSource.dispose();
+    });
 
     test('emits STRAIGHT_JOIN keyword', () async {
-      final plan = harness.context
+      final plan = dataSource.context
           .query<Post>()
           .straightJoin('authors', 'authors.id', '=', 'posts.author_id')
           .debugPlan();
@@ -25,8 +48,8 @@ void main() {
     });
 
     test('joinLateral emits keyword', () async {
-      final subquery = harness.context.query<Post>().limit(1);
-      final plan = harness.context
+      final subquery = dataSource.context.query<Post>().limit(1);
+      final plan = dataSource.context
           .query<Author>()
           .joinLateral(
             subquery,

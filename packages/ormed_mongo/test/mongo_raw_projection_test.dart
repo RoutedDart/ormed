@@ -1,32 +1,43 @@
 import 'package:driver_tests/driver_tests.dart';
+import 'package:ormed/ormed.dart';
 import 'package:test/test.dart';
 
-import 'support/mongo_harness.dart';
+import 'shared.dart';
+import 'package:ormed_mongo/ormed_mongo.dart';
 
 void main() {
-  late MongoTestHarness harness;
+  late DataSource dataSource;
+  late MongoDriverAdapter driverAdapter;
 
   setUpAll(() async {
-    harness = await MongoTestHarness.create();
-    await seedGraph(harness);
+    await waitForMongoReady();
+    await clearDatabase();
+    driverAdapter = createAdapter();
+    registerDriverTestFactories();
+    dataSource = DataSource(DataSourceOptions(
+      driver: driverAdapter,
+      entities: generatedOrmModelDefinitions,
+    ));
+    await dataSource.init();
+    await seedGraph(dataSource);
   });
 
-  tearDownAll(() async => await harness.dispose());
+  tearDownAll(() async => await dataSource.dispose());
 
   test('executeRaw throws UnsupportedError for SQL', () async {
     expect(
-      () => harness.adapter.executeRaw('SHOW TABLES'),
+      () => driverAdapter.executeRaw('SHOW TABLES'),
       throwsUnsupportedError,
     );
     expect(
-      () => harness.adapter.executeRaw('DESCRIBE authors'),
+      () => driverAdapter.executeRaw('DESCRIBE authors'),
       throwsUnsupportedError,
     );
   });
 
   test('select projection only returns requested fields', () async {
-    final plan = harness.context.query<Author>().select(['id']).debugPlan();
-    final rows = await harness.context.runSelect(plan);
+    final plan = dataSource.context.query<Author>().select(['id']).debugPlan();
+    final rows = await dataSource.context.runSelect(plan);
     for (final row in rows) {
       expect(row.containsKey('id'), isTrue);
       final extra = row.keys.toSet().difference({'id', '_id'});

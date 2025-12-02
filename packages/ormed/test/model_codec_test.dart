@@ -1,9 +1,8 @@
 import 'dart:convert';
 
+import 'package:driver_tests/driver_tests.dart';
 import 'package:ormed/ormed.dart';
 import 'package:test/test.dart';
-
-import 'models/user.dart';
 
 void main() {
   final registry = ValueCodecRegistry.standard()
@@ -11,7 +10,7 @@ void main() {
 
   test('encodes maps using registered codecs', () {
     final user = User(
-      id: '42',
+      id: 42,
       email: 'user@example.com',
       profile: {'theme': 'dark', 'flags': 2},
       createdAt: DateTime.utc(2024, 5, 1),
@@ -22,14 +21,14 @@ void main() {
       registry: registry,
     );
 
-    expect(encoded['id'], '42');
+    expect(encoded['id'], 42);
     expect(encoded['profile'], jsonEncode({'theme': 'dark', 'flags': 2}));
   });
 
   test('decodes rows into concrete models with codecs applied', () {
     final now = DateTime.utc(2025, 1, 10);
     final data = <String, Object?>{
-      'id': '100',
+      'id': 100,
       'email': 'decode@example.com',
       'profile': jsonEncode({'lang': 'en'}),
       'createdAt': now,
@@ -40,7 +39,7 @@ void main() {
       registry: registry,
     );
 
-    expect(model.id, '100');
+    expect(model.id, 100);
     expect(model.profile, {'lang': 'en'});
     expect(model.createdAt, now);
   });

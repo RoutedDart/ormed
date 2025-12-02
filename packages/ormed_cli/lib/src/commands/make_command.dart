@@ -107,6 +107,7 @@ class MakeCommand extends Command<void> {
   }
 }
 
+/// Format timestamp as m_YYYYMMDDHHMMSS (new Dart-compliant format)
 String _formatTimestamp(DateTime value) {
   final year = value.year.toString().padLeft(4, '0');
   final month = value.month.toString().padLeft(2, '0');
@@ -114,7 +115,7 @@ String _formatTimestamp(DateTime value) {
   final hour = value.hour.toString().padLeft(2, '0');
   final minute = value.minute.toString().padLeft(2, '0');
   final second = value.second.toString().padLeft(2, '0');
-  return '${year}_${month}_${day}_$hour$minute$second';
+  return 'm_$year$month$day$hour$minute$second';
 }
 
 String _toPascalCase(String slug) {
@@ -145,16 +146,22 @@ class $className extends Migration {
 
 String _seederFileTemplate(String className) =>
     '''
-import 'package:ormed_cli/runtime.dart';
 import 'package:ormed/ormed.dart';
 
-class $className extends Seeder {
-  $className(SeedContext context) : super(context);
+class $className extends DatabaseSeeder {
+  $className(super.connection);
 
   @override
   Future<void> run() async {
-    final seeder = context.seeder;
     // TODO: add seed logic here
+    // Examples:
+    // await seed<User>([
+    //   {'name': 'John Doe', 'email': 'john@example.com'},
+    //   {'name': 'Jane Smith', 'email': 'jane@example.com'},
+    // ]);
+    //
+    // Or use call() to run other seeders:
+    // await call([UserSeeder.new, PostSeeder.new]);
   }
 }
 ''';
@@ -224,7 +231,13 @@ void _createSeeder({
     );
   }
   var content = registry.readAsStringSync();
-  final importLine = "import 'seeders/$snake.dart';";
+  
+  // Calculate relative import path from registry to seeder file
+  final registryDir = p.dirname(registryPath);
+  final relativeImportPath = p.relative(file.path, from: registryDir)
+      .replaceAll(r'\', '/'); // Normalize for Dart imports
+  
+  final importLine = "import '$relativeImportPath';";
   if (!content.contains(importLine)) {
     content = insertBetweenMarkers(
       content,
@@ -300,7 +313,13 @@ void _createMigration({
     throw StateError('Registry file $registryPath not found. Run `orm init`.');
   }
   var content = registry.readAsStringSync();
-  final importLine = "import 'migrations/$fileName';";
+  
+  // Calculate relative import path from registry to migration file
+  final registryDir = p.dirname(registryPath);
+  final relativeImportPath = p.relative(file.path, from: registryDir)
+      .replaceAll(r'\', '/'); // Normalize for Dart imports
+  
+  final importLine = "import '$relativeImportPath';";
   content = insertBetweenMarkers(
     content,
     importsMarkerStart,
@@ -309,7 +328,7 @@ void _createMigration({
     indent: '',
   );
   final descriptor =
-      '''_MigrationEntry(
+      '''MigrationEntry(
     id: MigrationId.parse('${timestamp}_$slug'),
     migration: const $className(),
   ),''';

@@ -2,8 +2,7 @@ import 'dart:convert';
 
 import 'package:ormed/ormed.dart';
 import 'package:test/test.dart';
-
-import 'models/driver_override.dart';
+import 'package:driver_tests/driver_tests.dart';
 
 void main() {
   group('FieldDefinition driver overrides', () {

@@ -3,7 +3,7 @@ import 'package:ormed/ormed.dart';
 part 'post_tag.orm.dart';
 
 @OrmModel(table: 'post_tags')
-class PostTag {
+class PostTag extends Model<PostTag> {
   const PostTag({required this.postId, required this.tagId});
 
   @OrmField(isPrimaryKey: true, columnName: 'post_id')

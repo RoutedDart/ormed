@@ -82,10 +82,55 @@ extension TagOrmDefinition on Tag {
   static ModelDefinition<Tag> get definition => _$TagModelDefinition;
 }
 
+class Tags {
+  const Tags._();
+
+  static Query<Tag> query([String? connection]) =>
+      Model.query<Tag>(connection: connection);
+
+  static Future<Tag?> find(Object id, {String? connection}) =>
+      Model.find<Tag>(id, connection: connection);
+
+  static Future<Tag> findOrFail(Object id, {String? connection}) =>
+      Model.findOrFail<Tag>(id, connection: connection);
+
+  static Future<List<Tag>> all({String? connection}) =>
+      Model.all<Tag>(connection: connection);
+
+  static Future<int> count({String? connection}) =>
+      Model.count<Tag>(connection: connection);
+
+  static Future<bool> exists({String? connection}) =>
+      Model.exists<Tag>(connection: connection);
+
+  static Query<Tag> where(
+    String column,
+    String operator,
+    dynamic value, {
+    String? connection,
+  }) => Model.where<Tag>(column, operator, value, connection: connection);
+
+  static Query<Tag> whereIn(
+    String column,
+    List<dynamic> values, {
+    String? connection,
+  }) => Model.whereIn<Tag>(column, values, connection: connection);
+
+  static Query<Tag> orderBy(
+    String column, {
+    String direction = "asc",
+    String? connection,
+  }) =>
+      Model.orderBy<Tag>(column, direction: direction, connection: connection);
+
+  static Query<Tag> limit(int count, {String? connection}) =>
+      Model.limit<Tag>(count, connection: connection);
+}
+
 class TagModelFactory {
   const TagModelFactory._();
 
-  static ModelDefinition<Tag> get definition => TagOrmDefinition.definition;
+  static ModelDefinition<Tag> get definition => _$TagModelDefinition;
 
   static ModelCodec<Tag> get codec => definition.codec;
 
@@ -102,8 +147,12 @@ class TagModelFactory {
   static void registerWith(ModelRegistry registry) =>
       registry.register(definition);
 
-  static ModelFactoryConnection<Tag> withConnection(QueryContext context) =>
-      ModelFactoryConnection<Tag>(definition: definition, context: context);
+  static ModelFactoryBuilder<Tag> factory({
+    GeneratorProvider? generatorProvider,
+  }) => ModelFactoryBuilder<Tag>(
+    definition: definition,
+    generatorProvider: generatorProvider,
+  );
 }
 
 class _$TagModelCodec extends ModelCodec<Tag> {
@@ -152,13 +201,18 @@ class _$TagModelCodec extends ModelCodec<Tag> {
   }
 }
 
-class _$TagModel extends Tag with ModelAttributes, ModelConnection {
+class _$TagModel extends Tag {
   _$TagModel({
     int? id,
     required String name,
     DateTime? createdAt,
     DateTime? updatedAt,
-  }) : super(id: id, name: name, createdAt: createdAt, updatedAt: updatedAt) {
+  }) : super.new(
+         id: id,
+         name: name,
+         createdAt: createdAt,
+         updatedAt: updatedAt,
+       ) {
     _attachOrmRuntimeMetadata({
       'id': id,
       'name': name,
@@ -170,19 +224,34 @@ class _$TagModel extends Tag with ModelAttributes, ModelConnection {
   @override
   int? get id => getAttribute<int?>('id') ?? super.id;
 
+  set id(int? value) => setAttribute('id', value);
+
   @override
   String get name => getAttribute<String>('name') ?? super.name;
+
+  set name(String value) => setAttribute('name', value);
 
   @override
   DateTime? get createdAt =>
       getAttribute<DateTime?>('created_at') ?? super.createdAt;
 
+  set createdAt(DateTime? value) => setAttribute('created_at', value);
+
   @override
   DateTime? get updatedAt =>
       getAttribute<DateTime?>('updated_at') ?? super.updatedAt;
+
+  set updatedAt(DateTime? value) => setAttribute('updated_at', value);
 
   void _attachOrmRuntimeMetadata(Map<String, Object?> values) {
     replaceAttributes(values);
     attachModelDefinition(_$TagModelDefinition);
   }
+}
+
+extension TagAttributeSetters on Tag {
+  set id(int? value) => setAttribute('id', value);
+  set name(String value) => setAttribute('name', value);
+  set createdAt(DateTime? value) => setAttribute('created_at', value);
+  set updatedAt(DateTime? value) => setAttribute('updated_at', value);
 }

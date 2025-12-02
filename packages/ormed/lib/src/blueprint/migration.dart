@@ -1,3 +1,4 @@
+import 'dart:async' show FutureOr;
 import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
@@ -13,12 +14,16 @@ enum MigrationDirection { up, down }
 abstract class Migration {
   const Migration();
 
-  void up(SchemaBuilder schema);
-  void down(SchemaBuilder schema);
+  FutureOr<void> up(SchemaBuilder schema);
+  FutureOr<void> down(SchemaBuilder schema);
 
   /// Builds a plan for the requested direction.
-  SchemaPlan plan(MigrationDirection direction, {SchemaSnapshot? snapshot}) {
-    final builder = SchemaBuilder(snapshot: snapshot);
+  SchemaPlan plan(
+    MigrationDirection direction, {
+    SchemaSnapshot? snapshot,
+    String? defaultSchema,
+  }) {
+    final builder = SchemaBuilder(snapshot: snapshot, defaultSchema: defaultSchema);
     switch (direction) {
       case MigrationDirection.up:
         up(builder);
@@ -38,10 +43,46 @@ class MigrationId {
   const MigrationId(this.timestamp, this.slug);
 
   factory MigrationId.parse(String value) {
-    final segments = value.split('_');
+    // Strip "m_" prefix if present (new format)
+    var normalized = value;
+    if (value.startsWith('m_')) {
+      normalized = value.substring(2);
+    }
+
+    // New format: m_YYYYMMDDHHMMSS_slug
+    // Old format: YYYY_MM_DD_HHMMSS_slug (for backward compatibility)
+
+    // Check if it's the new format (14 consecutive digits followed by underscore)
+    final newFormatMatch = RegExp(r'^(\d{14})_(.+)$').firstMatch(normalized);
+    if (newFormatMatch != null) {
+      final timestampStr = newFormatMatch.group(1)!;
+      final slug = newFormatMatch.group(2)!;
+
+      final year = int.tryParse(timestampStr.substring(0, 4));
+      final month = int.tryParse(timestampStr.substring(4, 6));
+      final day = int.tryParse(timestampStr.substring(6, 8));
+      final hour = int.tryParse(timestampStr.substring(8, 10));
+      final minute = int.tryParse(timestampStr.substring(10, 12));
+      final second = int.tryParse(timestampStr.substring(12, 14));
+
+      if (year == null ||
+          month == null ||
+          day == null ||
+          hour == null ||
+          minute == null ||
+          second == null) {
+        throw FormatException('Invalid migration timestamp in "$value".');
+      }
+
+      final timestamp = DateTime.utc(year, month, day, hour, minute, second);
+      return MigrationId(timestamp, slug);
+    }
+
+    // Fall back to old format: YYYY_MM_DD_HHMMSS_slug
+    final segments = normalized.split('_');
     if (segments.length < 5) {
       throw FormatException(
-        'Invalid migration id "$value". Expected YYYY_MM_DD_HHMMSS_slug format.',
+        'Invalid migration id "$value". Expected m_YYYYMMDDHHMMSS_slug or YYYY_MM_DD_HHMMSS_slug format.',
       );
     }
 
@@ -71,7 +112,8 @@ class MigrationId {
   final DateTime timestamp;
   final String slug;
 
-  String toFileName() => '${_formatTimestamp(timestamp)}_$slug';
+  /// Generate filename in new format: m_YYYYMMDDHHMMSS_slug.dart
+  String toFileName() => 'm_${_formatTimestampCompact(timestamp)}_$slug';
 
   @override
   String toString() => toFileName();
@@ -99,9 +141,10 @@ class MigrationDescriptor {
   factory MigrationDescriptor.fromMigration({
     required MigrationId id,
     required Migration migration,
+    String? defaultSchema,
   }) {
-    final upPlan = migration.plan(MigrationDirection.up);
-    final downPlan = migration.plan(MigrationDirection.down);
+    final upPlan = migration.plan(MigrationDirection.up, defaultSchema: defaultSchema);
+    final downPlan = migration.plan(MigrationDirection.down, defaultSchema: defaultSchema);
     final checksum = _checksumForPlans(upPlan, downPlan);
     return MigrationDescriptor(
       id: id,
@@ -141,12 +184,62 @@ String _checksumForPlans(SchemaPlan up, SchemaPlan down) {
   return sha1.convert(utf8.encode(payload)).toString();
 }
 
-String _formatTimestamp(DateTime value) {
+/// Format timestamp as YYYYMMDDHHMMSS (14 digits, no separators)
+String _formatTimestampCompact(DateTime value) {
   final year = value.year.toString().padLeft(4, '0');
   final month = value.month.toString().padLeft(2, '0');
   final day = value.day.toString().padLeft(2, '0');
   final hour = value.hour.toString().padLeft(2, '0');
   final minute = value.minute.toString().padLeft(2, '0');
   final second = value.second.toString().padLeft(2, '0');
-  return '${year}_${month}_${day}_$hour$minute$second';
+  return '$year$month$day$hour$minute$second';
+}
+
+/// Ties a [MigrationId] to a [Migration] instance.
+///
+/// Used to register migrations with their IDs for proper ordering.
+/// The CLI generates these automatically in migrations.dart file.
+///
+/// Example:
+/// ```dart
+/// final entries = [
+///   MigrationEntry(
+///     id: MigrationId.parse('m_20251130100953_create_users'),
+///     migration: const CreateUsersTable(),
+///   ),
+///   MigrationEntry(
+///     id: MigrationId.parse('m_20251130101500_add_index'),
+///     migration: const AddEmailIndex(),
+///   ),
+/// ];
+///
+/// // Convert to descriptors (sorted by timestamp)
+/// final descriptors = MigrationEntry.buildDescriptors(entries);
+/// ```
+class MigrationEntry {
+  const MigrationEntry({required this.id, required this.migration});
+
+  final MigrationId id;
+  final Migration migration;
+
+  /// Convert a list of entries to migration descriptors.
+  ///
+  /// Migrations are sorted by their ID timestamp (oldest first),
+  /// ensuring they run in the correct dependency order.
+  static List<MigrationDescriptor> buildDescriptors(
+    List<MigrationEntry> entries,
+  ) {
+    // Sort by timestamp (oldest first)
+    final sorted = List<MigrationEntry>.from(entries)
+      ..sort((a, b) => a.id.timestamp.compareTo(b.id.timestamp));
+
+    return List.unmodifiable(
+      sorted.map(
+        (entry) => MigrationDescriptor.fromMigration(
+          id: entry.id,
+          migration: entry.migration,
+        ),
+      ),
+    );
+  }
 }

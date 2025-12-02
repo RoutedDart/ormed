@@ -3,10 +3,10 @@ library;
 
 import 'dart:io';
 
+import 'package:orm_playground/src/database/seeders.dart' as playground_seeders;
 import 'package:ormed/ormed.dart';
 import 'package:orm_playground/orm_playground.dart';
 
-import '../database/seeders.dart' as playground_seeders;
 
 Future<void> main(List<String> arguments) async {
   final database = PlaygroundDatabase();

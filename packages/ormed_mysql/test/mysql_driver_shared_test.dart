@@ -1,18 +1,12 @@
-import 'package:ormed/ormed.dart';
+import 'dart:io';
+
 import 'package:driver_tests/driver_tests.dart';
+import 'package:ormed/ormed.dart';
+import 'package:ormed/testing.dart';
+import 'package:ormed_mysql/ormed_mysql.dart';
+import 'package:test/test.dart';
 
-import 'support/mysql_harness.dart';
-
-void main() {
-  const mysqlCapabilities = {
-    DriverCapability.joins,
-    DriverCapability.insertUsing,
-    DriverCapability.queryDeletes,
-    DriverCapability.schemaIntrospection,
-    DriverCapability.threadCount,
-    DriverCapability.transactions,
-    DriverCapability.adHocQueryUpdates,
-  };
+Future<void> main() async {
   const config = DriverTestConfig(
     driverName: 'MySqlDriverAdapter',
     supportsReturning: false,
@@ -25,35 +19,107 @@ void main() {
     supportsWhereRaw: true,
     supportsSelectRaw: true,
     supportsRightJoin: true,
-    capabilities: mysqlCapabilities,
+    capabilities: {
+      DriverCapability.joins,
+      DriverCapability.insertUsing,
+      DriverCapability.queryDeletes,
+      DriverCapability.schemaIntrospection,
+      DriverCapability.threadCount,
+      DriverCapability.transactions,
+      DriverCapability.adHocQueryUpdates,
+    },
   );
 
-  runDriverQueryTests(createHarness: MySqlTestHarness.connect, config: config);
+  late DataSource dataSource;
+  late MySqlDriverAdapter driverAdapter;
 
-  runDriverJoinTests(createHarness: MySqlTestHarness.connect, config: config);
+  // Configure the MySQL driver
+  final url =
+      Platform.environment['MYSQL_URL'] ??
+      'mysql://root:secret@localhost:6605/orm_test';
 
-  runDriverAdvancedQueryTests(
-    createHarness: MySqlTestHarness.connect,
-    config: config,
+  // Create custom codecs map and register in driver's codec registry
+  // The driver will augment this with MySQL-specific codecs (e.g., MySqlBoolCodec)
+  final codecRegistry = ValueCodecRegistry.standard();
+  codecRegistry.registerCodec(
+    key: 'PostgresPayloadCodec',
+    codec: const PostgresPayloadCodec(),
+  );
+  codecRegistry.registerCodec(
+    key: 'SqlitePayloadCodec',
+    codec: const SqlitePayloadCodec(),
+  );
+  codecRegistry.registerCodec(
+    key: 'MariaDbPayloadCodec',
+    codec: const MariaDbPayloadCodec(),
+  );
+  codecRegistry.registerCodec(key: 'JsonMapCodec', codec: const JsonMapCodec());
+
+  driverAdapter = MySqlDriverAdapter.custom(
+    config: DatabaseConfig(driver: 'mysql', options: {'url': url, 'ssl': true}),
+    codecRegistry: codecRegistry,
   );
 
-  runDriverMutationTests(
-    createHarness: MySqlTestHarness.connect,
-    config: config,
-  );
+  // Create the DataSource - pass codecs again so DataSource has access to them
+  // (DataSource creates its own registry, so we need to provide codecs here too)
+  final customCodecs = <String, ValueCodec<dynamic>>{
+    'PostgresPayloadCodec': const PostgresPayloadCodec(),
+    'SqlitePayloadCodec': const SqlitePayloadCodec(),
+    'MariaDbPayloadCodec': const MariaDbPayloadCodec(),
+    'JsonMapCodec': const JsonMapCodec(),
+    // Also add MySQL-specific codecs that the driver would add
+    'bool': const MySqlBoolCodec(),
+    'bool?': const MySqlBoolCodec(),
+  };
 
-  runDriverTransactionTests(
-    createHarness: MySqlTestHarness.connect,
-    config: config,
+  dataSource = DataSource(
+    DataSourceOptions(
+      driver: driverAdapter,
+      entities: generatedOrmModelDefinitions,
+      codecs: customCodecs,
+      logging: true,
+    ),
   );
+  await dataSource.init();
+  dataSource.enableQueryLog();
 
-  runDriverOverrideTests(
-    createHarness: MySqlTestHarness.connect,
-    config: config,
-  );
+  // Enable SQL query logging
+  dataSource.connection.onBeforeQuery((plan) {
+    final preview = dataSource.connection.driver.describeQuery(plan);
+    // print('[QUERY SQL] ${preview.normalized.command}');
+    if (preview.normalized.parameters.isNotEmpty) {
+      // print('[PARAMS] ${preview.normalized.parameters}');
+    }
+  });
 
-  runDriverQueryBuilderTests(
-    createHarness: MySqlTestHarness.connect,
-    config: config,
-  );
+  // Enable mutation logging
+  dataSource.context.onMutation((event) {
+    if (Platform.environment['ORMED_TEST_LOG_MUTATIONS'] == 'true') {
+      print('[MUTATION SQL] ${event.preview.normalized.command}');
+      if (event.preview.normalized.parameters.isNotEmpty) {
+        print('[PARAMS] ${event.preview.normalized.parameters}');
+      }
+    }
+    if (event.error != null) {
+      print('[MUTATION ERROR] ${event.error}');
+    }
+  });
+
+  tearDownAll(() async {
+    await dataSource.dispose();
+  });
+
+  runDriverQueryTests(dataSource: dataSource, config: config);
+
+  runDriverJoinTests(dataSource: dataSource, config: config);
+
+  runDriverAdvancedQueryTests(dataSource: dataSource, config: config);
+
+  runDriverMutationTests(dataSource: dataSource, config: config);
+
+  runDriverTransactionTests(dataSource: dataSource, config: config);
+
+  runDriverOverrideTests(dataSource: dataSource, config: config);
+
+  runDriverQueryBuilderTests(dataSource: dataSource, config: config);
 }

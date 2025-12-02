@@ -59,7 +59,7 @@ final ModelDefinition<Image> _$ImageModelDefinition = ModelDefinition(
 );
 
 // ignore: unused_element
-final _ImageModelDefinitionRegistration = ModelFactoryRegistry.register<Image>(
+final imageModelDefinitionRegistration = ModelFactoryRegistry.register<Image>(
   _$ImageModelDefinition,
 );
 
@@ -90,18 +90,237 @@ class ImageModelFactory {
   static ModelFactoryConnection<Image> withConnection(QueryContext context) =>
       ModelFactoryConnection<Image>(definition: definition, context: context);
 
+  static Query<Image> query([String? connection]) {
+    final connName = connection ?? definition.metadata.connection;
+    final conn = ConnectionManager.instance.connection(
+      connName ?? ConnectionManager.instance.defaultConnectionName ?? "default",
+    );
+    return conn.query<Image>();
+  }
+
   static ModelFactoryBuilder<Image> factory({
     GeneratorProvider? generatorProvider,
   }) => ModelFactoryBuilder<Image>(
     definition: definition,
     generatorProvider: generatorProvider,
   );
+
+  static Future<List<Image>> all([String? connection]) =>
+      query(connection).get();
+
+  static Future<Image> create(
+    Map<String, dynamic> attributes, [
+    String? connection,
+  ]) async {
+    final model = const _$ImageModelCodec().decode(
+      attributes,
+      ValueCodecRegistry.standard(),
+    );
+    final connName = connection ?? definition.metadata.connection;
+    final conn = ConnectionManager.instance.connection(
+      connName ?? ConnectionManager.instance.defaultConnectionName ?? "default",
+    );
+    final repo = conn.context.repository<Image>();
+    final result = await repo.insertMany([model], returning: true);
+    return result.first;
+  }
+
+  static Future<List<Image>> createMany(
+    List<Map<String, dynamic>> records, [
+    String? connection,
+  ]) async {
+    final models = records
+        .map(
+          (r) => const _$ImageModelCodec().decode(
+            r,
+            ValueCodecRegistry.standard(),
+          ),
+        )
+        .toList();
+    final connName = connection ?? definition.metadata.connection;
+    final conn = ConnectionManager.instance.connection(
+      connName ?? ConnectionManager.instance.defaultConnectionName ?? "default",
+    );
+    final repo = conn.context.repository<Image>();
+    return await repo.insertMany(models, returning: true);
+  }
+
+  static Future<void> insert(
+    List<Map<String, dynamic>> records, [
+    String? connection,
+  ]) async {
+    final models = records
+        .map(
+          (r) => const _$ImageModelCodec().decode(
+            r,
+            ValueCodecRegistry.standard(),
+          ),
+        )
+        .toList();
+    final connName = connection ?? definition.metadata.connection;
+    final conn = ConnectionManager.instance.connection(
+      connName ?? ConnectionManager.instance.defaultConnectionName ?? "default",
+    );
+    final repo = conn.context.repository<Image>();
+    await repo.insertMany(models, returning: false);
+  }
+
+  static Future<Image?> find(Object id, [String? connection]) =>
+      query(connection).find(id);
+
+  static Future<Image> findOrFail(Object id, [String? connection]) async {
+    final result = await find(id, connection);
+    if (result == null) throw StateError("Model not found with id: $id");
+    return result;
+  }
+
+  static Future<List<Image>> findMany(List<Object> ids, [String? connection]) =>
+      query(connection).findMany(ids);
+
+  static Future<Image?> first([String? connection]) =>
+      query(connection).first();
+
+  static Future<Image> firstOrFail([String? connection]) async {
+    final result = await first(connection);
+    if (result == null) throw StateError("No model found");
+    return result;
+  }
+
+  static Future<int> count([String? connection]) => query(connection).count();
+
+  static Future<bool> exists([String? connection]) async =>
+      await count(connection) > 0;
+
+  static Future<int> destroy(List<Object> ids, [String? connection]) async {
+    final models = await findMany(ids, connection);
+    for (final model in models) {
+      await model.delete();
+    }
+    return models.length;
+  }
+
+  static Query<Image> where(
+    String column,
+    dynamic value, [
+    String? connection,
+  ]) => query(connection).where(column, value);
+
+  static Query<Image> whereIn(
+    String column,
+    List<dynamic> values, [
+    String? connection,
+  ]) => query(connection).whereIn(column, values);
+
+  static Query<Image> orderBy(
+    String column, {
+    String direction = "asc",
+    String? connection,
+  }) => query(
+    connection,
+  ).orderBy(column, descending: direction.toLowerCase() == "desc");
+
+  static Query<Image> limit(int count, [String? connection]) =>
+      query(connection).limit(count);
 }
 
-extension ImageModelFactoryExtension on Image {
+extension ImageModelHelpers on Image {
+  // Factory
   static ModelFactoryBuilder<Image> factory({
     GeneratorProvider? generatorProvider,
   }) => ImageModelFactory.factory(generatorProvider: generatorProvider);
+
+  // Query builder
+  static Query<Image> query([String? connection]) =>
+      ImageModelFactory.query(connection);
+
+  // CRUD operations
+  static Future<List<Image>> all([String? connection]) =>
+      ImageModelFactory.all(connection);
+
+  static Future<Image?> find(Object id, [String? connection]) =>
+      ImageModelFactory.find(id, connection);
+
+  static Future<Image> findOrFail(Object id, [String? connection]) =>
+      ImageModelFactory.findOrFail(id, connection);
+
+  static Future<List<Image>> findMany(List<Object> ids, [String? connection]) =>
+      ImageModelFactory.findMany(ids, connection);
+
+  static Future<Image?> first([String? connection]) =>
+      ImageModelFactory.first(connection);
+
+  static Future<Image> firstOrFail([String? connection]) =>
+      ImageModelFactory.firstOrFail(connection);
+
+  static Future<Image> create(
+    Map<String, dynamic> attributes, [
+    String? connection,
+  ]) => ImageModelFactory.create(attributes, connection);
+
+  static Future<List<Image>> createMany(
+    List<Map<String, dynamic>> records, [
+    String? connection,
+  ]) => ImageModelFactory.createMany(records, connection);
+
+  static Future<void> insert(
+    List<Map<String, dynamic>> records, [
+    String? connection,
+  ]) => ImageModelFactory.insert(records, connection);
+
+  static Future<int> destroy(List<Object> ids, [String? connection]) =>
+      ImageModelFactory.destroy(ids, connection);
+
+  static Future<int> count([String? connection]) =>
+      ImageModelFactory.count(connection);
+
+  static Future<bool> exists([String? connection]) =>
+      ImageModelFactory.exists(connection);
+
+  static Query<Image> where(
+    String column,
+    dynamic value, [
+    String? connection,
+  ]) => ImageModelFactory.where(column, value, connection);
+
+  static Query<Image> whereIn(
+    String column,
+    List<dynamic> values, [
+    String? connection,
+  ]) => ImageModelFactory.whereIn(column, values, connection);
+
+  static Query<Image> orderBy(
+    String column, {
+    String direction = "asc",
+    String? connection,
+  }) => ImageModelFactory.orderBy(
+    column,
+    direction: direction,
+    connection: connection,
+  );
+
+  static Query<Image> limit(int count, [String? connection]) =>
+      ImageModelFactory.limit(count, connection);
+
+  // Instance method
+  Future<void> delete([String? connection]) async {
+    final connName =
+        connection ?? ImageModelFactory.definition.metadata.connection;
+    final conn = ConnectionManager.instance.connection(
+      connName ?? ConnectionManager.instance.defaultConnectionName ?? "default",
+    );
+    final repo = conn.context.repository<Image>();
+    final primaryKeys = ImageModelFactory.definition.fields
+        .where((f) => f.isPrimaryKey)
+        .toList();
+    if (primaryKeys.isEmpty) {
+      throw StateError("Cannot delete model without primary key");
+    }
+    final keyMap = <String, Object?>{
+      for (final key in primaryKeys)
+        key.columnName: ImageModelFactory.toMap(this)[key.name],
+    };
+    await repo.deleteByKeys([keyMap]);
+  }
 }
 
 class _$ImageModelCodec extends ModelCodec<Image> {

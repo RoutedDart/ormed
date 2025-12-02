@@ -26,27 +26,16 @@ import 'package:ormed/migrations.dart';
 $importsMarkerStart
 $importsMarkerEnd
 
-class _MigrationEntry {
-  const _MigrationEntry({required this.id, required this.migration});
-
-  final MigrationId id;
-  final Migration migration;
-}
-
-final List<_MigrationEntry> _entries = [
+final List<MigrationEntry> _entries = [
   $registryMarkerStart
   $registryMarkerEnd
 ];
 
+/// Build migration descriptors sorted by timestamp.
 List<MigrationDescriptor> buildMigrations() =>
-    List.unmodifiable(_entries.map(
-      (entry) => MigrationDescriptor.fromMigration(
-        id: entry.id,
-        migration: entry.migration,
-      ),
-    ));
+    MigrationEntry.buildDescriptors(_entries);
 
-_MigrationEntry? _findEntry(String rawId) {
+MigrationEntry? _findEntry(String rawId) {
   for (final entry in _entries) {
     if (entry.id.toString() == rawId) return entry;
   }
@@ -89,13 +78,13 @@ driver:
   options:
     database: database.sqlite
 migrations:
-  directory: database/migrations
-  registry: database/migrations.dart
+  directory: lib/src/database/migrations
+  registry: lib/src/database/migrations.dart
   ledger_table: orm_migrations
   schema_dump: database/schema.sql
 seeds:
-  directory: database/seeders
-  registry: database/seeders.dart
+  directory: lib/src/database/seeders
+  registry: lib/src/database/seeders.dart
   default_class: DatabaseSeeder
 ''';
 
@@ -109,7 +98,7 @@ const String initialSeedRegistryTemplate =
 import 'package:ormed_cli/runtime.dart';
 import 'package:ormed/ormed.dart';
 
-import 'seeders/database_seeder.dart';
+import 'database_seeder.dart';
 $seedImportsMarkerStart
 $seedImportsMarkerEnd
 
@@ -117,7 +106,7 @@ final List<SeederRegistration> _seeders = <SeederRegistration>[
 $seedRegistryMarkerStart
   SeederRegistration(
     name: 'DatabaseSeeder',
-    factory: DatabaseSeeder.new,
+    factory: (context) => DatabaseSeeder(context.connection),
   ),
 $seedRegistryMarkerEnd
 ];
@@ -401,10 +390,10 @@ void printMigrationPlanPreview({
   }
 }
 
-bool confirmToProceed({bool force = false}) {
+bool confirmToProceed({bool force = false, String action = 'proceed'}) {
   if (force) return true;
   if (!_isProductionEnvironment()) return true;
-  stdout.write('Application is running in production. Continue? (y/N) ');
+  stdout.write('Application is running in production. Continue to $action? (y/N) ');
   final response = stdin.readLineSync();
   return response != null && response.toLowerCase().startsWith('y');
 }

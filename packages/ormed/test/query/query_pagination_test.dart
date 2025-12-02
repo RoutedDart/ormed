@@ -1,8 +1,8 @@
+import 'package:driver_tests/driver_tests.dart';
 import 'package:ormed/ormed.dart';
 import 'package:test/test.dart';
 
-import 'models/author.dart';
-import 'models/post.dart';
+
 
 void main() {
   late ModelRegistry registry;

@@ -63,75 +63,256 @@ final ModelDefinition<Todo> _$TodoModelDefinition = ModelDefinition(
 
 extension TodoOrmDefinition on Todo {
   static ModelDefinition<Todo> get definition => _$TodoModelDefinition;
+}
 
-  // Static Query Helpers
-  static Query<Todo> query({String? connection}) =>
-      Model.query<Todo>(connection: connection);
+class TodoModelFactory {
+  const TodoModelFactory._();
 
-  static Future<List<Todo>> all({String? connection}) =>
-      Model.all<Todo>(connection: connection);
+  static ModelDefinition<Todo> get definition => TodoOrmDefinition.definition;
 
-  static Future<Todo?> find(dynamic id, {String? connection}) =>
-      Model.find<Todo>(id, connection: connection);
+  static ModelCodec<Todo> get codec => definition.codec;
 
-  static Future<Todo> findOrFail(dynamic id, {String? connection}) =>
-      Model.findOrFail<Todo>(id, connection: connection);
+  static Todo fromMap(
+    Map<String, Object?> data, {
+    ValueCodecRegistry? registry,
+  }) => definition.fromMap(data, registry: registry);
 
-  static Future<Todo?> first({String? connection}) =>
-      Model.first<Todo>(connection: connection);
+  static Map<String, Object?> toMap(
+    Todo model, {
+    ValueCodecRegistry? registry,
+  }) => definition.toMap(model, registry: registry);
 
-  static Future<Todo> firstOrFail({String? connection}) =>
-      Model.firstOrFail<Todo>(connection: connection);
+  static void registerWith(ModelRegistry registry) =>
+      registry.register(definition);
 
-  static Query<Todo> where(
-    String column,
-    String operator,
-    dynamic value, {
-    String? connection,
-  }) => Model.where<Todo>(column, operator, value, connection: connection);
+  static ModelFactoryConnection<Todo> withConnection(QueryContext context) =>
+      ModelFactoryConnection<Todo>(definition: definition, context: context);
 
-  static Query<Todo> whereIn(
-    String column,
-    List<dynamic> values, {
-    String? connection,
-  }) => Model.whereIn<Todo>(column, values, connection: connection);
+  static Query<Todo> query([String? connection]) {
+    final connName = connection ?? definition.metadata.connection;
+    final conn = ConnectionManager.instance.connection(
+      connName ?? ConnectionManager.instance.defaultConnectionName ?? "default",
+    );
+    return conn.query<Todo>();
+  }
 
-  static Query<Todo> orderBy(
-    String column, {
-    String direction = 'asc',
-    String? connection,
-  }) =>
-      Model.orderBy<Todo>(column, direction: direction, connection: connection);
+  static ModelFactoryBuilder<Todo> factory({
+    GeneratorProvider? generatorProvider,
+  }) => ModelFactoryBuilder<Todo>(
+    definition: definition,
+    generatorProvider: generatorProvider,
+  );
 
-  static Query<Todo> limit(int count, {String? connection}) =>
-      Model.limit<Todo>(count, connection: connection);
-
-  static Future<int> count({String? connection}) =>
-      Model.count<Todo>(connection: connection);
-
-  static Future<bool> exists({String? connection}) =>
-      Model.exists<Todo>(connection: connection);
-
-  static Future<bool> doesntExist({String? connection}) =>
-      Model.doesntExist<Todo>(connection: connection);
+  static Future<List<Todo>> all([String? connection]) =>
+      query(connection).get();
 
   static Future<Todo> create(
-    Map<String, dynamic> attributes, {
+    Map<String, dynamic> attributes, [
     String? connection,
-  }) async {
-    final q = query(connection: connection);
-    final codec = const _$TodoModelCodec();
-    final model = codec.decode(attributes, q.context.codecRegistry);
-    return await model.save();
+  ]) async {
+    final model = const _$TodoModelCodec().decode(
+      attributes,
+      ValueCodecRegistry.standard(),
+    );
+    final connName = connection ?? definition.metadata.connection;
+    final conn = ConnectionManager.instance.connection(
+      connName ?? ConnectionManager.instance.defaultConnectionName ?? "default",
+    );
+    final repo = conn.context.repository<Todo>();
+    final result = await repo.insertMany([model], returning: true);
+    return result.first;
+  }
+
+  static Future<List<Todo>> createMany(
+    List<Map<String, dynamic>> records, [
+    String? connection,
+  ]) async {
+    final models = records
+        .map(
+          (r) =>
+              const _$TodoModelCodec().decode(r, ValueCodecRegistry.standard()),
+        )
+        .toList();
+    final connName = connection ?? definition.metadata.connection;
+    final conn = ConnectionManager.instance.connection(
+      connName ?? ConnectionManager.instance.defaultConnectionName ?? "default",
+    );
+    final repo = conn.context.repository<Todo>();
+    return await repo.insertMany(models, returning: true);
   }
 
   static Future<void> insert(
-    List<Map<String, dynamic>> records, {
+    List<Map<String, dynamic>> records, [
     String? connection,
-  }) async {
-    for (final record in records) {
-      await create(record, connection: connection);
+  ]) async {
+    final models = records
+        .map(
+          (r) =>
+              const _$TodoModelCodec().decode(r, ValueCodecRegistry.standard()),
+        )
+        .toList();
+    final connName = connection ?? definition.metadata.connection;
+    final conn = ConnectionManager.instance.connection(
+      connName ?? ConnectionManager.instance.defaultConnectionName ?? "default",
+    );
+    final repo = conn.context.repository<Todo>();
+    await repo.insertMany(models, returning: false);
+  }
+
+  static Future<Todo?> find(Object id, [String? connection]) =>
+      query(connection).find(id);
+
+  static Future<Todo> findOrFail(Object id, [String? connection]) async {
+    final result = await find(id, connection);
+    if (result == null) throw StateError("Model not found with id: $id");
+    return result;
+  }
+
+  static Future<List<Todo>> findMany(List<Object> ids, [String? connection]) =>
+      query(connection).findMany(ids);
+
+  static Future<Todo?> first([String? connection]) => query(connection).first();
+
+  static Future<Todo> firstOrFail([String? connection]) async {
+    final result = await first(connection);
+    if (result == null) throw StateError("No model found");
+    return result;
+  }
+
+  static Future<int> count([String? connection]) => query(connection).count();
+
+  static Future<bool> exists([String? connection]) async =>
+      await count(connection) > 0;
+
+  static Future<int> destroy(List<Object> ids, [String? connection]) async {
+    final models = await findMany(ids, connection);
+    for (final model in models) {
+      await model.delete();
     }
+    return models.length;
+  }
+
+  static Query<Todo> where(
+    String column,
+    dynamic value, [
+    String? connection,
+  ]) => query(connection).where(column, value);
+
+  static Query<Todo> whereIn(
+    String column,
+    List<dynamic> values, [
+    String? connection,
+  ]) => query(connection).whereIn(column, values);
+
+  static Query<Todo> orderBy(
+    String column, {
+    String direction = "asc",
+    String? connection,
+  }) => query(
+    connection,
+  ).orderBy(column, descending: direction.toLowerCase() == "desc");
+
+  static Query<Todo> limit(int count, [String? connection]) =>
+      query(connection).limit(count);
+}
+
+extension TodoModelHelpers on Todo {
+  // Factory
+  static ModelFactoryBuilder<Todo> factory({
+    GeneratorProvider? generatorProvider,
+  }) => TodoModelFactory.factory(generatorProvider: generatorProvider);
+
+  // Query builder
+  static Query<Todo> query([String? connection]) =>
+      TodoModelFactory.query(connection);
+
+  // CRUD operations
+  static Future<List<Todo>> all([String? connection]) =>
+      TodoModelFactory.all(connection);
+
+  static Future<Todo?> find(Object id, [String? connection]) =>
+      TodoModelFactory.find(id, connection);
+
+  static Future<Todo> findOrFail(Object id, [String? connection]) =>
+      TodoModelFactory.findOrFail(id, connection);
+
+  static Future<List<Todo>> findMany(List<Object> ids, [String? connection]) =>
+      TodoModelFactory.findMany(ids, connection);
+
+  static Future<Todo?> first([String? connection]) =>
+      TodoModelFactory.first(connection);
+
+  static Future<Todo> firstOrFail([String? connection]) =>
+      TodoModelFactory.firstOrFail(connection);
+
+  static Future<Todo> create(
+    Map<String, dynamic> attributes, [
+    String? connection,
+  ]) => TodoModelFactory.create(attributes, connection);
+
+  static Future<List<Todo>> createMany(
+    List<Map<String, dynamic>> records, [
+    String? connection,
+  ]) => TodoModelFactory.createMany(records, connection);
+
+  static Future<void> insert(
+    List<Map<String, dynamic>> records, [
+    String? connection,
+  ]) => TodoModelFactory.insert(records, connection);
+
+  static Future<int> destroy(List<Object> ids, [String? connection]) =>
+      TodoModelFactory.destroy(ids, connection);
+
+  static Future<int> count([String? connection]) =>
+      TodoModelFactory.count(connection);
+
+  static Future<bool> exists([String? connection]) =>
+      TodoModelFactory.exists(connection);
+
+  static Query<Todo> where(
+    String column,
+    dynamic value, [
+    String? connection,
+  ]) => TodoModelFactory.where(column, value, connection);
+
+  static Query<Todo> whereIn(
+    String column,
+    List<dynamic> values, [
+    String? connection,
+  ]) => TodoModelFactory.whereIn(column, values, connection);
+
+  static Query<Todo> orderBy(
+    String column, {
+    String direction = "asc",
+    String? connection,
+  }) => TodoModelFactory.orderBy(
+    column,
+    direction: direction,
+    connection: connection,
+  );
+
+  static Query<Todo> limit(int count, [String? connection]) =>
+      TodoModelFactory.limit(count, connection);
+
+  // Instance method
+  Future<void> delete([String? connection]) async {
+    final connName =
+        connection ?? TodoModelFactory.definition.metadata.connection;
+    final conn = ConnectionManager.instance.connection(
+      connName ?? ConnectionManager.instance.defaultConnectionName ?? "default",
+    );
+    final repo = conn.context.repository<Todo>();
+    final primaryKeys = TodoModelFactory.definition.fields
+        .where((f) => f.isPrimaryKey)
+        .toList();
+    if (primaryKeys.isEmpty) {
+      throw StateError("Cannot delete model without primary key");
+    }
+    final keyMap = <String, Object?>{
+      for (final key in primaryKeys)
+        key.columnName: TodoModelFactory.toMap(this)[key.name],
+    };
+    await repo.deleteByKeys([keyMap]);
   }
 }
 

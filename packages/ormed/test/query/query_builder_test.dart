@@ -1,15 +1,10 @@
 /// Integration tests for the fluent query builder and relation loader.
 library;
 
+import 'package:driver_tests/driver_tests.dart';
 import 'package:ormed/ormed.dart';
 import 'package:test/test.dart';
 
-import 'models/author.dart';
-import 'models/post.dart';
-import 'models/tag.dart';
-import 'models/post_tag.dart';
-import 'models/photo.dart';
-import 'models/image.dart';
 
 void main() {
   late ModelRegistry registry;
@@ -18,14 +13,7 @@ void main() {
 
   setUp(() {
     registry = ModelRegistry()
-      ..registerAll([
-        AuthorOrmDefinition.definition,
-        PostOrmDefinition.definition,
-        TagOrmDefinition.definition,
-        PostTagOrmDefinition.definition,
-        PhotoOrmDefinition.definition,
-        ImageOrmDefinition.definition,
-      ]);
+      ..registerAll(generatedOrmModelDefinitions);
     executor = InMemoryQueryExecutor();
 
     executor.register(AuthorOrmDefinition.definition, const [

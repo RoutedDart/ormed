@@ -9,6 +9,7 @@ Future<void> main(List<String> args) async {
     ..addCommand(ApplyCommand())
     ..addCommand(RollbackCommand())
     ..addCommand(StatusCommand())
+    ..addCommand(SchemaDumpCommand())
     ..addCommand(SchemaDescribeCommand())
     ..addCommand(SeedCommand());
 

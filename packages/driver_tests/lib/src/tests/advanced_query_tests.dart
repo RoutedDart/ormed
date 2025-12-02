@@ -3,29 +3,48 @@ import 'package:test/test.dart';
 
 import '../../models.dart';
 import '../config.dart';
-import '../harness/driver_test_harness.dart';
 import '../seed_data.dart';
+import '../support/driver_schema.dart';
 
 void runDriverAdvancedQueryTests({
-  required DriverHarnessBuilder<DriverTestHarness> createHarness,
+  required DataSource dataSource,
   required DriverTestConfig config,
 }) {
   if (!config.supportsCapability(DriverCapability.advancedQueryBuilders)) {
     return;
   }
   group('${config.driverName} advanced builders', () {
-    late DriverTestHarness harness;
+    late TestDatabaseManager manager;
 
-    setUp(() async {
-      harness = await createHarness();
-      await harness.seedArticles(sampleArticles);
+    setUpAll(() async {
+      await dataSource.init();
+      manager = TestDatabaseManager(
+        baseDataSource: dataSource,
+        migrationDescriptors: driverTestMigrationEntries
+            .map((e) => MigrationDescriptor.fromMigration(
+                  id: e.id,
+                  migration: e.migration,
+                ))
+            .toList(),
+        strategy: DatabaseIsolationStrategy.truncate,
+      );
+      await manager.initialize();
     });
 
-    tearDown(() async => harness.dispose());
+    setUp(() async {
+      await manager.beginTest('advanced_query_tests', dataSource);
+      await dataSource.repo<Article>().insertMany(sampleArticles);
+    });
+
+    tearDown(() async => manager.endTest('advanced_query_tests', dataSource));
+
+    tearDownAll(() async {
+      // Schema cleanup is handled by outer test file
+    });
 
     group('filter predicates', () {
       test('applies between/notBetween combinations', () async {
-        final models = await harness.context
+        final models = await dataSource.context
             .query<Article>()
             .whereBetween('rating', 3.5, 4.9)
             .whereNotBetween('priority', 4, 5)
@@ -36,14 +55,14 @@ void runDriverAdvancedQueryTests({
       });
 
       test('supports in/notIn sets with empty guard rails', () async {
-        final include = await harness.context
+        final include = await dataSource.context
             .query<Article>()
             .whereIn('status', ['draft', 'review'])
             .orderBy('id')
             .get();
         expect(include.map((a) => a.id), equals([1, 2]));
 
-        final exclude = await harness.context
+        final exclude = await dataSource.context
             .query<Article>()
             .whereNotIn('id', [1, 4])
             .orderBy('id')
@@ -52,14 +71,14 @@ void runDriverAdvancedQueryTests({
       });
 
       test('handles null/notNull predicates on nullable columns', () async {
-        final nullBodies = await harness.context
+        final nullBodies = await dataSource.context
             .query<Article>()
             .whereNull('body')
             .orderBy('id')
             .get();
         expect(nullBodies.map((a) => a.id), equals([1, 4]));
 
-        final reviewed = await harness.context
+        final reviewed = await dataSource.context
             .query<Article>()
             .whereNotNull('reviewedAt')
             .orderBy('id')
@@ -70,7 +89,7 @@ void runDriverAdvancedQueryTests({
 
     group('pattern predicates', () {
       test('combines like/notLike and ilike/notILike', () async {
-        final titles = await harness.context
+        final titles = await dataSource.context
             .query<Article>()
             .whereLike('title', '%Update%')
             .orWhere((builder) {
@@ -84,7 +103,7 @@ void runDriverAdvancedQueryTests({
             .get();
         expect(titles.map((a) => a.id), equals([2, 4]));
 
-        final filtered = await harness.context
+        final filtered = await dataSource.context
             .query<Article>()
             .whereNotLike('title', '%Release%')
             .where((builder) {
@@ -102,13 +121,13 @@ void runDriverAdvancedQueryTests({
 
     group('column comparisons', () {
       test('supports equals and not-equals between columns', () async {
-        final matching = await harness.context
+        final matching = await dataSource.context
             .query<Article>()
             .whereColumn('reviewedAt', 'publishedAt')
             .get();
         expect(matching.map((a) => a.id), equals([2]));
 
-        final different = await harness.context
+        final different = await dataSource.context
             .query<Article>()
             .whereColumn(
               'reviewedAt',
@@ -123,7 +142,7 @@ void runDriverAdvancedQueryTests({
 
     group('raw predicates and having clauses', () {
       test('evaluates whereRaw fragments with bindings', () async {
-        final models = await harness.context
+        final models = await dataSource.context
             .query<Article>()
             .whereRaw('LENGTH(title) BETWEEN ? AND ?', [11, 14])
             .orderBy('id')
@@ -133,7 +152,7 @@ void runDriverAdvancedQueryTests({
       });
 
       test('applies having and havingRaw over grouped aggregates', () async {
-        final query = harness.context
+        final query = dataSource.context
             .query<Article>()
             .select(['categoryId'])
             .countAggregate(expression: '*', alias: 'total_articles')
@@ -144,7 +163,7 @@ void runDriverAdvancedQueryTests({
             .orderBy('categoryId');
 
         // ignore: invalid_use_of_visible_for_testing_member
-        final rows = await harness.adapter.execute(query.debugPlan());
+        final rows = await dataSource.connection.driver.execute(query.debugPlan());
         expect(rows, hasLength(2));
         expect(rows[0]['category_id'], 1);
         expect(rows[0]['priority_sum'], 8);
@@ -157,7 +176,7 @@ void runDriverAdvancedQueryTests({
       test(
         'returns raw selects and aggregates alongside base columns',
         () async {
-          final query = harness.context
+          final query = dataSource.context
               .query<Article>()
               .select(['id', 'title'])
               .selectRaw('UPPER(title) AS loud_title')
@@ -167,7 +186,7 @@ void runDriverAdvancedQueryTests({
 
           // ignore: invalid_use_of_visible_for_testing_member
           final plan = query.debugPlan();
-          final rows = await harness.adapter.execute(plan);
+          final rows = await dataSource.connection.driver.execute(plan);
 
           expect(rows.single['id'], 1);
           expect(rows.single['loud_title'], 'ALPHA RELEASE');

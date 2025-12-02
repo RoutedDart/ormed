@@ -1,9 +1,9 @@
 import 'package:ormed/ormed.dart';
+import 'package:test/test.dart';
 import 'package:driver_tests/driver_tests.dart';
+import 'package:ormed_mongo/ormed_mongo.dart';
 
-import 'support/mongo_harness.dart';
-
-Future<MongoTestHarness> _createHarness() => MongoTestHarness.create();
+import 'shared.dart';
 
 const config = DriverTestConfig(
   driverName: 'MongoDriverAdapter',
@@ -25,15 +25,37 @@ const config = DriverTestConfig(
 );
 
 void main() {
-  runDriverQueryTests(createHarness: _createHarness, config: config);
+  late DataSource dataSource;
+  late MongoDriverAdapter driverAdapter;
 
-  runDriverMutationTests(createHarness: _createHarness, config: config);
+  setUpAll(() async {
+    await waitForMongoReady();
+    await clearDatabase();
+    
+    driverAdapter = createAdapter();
+    registerDriverTestFactories();
 
-  runDriverAdvancedQueryTests(createHarness: _createHarness, config: config);
+    dataSource = DataSource(DataSourceOptions(
+      driver: driverAdapter,
+      entities: generatedOrmModelDefinitions,
+    ));
 
-  runDriverTransactionTests(createHarness: _createHarness, config: config);
+    await dataSource.init();
+  });
 
-  runDriverOverrideTests(createHarness: _createHarness, config: config);
+  tearDownAll(() async {
+    await dataSource.dispose();
+  });
 
-  runDriverQueryBuilderTests(createHarness: _createHarness, config: config);
+  runDriverQueryTests(dataSource: dataSource, config: config);
+
+  runDriverMutationTests(dataSource: dataSource, config: config);
+
+  runDriverAdvancedQueryTests(dataSource: dataSource, config: config);
+
+  runDriverTransactionTests(dataSource: dataSource, config: config);
+
+  runDriverOverrideTests(dataSource: dataSource, config: config);
+
+  runDriverQueryBuilderTests(dataSource: dataSource, config: config);
 }

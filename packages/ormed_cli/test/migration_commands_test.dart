@@ -578,8 +578,8 @@ final List<SeederRegistration> _seeders = [
   ),
 ];
 
-class TestSeeder extends Seeder {
-  TestSeeder(SeedContext context) : super(context);
+class TestSeeder extends DatabaseSeeder {
+  TestSeeder(super.connection);
 
   @override
   Future<void> run() async {

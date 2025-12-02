@@ -116,11 +116,58 @@ extension CommentOrmDefinition on Comment {
   static ModelDefinition<Comment> get definition => _$CommentModelDefinition;
 }
 
+class Comments {
+  const Comments._();
+
+  static Query<Comment> query([String? connection]) =>
+      Model.query<Comment>(connection: connection);
+
+  static Future<Comment?> find(Object id, {String? connection}) =>
+      Model.find<Comment>(id, connection: connection);
+
+  static Future<Comment> findOrFail(Object id, {String? connection}) =>
+      Model.findOrFail<Comment>(id, connection: connection);
+
+  static Future<List<Comment>> all({String? connection}) =>
+      Model.all<Comment>(connection: connection);
+
+  static Future<int> count({String? connection}) =>
+      Model.count<Comment>(connection: connection);
+
+  static Future<bool> exists({String? connection}) =>
+      Model.exists<Comment>(connection: connection);
+
+  static Query<Comment> where(
+    String column,
+    String operator,
+    dynamic value, {
+    String? connection,
+  }) => Model.where<Comment>(column, operator, value, connection: connection);
+
+  static Query<Comment> whereIn(
+    String column,
+    List<dynamic> values, {
+    String? connection,
+  }) => Model.whereIn<Comment>(column, values, connection: connection);
+
+  static Query<Comment> orderBy(
+    String column, {
+    String direction = "asc",
+    String? connection,
+  }) => Model.orderBy<Comment>(
+    column,
+    direction: direction,
+    connection: connection,
+  );
+
+  static Query<Comment> limit(int count, {String? connection}) =>
+      Model.limit<Comment>(count, connection: connection);
+}
+
 class CommentModelFactory {
   const CommentModelFactory._();
 
-  static ModelDefinition<Comment> get definition =>
-      CommentOrmDefinition.definition;
+  static ModelDefinition<Comment> get definition => _$CommentModelDefinition;
 
   static ModelCodec<Comment> get codec => definition.codec;
 
@@ -137,8 +184,12 @@ class CommentModelFactory {
   static void registerWith(ModelRegistry registry) =>
       registry.register(definition);
 
-  static ModelFactoryConnection<Comment> withConnection(QueryContext context) =>
-      ModelFactoryConnection<Comment>(definition: definition, context: context);
+  static ModelFactoryBuilder<Comment> factory({
+    GeneratorProvider? generatorProvider,
+  }) => ModelFactoryBuilder<Comment>(
+    definition: definition,
+    generatorProvider: generatorProvider,
+  );
 }
 
 class _$CommentModelCodec extends ModelCodec<Comment> {
@@ -206,7 +257,7 @@ class _$CommentModelCodec extends ModelCodec<Comment> {
   }
 }
 
-class _$CommentModel extends Comment with ModelAttributes, ModelConnection {
+class _$CommentModel extends Comment {
   _$CommentModel({
     int? id,
     required int postId,
@@ -214,7 +265,7 @@ class _$CommentModel extends Comment with ModelAttributes, ModelConnection {
     required String body,
     DateTime? createdAt,
     DateTime? updatedAt,
-  }) : super(
+  }) : super.new(
          id: id,
          postId: postId,
          userId: userId,
@@ -235,25 +286,60 @@ class _$CommentModel extends Comment with ModelAttributes, ModelConnection {
   @override
   int? get id => getAttribute<int?>('id') ?? super.id;
 
+  set id(int? value) => setAttribute('id', value);
+
   @override
   int get postId => getAttribute<int>('post_id') ?? super.postId;
+
+  set postId(int value) => setAttribute('post_id', value);
 
   @override
   int? get userId => getAttribute<int?>('user_id') ?? super.userId;
 
+  set userId(int? value) => setAttribute('user_id', value);
+
   @override
   String get body => getAttribute<String>('body') ?? super.body;
+
+  set body(String value) => setAttribute('body', value);
 
   @override
   DateTime? get createdAt =>
       getAttribute<DateTime?>('created_at') ?? super.createdAt;
 
+  set createdAt(DateTime? value) => setAttribute('created_at', value);
+
   @override
   DateTime? get updatedAt =>
       getAttribute<DateTime?>('updated_at') ?? super.updatedAt;
+
+  set updatedAt(DateTime? value) => setAttribute('updated_at', value);
 
   void _attachOrmRuntimeMetadata(Map<String, Object?> values) {
     replaceAttributes(values);
     attachModelDefinition(_$CommentModelDefinition);
   }
+
+  @override
+  User? get author {
+    if (relationLoaded('author')) {
+      return getRelation<User>('author');
+    }
+    return super.author;
+  }
+}
+
+extension CommentRelationQueries on Comment {
+  Query<User> authorQuery() {
+    return Model.query<User>().where('id', userId);
+  }
+}
+
+extension CommentAttributeSetters on Comment {
+  set id(int? value) => setAttribute('id', value);
+  set postId(int value) => setAttribute('post_id', value);
+  set userId(int? value) => setAttribute('user_id', value);
+  set body(String value) => setAttribute('body', value);
+  set createdAt(DateTime? value) => setAttribute('created_at', value);
+  set updatedAt(DateTime? value) => setAttribute('updated_at', value);
 }

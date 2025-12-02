@@ -89,7 +89,7 @@ void main() {
       ],
     );
     final sql = grammar.compileSelect(plan).sql;
-    expect(sql, contains('JSON_UNQUOTE(JSON_EXTRACT(`data`, '));
+    expect(sql, contains('JSON_UNQUOTE(JSON_EXTRACT(`articles`.`data`, '));
     expect(sql, contains('ORDER BY'));
   });
 

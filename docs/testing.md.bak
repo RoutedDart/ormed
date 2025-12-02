@@ -1,0 +1,200 @@
+# Testing with Ormed
+
+Ormed provides comprehensive testing utilities to make writing database tests easy and efficient. These utilities handle database setup, isolation, and cleanup automatically.
+
+## Quick Start
+
+The simplest way to write tests is using the `ormedTest` function:
+
+```dart
+import 'package:ormed/ormed.dart';
+import 'package:test/test.dart';
+
+void main() {
+  // Set up Ormed for testing
+  setUpOrmed(
+    dataSource: DataSource(DataSourceOptions(
+      name: 'test',
+      driver: SqliteDriverAdapter.memory(),
+      entities: [UserOrmDefinition.definition, PostOrmDefinition.definition],
+    )),
+    migrations: ['lib/migrations/*.dart'],
+  );
+
+  ormedTest('creates a user', () async {
+    final user = User(name: 'John', email: 'john@example.com');
+    await user.save();
+    
+    expect(user.id, isNotNull);
+    expect(user.name, equals('John'));
+  });
+
+  ormedTest('user tests are isolated', () async {
+    // This test starts with a clean database
+    final users = await User.all();
+    expect(users, isEmpty);
+  });
+}
+```
+
+## Database Isolation Strategies
+
+Ormed supports three strategies for isolating tests from each other:
+
+### Transaction Rollback (Default)
+
+The fastest approach. Each test runs inside a transaction that is rolled back after the test completes. This works well for most SQL databases but may not support all operations (like DDL statements in some databases).
+
+```dart
+setUpOrmed(
+  dataSource: myDataSource,
+  migrations: myMigrations,
+  strategy: DatabaseIsolationStrategy.transaction, // Default
+);
+```
+
+### Table Truncation
+
+After each test, all tables are truncated. Slower than transactions but works with operations that don't support transactions.
+
+```dart
+setUpOrmed(
+  dataSource: myDataSource,
+  migrations: myMigrations,
+  strategy: DatabaseIsolationStrategy.truncate,
+);
+```
+
+### Schema Recreation
+
+The most thorough but slowest approach. The entire schema is dropped and recreated after each test. Use this when you need complete isolation or are testing migrations themselves.
+
+```dart
+setUpOrmed(
+  dataSource: myDataSource,
+  migrations: myMigrations,
+  strategy: DatabaseIsolationStrategy.recreate,
+);
+```
+
+## Parallel Testing
+
+By default, Dart tests run sequentially. Ormed can create isolated databases for parallel test execution:
+
+```dart
+setUpOrmed(
+  dataSource: myDataSource,
+  migrations: myMigrations,
+  parallel: true, // Enable parallel testing
+);
+```
+
+When parallel mode is enabled, each test gets its own database instance. This allows tests to run concurrently without interfering with each other. Note that this only works well with SQLite file-based or in-memory databases. For server databases like PostgreSQL or MySQL, you would need to create separate database instances, which is more complex.
+
+## The RefreshDatabase Mixin
+
+For more control over test setup, use the `RefreshDatabase` mixin. This is similar to Laravel's trait:
+
+```dart
+import 'package:ormed/ormed.dart';
+import 'package:test/test.dart';
+
+class UserTest with RefreshDatabase {
+  late DataSource dataSource;
+  
+  @override
+  DataSource get testDataSource => dataSource;
+  
+  @override
+  List<String> get migrations => ['lib/migrations/*.dart'];
+  
+  @override
+  bool get useTransactions => true; // Use transaction isolation
+}
+
+void main() {
+  final testHelper = UserTest();
+  
+  setUpAll(() async {
+    testHelper.dataSource = DataSource(DataSourceOptions(
+      name: 'test',
+      driver: SqliteDriverAdapter.memory(),
+      entities: [UserOrmDefinition.definition],
+    ));
+    await testHelper.setUpDatabase();
+  });
+  
+  setUp(() async {
+    await testHelper.beforeEach();
+  });
+  
+  tearDown(() async {
+    await testHelper.afterEach();
+  });
+  
+  tearDownAll(() async {
+    await testHelper.tearDownDatabase();
+  });
+  
+  test('creates a user', () async {
+    final user = User(name: 'Jane');
+    await user.save();
+    
+    expect(user.id, isNotNull);
+  });
+}
+```
+
+## Testing with Multiple DataSources
+
+If your application uses multiple databases, you can set up and test each one:
+
+```dart
+void main() {
+  late DataSource primaryDb;
+  late DataSource analyticsDb;
+  
+  setUpAll(() async {
+    primaryDb = DataSource(DataSourceOptions(
+      name: 'primary',
+      driver: SqliteDriverAdapter.memory(),
+      entities: [UserOrmDefinition.definition],
+    ));
+    await primaryDb.init();
+    
+    analyticsDb = DataSource(DataSourceOptions(
+      name: 'analytics',
+      driver: SqliteDriverAdapter.memory(),
+      entities: [EventOrmDefinition.definition],
+    ));
+    await analyticsDb.init();
+    
+    // Set primary as default for static helpers
+    ConnectionManager.instance.setDefaultDataSource(primaryDb);
+  });
+  
+  test('can use both databases', () async {
+    // Uses primary (default)
+    final user = await User.create({'name': 'John'});
+    
+    // Uses analytics explicitly
+    final event = Event(userId: user.id, action: 'login');
+    await event.save(connection: 'analytics');
+    
+    expect(user.id, isNotNull);
+    expect(event.id, isNotNull);
+  });
+}
+```
+
+## Best Practices
+
+Use in-memory databases for fast tests. SQLite's in-memory mode is perfect for unit tests as it requires no file I/O and is extremely fast.
+
+Run migrations automatically. Always use the migrations parameter in `setUpOrmed` to ensure your test database schema matches your production schema.
+
+Prefer transactions for isolation. Transaction rollback is the fastest isolation strategy and should be your default choice unless you specifically need truncation or recreation.
+
+Test with the same database as production when possible. While SQLite is convenient for development and unit tests, consider running integration tests against the same database type you use in production to catch database-specific behaviors.
+
+Clean up test databases. When using file-based SQLite databases for parallel tests, ensure they are cleaned up properly. The testing helpers handle this automatically in the tearDown phase.

@@ -29,7 +29,7 @@ class SqliteConnector extends Connector<sqlite.Database> {
         description: inMemory ? ':memory:' : path,
       ),
       onClose: () async {
-        database.dispose();
+        database.close();
       },
     );
   }

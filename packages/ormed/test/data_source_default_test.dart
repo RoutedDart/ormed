@@ -1,8 +1,7 @@
 import 'package:ormed/ormed.dart';
 import 'package:test/test.dart';
 
-import 'models/active_user.dart';
-
+import 'package:driver_tests/driver_tests.dart';
 void main() {
   group('DataSource setDefaultDataSource', () {
     late InMemoryQueryExecutor driver;
@@ -78,11 +77,11 @@ void main() {
       );
 
       // Use static helpers - they will use the 'analytics' connection (default)
-      final users = await ActiveUserOrmDefinition.all();
+      final users = await ActiveUserModelFactory.query().get();
       expect(users, hasLength(1));
       expect(users.first.name, 'Test User');
 
-      final user = await ActiveUserOrmDefinition.find(1);
+      final user = await ActiveUserModelFactory.find(1);
       expect(user, isNotNull);
       expect(user!.email, 'test@example.com');
     });

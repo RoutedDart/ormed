@@ -163,10 +163,55 @@ extension PostOrmDefinition on Post {
   static ModelDefinition<Post> get definition => _$PostModelDefinition;
 }
 
+class Posts {
+  const Posts._();
+
+  static Query<Post> query([String? connection]) =>
+      Model.query<Post>(connection: connection);
+
+  static Future<Post?> find(Object id, {String? connection}) =>
+      Model.find<Post>(id, connection: connection);
+
+  static Future<Post> findOrFail(Object id, {String? connection}) =>
+      Model.findOrFail<Post>(id, connection: connection);
+
+  static Future<List<Post>> all({String? connection}) =>
+      Model.all<Post>(connection: connection);
+
+  static Future<int> count({String? connection}) =>
+      Model.count<Post>(connection: connection);
+
+  static Future<bool> exists({String? connection}) =>
+      Model.exists<Post>(connection: connection);
+
+  static Query<Post> where(
+    String column,
+    String operator,
+    dynamic value, {
+    String? connection,
+  }) => Model.where<Post>(column, operator, value, connection: connection);
+
+  static Query<Post> whereIn(
+    String column,
+    List<dynamic> values, {
+    String? connection,
+  }) => Model.whereIn<Post>(column, values, connection: connection);
+
+  static Query<Post> orderBy(
+    String column, {
+    String direction = "asc",
+    String? connection,
+  }) =>
+      Model.orderBy<Post>(column, direction: direction, connection: connection);
+
+  static Query<Post> limit(int count, {String? connection}) =>
+      Model.limit<Post>(count, connection: connection);
+}
+
 class PostModelFactory {
   const PostModelFactory._();
 
-  static ModelDefinition<Post> get definition => PostOrmDefinition.definition;
+  static ModelDefinition<Post> get definition => _$PostModelDefinition;
 
   static ModelCodec<Post> get codec => definition.codec;
 
@@ -183,8 +228,12 @@ class PostModelFactory {
   static void registerWith(ModelRegistry registry) =>
       registry.register(definition);
 
-  static ModelFactoryConnection<Post> withConnection(QueryContext context) =>
-      ModelFactoryConnection<Post>(definition: definition, context: context);
+  static ModelFactoryBuilder<Post> factory({
+    GeneratorProvider? generatorProvider,
+  }) => ModelFactoryBuilder<Post>(
+    definition: definition,
+    generatorProvider: generatorProvider,
+  );
 }
 
 class _$PostModelCodec extends ModelCodec<Post> {
@@ -262,17 +311,17 @@ class _$PostModelCodec extends ModelCodec<Post> {
   }
 }
 
-class _$PostModel extends Post with ModelAttributes, ModelConnection {
+class _$PostModel extends Post {
   _$PostModel({
     int? id,
     required int userId,
     required String title,
     String? body,
-    bool published = false,
+    required bool published,
     DateTime? publishedAt,
     DateTime? createdAt,
     DateTime? updatedAt,
-  }) : super(
+  }) : super.new(
          id: id,
          userId: userId,
          title: title,
@@ -297,32 +346,97 @@ class _$PostModel extends Post with ModelAttributes, ModelConnection {
   @override
   int? get id => getAttribute<int?>('id') ?? super.id;
 
+  set id(int? value) => setAttribute('id', value);
+
   @override
   int get userId => getAttribute<int>('user_id') ?? super.userId;
+
+  set userId(int value) => setAttribute('user_id', value);
 
   @override
   String get title => getAttribute<String>('title') ?? super.title;
 
+  set title(String value) => setAttribute('title', value);
+
   @override
   String? get body => getAttribute<String?>('body') ?? super.body;
 
+  set body(String? value) => setAttribute('body', value);
+
   @override
   bool get published => getAttribute<bool>('published') ?? super.published;
+
+  set published(bool value) => setAttribute('published', value);
 
   @override
   DateTime? get publishedAt =>
       getAttribute<DateTime?>('published_at') ?? super.publishedAt;
 
+  set publishedAt(DateTime? value) => setAttribute('published_at', value);
+
   @override
   DateTime? get createdAt =>
       getAttribute<DateTime?>('created_at') ?? super.createdAt;
+
+  set createdAt(DateTime? value) => setAttribute('created_at', value);
 
   @override
   DateTime? get updatedAt =>
       getAttribute<DateTime?>('updated_at') ?? super.updatedAt;
 
+  set updatedAt(DateTime? value) => setAttribute('updated_at', value);
+
   void _attachOrmRuntimeMetadata(Map<String, Object?> values) {
     replaceAttributes(values);
     attachModelDefinition(_$PostModelDefinition);
   }
+
+  @override
+  User? get author {
+    if (relationLoaded('author')) {
+      return getRelation<User>('author');
+    }
+    return super.author;
+  }
+
+  @override
+  List<Tag> get tags {
+    if (relationLoaded('tags')) {
+      return getRelationList<Tag>('tags');
+    }
+    return super.tags;
+  }
+
+  @override
+  List<Comment> get comments {
+    if (relationLoaded('comments')) {
+      return getRelationList<Comment>('comments');
+    }
+    return super.comments;
+  }
+}
+
+extension PostRelationQueries on Post {
+  Query<User> authorQuery() {
+    return Model.query<User>().where('id', userId);
+  }
+
+  Query<Tag> tagsQuery() {
+    throw UnimplementedError("ManyToMany query generation not yet supported");
+  }
+
+  Query<Comment> commentsQuery() {
+    return Model.query<Comment>().where('post_id', id);
+  }
+}
+
+extension PostAttributeSetters on Post {
+  set id(int? value) => setAttribute('id', value);
+  set userId(int value) => setAttribute('user_id', value);
+  set title(String value) => setAttribute('title', value);
+  set body(String? value) => setAttribute('body', value);
+  set published(bool value) => setAttribute('published', value);
+  set publishedAt(DateTime? value) => setAttribute('published_at', value);
+  set createdAt(DateTime? value) => setAttribute('created_at', value);
+  set updatedAt(DateTime? value) => setAttribute('updated_at', value);
 }

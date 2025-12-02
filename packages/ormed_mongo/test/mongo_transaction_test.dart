@@ -2,21 +2,31 @@ import 'package:ormed/ormed.dart';
 import 'package:driver_tests/driver_tests.dart';
 import 'package:test/test.dart';
 
-import 'support/mongo_harness.dart';
+import 'shared.dart';
+import 'package:ormed_mongo/ormed_mongo.dart';
 
 void main() {
-  late MongoTestHarness harness;
+  late DataSource dataSource;
+  late MongoDriverAdapter driverAdapter;
 
   setUpAll(() async {
-    harness = await MongoTestHarness.create();
-    await seedGraph(harness);
+    await waitForMongoReady();
+    await clearDatabase();
+    driverAdapter = createAdapter();
+    registerDriverTestFactories();
+    dataSource = DataSource(DataSourceOptions(
+      driver: driverAdapter,
+      entities: generatedOrmModelDefinitions,
+    ));
+    await dataSource.init();
+    await seedGraph(dataSource);
   });
 
-  tearDownAll(() async => await harness.dispose());
+  tearDownAll(() async => await dataSource.dispose());
 
   test('tracks session metadata during transaction', () async {
     final sessions = <Map<String, Object?>>[];
-    final remove = harness.context.beforeExecuting((statement) {
+    final remove = dataSource.context.beforeExecuting((statement) {
       final payload = statement.preview.payload as DocumentStatementPayload;
       final map = payload.metadata?['session'] as Map<String, Object?>?;
       if (map != null) {
@@ -24,11 +34,11 @@ void main() {
       }
     });
     try {
-      await harness.context.transaction(() async {
-        await harness.context.query<Post>().whereEquals('id', 1).rows();
+      await dataSource.context.transaction(() async {
+        await dataSource.context.query<Post>().whereEquals('id', 1).rows();
       });
-      await harness.context.transaction(() async {
-        await harness.context.query<Post>().whereEquals('id', 2).rows();
+      await dataSource.context.transaction(() async {
+        await dataSource.context.query<Post>().whereEquals('id', 2).rows();
       });
     } finally {
       remove();
@@ -44,7 +54,7 @@ void main() {
 
   test('preview metadata includes session id', () async {
     final sessions = <Map<String, Object?>>[];
-    final remove = harness.context.beforeExecuting((statement) {
+    final remove = dataSource.context.beforeExecuting((statement) {
       final payload = statement.preview.payload as DocumentStatementPayload;
       final map = payload.metadata?['session'] as Map<String, Object?>?;
       if (map != null) {
@@ -52,8 +62,8 @@ void main() {
       }
     });
     try {
-      await harness.context.transaction(() async {
-        await harness.context.query<Post>().rows();
+      await dataSource.context.transaction(() async {
+        await dataSource.context.query<Post>().rows();
       });
     } finally {
       remove();

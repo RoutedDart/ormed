@@ -64,7 +64,7 @@ void main() {
       await schemaDriver.applySchemaPlan(createBuilder.build());
 
       final inspector = sqlite.sqlite3.open(dbPath);
-      addTearDown(inspector.dispose);
+      addTearDown(inspector.close);
 
       final libraryColumns = inspector.select('PRAGMA table_info("libraries")');
       final libraryColumnNames = libraryColumns
@@ -189,7 +189,7 @@ void main() {
       await schemaDriver.applySchemaPlan(createBuilder.build());
 
       final inspector = sqlite.sqlite3.open(dbPath);
-      addTearDown(inspector.dispose);
+      addTearDown(inspector.close);
 
       final originalIndexes = inspector.select(
         "SELECT name FROM sqlite_master WHERE type = 'index' AND tbl_name = 'projects'",

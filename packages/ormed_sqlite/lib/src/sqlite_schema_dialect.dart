@@ -69,7 +69,7 @@ class SqliteSchemaDialect extends SchemaDialect {
     final buffer = StringBuffer('CREATE ');
     if (blueprint.temporary) buffer.write('TEMPORARY ');
     buffer
-      ..write('TABLE ${_quote(blueprint.table)} (\n')
+      ..write('TABLE ${_tableNameFromBlueprint(blueprint)} (\n')
       ..write(segments.map((line) => '  $line').join(',\n'))
       ..write('\n)');
 
@@ -78,6 +78,7 @@ class SqliteSchemaDialect extends SchemaDialect {
     for (final indexCommand in blueprint.indexes) {
       final definition = indexCommand.definition;
       if (definition == null || definition.type == IndexType.primary) continue;
+      // Pass unquoted table name - _indexStatements will quote it
       statements.addAll(_indexStatements(blueprint.table, definition));
     }
 
@@ -86,6 +87,7 @@ class SqliteSchemaDialect extends SchemaDialect {
 
   List<SchemaStatement> _compileAlterTable(TableBlueprint blueprint) {
     final statements = <SchemaStatement>[];
+    final tableName = _tableNameFromBlueprint(blueprint);
 
     for (final column in blueprint.columns) {
       switch (column.kind) {
@@ -96,7 +98,7 @@ class SqliteSchemaDialect extends SchemaDialect {
           }
           statements.add(
             SchemaStatement(
-              'ALTER TABLE ${_quote(blueprint.table)} ADD COLUMN ${_columnDefinitionSql(definition)}',
+              'ALTER TABLE $tableName ADD COLUMN ${_columnDefinitionSql(definition)}',
             ),
           );
         case ColumnCommandKind.alter:
@@ -104,7 +106,7 @@ class SqliteSchemaDialect extends SchemaDialect {
         case ColumnCommandKind.drop:
           statements.add(
             SchemaStatement(
-              'ALTER TABLE ${_quote(blueprint.table)} DROP COLUMN ${_quote(column.name)}',
+              'ALTER TABLE $tableName DROP COLUMN ${_quote(column.name)}',
             ),
           );
       }
@@ -113,7 +115,7 @@ class SqliteSchemaDialect extends SchemaDialect {
     for (final rename in blueprint.renamedColumns) {
       statements.add(
         SchemaStatement(
-          'ALTER TABLE ${_quote(blueprint.table)} RENAME COLUMN ${_quote(rename.from)} TO ${_quote(rename.to)}',
+          'ALTER TABLE $tableName RENAME COLUMN ${_quote(rename.from)} TO ${_quote(rename.to)}',
         ),
       );
     }
@@ -128,8 +130,10 @@ class SqliteSchemaDialect extends SchemaDialect {
               'SQLite does not support ALTER TABLE ADD PRIMARY KEY.',
             );
           }
+          // Pass unquoted table name - _indexStatements will quote it
           statements.addAll(_indexStatements(blueprint.table, definition));
         case IndexCommandKind.drop:
+          // Pass unquoted table name - _dropIndexArtifacts will quote it
           statements.addAll(
             _dropIndexArtifacts(blueprint.table, indexCommand.name),
           );
@@ -504,5 +508,19 @@ class SqliteSchemaDialect extends SchemaDialect {
   String _quote(String identifier) {
     final escaped = identifier.replaceAll('"', '""');
     return '"$escaped"';
+  }
+
+  String _tableName(String table, {String? schema}) {
+    // SQLite doesn't support real schemas like PostgreSQL/MySQL
+    // Schema parameter is ignored - SQLite uses attached databases instead
+    if (table.contains('.')) {
+      return table.split('.').map(_quote).join('.');
+    }
+    return _quote(table);
+  }
+  
+  String _tableNameFromBlueprint(TableBlueprint blueprint) {
+    // Ignore blueprint.schema for SQLite - it doesn't support schemas
+    return _tableName(blueprint.table);
   }
 }

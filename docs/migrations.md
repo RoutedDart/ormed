@@ -9,6 +9,7 @@ Migrations are version-controlled database schema changes that allow you to modi
 - [Creating Migrations](#creating-migrations)
 - [Writing Migrations](#writing-migrations)
 - [Running Migrations](#running-migrations)
+- [Squashing Migrations](#squashing-migrations)
 - [Runtime Concepts](#runtime-concepts)
 - [Troubleshooting](#troubleshooting)
 
@@ -589,6 +590,113 @@ Migration was modified after being applied. Revert changes or create a new migra
 ### Foreign Key Constraint Failed
 
 Ensure parent table exists before creating foreign key, and drop dependent tables before dropping parent tables.
+
+## Squashing Migrations
+
+As your application grows, you may accumulate hundreds of migration files over time. This can slow down test database creation and make your migrations directory difficult to manage. To address this, Ormed provides a migration squashing feature inspired by Laravel that allows you to compress all your migrations into a single SQL schema file.
+
+### Creating a Schema Dump
+
+To dump your current database schema to a SQL file, use the `schema:dump` command:
+
+```bash
+dart run orm schema:dump
+```
+
+This command will:
+1. Connect to your database
+2. Export the complete schema (tables, indexes, constraints) to a SQL file
+3. Save it to the location specified in your `orm.yaml` (default: `database/schema.sql`)
+
+The schema file will be used when setting up new databases (such as test databases) when no migrations have been run yet. If the migration ledger is empty, Ormed will first load the schema dump, then apply any migrations created after the dump.
+
+### Pruning Migration Files
+
+After creating a schema dump, you can optionally delete all existing migration files using the `--prune` flag:
+
+```bash
+dart run orm schema:dump --prune
+```
+
+This will:
+1. Create the schema dump
+2. Delete all migration files from your migrations directory
+3. Leave you with a clean slate where future migrations will be applied on top of the schema dump
+
+**Important:** Only use `--prune` in production after ensuring:
+- The schema dump was successfully created
+- All team members have pulled the latest changes
+- Your CI/CD pipeline is updated to use the schema dump
+
+### Database-Specific Schema Dumps
+
+If your application uses multiple database connections (e.g., separate databases for testing), you should create schema dumps for each connection:
+
+```bash
+# Dump the default database
+dart run orm schema:dump
+
+# Dump the testing database
+dart run orm schema:dump --database=testing --prune
+```
+
+This ensures that each database connection has its appropriate schema file for quick database initialization.
+
+### Custom Output Path
+
+You can specify a custom path for the schema dump using the `--path` option:
+
+```bash
+dart run orm schema:dump --path=database/schema/production.sql
+```
+
+### Configuration
+
+By default, schema dumps are saved to the location specified in your `orm.yaml`:
+
+```yaml
+migrations:
+  path: lib/src/database/migrations
+  registry: lib/src/database/migrations/registry.dart
+  ledger_table: _orm_migrations
+  schema_dump: database/schema.sql  # Schema dump location
+```
+
+### How It Works
+
+When you run migrations with `dart run orm apply`:
+
+1. **If the ledger is empty** (fresh database):
+   - Ormed checks if a schema dump file exists
+   - If yes, it loads the entire schema from the dump file
+   - Then applies any migrations created after the schema dump
+   
+2. **If the ledger has entries** (existing database):
+   - Normal migration flow applies
+   - The schema dump is ignored
+   - Only pending migrations are applied
+
+This approach dramatically speeds up test database setup and simplifies new developer onboarding, as they don't need to wait for hundreds of migrations to run sequentially.
+
+### Best Practices
+
+**Commit Schema Files:** Always commit your schema dump files to version control so that team members and CI/CD systems can quickly create databases.
+
+**Regular Dumps:** Create new schema dumps periodically (e.g., before major releases) to keep the file current and minimize the number of additional migrations to apply.
+
+**Test First:** Before pruning migrations in production, test the schema dump thoroughly in a development/staging environment to ensure it creates the expected database structure.
+
+**Documentation:** Document when schema dumps were created and which migration they represent, especially if coordinating across multiple team members.
+
+### Database Support
+
+Schema squashing is supported for:
+- **SQLite**: Full support via native dump/restore
+- **PostgreSQL**: Full support via `pg_dump`
+- **MySQL**: Full support via `mysqldump`
+- **MongoDB**: Not applicable (MongoDB is schemaless)
+
+The CLI automatically uses the appropriate database-specific tools to create portable schema dumps that can be loaded on any compatible database server.
 
 ## Runtime Concepts
 

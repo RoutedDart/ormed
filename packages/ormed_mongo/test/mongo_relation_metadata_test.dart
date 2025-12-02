@@ -5,30 +5,39 @@ import 'package:ormed_mongo/src/mongo_relation_hook.dart';
 import 'package:test/test.dart';
 
 import 'shared.dart';
-import 'support/mongo_harness.dart';
+import 'package:ormed_mongo/ormed_mongo.dart';
 
 void main() {
-  late MongoTestHarness harness;
+  late DataSource dataSource;
+  late MongoDriverAdapter driverAdapter;
 
   setUpAll(() async {
-    harness = await MongoTestHarness.create();
+    await waitForMongoReady();
+    await clearDatabase();
+    driverAdapter = createAdapter();
+    registerDriverTestFactories();
+    dataSource = DataSource(DataSourceOptions(
+      driver: driverAdapter,
+      entities: generatedOrmModelDefinitions,
+    ));
+    await dataSource.init();
   });
 
   setUp(() async {
     await clearDatabase();
-    await seedGraph(harness);
+    await seedGraph(dataSource);
   });
 
-  tearDownAll(() async => await harness.dispose());
+  tearDownAll(() async => await dataSource.dispose());
 
   test('Mongo metadata captures eager-relation descriptors', () async {
-    final plan = harness.context
+    final plan = dataSource.context
         .query<Post>()
         .withRelation('author')
         .whereEquals('id', 1)
         .debugPlan();
 
-    final rows = await harness.context.runSelect(plan);
+    final rows = await dataSource.context.runSelect(plan);
 
     expect(rows, isNotEmpty);
 
@@ -40,12 +49,12 @@ void main() {
   });
 
   test('Relation metadata records constraints supplied via helper', () async {
-    final plan = harness.context
+    final plan = dataSource.context
         .query<Post>()
         .withRelation('photos', (builder) => builder.where('path', 'hero.jpg'))
         .debugPlan();
 
-    await harness.context.runSelect(plan);
+    await dataSource.context.runSelect(plan);
 
     final metadata = metadataForPlan(plan);
     expect(metadata, isNotNull);
@@ -55,9 +64,9 @@ void main() {
   });
 
   test('Mongo metadata records relation aggregate descriptors', () async {
-    final query = harness.context.query<Author>().withCount('posts');
+    final query = dataSource.context.query<Author>().withCount('posts');
     final plan = query.debugPlan();
-    await harness.context.runSelect(plan);
+    await dataSource.context.runSelect(plan);
 
     final metadata = metadataForPlan(plan);
     expect(metadata, isNotNull);
@@ -71,9 +80,9 @@ void main() {
   test(
     'Mongo metadata records nested relation aggregate descriptors',
     () async {
-      final query = harness.context.query<Author>().withCount('posts.photos');
+      final query = dataSource.context.query<Author>().withCount('posts.photos');
       final plan = query.debugPlan();
-      await harness.context.runSelect(plan);
+      await dataSource.context.runSelect(plan);
 
       final metadata = metadataForPlan(plan);
       expect(metadata, isNotNull);
@@ -88,13 +97,13 @@ void main() {
   );
 
   test('Mongo metadata captures relation order descriptors', () async {
-    final query = harness.context.query<Author>().orderByRelation(
+    final query = dataSource.context.query<Author>().orderByRelation(
       'posts',
       aggregate: RelationAggregateType.count,
       descending: true,
     );
     final plan = query.debugPlan();
-    await harness.context.runSelect(plan);
+    await dataSource.context.runSelect(plan);
 
     final metadata = metadataForPlan(plan);
     expect(metadata, isNotNull);
@@ -108,7 +117,7 @@ void main() {
   });
 
   test('Mongo relation helper synthesizes relation counts', () async {
-    final query = harness.context
+    final query = dataSource.context
         .query<Author>()
         .withCount('posts')
         .orderBy('id');
@@ -123,7 +132,7 @@ void main() {
   });
 
   test('Mongo relation helper handles withExists', () async {
-    final query = harness.context
+    final query = dataSource.context
         .query<Author>()
         .withExists('posts')
         .orderBy('id');
@@ -136,7 +145,7 @@ void main() {
   });
 
   test('Mongo relation helper streams aggregates', () async {
-    final query = harness.context
+    final query = dataSource.context
         .query<Author>()
         .withCount('posts')
         .orderBy('id');
@@ -153,7 +162,7 @@ void main() {
   });
 
   test('Mongo relation helper orders by relation aggregates', () async {
-    final rows = await harness.context
+    final rows = await dataSource.context
         .query<Author>()
         .orderByRelation(
           'posts',
@@ -167,7 +176,7 @@ void main() {
   });
 
   test('Mongo relation helper streams ordered aggregates', () async {
-    final rows = await harness.context
+    final rows = await dataSource.context
         .query<Author>()
         .orderByRelation(
           'posts',
@@ -182,8 +191,8 @@ void main() {
   });
 
   test('Mongo relation helper handles nested relation counts', () async {
-    final posts = await harness.context.query<Post>().get();
-    final photos = await harness.context.query<Photo>().get();
+    final posts = await dataSource.context.query<Post>().get();
+    final photos = await dataSource.context.query<Photo>().get();
     final postIdsByAuthor = <int, List<int>>{};
     for (final post in posts) {
       postIdsByAuthor.putIfAbsent(post.authorId, () => <int>[]).add(post.id);
@@ -198,7 +207,7 @@ void main() {
       }
     }
 
-    final query = harness.context
+    final query = dataSource.context
         .query<Author>()
         .withCount('posts.photos')
         .orderBy('id');
@@ -213,7 +222,7 @@ void main() {
   });
 
   test('Mongo relation helper orders by nested relation aggregates', () async {
-    final rows = await harness.context
+    final rows = await dataSource.context
         .query<Author>()
         .orderByRelation(
           'posts.photos',
@@ -227,7 +236,7 @@ void main() {
   });
 
   test('Mongo relation helper streams nested ordered aggregates', () async {
-    final rows = await harness.context
+    final rows = await dataSource.context
         .query<Author>()
         .orderByRelation(
           'posts.photos',
@@ -242,6 +251,6 @@ void main() {
   });
 
   test('Mongo driver metadata registers the relation hook', () {
-    expect(harness.adapter.metadata.relationHook, isA<MongoRelationHook>());
+    expect(driverAdapter.metadata.relationHook, isA<MongoRelationHook>());
   });
 }

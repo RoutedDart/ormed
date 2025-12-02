@@ -195,7 +195,7 @@ class _LedgerTableMigration extends Migration {
   final String table;
 
   @override
-  void up(SchemaBuilder schema) {
+  Future<void> up(SchemaBuilder schema) async {
     schema.create(table, (table) {
       table.string('id').primaryKey();
       table.string('checksum', length: 64);
@@ -205,7 +205,7 @@ class _LedgerTableMigration extends Migration {
   }
 
   @override
-  void down(SchemaBuilder schema) {
+  Future<void> down(SchemaBuilder schema) async {
     schema.drop(table, ifExists: true);
   }
 }

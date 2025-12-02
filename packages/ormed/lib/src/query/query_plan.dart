@@ -37,6 +37,7 @@ class QueryPlan {
     this.distinct = false,
     List<DistinctOnClause>? distinctOn,
     List<QueryUnion>? unions,
+    this.disableAutoHydration = false,
   }) : filters = List.unmodifiable(filters ?? const []),
        orders = List.unmodifiable(orders ?? const []),
        relations = List.unmodifiable(relations ?? const []),
@@ -96,6 +97,7 @@ class QueryPlan {
   final bool distinct;
   final List<DistinctOnClause> distinctOn;
   final List<QueryUnion> unions;
+  final bool disableAutoHydration;
 
   QueryPlan copyWith({
     List<FilterClause>? filters,
@@ -126,6 +128,7 @@ class QueryPlan {
     bool? distinct,
     List<DistinctOnClause>? distinctOn,
     List<QueryUnion>? unions,
+    bool? disableAutoHydration,
   }) => QueryPlan(
     definition: definition,
     driverName: driverName,
@@ -157,7 +160,25 @@ class QueryPlan {
     distinct: distinct ?? this.distinct,
     distinctOn: distinctOn ?? this.distinctOn,
     unions: unions ?? this.unions,
+    disableAutoHydration: disableAutoHydration ?? this.disableAutoHydration,
   );
+
+  @override
+  String toString() {
+    final parts = <String>[
+      'QueryPlan(${definition.tableName}',
+      if (filters.isNotEmpty) 'filters: ${filters.length}',
+      if (orders.isNotEmpty) 'orders: ${orders.length}',
+      if (limit != null) 'limit: $limit',
+      if (offset != null) 'offset: $offset',
+      if (joins.isNotEmpty) 'joins: ${joins.length}',
+      if (relations.isNotEmpty) 'relations: ${relations.length}',
+      if (selects.isNotEmpty) 'selects: ${selects.length}',
+      if (aggregates.isNotEmpty) 'aggregates: ${aggregates.length}',
+      if (distinct) 'distinct',
+    ];
+    return parts.join(', ') + ')';
+  }
 }
 
 class QueryUnion {
@@ -598,7 +619,7 @@ class RelationAggregate {
   final RelationPath path;
   final QueryPredicate? where;
   final bool distinct;
-  
+
   /// The column to aggregate (used for sum, avg, max, min).
   final String? column;
 }

@@ -3,7 +3,7 @@ import 'package:ormed/ormed.dart';
 part 'user.orm.dart';
 
 @OrmModel(table: 'users')
-class User {
+class User extends Model<User> {
   const User({
     this.id,
     required this.email,

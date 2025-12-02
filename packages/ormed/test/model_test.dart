@@ -1,7 +1,6 @@
+import 'package:driver_tests/driver_tests.dart';
 import 'package:ormed/ormed.dart';
 import 'package:test/test.dart';
-
-import 'models/active_user.dart';
 
 void main() {
   group('Model base', () {
@@ -39,7 +38,7 @@ void main() {
 
     test('save inserts new model instances via the model helpers', () async {
       final created = await ActiveUser(email: 'new@example.com').save();
-      expect(created.id, isNull);
+      expect(created.id, isNotNull); // Auto-increment should assign ID
       expect(created.connectionResolver, same(context));
       final rows = await Model.query<ActiveUser>().get();
       expect(rows, hasLength(1));

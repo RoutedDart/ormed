@@ -55,7 +55,7 @@ class MigrationSection {
   /// Ledger table name used by `SqlMigrationLedger`.
   final String ledgerTable;
 
-  /// Schema dump file path for `schema_dump`.
+  /// Schema dump directory path for `schema_dump`. Files are named `<connection>-schema.sql`.
   final String schemaDump;
 
   /// Reconstructs the section from YAML.
@@ -64,7 +64,7 @@ class MigrationSection {
         directory: map['directory']?.toString() ?? '',
         registry: map['registry']?.toString() ?? '',
         ledgerTable: map['ledger_table']?.toString() ?? 'orm_migrations',
-        schemaDump: map['schema_dump']?.toString() ?? 'database/schema.sql',
+        schemaDump: map['schema_dump']?.toString() ?? 'database/schema',
       );
 
   /// Serializes the section back to a map.

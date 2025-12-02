@@ -8,8 +8,11 @@ test:
 	docker compose up -d --wait --wait-timeout 120; \
 	trap 'docker compose down -v' EXIT; \
 	sleep 2; \
-	POSTGRES_URL={{POSTGRES_URL}} dart test -r expanded
+	POSTGRES_URL={{POSTGRES_URL}} dart test -r expanded	
 
 # Tear down any lingering containers.
 down:
 	docker compose down -v || true
+
+up:
+    docker compose -p ormed-postgres up -d --wait --wait-timeout 120

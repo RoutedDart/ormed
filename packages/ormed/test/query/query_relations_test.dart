@@ -1,12 +1,7 @@
 import 'package:ormed/ormed.dart';
 import 'package:test/test.dart';
 
-import 'models/author.dart';
-import 'models/post.dart';
-import 'models/photo.dart';
-import 'models/image.dart';
-import 'models/tag.dart';
-
+import 'package:driver_tests/driver_tests.dart';
 void main() {
   groupHasMany();
   groupBelongsTo();

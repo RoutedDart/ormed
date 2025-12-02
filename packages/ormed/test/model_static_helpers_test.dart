@@ -6,11 +6,13 @@ void main() {
   late DataSource dataSource;
 
   setUp(() async {
-    dataSource = DataSource(DataSourceOptions(
-      name: 'test_db',
-      driver: SqliteDriverAdapter.inMemory(),
-      entities: [],
-    ));
+    dataSource = DataSource(
+      DataSourceOptions(
+        name: 'test_db',
+        driver: SqliteDriverAdapter.inMemory(),
+        entities: [],
+      ),
+    );
     await dataSource.init();
   });
 
@@ -56,16 +58,15 @@ void main() {
     });
 
     test('setAsDefault() requires initialized datasource', () {
-      final uninit = DataSource(DataSourceOptions(
-        name: 'uninit',
-        driver: SqliteDriverAdapter.inMemory(),
-        entities: [],
-      ));
-
-      expect(
-        () => uninit.setAsDefault(),
-        throwsA(isA<StateError>()),
+      final uninit = DataSource(
+        DataSourceOptions(
+          name: 'uninit',
+          driver: SqliteDriverAdapter.inMemory(),
+          entities: [],
+        ),
       );
+
+      expect(() => uninit.setAsDefault(), throwsA(isA<StateError>()));
     });
 
     test('can change default connection', () async {
@@ -74,11 +75,13 @@ void main() {
       expect(ConnectionManager.instance.defaultConnectionName, 'test_db');
 
       // Create second datasource
-      final ds2 = DataSource(DataSourceOptions(
-        name: 'second',
-        driver: SqliteDriverAdapter.inMemory(),
-        entities: [],
-      ));
+      final ds2 = DataSource(
+        DataSourceOptions(
+          name: 'second',
+          driver: SqliteDriverAdapter.inMemory(),
+          entities: [],
+        ),
+      );
       await ds2.init();
 
       // Change default

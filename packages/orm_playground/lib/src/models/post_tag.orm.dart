@@ -53,11 +53,58 @@ extension PostTagOrmDefinition on PostTag {
   static ModelDefinition<PostTag> get definition => _$PostTagModelDefinition;
 }
 
+class PostTags {
+  const PostTags._();
+
+  static Query<PostTag> query([String? connection]) =>
+      Model.query<PostTag>(connection: connection);
+
+  static Future<PostTag?> find(Object id, {String? connection}) =>
+      Model.find<PostTag>(id, connection: connection);
+
+  static Future<PostTag> findOrFail(Object id, {String? connection}) =>
+      Model.findOrFail<PostTag>(id, connection: connection);
+
+  static Future<List<PostTag>> all({String? connection}) =>
+      Model.all<PostTag>(connection: connection);
+
+  static Future<int> count({String? connection}) =>
+      Model.count<PostTag>(connection: connection);
+
+  static Future<bool> exists({String? connection}) =>
+      Model.exists<PostTag>(connection: connection);
+
+  static Query<PostTag> where(
+    String column,
+    String operator,
+    dynamic value, {
+    String? connection,
+  }) => Model.where<PostTag>(column, operator, value, connection: connection);
+
+  static Query<PostTag> whereIn(
+    String column,
+    List<dynamic> values, {
+    String? connection,
+  }) => Model.whereIn<PostTag>(column, values, connection: connection);
+
+  static Query<PostTag> orderBy(
+    String column, {
+    String direction = "asc",
+    String? connection,
+  }) => Model.orderBy<PostTag>(
+    column,
+    direction: direction,
+    connection: connection,
+  );
+
+  static Query<PostTag> limit(int count, {String? connection}) =>
+      Model.limit<PostTag>(count, connection: connection);
+}
+
 class PostTagModelFactory {
   const PostTagModelFactory._();
 
-  static ModelDefinition<PostTag> get definition =>
-      PostTagOrmDefinition.definition;
+  static ModelDefinition<PostTag> get definition => _$PostTagModelDefinition;
 
   static ModelCodec<PostTag> get codec => definition.codec;
 
@@ -74,8 +121,12 @@ class PostTagModelFactory {
   static void registerWith(ModelRegistry registry) =>
       registry.register(definition);
 
-  static ModelFactoryConnection<PostTag> withConnection(QueryContext context) =>
-      ModelFactoryConnection<PostTag>(definition: definition, context: context);
+  static ModelFactoryBuilder<PostTag> factory({
+    GeneratorProvider? generatorProvider,
+  }) => ModelFactoryBuilder<PostTag>(
+    definition: definition,
+    generatorProvider: generatorProvider,
+  );
 }
 
 class _$PostTagModelCodec extends ModelCodec<PostTag> {
@@ -109,20 +160,29 @@ class _$PostTagModelCodec extends ModelCodec<PostTag> {
   }
 }
 
-class _$PostTagModel extends PostTag with ModelAttributes, ModelConnection {
+class _$PostTagModel extends PostTag {
   _$PostTagModel({required int postId, required int tagId})
-    : super(postId: postId, tagId: tagId) {
+    : super.new(postId: postId, tagId: tagId) {
     _attachOrmRuntimeMetadata({'post_id': postId, 'tag_id': tagId});
   }
 
   @override
   int get postId => getAttribute<int>('post_id') ?? super.postId;
 
+  set postId(int value) => setAttribute('post_id', value);
+
   @override
   int get tagId => getAttribute<int>('tag_id') ?? super.tagId;
+
+  set tagId(int value) => setAttribute('tag_id', value);
 
   void _attachOrmRuntimeMetadata(Map<String, Object?> values) {
     replaceAttributes(values);
     attachModelDefinition(_$PostTagModelDefinition);
   }
+}
+
+extension PostTagAttributeSetters on PostTag {
+  set postId(int value) => setAttribute('post_id', value);
+  set tagId(int value) => setAttribute('tag_id', value);
 }

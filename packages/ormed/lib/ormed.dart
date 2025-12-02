@@ -31,9 +31,7 @@ export 'src/driver/schema_state.dart';
 export 'src/driver/schema_state_provider.dart';
 export 'src/repository/repository.dart';
 export 'migrations.dart';
-export 'testing/in_memory_query_driver.dart';
-export 'testing/driver_override_codecs.dart';
-export 'testing/seeder.dart';
+export 'src/migrations/seeder.dart' show DatabaseSeeder, Seeder, SeederRegistry;
 export 'src/model_mixins/model_attributes.dart';
 export 'src/model_mixins/model_attribute_extensions.dart';
 export 'src/model_mixins/soft_deletes.dart';
@@ -67,3 +65,6 @@ export 'src/blueprint/schema_diff.dart'
         SchemaDiffSeverity,
         SchemaDiffer;
 export 'src/data_source.dart';
+export 'src/testing/test_database_manager.dart';
+export 'src/testing/ormed_test.dart';
+export 'src/migrations/seeder.dart';

@@ -4,26 +4,26 @@ import 'package:test/test.dart';
 import '../../../driver_tests.dart';
 
 void runRelationResolverCacheTests(
-  DriverHarnessBuilder<DriverTestHarness> createHarness,
+  DataSource dataSource,
   DriverTestConfig config,
 ) {
   group('${config.driverName} RelationResolver caching', () {
-    late DriverTestHarness harness;
+    
 
     setUp(() async {
-      harness = await createHarness();
+      
 
       // Bind connection resolver for Model methods to work
       Model.bindConnectionResolver(
-        resolveConnection: (name) => harness.context,
+        resolveConnection: (name) => dataSource.context,
       );
 
       // Seed test data
-      await harness.seedAuthors([
+      await dataSource.repo<Author>().insertMany([
         const Author(id: 1, name: 'Alice'),
         const Author(id: 2, name: 'Bob'),
       ]);
-      await harness.seedPosts([
+      await dataSource.repo<Post>().insertMany([
         Post(id: 1, authorId: 1, title: 'Post 1', publishedAt: DateTime(2024)),
         Post(
           id: 2,
@@ -38,11 +38,11 @@ void runRelationResolverCacheTests(
           publishedAt: DateTime(2024, 3),
         ),
       ]);
-      await harness.seedTags([
+      await dataSource.repo<Tag>().insertMany([
         const Tag(id: 1, label: 'dart'),
         const Tag(id: 2, label: 'flutter'),
       ]);
-      await harness.seedPostTags([
+      await dataSource.repo<PostTag>().insertMany([
         const PostTag(postId: 1, tagId: 1),
         const PostTag(postId: 1, tagId: 2),
         const PostTag(postId: 2, tagId: 1),
@@ -51,12 +51,12 @@ void runRelationResolverCacheTests(
 
     tearDown(() async {
       Model.unbindConnectionResolver();
-      await harness.dispose();
+      
     });
 
     group('cached resolver', () {
       test('caches resolved paths for reuse', () {
-        final resolver = RelationResolver(harness.context);
+        final resolver = RelationResolver(dataSource.context);
 
         // First resolution
         final path1 = resolver.resolvePath(
@@ -75,7 +75,7 @@ void runRelationResolverCacheTests(
       });
 
       test('cacheStats reports correct size', () {
-        final resolver = RelationResolver(harness.context);
+        final resolver = RelationResolver(dataSource.context);
 
         expect(resolver.cacheStats['size'], equals(0));
 
@@ -94,7 +94,7 @@ void runRelationResolverCacheTests(
       });
 
       test('clearCache removes all cached entries', () {
-        final resolver = RelationResolver(harness.context);
+        final resolver = RelationResolver(dataSource.context);
 
         resolver.resolvePath(AuthorOrmDefinition.definition, 'posts');
         resolver.resolvePath(PostOrmDefinition.definition, 'author');
@@ -105,7 +105,7 @@ void runRelationResolverCacheTests(
       });
 
       test('after clearCache, paths are resolved fresh', () {
-        final resolver = RelationResolver(harness.context);
+        final resolver = RelationResolver(dataSource.context);
 
         final path1 = resolver.resolvePath(
           AuthorOrmDefinition.definition,
@@ -128,7 +128,7 @@ void runRelationResolverCacheTests(
       });
 
       test('caches nested relation paths', () {
-        final resolver = RelationResolver(harness.context);
+        final resolver = RelationResolver(dataSource.context);
 
         final path1 = resolver.resolvePath(
           AuthorOrmDefinition.definition,
@@ -145,7 +145,7 @@ void runRelationResolverCacheTests(
       });
 
       test('different paths are cached separately', () {
-        final resolver = RelationResolver(harness.context);
+        final resolver = RelationResolver(dataSource.context);
 
         final postsPath = resolver.resolvePath(
           AuthorOrmDefinition.definition,
@@ -174,7 +174,7 @@ void runRelationResolverCacheTests(
       });
 
       test('caches paths by model and relation combination', () {
-        final resolver = RelationResolver(harness.context);
+        final resolver = RelationResolver(dataSource.context);
 
         // Same relation name on different models
         // (if Post had an 'author' and Tag had an 'author', they'd be separate)
@@ -195,7 +195,7 @@ void runRelationResolverCacheTests(
 
     group('uncached resolver', () {
       test('does not cache paths', () {
-        final resolver = RelationResolver.uncached(harness.context);
+        final resolver = RelationResolver.uncached(dataSource.context);
 
         final path1 = resolver.resolvePath(
           AuthorOrmDefinition.definition,
@@ -212,7 +212,7 @@ void runRelationResolverCacheTests(
       });
 
       test('cacheStats always returns zero', () {
-        final resolver = RelationResolver.uncached(harness.context);
+        final resolver = RelationResolver.uncached(dataSource.context);
 
         resolver.resolvePath(AuthorOrmDefinition.definition, 'posts');
         resolver.resolvePath(PostOrmDefinition.definition, 'author');
@@ -222,7 +222,7 @@ void runRelationResolverCacheTests(
       });
 
       test('resolves paths correctly despite no caching', () {
-        final resolver = RelationResolver.uncached(harness.context);
+        final resolver = RelationResolver.uncached(dataSource.context);
 
         final path = resolver.resolvePath(
           AuthorOrmDefinition.definition,
@@ -240,12 +240,12 @@ void runRelationResolverCacheTests(
       test('caching works across multiple query operations', () async {
         // Multiple queries using withRelation should benefit from caching
         // (internally the query builder uses a cached resolver)
-        final authors1 = await harness.context
+        final authors1 = await dataSource.context
             .query<Author>()
             .withRelation('posts')
             .get();
 
-        final authors2 = await harness.context
+        final authors2 = await dataSource.context
             .query<Author>()
             .withRelation('posts')
             .get();
@@ -256,11 +256,11 @@ void runRelationResolverCacheTests(
       });
 
       test('caching works with lazy loading', () async {
-        final rows1 = await harness.context
+        final rows1 = await dataSource.context
             .query<Author>()
             .where('id', 1)
             .get();
-        final rows2 = await harness.context
+        final rows2 = await dataSource.context
             .query<Author>()
             .where('id', 2)
             .get();
@@ -277,7 +277,7 @@ void runRelationResolverCacheTests(
       });
 
       test('caching works with nested relation loading', () async {
-        final rows = await harness.context.query<Author>().where('id', 1).get();
+        final rows = await dataSource.context.query<Author>().where('id', 1).get();
         final author = rows.first;
 
         // Load nested relations multiple times
@@ -292,7 +292,7 @@ void runRelationResolverCacheTests(
       });
 
       test('caching works with batch loading', () async {
-        final authors = await harness.context.query<Author>().get();
+        final authors = await dataSource.context.query<Author>().get();
 
         // Batch load should work with caching
         await Model.loadRelations(authors, 'posts');
@@ -305,7 +305,7 @@ void runRelationResolverCacheTests(
 
     group('error handling', () {
       test('invalid relation throws ArgumentError (cached)', () {
-        final resolver = RelationResolver(harness.context);
+        final resolver = RelationResolver(dataSource.context);
 
         expect(
           () => resolver.resolvePath(AuthorOrmDefinition.definition, 'invalid'),
@@ -317,7 +317,7 @@ void runRelationResolverCacheTests(
       });
 
       test('invalid relation throws ArgumentError (uncached)', () {
-        final resolver = RelationResolver.uncached(harness.context);
+        final resolver = RelationResolver.uncached(dataSource.context);
 
         expect(
           () => resolver.resolvePath(AuthorOrmDefinition.definition, 'invalid'),
@@ -326,7 +326,7 @@ void runRelationResolverCacheTests(
       });
 
       test('invalid nested relation throws ArgumentError', () {
-        final resolver = RelationResolver(harness.context);
+        final resolver = RelationResolver(dataSource.context);
 
         expect(
           () => resolver.resolvePath(
@@ -340,7 +340,7 @@ void runRelationResolverCacheTests(
 
     group('segmentFor method', () {
       test('builds segment for belongsTo relation', () {
-        final resolver = RelationResolver(harness.context);
+        final resolver = RelationResolver(dataSource.context);
         final authorRelation = PostOrmDefinition.definition.relations
             .firstWhere((r) => r.name == 'author');
 
@@ -356,7 +356,7 @@ void runRelationResolverCacheTests(
       });
 
       test('builds segment for hasMany relation', () {
-        final resolver = RelationResolver(harness.context);
+        final resolver = RelationResolver(dataSource.context);
         final postsRelation = AuthorOrmDefinition.definition.relations
             .firstWhere((r) => r.name == 'posts');
 
@@ -372,7 +372,7 @@ void runRelationResolverCacheTests(
       });
 
       test('builds segment for manyToMany relation', () {
-        final resolver = RelationResolver(harness.context);
+        final resolver = RelationResolver(dataSource.context);
         final tagsRelation = PostOrmDefinition.definition.relations.firstWhere(
           (r) => r.name == 'tags',
         );
@@ -392,7 +392,7 @@ void runRelationResolverCacheTests(
 
     group('predicateFor method', () {
       test('returns null when no constraint provided', () {
-        final resolver = RelationResolver(harness.context);
+        final resolver = RelationResolver(dataSource.context);
         final relation = PostOrmDefinition.definition.relations.first;
 
         final predicate = resolver.predicateFor(relation, null);
@@ -401,7 +401,7 @@ void runRelationResolverCacheTests(
       });
 
       test('builds predicate from constraint callback', () {
-        final resolver = RelationResolver(harness.context);
+        final resolver = RelationResolver(dataSource.context);
         final authorRelation = PostOrmDefinition.definition.relations
             .firstWhere((r) => r.name == 'author');
 
@@ -418,7 +418,7 @@ void runRelationResolverCacheTests(
       });
 
       test('builds complex predicate with multiple conditions', () {
-        final resolver = RelationResolver(harness.context);
+        final resolver = RelationResolver(dataSource.context);
         final postsRelation = AuthorOrmDefinition.definition.relations
             .firstWhere((r) => r.name == 'posts');
 

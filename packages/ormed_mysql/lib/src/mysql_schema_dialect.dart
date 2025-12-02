@@ -70,7 +70,7 @@ class MySqlSchemaDialect extends SchemaDialect {
     final buffer = StringBuffer('CREATE ');
     if (blueprint.temporary) buffer.write('TEMPORARY ');
     buffer
-      ..write('TABLE ${_tableName(blueprint.table)} (\n')
+      ..write('TABLE ${_tableNameFromBlueprint(blueprint)} (\n')
       ..write(
         [...definitions, ...constraints].map((line) => '  $line').join(',\n'),
       )
@@ -82,7 +82,8 @@ class MySqlSchemaDialect extends SchemaDialect {
       final definition = indexCommand.definition;
       if (definition == null || definition.type == IndexType.primary) continue;
       statements.add(
-        SchemaStatement(_createIndexSql(blueprint.table, definition)),
+        // Pass blueprint for schema-aware index creation
+        SchemaStatement(_createIndexSqlForBlueprint(blueprint, definition)),
       );
     }
 
@@ -91,7 +92,7 @@ class MySqlSchemaDialect extends SchemaDialect {
 
   List<SchemaStatement> _compileAlterTable(TableBlueprint blueprint) {
     final statements = <SchemaStatement>[];
-    final table = _tableName(blueprint.table);
+    final table = _tableNameFromBlueprint(blueprint);
 
     for (final column in blueprint.columns) {
       final definition = column.definition;
@@ -141,7 +142,7 @@ class MySqlSchemaDialect extends SchemaDialect {
             );
           } else {
             statements.add(
-              SchemaStatement(_createIndexSql(blueprint.table, definition)),
+              SchemaStatement(_createIndexSqlForBlueprint(blueprint, definition)),
             );
           }
         case IndexCommandKind.drop:
@@ -206,6 +207,26 @@ class MySqlSchemaDialect extends SchemaDialect {
       return 'ALTER TABLE ${_tableName(table)} ADD PRIMARY KEY ($columns)';
     }
     return 'CREATE ${keyword}INDEX $name ON ${_tableName(table)} ($columns)';
+  }
+
+  String _createIndexSqlForBlueprint(TableBlueprint blueprint, IndexDefinition definition) {
+    final keyword = switch (definition.type) {
+      IndexType.unique => 'UNIQUE ',
+      IndexType.fullText => 'FULLTEXT ',
+      IndexType.spatial => 'SPATIAL ',
+      _ => '',
+    };
+    final columns = definition.raw
+        ? definition.columns.join(', ')
+        : definition.columns.map(_quote).join(', ');
+    final name = definition.type == IndexType.primary
+        ? 'PRIMARY'
+        : _quote(definition.name);
+    final tableName = _tableNameFromBlueprint(blueprint);
+    if (definition.type == IndexType.primary) {
+      return 'ALTER TABLE $tableName ADD PRIMARY KEY ($columns)';
+    }
+    return 'CREATE ${keyword}INDEX $name ON $tableName ($columns)';
   }
 
   String _columnDefinitionSql(ColumnDefinition definition) {
@@ -399,10 +420,17 @@ class MySqlSchemaDialect extends SchemaDialect {
 
   String _quoteString(String value) => "'${value.replaceAll("'", "''")}'";
 
-  String _tableName(String table) {
+  String _tableName(String table, {String? schema}) {
+    if (schema != null && schema.isNotEmpty) {
+      return '${_quote(schema)}.${_quote(table)}';
+    }
     if (table.contains('.')) {
       return table.split('.').map(_quote).join('.');
     }
     return _quote(table);
+  }
+  
+  String _tableNameFromBlueprint(TableBlueprint blueprint) {
+    return _tableName(blueprint.table, schema: blueprint.schema);
   }
 }

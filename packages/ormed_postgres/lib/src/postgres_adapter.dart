@@ -33,6 +33,8 @@ class PostgresDriverAdapter
            DriverCapability.transactions,
            DriverCapability.returning,
            DriverCapability.adHocQueryUpdates,
+           DriverCapability.increment,
+           DriverCapability.relationAggregates,
          },
        ),
        _schemaCompiler = SchemaPlanCompiler(PostgresSchemaDialect()),
@@ -286,6 +288,63 @@ class PostgresDriverAdapter
     } else {
       await runner();
     }
+  }
+
+  @override
+  Future<void> beginTransaction() async {
+    final connection = await _connection();
+    if (_transactionDepth == 0) {
+      await connection.execute('BEGIN');
+      _transactionDepth++;
+    } else {
+      // Use savepoint for nested transactions
+      final savepoint = 'sp_${_transactionDepth + 1}';
+      await connection.execute('SAVEPOINT $savepoint');
+      _transactionDepth++;
+    }
+  }
+
+  @override
+  Future<void> commitTransaction() async {
+    if (_transactionDepth == 0) {
+      throw StateError('No active transaction to commit');
+    }
+
+    final connection = await _connection();
+    if (_transactionDepth == 1) {
+      await connection.execute('COMMIT');
+      _transactionDepth--;
+    } else {
+      // Release savepoint for nested transactions
+      final savepoint = 'sp_$_transactionDepth';
+      await connection.execute('RELEASE SAVEPOINT $savepoint');
+      _transactionDepth--;
+    }
+  }
+
+  @override
+  Future<void> rollbackTransaction() async {
+    if (_transactionDepth == 0) {
+      throw StateError('No active transaction to rollback');
+    }
+
+    final connection = await _connection();
+    if (_transactionDepth == 1) {
+      await connection.execute('ROLLBACK');
+      _transactionDepth--;
+    } else {
+      // Rollback to savepoint for nested transactions
+      final savepoint = 'sp_$_transactionDepth';
+      await connection.execute('ROLLBACK TO SAVEPOINT $savepoint');
+      _transactionDepth--;
+    }
+  }
+
+  @override
+  Future<void> truncateTable(String tableName) async {
+    final connection = await _connection();
+    // PostgreSQL supports TRUNCATE TABLE with RESTART IDENTITY
+    await connection.execute('TRUNCATE TABLE $tableName RESTART IDENTITY');
   }
 
   @override
@@ -779,7 +838,8 @@ class PostgresDriverAdapter
     final queryPlan = plan.queryPlan;
     final hasColumns = plan.queryUpdateValues.isNotEmpty;
     final hasJson = plan.queryJsonUpdates.isNotEmpty;
-    if (queryPlan == null || (!hasColumns && !hasJson)) {
+    final hasIncrements = plan.queryIncrementValues.isNotEmpty;
+    if (queryPlan == null || (!hasColumns && !hasJson && !hasIncrements)) {
       return _PostgresMutationShape.empty();
     }
     final key =
@@ -809,6 +869,15 @@ class PostgresDriverAdapter
         plan.queryUpdateValues.keys.map((column) => '${_quote(column)} = ?'),
       );
       parameters.addAll(plan.queryUpdateValues.values);
+    }
+    if (hasIncrements) {
+      final baseRef = _baseTableReference(queryPlan);
+      for (final entry in plan.queryIncrementValues.entries) {
+        final column = entry.key;
+        final amount = entry.value;
+        assignments.add('${_quote(column)} = $baseRef.${_quote(column)} + ?');
+        parameters.add(amount);
+      }
     }
     if (hasJson) {
       final grouped = <String, List<JsonUpdateClause>>{};
