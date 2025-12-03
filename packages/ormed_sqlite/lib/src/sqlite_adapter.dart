@@ -44,6 +44,7 @@ class SqliteDriverAdapter
     ValueCodecRegistry? codecRegistry,
   }) : _metadata = const DriverMetadata(
          name: 'sqlite',
+         supportsReturning: true,
          supportsQueryDeletes: true,
          requiresPrimaryKeyForQueryUpdate: false,
          queryUpdateRowIdentifier: QueryRowIdentifier(
@@ -354,10 +355,7 @@ class SqliteDriverAdapter
     // SQLite doesn't have TRUNCATE, use DELETE and reset sequence
     database.execute('DELETE FROM $tableName');
     // Reset auto-increment counter
-    database.execute(
-      "DELETE FROM sqlite_sequence WHERE name = ?",
-      [tableName],
-    );
+    database.execute("DELETE FROM sqlite_sequence WHERE name = ?", [tableName]);
   }
 
   @override
@@ -598,12 +596,12 @@ class SqliteDriverAdapter
     try {
       var affected = 0;
       final insertedRows = <Map<String, dynamic>>[];
-      
+
       for (int i = 0; i < shape.parameterSets.length; i++) {
         final parameters = shape.parameterSets[i];
         stmt.execute(normalizeSqliteParameters(parameters));
         affected += database.updatedRows;
-        
+
         // If returning is requested and insert succeeded, return a row with the PK value
         // SQLite doesn't support RETURNING, so we simulate it by returning just the PK
         if (plan.returning && database.updatedRows > 0) {
@@ -619,7 +617,7 @@ class SqliteDriverAdapter
           }
         }
       }
-      
+
       return MutationResult(
         affectedRows: affected,
         returnedRows: plan.returning ? insertedRows : null,
@@ -868,7 +866,7 @@ class SqliteDriverAdapter
         })
         .map((f) => f.columnName)
         .toList();
-    
+
     final columnSql = columnsToInsert.map(_quote).join(', ');
     final placeholders = List.filled(columnsToInsert.length, '?').join(', ');
     final verb = plan.ignoreConflicts ? 'INSERT OR IGNORE' : 'INSERT';
@@ -898,12 +896,15 @@ class SqliteDriverAdapter
     final compilation = _grammar.compileSelect(queryPlan);
     final verb = plan.ignoreConflicts ? 'INSERT OR IGNORE' : 'INSERT';
     final columns = plan.insertColumns.map(_quote).join(', ');
-    
+
     // Wrap the source query in a subquery that only selects the columns we're inserting
     // This handles cases where the source query selects more columns than we need
-    final projectedColumns = plan.insertColumns.map((col) => _quote(col)).join(', ');
-    final wrappedSelect = 'SELECT $projectedColumns FROM (${compilation.sql}) AS __source__';
-    
+    final projectedColumns = plan.insertColumns
+        .map((col) => _quote(col))
+        .join(', ');
+    final wrappedSelect =
+        'SELECT $projectedColumns FROM (${compilation.sql}) AS __source__';
+
     final sql = StringBuffer()
       ..write('$verb INTO ${_tableIdentifier(plan.definition)} ($columns) ')
       ..write(wrappedSelect);

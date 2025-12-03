@@ -19,9 +19,18 @@ void main() {
     await clearDatabase();
     driverAdapter = createAdapter();
     registerDriverTestFactories();
+    // Create custom codecs map
+    final customCodecs = <String, ValueCodec<dynamic>>{
+      'PostgresPayloadCodec': const PostgresPayloadCodec(),
+      'SqlitePayloadCodec': const SqlitePayloadCodec(),
+      'MariaDbPayloadCodec': const MariaDbPayloadCodec(),
+      'JsonMapCodec': const JsonMapCodec(),
+    };
+
     dataSource = DataSource(DataSourceOptions(
       driver: driverAdapter,
       entities: generatedOrmModelDefinitions,
+      codecs: customCodecs,
     ));
     await dataSource.init();
     await seedGraph(dataSource);

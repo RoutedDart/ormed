@@ -52,7 +52,10 @@ extension CrudExtension<T> on Query<T> {
       },
     );
 
-    return await repo.insertMany(models, returning: context.driver.metadata.supportsReturning);
+    return await repo.insertMany(
+      models,
+      returning: context.driver.metadata.supportsReturning,
+    );
   }
 
   /// Finds the first record matching the attributes, or creates it if not found.

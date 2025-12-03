@@ -26,37 +26,36 @@ void main() {
     capabilities: sqliteCapabilities,
   );
 
-  late DataSource dataSource;
-  late SqliteDriverAdapter driverAdapter;
+  registerDriverTestFactories();
+
+  // Create custom codecs map
+  final customCodecs = <String, ValueCodec<dynamic>>{
+    'PostgresPayloadCodec': const PostgresPayloadCodec(),
+    'SqlitePayloadCodec': const SqlitePayloadCodec(),
+    'JsonMapCodec': const JsonMapCodec(),
+  };
+
+  // Create codec registry for the adapter
+  final codecRegistry = ValueCodecRegistry.standard();
+  for (final entry in customCodecs.entries) {
+    codecRegistry.registerCodec(key: entry.key, codec: entry.value);
+  }
+
+  // Create adapter with the codec registry
+  final driverAdapter = SqliteDriverAdapter.inMemory(
+    codecRegistry: codecRegistry,
+  );
+
+  final dataSource = DataSource(
+    DataSourceOptions(
+      name: 'default',
+      driver: driverAdapter,
+      entities: generatedOrmModelDefinitions,
+      codecs: customCodecs,
+    ),
+  );
 
   setUpAll(() async {
-    registerDriverTestFactories();
-
-    // Create custom codecs map
-    final customCodecs = <String, ValueCodec<dynamic>>{
-      'PostgresPayloadCodec': const PostgresPayloadCodec(),
-      'SqlitePayloadCodec': const SqlitePayloadCodec(),
-      'JsonMapCodec': const JsonMapCodec(),
-    };
-
-    // Create codec registry for the adapter
-    final codecRegistry = ValueCodecRegistry.standard();
-    for (final entry in customCodecs.entries) {
-      codecRegistry.registerCodec(key: entry.key, codec: entry.value);
-    }
-
-    // Create adapter with the codec registry
-    driverAdapter = SqliteDriverAdapter.inMemory(codecRegistry: codecRegistry);
-
-    dataSource = DataSource(
-      DataSourceOptions(
-        name: 'default',
-        driver: driverAdapter,
-        entities: generatedOrmModelDefinitions,
-        codecs: customCodecs,
-      ),
-    );
-
     await dataSource.init();
 
     // Add query logging
@@ -72,40 +71,21 @@ void main() {
     await dataSource.dispose();
   });
 
-  runDriverQueryTests(
-    dataSource: dataSource,
-    config: config,
-  );
+  runDriverQueryTests(dataSource: dataSource, config: config);
 
   runDriverJoinTests(dataSource: dataSource, config: config);
 
-  runDriverAdvancedQueryTests(
-    dataSource: dataSource,
-    config: config,
-  );
+  runDriverAdvancedQueryTests(dataSource: dataSource, config: config);
 
-  runDriverMutationTests(
-    dataSource: dataSource,
-    config: config,
-  );
+  runDriverMutationTests(dataSource: dataSource, config: config);
 
-  runDriverTransactionTests(
-    dataSource: dataSource,
-    config: config,
-  );
+  runDriverTransactionTests(dataSource: dataSource, config: config);
 
-  runDriverOverrideTests(
-    dataSource: dataSource,
-    config: config,
-  );
+  runDriverOverrideTests(dataSource: dataSource, config: config);
 
-  runDriverFactoryInheritanceTests(
-    dataSource: dataSource,
-    config: config,
-  );
+  runDriverFactoryInheritanceTests(dataSource: dataSource, config: config);
 
-  runDriverQueryBuilderTests(
-    dataSource: dataSource,
-    config: config,
-  );
+  runDriverQueryBuilderTests(dataSource: dataSource, config: config);
+
+  runDriverRepositoryTests(dataSource: dataSource, config: config);
 }

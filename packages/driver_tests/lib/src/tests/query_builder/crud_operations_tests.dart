@@ -2,14 +2,9 @@ import 'package:driver_tests/driver_tests.dart';
 import 'package:ormed/ormed.dart';
 import 'package:test/test.dart';
 
-void runCrudOperationsTests(  DataSource dataSource,
-    DriverTestConfig config,
-    )  {
+void runCrudOperationsTests(DataSource dataSource, DriverTestConfig config) {
   group('CRUD Operations', () {
-    
-
     setUp(() async {
-      
       // Thoroughly clean all test data before each test
       try {
         // Try using adapter's executeRaw if available
@@ -33,12 +28,12 @@ void runCrudOperationsTests(  DataSource dataSource,
       }
     });
 
-    
-
     group('Create Operations', () {
       test('create() - creates and returns single record', () async {
-        final user = await Model.query<User>()
-            .create({'name': 'John Doe', 'email': 'john@example.com'});
+        final user = await Model.query<User>().create({
+          'name': 'John Doe',
+          'email': 'john@example.com',
+        });
 
         expect(user, isA<User>());
         expect(user.name, equals('John Doe'));
@@ -58,8 +53,10 @@ void runCrudOperationsTests(  DataSource dataSource,
       });
 
       test('firstOrCreate() - finds existing record', () async {
-        final existing = await Model.query<User>()
-            .create({'name': 'John Doe', 'email': 'john@example.com'});
+        final existing = await Model.query<User>().create({
+          'name': 'John Doe',
+          'email': 'john@example.com',
+        });
 
         final found = await Model.query<User>().firstOrCreate(
           {'email': 'john@example.com'},
@@ -69,7 +66,6 @@ void runCrudOperationsTests(  DataSource dataSource,
         expect(found.id, equals(existing.id));
         expect(found.name, equals('John Doe'));
       });
-
       test('firstOrCreate() - creates new record when not found', () async {
         final user = await Model.query<User>().firstOrCreate(
           {'email': 'new@example.com'},
@@ -82,8 +78,10 @@ void runCrudOperationsTests(  DataSource dataSource,
       });
 
       test('updateOrCreate() - updates existing record', () async {
-        await Model.query<User>()
-            .create({'name': 'John Doe', 'email': 'john@example.com'});
+        await Model.query<User>().create({
+          'name': 'John Doe',
+          'email': 'john@example.com',
+        });
 
         final updated = await Model.query<User>().updateOrCreate(
           {'email': 'john@example.com'},
@@ -117,7 +115,7 @@ void runCrudOperationsTests(  DataSource dataSource,
         ]);
 
         final affected = await Model.query<User>()
-            .where('email',  'john@example.com')
+            .where('email', 'john@example.com')
             .update({'name': 'John Updated'});
 
         expect(affected, equals(1));
@@ -133,7 +131,7 @@ void runCrudOperationsTests(  DataSource dataSource,
           'name': 'John',
           'email': 'john@example.com',
           'active': true,
-          'age': 0
+          'age': 0,
         });
 
         await Model.query<User>().where('id', user.id).increment('age');
@@ -147,12 +145,10 @@ void runCrudOperationsTests(  DataSource dataSource,
           'name': 'John',
           'email': 'john@example.com',
           'active': true,
-          'age': 0
+          'age': 0,
         });
 
-        await Model.query<User>()
-            .where('id', user.id)
-            .increment('age', 5);
+        await Model.query<User>().where('id', user.id).increment('age', 5);
 
         final updated = await Model.query<User>().find(user.id);
         expect(updated?.age, equals(5));
@@ -163,7 +159,7 @@ void runCrudOperationsTests(  DataSource dataSource,
           'name': 'John',
           'email': 'john@example.com',
           'active': true,
-          'age': 10
+          'age': 10,
         });
 
         await Model.query<User>().where('id', user.id).decrement('age');
@@ -177,12 +173,10 @@ void runCrudOperationsTests(  DataSource dataSource,
           'name': 'John',
           'email': 'john@example.com',
           'active': true,
-          'age': 10
+          'age': 10,
         });
 
-        await Model.query<User>()
-            .where('id', user.id)
-            .decrement('age', 3);
+        await Model.query<User>().where('id', user.id).decrement('age', 3);
 
         final updated = await Model.query<User>().find(user.id);
         expect(updated?.age, equals(7));
@@ -196,16 +190,20 @@ void runCrudOperationsTests(  DataSource dataSource,
           {'name': 'Jane Smith', 'email': 'jane@example.com'},
         ]);
 
-        final deleted =
-            await Model.query<User>().where('email', 'john@example.com').delete();
+        final deleted = await Model.query<User>()
+            .where('email', 'john@example.com')
+            .delete();
 
         expect(deleted, equals(1));
         expect(await Model.query<User>().count(), equals(1));
       });
 
       test('destroy() - deletes by ID', () async {
-        final user = await Model.query<User>()
-            .create({'name': 'John Doe', 'email': 'john@example.com', 'active': true});
+        final user = await Model.query<User>().create({
+          'name': 'John Doe',
+          'email': 'john@example.com',
+          'active': true,
+        });
 
         final deleted = await Model.query<User>().destroy(user.id);
 
@@ -219,8 +217,10 @@ void runCrudOperationsTests(  DataSource dataSource,
           {'name': 'Jane Smith', 'email': 'jane@example.com', 'active': true},
         ]);
 
-        final deleted =
-            await Model.query<User>().destroy([users[0].id, users[1].id]);
+        final deleted = await Model.query<User>().destroy([
+          users[0].id,
+          users[1].id,
+        ]);
 
         expect(deleted, equals(2));
         expect(await Model.query<User>().count(), equals(0));
@@ -288,11 +288,14 @@ void runCrudOperationsTests(  DataSource dataSource,
 
     group('Retrieval Operations', () {
       test('sole() - returns single matching record', () async {
-        await Model.query<User>()
-            .create({'name': 'John Doe', 'email': 'john@example.com'});
+        await Model.query<User>().create({
+          'name': 'John Doe',
+          'email': 'john@example.com',
+        });
 
-        final user =
-            await Model.query<User>().where('email', 'john@example.com').sole();
+        final user = await Model.query<User>()
+            .where('email', 'john@example.com')
+            .sole();
 
         expect(user.name, equals('John Doe'));
       });
@@ -311,19 +314,21 @@ void runCrudOperationsTests(  DataSource dataSource,
 
       test('sole() - throws when no records match', () async {
         expect(
-          () => Model.query<User>().where('email', 'notfound@example.com').sole(),
+          () =>
+              Model.query<User>().where('email', 'notfound@example.com').sole(),
           throwsA(isA<ModelNotFoundException>()),
         );
       });
 
       test('value() - returns single column value', () async {
-        await Model.query<User>()
-            .create({'name': 'John Doe', 'email': 'john@example.com'});
+        await Model.query<User>().create({
+          'name': 'John Doe',
+          'email': 'john@example.com',
+        });
 
-        final name =
-            await Model.query<User>().where('email', 'john@example.com').value(
-                  'name',
-                );
+        final name = await Model.query<User>()
+            .where('email', 'john@example.com')
+            .value('name');
 
         expect(name, equals('John Doe'));
       });
@@ -339,11 +344,14 @@ void runCrudOperationsTests(  DataSource dataSource,
 
     group('Existence Operations', () {
       test('exists() - returns true when records exist', () async {
-        await Model.query<User>()
-            .create({'name': 'John Doe', 'email': 'john@example.com'});
+        await Model.query<User>().create({
+          'name': 'John Doe',
+          'email': 'john@example.com',
+        });
 
-        final exists =
-            await Model.query<User>().where('email', 'john@example.com').exists();
+        final exists = await Model.query<User>()
+            .where('email', 'john@example.com')
+            .exists();
 
         expect(exists, isTrue);
       });
@@ -357,8 +365,10 @@ void runCrudOperationsTests(  DataSource dataSource,
       });
 
       test('doesntExist() - returns false when records exist', () async {
-        await Model.query<User>()
-            .create({'name': 'John Doe', 'email': 'john@example.com'});
+        await Model.query<User>().create({
+          'name': 'John Doe',
+          'email': 'john@example.com',
+        });
 
         final doesntExist = await Model.query<User>()
             .where('email', 'john@example.com')

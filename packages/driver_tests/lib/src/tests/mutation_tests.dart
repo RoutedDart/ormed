@@ -36,10 +36,12 @@ void runDriverMutationTests({
       manager = TestDatabaseManager(
         baseDataSource: dataSource,
         migrationDescriptors: driverTestMigrationEntries
-            .map((e) => MigrationDescriptor.fromMigration(
-                  id: e.id,
-                  migration: e.migration,
-                ))
+            .map(
+              (e) => MigrationDescriptor.fromMigration(
+                id: e.id,
+                migration: e.migration,
+              ),
+            )
             .toList(),
         strategy: DatabaseIsolationStrategy.truncate,
       );
@@ -262,7 +264,10 @@ void runDriverMutationTests({
           .forceDelete();
 
       expect(removed, 1);
-      final remaining = await dataSource.context.query<User>().orderBy('id').get();
+      final remaining = await dataSource.context
+          .query<User>()
+          .orderBy('id')
+          .get();
       expect(remaining.map((user) => user.id), equals([2, 3]));
     });
 
@@ -395,7 +400,7 @@ void runDriverMutationTests({
         ]);
 
         final affected = await dataSource.context
-            .table('settings')
+            .table('driver_override_entries')
             .whereEquals('id', 9050)
             .limit(1)
             .update({
