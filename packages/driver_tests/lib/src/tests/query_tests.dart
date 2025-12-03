@@ -2,15 +2,12 @@ import 'package:ormed/ormed.dart';
 import 'package:test/test.dart';
 
 import '../../models.dart';
-import '../config.dart';
 import '../seed_data.dart';
 import '../support/driver_schema.dart';
 
-void runDriverQueryTests({
-  required DataSource dataSource,
-  required DriverTestConfig config,
-}) {
-  group('${config.driverName} queries', () {
+void runDriverQueryTests({required DataSource dataSource}) {
+  final metadata = dataSource.connection.driver.metadata;
+  group('${metadata.name} queries', () {
     late TestDatabaseManager manager;
     late List<User> seededUsers;
 
@@ -27,10 +24,12 @@ void runDriverQueryTests({
       manager = TestDatabaseManager(
         baseDataSource: dataSource,
         migrationDescriptors: driverTestMigrationEntries
-            .map((e) => MigrationDescriptor.fromMigration(
-                  id: e.id,
-                  migration: e.migration,
-                ))
+            .map(
+              (e) => MigrationDescriptor.fromMigration(
+                id: e.id,
+                migration: e.migration,
+              ),
+            )
             .toList(),
         strategy: DatabaseIsolationStrategy.truncate,
       );
@@ -100,14 +99,14 @@ void runDriverQueryTests({
       () async {
         final events = <QueryEvent>[];
         dataSource.context.onQuery(events.add);
-        
+
         // Use an invalid query that goes through QueryContext to trigger error
         // Query with invalid column should cause error and emit event
         await expectLater(
-          () => dataSource.context
-              .query<User>()
-              .whereRaw('invalid_column_xyz = ?', [1])
-              .get(),
+          () => dataSource.context.query<User>().whereRaw(
+            'invalid_column_xyz = ?',
+            [1],
+          ).get(),
           throwsA(isA<Exception>()),
         );
 
@@ -115,12 +114,12 @@ void runDriverQueryTests({
         expect(events.single.error, isNotNull);
         expect(events.single.succeeded, isFalse);
       },
-      skip: !config.supportsCapability(DriverCapability.rawSQL),
+      skip: !metadata.supportsCapability(DriverCapability.rawSQL),
     );
 
     test('threadCount reports driver metric', () async {
       final count = await dataSource.context.threadCount();
-      if (config.supportsCapability(DriverCapability.threadCount)) {
+      if (metadata.supportsCapability(DriverCapability.threadCount)) {
         expect(count, isNotNull);
         expect(count, greaterThanOrEqualTo(1));
       } else {
@@ -156,7 +155,7 @@ void runDriverQueryTests({
       expect(exact?.id, 1);
     });
 
-    if (config.supportsAdvancedQueryBuilders) {
+    if (metadata.supportsCapability(DriverCapability.advancedQueryBuilders)) {
       test('time helpers compare HH:mm:ss fragments', () async {
         final timeQuery = dataSource.context.query<Post>().whereTime(
           'publishedAt',
@@ -165,7 +164,7 @@ void runDriverQueryTests({
         final preview = timeQuery.toSql();
         expectPreviewMetadata(preview);
 
-        if (config.driverName != 'MySqlDriverAdapter') {
+        if (metadata.name != 'MySqlDriverAdapter') {
           final match = await timeQuery.first();
           expect(match?.id, 2);
         }
@@ -266,7 +265,7 @@ void runDriverQueryTests({
       },
     );
 
-    if (config.supportsAdvancedQueryBuilders) {
+    if (metadata.supportsCapability(DriverCapability.advancedQueryBuilders)) {
       group('predicate AST support', () {
         test('applies nested boolean groups and advanced operators', () async {
           final rows = await dataSource.context
@@ -290,7 +289,9 @@ void runDriverQueryTests({
                 .query<Post>()
                 .whereRaw('substr(title, 1, 1) = ?', ['I'])
                 .orWhere((builder) {
-                  if (config.supportsCaseInsensitiveLike) {
+                  if (metadata.supportsCapability(
+                    DriverCapability.caseInsensitiveLike,
+                  )) {
                     builder.whereILike('title', 'wel%');
                   } else {
                     builder.whereLike('title', 'Wel%');
@@ -559,13 +560,14 @@ void runDriverQueryTests({
                 .get();
             expect(rows.map((c) => c.id), equals([1]));
           },
-          skip: !config.supportsCapability(DriverCapability.queryDeletes),
+          skip: !metadata.supportsCapability(DriverCapability.queryDeletes),
         );
       });
 
       group('json predicates', () {
-        Future<void> seedDriverSettings() =>
-            dataSource.context.repository<DriverOverrideEntry>().insertMany(const [
+        Future<void> seedDriverSettings() => dataSource.context
+            .repository<DriverOverrideEntry>()
+            .insertMany(const [
               DriverOverrideEntry(
                 id: 1,
                 payload: {

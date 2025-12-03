@@ -6,7 +6,6 @@ import 'package:ormed/src/migrations/seeder.dart';
 import '../../migrations.dart';
 import '../connection/orm_connection.dart';
 import '../data_source.dart';
-import '../driver/driver.dart';
 import '../query/query.dart';
 import 'test_schema_manager.dart';
 

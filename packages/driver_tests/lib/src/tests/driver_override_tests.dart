@@ -4,14 +4,10 @@ import 'package:ormed/ormed.dart';
 import 'package:test/test.dart';
 
 import '../../models.dart';
-import '../config.dart';
 import '../support/driver_schema.dart';
 
-void runDriverOverrideTests({
-  required DataSource dataSource,
-  required DriverTestConfig config,
-}) {
-  group('${config.driverName} driver overrides', () {
+void runDriverOverrideTests({required DataSource dataSource}) {
+  group('${dataSource.connection.driver.metadata.name} driver overrides', () {
     late TestDatabaseManager manager;
 
     setUpAll(() async {
@@ -19,10 +15,12 @@ void runDriverOverrideTests({
       manager = TestDatabaseManager(
         baseDataSource: dataSource,
         migrationDescriptors: driverTestMigrationEntries
-            .map((e) => MigrationDescriptor.fromMigration(
-                  id: e.id,
-                  migration: e.migration,
-                ))
+            .map(
+              (e) => MigrationDescriptor.fromMigration(
+                id: e.id,
+                migration: e.migration,
+              ),
+            )
             .toList(),
         strategy: DatabaseIsolationStrategy.truncate,
       );
@@ -50,7 +48,8 @@ void runDriverOverrideTests({
           'SELECT payload FROM driver_override_entries WHERE id = 1',
         );
         final value = rows.single['payload'];
-        final driverName = dataSource.connection.driver.metadata.name.toLowerCase();
+        final driverName = dataSource.connection.driver.metadata.name
+            .toLowerCase();
         if (driverName.contains('sqlite')) {
           expect(value, isA<String>());
           expect(value, equals(jsonEncode(entry.payload)));
@@ -70,7 +69,9 @@ void runDriverOverrideTests({
             .firstOrFail();
         expect(fetched.payload['mode'], equals('dark'));
       },
-      skip: !config.supportsCapability(DriverCapability.rawSQL),
+      skip: !dataSource.connection.driver.metadata.supportsCapability(
+        DriverCapability.rawSQL,
+      ),
     );
   });
 }

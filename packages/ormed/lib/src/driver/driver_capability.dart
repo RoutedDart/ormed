@@ -12,4 +12,7 @@ enum DriverCapability {
   increment,
   rawSQL,
   relationAggregates,
+  caseInsensitiveLike,
+  rightJoin,
+  distinctOn,
 }

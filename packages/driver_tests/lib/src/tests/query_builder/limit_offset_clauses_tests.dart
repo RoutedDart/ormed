@@ -3,20 +3,10 @@ import 'package:test/test.dart';
 
 import '../../models/models.dart';
 
-import '../../config.dart';
 
-void runLimitOffsetClausesTests(
-  DataSource dataSource,
-  DriverTestConfig config,
-) {
+void runLimitOffsetClausesTests(DataSource dataSource) {
   group('Limit/Offset Clauses tests', () {
-    
-
-    setUp(() async {
-      
-    });
-
-    
+    setUp(() async {});
 
     test('limit', () async {
       await dataSource.repo<User>().insertMany([

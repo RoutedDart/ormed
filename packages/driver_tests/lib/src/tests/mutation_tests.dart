@@ -4,23 +4,20 @@ import 'package:ormed/ormed.dart';
 import 'package:test/test.dart';
 
 import '../../models.dart';
-import '../config.dart';
 import '../seed_data.dart';
 import '../support/driver_schema.dart';
 
-void runDriverMutationTests({
-  required DataSource dataSource,
-  required DriverTestConfig config,
-}) {
+void runDriverMutationTests({required DataSource dataSource}) {
+  final metadata = dataSource.connection.driver.metadata;
   // Skip entire group for drivers that don't support raw SQL,
   // as these tests use executeRaw, queryRaw, and SQL-specific features
-  if (!config.supportsCapability(DriverCapability.rawSQL)) {
+  if (!metadata.supportsCapability(DriverCapability.rawSQL)) {
     return;
   }
 
-  group('${config.driverName} mutations', () {
+  group('${metadata.name} mutations', () {
     String wrap(String value) =>
-        '${config.identifierQuote}$value${config.identifierQuote}';
+        '${metadata.identifierQuote}$value${metadata.identifierQuote}';
     late TestDatabaseManager manager;
 
     void expectPreviewMetadata(StatementPreview preview) {
@@ -138,7 +135,7 @@ void runDriverMutationTests({
       expect(rows.where((user) => user.id == 50).single.active, isTrue);
     });
 
-    if (config.supportsCapability(DriverCapability.insertUsing)) {
+    if (metadata.supportsCapability(DriverCapability.insertUsing)) {
       test('insertUsing copies rows from select queries', () async {
         final repo = dataSource.context.repository<User>();
         await repo.insertMany(const [
@@ -152,9 +149,7 @@ void runDriverMutationTests({
             .select([])
             .selectRaw('${wrap('users')}.${wrap('id')} + $offset', alias: 'id');
 
-        final emailExpr =
-            config.driverName == 'MySqlDriverAdapter' ||
-                config.driverName == 'MariaDbDriverAdapter'
+        final emailExpr = metadata.name == 'mysql' || metadata.name == 'mariadb'
             ? "CONCAT(${wrap('users')}.${wrap('email')}, '-copy')"
             : "${wrap('users')}.${wrap('email')} || '-copy'";
 
@@ -274,7 +269,7 @@ void runDriverMutationTests({
     test(
       'auto increment primary keys use driver defaults when omitted',
       () async {
-        if (!config.supportsCapability(DriverCapability.rawSQL)) {
+        if (!metadata.supportsCapability(DriverCapability.rawSQL)) {
           return;
         }
         final plan = MutationPlan.insert(
@@ -284,7 +279,7 @@ void runDriverMutationTests({
             {'label': 'second'},
           ],
           driverName: dataSource.connection.driver.metadata.name,
-          returning: config.supportsCapability(DriverCapability.returning),
+          returning: metadata.supportsCapability(DriverCapability.returning),
         );
 
         final result = await dataSource.connection.driver.runMutation(plan);
@@ -301,7 +296,7 @@ void runDriverMutationTests({
         expect(firstId, greaterThan(0));
         expect(secondId, greaterThan(firstId));
 
-        if (config.supportsCapability(DriverCapability.returning)) {
+        if (metadata.supportsCapability(DriverCapability.returning)) {
           expect(result.returnedRows, isNotNull);
           final returnedIds = result.returnedRows!
               .map((row) => row['id'])
@@ -385,13 +380,13 @@ void runDriverMutationTests({
 
         expect(refreshed.active, isFalse);
       },
-      skip: !config.supportsCapability(DriverCapability.adHocQueryUpdates),
+      skip: !metadata.supportsCapability(DriverCapability.adHocQueryUpdates),
     );
 
     test(
       'sqlite query updates encode json bindings for ad-hoc tables',
       () async {
-        if (config.driverName != 'SqliteDriverAdapter') {
+        if (metadata.name != 'sqlite') {
           return;
         }
         final repo = dataSource.context.repository<DriverOverrideEntry>();
@@ -420,7 +415,7 @@ void runDriverMutationTests({
     );
 
     test('sqlite query updates support joins and limits', () async {
-      if (config.driverName != 'SqliteDriverAdapter') {
+      if (metadata.name != 'sqlite') {
         return;
       }
       await dataSource.repo<User>().insertMany(buildDefaultUsers());
@@ -457,7 +452,7 @@ void runDriverMutationTests({
     });
 
     test('sqlite query deletes support joins and limits', () async {
-      if (config.driverName != 'SqliteDriverAdapter') {
+      if (metadata.name != 'sqlite') {
         return;
       }
       await dataSource.repo<User>().insertMany(buildDefaultUsers());
@@ -603,7 +598,7 @@ void runDriverMutationTests({
     });
 
     test('json updates patch nested payload columns', () async {
-      if (!config.supportsCapability(DriverCapability.rawSQL)) {
+      if (!metadata.supportsCapability(DriverCapability.rawSQL)) {
         return; // Skip for non-SQL drivers
       }
       final docId = 9001;
@@ -707,7 +702,7 @@ void runDriverMutationTests({
         ]);
         expect(deleted, 1);
       },
-      skip: config.supportsCapability(DriverCapability.returning)
+      skip: metadata.supportsCapability(DriverCapability.returning)
           ? false
           : 'Driver does not support RETURNING mutations',
     );
@@ -726,7 +721,7 @@ void runDriverMutationTests({
         ], returning: true);
         expect(second.single.email, 'new@upsert.com');
       },
-      skip: config.supportsCapability(DriverCapability.returning)
+      skip: metadata.supportsCapability(DriverCapability.returning)
           ? false
           : 'Driver does not support RETURNING mutations',
     );

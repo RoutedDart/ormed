@@ -31,6 +31,7 @@ class MongoDriverAdapter implements DriverAdapter, SchemaDriver {
          name: 'mongo',
          supportsTransactions: false,
          supportsQueryDeletes: true,
+         identifierQuote: '',
          capabilities: {
            DriverCapability.schemaIntrospection,
            DriverCapability.queryDeletes,

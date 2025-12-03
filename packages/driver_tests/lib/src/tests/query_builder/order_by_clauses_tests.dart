@@ -3,20 +3,10 @@ import 'package:test/test.dart';
 
 import '../../models/models.dart';
 
-import '../../config.dart';
 
-void runOrderByClausesTests(
-  DataSource dataSource,
-  DriverTestConfig config,
-) {
+void runOrderByClausesTests(DataSource dataSource) {
   group('OrderBy Clauses tests', () {
-    
-
-    setUp(() async {
-      
-    });
-
-    
+    setUp(() async {});
 
     test('orderBy', () async {
       await dataSource.repo<User>().insertMany([
@@ -24,7 +14,10 @@ void runOrderByClausesTests(
         User(id: 2, email: 'a@example.com', active: false),
       ]);
 
-      final users = await dataSource.context.query<User>().orderBy('email').get();
+      final users = await dataSource.context
+          .query<User>()
+          .orderBy('email')
+          .get();
 
       expect(users, hasLength(2));
       expect(users.first.id, 2);
@@ -97,7 +90,10 @@ void runOrderByClausesTests(
 
       final seen = <List<int>>[];
       for (var i = 0; i < 5; i++) {
-        final users = await dataSource.context.query<User>().orderByRandom().get();
+        final users = await dataSource.context
+            .query<User>()
+            .orderByRandom()
+            .get();
         seen.add(users.map((u) => u.id).toList(growable: false));
       }
 

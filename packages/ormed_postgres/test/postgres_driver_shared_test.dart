@@ -6,31 +6,6 @@ import 'package:driver_tests/driver_tests.dart';
 import 'package:ormed_postgres/ormed_postgres.dart';
 
 void main() {
-  const postgresCapabilities = {
-    DriverCapability.joins,
-    DriverCapability.insertUsing,
-    DriverCapability.queryDeletes,
-    DriverCapability.schemaIntrospection,
-    DriverCapability.threadCount,
-    DriverCapability.transactions,
-    DriverCapability.adHocQueryUpdates,
-    DriverCapability.returning,
-    DriverCapability.increment,
-    DriverCapability.relationAggregates,
-  };
-  const sharedConfig = DriverTestConfig(
-    driverName: 'PostgresDriverAdapter',
-    supportsReturning: true,
-    supportsCaseInsensitiveLike: true,
-    supportsQueryDeletes: true,
-    supportsThreadCount: true,
-    supportsAdHocQueryUpdates: true,
-    supportsSqlPreviews: true,
-    supportsAdvancedQueryBuilders: true,
-    supportsDistinctOn: true,
-    capabilities: postgresCapabilities,
-  );
-
   late DataSource dataSource;
   late PostgresDriverAdapter driverAdapter;
 
@@ -45,6 +20,8 @@ void main() {
     'SqlitePayloadCodec': const SqlitePayloadCodec(),
     'MariaDbPayloadCodec': const MariaDbPayloadCodec(),
     'JsonMapCodec': const JsonMapCodec(),
+    'Map<String, Object?>': const JsonMapCodec(),
+    'Map<String, Object?>?': const JsonMapCodec(),
   };
 
   // Create codec registry for the adapter
@@ -104,17 +81,5 @@ void main() {
     await dataSource.dispose();
   });
 
-  runDriverQueryTests(dataSource: dataSource, config: sharedConfig);
-
-  runDriverJoinTests(dataSource: dataSource, config: sharedConfig);
-
-  runDriverAdvancedQueryTests(dataSource: dataSource, config: sharedConfig);
-
-  runDriverMutationTests(dataSource: dataSource, config: sharedConfig);
-
-  runDriverTransactionTests(dataSource: dataSource, config: sharedConfig);
-
-  runDriverOverrideTests(dataSource: dataSource, config: sharedConfig);
-
-  runDriverQueryBuilderTests(dataSource: dataSource, config: sharedConfig);
+  runAllDriverTests(dataSource: dataSource);
 }

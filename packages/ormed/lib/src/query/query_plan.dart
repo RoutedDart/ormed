@@ -177,7 +177,7 @@ class QueryPlan {
       if (aggregates.isNotEmpty) 'aggregates: ${aggregates.length}',
       if (distinct) 'distinct',
     ];
-    return parts.join(', ') + ')';
+    return '${parts.join(', ')})';
   }
 }
 

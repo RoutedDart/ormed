@@ -20,7 +20,11 @@ class DriverMetadata {
     this.repositoryHook,
     this.schemaMutationHooks,
     this.relationHook,
+    this.identifierQuote = '"',
   }) : _capabilities = capabilities ?? const {};
+
+  /// The quote character used for identifiers.
+  final String identifierQuote;
 
   /// Identifier for the driver (e.g. `sqlite`).
   final String name;

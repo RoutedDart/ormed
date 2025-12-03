@@ -1,7 +1,7 @@
 import 'package:ormed/ormed.dart';
 import 'package:ormed_sqlite/ormed_sqlite.dart';
 import 'package:test/test.dart';
-import '../../../driver_tests/lib/src/models/active_user.dart';
+import 'package:driver_tests/src/models/active_user.dart';
 
 /// Example demonstrating consolidated testing approaches with Ormed.
 ///

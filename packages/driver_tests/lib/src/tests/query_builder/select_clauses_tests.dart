@@ -3,20 +3,10 @@ import 'package:test/test.dart';
 
 import '../../models/models.dart';
 
-import '../../config.dart';
 
-void runSelectClausesTests(
-  DataSource dataSource,
-  DriverTestConfig config,
-) {
+void runSelectClausesTests(DataSource dataSource) {
   group('Select Clauses tests', () {
-    
-
-    setUp(() async {
-      
-    });
-
-    
+    setUp(() async {});
 
     test('select', () async {
       await dataSource.repo<User>().insertMany([
@@ -48,20 +38,26 @@ void runSelectClausesTests(
       expect(users.first.email, 'a@example.com');
     });
 
-    test('selectRaw', () async {
-      await dataSource.repo<User>().insertMany([
-        User(id: 1, email: 'a@example.com', active: true),
-      ]);
+    test(
+      'selectRaw',
+      () async {
+        await dataSource.repo<User>().insertMany([
+          User(id: 1, email: 'a@example.com', active: true),
+        ]);
 
-      final results = await dataSource.context
-          .query<User>()
-          .selectRaw('id, email as user_email, active')
-          .rows();
+        final results = await dataSource.context
+            .query<User>()
+            .selectRaw('id, email as user_email, active')
+            .rows();
 
-      expect(results, hasLength(1));
-      expect(results.first.row.containsKey('user_email'), isTrue);
-      expect(results.first.row['user_email'], 'a@example.com');
-    }, skip: !config.supportsCapability(DriverCapability.rawSQL));
+        expect(results, hasLength(1));
+        expect(results.first.row.containsKey('user_email'), isTrue);
+        expect(results.first.row['user_email'], 'a@example.com');
+      },
+      skip: !dataSource.connection.driver.metadata.supportsCapability(
+        DriverCapability.rawSQL,
+      ),
+    );
 
     test('distinct', () async {
       await dataSource.repo<Article>().insertMany([
@@ -98,7 +94,9 @@ void runSelectClausesTests(
         'status',
       ]).get();
 
-      if (config.supportsDistinctOn) {
+      if (dataSource.connection.driver.metadata.supportsCapability(
+        DriverCapability.distinctOn,
+      )) {
         expect(articles, hasLength(2));
         final statuses = articles.map((a) => a.status).toSet();
         expect(statuses, hasLength(2));
@@ -144,7 +142,9 @@ void runSelectClausesTests(
         'priority',
       ]).get();
 
-      if (config.supportsDistinctOn) {
+      if (dataSource.connection.driver.metadata.supportsCapability(
+        DriverCapability.distinctOn,
+      )) {
         expect(articles, hasLength(2));
         final statuses = articles.map((a) => a.status).toSet();
         expect(statuses, containsAll(['draft', 'published']));
@@ -182,7 +182,9 @@ void runSelectClausesTests(
           .orderBy('id')
           .get();
 
-      if (config.supportsDistinctOn) {
+      if (dataSource.connection.driver.metadata.supportsCapability(
+        DriverCapability.distinctOn,
+      )) {
         expect(articles, hasLength(1));
       } else {
         expect(articles, hasLength(2));

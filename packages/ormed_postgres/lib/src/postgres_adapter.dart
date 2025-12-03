@@ -24,6 +24,7 @@ class PostgresDriverAdapter
            column: 'ctid',
            expression: 'ctid',
          ),
+         identifierQuote: '"',
          capabilities: {
            DriverCapability.joins,
            DriverCapability.insertUsing,
@@ -35,6 +36,9 @@ class PostgresDriverAdapter
            DriverCapability.adHocQueryUpdates,
            DriverCapability.increment,
            DriverCapability.relationAggregates,
+           DriverCapability.caseInsensitiveLike,
+           DriverCapability.distinctOn,
+           DriverCapability.rightJoin,
          },
        ),
        _schemaCompiler = SchemaPlanCompiler(PostgresSchemaDialect()),

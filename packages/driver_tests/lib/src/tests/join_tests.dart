@@ -2,19 +2,16 @@ import 'package:ormed/ormed.dart';
 import 'package:test/test.dart';
 
 import '../../models.dart';
-import '../config.dart';
 import '../seed_data.dart';
 import '../support/driver_schema.dart';
 
-void runDriverJoinTests({
-  required DataSource dataSource,
-  required DriverTestConfig config,
-}) {
-  if (!config.supportsCapability(DriverCapability.joins)) {
+void runDriverJoinTests({required DataSource dataSource}) {
+  final metadata = dataSource.connection.driver.metadata;
+  if (!metadata.supportsCapability(DriverCapability.joins)) {
     return;
   }
 
-  group('${config.driverName} manual joins', () {
+  group('${metadata.name} manual joins', () {
     late TestDatabaseManager manager;
 
     setUpAll(() async {
@@ -22,10 +19,12 @@ void runDriverJoinTests({
       manager = TestDatabaseManager(
         baseDataSource: dataSource,
         migrationDescriptors: driverTestMigrationEntries
-            .map((e) => MigrationDescriptor.fromMigration(
-                  id: e.id,
-                  migration: e.migration,
-                ))
+            .map(
+              (e) => MigrationDescriptor.fromMigration(
+                id: e.id,
+                migration: e.migration,
+              ),
+            )
             .toList(),
         strategy: DatabaseIsolationStrategy.truncate,
       );

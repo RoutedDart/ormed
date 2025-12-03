@@ -2,14 +2,11 @@ import 'package:ormed/ormed.dart';
 import 'package:test/test.dart';
 
 import 'package:driver_tests/src/models/derived_for_factory.dart';
-import '../config.dart';
 import '../support/driver_schema.dart';
 
-void runDriverFactoryInheritanceTests({
-  required DataSource dataSource,
-  required DriverTestConfig config,
-}) {
-  group('${config.driverName} factory inheritance', () {
+void runDriverFactoryInheritanceTests({required DataSource dataSource}) {
+  final metadata = dataSource.connection.driver.metadata;
+  group('${metadata.name} factory inheritance', () {
     late TestDatabaseManager manager;
 
     setUpAll(() async {
@@ -17,10 +14,12 @@ void runDriverFactoryInheritanceTests({
       manager = TestDatabaseManager(
         baseDataSource: dataSource,
         migrationDescriptors: driverTestMigrationEntries
-            .map((e) => MigrationDescriptor.fromMigration(
-                  id: e.id,
-                  migration: e.migration,
-                ))
+            .map(
+              (e) => MigrationDescriptor.fromMigration(
+                id: e.id,
+                migration: e.migration,
+              ),
+            )
             .toList(),
         strategy: DatabaseIsolationStrategy.truncate,
       );
@@ -31,7 +30,9 @@ void runDriverFactoryInheritanceTests({
       await manager.beginTest('factory_inheritance_tests', dataSource);
     });
 
-    tearDown(() async => manager.endTest('factory_inheritance_tests', dataSource));
+    tearDown(
+      () async => manager.endTest('factory_inheritance_tests', dataSource),
+    );
 
     tearDownAll(() async {
       // Schema cleanup is handled by outer test file

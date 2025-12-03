@@ -22,6 +22,7 @@ export 'src/tests/mutation_tests.dart' show runDriverMutationTests;
 export 'src/tests/query_builder_tests.dart' show runDriverQueryBuilderTests;
 export 'src/tests/query_tests.dart' show runDriverQueryTests;
 export 'src/tests/repository_tests.dart' show runDriverRepositoryTests;
+export 'src/tests/all_tests.dart' show runAllDriverTests;
 export 'src/tests/transaction_tests.dart' show runDriverTransactionTests;
 
 export 'src/driver_override_codecs.dart';

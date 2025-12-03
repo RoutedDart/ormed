@@ -510,7 +510,7 @@ class SqliteSchemaDialect extends SchemaDialect {
     return '"$escaped"';
   }
 
-  String _tableName(String table, {String? schema}) {
+  String _tableName(String table) {
     // SQLite doesn't support real schemas like PostgreSQL/MySQL
     // Schema parameter is ignored - SQLite uses attached databases instead
     if (table.contains('.')) {

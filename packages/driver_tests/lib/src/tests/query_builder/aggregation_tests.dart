@@ -3,20 +3,10 @@ import 'package:test/test.dart';
 
 import '../../models/models.dart';
 
-import '../../config.dart';
 
-void runAggregationTests(
-  DataSource dataSource,
-  DriverTestConfig config,
-) {
+void runAggregationTests(DataSource dataSource) {
   group('Aggregation tests', () {
-    
-
-    setUp(() async {
-      
-    });
-
-    
+    setUp(() async {});
 
     // A test for 'count' for aggregation functionality
     test('count', () async {
@@ -52,7 +42,9 @@ void runAggregationTests(
         ),
       ]);
 
-      final sum = await dataSource.context.query<Article>().sumValue('priority');
+      final sum = await dataSource.context.query<Article>().sumValue(
+        'priority',
+      );
       expect(sum, 3);
     });
 

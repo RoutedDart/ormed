@@ -2,34 +2,10 @@ import 'dart:io';
 
 import 'package:driver_tests/driver_tests.dart';
 import 'package:ormed/ormed.dart';
-import 'package:ormed/testing.dart';
 import 'package:ormed_mysql/ormed_mysql.dart';
 import 'package:test/test.dart';
 
 Future<void> main() async {
-  const config = DriverTestConfig(
-    driverName: 'MySqlDriverAdapter',
-    supportsReturning: false,
-    supportsCaseInsensitiveLike: false,
-    identifierQuote: '`',
-    supportsQueryDeletes: true,
-    supportsThreadCount: true,
-    supportsAdvancedQueryBuilders: true,
-    supportsSqlPreviews: true,
-    supportsWhereRaw: true,
-    supportsSelectRaw: true,
-    supportsRightJoin: true,
-    capabilities: {
-      DriverCapability.joins,
-      DriverCapability.insertUsing,
-      DriverCapability.queryDeletes,
-      DriverCapability.schemaIntrospection,
-      DriverCapability.threadCount,
-      DriverCapability.transactions,
-      DriverCapability.adHocQueryUpdates,
-    },
-  );
-
   late DataSource dataSource;
   late MySqlDriverAdapter driverAdapter;
 
@@ -109,17 +85,5 @@ Future<void> main() async {
     await dataSource.dispose();
   });
 
-  runDriverQueryTests(dataSource: dataSource, config: config);
-
-  runDriverJoinTests(dataSource: dataSource, config: config);
-
-  runDriverAdvancedQueryTests(dataSource: dataSource, config: config);
-
-  runDriverMutationTests(dataSource: dataSource, config: config);
-
-  runDriverTransactionTests(dataSource: dataSource, config: config);
-
-  runDriverOverrideTests(dataSource: dataSource, config: config);
-
-  runDriverQueryBuilderTests(dataSource: dataSource, config: config);
+  runAllDriverTests(dataSource: dataSource);
 }

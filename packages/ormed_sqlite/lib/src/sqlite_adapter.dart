@@ -51,6 +51,7 @@ class SqliteDriverAdapter
            column: 'rowid',
            expression: 'rowid',
          ),
+         identifierQuote: '"',
          capabilities: {
            DriverCapability.joins,
            DriverCapability.insertUsing,
@@ -62,6 +63,7 @@ class SqliteDriverAdapter
            DriverCapability.rawSQL,
            DriverCapability.increment,
            DriverCapability.returning,
+           DriverCapability.caseInsensitiveLike,
          },
        ),
        _schemaCompiler = SchemaPlanCompiler(SqliteSchemaDialect()),

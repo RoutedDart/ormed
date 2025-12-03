@@ -3,15 +3,11 @@ import 'package:test/test.dart';
 
 import '../../models/models.dart';
 
-import '../../config.dart';
 
-void runWhereClausesTests(
-  DataSource dataSource,
-  DriverTestConfig config,
-) {
+void runWhereClausesTests(DataSource dataSource) {
+  final metadata = dataSource.connection.driver.metadata;
+
   group('Where Clauses tests', () {
-
-
     test('whereEquals', () async {
       await dataSource.repo<User>().insertMany([
         User(id: 1, email: 'test1@example.com', active: true),
@@ -355,11 +351,12 @@ void runWhereClausesTests(
         User(id: 2, email: 'test2@example.com', active: false),
       ]);
 
-      final users = await dataSource.context.query<User>().whereRaw('active = ?', [
-        true,
-      ]).get();
+      final users = await dataSource.context.query<User>().whereRaw(
+        'active = ?',
+        [true],
+      ).get();
       expect(users, hasLength(1));
       expect(users.first.id, 1);
-    }, skip: !config.supportsCapability(DriverCapability.rawSQL));
+    }, skip: !metadata.supportsCapability(DriverCapability.rawSQL));
   });
 }

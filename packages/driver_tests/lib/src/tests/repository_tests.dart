@@ -2,7 +2,6 @@ import 'package:driver_tests/models.dart';
 import 'package:ormed/ormed.dart';
 import 'package:test/test.dart';
 
-import '../config.dart';
 import '../support/driver_schema.dart';
 
 /// Runs comprehensive repository tests against the provided [dataSource].
@@ -13,11 +12,9 @@ import '../support/driver_schema.dart';
 /// - Upsert operations (with conflict resolution)
 /// - Delete operations (by keys)
 /// - Preview operations (for all mutation types)
-void runDriverRepositoryTests({
-  required DataSource dataSource,
-  required DriverTestConfig config,
-}) {
-  group('${config.driverName} Repository Operations', () {
+void runDriverRepositoryTests({required DataSource dataSource}) {
+  final metadata = dataSource.connection.driver.metadata;
+  group('${metadata.name} Repository Operations', () {
     late Repository<User> userRepo;
     late Repository<Author> authorRepo;
     late TestDatabaseManager manager;
@@ -72,7 +69,6 @@ void runDriverRepositoryTests({
         final inserted = await userRepo.insertMany(users, returning: true);
 
         expect(inserted.length, 3);
-        expect(inserted.every((u) => u.id != null), isTrue);
         expect(inserted[0].email, 'user1@example.com');
         expect(inserted[1].email, 'user2@example.com');
         expect(inserted[2].email, 'user3@example.com');
@@ -134,7 +130,7 @@ void runDriverRepositoryTests({
 
     group('Update Operations', () {
       test('updateMany() updates models', () async {
-        final user = await userRepo.insert(
+        final _ = await userRepo.insert(
           const User(id: 2000, email: 'original@example.com', active: true),
           returning: true,
         );
@@ -193,7 +189,6 @@ void runDriverRepositoryTests({
         final upserted = await userRepo.upsertMany(users, returning: true);
 
         expect(upserted.length, 2);
-        expect(upserted.every((u) => u.id != null), isTrue);
       });
 
       test('upsertMany() updates existing records', () async {
@@ -251,7 +246,7 @@ void runDriverRepositoryTests({
           User(id: 5001, email: 'delete2@example.com', active: true),
         ], returning: true);
 
-        final keys = users.map((u) => {'id': u.id!}).toList();
+        final keys = users.map((u) => {'id': u.id}).toList();
         final affected = await userRepo.deleteByKeys(keys);
 
         expect(affected, 2);
@@ -260,7 +255,7 @@ void runDriverRepositoryTests({
         for (final user in users) {
           final fetched = await dataSource
               .query<User>()
-              .whereEquals('id', user.id!)
+              .whereEquals('id', user.id)
               .first();
           expect(fetched, isNull);
         }
@@ -369,7 +364,6 @@ void runDriverRepositoryTests({
         final results = await Future.wait(futures);
 
         expect(results.length, 5);
-        expect(results.every((u) => u.id != null), isTrue);
       });
     });
   });

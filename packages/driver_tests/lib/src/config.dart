@@ -70,6 +70,15 @@ class DriverTestConfig {
         return supportsWhereRaw && supportsSelectRaw;
       case DriverCapability.relationAggregates:
         return _capabilities.contains(DriverCapability.relationAggregates);
+      case DriverCapability.caseInsensitiveLike:
+        // TODO: Handle this case.
+        throw UnimplementedError();
+      case DriverCapability.rightJoin:
+        // TODO: Handle this case.
+        throw UnimplementedError();
+      case DriverCapability.distinctOn:
+        // TODO: Handle this case.
+        throw UnimplementedError();
     }
   }
 }

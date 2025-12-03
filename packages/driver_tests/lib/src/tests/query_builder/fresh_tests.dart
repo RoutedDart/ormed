@@ -3,23 +3,19 @@ import 'package:test/test.dart';
 
 import '../../../driver_tests.dart';
 
-void runFreshTests(
-  DataSource dataSource,
-  DriverTestConfig config,
-) {
-  group('${config.driverName} Model.fresh()', () {
-    
-
+void runFreshTests(DataSource dataSource) {
+  final metadata = dataSource.connection.driver.metadata;
+  group('${metadata.name} Model.fresh()', () {
     setUp(() async {
-      
-
       // Bind connection resolver for Model methods to work
       Model.bindConnectionResolver(
         resolveConnection: (name) => dataSource.context,
       );
 
       // Seed test data
-      await dataSource.repo<Author>().insertMany([const Author(id: 1, name: 'Alice')]);
+      await dataSource.repo<Author>().insertMany([
+        const Author(id: 1, name: 'Alice'),
+      ]);
       await dataSource.repo<Post>().insertMany([
         Post(id: 1, authorId: 1, title: 'Post 1', publishedAt: DateTime(2024)),
         Post(
@@ -29,18 +25,24 @@ void runFreshTests(
           publishedAt: DateTime(2024, 2),
         ),
       ]);
-      await dataSource.repo<Tag>().insertMany([const Tag(id: 1, label: 'dart')]);
-      await dataSource.repo<PostTag>().insertMany([const PostTag(postId: 1, tagId: 1)]);
+      await dataSource.repo<Tag>().insertMany([
+        const Tag(id: 1, label: 'dart'),
+      ]);
+      await dataSource.repo<PostTag>().insertMany([
+        const PostTag(postId: 1, tagId: 1),
+      ]);
     });
 
     tearDown(() async {
       Model.unbindConnectionResolver();
-      
     });
 
     group('basic functionality', () {
       test('returns a new instance from database', () async {
-        final rows = await dataSource.context.query<Author>().where('id', 1).get();
+        final rows = await dataSource.context
+            .query<Author>()
+            .where('id', 1)
+            .get();
         final author = rows.first;
 
         final freshAuthor = await author.fresh();
@@ -52,7 +54,10 @@ void runFreshTests(
       });
 
       test('fresh instance reflects database changes', () async {
-        final rows = await dataSource.context.query<Author>().where('id', 1).get();
+        final rows = await dataSource.context
+            .query<Author>()
+            .where('id', 1)
+            .get();
         final author = rows.first;
 
         final originalName = author.name;
@@ -80,7 +85,10 @@ void runFreshTests(
       });
 
       test('original instance is not modified', () async {
-        final rows = await dataSource.context.query<Author>().where('id', 1).get();
+        final rows = await dataSource.context
+            .query<Author>()
+            .where('id', 1)
+            .get();
         final author = rows.first;
 
         final originalName = author.name;
@@ -106,7 +114,10 @@ void runFreshTests(
 
     group('with relations', () {
       test('fresh returns instance with specified relations loaded', () async {
-        final rows = await dataSource.context.query<Author>().where('id', 1).get();
+        final rows = await dataSource.context
+            .query<Author>()
+            .where('id', 1)
+            .get();
         final author = rows.first;
 
         expect(author.relationLoaded('posts'), isFalse);
@@ -123,7 +134,10 @@ void runFreshTests(
       });
 
       test('fresh with multiple relations', () async {
-        final rows = await dataSource.context.query<Post>().where('id', 1).get();
+        final rows = await dataSource.context
+            .query<Post>()
+            .where('id', 1)
+            .get();
         final post = rows.first;
 
         expect(post.relationLoaded('author'), isFalse);
@@ -160,7 +174,10 @@ void runFreshTests(
       });
 
       test('fresh relations reflect database changes', () async {
-        final rows = await dataSource.context.query<Author>().where('id', 1).get();
+        final rows = await dataSource.context
+            .query<Author>()
+            .where('id', 1)
+            .get();
         final author = rows.first;
 
         // Add a new post in database
@@ -201,7 +218,7 @@ void runFreshTests(
                   keys: {'id': 1},
                 ),
               ],
-              driverName: dataSource.connection.driver.metadata.name,
+              driverName: metadata.name,
             ),
           );
 
@@ -221,7 +238,10 @@ void runFreshTests(
       );
 
       test('fresh() and refresh() both support withRelations', () async {
-        final rows = await dataSource.context.query<Author>().where('id', 1).get();
+        final rows = await dataSource.context
+            .query<Author>()
+            .where('id', 1)
+            .get();
         final author = rows.first;
 
         // fresh with relations
@@ -266,7 +286,10 @@ void runFreshTests(
       });
 
       test('multiple fresh() calls return independent instances', () async {
-        final rows = await dataSource.context.query<Author>().where('id', 1).get();
+        final rows = await dataSource.context
+            .query<Author>()
+            .where('id', 1)
+            .get();
         final author = rows.first;
 
         final fresh1 = await author.fresh();
@@ -278,7 +301,10 @@ void runFreshTests(
       });
 
       test('fresh() with empty withRelations list', () async {
-        final rows = await dataSource.context.query<Author>().where('id', 1).get();
+        final rows = await dataSource.context
+            .query<Author>()
+            .where('id', 1)
+            .get();
         final author = rows.first;
 
         // Should work with empty relations list
@@ -291,7 +317,10 @@ void runFreshTests(
 
     group('use cases', () {
       test('use fresh() to preserve original while checking updates', () async {
-        final rows = await dataSource.context.query<Author>().where('id', 1).get();
+        final rows = await dataSource.context
+            .query<Author>()
+            .where('id', 1)
+            .get();
         final author = rows.first;
 
         // Simulate external update

@@ -3,7 +3,6 @@ import 'package:ormed/src/builder/descriptors.dart';
 import 'package:ormed/src/builder/helpers.dart';
 
 import 'package:ormed/src/model_mixins/soft_deletes.dart';
-import '../model_context.dart';
 
 class ModelDefinitionEmitter {
   ModelDefinitionEmitter(this.context);

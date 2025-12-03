@@ -1,4 +1,3 @@
-import 'package:analyzer/dart/element/element.dart';
 import '../model_context.dart';
 
 class CompanionClassEmitter {

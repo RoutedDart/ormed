@@ -2,18 +2,15 @@ import 'package:ormed/ormed.dart';
 import 'package:test/test.dart';
 
 import '../../models.dart';
-import '../config.dart';
 import '../support/driver_schema.dart';
 
-void runDriverTransactionTests({
-  required DataSource dataSource,
-  required DriverTestConfig config,
-}) {
-  if (!config.supportsCapability(DriverCapability.transactions)) {
+void runDriverTransactionTests({required DataSource dataSource}) {
+  final metadata = dataSource.connection.driver.metadata;
+  if (!metadata.supportsCapability(DriverCapability.transactions)) {
     return;
   }
 
-  group('${config.driverName} transactions', () {
+  group('${metadata.name} transactions', () {
     late TestDatabaseManager manager;
 
     setUpAll(() async {
@@ -21,10 +18,12 @@ void runDriverTransactionTests({
       manager = TestDatabaseManager(
         baseDataSource: dataSource,
         migrationDescriptors: driverTestMigrationEntries
-            .map((e) => MigrationDescriptor.fromMigration(
-                  id: e.id,
-                  migration: e.migration,
-                ))
+            .map(
+              (e) => MigrationDescriptor.fromMigration(
+                id: e.id,
+                migration: e.migration,
+              ),
+            )
             .toList(),
         strategy: DatabaseIsolationStrategy.truncate,
       );

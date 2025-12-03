@@ -2,18 +2,15 @@ import 'package:ormed/ormed.dart';
 import 'package:test/test.dart';
 
 import '../../models.dart';
-import '../config.dart';
 import '../seed_data.dart';
 import '../support/driver_schema.dart';
 
-void runDriverAdvancedQueryTests({
-  required DataSource dataSource,
-  required DriverTestConfig config,
-}) {
-  if (!config.supportsCapability(DriverCapability.advancedQueryBuilders)) {
+void runDriverAdvancedQueryTests({required DataSource dataSource}) {
+  final metadata = dataSource.connection.driver.metadata;
+  if (!metadata.supportsCapability(DriverCapability.advancedQueryBuilders)) {
     return;
   }
-  group('${config.driverName} advanced builders', () {
+  group('${metadata.name} advanced builders', () {
     late TestDatabaseManager manager;
 
     setUpAll(() async {
@@ -21,10 +18,12 @@ void runDriverAdvancedQueryTests({
       manager = TestDatabaseManager(
         baseDataSource: dataSource,
         migrationDescriptors: driverTestMigrationEntries
-            .map((e) => MigrationDescriptor.fromMigration(
-                  id: e.id,
-                  migration: e.migration,
-                ))
+            .map(
+              (e) => MigrationDescriptor.fromMigration(
+                id: e.id,
+                migration: e.migration,
+              ),
+            )
             .toList(),
         strategy: DatabaseIsolationStrategy.truncate,
       );
@@ -93,7 +92,9 @@ void runDriverAdvancedQueryTests({
             .query<Article>()
             .whereLike('title', '%Update%')
             .orWhere((builder) {
-              if (config.supportsCaseInsensitiveLike) {
+              if (metadata.supportsCapability(
+                DriverCapability.caseInsensitiveLike,
+              )) {
                 builder.whereILike('title', 'DELTA%');
               } else {
                 builder.whereLike('title', 'delta%');
@@ -107,7 +108,9 @@ void runDriverAdvancedQueryTests({
             .query<Article>()
             .whereNotLike('title', '%Release%')
             .where((builder) {
-              if (config.supportsCaseInsensitiveLike) {
+              if (metadata.supportsCapability(
+                DriverCapability.caseInsensitiveLike,
+              )) {
                 builder.whereNotILike('title', 'GAMMA%');
               } else {
                 builder.whereNotLike('title', 'Gamma%');
@@ -163,7 +166,9 @@ void runDriverAdvancedQueryTests({
             .orderBy('categoryId');
 
         // ignore: invalid_use_of_visible_for_testing_member
-        final rows = await dataSource.connection.driver.execute(query.debugPlan());
+        final rows = await dataSource.connection.driver.execute(
+          query.debugPlan(),
+        );
         expect(rows, hasLength(2));
         expect(rows[0]['category_id'], 1);
         expect(rows[0]['priority_sum'], 8);

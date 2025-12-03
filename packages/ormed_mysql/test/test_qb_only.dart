@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:driver_tests/driver_tests.dart';
 import 'package:ormed/ormed.dart';
-import 'package:ormed/testing.dart';
 import 'package:ormed_mysql/ormed_mysql.dart';
 import 'package:test/test.dart';
 
@@ -29,13 +28,23 @@ Future<void> main() async {
     },
   );
 
-  final url = Platform.environment['MYSQL_URL'] ?? 
+  final url =
+      Platform.environment['MYSQL_URL'] ??
       'mysql://root:secret@localhost:6605/orm_test';
 
   final codecRegistry = ValueCodecRegistry.standard();
-  codecRegistry.registerCodec(key: 'PostgresPayloadCodec', codec: const PostgresPayloadCodec());
-  codecRegistry.registerCodec(key: 'SqlitePayloadCodec', codec: const SqlitePayloadCodec());
-  codecRegistry.registerCodec(key: 'MariaDbPayloadCodec', codec: const MariaDbPayloadCodec());
+  codecRegistry.registerCodec(
+    key: 'PostgresPayloadCodec',
+    codec: const PostgresPayloadCodec(),
+  );
+  codecRegistry.registerCodec(
+    key: 'SqlitePayloadCodec',
+    codec: const SqlitePayloadCodec(),
+  );
+  codecRegistry.registerCodec(
+    key: 'MariaDbPayloadCodec',
+    codec: const MariaDbPayloadCodec(),
+  );
   codecRegistry.registerCodec(key: 'JsonMapCodec', codec: const JsonMapCodec());
 
   final driverAdapter = MySqlDriverAdapter.custom(
@@ -66,5 +75,5 @@ Future<void> main() async {
     await dataSource.dispose();
   });
 
-  runDriverQueryBuilderTests(dataSource: dataSource, config: config);
+  runDriverQueryBuilderTests(dataSource: dataSource);
 }

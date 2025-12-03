@@ -2,7 +2,7 @@ import 'package:driver_tests/driver_tests.dart';
 import 'package:ormed/ormed.dart';
 import 'package:test/test.dart';
 
-void runCrudOperationsTests(DataSource dataSource, DriverTestConfig config) {
+void runCrudOperationsTests(DataSource dataSource) {
   group('CRUD Operations', () {
     setUp(() async {
       // Thoroughly clean all test data before each test

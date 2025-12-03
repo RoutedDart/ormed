@@ -5,31 +5,7 @@ import 'package:ormed/ormed.dart';
 import 'package:ormed_mysql/ormed_mysql.dart';
 import 'package:test/test.dart';
 
-void main() {
-  const config = DriverTestConfig(
-    driverName: 'MariaDbDriverAdapter',
-    supportsReturning: false,
-    supportsCaseInsensitiveLike: false,
-    identifierQuote: '`',
-    supportsQueryDeletes: true,
-    supportsThreadCount: true,
-    supportsAdvancedQueryBuilders: true,
-    supportsSqlPreviews: true,
-    supportsWhereRaw: true,
-    supportsSelectRaw: true,
-    supportsRightJoin: true,
-    capabilities: {
-      DriverCapability.joins,
-      DriverCapability.insertUsing,
-      DriverCapability.queryDeletes,
-      DriverCapability.schemaIntrospection,
-      DriverCapability.threadCount,
-      DriverCapability.transactions,
-      DriverCapability.adHocQueryUpdates,
-      DriverCapability.increment,
-    },
-  );
-
+Future<void> main() async {
   late DataSource dataSource;
   late MariaDbDriverAdapter driverAdapter;
 
@@ -68,12 +44,11 @@ void main() {
       logging: true,
     ),
   );
+  // Initialize and setup schema
+  await dataSource.init();
+  dataSource.enableQueryLog();
 
   setUpAll(() async {
-    // Initialize and setup schema
-    await dataSource.init();
-    dataSource.enableQueryLog();
-
     // Enable SQL query logging
     dataSource.connection.onBeforeQuery((plan) {
       final preview = dataSource.connection.driver.describeQuery(plan);
@@ -101,21 +76,8 @@ void main() {
   });
 
   tearDownAll(() async {
-    await dropDriverTestSchema(driverAdapter, schema: null);
     await dataSource.dispose();
   });
 
-  runDriverQueryTests(dataSource: dataSource, config: config);
-
-  runDriverJoinTests(dataSource: dataSource, config: config);
-
-  runDriverAdvancedQueryTests(dataSource: dataSource, config: config);
-
-  runDriverMutationTests(dataSource: dataSource, config: config);
-
-  runDriverTransactionTests(dataSource: dataSource, config: config);
-
-  runDriverOverrideTests(dataSource: dataSource, config: config);
-
-  runDriverQueryBuilderTests(dataSource: dataSource, config: config);
+  runAllDriverTests(dataSource: dataSource);
 }

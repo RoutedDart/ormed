@@ -28,6 +28,7 @@ class MySqlDriverAdapter
            column: 'id',
            expression: 'id',
          ),
+         identifierQuote: '`',
          capabilities: {
            DriverCapability.joins,
            DriverCapability.insertUsing,
@@ -37,6 +38,7 @@ class MySqlDriverAdapter
            DriverCapability.transactions,
            DriverCapability.adHocQueryUpdates,
            DriverCapability.increment,
+           DriverCapability.rightJoin,
          },
        ),
        _schemaCompiler = SchemaPlanCompiler(
@@ -614,7 +616,7 @@ class MySqlDriverAdapter
     final connection = await _connection();
     var affected = 0;
     final returnedRows = <Map<String, Object?>>[];
-    
+
     for (final parameters in shape.parameterSets) {
       final statement = _prepareStatement(shape.sql, parameters);
       final result = await connection.execute(
@@ -622,19 +624,23 @@ class MySqlDriverAdapter
         statement.parameters.isEmpty ? null : statement.parameters,
       );
       affected += result.affectedRows.toInt();
-      
+
       // For INSERTs, capture the last insert ID as a returned row
-      if (shape.isInsert && result.lastInsertID.toInt() > 0 && shape.definition != null) {
+      if (shape.isInsert &&
+          result.lastInsertID.toInt() > 0 &&
+          shape.definition != null) {
         // Find the primary key field name from the plan
         try {
-          final pkField = shape.definition!.fields.firstWhere((f) => f.isPrimaryKey);
+          final pkField = shape.definition!.fields.firstWhere(
+            (f) => f.isPrimaryKey,
+          );
           returnedRows.add({pkField.columnName: result.lastInsertID.toInt()});
         } catch (_) {
           // No primary key found, skip
         }
       }
     }
-    
+
     return MutationResult(
       affectedRows: affected,
       returnedRows: returnedRows.isEmpty ? null : returnedRows,

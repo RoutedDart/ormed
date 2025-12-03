@@ -1,18 +1,10 @@
+import 'package:driver_tests/models.dart';
 import 'package:ormed/ormed.dart';
 import 'package:test/test.dart';
 
-import '../../../driver_tests.dart';
-
-void runLazyLoadingTests(
-  DataSource dataSource,
-  DriverTestConfig config,
-) {
-  group('${config.driverName} lazy loading', () {
-    
-
+void runLazyLoadingTests(DataSource dataSource) {
+  group('${dataSource.connection.driver.metadata.name} lazy loading', () {
     setUp(() async {
-      
-
       // Bind connection resolver for Model.load() to work
       Model.bindConnectionResolver(
         resolveConnection: (name) => dataSource.context,
@@ -51,7 +43,6 @@ void runLazyLoadingTests(
     tearDown(() async {
       ModelRelations.preventsLazyLoading = false;
       Model.unbindConnectionResolver();
-      
     });
 
     group('load() method', () {
@@ -113,7 +104,10 @@ void runLazyLoadingTests(
       test(
         'belongsTo relation starts null, becomes populated after lazy load',
         () async {
-          final rows = await dataSource.context.query<Post>().where('id', 1).get();
+          final rows = await dataSource.context
+              .query<Post>()
+              .where('id', 1)
+              .get();
           final post = rows.first;
 
           // BEFORE lazy loading
@@ -151,7 +145,10 @@ void runLazyLoadingTests(
       );
 
       test('loads hasMany relation', () async {
-        final rows = await dataSource.context.query<Author>().where('id', 1).get();
+        final rows = await dataSource.context
+            .query<Author>()
+            .where('id', 1)
+            .get();
         final author = rows.first;
 
         expect(author.relationLoaded('posts'), isFalse);
@@ -169,7 +166,10 @@ void runLazyLoadingTests(
       });
 
       test('loads belongsTo relation', () async {
-        final rows = await dataSource.context.query<Post>().where('id', 1).get();
+        final rows = await dataSource.context
+            .query<Post>()
+            .where('id', 1)
+            .get();
         final post = rows.first;
 
         expect(post.relationLoaded('author'), isFalse);
@@ -182,7 +182,10 @@ void runLazyLoadingTests(
       });
 
       test('loads relation with constraint callback', () async {
-        final rows = await dataSource.context.query<Author>().where('id', 1).get();
+        final rows = await dataSource.context
+            .query<Author>()
+            .where('id', 1)
+            .get();
         final author = rows.first;
 
         // Load all posts first to know total
@@ -205,7 +208,10 @@ void runLazyLoadingTests(
       });
 
       test('loads relation multiple times (replaces previous)', () async {
-        final rows = await dataSource.context.query<Author>().where('id', 1).get();
+        final rows = await dataSource.context
+            .query<Author>()
+            .where('id', 1)
+            .get();
         final author = rows.first;
 
         // First load with constraint
@@ -222,7 +228,10 @@ void runLazyLoadingTests(
       });
 
       test('throws ArgumentError for invalid relation name', () async {
-        final rows = await dataSource.context.query<Author>().where('id', 1).get();
+        final rows = await dataSource.context
+            .query<Author>()
+            .where('id', 1)
+            .get();
         final author = rows.first;
 
         expect(
@@ -240,7 +249,10 @@ void runLazyLoadingTests(
       test('throws LazyLoadingViolationException when prevented', () async {
         ModelRelations.preventsLazyLoading = true;
 
-        final rows = await dataSource.context.query<Author>().where('id', 1).get();
+        final rows = await dataSource.context
+            .query<Author>()
+            .where('id', 1)
+            .get();
         final author = rows.first;
 
         expect(
@@ -250,7 +262,10 @@ void runLazyLoadingTests(
       });
 
       test('generated getter delegates to cache when loaded', () async {
-        final rows = await dataSource.context.query<Author>().where('id', 1).get();
+        final rows = await dataSource.context
+            .query<Author>()
+            .where('id', 1)
+            .get();
         final author = rows.first;
 
         // When not loaded, returns super.posts (empty list)
@@ -311,7 +326,10 @@ void runLazyLoadingTests(
       });
 
       test('loads multiple missing relations', () async {
-        final rows = await dataSource.context.query<Post>().where('id', 1).get();
+        final rows = await dataSource.context
+            .query<Post>()
+            .where('id', 1)
+            .get();
         final post = rows.first;
 
         expect(post.relationLoaded('author'), isFalse);
@@ -347,7 +365,10 @@ void runLazyLoadingTests(
       });
 
       test('returns self for chaining', () async {
-        final rows = await dataSource.context.query<Post>().where('id', 1).get();
+        final rows = await dataSource.context
+            .query<Post>()
+            .where('id', 1)
+            .get();
         final post = rows.first;
 
         final result = await post.loadMissing(['author']);
@@ -357,7 +378,10 @@ void runLazyLoadingTests(
 
     group('loadMany() method', () {
       test('loads multiple relations with constraints', () async {
-        final rows = await dataSource.context.query<Author>().where('id', 1).get();
+        final rows = await dataSource.context
+            .query<Author>()
+            .where('id', 1)
+            .get();
         final author = rows.first;
 
         await author.loadMany({'posts': (q) => q.where('id', 1)});
@@ -367,7 +391,10 @@ void runLazyLoadingTests(
       });
 
       test('loads relations with mixed constraints', () async {
-        final rows = await dataSource.context.query<Post>().where('id', 1).get();
+        final rows = await dataSource.context
+            .query<Post>()
+            .where('id', 1)
+            .get();
         final post = rows.first;
 
         await post.loadMany({'author': null, 'tags': (q) => q.where('id', 1)});
@@ -377,7 +404,10 @@ void runLazyLoadingTests(
       });
 
       test('loads all relations when no constraints', () async {
-        final rows = await dataSource.context.query<Post>().where('id', 1).get();
+        final rows = await dataSource.context
+            .query<Post>()
+            .where('id', 1)
+            .get();
         final post = rows.first;
 
         await post.loadMany({'author': null, 'tags': null});
@@ -387,7 +417,10 @@ void runLazyLoadingTests(
       });
 
       test('returns self for chaining', () async {
-        final rows = await dataSource.context.query<Post>().where('id', 1).get();
+        final rows = await dataSource.context
+            .query<Post>()
+            .where('id', 1)
+            .get();
         final post = rows.first;
 
         final result = await post.loadMany({'author': null});
@@ -397,7 +430,10 @@ void runLazyLoadingTests(
 
     group('loadCount() method', () {
       test('loads relation count', () async {
-        final rows = await dataSource.context.query<Author>().where('id', 1).get();
+        final rows = await dataSource.context
+            .query<Author>()
+            .where('id', 1)
+            .get();
         final author = rows.first;
 
         expect(author.getAttribute<int>('posts_count'), isNull);
@@ -410,7 +446,10 @@ void runLazyLoadingTests(
       });
 
       test('loads count with custom alias', () async {
-        final rows = await dataSource.context.query<Author>().where('id', 1).get();
+        final rows = await dataSource.context
+            .query<Author>()
+            .where('id', 1)
+            .get();
         final author = rows.first;
 
         await author.loadCount('posts', alias: 'total_posts');
@@ -424,7 +463,10 @@ void runLazyLoadingTests(
       });
 
       test('loads count with constraint', () async {
-        final rows = await dataSource.context.query<Author>().where('id', 1).get();
+        final rows = await dataSource.context
+            .query<Author>()
+            .where('id', 1)
+            .get();
         final author = rows.first;
 
         await author.loadCount('posts', constraint: (q) => q.where('id', 1));
@@ -436,7 +478,10 @@ void runLazyLoadingTests(
       test('throws when lazy loading is prevented', () async {
         ModelRelations.preventsLazyLoading = true;
 
-        final rows = await dataSource.context.query<Author>().where('id', 1).get();
+        final rows = await dataSource.context
+            .query<Author>()
+            .where('id', 1)
+            .get();
         final author = rows.first;
 
         expect(
@@ -446,7 +491,10 @@ void runLazyLoadingTests(
       });
 
       test('returns self for chaining', () async {
-        final rows = await dataSource.context.query<Author>().where('id', 1).get();
+        final rows = await dataSource.context
+            .query<Author>()
+            .where('id', 1)
+            .get();
         final author = rows.first;
 
         final result = await author.loadCount('posts');
@@ -456,7 +504,10 @@ void runLazyLoadingTests(
 
     group('loadExists() method', () {
       test('loads relation existence', () async {
-        final rows = await dataSource.context.query<Author>().where('id', 1).get();
+        final rows = await dataSource.context
+            .query<Author>()
+            .where('id', 1)
+            .get();
         final author = rows.first;
 
         expect(author.getAttribute<bool>('posts_exists'), isNull);
@@ -467,7 +518,10 @@ void runLazyLoadingTests(
       });
 
       test('loads exists with custom alias', () async {
-        final rows = await dataSource.context.query<Author>().where('id', 1).get();
+        final rows = await dataSource.context
+            .query<Author>()
+            .where('id', 1)
+            .get();
         final author = rows.first;
 
         await author.loadExists('posts', alias: 'has_posts');
@@ -481,7 +535,10 @@ void runLazyLoadingTests(
       });
 
       test('loads exists with constraint', () async {
-        final rows = await dataSource.context.query<Author>().where('id', 1).get();
+        final rows = await dataSource.context
+            .query<Author>()
+            .where('id', 1)
+            .get();
         final author = rows.first;
 
         await author.loadExists('posts', constraint: (q) => q.where('id', 1));
@@ -492,7 +549,10 @@ void runLazyLoadingTests(
       test('throws when lazy loading is prevented', () async {
         ModelRelations.preventsLazyLoading = true;
 
-        final rows = await dataSource.context.query<Author>().where('id', 1).get();
+        final rows = await dataSource.context
+            .query<Author>()
+            .where('id', 1)
+            .get();
         final author = rows.first;
 
         expect(
@@ -502,7 +562,10 @@ void runLazyLoadingTests(
       });
 
       test('returns self for chaining', () async {
-        final rows = await dataSource.context.query<Author>().where('id', 1).get();
+        final rows = await dataSource.context
+            .query<Author>()
+            .where('id', 1)
+            .get();
         final author = rows.first;
 
         final result = await author.loadExists('posts');
@@ -512,7 +575,10 @@ void runLazyLoadingTests(
 
     group('Method chaining', () {
       test('can chain multiple load methods', () async {
-        final rows = await dataSource.context.query<Post>().where('id', 1).get();
+        final rows = await dataSource.context
+            .query<Post>()
+            .where('id', 1)
+            .get();
         final post = rows.first;
 
         await post
@@ -528,7 +594,10 @@ void runLazyLoadingTests(
       });
 
       test('can chain load and loadMissing', () async {
-        final rows = await dataSource.context.query<Post>().where('id', 1).get();
+        final rows = await dataSource.context
+            .query<Post>()
+            .where('id', 1)
+            .get();
         final post = rows.first;
 
         await post
@@ -540,7 +609,10 @@ void runLazyLoadingTests(
       });
 
       test('can chain all methods together', () async {
-        final rows = await dataSource.context.query<Post>().where('id', 1).get();
+        final rows = await dataSource.context
+            .query<Post>()
+            .where('id', 1)
+            .get();
         final post = rows.first;
 
         await post
@@ -628,14 +700,20 @@ void runLazyLoadingTests(
       });
 
       test('throws ArgumentError for invalid relation in loadCount', () async {
-        final rows = await dataSource.context.query<Author>().where('id', 1).get();
+        final rows = await dataSource.context
+            .query<Author>()
+            .where('id', 1)
+            .get();
         final author = rows.first;
 
         expect(() => author.loadCount('invalid_relation'), throwsArgumentError);
       });
 
       test('throws ArgumentError for invalid relation in loadExists', () async {
-        final rows = await dataSource.context.query<Author>().where('id', 1).get();
+        final rows = await dataSource.context
+            .query<Author>()
+            .where('id', 1)
+            .get();
         final author = rows.first;
 
         expect(
@@ -649,7 +727,10 @@ void runLazyLoadingTests(
       test('preventsLazyLoading blocks load()', () async {
         ModelRelations.preventsLazyLoading = true;
 
-        final rows = await dataSource.context.query<Author>().where('id', 1).get();
+        final rows = await dataSource.context
+            .query<Author>()
+            .where('id', 1)
+            .get();
         final author = rows.first;
 
         expect(
@@ -661,7 +742,10 @@ void runLazyLoadingTests(
       test('preventsLazyLoading blocks loadCount()', () async {
         ModelRelations.preventsLazyLoading = true;
 
-        final rows = await dataSource.context.query<Author>().where('id', 1).get();
+        final rows = await dataSource.context
+            .query<Author>()
+            .where('id', 1)
+            .get();
         final author = rows.first;
 
         expect(
@@ -673,7 +757,10 @@ void runLazyLoadingTests(
       test('preventsLazyLoading blocks loadExists()', () async {
         ModelRelations.preventsLazyLoading = true;
 
-        final rows = await dataSource.context.query<Author>().where('id', 1).get();
+        final rows = await dataSource.context
+            .query<Author>()
+            .where('id', 1)
+            .get();
         final author = rows.first;
 
         expect(
@@ -720,7 +807,10 @@ void runLazyLoadingTests(
       );
 
       test('can toggle preventsLazyLoading', () async {
-        final rows = await dataSource.context.query<Author>().where('id', 1).get();
+        final rows = await dataSource.context
+            .query<Author>()
+            .where('id', 1)
+            .get();
         final author = rows.first;
 
         // Enable prevention
@@ -740,7 +830,10 @@ void runLazyLoadingTests(
 
     group('Nested relation paths', () {
       test('loads nested hasMany -> belongsTo relation path', () async {
-        final rows = await dataSource.context.query<Author>().where('id', 1).get();
+        final rows = await dataSource.context
+            .query<Author>()
+            .where('id', 1)
+            .get();
         final author = rows.first;
 
         expect(author.relationLoaded('posts'), isFalse);
@@ -767,7 +860,10 @@ void runLazyLoadingTests(
       });
 
       test('loads nested hasMany -> manyToMany relation path', () async {
-        final rows = await dataSource.context.query<Author>().where('id', 1).get();
+        final rows = await dataSource.context
+            .query<Author>()
+            .where('id', 1)
+            .get();
         final author = rows.first;
 
         // Load posts and their tags
@@ -785,7 +881,10 @@ void runLazyLoadingTests(
       });
 
       test('nested path constraint applies to final segment only', () async {
-        final rows = await dataSource.context.query<Author>().where('id', 1).get();
+        final rows = await dataSource.context
+            .query<Author>()
+            .where('id', 1)
+            .get();
         final author = rows.first;
 
         // Load posts -> tags with constraint on tags
@@ -807,7 +906,10 @@ void runLazyLoadingTests(
 
       test('nested path with empty intermediate result does not error', () async {
         // Get author with no posts (if exists) or use one that will have empty filtered result
-        final rows = await dataSource.context.query<Author>().where('id', 2).get();
+        final rows = await dataSource.context
+            .query<Author>()
+            .where('id', 2)
+            .get();
         final author = rows.first;
 
         // This should not throw even if posts are empty or don't have tags
@@ -817,7 +919,10 @@ void runLazyLoadingTests(
       });
 
       test('nested path throws for invalid first segment', () async {
-        final rows = await dataSource.context.query<Author>().where('id', 1).get();
+        final rows = await dataSource.context
+            .query<Author>()
+            .where('id', 1)
+            .get();
         final author = rows.first;
 
         expect(
@@ -827,7 +932,10 @@ void runLazyLoadingTests(
       });
 
       test('nested path returns self for chaining', () async {
-        final rows = await dataSource.context.query<Author>().where('id', 1).get();
+        final rows = await dataSource.context
+            .query<Author>()
+            .where('id', 1)
+            .get();
         final author = rows.first;
 
         final result = await author.load('posts.author');

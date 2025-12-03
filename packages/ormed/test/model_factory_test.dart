@@ -2,7 +2,7 @@ import 'package:ormed/ormed.dart';
 import 'package:test/test.dart';
 
 import 'package:driver_tests/src/models/attribute_user.dart';
-import '../../driver_tests/lib/src/models/active_user.dart';
+import 'package:driver_tests/src/models/active_user.dart';
 import 'package:driver_tests/src/models/derived_for_factory.dart';
 
 void main() {
