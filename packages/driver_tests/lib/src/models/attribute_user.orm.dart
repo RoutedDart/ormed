@@ -65,6 +65,7 @@ const FieldDefinition _$AttributeUserProfileField = FieldDefinition(
   isUnique: false,
   isIndexed: false,
   autoIncrement: false,
+  codecType: 'json',
 );
 
 final ModelDefinition<AttributeUser> _$AttributeUserModelDefinition =
@@ -109,11 +110,64 @@ extension AttributeUserOrmDefinition on AttributeUser {
       _$AttributeUserModelDefinition;
 }
 
+class AttributeUsers {
+  const AttributeUsers._();
+
+  static Query<AttributeUser> query([String? connection]) =>
+      Model.query<AttributeUser>(connection: connection);
+
+  static Future<AttributeUser?> find(Object id, {String? connection}) =>
+      Model.find<AttributeUser>(id, connection: connection);
+
+  static Future<AttributeUser> findOrFail(Object id, {String? connection}) =>
+      Model.findOrFail<AttributeUser>(id, connection: connection);
+
+  static Future<List<AttributeUser>> all({String? connection}) =>
+      Model.all<AttributeUser>(connection: connection);
+
+  static Future<int> count({String? connection}) =>
+      Model.count<AttributeUser>(connection: connection);
+
+  static Future<bool> exists({String? connection}) =>
+      Model.exists<AttributeUser>(connection: connection);
+
+  static Query<AttributeUser> where(
+    String column,
+    String operator,
+    dynamic value, {
+    String? connection,
+  }) => Model.where<AttributeUser>(
+    column,
+    operator,
+    value,
+    connection: connection,
+  );
+
+  static Query<AttributeUser> whereIn(
+    String column,
+    List<dynamic> values, {
+    String? connection,
+  }) => Model.whereIn<AttributeUser>(column, values, connection: connection);
+
+  static Query<AttributeUser> orderBy(
+    String column, {
+    String direction = "asc",
+    String? connection,
+  }) => Model.orderBy<AttributeUser>(
+    column,
+    direction: direction,
+    connection: connection,
+  );
+
+  static Query<AttributeUser> limit(int count, {String? connection}) =>
+      Model.limit<AttributeUser>(count, connection: connection);
+}
+
 class AttributeUserModelFactory {
   const AttributeUserModelFactory._();
 
   static ModelDefinition<AttributeUser> get definition =>
-      AttributeUserOrmDefinition.definition;
+      _$AttributeUserModelDefinition;
 
   static ModelCodec<AttributeUser> get codec => definition.codec;
 
@@ -137,244 +191,12 @@ class AttributeUserModelFactory {
     context: context,
   );
 
-  static Query<AttributeUser> query([String? connection]) {
-    final connName = connection ?? definition.metadata.connection;
-    final conn = ConnectionManager.instance.connection(
-      connName ?? ConnectionManager.instance.defaultConnectionName ?? "default",
-    );
-    return conn.query<AttributeUser>();
-  }
-
   static ModelFactoryBuilder<AttributeUser> factory({
     GeneratorProvider? generatorProvider,
   }) => ModelFactoryBuilder<AttributeUser>(
     definition: definition,
     generatorProvider: generatorProvider,
   );
-
-  static Future<List<AttributeUser>> all([String? connection]) =>
-      query(connection).get();
-
-  static Future<AttributeUser> create(
-    Map<String, dynamic> attributes, [
-    String? connection,
-  ]) async {
-    final model = const _$AttributeUserModelCodec().decode(
-      attributes,
-      ValueCodecRegistry.standard(),
-    );
-    final connName = connection ?? definition.metadata.connection;
-    final conn = ConnectionManager.instance.connection(
-      connName ?? ConnectionManager.instance.defaultConnectionName ?? "default",
-    );
-    final repo = conn.context.repository<AttributeUser>();
-    final result = await repo.insertMany([model], returning: true);
-    return result.first;
-  }
-
-  static Future<List<AttributeUser>> createMany(
-    List<Map<String, dynamic>> records, [
-    String? connection,
-  ]) async {
-    final models = records
-        .map(
-          (r) => const _$AttributeUserModelCodec().decode(
-            r,
-            ValueCodecRegistry.standard(),
-          ),
-        )
-        .toList();
-    final connName = connection ?? definition.metadata.connection;
-    final conn = ConnectionManager.instance.connection(
-      connName ?? ConnectionManager.instance.defaultConnectionName ?? "default",
-    );
-    final repo = conn.context.repository<AttributeUser>();
-    return await repo.insertMany(models, returning: true);
-  }
-
-  static Future<void> insert(
-    List<Map<String, dynamic>> records, [
-    String? connection,
-  ]) async {
-    final models = records
-        .map(
-          (r) => const _$AttributeUserModelCodec().decode(
-            r,
-            ValueCodecRegistry.standard(),
-          ),
-        )
-        .toList();
-    final connName = connection ?? definition.metadata.connection;
-    final conn = ConnectionManager.instance.connection(
-      connName ?? ConnectionManager.instance.defaultConnectionName ?? "default",
-    );
-    final repo = conn.context.repository<AttributeUser>();
-    await repo.insertMany(models, returning: false);
-  }
-
-  static Future<AttributeUser?> find(Object id, [String? connection]) =>
-      query(connection).find(id);
-
-  static Future<AttributeUser> findOrFail(
-    Object id, [
-    String? connection,
-  ]) async {
-    final result = await find(id, connection);
-    if (result == null) throw StateError("Model not found with id: $id");
-    return result;
-  }
-
-  static Future<List<AttributeUser>> findMany(
-    List<Object> ids, [
-    String? connection,
-  ]) => query(connection).findMany(ids);
-
-  static Future<AttributeUser?> first([String? connection]) =>
-      query(connection).first();
-
-  static Future<AttributeUser> firstOrFail([String? connection]) async {
-    final result = await first(connection);
-    if (result == null) throw StateError("No model found");
-    return result;
-  }
-
-  static Future<int> count([String? connection]) => query(connection).count();
-
-  static Future<bool> exists([String? connection]) async =>
-      await count(connection) > 0;
-
-  static Future<int> destroy(List<Object> ids, [String? connection]) async {
-    final models = await findMany(ids, connection);
-    for (final model in models) {
-      await model.delete();
-    }
-    return models.length;
-  }
-
-  static Query<AttributeUser> where(
-    String column,
-    dynamic value, [
-    String? connection,
-  ]) => query(connection).where(column, value);
-
-  static Query<AttributeUser> whereIn(
-    String column,
-    List<dynamic> values, [
-    String? connection,
-  ]) => query(connection).whereIn(column, values);
-
-  static Query<AttributeUser> orderBy(
-    String column, {
-    String direction = "asc",
-    String? connection,
-  }) => query(
-    connection,
-  ).orderBy(column, descending: direction.toLowerCase() == "desc");
-
-  static Query<AttributeUser> limit(int count, [String? connection]) =>
-      query(connection).limit(count);
-}
-
-extension AttributeUserModelHelpers on AttributeUser {
-  // Factory
-  static ModelFactoryBuilder<AttributeUser> factory({
-    GeneratorProvider? generatorProvider,
-  }) => AttributeUserModelFactory.factory(generatorProvider: generatorProvider);
-
-  // Query builder
-  static Query<AttributeUser> query([String? connection]) =>
-      AttributeUserModelFactory.query(connection);
-
-  // CRUD operations
-  static Future<List<AttributeUser>> all([String? connection]) =>
-      AttributeUserModelFactory.all(connection);
-
-  static Future<AttributeUser?> find(Object id, [String? connection]) =>
-      AttributeUserModelFactory.find(id, connection);
-
-  static Future<AttributeUser> findOrFail(Object id, [String? connection]) =>
-      AttributeUserModelFactory.findOrFail(id, connection);
-
-  static Future<List<AttributeUser>> findMany(
-    List<Object> ids, [
-    String? connection,
-  ]) => AttributeUserModelFactory.findMany(ids, connection);
-
-  static Future<AttributeUser?> first([String? connection]) =>
-      AttributeUserModelFactory.first(connection);
-
-  static Future<AttributeUser> firstOrFail([String? connection]) =>
-      AttributeUserModelFactory.firstOrFail(connection);
-
-  static Future<AttributeUser> create(
-    Map<String, dynamic> attributes, [
-    String? connection,
-  ]) => AttributeUserModelFactory.create(attributes, connection);
-
-  static Future<List<AttributeUser>> createMany(
-    List<Map<String, dynamic>> records, [
-    String? connection,
-  ]) => AttributeUserModelFactory.createMany(records, connection);
-
-  static Future<void> insert(
-    List<Map<String, dynamic>> records, [
-    String? connection,
-  ]) => AttributeUserModelFactory.insert(records, connection);
-
-  static Future<int> destroy(List<Object> ids, [String? connection]) =>
-      AttributeUserModelFactory.destroy(ids, connection);
-
-  static Future<int> count([String? connection]) =>
-      AttributeUserModelFactory.count(connection);
-
-  static Future<bool> exists([String? connection]) =>
-      AttributeUserModelFactory.exists(connection);
-
-  static Query<AttributeUser> where(
-    String column,
-    dynamic value, [
-    String? connection,
-  ]) => AttributeUserModelFactory.where(column, value, connection);
-
-  static Query<AttributeUser> whereIn(
-    String column,
-    List<dynamic> values, [
-    String? connection,
-  ]) => AttributeUserModelFactory.whereIn(column, values, connection);
-
-  static Query<AttributeUser> orderBy(
-    String column, {
-    String direction = "asc",
-    String? connection,
-  }) => AttributeUserModelFactory.orderBy(
-    column,
-    direction: direction,
-    connection: connection,
-  );
-
-  static Query<AttributeUser> limit(int count, [String? connection]) =>
-      AttributeUserModelFactory.limit(count, connection);
-
-  // Instance method
-  Future<void> delete([String? connection]) async {
-    final connName =
-        connection ?? AttributeUserModelFactory.definition.metadata.connection;
-    final conn = ConnectionManager.instance.connection(
-      connName ?? ConnectionManager.instance.defaultConnectionName ?? "default",
-    );
-    final repo = conn.context.repository<AttributeUser>();
-    final primaryKeys = AttributeUserModelFactory.definition.fields
-        .where((f) => f.isPrimaryKey)
-        .toList();
-    if (primaryKeys.isEmpty) {
-      throw StateError("Cannot delete model without primary key");
-    }
-    final keyMap = <String, Object?>{
-      for (final key in primaryKeys)
-        key.columnName: AttributeUserModelFactory.toMap(this)[key.name],
-    };
-    await repo.deleteByKeys([keyMap]);
-  }
 }
 
 class _$AttributeUserModelCodec extends ModelCodec<AttributeUser> {
@@ -494,12 +316,4 @@ class _$AttributeUserModel extends AttributeUser {
     replaceAttributes(values);
     attachModelDefinition(_$AttributeUserModelDefinition);
   }
-}
-
-extension AttributeUserAttributeSetters on AttributeUser {
-  set id(int value) => setAttribute('id', value);
-  set email(String value) => setAttribute('email', value);
-  set secret(String value) => setAttribute('secret', value);
-  set role(String? value) => setAttribute('role', value);
-  set profile(Map<String, Object?>? value) => setAttribute('profile', value);
 }

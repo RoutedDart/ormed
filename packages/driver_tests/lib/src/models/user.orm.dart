@@ -128,10 +128,55 @@ extension UserOrmDefinition on User {
   static ModelDefinition<User> get definition => _$UserModelDefinition;
 }
 
+class Users {
+  const Users._();
+
+  static Query<User> query([String? connection]) =>
+      Model.query<User>(connection: connection);
+
+  static Future<User?> find(Object id, {String? connection}) =>
+      Model.find<User>(id, connection: connection);
+
+  static Future<User> findOrFail(Object id, {String? connection}) =>
+      Model.findOrFail<User>(id, connection: connection);
+
+  static Future<List<User>> all({String? connection}) =>
+      Model.all<User>(connection: connection);
+
+  static Future<int> count({String? connection}) =>
+      Model.count<User>(connection: connection);
+
+  static Future<bool> exists({String? connection}) =>
+      Model.exists<User>(connection: connection);
+
+  static Query<User> where(
+    String column,
+    String operator,
+    dynamic value, {
+    String? connection,
+  }) => Model.where<User>(column, operator, value, connection: connection);
+
+  static Query<User> whereIn(
+    String column,
+    List<dynamic> values, {
+    String? connection,
+  }) => Model.whereIn<User>(column, values, connection: connection);
+
+  static Query<User> orderBy(
+    String column, {
+    String direction = "asc",
+    String? connection,
+  }) =>
+      Model.orderBy<User>(column, direction: direction, connection: connection);
+
+  static Query<User> limit(int count, {String? connection}) =>
+      Model.limit<User>(count, connection: connection);
+}
+
 class UserModelFactory {
   const UserModelFactory._();
 
-  static ModelDefinition<User> get definition => UserOrmDefinition.definition;
+  static ModelDefinition<User> get definition => _$UserModelDefinition;
 
   static ModelCodec<User> get codec => definition.codec;
 
@@ -151,232 +196,12 @@ class UserModelFactory {
   static ModelFactoryConnection<User> withConnection(QueryContext context) =>
       ModelFactoryConnection<User>(definition: definition, context: context);
 
-  static Query<User> query([String? connection]) {
-    final connName = connection ?? definition.metadata.connection;
-    final conn = ConnectionManager.instance.connection(
-      connName ?? ConnectionManager.instance.defaultConnectionName ?? "default",
-    );
-    return conn.query<User>();
-  }
-
   static ModelFactoryBuilder<User> factory({
     GeneratorProvider? generatorProvider,
   }) => ModelFactoryBuilder<User>(
     definition: definition,
     generatorProvider: generatorProvider,
   );
-
-  static Future<List<User>> all([String? connection]) =>
-      query(connection).get();
-
-  static Future<User> create(
-    Map<String, dynamic> attributes, [
-    String? connection,
-  ]) async {
-    final model = const _$UserModelCodec().decode(
-      attributes,
-      ValueCodecRegistry.standard(),
-    );
-    final connName = connection ?? definition.metadata.connection;
-    final conn = ConnectionManager.instance.connection(
-      connName ?? ConnectionManager.instance.defaultConnectionName ?? "default",
-    );
-    final repo = conn.context.repository<User>();
-    final result = await repo.insertMany([model], returning: true);
-    return result.first;
-  }
-
-  static Future<List<User>> createMany(
-    List<Map<String, dynamic>> records, [
-    String? connection,
-  ]) async {
-    final models = records
-        .map(
-          (r) =>
-              const _$UserModelCodec().decode(r, ValueCodecRegistry.standard()),
-        )
-        .toList();
-    final connName = connection ?? definition.metadata.connection;
-    final conn = ConnectionManager.instance.connection(
-      connName ?? ConnectionManager.instance.defaultConnectionName ?? "default",
-    );
-    final repo = conn.context.repository<User>();
-    return await repo.insertMany(models, returning: true);
-  }
-
-  static Future<void> insert(
-    List<Map<String, dynamic>> records, [
-    String? connection,
-  ]) async {
-    final models = records
-        .map(
-          (r) =>
-              const _$UserModelCodec().decode(r, ValueCodecRegistry.standard()),
-        )
-        .toList();
-    final connName = connection ?? definition.metadata.connection;
-    final conn = ConnectionManager.instance.connection(
-      connName ?? ConnectionManager.instance.defaultConnectionName ?? "default",
-    );
-    final repo = conn.context.repository<User>();
-    await repo.insertMany(models, returning: false);
-  }
-
-  static Future<User?> find(Object id, [String? connection]) =>
-      query(connection).find(id);
-
-  static Future<User> findOrFail(Object id, [String? connection]) async {
-    final result = await find(id, connection);
-    if (result == null) throw StateError("Model not found with id: $id");
-    return result;
-  }
-
-  static Future<List<User>> findMany(List<Object> ids, [String? connection]) =>
-      query(connection).findMany(ids);
-
-  static Future<User?> first([String? connection]) => query(connection).first();
-
-  static Future<User> firstOrFail([String? connection]) async {
-    final result = await first(connection);
-    if (result == null) throw StateError("No model found");
-    return result;
-  }
-
-  static Future<int> count([String? connection]) => query(connection).count();
-
-  static Future<bool> exists([String? connection]) async =>
-      await count(connection) > 0;
-
-  static Future<int> destroy(List<Object> ids, [String? connection]) async {
-    final models = await findMany(ids, connection);
-    for (final model in models) {
-      await model.delete();
-    }
-    return models.length;
-  }
-
-  static Query<User> where(
-    String column,
-    dynamic value, [
-    String? connection,
-  ]) => query(connection).where(column, value);
-
-  static Query<User> whereIn(
-    String column,
-    List<dynamic> values, [
-    String? connection,
-  ]) => query(connection).whereIn(column, values);
-
-  static Query<User> orderBy(
-    String column, {
-    String direction = "asc",
-    String? connection,
-  }) => query(
-    connection,
-  ).orderBy(column, descending: direction.toLowerCase() == "desc");
-
-  static Query<User> limit(int count, [String? connection]) =>
-      query(connection).limit(count);
-}
-
-extension UserModelHelpers on User {
-  // Factory
-  static ModelFactoryBuilder<User> factory({
-    GeneratorProvider? generatorProvider,
-  }) => UserModelFactory.factory(generatorProvider: generatorProvider);
-
-  // Query builder
-  static Query<User> query([String? connection]) =>
-      UserModelFactory.query(connection);
-
-  // CRUD operations
-  static Future<List<User>> all([String? connection]) =>
-      UserModelFactory.all(connection);
-
-  static Future<User?> find(Object id, [String? connection]) =>
-      UserModelFactory.find(id, connection);
-
-  static Future<User> findOrFail(Object id, [String? connection]) =>
-      UserModelFactory.findOrFail(id, connection);
-
-  static Future<List<User>> findMany(List<Object> ids, [String? connection]) =>
-      UserModelFactory.findMany(ids, connection);
-
-  static Future<User?> first([String? connection]) =>
-      UserModelFactory.first(connection);
-
-  static Future<User> firstOrFail([String? connection]) =>
-      UserModelFactory.firstOrFail(connection);
-
-  static Future<User> create(
-    Map<String, dynamic> attributes, [
-    String? connection,
-  ]) => UserModelFactory.create(attributes, connection);
-
-  static Future<List<User>> createMany(
-    List<Map<String, dynamic>> records, [
-    String? connection,
-  ]) => UserModelFactory.createMany(records, connection);
-
-  static Future<void> insert(
-    List<Map<String, dynamic>> records, [
-    String? connection,
-  ]) => UserModelFactory.insert(records, connection);
-
-  static Future<int> destroy(List<Object> ids, [String? connection]) =>
-      UserModelFactory.destroy(ids, connection);
-
-  static Future<int> count([String? connection]) =>
-      UserModelFactory.count(connection);
-
-  static Future<bool> exists([String? connection]) =>
-      UserModelFactory.exists(connection);
-
-  static Query<User> where(
-    String column,
-    dynamic value, [
-    String? connection,
-  ]) => UserModelFactory.where(column, value, connection);
-
-  static Query<User> whereIn(
-    String column,
-    List<dynamic> values, [
-    String? connection,
-  ]) => UserModelFactory.whereIn(column, values, connection);
-
-  static Query<User> orderBy(
-    String column, {
-    String direction = "asc",
-    String? connection,
-  }) => UserModelFactory.orderBy(
-    column,
-    direction: direction,
-    connection: connection,
-  );
-
-  static Query<User> limit(int count, [String? connection]) =>
-      UserModelFactory.limit(count, connection);
-
-  // Instance method
-  Future<void> delete([String? connection]) async {
-    final connName =
-        connection ?? UserModelFactory.definition.metadata.connection;
-    final conn = ConnectionManager.instance.connection(
-      connName ?? ConnectionManager.instance.defaultConnectionName ?? "default",
-    );
-    final repo = conn.context.repository<User>();
-    final primaryKeys = UserModelFactory.definition.fields
-        .where((f) => f.isPrimaryKey)
-        .toList();
-    if (primaryKeys.isEmpty) {
-      throw StateError("Cannot delete model without primary key");
-    }
-    final keyMap = <String, Object?>{
-      for (final key in primaryKeys)
-        key.columnName: UserModelFactory.toMap(this)[key.name],
-    };
-    await repo.deleteByKeys([keyMap]);
-  }
 }
 
 class _$UserModelCodec extends ModelCodec<User> {
@@ -447,7 +272,7 @@ class _$UserModel extends User {
   _$UserModel({
     required int id,
     required String email,
-    bool active = false,
+    required bool active,
     String? name,
     int? age,
     Map<String, Object?>? profile,
@@ -513,14 +338,4 @@ class _$UserModel extends User {
     replaceAttributes(values);
     attachModelDefinition(_$UserModelDefinition);
   }
-}
-
-extension UserAttributeSetters on User {
-  set id(int value) => setAttribute('id', value);
-  set email(String value) => setAttribute('email', value);
-  set active(bool value) => setAttribute('active', value);
-  set name(String? value) => setAttribute('name', value);
-  set age(int? value) => setAttribute('age', value);
-  set createdAt(DateTime? value) => setAttribute('createdAt', value);
-  set profile(Map<String, Object?>? value) => setAttribute('profile', value);
 }

@@ -17,28 +17,49 @@ class ModelDefinition<TModel> {
     this.metadata = const ModelAttributesMetadata(),
   });
 
+  /// The name of the model class.
   final String modelName;
+
+  /// The database table name for this model.
   final String tableName;
+
+  /// Optional database schema name.
   final String? schema;
+
+  /// List of all field definitions for this model.
   final List<FieldDefinition> fields;
+
+  /// List of all relation definitions for this model.
   final List<RelationDefinition> relations;
+
+  /// Codec for encoding/decoding model instances to/from maps.
   final ModelCodec<TModel> codec;
+
+  /// Column name used for soft deletes, if enabled.
   final String? softDeleteColumn;
+
+  /// Metadata controlling attribute behavior (hidden, fillable, etc.).
   final ModelAttributesMetadata metadata;
 
+  /// Returns the runtime type of the model.
   Type get modelType => TModel;
 
+  /// Finds a field by its Dart property name.
   FieldDefinition? fieldByName(String name) =>
       fields.firstWhereOrNull((field) => field.name == name);
 
+  /// Finds a field by its database column name.
   FieldDefinition? fieldByColumn(String column) =>
       fields.firstWhereOrNull((field) => field.columnName == column);
 
+  /// Returns the primary key field definition, if one exists.
   FieldDefinition? get primaryKeyField =>
       fields.firstWhereOrNull((field) => field.isPrimaryKey);
 
+  /// Returns true if this model uses soft deletes.
   bool get usesSoftDeletes => softDeleteField != null;
 
+  /// Returns the field definition for the soft delete column, if configured.
   FieldDefinition? get softDeleteField {
     if (softDeleteColumn == null) return null;
     return fields.firstWhereOrNull(
@@ -48,9 +69,14 @@ class ModelDefinition<TModel> {
     );
   }
 
+  /// Encodes a model instance to a map using the model's codec.
   Map<String, Object?> toMap(TModel model, {ValueCodecRegistry? registry}) =>
       codec.encode(model, registry ?? ValueCodecRegistry.standard());
 
+  /// Decodes a map to a model instance using the model's codec.
+  ///
+  /// Automatically attaches model definition and soft delete metadata if the
+  /// model implements [ModelAttributes].
   TModel fromMap(Map<String, Object?> data, {ValueCodecRegistry? registry}) {
     final model = codec.decode(data, registry ?? ValueCodecRegistry.standard());
     if (model is ModelAttributes) {
@@ -62,6 +88,7 @@ class ModelDefinition<TModel> {
     return model;
   }
 
+  /// Creates a copy of this definition with the specified fields replaced.
   ModelDefinition<TModel> copyWith({
     String? modelName,
     String? tableName,
@@ -98,17 +125,37 @@ class ModelAttributesMetadata {
     this.driverAnnotations = const <Object>[],
   });
 
+  /// List of attribute names that should be hidden from serialization.
   final List<String> hidden;
+
+  /// List of attribute names that should be visible in serialization (overrides hidden).
   final List<String> visible;
+
+  /// List of attribute names that can be mass-assigned.
   final List<String> fillable;
+
+  /// List of attribute names that cannot be mass-assigned.
   final List<String> guarded;
+
+  /// Map of attribute names to their cast types.
   final Map<String, String> casts;
+
+  /// Per-field metadata overrides.
   final Map<String, FieldAttributeMetadata> fieldOverrides;
+
+  /// Connection name for this model.
   final String? connection;
+
+  /// Whether soft deletes are enabled.
   final bool softDeletes;
+
+  /// Name of the soft delete column.
   final String softDeleteColumn;
+
+  /// Driver-specific annotations.
   final List<Object> driverAnnotations;
 
+  /// Creates a copy of this metadata with the specified fields replaced.
   ModelAttributesMetadata copyWith({
     List<String>? hidden,
     List<String>? visible,
@@ -134,6 +181,9 @@ class ModelAttributesMetadata {
   );
 }
 
+/// Per-field metadata overrides for attribute behavior.
+///
+/// These override the model-level settings for a specific field.
 class FieldAttributeMetadata {
   const FieldAttributeMetadata({
     this.fillable,
@@ -143,10 +193,19 @@ class FieldAttributeMetadata {
     this.cast,
   });
 
+  /// Whether this field is fillable (overrides model-level).
   final bool? fillable;
+
+  /// Whether this field is guarded (overrides model-level).
   final bool? guarded;
+
+  /// Whether this field is hidden (overrides model-level).
   final bool? hidden;
+
+  /// Whether this field is visible (overrides model-level).
   final bool? visible;
+
+  /// Cast type for this field (overrides model-level).
   final String? cast;
 }
 
@@ -168,32 +227,61 @@ class FieldDefinition {
     this.driverOverrides = const {},
   });
 
+  /// The Dart property name.
   final String name;
+
+  /// The database column name.
   final String columnName;
+
+  /// The Dart type as a string (e.g., 'String', 'int?').
   final String dartType;
+
+  /// The resolved type after codec transformations.
   final String resolvedType;
+
+  /// Whether this field is the primary key.
   final bool isPrimaryKey;
+
+  /// Whether this field can be null.
   final bool isNullable;
+
+  /// Whether this field has a unique constraint.
   final bool isUnique;
+
+  /// Whether this field is indexed.
   final bool isIndexed;
+
+  /// Whether this field auto-increments.
   final bool autoIncrement;
+
+  /// SQL column type (e.g., 'VARCHAR(255)', 'INTEGER').
   final String? columnType;
+
+  /// SQL default value expression.
   final String? defaultValueSql;
+
+  /// Codec type for value transformations.
   final String? codecType;
+
+  /// Driver-specific overrides for this field.
   final Map<String, FieldDriverOverride> driverOverrides;
 
+  /// Returns the driver-specific override for this field, if any.
   FieldDriverOverride? overrideFor(String? driver) {
     if (driver == null) return null;
     final normalized = _normalizeDriver(driver);
     return driverOverrides[normalized];
   }
 
+  /// Returns the column type for the specified driver, falling back to the default.
   String? columnTypeForDriver(String? driver) =>
       overrideFor(driver)?.columnType ?? columnType;
 
+  /// Returns the default value SQL for the specified driver, falling back to the default.
   String? defaultValueSqlForDriver(String? driver) =>
       overrideFor(driver)?.defaultValueSql ?? defaultValueSql;
 
+  /// Returns the codec type for the specified driver, falling back to the default.
   String? codecTypeForDriver(String? driver) =>
       overrideFor(driver)?.codecType ?? codecType;
 }
@@ -206,8 +294,13 @@ class FieldDriverOverride {
     this.codecType,
   });
 
+  /// Driver-specific column type override.
   final String? columnType;
+
+  /// Driver-specific default value SQL override.
   final String? defaultValueSql;
+
+  /// Driver-specific codec type override.
   final String? codecType;
 }
 
@@ -228,15 +321,34 @@ class RelationDefinition {
     this.morphClass,
   });
 
+  /// The name of the relation property.
   final String name;
+
+  /// The kind of relationship (hasMany, belongsTo, etc.).
   final RelationKind kind;
+
+  /// The target model type name.
   final String targetModel;
+
+  /// Foreign key column name.
   final String? foreignKey;
+
+  /// Local key column name.
   final String? localKey;
+
+  /// Through model for has-many-through relations.
   final String? through;
+
+  /// Foreign key on the pivot table for many-to-many relations.
   final String? pivotForeignKey;
+
+  /// Related key on the pivot table for many-to-many relations.
   final String? pivotRelatedKey;
+
+  /// Type column name for polymorphic relations.
   final String? morphType;
+
+  /// Class identifier for polymorphic relations.
   final String? morphClass;
 }
 
@@ -244,10 +356,16 @@ class RelationDefinition {
 abstract class ModelCodec<TModel> {
   const ModelCodec();
 
+  /// Encodes a model instance to a map.
   Map<String, Object?> encode(TModel model, ValueCodecRegistry registry);
+
+  /// Decodes a map to a model instance.
   TModel decode(Map<String, Object?> data, ValueCodecRegistry registry);
 }
 
+/// A model definition for ad-hoc queries without a concrete model class.
+///
+/// Used internally for table queries and raw SQL results.
 class AdHocModelDefinition extends ModelDefinition<Map<String, Object?>> {
   AdHocModelDefinition({
     required super.tableName,
@@ -265,9 +383,12 @@ class AdHocModelDefinition extends ModelDefinition<Map<String, Object?>> {
     }
   }
 
+  /// Optional table alias.
   final String? alias;
+
   final Map<String, FieldDefinition> _fields;
 
+  /// Returns a field definition for the given name, creating one if needed.
   FieldDefinition fieldFor(String name) {
     final existing = _fields[name];
     if (existing != null) {
@@ -285,6 +406,7 @@ class AdHocModelDefinition extends ModelDefinition<Map<String, Object?>> {
     return definition;
   }
 
+  /// Registers a column definition for this ad-hoc model.
   void registerColumn(AdHocColumn column) {
     final definition = FieldDefinition(
       name: column.name,
@@ -307,6 +429,7 @@ class AdHocModelDefinition extends ModelDefinition<Map<String, Object?>> {
   }
 }
 
+/// Column definition for ad-hoc queries.
 class AdHocColumn {
   const AdHocColumn({
     required this.name,
@@ -319,13 +442,28 @@ class AdHocColumn {
     this.isPrimaryKey = false,
   });
 
+  /// The column name or alias.
   final String name;
+
+  /// The actual database column name if different from name.
   final String? columnName;
+
+  /// Dart type hint.
   final String? dartType;
+
+  /// Resolved type after transformations.
   final String? resolvedType;
+
+  /// SQL column type.
   final String? columnType;
+
+  /// SQL default value expression.
   final String? defaultValueSql;
+
+  /// Whether this column can be null.
   final bool isNullable;
+
+  /// Whether this column is a primary key.
   final bool isPrimaryKey;
 }
 

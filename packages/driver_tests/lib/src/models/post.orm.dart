@@ -143,10 +143,55 @@ extension PostOrmDefinition on Post {
   static ModelDefinition<Post> get definition => _$PostModelDefinition;
 }
 
+class Posts {
+  const Posts._();
+
+  static Query<Post> query([String? connection]) =>
+      Model.query<Post>(connection: connection);
+
+  static Future<Post?> find(Object id, {String? connection}) =>
+      Model.find<Post>(id, connection: connection);
+
+  static Future<Post> findOrFail(Object id, {String? connection}) =>
+      Model.findOrFail<Post>(id, connection: connection);
+
+  static Future<List<Post>> all({String? connection}) =>
+      Model.all<Post>(connection: connection);
+
+  static Future<int> count({String? connection}) =>
+      Model.count<Post>(connection: connection);
+
+  static Future<bool> exists({String? connection}) =>
+      Model.exists<Post>(connection: connection);
+
+  static Query<Post> where(
+    String column,
+    String operator,
+    dynamic value, {
+    String? connection,
+  }) => Model.where<Post>(column, operator, value, connection: connection);
+
+  static Query<Post> whereIn(
+    String column,
+    List<dynamic> values, {
+    String? connection,
+  }) => Model.whereIn<Post>(column, values, connection: connection);
+
+  static Query<Post> orderBy(
+    String column, {
+    String direction = "asc",
+    String? connection,
+  }) =>
+      Model.orderBy<Post>(column, direction: direction, connection: connection);
+
+  static Query<Post> limit(int count, {String? connection}) =>
+      Model.limit<Post>(count, connection: connection);
+}
+
 class PostModelFactory {
   const PostModelFactory._();
 
-  static ModelDefinition<Post> get definition => PostOrmDefinition.definition;
+  static ModelDefinition<Post> get definition => _$PostModelDefinition;
 
   static ModelCodec<Post> get codec => definition.codec;
 
@@ -166,232 +211,12 @@ class PostModelFactory {
   static ModelFactoryConnection<Post> withConnection(QueryContext context) =>
       ModelFactoryConnection<Post>(definition: definition, context: context);
 
-  static Query<Post> query([String? connection]) {
-    final connName = connection ?? definition.metadata.connection;
-    final conn = ConnectionManager.instance.connection(
-      connName ?? ConnectionManager.instance.defaultConnectionName ?? "default",
-    );
-    return conn.query<Post>();
-  }
-
   static ModelFactoryBuilder<Post> factory({
     GeneratorProvider? generatorProvider,
   }) => ModelFactoryBuilder<Post>(
     definition: definition,
     generatorProvider: generatorProvider,
   );
-
-  static Future<List<Post>> all([String? connection]) =>
-      query(connection).get();
-
-  static Future<Post> create(
-    Map<String, dynamic> attributes, [
-    String? connection,
-  ]) async {
-    final model = const _$PostModelCodec().decode(
-      attributes,
-      ValueCodecRegistry.standard(),
-    );
-    final connName = connection ?? definition.metadata.connection;
-    final conn = ConnectionManager.instance.connection(
-      connName ?? ConnectionManager.instance.defaultConnectionName ?? "default",
-    );
-    final repo = conn.context.repository<Post>();
-    final result = await repo.insertMany([model], returning: true);
-    return result.first;
-  }
-
-  static Future<List<Post>> createMany(
-    List<Map<String, dynamic>> records, [
-    String? connection,
-  ]) async {
-    final models = records
-        .map(
-          (r) =>
-              const _$PostModelCodec().decode(r, ValueCodecRegistry.standard()),
-        )
-        .toList();
-    final connName = connection ?? definition.metadata.connection;
-    final conn = ConnectionManager.instance.connection(
-      connName ?? ConnectionManager.instance.defaultConnectionName ?? "default",
-    );
-    final repo = conn.context.repository<Post>();
-    return await repo.insertMany(models, returning: true);
-  }
-
-  static Future<void> insert(
-    List<Map<String, dynamic>> records, [
-    String? connection,
-  ]) async {
-    final models = records
-        .map(
-          (r) =>
-              const _$PostModelCodec().decode(r, ValueCodecRegistry.standard()),
-        )
-        .toList();
-    final connName = connection ?? definition.metadata.connection;
-    final conn = ConnectionManager.instance.connection(
-      connName ?? ConnectionManager.instance.defaultConnectionName ?? "default",
-    );
-    final repo = conn.context.repository<Post>();
-    await repo.insertMany(models, returning: false);
-  }
-
-  static Future<Post?> find(Object id, [String? connection]) =>
-      query(connection).find(id);
-
-  static Future<Post> findOrFail(Object id, [String? connection]) async {
-    final result = await find(id, connection);
-    if (result == null) throw StateError("Model not found with id: $id");
-    return result;
-  }
-
-  static Future<List<Post>> findMany(List<Object> ids, [String? connection]) =>
-      query(connection).findMany(ids);
-
-  static Future<Post?> first([String? connection]) => query(connection).first();
-
-  static Future<Post> firstOrFail([String? connection]) async {
-    final result = await first(connection);
-    if (result == null) throw StateError("No model found");
-    return result;
-  }
-
-  static Future<int> count([String? connection]) => query(connection).count();
-
-  static Future<bool> exists([String? connection]) async =>
-      await count(connection) > 0;
-
-  static Future<int> destroy(List<Object> ids, [String? connection]) async {
-    final models = await findMany(ids, connection);
-    for (final model in models) {
-      await model.delete();
-    }
-    return models.length;
-  }
-
-  static Query<Post> where(
-    String column,
-    dynamic value, [
-    String? connection,
-  ]) => query(connection).where(column, value);
-
-  static Query<Post> whereIn(
-    String column,
-    List<dynamic> values, [
-    String? connection,
-  ]) => query(connection).whereIn(column, values);
-
-  static Query<Post> orderBy(
-    String column, {
-    String direction = "asc",
-    String? connection,
-  }) => query(
-    connection,
-  ).orderBy(column, descending: direction.toLowerCase() == "desc");
-
-  static Query<Post> limit(int count, [String? connection]) =>
-      query(connection).limit(count);
-}
-
-extension PostModelHelpers on Post {
-  // Factory
-  static ModelFactoryBuilder<Post> factory({
-    GeneratorProvider? generatorProvider,
-  }) => PostModelFactory.factory(generatorProvider: generatorProvider);
-
-  // Query builder
-  static Query<Post> query([String? connection]) =>
-      PostModelFactory.query(connection);
-
-  // CRUD operations
-  static Future<List<Post>> all([String? connection]) =>
-      PostModelFactory.all(connection);
-
-  static Future<Post?> find(Object id, [String? connection]) =>
-      PostModelFactory.find(id, connection);
-
-  static Future<Post> findOrFail(Object id, [String? connection]) =>
-      PostModelFactory.findOrFail(id, connection);
-
-  static Future<List<Post>> findMany(List<Object> ids, [String? connection]) =>
-      PostModelFactory.findMany(ids, connection);
-
-  static Future<Post?> first([String? connection]) =>
-      PostModelFactory.first(connection);
-
-  static Future<Post> firstOrFail([String? connection]) =>
-      PostModelFactory.firstOrFail(connection);
-
-  static Future<Post> create(
-    Map<String, dynamic> attributes, [
-    String? connection,
-  ]) => PostModelFactory.create(attributes, connection);
-
-  static Future<List<Post>> createMany(
-    List<Map<String, dynamic>> records, [
-    String? connection,
-  ]) => PostModelFactory.createMany(records, connection);
-
-  static Future<void> insert(
-    List<Map<String, dynamic>> records, [
-    String? connection,
-  ]) => PostModelFactory.insert(records, connection);
-
-  static Future<int> destroy(List<Object> ids, [String? connection]) =>
-      PostModelFactory.destroy(ids, connection);
-
-  static Future<int> count([String? connection]) =>
-      PostModelFactory.count(connection);
-
-  static Future<bool> exists([String? connection]) =>
-      PostModelFactory.exists(connection);
-
-  static Query<Post> where(
-    String column,
-    dynamic value, [
-    String? connection,
-  ]) => PostModelFactory.where(column, value, connection);
-
-  static Query<Post> whereIn(
-    String column,
-    List<dynamic> values, [
-    String? connection,
-  ]) => PostModelFactory.whereIn(column, values, connection);
-
-  static Query<Post> orderBy(
-    String column, {
-    String direction = "asc",
-    String? connection,
-  }) => PostModelFactory.orderBy(
-    column,
-    direction: direction,
-    connection: connection,
-  );
-
-  static Query<Post> limit(int count, [String? connection]) =>
-      PostModelFactory.limit(count, connection);
-
-  // Instance method
-  Future<void> delete([String? connection]) async {
-    final connName =
-        connection ?? PostModelFactory.definition.metadata.connection;
-    final conn = ConnectionManager.instance.connection(
-      connName ?? ConnectionManager.instance.defaultConnectionName ?? "default",
-    );
-    final repo = conn.context.repository<Post>();
-    final primaryKeys = PostModelFactory.definition.fields
-        .where((f) => f.isPrimaryKey)
-        .toList();
-    if (primaryKeys.isEmpty) {
-      throw StateError("Cannot delete model without primary key");
-    }
-    final keyMap = <String, Object?>{
-      for (final key in primaryKeys)
-        key.columnName: PostModelFactory.toMap(this)[key.name],
-    };
-    await repo.deleteByKeys([keyMap]);
-  }
 }
 
 class _$PostModelCodec extends ModelCodec<Post> {
@@ -514,6 +339,11 @@ class _$PostModel extends Post {
 
   set publishedAt(DateTime value) => setAttribute('published_at', value);
 
+  void _attachOrmRuntimeMetadata(Map<String, Object?> values) {
+    replaceAttributes(values);
+    attachModelDefinition(_$PostModelDefinition);
+  }
+
   @override
   Author? get author {
     if (relationLoaded('author')) {
@@ -537,18 +367,20 @@ class _$PostModel extends Post {
     }
     return super.photos;
   }
-
-  void _attachOrmRuntimeMetadata(Map<String, Object?> values) {
-    replaceAttributes(values);
-    attachModelDefinition(_$PostModelDefinition);
-  }
 }
 
-extension PostAttributeSetters on Post {
-  set id(int value) => setAttribute('id', value);
-  set authorId(int value) => setAttribute('author_id', value);
-  set title(String value) => setAttribute('title', value);
-  set content(String? value) => setAttribute('content', value);
-  set views(int? value) => setAttribute('views', value);
-  set publishedAt(DateTime value) => setAttribute('published_at', value);
+extension PostRelationQueries on Post {
+  Query<Author> authorQuery() {
+    return Model.query<Author>().where('id', authorId);
+  }
+
+  Query<Tag> tagsQuery() {
+    throw UnimplementedError("ManyToMany query generation not yet supported");
+  }
+
+  Query<Photo> photosQuery() {
+    throw UnimplementedError(
+      "Polymorphic relation query generation not yet supported",
+    );
+  }
 }

@@ -4,7 +4,6 @@ import 'package:driver_tests/driver_tests.dart';
 import 'package:ormed/ormed.dart';
 import 'package:test/test.dart';
 
-
 void main() {
   group('Generated AttributeUser', () {
     test('metadata drives guards, hidden lists, and casts', () {
@@ -24,7 +23,6 @@ void main() {
         'role': null,
         'profile': null,
       }, registry);
-
 
       user.fill({
         'email': 'b@x.dev',

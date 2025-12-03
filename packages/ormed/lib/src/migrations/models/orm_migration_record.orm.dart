@@ -84,11 +84,67 @@ extension OrmMigrationRecordOrmDefinition on OrmMigrationRecord {
       _$OrmMigrationRecordModelDefinition;
 }
 
+class OrmMigrationRecords {
+  const OrmMigrationRecords._();
+
+  static Query<OrmMigrationRecord> query([String? connection]) =>
+      Model.query<OrmMigrationRecord>(connection: connection);
+
+  static Future<OrmMigrationRecord?> find(Object id, {String? connection}) =>
+      Model.find<OrmMigrationRecord>(id, connection: connection);
+
+  static Future<OrmMigrationRecord> findOrFail(
+    Object id, {
+    String? connection,
+  }) => Model.findOrFail<OrmMigrationRecord>(id, connection: connection);
+
+  static Future<List<OrmMigrationRecord>> all({String? connection}) =>
+      Model.all<OrmMigrationRecord>(connection: connection);
+
+  static Future<int> count({String? connection}) =>
+      Model.count<OrmMigrationRecord>(connection: connection);
+
+  static Future<bool> exists({String? connection}) =>
+      Model.exists<OrmMigrationRecord>(connection: connection);
+
+  static Query<OrmMigrationRecord> where(
+    String column,
+    String operator,
+    dynamic value, {
+    String? connection,
+  }) => Model.where<OrmMigrationRecord>(
+    column,
+    operator,
+    value,
+    connection: connection,
+  );
+
+  static Query<OrmMigrationRecord> whereIn(
+    String column,
+    List<dynamic> values, {
+    String? connection,
+  }) =>
+      Model.whereIn<OrmMigrationRecord>(column, values, connection: connection);
+
+  static Query<OrmMigrationRecord> orderBy(
+    String column, {
+    String direction = "asc",
+    String? connection,
+  }) => Model.orderBy<OrmMigrationRecord>(
+    column,
+    direction: direction,
+    connection: connection,
+  );
+
+  static Query<OrmMigrationRecord> limit(int count, {String? connection}) =>
+      Model.limit<OrmMigrationRecord>(count, connection: connection);
+}
+
 class OrmMigrationRecordModelFactory {
   const OrmMigrationRecordModelFactory._();
 
   static ModelDefinition<OrmMigrationRecord> get definition =>
-      OrmMigrationRecordOrmDefinition.definition;
+      _$OrmMigrationRecordModelDefinition;
 
   static ModelCodec<OrmMigrationRecord> get codec => definition.codec;
 
@@ -112,249 +168,12 @@ class OrmMigrationRecordModelFactory {
     context: context,
   );
 
-  static Query<OrmMigrationRecord> query([String? connection]) {
-    final connName = connection ?? definition.metadata.connection;
-    final conn = ConnectionManager.instance.connection(
-      connName ?? ConnectionManager.instance.defaultConnectionName ?? "default",
-    );
-    return conn.query<OrmMigrationRecord>();
-  }
-
   static ModelFactoryBuilder<OrmMigrationRecord> factory({
     GeneratorProvider? generatorProvider,
   }) => ModelFactoryBuilder<OrmMigrationRecord>(
     definition: definition,
     generatorProvider: generatorProvider,
   );
-
-  static Future<List<OrmMigrationRecord>> all([String? connection]) =>
-      query(connection).get();
-
-  static Future<OrmMigrationRecord> create(
-    Map<String, dynamic> attributes, [
-    String? connection,
-  ]) async {
-    final model = const _$OrmMigrationRecordModelCodec().decode(
-      attributes,
-      ValueCodecRegistry.standard(),
-    );
-    final connName = connection ?? definition.metadata.connection;
-    final conn = ConnectionManager.instance.connection(
-      connName ?? ConnectionManager.instance.defaultConnectionName ?? "default",
-    );
-    final repo = conn.context.repository<OrmMigrationRecord>();
-    final result = await repo.insertMany([model], returning: true);
-    return result.first;
-  }
-
-  static Future<List<OrmMigrationRecord>> createMany(
-    List<Map<String, dynamic>> records, [
-    String? connection,
-  ]) async {
-    final models = records
-        .map(
-          (r) => const _$OrmMigrationRecordModelCodec().decode(
-            r,
-            ValueCodecRegistry.standard(),
-          ),
-        )
-        .toList();
-    final connName = connection ?? definition.metadata.connection;
-    final conn = ConnectionManager.instance.connection(
-      connName ?? ConnectionManager.instance.defaultConnectionName ?? "default",
-    );
-    final repo = conn.context.repository<OrmMigrationRecord>();
-    return await repo.insertMany(models, returning: true);
-  }
-
-  static Future<void> insert(
-    List<Map<String, dynamic>> records, [
-    String? connection,
-  ]) async {
-    final models = records
-        .map(
-          (r) => const _$OrmMigrationRecordModelCodec().decode(
-            r,
-            ValueCodecRegistry.standard(),
-          ),
-        )
-        .toList();
-    final connName = connection ?? definition.metadata.connection;
-    final conn = ConnectionManager.instance.connection(
-      connName ?? ConnectionManager.instance.defaultConnectionName ?? "default",
-    );
-    final repo = conn.context.repository<OrmMigrationRecord>();
-    await repo.insertMany(models, returning: false);
-  }
-
-  static Future<OrmMigrationRecord?> find(Object id, [String? connection]) =>
-      query(connection).find(id);
-
-  static Future<OrmMigrationRecord> findOrFail(
-    Object id, [
-    String? connection,
-  ]) async {
-    final result = await find(id, connection);
-    if (result == null) throw StateError("Model not found with id: $id");
-    return result;
-  }
-
-  static Future<List<OrmMigrationRecord>> findMany(
-    List<Object> ids, [
-    String? connection,
-  ]) => query(connection).findMany(ids);
-
-  static Future<OrmMigrationRecord?> first([String? connection]) =>
-      query(connection).first();
-
-  static Future<OrmMigrationRecord> firstOrFail([String? connection]) async {
-    final result = await first(connection);
-    if (result == null) throw StateError("No model found");
-    return result;
-  }
-
-  static Future<int> count([String? connection]) => query(connection).count();
-
-  static Future<bool> exists([String? connection]) async =>
-      await count(connection) > 0;
-
-  static Future<int> destroy(List<Object> ids, [String? connection]) async {
-    final models = await findMany(ids, connection);
-    for (final model in models) {
-      await model.delete();
-    }
-    return models.length;
-  }
-
-  static Query<OrmMigrationRecord> where(
-    String column,
-    dynamic value, [
-    String? connection,
-  ]) => query(connection).where(column, value);
-
-  static Query<OrmMigrationRecord> whereIn(
-    String column,
-    List<dynamic> values, [
-    String? connection,
-  ]) => query(connection).whereIn(column, values);
-
-  static Query<OrmMigrationRecord> orderBy(
-    String column, {
-    String direction = "asc",
-    String? connection,
-  }) => query(
-    connection,
-  ).orderBy(column, descending: direction.toLowerCase() == "desc");
-
-  static Query<OrmMigrationRecord> limit(int count, [String? connection]) =>
-      query(connection).limit(count);
-}
-
-extension OrmMigrationRecordModelHelpers on OrmMigrationRecord {
-  // Factory
-  static ModelFactoryBuilder<OrmMigrationRecord> factory({
-    GeneratorProvider? generatorProvider,
-  }) => OrmMigrationRecordModelFactory.factory(
-    generatorProvider: generatorProvider,
-  );
-
-  // Query builder
-  static Query<OrmMigrationRecord> query([String? connection]) =>
-      OrmMigrationRecordModelFactory.query(connection);
-
-  // CRUD operations
-  static Future<List<OrmMigrationRecord>> all([String? connection]) =>
-      OrmMigrationRecordModelFactory.all(connection);
-
-  static Future<OrmMigrationRecord?> find(Object id, [String? connection]) =>
-      OrmMigrationRecordModelFactory.find(id, connection);
-
-  static Future<OrmMigrationRecord> findOrFail(
-    Object id, [
-    String? connection,
-  ]) => OrmMigrationRecordModelFactory.findOrFail(id, connection);
-
-  static Future<List<OrmMigrationRecord>> findMany(
-    List<Object> ids, [
-    String? connection,
-  ]) => OrmMigrationRecordModelFactory.findMany(ids, connection);
-
-  static Future<OrmMigrationRecord?> first([String? connection]) =>
-      OrmMigrationRecordModelFactory.first(connection);
-
-  static Future<OrmMigrationRecord> firstOrFail([String? connection]) =>
-      OrmMigrationRecordModelFactory.firstOrFail(connection);
-
-  static Future<OrmMigrationRecord> create(
-    Map<String, dynamic> attributes, [
-    String? connection,
-  ]) => OrmMigrationRecordModelFactory.create(attributes, connection);
-
-  static Future<List<OrmMigrationRecord>> createMany(
-    List<Map<String, dynamic>> records, [
-    String? connection,
-  ]) => OrmMigrationRecordModelFactory.createMany(records, connection);
-
-  static Future<void> insert(
-    List<Map<String, dynamic>> records, [
-    String? connection,
-  ]) => OrmMigrationRecordModelFactory.insert(records, connection);
-
-  static Future<int> destroy(List<Object> ids, [String? connection]) =>
-      OrmMigrationRecordModelFactory.destroy(ids, connection);
-
-  static Future<int> count([String? connection]) =>
-      OrmMigrationRecordModelFactory.count(connection);
-
-  static Future<bool> exists([String? connection]) =>
-      OrmMigrationRecordModelFactory.exists(connection);
-
-  static Query<OrmMigrationRecord> where(
-    String column,
-    dynamic value, [
-    String? connection,
-  ]) => OrmMigrationRecordModelFactory.where(column, value, connection);
-
-  static Query<OrmMigrationRecord> whereIn(
-    String column,
-    List<dynamic> values, [
-    String? connection,
-  ]) => OrmMigrationRecordModelFactory.whereIn(column, values, connection);
-
-  static Query<OrmMigrationRecord> orderBy(
-    String column, {
-    String direction = "asc",
-    String? connection,
-  }) => OrmMigrationRecordModelFactory.orderBy(
-    column,
-    direction: direction,
-    connection: connection,
-  );
-
-  static Query<OrmMigrationRecord> limit(int count, [String? connection]) =>
-      OrmMigrationRecordModelFactory.limit(count, connection);
-
-  // Instance method
-  Future<void> delete([String? connection]) async {
-    final connName =
-        connection ??
-        OrmMigrationRecordModelFactory.definition.metadata.connection;
-    final conn = ConnectionManager.instance.connection(
-      connName ?? ConnectionManager.instance.defaultConnectionName ?? "default",
-    );
-    final repo = conn.context.repository<OrmMigrationRecord>();
-    final primaryKeys = OrmMigrationRecordModelFactory.definition.fields
-        .where((f) => f.isPrimaryKey)
-        .toList();
-    if (primaryKeys.isEmpty) {
-      throw StateError("Cannot delete model without primary key");
-    }
-    final keyMap = <String, Object?>{
-      for (final key in primaryKeys)
-        key.columnName: OrmMigrationRecordModelFactory.toMap(this)[key.name],
-    };
-    await repo.deleteByKeys([keyMap]);
-  }
 }
 
 class _$OrmMigrationRecordModelCodec extends ModelCodec<OrmMigrationRecord> {
@@ -473,11 +292,4 @@ class _$OrmMigrationRecordModel extends OrmMigrationRecord {
     replaceAttributes(values);
     attachModelDefinition(_$OrmMigrationRecordModelDefinition);
   }
-}
-
-extension OrmMigrationRecordAttributeSetters on OrmMigrationRecord {
-  set id(String value) => setAttribute('id', value);
-  set checksum(String value) => setAttribute('checksum', value);
-  set appliedAt(DateTime value) => setAttribute('applied_at', value);
-  set batch(int value) => setAttribute('batch', value);
 }

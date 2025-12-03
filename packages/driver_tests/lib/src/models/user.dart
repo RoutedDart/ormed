@@ -50,6 +50,11 @@ class JsonMapCodec extends ValueCodec<Map<String, Object?>> {
   @override
   Map<String, Object?>? decode(Object? value) {
     if (value == null) return null;
+    // Handle both Map (from factory/app code) and String (from database)
+    if (value is Map<String, Object?>) return value;
+    if (value is Map) {
+      return value.map((key, dynamic entry) => MapEntry(key.toString(), entry));
+    }
     final decoded = jsonDecode(value as String) as Map<String, dynamic>;
     return decoded.map((key, dynamic entry) => MapEntry(key, entry));
   }

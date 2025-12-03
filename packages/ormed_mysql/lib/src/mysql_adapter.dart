@@ -172,9 +172,11 @@ class MySqlDriverAdapter
 
   @override
   Future<MutationResult> runMutation(MutationPlan plan) async {
-    if (plan.returning) {
-      throw UnsupportedError('MySQL/MariaDB drivers do not support RETURNING.');
-    }
+    // MySQL/MariaDB don't support native RETURNING clause
+    // For INSERT operations, we simulate it by returning the lastInsertID
+    // For other operations (UPDATE, DELETE, UPSERT), returning is silently ignored
+    // since we can't efficiently implement it without re-querying
+    
     switch (plan.operation) {
       case MutationOperation.insert:
         return _runInsert(plan);
@@ -625,8 +627,10 @@ class MySqlDriverAdapter
       );
       affected += result.affectedRows.toInt();
 
-      // For INSERTs, capture the last insert ID as a returned row
+      // For INSERTs with RETURNING, capture the last insert ID as a returned row
+      // MySQL doesn't support native RETURNING, so we simulate it for INSERTs only
       if (shape.isInsert &&
+          shape.returning &&
           result.lastInsertID.toInt() > 0 &&
           shape.definition != null) {
         // Find the primary key field name from the plan
@@ -643,7 +647,7 @@ class MySqlDriverAdapter
 
     return MutationResult(
       affectedRows: affected,
-      returnedRows: returnedRows.isEmpty ? null : returnedRows,
+      returnedRows: shape.returning && returnedRows.isNotEmpty ? returnedRows : null,
     );
   }
 
@@ -686,6 +690,7 @@ class MySqlDriverAdapter
       parameterSets: parameterSets,
       isInsert: true,
       definition: plan.definition,
+      returning: plan.returning,
     );
   }
 
@@ -705,6 +710,7 @@ class MySqlDriverAdapter
       parameterSets: [compilation.bindings.toList(growable: false)],
       isInsert: true,
       definition: plan.definition,
+      returning: plan.returning,
     );
   }
 
@@ -1329,12 +1335,14 @@ class _MySqlMutationShape {
     required this.parameterSets,
     this.isInsert = false,
     this.definition,
+    this.returning = false,
   });
 
   final String sql;
   final List<List<Object?>> parameterSets;
   final bool isInsert;
   final ModelDefinition<dynamic>? definition;
+  final bool returning;
 
   static _MySqlMutationShape empty() =>
       const _MySqlMutationShape(sql: '<no-op>', parameterSets: []);

@@ -55,7 +55,7 @@ void runDriverFactoryInheritanceTests({required DataSource dataSource}) {
         'baseName': 'root',
         'layerOneNotes': {'notes': true},
         'layerTwoFlag': true,
-      }).make();
+      }).make(registry: dataSource.context.codecRegistry);
 
       await dataSource.context.repository<DerivedForFactory>().insert(derived);
 

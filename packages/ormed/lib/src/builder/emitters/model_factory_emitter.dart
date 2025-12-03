@@ -40,6 +40,15 @@ class ModelFactoryEmitter {
     buffer.writeln('      registry.register(definition);');
     buffer.writeln();
 
+    // withConnection method
+    buffer.writeln(
+      '  static ModelFactoryConnection<$className> withConnection(QueryContext context) =>',
+    );
+    buffer.writeln(
+      '      ModelFactoryConnection<$className>(definition: definition, context: context);',
+    );
+    buffer.writeln();
+
     // factory method
     buffer.writeln('  static ModelFactoryBuilder<$className> factory({');
     buffer.writeln('    GeneratorProvider? generatorProvider,');

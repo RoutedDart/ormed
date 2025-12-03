@@ -5,7 +5,7 @@ import 'package:test/test.dart';
 import 'package:driver_tests/driver_tests.dart';
 import 'package:ormed_postgres/ormed_postgres.dart';
 
-void main() {
+Future<void> main() async {
   late DataSource dataSource;
   late PostgresDriverAdapter driverAdapter;
 
@@ -45,39 +45,35 @@ void main() {
     ),
   );
 
-  setUpAll(() async {
-    // Initialize and setup schema
-    await dataSource.init();
-    dataSource.enableQueryLog();
+  // Initialize and setup schema
+  await dataSource.init();
+  dataSource.enableQueryLog();
 
-    // Enable SQL query logging
-    dataSource.connection.onBeforeQuery((plan) {
-      final preview = dataSource.connection.driver.describeQuery(plan);
-      // print('[QUERY SQL] ${preview.normalized.command}');
-      if (preview.normalized.parameters.isNotEmpty) {
-        // print('[PARAMS] ${preview.normalized.parameters}');
-      }
-    });
-
-    // Enable mutation logging
-    dataSource.context.onMutation((event) {
-      if (Platform.environment['ORMED_TEST_LOG_MUTATIONS'] == 'true') {
-        print('[MUTATION SQL] ${event.preview.normalized.command}');
-        if (event.preview.normalized.parameters.isNotEmpty) {
-          print('[PARAMS] ${event.preview.normalized.parameters}');
-        }
-      }
-      if (event.error != null) {
-        print('[MUTATION ERROR] ${event.error}');
-      }
-    });
-
-    registerDriverTestFactories();
-    await resetDriverTestSchema(driverAdapter, schema: null);
+  // Enable SQL query logging
+  dataSource.connection.onBeforeQuery((plan) {
+    final preview = dataSource.connection.driver.describeQuery(plan);
+    // print('[QUERY SQL] ${preview.normalized.command}');
+    if (preview.normalized.parameters.isNotEmpty) {
+      // print('[PARAMS] ${preview.normalized.parameters}');
+    }
   });
 
+  // Enable mutation logging
+  dataSource.context.onMutation((event) {
+    if (Platform.environment['ORMED_TEST_LOG_MUTATIONS'] == 'true') {
+      print('[MUTATION SQL] ${event.preview.normalized.command}');
+      if (event.preview.normalized.parameters.isNotEmpty) {
+        print('[PARAMS] ${event.preview.normalized.parameters}');
+      }
+    }
+    if (event.error != null) {
+      print('[MUTATION ERROR] ${event.error}');
+    }
+  });
+
+  registerDriverTestFactories();
+
   tearDownAll(() async {
-    await dropDriverTestSchema(driverAdapter, schema: null);
     await dataSource.dispose();
   });
 

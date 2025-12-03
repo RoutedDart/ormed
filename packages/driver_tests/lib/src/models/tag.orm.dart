@@ -67,10 +67,55 @@ extension TagOrmDefinition on Tag {
   static ModelDefinition<Tag> get definition => _$TagModelDefinition;
 }
 
+class Tags {
+  const Tags._();
+
+  static Query<Tag> query([String? connection]) =>
+      Model.query<Tag>(connection: connection);
+
+  static Future<Tag?> find(Object id, {String? connection}) =>
+      Model.find<Tag>(id, connection: connection);
+
+  static Future<Tag> findOrFail(Object id, {String? connection}) =>
+      Model.findOrFail<Tag>(id, connection: connection);
+
+  static Future<List<Tag>> all({String? connection}) =>
+      Model.all<Tag>(connection: connection);
+
+  static Future<int> count({String? connection}) =>
+      Model.count<Tag>(connection: connection);
+
+  static Future<bool> exists({String? connection}) =>
+      Model.exists<Tag>(connection: connection);
+
+  static Query<Tag> where(
+    String column,
+    String operator,
+    dynamic value, {
+    String? connection,
+  }) => Model.where<Tag>(column, operator, value, connection: connection);
+
+  static Query<Tag> whereIn(
+    String column,
+    List<dynamic> values, {
+    String? connection,
+  }) => Model.whereIn<Tag>(column, values, connection: connection);
+
+  static Query<Tag> orderBy(
+    String column, {
+    String direction = "asc",
+    String? connection,
+  }) =>
+      Model.orderBy<Tag>(column, direction: direction, connection: connection);
+
+  static Query<Tag> limit(int count, {String? connection}) =>
+      Model.limit<Tag>(count, connection: connection);
+}
+
 class TagModelFactory {
   const TagModelFactory._();
 
-  static ModelDefinition<Tag> get definition => TagOrmDefinition.definition;
+  static ModelDefinition<Tag> get definition => _$TagModelDefinition;
 
   static ModelCodec<Tag> get codec => definition.codec;
 
@@ -90,225 +135,12 @@ class TagModelFactory {
   static ModelFactoryConnection<Tag> withConnection(QueryContext context) =>
       ModelFactoryConnection<Tag>(definition: definition, context: context);
 
-  static Query<Tag> query([String? connection]) {
-    final connName = connection ?? definition.metadata.connection;
-    final conn = ConnectionManager.instance.connection(
-      connName ?? ConnectionManager.instance.defaultConnectionName ?? "default",
-    );
-    return conn.query<Tag>();
-  }
-
   static ModelFactoryBuilder<Tag> factory({
     GeneratorProvider? generatorProvider,
   }) => ModelFactoryBuilder<Tag>(
     definition: definition,
     generatorProvider: generatorProvider,
   );
-
-  static Future<List<Tag>> all([String? connection]) => query(connection).get();
-
-  static Future<Tag> create(
-    Map<String, dynamic> attributes, [
-    String? connection,
-  ]) async {
-    final model = const _$TagModelCodec().decode(
-      attributes,
-      ValueCodecRegistry.standard(),
-    );
-    final connName = connection ?? definition.metadata.connection;
-    final conn = ConnectionManager.instance.connection(
-      connName ?? ConnectionManager.instance.defaultConnectionName ?? "default",
-    );
-    final repo = conn.context.repository<Tag>();
-    final result = await repo.insertMany([model], returning: true);
-    return result.first;
-  }
-
-  static Future<List<Tag>> createMany(
-    List<Map<String, dynamic>> records, [
-    String? connection,
-  ]) async {
-    final models = records
-        .map(
-          (r) =>
-              const _$TagModelCodec().decode(r, ValueCodecRegistry.standard()),
-        )
-        .toList();
-    final connName = connection ?? definition.metadata.connection;
-    final conn = ConnectionManager.instance.connection(
-      connName ?? ConnectionManager.instance.defaultConnectionName ?? "default",
-    );
-    final repo = conn.context.repository<Tag>();
-    return await repo.insertMany(models, returning: true);
-  }
-
-  static Future<void> insert(
-    List<Map<String, dynamic>> records, [
-    String? connection,
-  ]) async {
-    final models = records
-        .map(
-          (r) =>
-              const _$TagModelCodec().decode(r, ValueCodecRegistry.standard()),
-        )
-        .toList();
-    final connName = connection ?? definition.metadata.connection;
-    final conn = ConnectionManager.instance.connection(
-      connName ?? ConnectionManager.instance.defaultConnectionName ?? "default",
-    );
-    final repo = conn.context.repository<Tag>();
-    await repo.insertMany(models, returning: false);
-  }
-
-  static Future<Tag?> find(Object id, [String? connection]) =>
-      query(connection).find(id);
-
-  static Future<Tag> findOrFail(Object id, [String? connection]) async {
-    final result = await find(id, connection);
-    if (result == null) throw StateError("Model not found with id: $id");
-    return result;
-  }
-
-  static Future<List<Tag>> findMany(List<Object> ids, [String? connection]) =>
-      query(connection).findMany(ids);
-
-  static Future<Tag?> first([String? connection]) => query(connection).first();
-
-  static Future<Tag> firstOrFail([String? connection]) async {
-    final result = await first(connection);
-    if (result == null) throw StateError("No model found");
-    return result;
-  }
-
-  static Future<int> count([String? connection]) => query(connection).count();
-
-  static Future<bool> exists([String? connection]) async =>
-      await count(connection) > 0;
-
-  static Future<int> destroy(List<Object> ids, [String? connection]) async {
-    final models = await findMany(ids, connection);
-    for (final model in models) {
-      await model.delete();
-    }
-    return models.length;
-  }
-
-  static Query<Tag> where(String column, dynamic value, [String? connection]) =>
-      query(connection).where(column, value);
-
-  static Query<Tag> whereIn(
-    String column,
-    List<dynamic> values, [
-    String? connection,
-  ]) => query(connection).whereIn(column, values);
-
-  static Query<Tag> orderBy(
-    String column, {
-    String direction = "asc",
-    String? connection,
-  }) => query(
-    connection,
-  ).orderBy(column, descending: direction.toLowerCase() == "desc");
-
-  static Query<Tag> limit(int count, [String? connection]) =>
-      query(connection).limit(count);
-}
-
-extension TagModelHelpers on Tag {
-  // Factory
-  static ModelFactoryBuilder<Tag> factory({
-    GeneratorProvider? generatorProvider,
-  }) => TagModelFactory.factory(generatorProvider: generatorProvider);
-
-  // Query builder
-  static Query<Tag> query([String? connection]) =>
-      TagModelFactory.query(connection);
-
-  // CRUD operations
-  static Future<List<Tag>> all([String? connection]) =>
-      TagModelFactory.all(connection);
-
-  static Future<Tag?> find(Object id, [String? connection]) =>
-      TagModelFactory.find(id, connection);
-
-  static Future<Tag> findOrFail(Object id, [String? connection]) =>
-      TagModelFactory.findOrFail(id, connection);
-
-  static Future<List<Tag>> findMany(List<Object> ids, [String? connection]) =>
-      TagModelFactory.findMany(ids, connection);
-
-  static Future<Tag?> first([String? connection]) =>
-      TagModelFactory.first(connection);
-
-  static Future<Tag> firstOrFail([String? connection]) =>
-      TagModelFactory.firstOrFail(connection);
-
-  static Future<Tag> create(
-    Map<String, dynamic> attributes, [
-    String? connection,
-  ]) => TagModelFactory.create(attributes, connection);
-
-  static Future<List<Tag>> createMany(
-    List<Map<String, dynamic>> records, [
-    String? connection,
-  ]) => TagModelFactory.createMany(records, connection);
-
-  static Future<void> insert(
-    List<Map<String, dynamic>> records, [
-    String? connection,
-  ]) => TagModelFactory.insert(records, connection);
-
-  static Future<int> destroy(List<Object> ids, [String? connection]) =>
-      TagModelFactory.destroy(ids, connection);
-
-  static Future<int> count([String? connection]) =>
-      TagModelFactory.count(connection);
-
-  static Future<bool> exists([String? connection]) =>
-      TagModelFactory.exists(connection);
-
-  static Query<Tag> where(String column, dynamic value, [String? connection]) =>
-      TagModelFactory.where(column, value, connection);
-
-  static Query<Tag> whereIn(
-    String column,
-    List<dynamic> values, [
-    String? connection,
-  ]) => TagModelFactory.whereIn(column, values, connection);
-
-  static Query<Tag> orderBy(
-    String column, {
-    String direction = "asc",
-    String? connection,
-  }) => TagModelFactory.orderBy(
-    column,
-    direction: direction,
-    connection: connection,
-  );
-
-  static Query<Tag> limit(int count, [String? connection]) =>
-      TagModelFactory.limit(count, connection);
-
-  // Instance method
-  Future<void> delete([String? connection]) async {
-    final connName =
-        connection ?? TagModelFactory.definition.metadata.connection;
-    final conn = ConnectionManager.instance.connection(
-      connName ?? ConnectionManager.instance.defaultConnectionName ?? "default",
-    );
-    final repo = conn.context.repository<Tag>();
-    final primaryKeys = TagModelFactory.definition.fields
-        .where((f) => f.isPrimaryKey)
-        .toList();
-    if (primaryKeys.isEmpty) {
-      throw StateError("Cannot delete model without primary key");
-    }
-    final keyMap = <String, Object?>{
-      for (final key in primaryKeys)
-        key.columnName: TagModelFactory.toMap(this)[key.name],
-    };
-    await repo.deleteByKeys([keyMap]);
-  }
 }
 
 class _$TagModelCodec extends ModelCodec<Tag> {
@@ -352,6 +184,11 @@ class _$TagModel extends Tag {
 
   set label(String value) => setAttribute('label', value);
 
+  void _attachOrmRuntimeMetadata(Map<String, Object?> values) {
+    replaceAttributes(values);
+    attachModelDefinition(_$TagModelDefinition);
+  }
+
   @override
   List<Post> get posts {
     if (relationLoaded('posts')) {
@@ -359,14 +196,10 @@ class _$TagModel extends Tag {
     }
     return super.posts;
   }
-
-  void _attachOrmRuntimeMetadata(Map<String, Object?> values) {
-    replaceAttributes(values);
-    attachModelDefinition(_$TagModelDefinition);
-  }
 }
 
-extension TagAttributeSetters on Tag {
-  set id(int value) => setAttribute('id', value);
-  set label(String value) => setAttribute('label', value);
+extension TagRelationQueries on Tag {
+  Query<Post> postsQuery() {
+    throw UnimplementedError("ManyToMany query generation not yet supported");
+  }
 }

@@ -83,11 +83,70 @@ extension DriverOverrideEntryOrmDefinition on DriverOverrideEntry {
       _$DriverOverrideEntryModelDefinition;
 }
 
+class DriverOverrideEntrys {
+  const DriverOverrideEntrys._();
+
+  static Query<DriverOverrideEntry> query([String? connection]) =>
+      Model.query<DriverOverrideEntry>(connection: connection);
+
+  static Future<DriverOverrideEntry?> find(Object id, {String? connection}) =>
+      Model.find<DriverOverrideEntry>(id, connection: connection);
+
+  static Future<DriverOverrideEntry> findOrFail(
+    Object id, {
+    String? connection,
+  }) => Model.findOrFail<DriverOverrideEntry>(id, connection: connection);
+
+  static Future<List<DriverOverrideEntry>> all({String? connection}) =>
+      Model.all<DriverOverrideEntry>(connection: connection);
+
+  static Future<int> count({String? connection}) =>
+      Model.count<DriverOverrideEntry>(connection: connection);
+
+  static Future<bool> exists({String? connection}) =>
+      Model.exists<DriverOverrideEntry>(connection: connection);
+
+  static Query<DriverOverrideEntry> where(
+    String column,
+    String operator,
+    dynamic value, {
+    String? connection,
+  }) => Model.where<DriverOverrideEntry>(
+    column,
+    operator,
+    value,
+    connection: connection,
+  );
+
+  static Query<DriverOverrideEntry> whereIn(
+    String column,
+    List<dynamic> values, {
+    String? connection,
+  }) => Model.whereIn<DriverOverrideEntry>(
+    column,
+    values,
+    connection: connection,
+  );
+
+  static Query<DriverOverrideEntry> orderBy(
+    String column, {
+    String direction = "asc",
+    String? connection,
+  }) => Model.orderBy<DriverOverrideEntry>(
+    column,
+    direction: direction,
+    connection: connection,
+  );
+
+  static Query<DriverOverrideEntry> limit(int count, {String? connection}) =>
+      Model.limit<DriverOverrideEntry>(count, connection: connection);
+}
+
 class DriverOverrideEntryModelFactory {
   const DriverOverrideEntryModelFactory._();
 
   static ModelDefinition<DriverOverrideEntry> get definition =>
-      DriverOverrideEntryOrmDefinition.definition;
+      _$DriverOverrideEntryModelDefinition;
 
   static ModelCodec<DriverOverrideEntry> get codec => definition.codec;
 
@@ -111,249 +170,12 @@ class DriverOverrideEntryModelFactory {
     context: context,
   );
 
-  static Query<DriverOverrideEntry> query([String? connection]) {
-    final connName = connection ?? definition.metadata.connection;
-    final conn = ConnectionManager.instance.connection(
-      connName ?? ConnectionManager.instance.defaultConnectionName ?? "default",
-    );
-    return conn.query<DriverOverrideEntry>();
-  }
-
   static ModelFactoryBuilder<DriverOverrideEntry> factory({
     GeneratorProvider? generatorProvider,
   }) => ModelFactoryBuilder<DriverOverrideEntry>(
     definition: definition,
     generatorProvider: generatorProvider,
   );
-
-  static Future<List<DriverOverrideEntry>> all([String? connection]) =>
-      query(connection).get();
-
-  static Future<DriverOverrideEntry> create(
-    Map<String, dynamic> attributes, [
-    String? connection,
-  ]) async {
-    final model = const _$DriverOverrideEntryModelCodec().decode(
-      attributes,
-      ValueCodecRegistry.standard(),
-    );
-    final connName = connection ?? definition.metadata.connection;
-    final conn = ConnectionManager.instance.connection(
-      connName ?? ConnectionManager.instance.defaultConnectionName ?? "default",
-    );
-    final repo = conn.context.repository<DriverOverrideEntry>();
-    final result = await repo.insertMany([model], returning: true);
-    return result.first;
-  }
-
-  static Future<List<DriverOverrideEntry>> createMany(
-    List<Map<String, dynamic>> records, [
-    String? connection,
-  ]) async {
-    final models = records
-        .map(
-          (r) => const _$DriverOverrideEntryModelCodec().decode(
-            r,
-            ValueCodecRegistry.standard(),
-          ),
-        )
-        .toList();
-    final connName = connection ?? definition.metadata.connection;
-    final conn = ConnectionManager.instance.connection(
-      connName ?? ConnectionManager.instance.defaultConnectionName ?? "default",
-    );
-    final repo = conn.context.repository<DriverOverrideEntry>();
-    return await repo.insertMany(models, returning: true);
-  }
-
-  static Future<void> insert(
-    List<Map<String, dynamic>> records, [
-    String? connection,
-  ]) async {
-    final models = records
-        .map(
-          (r) => const _$DriverOverrideEntryModelCodec().decode(
-            r,
-            ValueCodecRegistry.standard(),
-          ),
-        )
-        .toList();
-    final connName = connection ?? definition.metadata.connection;
-    final conn = ConnectionManager.instance.connection(
-      connName ?? ConnectionManager.instance.defaultConnectionName ?? "default",
-    );
-    final repo = conn.context.repository<DriverOverrideEntry>();
-    await repo.insertMany(models, returning: false);
-  }
-
-  static Future<DriverOverrideEntry?> find(Object id, [String? connection]) =>
-      query(connection).find(id);
-
-  static Future<DriverOverrideEntry> findOrFail(
-    Object id, [
-    String? connection,
-  ]) async {
-    final result = await find(id, connection);
-    if (result == null) throw StateError("Model not found with id: $id");
-    return result;
-  }
-
-  static Future<List<DriverOverrideEntry>> findMany(
-    List<Object> ids, [
-    String? connection,
-  ]) => query(connection).findMany(ids);
-
-  static Future<DriverOverrideEntry?> first([String? connection]) =>
-      query(connection).first();
-
-  static Future<DriverOverrideEntry> firstOrFail([String? connection]) async {
-    final result = await first(connection);
-    if (result == null) throw StateError("No model found");
-    return result;
-  }
-
-  static Future<int> count([String? connection]) => query(connection).count();
-
-  static Future<bool> exists([String? connection]) async =>
-      await count(connection) > 0;
-
-  static Future<int> destroy(List<Object> ids, [String? connection]) async {
-    final models = await findMany(ids, connection);
-    for (final model in models) {
-      await model.delete();
-    }
-    return models.length;
-  }
-
-  static Query<DriverOverrideEntry> where(
-    String column,
-    dynamic value, [
-    String? connection,
-  ]) => query(connection).where(column, value);
-
-  static Query<DriverOverrideEntry> whereIn(
-    String column,
-    List<dynamic> values, [
-    String? connection,
-  ]) => query(connection).whereIn(column, values);
-
-  static Query<DriverOverrideEntry> orderBy(
-    String column, {
-    String direction = "asc",
-    String? connection,
-  }) => query(
-    connection,
-  ).orderBy(column, descending: direction.toLowerCase() == "desc");
-
-  static Query<DriverOverrideEntry> limit(int count, [String? connection]) =>
-      query(connection).limit(count);
-}
-
-extension DriverOverrideEntryModelHelpers on DriverOverrideEntry {
-  // Factory
-  static ModelFactoryBuilder<DriverOverrideEntry> factory({
-    GeneratorProvider? generatorProvider,
-  }) => DriverOverrideEntryModelFactory.factory(
-    generatorProvider: generatorProvider,
-  );
-
-  // Query builder
-  static Query<DriverOverrideEntry> query([String? connection]) =>
-      DriverOverrideEntryModelFactory.query(connection);
-
-  // CRUD operations
-  static Future<List<DriverOverrideEntry>> all([String? connection]) =>
-      DriverOverrideEntryModelFactory.all(connection);
-
-  static Future<DriverOverrideEntry?> find(Object id, [String? connection]) =>
-      DriverOverrideEntryModelFactory.find(id, connection);
-
-  static Future<DriverOverrideEntry> findOrFail(
-    Object id, [
-    String? connection,
-  ]) => DriverOverrideEntryModelFactory.findOrFail(id, connection);
-
-  static Future<List<DriverOverrideEntry>> findMany(
-    List<Object> ids, [
-    String? connection,
-  ]) => DriverOverrideEntryModelFactory.findMany(ids, connection);
-
-  static Future<DriverOverrideEntry?> first([String? connection]) =>
-      DriverOverrideEntryModelFactory.first(connection);
-
-  static Future<DriverOverrideEntry> firstOrFail([String? connection]) =>
-      DriverOverrideEntryModelFactory.firstOrFail(connection);
-
-  static Future<DriverOverrideEntry> create(
-    Map<String, dynamic> attributes, [
-    String? connection,
-  ]) => DriverOverrideEntryModelFactory.create(attributes, connection);
-
-  static Future<List<DriverOverrideEntry>> createMany(
-    List<Map<String, dynamic>> records, [
-    String? connection,
-  ]) => DriverOverrideEntryModelFactory.createMany(records, connection);
-
-  static Future<void> insert(
-    List<Map<String, dynamic>> records, [
-    String? connection,
-  ]) => DriverOverrideEntryModelFactory.insert(records, connection);
-
-  static Future<int> destroy(List<Object> ids, [String? connection]) =>
-      DriverOverrideEntryModelFactory.destroy(ids, connection);
-
-  static Future<int> count([String? connection]) =>
-      DriverOverrideEntryModelFactory.count(connection);
-
-  static Future<bool> exists([String? connection]) =>
-      DriverOverrideEntryModelFactory.exists(connection);
-
-  static Query<DriverOverrideEntry> where(
-    String column,
-    dynamic value, [
-    String? connection,
-  ]) => DriverOverrideEntryModelFactory.where(column, value, connection);
-
-  static Query<DriverOverrideEntry> whereIn(
-    String column,
-    List<dynamic> values, [
-    String? connection,
-  ]) => DriverOverrideEntryModelFactory.whereIn(column, values, connection);
-
-  static Query<DriverOverrideEntry> orderBy(
-    String column, {
-    String direction = "asc",
-    String? connection,
-  }) => DriverOverrideEntryModelFactory.orderBy(
-    column,
-    direction: direction,
-    connection: connection,
-  );
-
-  static Query<DriverOverrideEntry> limit(int count, [String? connection]) =>
-      DriverOverrideEntryModelFactory.limit(count, connection);
-
-  // Instance method
-  Future<void> delete([String? connection]) async {
-    final connName =
-        connection ??
-        DriverOverrideEntryModelFactory.definition.metadata.connection;
-    final conn = ConnectionManager.instance.connection(
-      connName ?? ConnectionManager.instance.defaultConnectionName ?? "default",
-    );
-    final repo = conn.context.repository<DriverOverrideEntry>();
-    final primaryKeys = DriverOverrideEntryModelFactory.definition.fields
-        .where((f) => f.isPrimaryKey)
-        .toList();
-    if (primaryKeys.isEmpty) {
-      throw StateError("Cannot delete model without primary key");
-    }
-    final keyMap = <String, Object?>{
-      for (final key in primaryKeys)
-        key.columnName: DriverOverrideEntryModelFactory.toMap(this)[key.name],
-    };
-    await repo.deleteByKeys([keyMap]);
-  }
 }
 
 class _$DriverOverrideEntryModelCodec extends ModelCodec<DriverOverrideEntry> {
@@ -424,9 +246,4 @@ class _$DriverOverrideEntryModel extends DriverOverrideEntry {
     replaceAttributes(values);
     attachModelDefinition(_$DriverOverrideEntryModelDefinition);
   }
-}
-
-extension DriverOverrideEntryAttributeSetters on DriverOverrideEntry {
-  set id(int value) => setAttribute('id', value);
-  set payload(Map<String, Object?> value) => setAttribute('payload', value);
 }

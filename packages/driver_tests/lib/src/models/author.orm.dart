@@ -78,11 +78,58 @@ extension AuthorOrmDefinition on Author {
   static ModelDefinition<Author> get definition => _$AuthorModelDefinition;
 }
 
+class Authors {
+  const Authors._();
+
+  static Query<Author> query([String? connection]) =>
+      Model.query<Author>(connection: connection);
+
+  static Future<Author?> find(Object id, {String? connection}) =>
+      Model.find<Author>(id, connection: connection);
+
+  static Future<Author> findOrFail(Object id, {String? connection}) =>
+      Model.findOrFail<Author>(id, connection: connection);
+
+  static Future<List<Author>> all({String? connection}) =>
+      Model.all<Author>(connection: connection);
+
+  static Future<int> count({String? connection}) =>
+      Model.count<Author>(connection: connection);
+
+  static Future<bool> exists({String? connection}) =>
+      Model.exists<Author>(connection: connection);
+
+  static Query<Author> where(
+    String column,
+    String operator,
+    dynamic value, {
+    String? connection,
+  }) => Model.where<Author>(column, operator, value, connection: connection);
+
+  static Query<Author> whereIn(
+    String column,
+    List<dynamic> values, {
+    String? connection,
+  }) => Model.whereIn<Author>(column, values, connection: connection);
+
+  static Query<Author> orderBy(
+    String column, {
+    String direction = "asc",
+    String? connection,
+  }) => Model.orderBy<Author>(
+    column,
+    direction: direction,
+    connection: connection,
+  );
+
+  static Query<Author> limit(int count, {String? connection}) =>
+      Model.limit<Author>(count, connection: connection);
+}
+
 class AuthorModelFactory {
   const AuthorModelFactory._();
 
-  static ModelDefinition<Author> get definition =>
-      AuthorOrmDefinition.definition;
+  static ModelDefinition<Author> get definition => _$AuthorModelDefinition;
 
   static ModelCodec<Author> get codec => definition.codec;
 
@@ -102,241 +149,12 @@ class AuthorModelFactory {
   static ModelFactoryConnection<Author> withConnection(QueryContext context) =>
       ModelFactoryConnection<Author>(definition: definition, context: context);
 
-  static Query<Author> query([String? connection]) {
-    final connName = connection ?? definition.metadata.connection;
-    final conn = ConnectionManager.instance.connection(
-      connName ?? ConnectionManager.instance.defaultConnectionName ?? "default",
-    );
-    return conn.query<Author>();
-  }
-
   static ModelFactoryBuilder<Author> factory({
     GeneratorProvider? generatorProvider,
   }) => ModelFactoryBuilder<Author>(
     definition: definition,
     generatorProvider: generatorProvider,
   );
-
-  static Future<List<Author>> all([String? connection]) =>
-      query(connection).get();
-
-  static Future<Author> create(
-    Map<String, dynamic> attributes, [
-    String? connection,
-  ]) async {
-    final model = const _$AuthorModelCodec().decode(
-      attributes,
-      ValueCodecRegistry.standard(),
-    );
-    final connName = connection ?? definition.metadata.connection;
-    final conn = ConnectionManager.instance.connection(
-      connName ?? ConnectionManager.instance.defaultConnectionName ?? "default",
-    );
-    final repo = conn.context.repository<Author>();
-    final result = await repo.insertMany([model], returning: true);
-    return result.first;
-  }
-
-  static Future<List<Author>> createMany(
-    List<Map<String, dynamic>> records, [
-    String? connection,
-  ]) async {
-    final models = records
-        .map(
-          (r) => const _$AuthorModelCodec().decode(
-            r,
-            ValueCodecRegistry.standard(),
-          ),
-        )
-        .toList();
-    final connName = connection ?? definition.metadata.connection;
-    final conn = ConnectionManager.instance.connection(
-      connName ?? ConnectionManager.instance.defaultConnectionName ?? "default",
-    );
-    final repo = conn.context.repository<Author>();
-    return await repo.insertMany(models, returning: true);
-  }
-
-  static Future<void> insert(
-    List<Map<String, dynamic>> records, [
-    String? connection,
-  ]) async {
-    final models = records
-        .map(
-          (r) => const _$AuthorModelCodec().decode(
-            r,
-            ValueCodecRegistry.standard(),
-          ),
-        )
-        .toList();
-    final connName = connection ?? definition.metadata.connection;
-    final conn = ConnectionManager.instance.connection(
-      connName ?? ConnectionManager.instance.defaultConnectionName ?? "default",
-    );
-    final repo = conn.context.repository<Author>();
-    await repo.insertMany(models, returning: false);
-  }
-
-  static Future<Author?> find(Object id, [String? connection]) =>
-      query(connection).find(id);
-
-  static Future<Author> findOrFail(Object id, [String? connection]) async {
-    final result = await find(id, connection);
-    if (result == null) throw StateError("Model not found with id: $id");
-    return result;
-  }
-
-  static Future<List<Author>> findMany(
-    List<Object> ids, [
-    String? connection,
-  ]) => query(connection).findMany(ids);
-
-  static Future<Author?> first([String? connection]) =>
-      query(connection).first();
-
-  static Future<Author> firstOrFail([String? connection]) async {
-    final result = await first(connection);
-    if (result == null) throw StateError("No model found");
-    return result;
-  }
-
-  static Future<int> count([String? connection]) => query(connection).count();
-
-  static Future<bool> exists([String? connection]) async =>
-      await count(connection) > 0;
-
-  static Future<int> destroy(List<Object> ids, [String? connection]) async {
-    final models = await findMany(ids, connection);
-    for (final model in models) {
-      await model.delete();
-    }
-    return models.length;
-  }
-
-  static Query<Author> where(
-    String column,
-    dynamic value, [
-    String? connection,
-  ]) => query(connection).where(column, value);
-
-  static Query<Author> whereIn(
-    String column,
-    List<dynamic> values, [
-    String? connection,
-  ]) => query(connection).whereIn(column, values);
-
-  static Query<Author> orderBy(
-    String column, {
-    String direction = "asc",
-    String? connection,
-  }) => query(
-    connection,
-  ).orderBy(column, descending: direction.toLowerCase() == "desc");
-
-  static Query<Author> limit(int count, [String? connection]) =>
-      query(connection).limit(count);
-}
-
-extension AuthorModelHelpers on Author {
-  // Factory
-  static ModelFactoryBuilder<Author> factory({
-    GeneratorProvider? generatorProvider,
-  }) => AuthorModelFactory.factory(generatorProvider: generatorProvider);
-
-  // Query builder
-  static Query<Author> query([String? connection]) =>
-      AuthorModelFactory.query(connection);
-
-  // CRUD operations
-  static Future<List<Author>> all([String? connection]) =>
-      AuthorModelFactory.all(connection);
-
-  static Future<Author?> find(Object id, [String? connection]) =>
-      AuthorModelFactory.find(id, connection);
-
-  static Future<Author> findOrFail(Object id, [String? connection]) =>
-      AuthorModelFactory.findOrFail(id, connection);
-
-  static Future<List<Author>> findMany(
-    List<Object> ids, [
-    String? connection,
-  ]) => AuthorModelFactory.findMany(ids, connection);
-
-  static Future<Author?> first([String? connection]) =>
-      AuthorModelFactory.first(connection);
-
-  static Future<Author> firstOrFail([String? connection]) =>
-      AuthorModelFactory.firstOrFail(connection);
-
-  static Future<Author> create(
-    Map<String, dynamic> attributes, [
-    String? connection,
-  ]) => AuthorModelFactory.create(attributes, connection);
-
-  static Future<List<Author>> createMany(
-    List<Map<String, dynamic>> records, [
-    String? connection,
-  ]) => AuthorModelFactory.createMany(records, connection);
-
-  static Future<void> insert(
-    List<Map<String, dynamic>> records, [
-    String? connection,
-  ]) => AuthorModelFactory.insert(records, connection);
-
-  static Future<int> destroy(List<Object> ids, [String? connection]) =>
-      AuthorModelFactory.destroy(ids, connection);
-
-  static Future<int> count([String? connection]) =>
-      AuthorModelFactory.count(connection);
-
-  static Future<bool> exists([String? connection]) =>
-      AuthorModelFactory.exists(connection);
-
-  static Query<Author> where(
-    String column,
-    dynamic value, [
-    String? connection,
-  ]) => AuthorModelFactory.where(column, value, connection);
-
-  static Query<Author> whereIn(
-    String column,
-    List<dynamic> values, [
-    String? connection,
-  ]) => AuthorModelFactory.whereIn(column, values, connection);
-
-  static Query<Author> orderBy(
-    String column, {
-    String direction = "asc",
-    String? connection,
-  }) => AuthorModelFactory.orderBy(
-    column,
-    direction: direction,
-    connection: connection,
-  );
-
-  static Query<Author> limit(int count, [String? connection]) =>
-      AuthorModelFactory.limit(count, connection);
-
-  // Instance method
-  Future<void> delete([String? connection]) async {
-    final connName =
-        connection ?? AuthorModelFactory.definition.metadata.connection;
-    final conn = ConnectionManager.instance.connection(
-      connName ?? ConnectionManager.instance.defaultConnectionName ?? "default",
-    );
-    final repo = conn.context.repository<Author>();
-    final primaryKeys = AuthorModelFactory.definition.fields
-        .where((f) => f.isPrimaryKey)
-        .toList();
-    if (primaryKeys.isEmpty) {
-      throw StateError("Cannot delete model without primary key");
-    }
-    final keyMap = <String, Object?>{
-      for (final key in primaryKeys)
-        key.columnName: AuthorModelFactory.toMap(this)[key.name],
-    };
-    await repo.deleteByKeys([keyMap]);
-  }
 }
 
 class _$AuthorModelCodec extends ModelCodec<Author> {
@@ -377,7 +195,7 @@ class _$AuthorModelCodec extends ModelCodec<Author> {
 }
 
 class _$AuthorModel extends Author {
-  _$AuthorModel({required int id, required String name, bool active = false})
+  _$AuthorModel({required int id, required String name, required bool active})
     : super.new(id: id, name: name, active: active) {
     _attachOrmRuntimeMetadata({'id': id, 'name': name, 'active': active});
   }
@@ -397,6 +215,11 @@ class _$AuthorModel extends Author {
 
   set active(bool value) => setAttribute('active', value);
 
+  void _attachOrmRuntimeMetadata(Map<String, Object?> values) {
+    replaceAttributes(values);
+    attachModelDefinition(_$AuthorModelDefinition);
+  }
+
   @override
   List<Post> get posts {
     if (relationLoaded('posts')) {
@@ -404,15 +227,10 @@ class _$AuthorModel extends Author {
     }
     return super.posts;
   }
-
-  void _attachOrmRuntimeMetadata(Map<String, Object?> values) {
-    replaceAttributes(values);
-    attachModelDefinition(_$AuthorModelDefinition);
-  }
 }
 
-extension AuthorAttributeSetters on Author {
-  set id(int value) => setAttribute('id', value);
-  set name(String value) => setAttribute('name', value);
-  set active(bool value) => setAttribute('active', value);
+extension AuthorRelationQueries on Author {
+  Query<Post> postsQuery() {
+    return Model.query<Post>().where('author_id', id);
+  }
 }

@@ -130,6 +130,16 @@ class ModelSubclassEmitter {
           buffer.writeln(
             '    throw UnimplementedError("ManyToMany query generation not yet supported");',
           );
+        } else if (relation.kind == RelationKind.morphOne ||
+            relation.kind == RelationKind.morphMany) {
+          buffer.writeln(
+            '    throw UnimplementedError("Polymorphic relation query generation not yet supported");',
+          );
+        } else {
+          // Fallback for any other relation kinds
+          buffer.writeln(
+            '    throw UnimplementedError("Relation query generation not supported for ${relation.kind}");',
+          );
         }
 
         buffer.writeln('  }');
@@ -139,25 +149,9 @@ class ModelSubclassEmitter {
       buffer.writeln();
     }
 
-    // Generate attribute setters extension for convenience
-    // This allows `user.name = 'foo'` to work even if the field is final in the base class
-    // (Wait, if it's final in base, we can't override setter unless we also override getter, which we do)
-    // But we can't add setters to the base class via extension if they don't exist.
-    // The generated subclass has setters. The base class might not.
-    // If the base class fields are final, we can't set them on the base type.
-    // But we can generate an extension on the base type that uses setAttribute.
-
-    buffer.writeln('extension ${className}AttributeSetters on $className {');
-    for (final field in context.fields.where((f) => !f.isVirtual)) {
-      // Only generate if not already settable?
-      // Actually, this extension is useful if the user uses the base class type but wants to set attributes
-      // backed by the map.
-      buffer.writeln(
-        '  set ${field.name}(${field.resolvedType} value) => setAttribute(\'${field.columnName}\', value);',
-      );
-    }
-    buffer.writeln('}');
-    buffer.writeln();
+    // Note: We don't generate an extension with setters on the base class because
+    // setAttribute() only exists on the generated subclass (via ModelAttributes mixin).
+    // Users should use the generated model type or access via repository/query builder.
 
     return buffer.toString();
   }

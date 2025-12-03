@@ -3,7 +3,7 @@ import 'package:test/test.dart';
 import 'package:driver_tests/driver_tests.dart';
 import 'package:ormed_sqlite/ormed_sqlite.dart';
 
-void main() {
+Future<void> main() async {
   registerDriverTestFactories();
 
   // Create custom codecs map
@@ -33,16 +33,11 @@ void main() {
     ),
   );
 
-  setUpAll(() async {
-    await dataSource.init();
+  await dataSource.init();
 
-    // Add query logging
-    dataSource.connection.onQueryLogged((entry) {
-      print('[SQL][${entry.type}] ${entry.sql}');
-    });
-
-    // Setup test schema
-    await resetDriverTestSchema(driverAdapter, schema: null);
+  // Add query logging
+  dataSource.connection.onQueryLogged((entry) {
+    print('[SQL][${entry.type}] ${entry.sql}');
   });
 
   tearDownAll(() async {

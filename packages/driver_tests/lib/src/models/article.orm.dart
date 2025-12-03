@@ -151,11 +151,58 @@ extension ArticleOrmDefinition on Article {
   static ModelDefinition<Article> get definition => _$ArticleModelDefinition;
 }
 
+class Articles {
+  const Articles._();
+
+  static Query<Article> query([String? connection]) =>
+      Model.query<Article>(connection: connection);
+
+  static Future<Article?> find(Object id, {String? connection}) =>
+      Model.find<Article>(id, connection: connection);
+
+  static Future<Article> findOrFail(Object id, {String? connection}) =>
+      Model.findOrFail<Article>(id, connection: connection);
+
+  static Future<List<Article>> all({String? connection}) =>
+      Model.all<Article>(connection: connection);
+
+  static Future<int> count({String? connection}) =>
+      Model.count<Article>(connection: connection);
+
+  static Future<bool> exists({String? connection}) =>
+      Model.exists<Article>(connection: connection);
+
+  static Query<Article> where(
+    String column,
+    String operator,
+    dynamic value, {
+    String? connection,
+  }) => Model.where<Article>(column, operator, value, connection: connection);
+
+  static Query<Article> whereIn(
+    String column,
+    List<dynamic> values, {
+    String? connection,
+  }) => Model.whereIn<Article>(column, values, connection: connection);
+
+  static Query<Article> orderBy(
+    String column, {
+    String direction = "asc",
+    String? connection,
+  }) => Model.orderBy<Article>(
+    column,
+    direction: direction,
+    connection: connection,
+  );
+
+  static Query<Article> limit(int count, {String? connection}) =>
+      Model.limit<Article>(count, connection: connection);
+}
+
 class ArticleModelFactory {
   const ArticleModelFactory._();
 
-  static ModelDefinition<Article> get definition =>
-      ArticleOrmDefinition.definition;
+  static ModelDefinition<Article> get definition => _$ArticleModelDefinition;
 
   static ModelCodec<Article> get codec => definition.codec;
 
@@ -175,241 +222,12 @@ class ArticleModelFactory {
   static ModelFactoryConnection<Article> withConnection(QueryContext context) =>
       ModelFactoryConnection<Article>(definition: definition, context: context);
 
-  static Query<Article> query([String? connection]) {
-    final connName = connection ?? definition.metadata.connection;
-    final conn = ConnectionManager.instance.connection(
-      connName ?? ConnectionManager.instance.defaultConnectionName ?? "default",
-    );
-    return conn.query<Article>();
-  }
-
   static ModelFactoryBuilder<Article> factory({
     GeneratorProvider? generatorProvider,
   }) => ModelFactoryBuilder<Article>(
     definition: definition,
     generatorProvider: generatorProvider,
   );
-
-  static Future<List<Article>> all([String? connection]) =>
-      query(connection).get();
-
-  static Future<Article> create(
-    Map<String, dynamic> attributes, [
-    String? connection,
-  ]) async {
-    final model = const _$ArticleModelCodec().decode(
-      attributes,
-      ValueCodecRegistry.standard(),
-    );
-    final connName = connection ?? definition.metadata.connection;
-    final conn = ConnectionManager.instance.connection(
-      connName ?? ConnectionManager.instance.defaultConnectionName ?? "default",
-    );
-    final repo = conn.context.repository<Article>();
-    final result = await repo.insertMany([model], returning: true);
-    return result.first;
-  }
-
-  static Future<List<Article>> createMany(
-    List<Map<String, dynamic>> records, [
-    String? connection,
-  ]) async {
-    final models = records
-        .map(
-          (r) => const _$ArticleModelCodec().decode(
-            r,
-            ValueCodecRegistry.standard(),
-          ),
-        )
-        .toList();
-    final connName = connection ?? definition.metadata.connection;
-    final conn = ConnectionManager.instance.connection(
-      connName ?? ConnectionManager.instance.defaultConnectionName ?? "default",
-    );
-    final repo = conn.context.repository<Article>();
-    return await repo.insertMany(models, returning: true);
-  }
-
-  static Future<void> insert(
-    List<Map<String, dynamic>> records, [
-    String? connection,
-  ]) async {
-    final models = records
-        .map(
-          (r) => const _$ArticleModelCodec().decode(
-            r,
-            ValueCodecRegistry.standard(),
-          ),
-        )
-        .toList();
-    final connName = connection ?? definition.metadata.connection;
-    final conn = ConnectionManager.instance.connection(
-      connName ?? ConnectionManager.instance.defaultConnectionName ?? "default",
-    );
-    final repo = conn.context.repository<Article>();
-    await repo.insertMany(models, returning: false);
-  }
-
-  static Future<Article?> find(Object id, [String? connection]) =>
-      query(connection).find(id);
-
-  static Future<Article> findOrFail(Object id, [String? connection]) async {
-    final result = await find(id, connection);
-    if (result == null) throw StateError("Model not found with id: $id");
-    return result;
-  }
-
-  static Future<List<Article>> findMany(
-    List<Object> ids, [
-    String? connection,
-  ]) => query(connection).findMany(ids);
-
-  static Future<Article?> first([String? connection]) =>
-      query(connection).first();
-
-  static Future<Article> firstOrFail([String? connection]) async {
-    final result = await first(connection);
-    if (result == null) throw StateError("No model found");
-    return result;
-  }
-
-  static Future<int> count([String? connection]) => query(connection).count();
-
-  static Future<bool> exists([String? connection]) async =>
-      await count(connection) > 0;
-
-  static Future<int> destroy(List<Object> ids, [String? connection]) async {
-    final models = await findMany(ids, connection);
-    for (final model in models) {
-      await model.delete();
-    }
-    return models.length;
-  }
-
-  static Query<Article> where(
-    String column,
-    dynamic value, [
-    String? connection,
-  ]) => query(connection).where(column, value);
-
-  static Query<Article> whereIn(
-    String column,
-    List<dynamic> values, [
-    String? connection,
-  ]) => query(connection).whereIn(column, values);
-
-  static Query<Article> orderBy(
-    String column, {
-    String direction = "asc",
-    String? connection,
-  }) => query(
-    connection,
-  ).orderBy(column, descending: direction.toLowerCase() == "desc");
-
-  static Query<Article> limit(int count, [String? connection]) =>
-      query(connection).limit(count);
-}
-
-extension ArticleModelHelpers on Article {
-  // Factory
-  static ModelFactoryBuilder<Article> factory({
-    GeneratorProvider? generatorProvider,
-  }) => ArticleModelFactory.factory(generatorProvider: generatorProvider);
-
-  // Query builder
-  static Query<Article> query([String? connection]) =>
-      ArticleModelFactory.query(connection);
-
-  // CRUD operations
-  static Future<List<Article>> all([String? connection]) =>
-      ArticleModelFactory.all(connection);
-
-  static Future<Article?> find(Object id, [String? connection]) =>
-      ArticleModelFactory.find(id, connection);
-
-  static Future<Article> findOrFail(Object id, [String? connection]) =>
-      ArticleModelFactory.findOrFail(id, connection);
-
-  static Future<List<Article>> findMany(
-    List<Object> ids, [
-    String? connection,
-  ]) => ArticleModelFactory.findMany(ids, connection);
-
-  static Future<Article?> first([String? connection]) =>
-      ArticleModelFactory.first(connection);
-
-  static Future<Article> firstOrFail([String? connection]) =>
-      ArticleModelFactory.firstOrFail(connection);
-
-  static Future<Article> create(
-    Map<String, dynamic> attributes, [
-    String? connection,
-  ]) => ArticleModelFactory.create(attributes, connection);
-
-  static Future<List<Article>> createMany(
-    List<Map<String, dynamic>> records, [
-    String? connection,
-  ]) => ArticleModelFactory.createMany(records, connection);
-
-  static Future<void> insert(
-    List<Map<String, dynamic>> records, [
-    String? connection,
-  ]) => ArticleModelFactory.insert(records, connection);
-
-  static Future<int> destroy(List<Object> ids, [String? connection]) =>
-      ArticleModelFactory.destroy(ids, connection);
-
-  static Future<int> count([String? connection]) =>
-      ArticleModelFactory.count(connection);
-
-  static Future<bool> exists([String? connection]) =>
-      ArticleModelFactory.exists(connection);
-
-  static Query<Article> where(
-    String column,
-    dynamic value, [
-    String? connection,
-  ]) => ArticleModelFactory.where(column, value, connection);
-
-  static Query<Article> whereIn(
-    String column,
-    List<dynamic> values, [
-    String? connection,
-  ]) => ArticleModelFactory.whereIn(column, values, connection);
-
-  static Query<Article> orderBy(
-    String column, {
-    String direction = "asc",
-    String? connection,
-  }) => ArticleModelFactory.orderBy(
-    column,
-    direction: direction,
-    connection: connection,
-  );
-
-  static Query<Article> limit(int count, [String? connection]) =>
-      ArticleModelFactory.limit(count, connection);
-
-  // Instance method
-  Future<void> delete([String? connection]) async {
-    final connName =
-        connection ?? ArticleModelFactory.definition.metadata.connection;
-    final conn = ConnectionManager.instance.connection(
-      connName ?? ConnectionManager.instance.defaultConnectionName ?? "default",
-    );
-    final repo = conn.context.repository<Article>();
-    final primaryKeys = ArticleModelFactory.definition.fields
-        .where((f) => f.isPrimaryKey)
-        .toList();
-    if (primaryKeys.isEmpty) {
-      throw StateError("Cannot delete model without primary key");
-    }
-    final keyMap = <String, Object?>{
-      for (final key in primaryKeys)
-        key.columnName: ArticleModelFactory.toMap(this)[key.name],
-    };
-    await repo.deleteByKeys([keyMap]);
-  }
 }
 
 class _$ArticleModelCodec extends ModelCodec<Article> {
@@ -588,16 +406,4 @@ class _$ArticleModel extends Article {
     replaceAttributes(values);
     attachModelDefinition(_$ArticleModelDefinition);
   }
-}
-
-extension ArticleAttributeSetters on Article {
-  set id(int value) => setAttribute('id', value);
-  set title(String value) => setAttribute('title', value);
-  set body(String? value) => setAttribute('body', value);
-  set status(String value) => setAttribute('status', value);
-  set rating(double value) => setAttribute('rating', value);
-  set priority(int value) => setAttribute('priority', value);
-  set publishedAt(DateTime value) => setAttribute('published_at', value);
-  set reviewedAt(DateTime? value) => setAttribute('reviewed_at', value);
-  set categoryId(int value) => setAttribute('category_id', value);
 }

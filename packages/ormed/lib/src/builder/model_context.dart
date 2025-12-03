@@ -229,6 +229,8 @@ class ModelContext {
     final resolvedType = typeWithNullability;
     final fieldName = field.displayName;
     final nullableOverride = reader?.peek('isNullable');
+    // codecType comes from 'codec' (Type parameter)
+    // If not set, use 'cast' (String) as the codec key
     final codecType = reader?.peek('codec')?.typeValue;
     final softDeleteReader = readAnnotation(field, 'OrmSoftDelete');
     final softDeleteColumnOverride = softDeleteReader
@@ -255,6 +257,14 @@ class ModelContext {
     );
     final attributeMetadata = _fieldAttributeMetadata(reader);
 
+    // Use 'cast' string as codecType if 'codec' Type is not specified
+    // Priority: 1) codec Type parameter, 2) cast field parameter, 3) model-level casts map
+    final castString = reader?.peek('cast')?.stringValue;
+    final modelLevelCast = castsAnnotation[fieldName];
+    final effectiveCodecType = codecType != null 
+        ? maybeTypeName(codecType) 
+        : (castString ?? modelLevelCast);
+
     return FieldDescriptor(
       owner: className,
       name: fieldName,
@@ -268,7 +278,7 @@ class ModelContext {
       autoIncrement: reader?.peek('autoIncrement')?.boolValue ?? false,
       columnType: reader?.peek('columnType')?.stringValue,
       defaultValueSql: reader?.peek('defaultValueSql')?.stringValue,
-      codecType: maybeTypeName(codecType),
+      codecType: effectiveCodecType,
       isSoftDelete: softDeleteReader != null || softDeleteViaMixin,
       softDeleteColumnName:
           softDeleteColumnOverride ??

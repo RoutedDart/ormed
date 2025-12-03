@@ -43,6 +43,7 @@ Future<void> main() async {
     'SqlitePayloadCodec': const SqlitePayloadCodec(),
     'MariaDbPayloadCodec': const MariaDbPayloadCodec(),
     'JsonMapCodec': const JsonMapCodec(),
+    'json': const JsonMapCodec(), // For @OrmField(cast: 'json')
     // Also add MySQL-specific codecs that the driver would add
     'bool': const MySqlBoolCodec(),
     'bool?': const MySqlBoolCodec(),
@@ -80,6 +81,9 @@ Future<void> main() async {
       print('[MUTATION ERROR] ${event.error}');
     }
   });
+
+  registerDriverTestFactories();
+  await resetDriverTestSchema(driverAdapter, schema: null);
 
   tearDownAll(() async {
     await dataSource.dispose();

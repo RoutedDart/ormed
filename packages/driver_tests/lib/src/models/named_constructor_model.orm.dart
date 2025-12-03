@@ -71,11 +71,70 @@ extension NamedConstructorModelOrmDefinition on NamedConstructorModel {
       _$NamedConstructorModelModelDefinition;
 }
 
+class NamedConstructorModels {
+  const NamedConstructorModels._();
+
+  static Query<NamedConstructorModel> query([String? connection]) =>
+      Model.query<NamedConstructorModel>(connection: connection);
+
+  static Future<NamedConstructorModel?> find(Object id, {String? connection}) =>
+      Model.find<NamedConstructorModel>(id, connection: connection);
+
+  static Future<NamedConstructorModel> findOrFail(
+    Object id, {
+    String? connection,
+  }) => Model.findOrFail<NamedConstructorModel>(id, connection: connection);
+
+  static Future<List<NamedConstructorModel>> all({String? connection}) =>
+      Model.all<NamedConstructorModel>(connection: connection);
+
+  static Future<int> count({String? connection}) =>
+      Model.count<NamedConstructorModel>(connection: connection);
+
+  static Future<bool> exists({String? connection}) =>
+      Model.exists<NamedConstructorModel>(connection: connection);
+
+  static Query<NamedConstructorModel> where(
+    String column,
+    String operator,
+    dynamic value, {
+    String? connection,
+  }) => Model.where<NamedConstructorModel>(
+    column,
+    operator,
+    value,
+    connection: connection,
+  );
+
+  static Query<NamedConstructorModel> whereIn(
+    String column,
+    List<dynamic> values, {
+    String? connection,
+  }) => Model.whereIn<NamedConstructorModel>(
+    column,
+    values,
+    connection: connection,
+  );
+
+  static Query<NamedConstructorModel> orderBy(
+    String column, {
+    String direction = "asc",
+    String? connection,
+  }) => Model.orderBy<NamedConstructorModel>(
+    column,
+    direction: direction,
+    connection: connection,
+  );
+
+  static Query<NamedConstructorModel> limit(int count, {String? connection}) =>
+      Model.limit<NamedConstructorModel>(count, connection: connection);
+}
+
 class NamedConstructorModelModelFactory {
   const NamedConstructorModelModelFactory._();
 
   static ModelDefinition<NamedConstructorModel> get definition =>
-      NamedConstructorModelOrmDefinition.definition;
+      _$NamedConstructorModelModelDefinition;
 
   static ModelCodec<NamedConstructorModel> get codec => definition.codec;
 
@@ -99,249 +158,12 @@ class NamedConstructorModelModelFactory {
     context: context,
   );
 
-  static Query<NamedConstructorModel> query([String? connection]) {
-    final connName = connection ?? definition.metadata.connection;
-    final conn = ConnectionManager.instance.connection(
-      connName ?? ConnectionManager.instance.defaultConnectionName ?? "default",
-    );
-    return conn.query<NamedConstructorModel>();
-  }
-
   static ModelFactoryBuilder<NamedConstructorModel> factory({
     GeneratorProvider? generatorProvider,
   }) => ModelFactoryBuilder<NamedConstructorModel>(
     definition: definition,
     generatorProvider: generatorProvider,
   );
-
-  static Future<List<NamedConstructorModel>> all([String? connection]) =>
-      query(connection).get();
-
-  static Future<NamedConstructorModel> create(
-    Map<String, dynamic> attributes, [
-    String? connection,
-  ]) async {
-    final model = const _$NamedConstructorModelModelCodec().decode(
-      attributes,
-      ValueCodecRegistry.standard(),
-    );
-    final connName = connection ?? definition.metadata.connection;
-    final conn = ConnectionManager.instance.connection(
-      connName ?? ConnectionManager.instance.defaultConnectionName ?? "default",
-    );
-    final repo = conn.context.repository<NamedConstructorModel>();
-    final result = await repo.insertMany([model], returning: true);
-    return result.first;
-  }
-
-  static Future<List<NamedConstructorModel>> createMany(
-    List<Map<String, dynamic>> records, [
-    String? connection,
-  ]) async {
-    final models = records
-        .map(
-          (r) => const _$NamedConstructorModelModelCodec().decode(
-            r,
-            ValueCodecRegistry.standard(),
-          ),
-        )
-        .toList();
-    final connName = connection ?? definition.metadata.connection;
-    final conn = ConnectionManager.instance.connection(
-      connName ?? ConnectionManager.instance.defaultConnectionName ?? "default",
-    );
-    final repo = conn.context.repository<NamedConstructorModel>();
-    return await repo.insertMany(models, returning: true);
-  }
-
-  static Future<void> insert(
-    List<Map<String, dynamic>> records, [
-    String? connection,
-  ]) async {
-    final models = records
-        .map(
-          (r) => const _$NamedConstructorModelModelCodec().decode(
-            r,
-            ValueCodecRegistry.standard(),
-          ),
-        )
-        .toList();
-    final connName = connection ?? definition.metadata.connection;
-    final conn = ConnectionManager.instance.connection(
-      connName ?? ConnectionManager.instance.defaultConnectionName ?? "default",
-    );
-    final repo = conn.context.repository<NamedConstructorModel>();
-    await repo.insertMany(models, returning: false);
-  }
-
-  static Future<NamedConstructorModel?> find(Object id, [String? connection]) =>
-      query(connection).find(id);
-
-  static Future<NamedConstructorModel> findOrFail(
-    Object id, [
-    String? connection,
-  ]) async {
-    final result = await find(id, connection);
-    if (result == null) throw StateError("Model not found with id: $id");
-    return result;
-  }
-
-  static Future<List<NamedConstructorModel>> findMany(
-    List<Object> ids, [
-    String? connection,
-  ]) => query(connection).findMany(ids);
-
-  static Future<NamedConstructorModel?> first([String? connection]) =>
-      query(connection).first();
-
-  static Future<NamedConstructorModel> firstOrFail([String? connection]) async {
-    final result = await first(connection);
-    if (result == null) throw StateError("No model found");
-    return result;
-  }
-
-  static Future<int> count([String? connection]) => query(connection).count();
-
-  static Future<bool> exists([String? connection]) async =>
-      await count(connection) > 0;
-
-  static Future<int> destroy(List<Object> ids, [String? connection]) async {
-    final models = await findMany(ids, connection);
-    for (final model in models) {
-      await model.delete();
-    }
-    return models.length;
-  }
-
-  static Query<NamedConstructorModel> where(
-    String column,
-    dynamic value, [
-    String? connection,
-  ]) => query(connection).where(column, value);
-
-  static Query<NamedConstructorModel> whereIn(
-    String column,
-    List<dynamic> values, [
-    String? connection,
-  ]) => query(connection).whereIn(column, values);
-
-  static Query<NamedConstructorModel> orderBy(
-    String column, {
-    String direction = "asc",
-    String? connection,
-  }) => query(
-    connection,
-  ).orderBy(column, descending: direction.toLowerCase() == "desc");
-
-  static Query<NamedConstructorModel> limit(int count, [String? connection]) =>
-      query(connection).limit(count);
-}
-
-extension NamedConstructorModelModelHelpers on NamedConstructorModel {
-  // Factory
-  static ModelFactoryBuilder<NamedConstructorModel> factory({
-    GeneratorProvider? generatorProvider,
-  }) => NamedConstructorModelModelFactory.factory(
-    generatorProvider: generatorProvider,
-  );
-
-  // Query builder
-  static Query<NamedConstructorModel> query([String? connection]) =>
-      NamedConstructorModelModelFactory.query(connection);
-
-  // CRUD operations
-  static Future<List<NamedConstructorModel>> all([String? connection]) =>
-      NamedConstructorModelModelFactory.all(connection);
-
-  static Future<NamedConstructorModel?> find(Object id, [String? connection]) =>
-      NamedConstructorModelModelFactory.find(id, connection);
-
-  static Future<NamedConstructorModel> findOrFail(
-    Object id, [
-    String? connection,
-  ]) => NamedConstructorModelModelFactory.findOrFail(id, connection);
-
-  static Future<List<NamedConstructorModel>> findMany(
-    List<Object> ids, [
-    String? connection,
-  ]) => NamedConstructorModelModelFactory.findMany(ids, connection);
-
-  static Future<NamedConstructorModel?> first([String? connection]) =>
-      NamedConstructorModelModelFactory.first(connection);
-
-  static Future<NamedConstructorModel> firstOrFail([String? connection]) =>
-      NamedConstructorModelModelFactory.firstOrFail(connection);
-
-  static Future<NamedConstructorModel> create(
-    Map<String, dynamic> attributes, [
-    String? connection,
-  ]) => NamedConstructorModelModelFactory.create(attributes, connection);
-
-  static Future<List<NamedConstructorModel>> createMany(
-    List<Map<String, dynamic>> records, [
-    String? connection,
-  ]) => NamedConstructorModelModelFactory.createMany(records, connection);
-
-  static Future<void> insert(
-    List<Map<String, dynamic>> records, [
-    String? connection,
-  ]) => NamedConstructorModelModelFactory.insert(records, connection);
-
-  static Future<int> destroy(List<Object> ids, [String? connection]) =>
-      NamedConstructorModelModelFactory.destroy(ids, connection);
-
-  static Future<int> count([String? connection]) =>
-      NamedConstructorModelModelFactory.count(connection);
-
-  static Future<bool> exists([String? connection]) =>
-      NamedConstructorModelModelFactory.exists(connection);
-
-  static Query<NamedConstructorModel> where(
-    String column,
-    dynamic value, [
-    String? connection,
-  ]) => NamedConstructorModelModelFactory.where(column, value, connection);
-
-  static Query<NamedConstructorModel> whereIn(
-    String column,
-    List<dynamic> values, [
-    String? connection,
-  ]) => NamedConstructorModelModelFactory.whereIn(column, values, connection);
-
-  static Query<NamedConstructorModel> orderBy(
-    String column, {
-    String direction = "asc",
-    String? connection,
-  }) => NamedConstructorModelModelFactory.orderBy(
-    column,
-    direction: direction,
-    connection: connection,
-  );
-
-  static Query<NamedConstructorModel> limit(int count, [String? connection]) =>
-      NamedConstructorModelModelFactory.limit(count, connection);
-
-  // Instance method
-  Future<void> delete([String? connection]) async {
-    final connName =
-        connection ??
-        NamedConstructorModelModelFactory.definition.metadata.connection;
-    final conn = ConnectionManager.instance.connection(
-      connName ?? ConnectionManager.instance.defaultConnectionName ?? "default",
-    );
-    final repo = conn.context.repository<NamedConstructorModel>();
-    final primaryKeys = NamedConstructorModelModelFactory.definition.fields
-        .where((f) => f.isPrimaryKey)
-        .toList();
-    if (primaryKeys.isEmpty) {
-      throw StateError("Cannot delete model without primary key");
-    }
-    final keyMap = <String, Object?>{
-      for (final key in primaryKeys)
-        key.columnName: NamedConstructorModelModelFactory.toMap(this)[key.name],
-    };
-    await repo.deleteByKeys([keyMap]);
-  }
 }
 
 class _$NamedConstructorModelModelCodec
@@ -433,10 +255,4 @@ class _$NamedConstructorModelModel extends NamedConstructorModel {
     replaceAttributes(values);
     attachModelDefinition(_$NamedConstructorModelModelDefinition);
   }
-}
-
-extension NamedConstructorModelAttributeSetters on NamedConstructorModel {
-  set id(int? value) => setAttribute('id', value);
-  set name(String value) => setAttribute('name', value);
-  set value(int value) => setAttribute('value', value);
 }

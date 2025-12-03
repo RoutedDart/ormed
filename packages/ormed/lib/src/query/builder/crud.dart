@@ -54,7 +54,7 @@ extension CrudExtension<T> on Query<T> {
 
     return await repo.insertMany(
       models,
-      returning: context.driver.metadata.supportsReturning,
+      returning: true, // Always request returning; drivers will use fallback if needed
     );
   }
 

@@ -399,9 +399,13 @@ class _$DriverOverrideModelModel extends DriverOverrideModel
   @override
   int get id => getAttribute<int>('id') ?? super.id;
 
+  set id(int value) => setAttribute('id', value);
+
   @override
   Map<String, Object?> get payload =>
       getAttribute<Map<String, Object?>>('payload') ?? super.payload;
+
+  set payload(Map<String, Object?> value) => setAttribute('payload', value);
 
   void _attachOrmRuntimeMetadata(Map<String, Object?> values) {
     replaceAttributes(values);

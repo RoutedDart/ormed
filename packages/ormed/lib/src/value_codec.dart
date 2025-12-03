@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'exceptions.dart';
 import 'model_definition.dart';
 
@@ -18,6 +20,51 @@ class IdentityCodec<TDart> extends ValueCodec<TDart> {
 
   @override
   TDart? decode(Object? value) => value as TDart?;
+}
+
+/// Codec for JSON encoding/decoding `Map<String, Object?>` fields.
+/// Encodes to JSON string for storage, decodes from JSON string to Map.
+class JsonCodec extends ValueCodec<Map<String, Object?>> {
+  const JsonCodec();
+
+  @override
+  Object? encode(Map<String, Object?>? value) {
+    if (value == null) return null;
+    return jsonEncode(value);
+  }
+
+  @override
+  Map<String, Object?>? decode(Object? value) {
+    if (value == null) return null;
+    if (value is Map<String, Object?>) return value;
+    if (value is String) {
+      final decoded = jsonDecode(value) as Map<String, dynamic>;
+      return decoded.map((key, dynamic entry) => MapEntry(key, entry));
+    }
+    throw FormatException('Cannot decode $value to Map<String, Object?>');
+  }
+}
+
+/// Codec for JSON array encoding/decoding List fields.
+/// Encodes to JSON string for storage, decodes from JSON string to List.
+class JsonArrayCodec extends ValueCodec<List<Object?>> {
+  const JsonArrayCodec();
+
+  @override
+  Object? encode(List<Object?>? value) {
+    if (value == null) return null;
+    return jsonEncode(value);
+  }
+
+  @override
+  List<Object?>? decode(Object? value) {
+    if (value == null) return null;
+    if (value is List<Object?>) return value;
+    if (value is String) {
+      return jsonDecode(value) as List<Object?>;
+    }
+    throw FormatException('Cannot decode $value to List<Object?>');
+  }
 }
 
 /// Registry that resolves codecs per field/type, with driver-specific overlays.
@@ -159,7 +206,14 @@ String _normalizeDriver(String driver) {
   return normalized.toLowerCase();
 }
 
+/// Default codecs available in all registries.
+/// 
+/// Basic types use IdentityCodec (no conversion).
+/// Cast keys support Laravel-style @OrmField(cast: 'json') syntax:
+/// - 'json' / 'object': Encodes Map to JSON string, decodes JSON string to Map
+/// - 'array': Encodes List to JSON string, decodes JSON string to List
 Map<String, ValueCodec<dynamic>> get _defaultCodecs => const {
+  // Basic types
   'Object': IdentityCodec<Object?>(),
   'Object?': IdentityCodec<Object?>(),
   'String': IdentityCodec<String>(),
@@ -172,4 +226,9 @@ Map<String, ValueCodec<dynamic>> get _defaultCodecs => const {
   'Map<String, dynamic>': IdentityCodec<Map<String, dynamic>>(),
   'List<Object?>': IdentityCodec<List<Object?>>(),
   'List<dynamic>': IdentityCodec<List<dynamic>>(),
+  
+  // Common cast keys (Laravel-style)
+  'json': JsonCodec(),
+  'array': JsonArrayCodec(),
+  'object': JsonCodec(), // Alias for json
 };

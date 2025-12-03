@@ -20,6 +20,7 @@ Future<void> main() async {
     'SqlitePayloadCodec': const SqlitePayloadCodec(),
     'MariaDbPayloadCodec': const MariaDbPayloadCodec(),
     'JsonMapCodec': const JsonMapCodec(),
+    'json': const JsonMapCodec(), // For @OrmField(cast: 'json')
     'bool': const MySqlBoolCodec(),
     'bool?': const MySqlBoolCodec(),
   };
@@ -60,11 +61,9 @@ Future<void> main() async {
 
     // Enable mutation logging
     dataSource.context.onMutation((event) {
-      if (Platform.environment['ORMED_TEST_LOG_MUTATIONS'] == 'true') {
-        print('[MUTATION SQL] ${event.preview.normalized.command}');
-        if (event.preview.normalized.parameters.isNotEmpty) {
-          print('[PARAMS] ${event.preview.normalized.parameters}');
-        }
+      // print('[MUTATION SQL] ${event.preview.normalized.command}');
+      if (event.preview.normalized.parameters.isNotEmpty) {
+        // print('[PARAMS] ${event.preview.normalized.parameters}');
       }
       if (event.error != null) {
         print('[MUTATION ERROR] ${event.error}');
