@@ -1,5 +1,7 @@
 import 'package:ormed/ormed.dart';
 
+import 'mongo_operators.dart';
+
 Map<String, Object?> mutationRowFilter(MutationRow row) =>
     Map<String, Object?>.from(row.keys);
 
@@ -15,13 +17,7 @@ Map<String, Object?> buildSetDocument(
   Map<String, Object?> values,
   List<JsonUpdateClause> jsonUpdates,
 ) {
-  final merged = <String, Object?>{};
-  merged.addAll(values);
-  merged.addAll(_jsonUpdateMap(jsonUpdates));
-  if (merged.isEmpty) {
-    return const {};
-  }
-  return {'\$set': merged};
+  return buildUpdateDocument(values, jsonUpdates, const {});
 }
 
 Map<String, Object?> buildUpdateDocument(
@@ -30,9 +26,45 @@ Map<String, Object?> buildUpdateDocument(
   Map<String, num> increments,
 ) {
   final document = <String, Object?>{};
-  final setDocument = buildSetDocument(values, jsonUpdates);
-  if (setDocument.isNotEmpty) {
-    document.addAll(setDocument);
+  final setValues = <String, Object?>{};
+  final pushValues = <String, Object?>{};
+  final addToSetValues = <String, Object?>{};
+  final pullValues = <String, Object?>{};
+  final unsetValues = <String, Object?>{};
+
+  for (final entry in values.entries) {
+    final value = entry.value;
+    if (value is MongoPush) {
+      if (value.unique) {
+        addToSetValues[entry.key] = value.value;
+      } else {
+        pushValues[entry.key] = value.value;
+      }
+    } else if (value is MongoPull) {
+      pullValues[entry.key] = value.value;
+    } else if (value is MongoUnset) {
+      unsetValues[entry.key] = '';
+    } else {
+      setValues[entry.key] = value;
+    }
+  }
+
+  setValues.addAll(_jsonUpdateMap(jsonUpdates));
+
+  if (setValues.isNotEmpty) {
+    document['\$set'] = setValues;
+  }
+  if (pushValues.isNotEmpty) {
+    document['\$push'] = pushValues;
+  }
+  if (addToSetValues.isNotEmpty) {
+    document['\$addToSet'] = addToSetValues;
+  }
+  if (pullValues.isNotEmpty) {
+    document['\$pull'] = pullValues;
+  }
+  if (unsetValues.isNotEmpty) {
+    document['\$unset'] = unsetValues;
   }
   if (increments.isNotEmpty) {
     document['\$inc'] = Map<String, num>.from(increments);

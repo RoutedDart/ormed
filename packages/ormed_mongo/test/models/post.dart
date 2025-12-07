@@ -1,0 +1,68 @@
+/// Test post model referencing authors.
+
+import 'package:mongo_dart/mongo_dart.dart' show ObjectId;
+import 'package:ormed/ormed.dart';
+
+import 'author.dart';
+import 'tag.dart';
+import 'photo.dart';
+
+part 'post.orm.dart';
+
+@OrmModel(table: 'posts')
+class Post extends Model<Post> with ModelFactoryCapable {
+  const Post({
+    this.id,
+    required this.authorId,
+    required this.title,
+    required this.publishedAt,
+    this.content,
+    this.views,
+  }) : author = null,
+       tags = const [],
+       photos = const [];
+
+  @OrmField(isPrimaryKey: true, columnName: '_id')
+  final ObjectId? id;
+
+  @OrmField(columnName: 'author_id')
+  final int authorId;
+
+  final String title;
+
+  final String? content;
+
+  final int? views;
+
+  @OrmField(columnName: 'published_at')
+  final DateTime publishedAt;
+
+  @OrmField(ignore: true)
+  @OrmRelation(
+    kind: RelationKind.belongsTo,
+    target: Author,
+    foreignKey: 'author_id',
+    localKey: 'id',
+  )
+  final Author? author;
+
+  @OrmField(ignore: true)
+  @OrmRelation(
+    kind: RelationKind.manyToMany,
+    target: Tag,
+    through: 'post_tags',
+    pivotForeignKey: 'post_id',
+    pivotRelatedKey: 'tag_id',
+  )
+  final List<Tag> tags;
+
+  @OrmField(ignore: true)
+  @OrmRelation(
+    kind: RelationKind.morphMany,
+    target: Photo,
+    foreignKey: 'imageable_id',
+    morphType: 'imageable_type',
+    morphClass: 'Post',
+  )
+  final List<Photo> photos;
+}

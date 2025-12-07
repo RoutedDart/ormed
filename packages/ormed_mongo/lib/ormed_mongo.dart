@@ -8,3 +8,6 @@ export 'src/mongo_connection.dart';
 export 'src/mongo_repository.dart';
 export 'src/mongo_schema_inspector.dart';
 export 'src/mongo_query_pipeline_stage.dart';
+export 'src/mongo_blueprint_extensions.dart';
+export 'src/mongo_query_builder_extensions.dart';
+export 'src/mongo_operators.dart';

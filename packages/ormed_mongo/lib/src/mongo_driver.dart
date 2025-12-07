@@ -57,15 +57,22 @@ class MongoDriverAdapter implements DriverAdapter, SchemaDriver {
 
   static ValueCodecRegistry _initializeCodecs(ValueCodecRegistry? registry) {
     final codecs = registry ?? ValueCodecRegistry.standard();
-    // Register codec for ObjectId type to handle ObjectId <-> int conversion
-    // when explicitly working with ObjectId values (e.g., for _id field).
-    // Don't register for 'int' globally as that would convert ALL integers.
+    // Register codec for ObjectId <-> int conversion for MongoDB driver.
+    // This handles MongoDB's _id field which is ObjectId but models expect int.
+    // Get a driver-scoped view to register the codec
     final mongoCodecs = codecs.forDriver('mongo');
     mongoCodecs.registerCodec(
       key: 'ObjectId',
       codec: MongoObjectIdToIntCodec(),
     );
-    return mongoCodecs;
+    // Also register for 'int' type so it's used for int fields when decoding
+    mongoCodecs.registerCodec(
+      key: 'int',
+      codec: MongoObjectIdToIntCodec(),
+    );
+    // Return the base registry (not the driver-scoped one)
+    // QueryContext will call .forDriver() again
+    return codecs;
   }
 
   final DatabaseConfig _config;
@@ -98,10 +105,12 @@ class MongoDriverAdapter implements DriverAdapter, SchemaDriver {
     if (_closed) return;
     if (_primaryHandle != null) {
       await _primaryHandle!.close();
-      _primaryHandle = null;
     }
     _closed = true;
   }
+
+  /// Exposes the underlying MongoDB client for testing purposes.
+  Db? get testDb => _primaryHandle?.client;
 
   Future<Db> _database() async {
     if (_closed) {
@@ -128,10 +137,15 @@ class MongoDriverAdapter implements DriverAdapter, SchemaDriver {
 
   Map<String, Object>? _projectionForPlan(QueryPlan plan) {
     if (plan.selects.isEmpty) {
-      return null;
+      return null; // No projection, return all fields
     }
+
     final projection = <String, Object>{};
+    // Always include _id for MongoDB
+    projection['_id'] = 1;
+    
     for (final fieldName in plan.selects) {
+      // Don't map 'id' to '_id' - they're separate fields
       final field = plan.definition.fieldByName(fieldName);
       if (field != null) {
         projection[field.columnName] = 1;
@@ -139,12 +153,6 @@ class MongoDriverAdapter implements DriverAdapter, SchemaDriver {
         projection[fieldName] = 1;
       }
     }
-
-    // Always include _id so we can map it to id
-    projection['_id'] = 1;
-
-    // Don't auto-include non-nullable fields when explicit selects are specified
-    // The user has explicitly chosen which fields they want
 
     return projection;
   }
@@ -254,15 +262,31 @@ class MongoDriverAdapter implements DriverAdapter, SchemaDriver {
         ? plan.offset
         : null;
 
-    // Use modernFind if available, or standard find
-    // Assuming modernFind is an extension or method on the collection object in this context
-    final cursor = collection.modernFind(
-      filter: filter.isNotEmpty ? filter : null,
-      sort: sortArguments,
-      projection: projection,
-      limit: plan.limit,
-      skip: skipValue,
-    );
+    // Use SelectorBuilder for advanced query options
+    final selector = SelectorBuilder();
+    if (filter.isNotEmpty) {
+      selector.raw(filter);
+    }
+    if (plan.limit != null) {
+      selector.limit(plan.limit!);
+    }
+    if (skipValue != null) {
+      selector.skip(skipValue);
+    }
+    if (sortArguments != null) {
+      for (final entry in sortArguments.entries) {
+        if (entry.value == 1) {
+          selector.sortBy(entry.key);
+        } else {
+          selector.sortBy(entry.key, descending: true);
+        }
+      }
+    }
+    if (projection != null) {
+      selector.fields(projection.keys.toList());
+    }
+
+    final cursor = collection.find(selector);
 
     final rows = await cursor.toList();
     if (plan.randomOrder && rows.length > 1) {
@@ -298,25 +322,30 @@ class MongoDriverAdapter implements DriverAdapter, SchemaDriver {
   }
 
   /// Helper to map MongoDB's _id to the model's id field.
-  /// Also handles type conversion (ObjectId -> int/String).
+  /// Laravel strategy: Keep both _id and id as separate fields.
+  /// If the model expects 'id' but only '_id' exists, copy it over.
+  /// For ObjectIds, leave them as-is and let the codec handle conversion during decoding.
   List<Map<String, Object?>> _mapMongoIdToModelId(
     List<Map<String, Object?>> rows,
   ) {
-    final codec = MongoObjectIdToIntCodec();
     return rows.map((row) {
-      // If _id exists but id doesn't, map it
+      // If row has _id but not id, copy _id to id field
+      // The codec registered for the 'id' field will handle type conversion
       if (row.containsKey('_id') && !row.containsKey('id')) {
-        final mapped = Map<String, Object?>.from(row);
-        var idValue = row['_id'];
-
-        // Use the codec to decode the value
-        // This handles ObjectId -> int conversion
-        mapped['id'] = codec.decode(idValue);
-
-        return mapped;
+        row['id'] = row['_id'];
       }
       return row;
     }).toList();
+  }
+
+  /// Convert ObjectId to appropriate model ID type
+  Object? _convertObjectIdToModelId(Object? value) {
+    if (value is ObjectId) {
+      // Convert ObjectId to string (like Laravel does)
+      // Models can use int autoincrement IDs separately
+      return value.oid;
+    }
+    return value;
   }
 
   Future<List<Map<String, Object?>>> _executeUnionPlan(QueryPlan plan) async {
@@ -540,6 +569,28 @@ class MongoDriverAdapter implements DriverAdapter, SchemaDriver {
             )
             .toList();
         await collection.insertAll(docs);
+
+        // If returning is requested, fetch the inserted records
+        if (plan.returning) {
+          final ids = docs
+              .map((doc) => doc['_id'])
+              .whereType<Object>()
+              .toList();
+          if (ids.isNotEmpty) {
+            final inserted = await collection
+                .find(where.oneFrom('_id', ids))
+                .toList();
+            final mapped = inserted
+                .map((row) => Map<String, Object?>.from(row))
+                .toList();
+            final withId = _mapMongoIdToModelId(mapped);
+            return MutationResult(
+              affectedRows: docs.length,
+              returnedRows: withId,
+            );
+          }
+        }
+
         return MutationResult(affectedRows: docs.length);
       case MutationOperation.update:
         return await _applyUpdates(collection, plan.rows);
@@ -572,7 +623,19 @@ class MongoDriverAdapter implements DriverAdapter, SchemaDriver {
       return const MutationResult(affectedRows: 0);
     }
     final result = await collection.updateMany(filter, updateDoc);
-    return MutationResult(affectedRows: _affectedRowsFromResult(result));
+    final affectedRows = _affectedRowsFromResult(result);
+
+    // If returning is requested, fetch the updated records
+    if (plan.returning && affectedRows > 0) {
+      final updated = await collection.find(filter).toList();
+      final mapped = updated
+          .map((row) => Map<String, Object?>.from(row))
+          .toList();
+      final withId = _mapMongoIdToModelId(mapped);
+      return MutationResult(affectedRows: affectedRows, returnedRows: withId);
+    }
+
+    return MutationResult(affectedRows: affectedRows);
   }
 
   Future<MutationResult> _applyQueryDelete(
@@ -674,17 +737,10 @@ class MongoDriverAdapter implements DriverAdapter, SchemaDriver {
     if (filter.isEmpty) {
       return filter;
     }
-    final normalized = <String, Object?>{};
-    final codec = MongoObjectIdToIntCodec();
-    filter.forEach((key, value) {
-      var targetKey = key == 'id' ? '_id' : key;
-      var targetValue = value;
-      if (targetKey == '_id' && value is int) {
-        targetValue = codec.encode(value);
-      }
-      normalized[targetKey] = targetValue;
-    });
-    return normalized;
+    // Don't transform id -> _id. Keep them as separate fields.
+    // MongoDB uses _id as internal identifier (ObjectId),
+    // but models can have their own 'id' field with any type.
+    return Map<String, Object?>.from(filter);
   }
 
   Map<String, Object?> _updateValues(MutationRow row) {
@@ -749,6 +805,14 @@ class MongoDriverAdapter implements DriverAdapter, SchemaDriver {
       case 'createCollection':
         if (collectionName == null) return;
         final command = <String, Object>{'create': collectionName};
+
+        // Add validator
+        final validator = args['validator'] as Map<String, Object?>?;
+        if (validator != null) {
+          command['validator'] = validator;
+        }
+
+        // Add validation options directly to command (validationLevel, validationAction)
         final options = args['options'] as Map<String, Object?>?;
         if (options != null) {
           for (final entry in options.entries) {
@@ -758,10 +822,7 @@ class MongoDriverAdapter implements DriverAdapter, SchemaDriver {
             }
           }
         }
-        final validator = args['validator'] as Map<String, Object?>?;
-        if (validator != null) {
-          command['validator'] = validator;
-        }
+
         await db.runCommand(command);
         break;
       case 'dropCollection':
@@ -797,14 +858,45 @@ class MongoDriverAdapter implements DriverAdapter, SchemaDriver {
         if (name == null) return;
         await db.runCommand({'dropIndexes': collectionName, 'index': name});
         break;
+      case 'createSearchIndex':
+        if (collectionName == null) return;
+        final name = args['name'] as String?;
+        final definition = args['definition'] as Map<String, Object?>?;
+        final type = args['type'] as String?;
+        if (definition == null) return;
+
+        final command = <String, Object>{
+          'createSearchIndexes': collectionName,
+          'indexes': [
+            {
+              'name': name ?? 'default',
+              'definition': definition,
+              if (type == 'vectorSearch') 'type': 'vectorSearch',
+            },
+          ],
+        };
+        await db.runCommand(command);
+        break;
+      case 'dropSearchIndex':
+        if (collectionName == null) return;
+        final name = args['name'] as String?;
+        if (name == null) return;
+        await db.runCommand({'dropSearchIndex': collectionName, 'name': name});
+        break;
       case 'modifyValidator':
         if (collectionName == null) return;
         final validator = args['validator'] as Map<String, Object?>?;
-        if (validator == null) return;
-        await db.runCommand({
-          'collMod': collectionName,
-          'validator': validator,
-        });
+        final options = args['options'] as Map<String, Object?>?;
+        if (validator == null && options == null) return;
+
+        final command = <String, Object?>{'collMod': collectionName};
+        if (validator != null) {
+          command['validator'] = validator;
+        }
+        if (options != null) {
+          command.addAll(options);
+        }
+        await db.runCommand(command as Map<String, Object>);
         break;
       default:
         break;

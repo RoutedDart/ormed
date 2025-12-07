@@ -1,7 +1,7 @@
+import 'package:mongo_dart/mongo_dart.dart';
 import 'package:ormed/ormed.dart';
 import 'package:ormed_sqlite/ormed_sqlite.dart';
 
-import 'mongo_codecs.dart';
 import 'mongo_query_plan_metadata.dart';
 import 'mongo_update_utils.dart';
 import 'mongo_transaction_context.dart';
@@ -219,8 +219,9 @@ class MongoPlanCompiler implements PlanCompiler {
       final projection = <String, Object?>{};
       projection['_id'] = 1; // Always include MongoDB's _id
       for (final select in plan.selects) {
-        final fieldName = select == 'id' ? '_id' : select;
-        projection[fieldName] = 1;
+        // Don't map 'id' to '_id' - they're separate fields
+        // Just include the actual field name requested
+        projection[select] = 1;
       }
       args['projection'] = projection;
     }
@@ -228,53 +229,31 @@ class MongoPlanCompiler implements PlanCompiler {
   }
 
   static Map<String, Object?> buildFilter(List<FilterClause> filters) {
-    final codec = MongoObjectIdToIntCodec();
     final selector = <String, Object?>{};
     for (final clause in filters) {
       var field = clause.field;
-      final isIdField = field == 'id' || field == '_id';
-
-      if (field == 'id') {
-        field = '_id';
-      }
+      
+      // Don't convert 'id' to '_id' anymore - query the actual field
+      // MongoDB will use _id internally, but user models may have 'id' as a separate field
 
       switch (clause.operator) {
         case FilterOperator.equals:
-          final value = isIdField && clause.value is int
-              ? codec.encode(clause.value as int)
-              : clause.value;
-          selector[field] = value;
+          selector[field] = clause.value;
           break;
         case FilterOperator.inValues:
-          var value = clause.value;
-          if (isIdField && value is List) {
-            value = value.map((e) => e is int ? codec.encode(e) : e).toList();
-          }
-          selector[field] = {'\$in': value};
+          selector[field] = {'\$in': clause.value};
           break;
         case FilterOperator.greaterThan:
-          final value = isIdField && clause.value is int
-              ? codec.encode(clause.value as int)
-              : clause.value;
-          selector[field] = {'\$gt': value};
+          selector[field] = {'\$gt': clause.value};
           break;
         case FilterOperator.greaterThanOrEqual:
-          final value = isIdField && clause.value is int
-              ? codec.encode(clause.value as int)
-              : clause.value;
-          selector[field] = {'\$gte': value};
+          selector[field] = {'\$gte': clause.value};
           break;
         case FilterOperator.lessThan:
-          final value = isIdField && clause.value is int
-              ? codec.encode(clause.value as int)
-              : clause.value;
-          selector[field] = {'\$lt': value};
+          selector[field] = {'\$lt': clause.value};
           break;
         case FilterOperator.lessThanOrEqual:
-          final value = isIdField && clause.value is int
-              ? codec.encode(clause.value as int)
-              : clause.value;
-          selector[field] = {'\$lte': value};
+          selector[field] = {'\$lte': clause.value};
           break;
         case FilterOperator.contains:
           selector[field] = {'\$regex': clause.value};
@@ -301,72 +280,55 @@ class MongoPlanCompiler implements PlanCompiler {
   }
 
   static Map<String, Object?> _buildFieldPredicate(FieldPredicate predicate) {
-    final codec = MongoObjectIdToIntCodec();
-    var field = predicate.field;
-    final isIdField = field == 'id' || field == '_id';
-
-    if (field == 'id') {
-      field = '_id';
-    }
+    // Laravel strategy: Convert 'id' field to '_id' for MongoDB queries
+    final field = predicate.field == 'id' ? '_id' : predicate.field;
     final selector = <String, Object?>{};
+
+    // Convert string IDs to ObjectId if they look like ObjectId hex strings
+    Object? convertValue(Object? value) {
+      if (field == '_id' && value is String && value.length == 24) {
+        try {
+          return ObjectId.fromHexString(value);
+        } catch (_) {
+          return value;
+        }
+      }
+      return value;
+    }
 
     switch (predicate.operator) {
       case PredicateOperator.equals:
-        final value = isIdField && predicate.value is int
-            ? codec.encode(predicate.value as int)
-            : predicate.value;
-        selector[field] = value;
+        selector[field] = convertValue(predicate.value);
         break;
       case PredicateOperator.notEquals:
-        final value = isIdField && predicate.value is int
-            ? codec.encode(predicate.value as int)
-            : predicate.value;
-        selector[field] = {'\$ne': value};
+        selector[field] = {'\$ne': convertValue(predicate.value)};
         break;
       case PredicateOperator.inValues:
       case PredicateOperator.notInValues:
-        var values = predicate.values ?? [];
-        if (isIdField) {
-          values = values.map((e) => e is int ? codec.encode(e) : e).toList();
-        }
+        final values = (predicate.values ?? []).map(convertValue).toList();
         selector[field] = {
           predicate.operator == PredicateOperator.inValues ? '\$in' : '\$nin':
               values,
         };
         break;
       case PredicateOperator.greaterThan:
-        final value = isIdField && predicate.value is int
-            ? codec.encode(predicate.value as int)
-            : predicate.value;
-        selector[field] = {'\$gt': value};
+        selector[field] = {'\$gt': convertValue(predicate.value)};
         break;
       case PredicateOperator.greaterThanOrEqual:
-        final value = isIdField && predicate.value is int
-            ? codec.encode(predicate.value as int)
-            : predicate.value;
-        selector[field] = {'\$gte': value};
+        selector[field] = {'\$gte': convertValue(predicate.value)};
         break;
       case PredicateOperator.lessThan:
-        final value = isIdField && predicate.value is int
-            ? codec.encode(predicate.value as int)
-            : predicate.value;
-        selector[field] = {'\$lt': value};
+        selector[field] = {'\$lt': convertValue(predicate.value)};
         break;
       case PredicateOperator.lessThanOrEqual:
-        final value = isIdField && predicate.value is int
-            ? codec.encode(predicate.value as int)
-            : predicate.value;
-        selector[field] = {'\$lte': value};
+        selector[field] = {'\$lte': convertValue(predicate.value)};
         break;
       case PredicateOperator.between:
       case PredicateOperator.notBetween:
-        var lower = predicate.lower;
-        var upper = predicate.upper;
-        if (isIdField) {
-          if (lower is int) lower = codec.encode(lower);
-          if (upper is int) upper = codec.encode(upper);
-        }
-        final range = {'\$gte': lower, '\$lte': upper};
+        final range = {
+          '\$gte': convertValue(predicate.lower),
+          '\$lte': convertValue(predicate.upper)
+        };
         if (predicate.operator == PredicateOperator.between) {
           selector[field] = range;
         } else {
@@ -377,7 +339,7 @@ class MongoPlanCompiler implements PlanCompiler {
       case PredicateOperator.iLike:
         // MongoDB regex for LIKE
         // This is a simplification, real implementation needs to escape and convert %/_
-        selector[field] = {'\$regex': predicate.value};
+        selector[field] = {'\$regex': convertValue(predicate.value)};
         break;
       case PredicateOperator.isNotNull:
         selector[field] = {'\$ne': null};
@@ -404,11 +366,8 @@ class MongoPlanCompiler implements PlanCompiler {
   static Map<String, Object?> buildSort(List<OrderClause> orders) {
     final map = <String, int>{};
     for (final order in orders) {
-      var field = order.field;
-      if (field == 'id') {
-        field = '_id';
-      }
-      map[field] = order.descending ? -1 : 1;
+      // Don't convert id->_id, use the actual field name
+      map[order.field] = order.descending ? -1 : 1;
     }
     return map;
   }
@@ -462,16 +421,32 @@ class MongoPlanCompiler implements PlanCompiler {
   ]) {
     final map = Map<String, Object?>.from(row.values);
 
-    if (definition != null) {
-      final pk = definition.primaryKeyField;
-      if (pk != null && map.containsKey(pk.name)) {
-        final value = map.remove(pk.name);
-        if (value is int) {
-          map['_id'] = MongoObjectIdToIntCodec().encode(value);
+    // Keep 'id' field as-is and also ensure _id is set for MongoDB
+    // Do NOT remove 'id' - models need it!
+    if (map.containsKey('id')) {
+      final idValue = map['id'];
+      
+      // Only set _id if not already set
+      if (!map.containsKey('_id') && idValue != null) {
+        // Convert string hex to ObjectId if it looks like one
+        if (idValue is String && idValue.length == 24) {
+          try {
+            map['_id'] = ObjectId.fromHexString(idValue);
+          } catch (_) {
+            // Not a valid ObjectId hex, generate a new ObjectId
+            map['_id'] = ObjectId();
+          }
+        } else if (idValue is int) {
+          // For int IDs, generate a new ObjectId for _id
+          // Keep the int id separate
+          map['_id'] = ObjectId();
         } else {
-          map['_id'] = value;
+          map['_id'] = idValue;
         }
       }
+    } else if (!map.containsKey('_id')) {
+      // No id field at all, let MongoDB generate _id
+      map['_id'] = ObjectId();
     }
 
     return map;
@@ -743,7 +718,7 @@ class MongoAggregatePipelineBuilder {
 
     // Auto-include required fields for hydration using $first
     for (final field in plan.definition.fields) {
-      if (field.isPrimaryKey) continue;
+      // Don't skip primary key - we need it preserved
       if (!field.isNullable &&
           !plan.groupBy.contains(field.name) &&
           !targets.any((t) => t.alias == field.name)) {
@@ -767,8 +742,8 @@ class MongoAggregatePipelineBuilder {
     if (plan.selects.isNotEmpty && plan.groupBy.isEmpty) {
       projection['_id'] = 1; // Always include MongoDB's _id
       for (final select in plan.selects) {
-        final fieldName = select == 'id' ? '_id' : select;
-        projection[fieldName] = 1;
+        // Don't map 'id' to '_id' - they're separate fields
+        projection[select] = 1;
       }
       // Also include any aggregate targets
       for (final target in targets) {
@@ -795,7 +770,7 @@ class MongoAggregatePipelineBuilder {
 
       // Include required fields that were preserved via $first
       for (final field in plan.definition.fields) {
-        if (field.isPrimaryKey) continue;
+        // Don't skip primary key - we need it for model hydration
         if (!field.isNullable &&
             !plan.groupBy.contains(field.name) &&
             !targets.any((t) => t.alias == field.name)) {
@@ -809,7 +784,7 @@ class MongoAggregatePipelineBuilder {
       // If no explicit selects, include all fields
       if (plan.selects.isEmpty) {
         for (final field in plan.definition.fields) {
-          if (field.isPrimaryKey) continue;
+          // Don't skip primary key - we need it for model hydration
           projection[field.columnName] = 1;
         }
       }

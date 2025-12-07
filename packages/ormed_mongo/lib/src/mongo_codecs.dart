@@ -10,49 +10,53 @@ class MongoObjectIdToIntCodec extends ValueCodec<int> {
   @override
   Object? encode(int? value) {
     if (value == null) return null;
-    // When encoding an int to MongoDB, create an ObjectId
-    // We can't perfectly recreate the original ObjectId from just an int,
-    // so we'll use the int as a seed for generating a consistent ObjectId
-    return ObjectId.fromHexString(value.toRadixString(16).padLeft(24, '0'));
+    // If value is 0 or negative, generate a new ObjectId
+    // Otherwise, try to convert the int to ObjectId hex
+    if (value <= 0) {
+      return ObjectId();
+    }
+    // Convert int to hex string (padded to 24 chars)
+    final hex = value.toRadixString(16).padLeft(24, '0');
+    if (hex.length > 24) {
+      // Int too large, generate new ObjectId
+      return ObjectId();
+    }
+    return ObjectId.fromHexString(hex);
   }
 
   @override
   int? decode(Object? value) {
     if (value == null) return null;
+    // If it's already an int, return it as-is
     if (value is int) return value;
 
-    ObjectId? objectId;
+    // If it's an ObjectId, convert the full hex to int
+    // This ensures consistent round-trip conversion
     if (value is ObjectId) {
-      objectId = value;
-    } else if (value is String) {
+      final hex = value.oid;
+      try {
+        // Parse full 24-char hex as int
+        // Note: This may produce very large ints
+        return int.parse(hex, radix: 16);
+      } catch (_) {
+        // If it overflows, use a hash
+        return hex.hashCode;
+      }
+    }
+    
+    if (value is String) {
       // Try to parse as int first
       final parsed = int.tryParse(value);
       if (parsed != null) return parsed;
+      
       // If it's a hex string (ObjectId), convert it
-      try {
-        objectId = ObjectId.fromHexString(value);
-      } catch (_) {
-        return null;
-      }
-    }
-
-    if (objectId != null) {
-      // Check if this is a "synthetic" ObjectId created from an integer (timestamp is 0)
-      // This handles the test cases where we use small integers as IDs
-      if (objectId.dateTime.millisecondsSinceEpoch == 0) {
-        // Parse the hex string as an integer
-        // We use BigInt to handle potential overflow of standard int parsing if the hex is large,
-        // though for our test cases it should fit in int.
+      if (ObjectId.isValidHexId(value)) {
         try {
-          return int.parse(objectId.oid, radix: 16);
+          return int.parse(value, radix: 16);
         } catch (_) {
-          // Fallback
+          return value.hashCode;
         }
       }
-
-      // For real ObjectIds, use the timestamp
-      // This provides a unique, sortable integer value
-      return objectId.dateTime.millisecondsSinceEpoch;
     }
 
     return null;

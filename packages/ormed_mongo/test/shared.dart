@@ -12,7 +12,7 @@ final _databaseName = Platform.environment['MONGO_DATABASE'] ?? 'orm_test';
 final _databaseUri = _buildDatabaseUri(_mongoUrl, _databaseName);
 final _databaseConfig = DatabaseConfig(
   driver: 'mongo',
-  options: {'url': _mongoUrl, 'database': _databaseName},
+  options: {'url': _mongoUrl, 'database': _databaseName, 'logging': true},
 );
 
 final productDefinition = AdHocModelDefinition(
@@ -55,55 +55,40 @@ Future<void> waitForMongoReady() async {
 MongoDriverAdapter createAdapter() =>
     MongoDriverAdapter.custom(config: _databaseConfig);
 
+Future<DataSource> createDataSource({bool resetDatabase = true}) async {
+  if (resetDatabase) {
+    await clearDatabase();
+  }
+
+  final adapter = createAdapter();
+
+  final dataSource = DataSource(
+    DataSourceOptions(
+      driver: adapter,
+      entities: [], // Add entities if needed for specific tests
+      logging: true,
+    ),
+  );
+
+  await dataSource.init();
+  // Force connection to open so testDb is available
+  try {
+    // Execute a dummy command to ensure connection is established
+    await (dataSource.connection.driver as MongoDriverAdapter).runMongoCommand(
+      'system.indexes',
+      (col) async => null,
+    );
+  } catch (_) {
+    // Ignore errors, we just want to trigger connection opening
+  }
+  return dataSource;
+}
+
 QueryContext createContext(MongoDriverAdapter adapter) => QueryContext(
   registry: ModelRegistry(),
   driver: adapter,
   codecRegistry: adapter.codecs,
 );
-
-class MongoTestContext {
-  MongoTestContext({
-    required this.adapter,
-    required this.registry,
-    required this.context,
-  });
-
-  final MongoDriverAdapter adapter;
-  final ModelRegistry registry;
-  final QueryContext context;
-
-  Future<void> dispose() => adapter.close();
-}
-
-Future<MongoTestContext> createTestContext({bool resetDatabase = true}) async {
-  if (resetDatabase) {
-    await clearDatabase();
-  }
-  final adapter = createAdapter();
-  final registry = ModelRegistry();
-  final context = QueryContext(
-    registry: registry,
-    driver: adapter,
-    codecRegistry: adapter.codecs,
-  );
-  return MongoTestContext(
-    adapter: adapter,
-    registry: registry,
-    context: context,
-  );
-}
-
-Future<T> runWithTestContext<T>(
-  FutureOr<T> Function(MongoTestContext ctx) action, {
-  bool resetDatabase = true,
-}) async {
-  final ctx = await createTestContext(resetDatabase: resetDatabase);
-  try {
-    return await action(ctx);
-  } finally {
-    await ctx.dispose();
-  }
-}
 
 Future<Db> openVerifier() async {
   final db = Db(_databaseUri);

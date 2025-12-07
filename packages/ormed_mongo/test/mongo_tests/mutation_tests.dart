@@ -1,0 +1,818 @@
+import 'dart:convert';
+
+import 'package:mongo_dart/mongo_dart.dart';
+import 'package:ormed/ormed.dart';
+import 'package:test/test.dart';
+
+import '../models/models.dart';
+import 'seed_data.dart';
+
+void runDriverMutationTests({required DataSource dataSource}) {
+  final metadata = dataSource.connection.driver.metadata;
+  // Skip entire group for drivers that don't support raw SQL,
+  // as these tests use executeRaw, queryRaw, and SQL-specific features
+  if (!metadata.supportsCapability(DriverCapability.rawSQL)) {
+    return;
+  }
+
+  group('${metadata.name} mutations', () {
+    String wrap(String value) =>
+        '${metadata.identifierQuote}$value${metadata.identifierQuote}';
+    late TestDatabaseManager manager;
+
+    void expectPreviewMetadata(StatementPreview preview) {
+      final normalized = preview.normalized;
+      expect(normalized.command, isNotEmpty);
+      expect(normalized.type, isIn(['sql', 'document']));
+      expect(normalized.arguments, isNotNull);
+      expect(normalized.parameters, isNotNull);
+    }
+
+    setUpAll(() async {
+      await dataSource.init();
+      manager = TestDatabaseManager(
+        baseDataSource: dataSource,
+        migrationDescriptors: driverTestMigrationEntries
+            .map(
+              (e) => MigrationDescriptor.fromMigration(
+                id: e.id,
+                migration: e.migration,
+              ),
+            )
+            .toList(),
+        strategy: DatabaseIsolationStrategy.truncate,
+      );
+      await manager.initialize();
+    });
+
+    setUp(() async {
+      await manager.beginTest('mutation_tests', dataSource);
+    });
+
+    tearDown(() async => manager.endTest('mutation_tests', dataSource));
+
+    tearDownAll(() async {
+      // Schema cleanup is handled by outer test file
+    });
+
+    test('insert + update + delete round trip', () async {
+      final repo = dataSource.context.repository<User>();
+      await repo.insert(
+        User(id: ObjectId(), email: 'seed@example.com', active: true),
+      );
+
+      await repo.updateMany([
+        User(id: ObjectId(), email: 'updated@example.com', active: false),
+      ]);
+
+      var users = await dataSource.context.query<User>().get();
+      expect(users.single.email, 'updated@example.com');
+      expect(users.single.active, isFalse);
+
+      final deleted = await repo.deleteByKeys([
+        {'id': ObjectId()},
+      ]);
+      expect(deleted, 1);
+
+      users = await dataSource.context.query<User>().get();
+      expect(users, isEmpty);
+    });
+
+    test('upsert inserts then updates', () async {
+      final repo = dataSource.context.repository<User>();
+      await repo.upsertMany([
+        User(id: ObjectId(), email: 'upsert@example.com', active: true),
+      ]);
+
+      var users = await dataSource.context
+          .query<User>()
+          .whereEquals('id', ObjectId())
+          .get();
+      expect(users.single.email, 'upsert@example.com');
+
+      await repo.upsertMany([
+        User(id: ObjectId(), email: 'updated@upsert.com', active: true),
+      ]);
+
+      users = await dataSource.context
+          .query<User>()
+          .whereEquals('id', ObjectId())
+          .get();
+      expect(users.single.email, 'updated@upsert.com');
+    });
+
+    test('upsert honors custom unique and update columns', () async {
+      final repo = dataSource.context.repository<User>();
+      await repo.insert(
+        User(id: ObjectId(), email: 'unique@example.com', active: false),
+      );
+
+      await repo.upsertMany(
+        [User(id: ObjectId(), email: 'unique@example.com', active: true)],
+        uniqueBy: ['email'],
+        updateColumns: ['active'],
+      );
+
+      final refreshed = await dataSource.context
+          .query<User>()
+          .whereEquals('email', 'unique@example.com')
+          .firstOrFail();
+      expect(refreshed.id, ObjectId());
+      expect(refreshed.active, isTrue);
+    });
+
+    test('insertOrIgnore skips duplicate rows', () async {
+      final repo = dataSource.context.repository<User>();
+      await repo.insert(
+        User(id: ObjectId(), email: 'unique-insert@example.com', active: true),
+      );
+
+      final inserted = await repo.insertOrIgnoreMany([
+        User(id: ObjectId(), email: 'second@example.com', active: true),
+        User(id: ObjectId(), email: 'duplicate@example.com', active: false),
+      ]);
+      expect(inserted, 1);
+
+      final rows = await dataSource.context.query<User>().get();
+      expect(rows.length, 2);
+      expect(rows.where((user) => user.id == ObjectId()).single.active, isTrue);
+    });
+
+    if (metadata.supportsCapability(DriverCapability.insertUsing)) {
+      test('insertUsing copies rows from select queries', () async {
+        final repo = dataSource.context.repository<User>();
+        await repo.insertMany([
+          User(
+            id: ObjectId(),
+            email: 'copy-source-a@example.com',
+            active: true,
+          ),
+          User(
+            id: ObjectId(),
+            email: 'copy-source-b@example.com',
+            active: false,
+          ),
+        ]);
+
+        final offset = 400;
+        var source = dataSource.context
+            .query<User>()
+            .select([])
+            .selectRaw('${wrap('users')}.${wrap('id')} + $offset', alias: 'id');
+
+        final emailExpr = metadata.name == 'mysql' || metadata.name == 'mariadb'
+            ? "CONCAT(${wrap('users')}.${wrap('email')}, '-copy')"
+            : "${wrap('users')}.${wrap('email')} || '-copy'";
+
+        source = source
+            .selectRaw(emailExpr, alias: 'email')
+            .selectRaw('${wrap('users')}.${wrap('active')}', alias: 'active')
+            .whereIn('id', [ObjectId(), ObjectId()]);
+
+        final inserted = await dataSource.context.query<User>().insertUsing([
+          'id',
+          'email',
+          'active',
+        ], source);
+        expect(inserted, 2);
+
+        final copies = await dataSource.context
+            .query<User>()
+            .whereIn('id', const [2450, 2451])
+            .orderBy('id')
+            .get();
+
+        expect(copies.length, 2);
+        expect(copies.first.email, 'copy-source-a@example.com-copy');
+        expect(copies.first.active, isTrue);
+        expect(copies.last.email, 'copy-source-b@example.com-copy');
+        expect(copies.last.active, isFalse);
+      });
+
+      test(
+        'insertOrIgnoreUsing suppresses duplicates from select queries',
+        () async {
+          final repo = dataSource.context.repository<User>();
+          await repo.insertMany([
+            User(
+              id: ObjectId(),
+              email: 'ignore-select@example.com',
+              active: true,
+            ),
+          ]);
+
+          final source = dataSource.context
+              .query<User>()
+              .select([])
+              .selectRaw('${wrap('users')}.${wrap('id')}', alias: 'id')
+              .selectRaw('${wrap('users')}.${wrap('email')}', alias: 'email')
+              .selectRaw('${wrap('users')}.${wrap('active')}', alias: 'active')
+              .whereEquals('id', ObjectId());
+
+          final inserted = await dataSource.context
+              .query<User>()
+              .insertOrIgnoreUsing(['id', 'email', 'active'], source);
+          expect(inserted, 0);
+
+          final rows = await dataSource.context
+              .query<User>()
+              .whereEquals('id', 3100)
+              .get();
+          expect(rows.length, 1);
+          expect(rows.single.email, 'ignore-select@example.com');
+        },
+      );
+    }
+
+    test('jsonPatch merges payload columns without clobbering state', () async {
+      final repo = dataSource.context.repository<DriverOverrideEntry>();
+      await repo.insert(
+        DriverOverrideEntry(
+          id: ObjectId(),
+          payload: {
+            'status': 'pending',
+            'meta': {'visits': 1},
+          },
+        ),
+      );
+
+      await repo.updateMany(
+        [
+          DriverOverrideEntry(
+            id: ObjectId(),
+            payload: {
+              'status': 'pending',
+              'meta': {'visits': 1},
+            },
+          ),
+        ],
+        jsonUpdates: (_) => [
+          JsonUpdateDefinition.patch('payload', {
+            'meta': {'visits': 2},
+            'tags': ['beta'],
+          }),
+        ],
+      );
+
+      final refreshed = await dataSource.context
+          .query<DriverOverrideEntry>()
+          .whereEquals('id', ObjectId())
+          .firstOrFail();
+      expect(refreshed.payload['status'], 'pending');
+      final meta = refreshed.payload['meta'] as Map<String, Object?>;
+      expect(meta['visits'], 2);
+      expect(refreshed.payload['tags'], ['beta']);
+    });
+
+    test('forceDelete honors ordering and limit clauses', () async {
+      await dataSource.repo<User>().insertMany(buildDefaultUsers());
+
+      final removed = await dataSource.context
+          .query<User>()
+          .orderBy('id')
+          .limit(1)
+          .forceDelete();
+
+      expect(removed, 1);
+      final remaining = await dataSource.context
+          .query<User>()
+          .orderBy('id')
+          .get();
+      expect(remaining.map((user) => user.id), equals([2, 3]));
+    });
+
+    test(
+      'auto increment primary keys use driver defaults when omitted',
+      () async {
+        if (!metadata.supportsCapability(DriverCapability.rawSQL)) {
+          return;
+        }
+        final plan = MutationPlan.insert(
+          definition: _serialTestDefinition,
+          rows: const [
+            {'label': 'first'},
+            {'label': 'second'},
+          ],
+          driverName: dataSource.connection.driver.metadata.name,
+          returning: metadata.supportsCapability(DriverCapability.returning),
+        );
+
+        final result = await dataSource.connection.driver.runMutation(plan);
+        expect(result.affectedRows, 2);
+
+        final inserted = await dataSource.connection.driver.queryRaw(
+          'SELECT id, label FROM serial_tests ORDER BY id',
+        );
+        expect(inserted.length, 2);
+        final firstId = (inserted.first['id'] as num).toInt();
+        final secondId = (inserted.last['id'] as num).toInt();
+        expect(inserted.first['label'], 'first');
+        expect(inserted.last['label'], 'second');
+        expect(firstId, greaterThan(0));
+        expect(secondId, greaterThan(firstId));
+
+        if (metadata.supportsCapability(DriverCapability.returning)) {
+          expect(result.returnedRows, isNotNull);
+          final returnedIds = result.returnedRows!
+              .map((row) => row['id'])
+              .whereType<num>();
+          expect(returnedIds, containsAll(<num>[firstId, secondId]));
+        }
+      },
+    );
+
+    test('query builder update applies mutations to matching rows', () async {
+      final repo = dataSource.context.repository<User>();
+      await repo.insertMany([
+        User(
+          id: ObjectId(),
+          email: 'builder-update-a@example.com',
+          active: true,
+        ),
+        User(
+          id: ObjectId(),
+          email: 'builder-update-b@example.com',
+          active: true,
+        ),
+      ]);
+
+      final affected = await dataSource.context
+          .query<User>()
+          .whereEquals('id', ObjectId())
+          .update({'active': false});
+
+      expect(affected, 1);
+
+      final first = await dataSource.context
+          .query<User>()
+          .whereEquals('id', ObjectId())
+          .firstOrFail();
+      final second = await dataSource.context
+          .query<User>()
+          .whereEquals('id', ObjectId())
+          .firstOrFail();
+
+      expect(first.active, isFalse);
+      expect(second.active, isTrue);
+    });
+
+    test('query builder update encodes values using model codecs', () async {
+      final repo = dataSource.context.repository<DriverOverrideEntry>();
+      await repo.insertMany([
+        DriverOverrideEntry(id: ObjectId(), payload: {'mode': 'light'}),
+      ]);
+
+      final affected = await dataSource.context
+          .query<DriverOverrideEntry>()
+          .whereEquals('id', ObjectId())
+          .update({
+            'payload': {'mode': 'dark', 'count': 2},
+          });
+
+      expect(affected, 1);
+
+      final refreshed = await dataSource.context
+          .query<DriverOverrideEntry>()
+          .whereEquals('id', ObjectId())
+          .firstOrFail();
+
+      expect(refreshed.payload['mode'], 'dark');
+      expect(refreshed.payload['count'], 2);
+    });
+
+    test(
+      'query builder update works without primary key when supported',
+      () async {
+        final repo = dataSource.context.repository<User>();
+        await repo.insertMany([
+          User(id: ObjectId(), email: 'adhoc@example.com', active: true),
+        ]);
+
+        final affected = await dataSource.context
+            .table('users')
+            .whereEquals('email', 'adhoc@example.com')
+            .limit(1)
+            .update({'active': false});
+
+        expect(affected, 1);
+
+        final refreshed = await dataSource.context
+            .query<User>()
+            .whereEquals('email', 'adhoc@example.com')
+            .firstOrFail();
+
+        expect(refreshed.active, isFalse);
+      },
+      skip: !metadata.supportsCapability(DriverCapability.adHocQueryUpdates),
+    );
+
+    test(
+      'sqlite query updates encode json bindings for ad-hoc tables',
+      () async {
+        if (metadata.name != 'sqlite') {
+          return;
+        }
+        final repo = dataSource.context.repository<DriverOverrideEntry>();
+        await repo.insertMany([
+          DriverOverrideEntry(id: ObjectId(), payload: {'mode': 'legacy'}),
+        ]);
+
+        final affected = await dataSource.context
+            .table('driver_override_entries')
+            .whereEquals('id', ObjectId())
+            .limit(1)
+            .update({
+              'payload': {'mode': 'encoded', 'count': 2},
+            });
+
+        expect(affected, 1);
+
+        final refreshed = await dataSource.context
+            .query<DriverOverrideEntry>()
+            .whereEquals('id', ObjectId())
+            .firstOrFail();
+
+        expect(refreshed.payload['mode'], 'encoded');
+        expect(refreshed.payload['count'], 2);
+      },
+    );
+
+    test('sqlite query updates support joins and limits', () async {
+      if (metadata.name != 'sqlite') {
+        return;
+      }
+      await dataSource.repo<User>().insertMany(buildDefaultUsers());
+      await dataSource.connection.driver.executeRaw(
+        'CREATE TABLE orm_test_join_updates ('
+        'user_id INTEGER NOT NULL, '
+        'label TEXT NOT NULL'
+        ')',
+      );
+      await dataSource.connection.driver.executeRaw(
+        'INSERT INTO orm_test_join_updates (user_id, label) VALUES (?, ?)',
+        [1, 'alpha'],
+      );
+      await dataSource.connection.driver.executeRaw(
+        'INSERT INTO orm_test_join_updates (user_id, label) VALUES (?, ?)',
+        [2, 'beta'],
+      );
+
+      final affected = await dataSource.context
+          .table('orm_test_join_updates')
+          .join('users', 'users.id', '=', 'orm_test_join_updates.user_id')
+          .orderBy('user_id')
+          .limit(1)
+          .update({'label': 'patched'});
+
+      expect(affected, 1);
+
+      final rows = await dataSource.connection.driver.queryRaw(
+        'SELECT user_id, label FROM orm_test_join_updates ORDER BY user_id',
+      );
+      expect(rows.length, 2);
+      expect(rows.first['label'], 'patched');
+      expect(rows.last['label'], 'beta');
+    });
+
+    test('sqlite query deletes support joins and limits', () async {
+      if (metadata.name != 'sqlite') {
+        return;
+      }
+      await dataSource.repo<User>().insertMany(buildDefaultUsers());
+      await dataSource.connection.driver.executeRaw(
+        'CREATE TABLE orm_test_join_deletes ('
+        'user_id INTEGER NOT NULL, '
+        'label TEXT NOT NULL'
+        ')',
+      );
+      await dataSource.connection.driver.executeRaw(
+        'INSERT INTO orm_test_join_deletes (user_id, label) VALUES (?, ?)',
+        [1, 'alpha'],
+      );
+      await dataSource.connection.driver.executeRaw(
+        'INSERT INTO orm_test_join_deletes (user_id, label) VALUES (?, ?)',
+        [2, 'beta'],
+      );
+      await dataSource.connection.driver.executeRaw(
+        'INSERT INTO orm_test_join_deletes (user_id, label) VALUES (?, ?)',
+        [3, 'gamma'],
+      );
+
+      final removed = await dataSource.context
+          .table('orm_test_join_deletes')
+          .join('users', 'users.id', '=', 'orm_test_join_deletes.user_id')
+          .orderBy('user_id')
+          .limit(1)
+          .forceDelete();
+
+      expect(removed, 1);
+
+      final rows = await dataSource.connection.driver.queryRaw(
+        'SELECT user_id FROM orm_test_join_deletes ORDER BY user_id',
+      );
+      expect(rows.map((row) => row['user_id']), equals([2, 3]));
+    });
+
+    test('query builder update json selectors patch nested payload', () async {
+      final repo = dataSource.context.repository<DriverOverrideEntry>();
+      await repo.insertMany([
+        DriverOverrideEntry(
+          id: ObjectId(),
+          payload: {
+            'mode': 'light',
+            'meta': {'count': 1},
+          },
+        ),
+      ]);
+
+      MutationEvent? mutation;
+      dataSource.context.onMutation((event) => mutation = event);
+
+      final affected = await dataSource.context
+          .query<DriverOverrideEntry>()
+          .whereEquals('id', ObjectId())
+          .update({'payload->mode': 'dark', r'payload->$.meta.count': 5});
+
+      expect(affected, 1);
+
+      final refreshed = await dataSource.context
+          .query<DriverOverrideEntry>()
+          .whereEquals('id', ObjectId())
+          .firstOrFail();
+
+      expect(refreshed.payload['mode'], 'dark');
+      expect((refreshed.payload['meta'] as Map)['count'], 5);
+      expect(mutation, isNotNull);
+      expectPreviewMetadata(mutation!.preview);
+    });
+
+    test('repository previewInsert exposes metadata', () async {
+      final repo = dataSource.context.repository<User>();
+      final preview = repo.previewInsert(
+        User(id: ObjectId(), email: 'preview@example.com', active: true),
+      );
+
+      expectPreviewMetadata(preview);
+      final normalized = preview.normalized;
+      expect(normalized.parameters, hasLength(7));
+      expect(normalized.parameters[0], 9);
+      expect(normalized.parameters[1], 'preview@example.com');
+      expect(
+        normalized.parameters[2],
+        anyOf(isTrue, equals(1)),
+        reason: 'boolean may be encoded as bool or int',
+      );
+      expect(normalized.parameters[3], isNull); // name
+      expect(normalized.parameters[4], isNull); // age
+      expect(normalized.parameters[5], isNull); // createdAt
+      expect(normalized.parameters[6], isNull); // profile
+    });
+
+    test('mutation events include normalized parameters', () async {
+      final events = <MutationEvent>[];
+      dataSource.context.onMutation(events.add);
+
+      final repo = dataSource.context.repository<User>();
+      await repo.insert(
+        User(id: ObjectId(), email: 'events@example.com', active: true),
+      );
+
+      expect(events, isNotEmpty);
+      final event = events.single;
+      expectPreviewMetadata(event.preview);
+      final normalized = event.preview.normalized;
+      expect(normalized.parameters.length, 7);
+      expect(normalized.parameters[0], 11);
+      expect(normalized.parameters[1], 'events@example.com');
+      expect(
+        normalized.parameters[2],
+        anyOf(isTrue, equals(1)),
+        reason: 'boolean may be encoded as bool or int',
+      );
+      expect(normalized.parameters[3], isNull); // name
+      expect(normalized.parameters[4], isNull); // age
+      expect(normalized.parameters[5], isNull); // createdAt
+      expect(normalized.parameters[6], isNull); // profile
+      expect(event.affectedRows, 1);
+      expect(event.succeeded, isTrue);
+    });
+
+    test('mutation events capture driver errors', () async {
+      final events = <MutationEvent>[];
+      dataSource.context.onMutation(events.add);
+
+      // Try to insert with a value that violates constraints to trigger mutation error
+      // Use duplicate primary key to cause error
+      await dataSource.context.repository<User>().insert(
+        User(id: ObjectId(), email: 'first@example.com', active: true),
+      );
+
+      await expectLater(
+        () => dataSource.context.repository<User>().insert(
+          User(id: ObjectId(), email: 'duplicate@example.com', active: true),
+        ),
+        throwsA(isA<Exception>()),
+      );
+
+      // Should have 2 events: first successful insert, then failed duplicate
+      expect(events.length, greaterThanOrEqualTo(2));
+      expect(events.last.error, isNotNull);
+      expect(events.last.succeeded, isFalse);
+    });
+
+    test('json updates patch nested payload columns', () async {
+      if (!metadata.supportsCapability(DriverCapability.rawSQL)) {
+        return; // Skip for non-SQL drivers
+      }
+      final docId = ObjectId();
+      await dataSource.connection.driver.executeRaw(
+        'INSERT INTO driver_override_entries (id, payload) VALUES (?, ?)',
+        [
+          docId,
+          jsonEncode({
+            'mode': 'dark',
+            'meta': {'count': 1},
+          }),
+        ],
+      );
+
+      final repo = dataSource.context.repository<DriverOverrideEntry>();
+      await repo.updateMany(
+        [
+          DriverOverrideEntry(
+            id: docId,
+            payload: const {
+              'mode': 'dark',
+              'meta': {'count': 1},
+            },
+          ),
+        ],
+        jsonUpdates: (_) => [
+          JsonUpdateDefinition.selector('payload->mode', 'light'),
+          JsonUpdateDefinition.path('payload', r'$.meta.count', 5),
+        ],
+        returning: false,
+      );
+
+      final rows = await dataSource.connection.driver.queryRaw(
+        'SELECT payload FROM driver_override_entries WHERE id = ?',
+        [docId],
+      );
+      expect(rows, hasLength(1));
+      final payload = _normalizeJsonPayload(rows.single['payload']);
+      expect(payload['mode'], equals('light'));
+      final meta = payload['meta'] as Map<String, Object?>?;
+      expect(meta, isNotNull);
+      expect(meta!['count'], equals(5));
+    });
+    //
+    // test('sqlite truncate resets auto-increment sequences', () async {
+    //   if (config.driverName != 'SqliteDriverAdapter') {
+    //     return;
+    //   }
+    //   await dataSource.connection.driver.executeRaw('DELETE FROM serial_tests');
+    //   await dataSource.connection.driver.executeRaw(
+    //     'INSERT INTO serial_tests (label) VALUES (?)',
+    //     ['first'],
+    //   );
+    //   await dataSource.connection.driver.executeRaw(
+    //     'INSERT INTO serial_tests (label) VALUES (?)',
+    //     ['second'],
+    //   );
+    //
+    //   final connection = OrmConnection(
+    //     config: ConnectionConfig(
+    //       name: 'sqlite-testing',
+    //       tablePrefix: dataSource.context.connectionTablePrefix ?? '',
+    //     ),
+    //     driver: dataSource.connection.driver,
+    //     registry: dataSource.context.registry,
+    //     codecRegistry: dataSource.context.codecRegistry,
+    //     context: dataSource.context,
+    //   );
+    //   final seeder = OrmSeeder(connection);
+    //   await seeder.truncate('serial_tests');
+    //
+    //   await dataSource.connection.driver.executeRaw(
+    //     'INSERT INTO serial_tests (label) VALUES (?)',
+    //     ['reset'],
+    //   );
+    //
+    //   final rows = await dataSource.connection.driver.queryRaw(
+    //     'SELECT id FROM serial_tests ORDER BY id',
+    //   );
+    //   expect(rows.single['id'], 1);
+    // });
+
+    test(
+      'insert/update/delete returning payloads',
+      () async {
+        final repo = dataSource.context.repository<User>();
+        final inserted = await repo.insert(
+          User(id: ObjectId(), email: 'returning@example.com', active: true),
+          returning: true,
+        );
+        expect(inserted.email, 'returning@example.com');
+
+        final updated = await repo.updateMany([
+          User(id: ObjectId(), email: 'updated@returning.com', active: false),
+        ], returning: true);
+        expect(updated.single.email, 'updated@returning.com');
+        expect(updated.single.active, isFalse);
+
+        final deleted = await repo.deleteByKeys([
+          {'id': 20},
+        ]);
+        expect(deleted, 1);
+      },
+      skip: metadata.supportsCapability(DriverCapability.returning)
+          ? false
+          : 'Driver does not support RETURNING mutations',
+    );
+
+    test(
+      'upsert returning payloads',
+      () async {
+        final repo = dataSource.context.repository<User>();
+        final first = await repo.upsertMany([
+          User(id: ObjectId(), email: 'upsert@return.com', active: true),
+        ], returning: true);
+        expect(first.single.email, 'upsert@return.com');
+
+        final second = await repo.upsertMany([
+          User(id: ObjectId(), email: 'new@upsert.com', active: true),
+        ], returning: true);
+        expect(second.single.email, 'new@upsert.com');
+      },
+      skip: metadata.supportsCapability(DriverCapability.returning)
+          ? false
+          : 'Driver does not support RETURNING mutations',
+    );
+  });
+}
+
+const FieldDefinition _serialIdField = FieldDefinition(
+  name: 'id',
+  columnName: 'id',
+  dartType: 'int',
+  resolvedType: 'int',
+  isPrimaryKey: true,
+  isNullable: false,
+  isUnique: false,
+  isIndexed: false,
+  autoIncrement: true,
+);
+
+const FieldDefinition _serialLabelField = FieldDefinition(
+  name: 'label',
+  columnName: 'label',
+  dartType: 'String',
+  resolvedType: 'String',
+  isPrimaryKey: false,
+  isNullable: false,
+  isUnique: false,
+  isIndexed: false,
+  autoIncrement: false,
+);
+
+final ModelDefinition<Map<String, Object?>> _serialTestDefinition =
+    ModelDefinition<Map<String, Object?>>(
+      modelName: 'SerialTest',
+      tableName: 'serial_tests',
+      fields: const [_serialIdField, _serialLabelField],
+      codec: const _PlainMapCodec(),
+    );
+
+class _PlainMapCodec extends ModelCodec<Map<String, Object?>> {
+  const _PlainMapCodec();
+
+  @override
+  Map<String, Object?> encode(
+    Map<String, Object?> model,
+    ValueCodecRegistry registry,
+  ) => Map<String, Object?>.from(model);
+
+  @override
+  Map<String, Object?> decode(
+    Map<String, Object?> data,
+    ValueCodecRegistry registry,
+  ) => Map<String, Object?>.from(data);
+}
+
+Map<String, Object?> _normalizeJsonPayload(Object? value) {
+  if (value == null) {
+    return const {};
+  }
+  if (value is String) {
+    final decoded = jsonDecode(value) as Map<String, dynamic>;
+    return Map<String, Object?>.from(decoded);
+  }
+  if (value is List<int>) {
+    final decoded = jsonDecode(utf8.decode(value)) as Map<String, dynamic>;
+    return Map<String, Object?>.from(decoded);
+  }
+  if (value is Map) {
+    return Map<String, Object?>.from(value.cast<String, Object?>());
+  }
+  throw StateError('Unsupported JSON payload type: ${value.runtimeType}.');
+}

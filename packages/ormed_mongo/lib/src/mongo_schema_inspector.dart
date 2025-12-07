@@ -138,7 +138,28 @@ class MongoSchemaInspector {
       unique: doc['unique'] as bool? ?? false,
       primary: doc['name'] == '_id_',
       whereClause: doc['partialFilterExpression']?.toString(),
+      sparse: doc['sparse'] as bool? ?? false,
+      type: _indexTypeFromDoc(doc),
     );
+  }
+
+  String? _indexTypeFromDoc(Map<String, Object?> doc) {
+    final key = doc['key'] as Map<String, Object?>?;
+    if (key == null) return null;
+
+    // Check for text index
+    if (key.values.any((v) => v == 'text')) return 'text';
+
+    // Check for 2dsphere
+    if (key.values.any((v) => v == '2dsphere')) return '2dsphere';
+
+    // Check for 2d
+    if (key.values.any((v) => v == '2d')) return '2d';
+
+    // Check for hashed
+    if (key.values.any((v) => v == 'hashed')) return 'hashed';
+
+    return null;
   }
 
   String? _descriptionFromOptions(Map<String, Object?>? options) {

@@ -39,8 +39,8 @@ Future<void> main() async {
   // Reset schema
   await clearDatabase();
 
-  // Register test factories if needed, though Mongo is schema-less
-  // registerDriverTestFactories();
+  // Register test factories
+  registerDriverTestFactories();
 
   tearDownAll(() async {
     await dataSource.dispose();
