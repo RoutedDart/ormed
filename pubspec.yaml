@@ -4,7 +4,6 @@ workspace:
   - packages/ormed
   - packages/driver_tests
   - packages/ormed_sqlite
-  - packages/ormed_mongo
   - packages/ormed_postgres
   - packages/ormed_mysql
   - packages/ormed_cli

@@ -11,6 +11,8 @@ class SchemaIndex {
     this.primary = false,
     this.method,
     this.whereClause,
+    this.type,
+    this.sparse = false,
   });
 
   /// Index name.
@@ -32,10 +34,17 @@ class SchemaIndex {
   final bool primary;
 
   /// Index method used (such as BTREE).
+  /// Index method used (such as BTREE).
   final String? method;
 
   /// WHERE clause limiting the index when it is partial.
   final String? whereClause;
+
+  /// Index type (e.g. text, geospatial).
+  final String? type;
+
+  /// Whether the index is sparse.
+  final bool sparse;
 
   Map<String, Object?> toJson() => {
     'name': name,
@@ -46,6 +55,8 @@ class SchemaIndex {
     if (primary) 'primary': true,
     if (method != null) 'method': method,
     if (whereClause != null) 'whereClause': whereClause,
+    if (type != null) 'type': type,
+    if (sparse) 'sparse': true,
   };
 
   factory SchemaIndex.fromJson(Map<String, Object?> json) => SchemaIndex(
@@ -57,5 +68,7 @@ class SchemaIndex {
     primary: json['primary'] as bool? ?? false,
     method: json['method'] as String?,
     whereClause: json['whereClause'] as String?,
+    type: json['type'] as String?,
+    sparse: json['sparse'] as bool? ?? false,
   );
 }

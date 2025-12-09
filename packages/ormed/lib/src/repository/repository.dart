@@ -1,6 +1,8 @@
 /// Write-side helpers for inserting models via driver adapters.
 library;
 
+import 'package:carbonized/carbonized.dart';
+
 import '../driver/driver.dart';
 import '../model_definition.dart';
 import '../model_mixins/model_attributes.dart';
@@ -53,20 +55,17 @@ class Repository<T> extends RepositoryBase<T>
   Repository({
     required ModelDefinition<T> definition,
     required String driverName,
-    required ValueCodecRegistry codecs,
     required Future<MutationResult> Function(MutationPlan plan) runMutation,
     required StatementPreview Function(MutationPlan plan) describeMutation,
     required void Function(Object? model) attachRuntimeMetadata,
   }) : _definition = definition,
        _driverName = driverName,
-       _codecs = codecs,
        _runMutation = runMutation,
        _describeMutation = describeMutation,
        _attachRuntimeMetadata = attachRuntimeMetadata;
 
   final ModelDefinition<T> _definition;
   final String _driverName;
-  final ValueCodecRegistry _codecs;
   final Future<MutationResult> Function(MutationPlan plan) _runMutation;
   final StatementPreview Function(MutationPlan plan) _describeMutation;
   final void Function(Object? model) _attachRuntimeMetadata;
@@ -78,7 +77,8 @@ class Repository<T> extends RepositoryBase<T>
   String get driverName => _driverName;
 
   @override
-  ValueCodecRegistry get codecs => _codecs;
+  ValueCodecRegistry get codecs =>
+      ValueCodecRegistry.instance.forDriver(_driverName);
 
   @override
   Future<MutationResult> Function(MutationPlan plan) get runMutation =>

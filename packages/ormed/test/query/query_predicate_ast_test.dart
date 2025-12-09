@@ -22,6 +22,7 @@ void main() {
       test('captures nested AND/OR branches', () {
         final plan = context
             .query<Post>()
+            .withTrashed()
             .where((outer) {
               outer.where('authorId', 1).orWhere((inner) {
                 inner.whereBetween('id', 10, 20);
@@ -66,6 +67,7 @@ void main() {
       test('tracks inclusive bounds for between variants', () {
         final plan = context
             .query<Post>()
+            .withTrashed()
             .whereBetween('id', 1, 5)
             .whereNotBetween('id', 50, 75)
             .debugPlan();
@@ -90,6 +92,7 @@ void main() {
       test('captures nullability checks', () {
         final plan = context
             .query<Post>()
+            .withTrashed()
             .whereNull('title')
             .whereNotNull('publishedAt')
             .debugPlan();
@@ -147,6 +150,7 @@ void main() {
       test('captures column equality and inequality comparisons', () {
         final plan = context
             .query<Post>()
+            .withTrashed()
             .whereColumn('authorId', 'id')
             .whereColumn(
               'authorId',
@@ -170,6 +174,7 @@ void main() {
       test('preserves SQL fragments and bindings', () {
         final plan = context
             .query<Post>()
+            .withTrashed()
             .whereRaw('json_extract(metadata, ?) = ?', [r'$.flag', true])
             .havingRaw('count(*) > ?', [1])
             .debugPlan();

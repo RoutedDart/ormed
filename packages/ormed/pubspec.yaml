@@ -9,6 +9,7 @@ environment:
 dependencies:
   analyzer: ^9.0.0
   build: ^4.0.3
+  carbonized: ^0.1.0
   glob: ^2.1.3
   collection: ^1.19.1
   crypto: ^3.0.7

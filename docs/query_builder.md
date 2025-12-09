@@ -99,6 +99,53 @@ final adminUsers = await User.query(connection: 'admin')
 
 The static `query()` helper is automatically generated for all models and provides a cleaner API similar to Laravel's Eloquent.
 
+### Query Caching
+
+Cache expensive query results to improve performance and reduce database load:
+
+```dart
+// Cache for 5 minutes
+final popularPosts = await Post.query()
+    .where('views', '>', 1000)
+    .orderBy('views', descending: true)
+    .remember(Duration(minutes: 5))
+    .get();
+
+// Cache indefinitely (good for reference data)
+final countries = await Country.query()
+    .rememberForever()
+    .get();
+
+// Bypass cache for specific query
+final freshData = await User.query()
+    .where('id', userId)
+    .dontRemember()
+    .first();
+
+// Manage cache
+context.flushQueryCache(); // Clear all
+context.vacuumQueryCache(); // Remove expired entries
+final stats = context.queryCacheStats; // Get statistics
+
+// Listen to cache events (unique feature!)
+context.queryCache.listen((event) {
+  if (event is CacheHitEvent) {
+    metrics.recordHit();
+  } else if (event is CacheMissEvent) {
+    metrics.recordMiss();
+  }
+});
+```
+
+**Key features:**
+- ✅ TTL-based expiration
+- ✅ Cache events for monitoring (unique to this ORM!)
+- ✅ Manual cache management
+- ✅ Cache statistics tracking
+- ✅ Laravel-compatible API
+
+See [Query Caching Guide](query-caching.md) for detailed documentation, best practices, and comparison with Laravel.
+
 Supported clauses:
 
 | Method | Description |

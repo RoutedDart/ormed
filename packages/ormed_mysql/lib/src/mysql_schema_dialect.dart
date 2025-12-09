@@ -1,4 +1,4 @@
-import 'package:ormed/migrations.dart';
+import 'package:ormed/ormed.dart';
 
 /// Generates MySQL-compatible SQL for schema mutations.
 class MySqlSchemaDialect extends SchemaDialect {
@@ -8,6 +8,9 @@ class MySqlSchemaDialect extends SchemaDialect {
 
   @override
   String get driverName => isMariaDb ? 'mariadb' : 'mysql';
+
+  /// Get the TypeMapper for this dialect (cached singleton)
+  DriverTypeMapper? get typeMapper => TypeMapperRegistry.get(driverName);
 
   @override
   List<SchemaStatement> compileMutation(SchemaMutation mutation) {
@@ -142,7 +145,9 @@ class MySqlSchemaDialect extends SchemaDialect {
             );
           } else {
             statements.add(
-              SchemaStatement(_createIndexSqlForBlueprint(blueprint, definition)),
+              SchemaStatement(
+                _createIndexSqlForBlueprint(blueprint, definition),
+              ),
             );
           }
         case IndexCommandKind.drop:
@@ -209,7 +214,10 @@ class MySqlSchemaDialect extends SchemaDialect {
     return 'CREATE ${keyword}INDEX $name ON ${_tableName(table)} ($columns)';
   }
 
-  String _createIndexSqlForBlueprint(TableBlueprint blueprint, IndexDefinition definition) {
+  String _createIndexSqlForBlueprint(
+    TableBlueprint blueprint,
+    IndexDefinition definition,
+  ) {
     final keyword = switch (definition.type) {
       IndexType.unique => 'UNIQUE ',
       IndexType.fullText => 'FULLTEXT ',
@@ -335,9 +343,14 @@ class MySqlSchemaDialect extends SchemaDialect {
       case ColumnTypeName.date:
         return 'DATE';
       case ColumnTypeName.time:
-        return 'TIME(6)';
+        final timePrecision = type.precision ?? 0;
+        return timePrecision > 0 ? 'TIME($timePrecision)' : 'TIME';
       case ColumnTypeName.dateTime:
-        return type.timezoneAware ? 'TIMESTAMP(6)' : 'DATETIME(6)';
+        // Default to precision 3 (milliseconds) to match Carbon's precision
+        // MySQL/MariaDB DATETIME without precision truncates to seconds
+        final dtPrecision = type.precision ?? 3;
+        final baseType = type.timezoneAware ? 'TIMESTAMP' : 'DATETIME';
+        return dtPrecision > 0 ? '$baseType($dtPrecision)' : baseType;
       case ColumnTypeName.decimal:
         final precision = type.precision ?? 10;
         final scale = type.scale ?? 0;
@@ -429,8 +442,42 @@ class MySqlSchemaDialect extends SchemaDialect {
     }
     return _quote(table);
   }
-  
+
   String _tableNameFromBlueprint(TableBlueprint blueprint) {
     return _tableName(blueprint.table, schema: blueprint.schema);
+  }
+
+  // ========== Database Management ==========
+
+  @override
+  String? compileCreateDatabase(String name, Map<String, Object?>? options) {
+    final charset = options?['charset'] as String? ?? 'utf8mb4';
+    final collation = options?['collation'] as String? ?? 'utf8mb4_unicode_ci';
+
+    return 'CREATE DATABASE ${_quote(name)} '
+        'DEFAULT CHARACTER SET $charset '
+        'DEFAULT COLLATE $collation';
+  }
+
+  @override
+  String? compileDropDatabaseIfExists(String name) {
+    return 'DROP DATABASE IF EXISTS ${_quote(name)}';
+  }
+
+  @override
+  String? compileListDatabases() {
+    return 'SHOW DATABASES';
+  }
+
+  // ========== Foreign Key Constraint Management ==========
+
+  @override
+  String? compileEnableForeignKeyConstraints() {
+    return 'SET FOREIGN_KEY_CHECKS=1';
+  }
+
+  @override
+  String? compileDisableForeignKeyConstraints() {
+    return 'SET FOREIGN_KEY_CHECKS=0';
   }
 }

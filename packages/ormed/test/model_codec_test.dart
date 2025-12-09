@@ -5,7 +5,7 @@ import 'package:ormed/ormed.dart';
 import 'package:test/test.dart';
 
 void main() {
-  final registry = ValueCodecRegistry.standard()
+  final registry = ValueCodecRegistry.instance
     ..registerCodecFor(JsonMapCodec, const JsonMapCodec());
 
   test('encodes maps using registered codecs', () {
@@ -17,7 +17,7 @@ void main() {
     );
 
     final encoded = UserOrmDefinition.definition.toMap(
-      user,
+      user.toTracked(),
       registry: registry,
     );
 

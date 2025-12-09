@@ -50,105 +50,102 @@ const FieldDefinition _$DriverOverrideEntryPayloadField = FieldDefinition(
   },
 );
 
-final ModelDefinition<DriverOverrideEntry>
-_$DriverOverrideEntryModelDefinition = ModelDefinition(
-  modelName: 'DriverOverrideEntry',
-  tableName: 'driver_override_entries',
-  fields: const [
-    _$DriverOverrideEntryIdField,
-    _$DriverOverrideEntryPayloadField,
-  ],
-  relations: const [],
-  softDeleteColumn: 'deleted_at',
-  metadata: ModelAttributesMetadata(
-    hidden: const <String>[],
-    visible: const <String>[],
-    fillable: const <String>[],
-    guarded: const <String>[],
-    casts: const <String, String>{},
-    softDeletes: false,
-    softDeleteColumn: 'deleted_at',
-  ),
-  codec: _$DriverOverrideEntryModelCodec(),
-);
-
-// ignore: unused_element
-final driveroverrideentryModelDefinitionRegistration =
-    ModelFactoryRegistry.register<DriverOverrideEntry>(
-      _$DriverOverrideEntryModelDefinition,
+final ModelDefinition<$DriverOverrideEntry> _$DriverOverrideEntryDefinition =
+    ModelDefinition(
+      modelName: 'DriverOverrideEntry',
+      tableName: 'driver_override_entries',
+      fields: const [
+        _$DriverOverrideEntryIdField,
+        _$DriverOverrideEntryPayloadField,
+      ],
+      relations: const [],
+      softDeleteColumn: 'deleted_at',
+      metadata: ModelAttributesMetadata(
+        hidden: const <String>[],
+        visible: const <String>[],
+        fillable: const <String>[],
+        guarded: const <String>[],
+        casts: const <String, String>{},
+        softDeletes: false,
+        softDeleteColumn: 'deleted_at',
+      ),
+      codec: _$DriverOverrideEntryCodec(),
     );
 
 extension DriverOverrideEntryOrmDefinition on DriverOverrideEntry {
-  static ModelDefinition<DriverOverrideEntry> get definition =>
-      _$DriverOverrideEntryModelDefinition;
+  static ModelDefinition<$DriverOverrideEntry> get definition =>
+      _$DriverOverrideEntryDefinition;
 }
 
 class DriverOverrideEntrys {
   const DriverOverrideEntrys._();
 
-  static Query<DriverOverrideEntry> query([String? connection]) =>
-      Model.query<DriverOverrideEntry>(connection: connection);
+  static Query<$DriverOverrideEntry> query([String? connection]) =>
+      Model.query<$DriverOverrideEntry>(connection: connection);
 
-  static Future<DriverOverrideEntry?> find(Object id, {String? connection}) =>
-      Model.find<DriverOverrideEntry>(id, connection: connection);
+  static Future<$DriverOverrideEntry?> find(Object id, {String? connection}) =>
+      Model.find<$DriverOverrideEntry>(id, connection: connection);
 
-  static Future<DriverOverrideEntry> findOrFail(
+  static Future<$DriverOverrideEntry> findOrFail(
     Object id, {
     String? connection,
-  }) => Model.findOrFail<DriverOverrideEntry>(id, connection: connection);
+  }) => Model.findOrFail<$DriverOverrideEntry>(id, connection: connection);
 
-  static Future<List<DriverOverrideEntry>> all({String? connection}) =>
-      Model.all<DriverOverrideEntry>(connection: connection);
+  static Future<List<$DriverOverrideEntry>> all({String? connection}) =>
+      Model.all<$DriverOverrideEntry>(connection: connection);
 
   static Future<int> count({String? connection}) =>
-      Model.count<DriverOverrideEntry>(connection: connection);
+      Model.count<$DriverOverrideEntry>(connection: connection);
 
-  static Future<bool> exists({String? connection}) =>
-      Model.exists<DriverOverrideEntry>(connection: connection);
+  static Future<bool> anyExist({String? connection}) =>
+      Model.anyExist<$DriverOverrideEntry>(connection: connection);
 
-  static Query<DriverOverrideEntry> where(
+  static Query<$DriverOverrideEntry> where(
     String column,
     String operator,
     dynamic value, {
     String? connection,
-  }) => Model.where<DriverOverrideEntry>(
+  }) => Model.where<$DriverOverrideEntry>(
     column,
     operator,
     value,
     connection: connection,
   );
 
-  static Query<DriverOverrideEntry> whereIn(
+  static Query<$DriverOverrideEntry> whereIn(
     String column,
     List<dynamic> values, {
     String? connection,
-  }) => Model.whereIn<DriverOverrideEntry>(
+  }) => Model.whereIn<$DriverOverrideEntry>(
     column,
     values,
     connection: connection,
   );
 
-  static Query<DriverOverrideEntry> orderBy(
+  static Query<$DriverOverrideEntry> orderBy(
     String column, {
     String direction = "asc",
     String? connection,
-  }) => Model.orderBy<DriverOverrideEntry>(
+  }) => Model.orderBy<$DriverOverrideEntry>(
     column,
     direction: direction,
     connection: connection,
   );
 
-  static Query<DriverOverrideEntry> limit(int count, {String? connection}) =>
-      Model.limit<DriverOverrideEntry>(count, connection: connection);
+  static Query<$DriverOverrideEntry> limit(int count, {String? connection}) =>
+      Model.limit<$DriverOverrideEntry>(count, connection: connection);
+
+  static Repository<$DriverOverrideEntry> repo([String? connection]) =>
+      Model.repository<$DriverOverrideEntry>(connection: connection);
 }
 
 class DriverOverrideEntryModelFactory {
   const DriverOverrideEntryModelFactory._();
 
-  static ModelDefinition<DriverOverrideEntry> get definition =>
-      _$DriverOverrideEntryModelDefinition;
+  static ModelDefinition<$DriverOverrideEntry> get definition =>
+      _$DriverOverrideEntryDefinition;
 
-  static ModelCodec<DriverOverrideEntry> get codec => definition.codec;
+  static ModelCodec<$DriverOverrideEntry> get codec => definition.codec;
 
   static DriverOverrideEntry fromMap(
     Map<String, Object?> data, {
@@ -158,7 +155,7 @@ class DriverOverrideEntryModelFactory {
   static Map<String, Object?> toMap(
     DriverOverrideEntry model, {
     ValueCodecRegistry? registry,
-  }) => definition.toMap(model, registry: registry);
+  }) => definition.toMap(model.toTracked(), registry: registry);
 
   static void registerWith(ModelRegistry registry) =>
       registry.register(definition);
@@ -178,12 +175,11 @@ class DriverOverrideEntryModelFactory {
   );
 }
 
-class _$DriverOverrideEntryModelCodec extends ModelCodec<DriverOverrideEntry> {
-  const _$DriverOverrideEntryModelCodec();
-
+class _$DriverOverrideEntryCodec extends ModelCodec<$DriverOverrideEntry> {
+  const _$DriverOverrideEntryCodec();
   @override
   Map<String, Object?> encode(
-    DriverOverrideEntry model,
+    $DriverOverrideEntry model,
     ValueCodecRegistry registry,
   ) {
     return <String, Object?>{
@@ -196,7 +192,7 @@ class _$DriverOverrideEntryModelCodec extends ModelCodec<DriverOverrideEntry> {
   }
 
   @override
-  DriverOverrideEntry decode(
+  $DriverOverrideEntry decode(
     Map<String, Object?> data,
     ValueCodecRegistry registry,
   ) {
@@ -211,7 +207,7 @@ class _$DriverOverrideEntryModelCodec extends ModelCodec<DriverOverrideEntry> {
         (throw StateError(
           'Field payload on DriverOverrideEntry cannot be null.',
         ));
-    final model = _$DriverOverrideEntryModel(
+    final model = $DriverOverrideEntry(
       id: driverOverrideEntryIdValue,
       payload: driverOverrideEntryPayloadValue,
     );
@@ -223,12 +219,24 @@ class _$DriverOverrideEntryModelCodec extends ModelCodec<DriverOverrideEntry> {
   }
 }
 
-class _$DriverOverrideEntryModel extends DriverOverrideEntry {
-  _$DriverOverrideEntryModel({
-    required int id,
-    required Map<String, Object?> payload,
-  }) : super.new(id: id, payload: payload) {
+/// Generated tracked model class for [DriverOverrideEntry].
+///
+/// This class extends the user-defined [DriverOverrideEntry] model and adds
+/// attribute tracking, change detection, and relationship management.
+/// Instances of this class are returned by queries and repositories.
+///
+/// **Do not instantiate this class directly.** Use queries, repositories,
+/// or model factories to create tracked model instances.
+class $DriverOverrideEntry extends DriverOverrideEntry
+    with ModelAttributes, ModelRelations {
+  $DriverOverrideEntry({required int id, required Map<String, Object?> payload})
+    : super.new(id: id, payload: payload) {
     _attachOrmRuntimeMetadata({'id': id, 'payload': payload});
+  }
+
+  /// Creates a tracked model instance from a user-defined model instance.
+  factory $DriverOverrideEntry.fromModel(DriverOverrideEntry model) {
+    return $DriverOverrideEntry(id: model.id, payload: model.payload);
   }
 
   @override
@@ -244,6 +252,20 @@ class _$DriverOverrideEntryModel extends DriverOverrideEntry {
 
   void _attachOrmRuntimeMetadata(Map<String, Object?> values) {
     replaceAttributes(values);
-    attachModelDefinition(_$DriverOverrideEntryModelDefinition);
+    attachModelDefinition(_$DriverOverrideEntryDefinition);
+  }
+}
+
+extension DriverOverrideEntryOrmExtension on DriverOverrideEntry {
+  /// The Type of the generated ORM-managed model class.
+  /// Use this when you need to specify the tracked model type explicitly,
+  /// for example in generic type parameters.
+  static Type get trackedType => $DriverOverrideEntry;
+
+  /// Converts this immutable model to a tracked ORM-managed model.
+  /// The tracked model supports attribute tracking, change detection,
+  /// and persistence operations like save() and touch().
+  $DriverOverrideEntry toTracked() {
+    return $DriverOverrideEntry.fromModel(this);
   }
 }

@@ -457,4 +457,66 @@ class PostgresSchemaDialect extends SchemaDialect {
   String _tableNameFromBlueprint(TableBlueprint blueprint) {
     return _tableName(blueprint.table, schema: blueprint.schema);
   }
+
+  // ========== Database Management ==========
+
+  @override
+  String? compileCreateDatabase(String name, Map<String, Object?>? options) {
+    final parts = <String>['CREATE DATABASE ${_quote(name)}'];
+
+    if (options?['owner'] != null) {
+      parts.add('OWNER ${_quote(options!['owner'] as String)}');
+    }
+    if (options?['template'] != null) {
+      parts.add('TEMPLATE ${_quote(options!['template'] as String)}');
+    }
+    if (options?['encoding'] != null) {
+      final encoding = options!['encoding'] as String;
+      parts.add("ENCODING '$encoding'");
+    }
+    if (options?['locale'] != null) {
+      final locale = options!['locale'] as String;
+      parts.add("LOCALE '$locale'");
+    }
+    if (options?['lc_collate'] != null) {
+      final lcCollate = options!['lc_collate'] as String;
+      parts.add("LC_COLLATE '$lcCollate'");
+    }
+    if (options?['lc_ctype'] != null) {
+      final lcCtype = options!['lc_ctype'] as String;
+      parts.add("LC_CTYPE '$lcCtype'");
+    }
+    if (options?['tablespace'] != null) {
+      parts.add('TABLESPACE ${_quote(options!['tablespace'] as String)}');
+    }
+    if (options?['connection_limit'] != null) {
+      parts.add('CONNECTION LIMIT ${options!['connection_limit']}');
+    }
+
+    return parts.join(' ');
+  }
+
+  @override
+  String? compileDropDatabaseIfExists(String name) {
+    return 'DROP DATABASE IF EXISTS ${_quote(name)}';
+  }
+
+  @override
+  String? compileListDatabases() {
+    return 'SELECT datname FROM pg_database WHERE datistemplate = false';
+  }
+
+  // ========== Foreign Key Constraint Management ==========
+
+  @override
+  String? compileEnableForeignKeyConstraints() {
+    // PostgreSQL doesn't have session-level FK disable
+    // Must use ALTER TABLE ... ENABLE TRIGGER ALL on each table
+    return null; // Handled at adapter level
+  }
+
+  @override
+  String? compileDisableForeignKeyConstraints() {
+    return null; // Handled at adapter level
+  }
 }

@@ -55,7 +55,7 @@ const FieldDefinition _$OrmMigrationRecordBatchField = FieldDefinition(
   autoIncrement: false,
 );
 
-final ModelDefinition<OrmMigrationRecord> _$OrmMigrationRecordModelDefinition =
+final ModelDefinition<$OrmMigrationRecord> _$OrmMigrationRecordDefinition =
     ModelDefinition(
       modelName: 'OrmMigrationRecord',
       tableName: 'orm_migrations',
@@ -76,77 +76,83 @@ final ModelDefinition<OrmMigrationRecord> _$OrmMigrationRecordModelDefinition =
         softDeletes: false,
         softDeleteColumn: 'deleted_at',
       ),
-      codec: _$OrmMigrationRecordModelCodec(),
+      codec: _$OrmMigrationRecordCodec(),
     );
 
 extension OrmMigrationRecordOrmDefinition on OrmMigrationRecord {
-  static ModelDefinition<OrmMigrationRecord> get definition =>
-      _$OrmMigrationRecordModelDefinition;
+  static ModelDefinition<$OrmMigrationRecord> get definition =>
+      _$OrmMigrationRecordDefinition;
 }
 
 class OrmMigrationRecords {
   const OrmMigrationRecords._();
 
-  static Query<OrmMigrationRecord> query([String? connection]) =>
-      Model.query<OrmMigrationRecord>(connection: connection);
+  static Query<$OrmMigrationRecord> query([String? connection]) =>
+      Model.query<$OrmMigrationRecord>(connection: connection);
 
-  static Future<OrmMigrationRecord?> find(Object id, {String? connection}) =>
-      Model.find<OrmMigrationRecord>(id, connection: connection);
+  static Future<$OrmMigrationRecord?> find(Object id, {String? connection}) =>
+      Model.find<$OrmMigrationRecord>(id, connection: connection);
 
-  static Future<OrmMigrationRecord> findOrFail(
+  static Future<$OrmMigrationRecord> findOrFail(
     Object id, {
     String? connection,
-  }) => Model.findOrFail<OrmMigrationRecord>(id, connection: connection);
+  }) => Model.findOrFail<$OrmMigrationRecord>(id, connection: connection);
 
-  static Future<List<OrmMigrationRecord>> all({String? connection}) =>
-      Model.all<OrmMigrationRecord>(connection: connection);
+  static Future<List<$OrmMigrationRecord>> all({String? connection}) =>
+      Model.all<$OrmMigrationRecord>(connection: connection);
 
   static Future<int> count({String? connection}) =>
-      Model.count<OrmMigrationRecord>(connection: connection);
+      Model.count<$OrmMigrationRecord>(connection: connection);
 
-  static Future<bool> exists({String? connection}) =>
-      Model.exists<OrmMigrationRecord>(connection: connection);
+  static Future<bool> anyExist({String? connection}) =>
+      Model.anyExist<$OrmMigrationRecord>(connection: connection);
 
-  static Query<OrmMigrationRecord> where(
+  static Query<$OrmMigrationRecord> where(
     String column,
     String operator,
     dynamic value, {
     String? connection,
-  }) => Model.where<OrmMigrationRecord>(
+  }) => Model.where<$OrmMigrationRecord>(
     column,
     operator,
     value,
     connection: connection,
   );
 
-  static Query<OrmMigrationRecord> whereIn(
+  static Query<$OrmMigrationRecord> whereIn(
     String column,
     List<dynamic> values, {
     String? connection,
-  }) =>
-      Model.whereIn<OrmMigrationRecord>(column, values, connection: connection);
+  }) => Model.whereIn<$OrmMigrationRecord>(
+    column,
+    values,
+    connection: connection,
+  );
 
-  static Query<OrmMigrationRecord> orderBy(
+  static Query<$OrmMigrationRecord> orderBy(
     String column, {
     String direction = "asc",
     String? connection,
-  }) => Model.orderBy<OrmMigrationRecord>(
+  }) => Model.orderBy<$OrmMigrationRecord>(
     column,
     direction: direction,
     connection: connection,
   );
 
-  static Query<OrmMigrationRecord> limit(int count, {String? connection}) =>
-      Model.limit<OrmMigrationRecord>(count, connection: connection);
+  static Query<$OrmMigrationRecord> limit(int count, {String? connection}) =>
+      Model.limit<$OrmMigrationRecord>(count, connection: connection);
+
+  static Repository<$OrmMigrationRecord> repo([String? connection]) =>
+      Model.repository<$OrmMigrationRecord>(connection: connection);
 }
 
 class OrmMigrationRecordModelFactory {
   const OrmMigrationRecordModelFactory._();
 
-  static ModelDefinition<OrmMigrationRecord> get definition =>
-      _$OrmMigrationRecordModelDefinition;
+  static ModelDefinition<$OrmMigrationRecord> get definition =>
+      _$OrmMigrationRecordDefinition;
 
-  static ModelCodec<OrmMigrationRecord> get codec => definition.codec;
+  static ModelCodec<$OrmMigrationRecord> get codec => definition.codec;
 
   static OrmMigrationRecord fromMap(
     Map<String, Object?> data, {
@@ -156,7 +162,7 @@ class OrmMigrationRecordModelFactory {
   static Map<String, Object?> toMap(
     OrmMigrationRecord model, {
     ValueCodecRegistry? registry,
-  }) => definition.toMap(model, registry: registry);
+  }) => definition.toMap(model.toTracked(), registry: registry);
 
   static void registerWith(ModelRegistry registry) =>
       registry.register(definition);
@@ -176,12 +182,11 @@ class OrmMigrationRecordModelFactory {
   );
 }
 
-class _$OrmMigrationRecordModelCodec extends ModelCodec<OrmMigrationRecord> {
-  const _$OrmMigrationRecordModelCodec();
-
+class _$OrmMigrationRecordCodec extends ModelCodec<$OrmMigrationRecord> {
+  const _$OrmMigrationRecordCodec();
   @override
   Map<String, Object?> encode(
-    OrmMigrationRecord model,
+    $OrmMigrationRecord model,
     ValueCodecRegistry registry,
   ) {
     return <String, Object?>{
@@ -202,7 +207,7 @@ class _$OrmMigrationRecordModelCodec extends ModelCodec<OrmMigrationRecord> {
   }
 
   @override
-  OrmMigrationRecord decode(
+  $OrmMigrationRecord decode(
     Map<String, Object?> data,
     ValueCodecRegistry registry,
   ) {
@@ -231,7 +236,7 @@ class _$OrmMigrationRecordModelCodec extends ModelCodec<OrmMigrationRecord> {
           data['batch'],
         ) ??
         (throw StateError('Field batch on OrmMigrationRecord cannot be null.'));
-    final model = _$OrmMigrationRecordModel(
+    final model = $OrmMigrationRecord(
       id: ormMigrationRecordIdValue,
       checksum: ormMigrationRecordChecksumValue,
       appliedAt: ormMigrationRecordAppliedAtValue,
@@ -247,8 +252,17 @@ class _$OrmMigrationRecordModelCodec extends ModelCodec<OrmMigrationRecord> {
   }
 }
 
-class _$OrmMigrationRecordModel extends OrmMigrationRecord {
-  _$OrmMigrationRecordModel({
+/// Generated tracked model class for [OrmMigrationRecord].
+///
+/// This class extends the user-defined [OrmMigrationRecord] model and adds
+/// attribute tracking, change detection, and relationship management.
+/// Instances of this class are returned by queries and repositories.
+///
+/// **Do not instantiate this class directly.** Use queries, repositories,
+/// or model factories to create tracked model instances.
+class $OrmMigrationRecord extends OrmMigrationRecord
+    with ModelAttributes, ModelRelations {
+  $OrmMigrationRecord({
     required String id,
     required String checksum,
     required DateTime appliedAt,
@@ -265,6 +279,16 @@ class _$OrmMigrationRecordModel extends OrmMigrationRecord {
       'applied_at': appliedAt,
       'batch': batch,
     });
+  }
+
+  /// Creates a tracked model instance from a user-defined model instance.
+  factory $OrmMigrationRecord.fromModel(OrmMigrationRecord model) {
+    return $OrmMigrationRecord(
+      id: model.id,
+      checksum: model.checksum,
+      appliedAt: model.appliedAt,
+      batch: model.batch,
+    );
   }
 
   @override
@@ -290,6 +314,20 @@ class _$OrmMigrationRecordModel extends OrmMigrationRecord {
 
   void _attachOrmRuntimeMetadata(Map<String, Object?> values) {
     replaceAttributes(values);
-    attachModelDefinition(_$OrmMigrationRecordModelDefinition);
+    attachModelDefinition(_$OrmMigrationRecordDefinition);
+  }
+}
+
+extension OrmMigrationRecordOrmExtension on OrmMigrationRecord {
+  /// The Type of the generated ORM-managed model class.
+  /// Use this when you need to specify the tracked model type explicitly,
+  /// for example in generic type parameters.
+  static Type get trackedType => $OrmMigrationRecord;
+
+  /// Converts this immutable model to a tracked ORM-managed model.
+  /// The tracked model supports attribute tracking, change detection,
+  /// and persistence operations like save() and touch().
+  $OrmMigrationRecord toTracked() {
+    return $OrmMigrationRecord.fromModel(this);
   }
 }

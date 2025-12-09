@@ -14,19 +14,66 @@ class ModelSubclassEmitter {
   String emit() {
     final buffer = StringBuffer();
     final className = context.className;
-    final modelSubclassName = '_\$${className}Model';
+    final modelSubclassName = context.trackedModelClassName;
+
+    // Generate documentation for the tracked model class
+    buffer.writeln('/// Generated tracked model class for [$className].');
+    buffer.writeln('///');
+    buffer.writeln('/// This class extends the user-defined [$className] model and adds');
+    buffer.writeln('/// attribute tracking, change detection, and relationship management.');
+    buffer.writeln('/// Instances of this class are returned by queries and repositories.');
+    buffer.writeln('///');
+    buffer.writeln('/// **Do not instantiate this class directly.** Use queries, repositories,');
+    buffer.writeln('/// or model factories to create tracked model instances.');
+
+    // The generated tracked model class needs ModelAttributes and ModelRelations mixins
+    // to enable attribute tracking, change detection, and relationship management.
+    // The base Model class only has ModelConnection (which doesn't require mixins).
     final mixins = <String>[];
 
-    if (!context.mixinModelAttributes) {
+    if (context.extendsModel) {
+      // User model extends Model, so we need to add the tracking mixins
       mixins.add('ModelAttributes');
-    }
-    if (!context.mixinModelConnection) {
-      mixins.add('ModelConnection');
-    }
-    // Add ModelRelations only if the base class doesn't extend Model
-    // (Model already has ModelRelations mixin)
-    if (!context.extendsModel) {
       mixins.add('ModelRelations');
+      
+      // Add timestamp implementation mixins
+      if (context.mixinTimestamps) {
+        mixins.add('TimestampsImpl');
+      } else if (context.mixinTimestampsTZ) {
+        mixins.add('TimestampsTZImpl');
+      }
+      
+      // Add soft delete implementation mixin
+      if (context.mixinSoftDeletesTZ) {
+        mixins.add('SoftDeletesTZImpl');
+      } else if (context.effectiveSoftDeletes) {
+        // Use the implementation mixin, not the marker mixin
+        mixins.add('SoftDeletesImpl');
+      }
+    } else {
+      // If not extending Model, we need to add all the mixins
+      if (!context.mixinModelAttributes) {
+        mixins.add('ModelAttributes');
+      }
+      if (!context.mixinModelConnection) {
+        mixins.add('ModelConnection');
+      }
+      mixins.add('ModelRelations');
+      
+      // Add timestamp implementation mixins
+      if (context.mixinTimestamps) {
+        mixins.add('TimestampsImpl');
+      } else if (context.mixinTimestampsTZ) {
+        mixins.add('TimestampsTZImpl');
+      }
+      
+      // Add soft delete implementation mixin
+      if (context.mixinSoftDeletesTZ) {
+        mixins.add('SoftDeletesTZImpl');
+      } else if (context.effectiveSoftDeletes) {
+        // Use the implementation mixin, not the marker mixin
+        mixins.add('SoftDeletesImpl');
+      }
     }
 
     final mixinSuffix = mixins.isEmpty ? '' : ' with ${mixins.join(', ')}';
@@ -40,6 +87,16 @@ class ModelSubclassEmitter {
       buffer.writeln("      '${field.columnName}': ${field.name},");
     }
     buffer.writeln('    });');
+    buffer.writeln('  }\n');
+
+    // Add factory constructor to convert from user model
+    buffer.writeln('  /// Creates a tracked model instance from a user-defined model instance.');
+    buffer.writeln('  factory $modelSubclassName.fromModel($className model) {');
+    buffer.writeln('    return $modelSubclassName(');
+    for (final field in context.fields.where((f) => !f.isVirtual)) {
+      buffer.writeln('      ${field.name}: model.${field.name},');
+    }
+    buffer.writeln('    );');
     buffer.writeln('  }\n');
 
     for (final field in context.fields.where((f) => !f.isVirtual)) {
@@ -59,7 +116,7 @@ class ModelSubclassEmitter {
     );
     buffer.writeln('    replaceAttributes(values);');
     buffer.writeln(
-      '    attachModelDefinition(_\$${className}ModelDefinition);',
+      '    attachModelDefinition(_${modelSubclassName}Definition);',
     );
     if (context.effectiveSoftDeletes) {
       buffer.writeln(
@@ -148,6 +205,23 @@ class ModelSubclassEmitter {
       buffer.writeln('}');
       buffer.writeln();
     }
+
+    // Generate toTracked() extension for converting user models to ORM-managed models
+    final extensionName = '${className}OrmExtension';
+    buffer.writeln('extension $extensionName on $className {');
+    buffer.writeln('  /// The Type of the generated ORM-managed model class.');
+    buffer.writeln('  /// Use this when you need to specify the tracked model type explicitly,');
+    buffer.writeln('  /// for example in generic type parameters.');
+    buffer.writeln('  static Type get trackedType => $modelSubclassName;');
+    buffer.writeln();
+    buffer.writeln('  /// Converts this immutable model to a tracked ORM-managed model.');
+    buffer.writeln('  /// The tracked model supports attribute tracking, change detection,');
+    buffer.writeln('  /// and persistence operations like save() and touch().');
+    buffer.writeln('  $modelSubclassName toTracked() {');
+    buffer.writeln('    return $modelSubclassName.fromModel(this);');
+    buffer.writeln('  }');
+    buffer.writeln('}');
+    buffer.writeln();
 
     // Note: We don't generate an extension with setters on the base class because
     // setAttribute() only exists on the generated subclass (via ModelAttributes mixin).

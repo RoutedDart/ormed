@@ -27,9 +27,13 @@ void main() {
         entities: generatedOrmModelDefinitions,
       ));
 
-      await dataSource.init();
       registerDriverTestFactories();
-      await resetDriverTestSchema(driverAdapter, schema: null);
+      
+      // Use schema lock to prevent concurrent schema modifications
+      // await withSchemaLock(() async {
+      //   await resetDriverTestSchema(driverAdapter, schema: null);
+      //   await dataSource.init();
+      // });
     });
 
     tearDownAll(() async {

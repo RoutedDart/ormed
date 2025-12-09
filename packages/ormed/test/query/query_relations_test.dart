@@ -158,6 +158,7 @@ void groupBelongsTo() {
     test('whereHas works for belongsTo', () {
       final plan = context
           .query<Post>()
+          .withTrashed()
           .whereHas('author', (authors) => authors.where('name', 'Alice'))
           .debugPlan();
 

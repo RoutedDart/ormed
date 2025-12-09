@@ -9,14 +9,16 @@ void main() {
   group('Postgres codecs', () {
     late DataSource dataSource;
     late PostgresDriverAdapter driverAdapter;
-    late ModelRegistry registry;
 
     setUpAll(() async {
       final url =
           Platform.environment['POSTGRES_URL'] ??
           'postgres://postgres:postgres@localhost:6543/orm_test';
 
-      // Create custom codecs map
+      // Register PostgreSQL codecs
+      PostgresDriverAdapter.registerCodecs();
+
+      // Register custom test codecs
       final customCodecs = <String, ValueCodec<dynamic>>{
         'PostgresPayloadCodec': const PostgresPayloadCodec(),
         'SqlitePayloadCodec': const SqlitePayloadCodec(),
@@ -27,27 +29,23 @@ void main() {
         'Duration?': const _DurationCodec(),
       };
 
-      // Create codec registry for the adapter
-      final codecRegistry = ValueCodecRegistry.standard();
       for (final entry in customCodecs.entries) {
-        codecRegistry.registerCodec(key: entry.key, codec: entry.value);
+        ValueCodecRegistry.instance.registerCodec(key: entry.key, codec: entry.value);
       }
 
       driverAdapter = PostgresDriverAdapter.custom(
         config: DatabaseConfig(driver: 'postgres', options: {'url': url}),
-        codecRegistry: codecRegistry,
       );
 
-      registry = ModelRegistry()
-        ..registerAll(generatedOrmModelDefinitions)
-        ..register(eventRecordDefinition);
       registerDriverTestFactories();
 
       dataSource = DataSource(
+
         DataSourceOptions(
           driver: driverAdapter,
           entities: [...generatedOrmModelDefinitions, eventRecordDefinition],
           codecs: customCodecs,
+
         ),
       );
 

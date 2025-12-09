@@ -28,7 +28,6 @@ class QueryContext implements ConnectionResolver {
   ///
   /// [registry] is the model registry containing all model definitions.
   /// [driver] is the database driver to use for all operations.
-  /// [codecRegistry] is an optional registry for custom field and value codecs.
   /// [scopeRegistry] is an optional registry for global and local query scopes.
   /// [connectionName] is an optional name for the database connection.
   /// [connectionDatabase] is an optional name for the database.
@@ -42,7 +41,6 @@ class QueryContext implements ConnectionResolver {
   QueryContext({
     required this.registry,
     required this.driver,
-    ValueCodecRegistry? codecRegistry,
     ScopeRegistry? scopeRegistry,
     this.connectionName,
     this.connectionDatabase,
@@ -53,10 +51,11 @@ class QueryContext implements ConnectionResolver {
     TransactionHook? afterTransactionHook,
     QueryLogHook? queryLogHook,
     bool Function()? pretendResolver,
-  }) : codecRegistry = (codecRegistry ?? driver.codecs).forDriver(
+  }) : codecRegistry = ValueCodecRegistry.instance.forDriver(
          driver.metadata.name,
        ),
        scopeRegistry = scopeRegistry ?? ScopeRegistry(),
+       queryCache = QueryCache(),
        _beforeQueryHook = beforeQueryHook,
        _beforeMutationHook = beforeMutationHook,
        _beforeTransactionHook = beforeTransactionHook,
@@ -81,6 +80,9 @@ class QueryContext implements ConnectionResolver {
 
   /// The registry for global and local query scopes.
   final ScopeRegistry scopeRegistry;
+
+  /// The query result cache.
+  final QueryCache queryCache;
 
   /// The name of the database connection.
   final String? connectionName;
@@ -194,7 +196,23 @@ class QueryContext implements ConnectionResolver {
   void registerGlobalScope<T>(
     String identifier,
     GlobalScopeCallback<T> scope,
-  ) => scopeRegistry.addGlobalScope<T>(identifier, scope);
+  ) {
+    scopeRegistry.addGlobalScope<T>(identifier, scope);
+    // Also register for the actual model type if T is an alias
+    try {
+      final definition = registry.expect<T>();
+      final actualType = definition.modelType;
+      if (actualType != T) {
+        scopeRegistry.addGlobalScopeForType(
+          actualType,
+          identifier,
+          (query) => scope(query as Query<T>) as Query<dynamic>,
+        );
+      }
+    } catch (_) {
+      // If the type is not registered, just register the scope for T only
+    }
+  }
 
   /// Registers a global scope pattern for models of type [T].
   ///
@@ -264,6 +282,14 @@ class QueryContext implements ConnectionResolver {
     if (model is ModelConnection) {
       model.attachConnectionResolver(this);
     }
+    // Mark models loaded from database as existing and sync their original state
+    final modelInstance = model;
+    if (modelInstance is Model<dynamic>) {
+      modelInstance.markAsExisting();
+      if (modelInstance is ModelAttributes) {
+        (modelInstance as ModelAttributes).syncOriginal();
+      }
+    }
   }
 
   /// Returns a [Repository] that emits events through this context.
@@ -281,7 +307,6 @@ class QueryContext implements ConnectionResolver {
     final defaultRepository = Repository(
       definition: definition,
       driverName: driver.metadata.name,
-      codecs: codecRegistry,
       runMutation: runMutation,
       describeMutation: describeMutation,
       attachRuntimeMetadata: attachRuntimeMetadata,
@@ -399,6 +424,19 @@ class QueryContext implements ConnectionResolver {
   @override
   Future<List<Map<String, Object?>>> runSelect(QueryPlan plan) async {
     final preview = describeQuery(plan);
+
+    // Check cache if enabled
+    if (plan.cacheTtl != null && !plan.disableCache) {
+      final cached = queryCache.get<List<Map<String, Object?>>>(
+        preview.sql,
+        preview.parameters,
+        ttl: plan.cacheTtl,
+      );
+      if (cached != null) {
+        return cached;
+      }
+    }
+
     final timer = Stopwatch()..start();
     _beforeQueryHook?.call(plan);
     final pretending = _pretendResolver?.call() ?? false;
@@ -460,6 +498,12 @@ class QueryContext implements ConnectionResolver {
         rowCount: result.length,
         error: null,
       );
+
+      // Store in cache if caching is enabled
+      if (plan.cacheTtl != null && !plan.disableCache) {
+        queryCache.put(preview.sql, preview.parameters, result, ttl: plan.cacheTtl);
+      }
+
       return result;
     } catch (error, stackTrace) {
       timer.stop();
@@ -868,6 +912,31 @@ class QueryContext implements ConnectionResolver {
       );
     }
   }
+
+  /// Clear all cached query results.
+  ///
+  /// Example:
+  /// ```dart
+  /// context.flushQueryCache();
+  /// ```
+  void flushQueryCache() => queryCache.flush();
+
+  /// Remove expired cache entries (automatic cleanup).
+  ///
+  /// Example:
+  /// ```dart
+  /// context.vacuumQueryCache();
+  /// ```
+  void vacuumQueryCache() => queryCache.vacuum();
+
+  /// Get query cache statistics.
+  ///
+  /// Example:
+  /// ```dart
+  /// final stats = context.queryCacheStats;
+  /// print('Active entries: ${stats.activeEntries}');
+  /// ```
+  CacheStats get queryCacheStats => queryCache.stats;
 
   void _handleLateRegistration(ModelDefinition<dynamic> definition) {
     final field = definition.softDeleteField;

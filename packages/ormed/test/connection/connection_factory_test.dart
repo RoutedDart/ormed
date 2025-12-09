@@ -62,7 +62,7 @@ class _DisposableDriver extends DriverAdapter {
   DriverMetadata get metadata => const DriverMetadata(name: 'test');
 
   @override
-  ValueCodecRegistry get codecs => ValueCodecRegistry.standard();
+  ValueCodecRegistry get codecs => ValueCodecRegistry.instance;
 
   @override
   Future<void> close() async => onClose();

@@ -8,6 +8,7 @@ class CompanionClassEmitter {
   String emit() {
     final buffer = StringBuffer();
     final className = context.className;
+    final generatedClassName = context.trackedModelClassName;
     // Simple pluralization: add 's'
     // TODO: Allow configuration or use a proper pluralizer
     final companionName = '${className}s';
@@ -16,100 +17,81 @@ class CompanionClassEmitter {
     buffer.writeln('  const $companionName._();');
     buffer.writeln();
 
-    buffer.writeln('  static Query<$className> query([String? connection]) =>');
-    buffer.writeln('      Model.query<$className>(connection: connection);');
+    buffer.writeln('  static Query<$generatedClassName> query([String? connection]) =>');
+    buffer.writeln('      Model.query<$generatedClassName>(connection: connection);');
     buffer.writeln();
 
     buffer.writeln(
-      '  static Future<$className?> find(Object id, {String? connection}) =>',
+      '  static Future<$generatedClassName?> find(Object id, {String? connection}) =>',
     );
-    buffer.writeln('      Model.find<$className>(id, connection: connection);');
+    buffer.writeln('      Model.find<$generatedClassName>(id, connection: connection);');
     buffer.writeln();
 
     buffer.writeln(
-      '  static Future<$className> findOrFail(Object id, {String? connection}) =>',
+      '  static Future<$generatedClassName> findOrFail(Object id, {String? connection}) =>',
     );
     buffer.writeln(
-      '      Model.findOrFail<$className>(id, connection: connection);',
+      '      Model.findOrFail<$generatedClassName>(id, connection: connection);',
     );
     buffer.writeln();
 
     buffer.writeln(
-      '  static Future<List<$className>> all({String? connection}) =>',
+      '  static Future<List<$generatedClassName>> all({String? connection}) =>',
     );
-    buffer.writeln('      Model.all<$className>(connection: connection);');
+    buffer.writeln('      Model.all<$generatedClassName>(connection: connection);');
     buffer.writeln();
 
     buffer.writeln('  static Future<int> count({String? connection}) =>');
-    buffer.writeln('      Model.count<$className>(connection: connection);');
+    buffer.writeln('      Model.count<$generatedClassName>(connection: connection);');
     buffer.writeln();
 
-    buffer.writeln('  static Future<bool> exists({String? connection}) =>');
-    buffer.writeln('      Model.exists<$className>(connection: connection);');
+    buffer.writeln('  static Future<bool> anyExist({String? connection}) =>');
+    buffer.writeln('      Model.anyExist<$generatedClassName>(connection: connection);');
     buffer.writeln();
 
-    buffer.writeln('  static Query<$className> where(');
+    buffer.writeln('  static Query<$generatedClassName> where(');
     buffer.writeln('    String column,');
     buffer.writeln('    String operator,');
     buffer.writeln('    dynamic value, {');
     buffer.writeln('    String? connection,');
     buffer.writeln(
-      '  }) => Model.where<$className>(column, operator, value, connection: connection);',
+      '  }) => Model.where<$generatedClassName>(column, operator, value, connection: connection);',
     );
     buffer.writeln();
 
-    buffer.writeln('  static Query<$className> whereIn(');
+    buffer.writeln('  static Query<$generatedClassName> whereIn(');
     buffer.writeln('    String column,');
     buffer.writeln('    List<dynamic> values, {');
     buffer.writeln('    String? connection,');
     buffer.writeln(
-      '  }) => Model.whereIn<$className>(column, values, connection: connection);',
+      '  }) => Model.whereIn<$generatedClassName>(column, values, connection: connection);',
     );
     buffer.writeln();
 
-    buffer.writeln('  static Query<$className> orderBy(');
+    buffer.writeln('  static Query<$generatedClassName> orderBy(');
     buffer.writeln('    String column, {');
     buffer.writeln('    String direction = "asc",');
     buffer.writeln('    String? connection,');
     buffer.writeln(
-      '  }) => Model.orderBy<$className>(column, direction: direction, connection: connection);',
+      '  }) => Model.orderBy<$generatedClassName>(column, direction: direction, connection: connection);',
     );
     buffer.writeln();
 
     buffer.writeln(
-      '  static Query<$className> limit(int count, {String? connection}) =>',
+      '  static Query<$generatedClassName> limit(int count, {String? connection}) =>',
     );
     buffer.writeln(
-      '      Model.limit<$className>(count, connection: connection);',
+      '      Model.limit<$generatedClassName>(count, connection: connection);',
     );
     buffer.writeln();
 
-    // Add other methods as needed (create, insert, etc.)
-    // For now, these are the ones we implemented in Model (or planned to)
-
-    // TODO: Re-enable scopes generation after fixing ParameterElement type issue
-    // for (final scope in context.scopes) {
-    //   // Skip the first parameter (Query<T>)
-    //   final visibleParams = scope.parameters.skip(1);
-    //   final paramSignature = visibleParams
-    //       .map(
-    //         (p) =>
-    //             '${(p as ParameterElement).type.getDisplayString(withNullability: true)} ${p.name}',
-    //       )
-    //       .join(', ');
-    //   final args = visibleParams
-    //       .map((p) => (p as ParameterElement).name)
-    //       .join(', ');
-    //   final queryArg = 'Model.query<$className>(connection: connection)';
-
-    //   buffer.writeln(
-    //     '  static Query<$className> ${scope.name}($paramSignature${paramSignature.isNotEmpty ? ', ' : ''}{String? connection}) =>',
-    //   );
-    //   buffer.writeln(
-    //     '      $className.${scope.name}($queryArg${args.isNotEmpty ? ', ' : ''}$args);',
-    //   );
-    //   buffer.writeln();
-    // }
+    buffer.writeln(
+      '  static Repository<$generatedClassName> repo([String? connection]) =>',
+    );
+    buffer.writeln(
+      '      Model.repository<$generatedClassName>(connection: connection);',
+    );
+    buffer.writeln();
 
     buffer.writeln('}');
     buffer.writeln();

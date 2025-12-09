@@ -134,8 +134,8 @@ class Comments {
   static Future<int> count({String? connection}) =>
       Model.count<Comment>(connection: connection);
 
-  static Future<bool> exists({String? connection}) =>
-      Model.exists<Comment>(connection: connection);
+  static Future<bool> anyExist({String? connection}) =>
+      Model.anyExist<Comment>(connection: connection);
 
   static Query<Comment> where(
     String column,
@@ -183,6 +183,9 @@ class CommentModelFactory {
 
   static void registerWith(ModelRegistry registry) =>
       registry.register(definition);
+
+  static ModelFactoryConnection<Comment> withConnection(QueryContext context) =>
+      ModelFactoryConnection<Comment>(definition: definition, context: context);
 
   static ModelFactoryBuilder<Comment> factory({
     GeneratorProvider? generatorProvider,
@@ -333,13 +336,4 @@ extension CommentRelationQueries on Comment {
   Query<User> authorQuery() {
     return Model.query<User>().where('id', userId);
   }
-}
-
-extension CommentAttributeSetters on Comment {
-  set id(int? value) => setAttribute('id', value);
-  set postId(int value) => setAttribute('post_id', value);
-  set userId(int? value) => setAttribute('user_id', value);
-  set body(String value) => setAttribute('body', value);
-  set createdAt(DateTime? value) => setAttribute('created_at', value);
-  set updatedAt(DateTime? value) => setAttribute('updated_at', value);
 }

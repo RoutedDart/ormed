@@ -155,6 +155,102 @@ class SnapshotSchemaDriver implements SchemaDriver {
       )
       .toList(growable: false);
 
+  @override
+  Future<bool> createDatabase(String name, {Map<String, Object?>? options}) async {
+    throw UnsupportedError('SnapshotSchemaDriver does not support database management.');
+  }
+
+  @override
+  Future<bool> dropDatabase(String name) async {
+    throw UnsupportedError('SnapshotSchemaDriver does not support database management.');
+  }
+
+  @override
+  Future<bool> dropDatabaseIfExists(String name) async {
+    throw UnsupportedError('SnapshotSchemaDriver does not support database management.');
+  }
+
+  @override
+  Future<List<String>> listDatabases() async {
+    throw UnsupportedError('SnapshotSchemaDriver does not support database management.');
+  }
+
+  @override
+  Future<bool> enableForeignKeyConstraints() async {
+    throw UnsupportedError('SnapshotSchemaDriver does not support FK constraint control.');
+  }
+
+  @override
+  Future<bool> disableForeignKeyConstraints() async {
+    throw UnsupportedError('SnapshotSchemaDriver does not support FK constraint control.');
+  }
+
+  @override
+  Future<T> withoutForeignKeyConstraints<T>(Future<T> Function() callback) async {
+    throw UnsupportedError('SnapshotSchemaDriver does not support FK constraint control.');
+  }
+
+  @override
+  Future<void> dropAllTables({String? schema}) async {
+    throw UnsupportedError('SnapshotSchemaDriver does not support table operations.');
+  }
+
+  @override
+  Future<bool> hasTable(String table, {String? schema}) async {
+    return snapshot.tables.any(
+      (t) => _equalsOwner(t.schema, schema) && _equals(t.name, table),
+    );
+  }
+
+  @override
+  Future<bool> hasView(String view, {String? schema}) async {
+    return snapshot.views.any(
+      (v) => _equalsOwner(v.schema, schema) && _equals(v.name, view),
+    );
+  }
+
+  @override
+  Future<bool> hasColumn(String table, String column, {String? schema}) async {
+    return snapshot.columns.any(
+      (c) =>
+          _equalsOwner(c.schema, schema) &&
+          _equals(c.tableName, table) &&
+          _equals(c.name, column),
+    );
+  }
+
+  @override
+  Future<bool> hasColumns(String table, List<String> columns, {String? schema}) async {
+    final tableColumns = snapshot.columns
+        .where(
+          (c) => _equalsOwner(c.schema, schema) && _equals(c.tableName, table),
+        )
+        .toList();
+
+    for (final column in columns) {
+      if (!tableColumns.any((c) => _equals(c.name, column))) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  @override
+  Future<bool> hasIndex(String table, String index, {String? schema, String? type}) async {
+    return snapshot.indexes.any((idx) {
+      final typeMatches = type == null ||
+          (type == 'primary' && idx.primary) ||
+          (type == 'unique' && idx.unique) ||
+          _equals(type, idx.type);
+
+      return _equalsOwner(idx.schema, schema) &&
+          _equals(idx.tableName, table) &&
+          _equals(idx.name, index) &&
+          typeMatches;
+    });
+  }
+
   bool _equals(String? a, String? b) =>
       (a ?? '').toLowerCase() == (b ?? '').toLowerCase();
 

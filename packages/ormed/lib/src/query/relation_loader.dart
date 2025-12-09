@@ -1,6 +1,7 @@
 import '../annotations.dart';
 import '../model.dart';
 import '../model_definition.dart';
+import '../model_mixins/model_relations.dart';
 import '../model_registry.dart';
 import '../value_codec.dart';
 import 'query.dart';
@@ -79,8 +80,8 @@ class RelationLoader {
   /// Syncs a loaded relation from QueryRow to the model's relation cache.
   void _syncRelationsToModels<T>(List<QueryRow<T>> rows, String relationName) {
     for (final row in rows) {
-      if (row.model is Model) {
-        final model = row.model as Model;
+      if (row.model is ModelRelations) {
+        final model = row.model as ModelRelations;
         final relationValue = row.relations[relationName];
         model.setRelation(relationName, relationValue);
       }

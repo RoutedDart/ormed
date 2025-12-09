@@ -112,7 +112,7 @@ class MySqlConnectionSettings {
     bool secure = _boolOption(options, 'ssl') ?? false;
     String? charset = _stringOption(options, 'charset') ?? 'utf8mb4';
     String? collation = _stringOption(options, 'collation');
-    String? timezone = _stringOption(options, 'timezone');
+    String? timezone = _stringOption(options, 'timezone') ?? '+00:00';
     String? sqlMode =
         _stringOption(options, 'sqlMode') ?? _stringOption(options, 'sql_mode');
     Duration timeout =

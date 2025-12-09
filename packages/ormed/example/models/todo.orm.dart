@@ -43,7 +43,7 @@ const FieldDefinition _$TodoCompletedField = FieldDefinition(
   autoIncrement: false,
 );
 
-final ModelDefinition<Todo> _$TodoModelDefinition = ModelDefinition(
+final ModelDefinition<$Todo> _$TodoDefinition = ModelDefinition(
   modelName: 'Todo',
   tableName: 'todos',
   fields: const [_$TodoIdField, _$TodoTitleField, _$TodoCompletedField],
@@ -58,64 +58,70 @@ final ModelDefinition<Todo> _$TodoModelDefinition = ModelDefinition(
     softDeletes: false,
     softDeleteColumn: 'deleted_at',
   ),
-  codec: _$TodoModelCodec(),
+  codec: _$TodoCodec(),
 );
 
 extension TodoOrmDefinition on Todo {
-  static ModelDefinition<Todo> get definition => _$TodoModelDefinition;
+  static ModelDefinition<$Todo> get definition => _$TodoDefinition;
 }
 
 class Todos {
   const Todos._();
 
-  static Query<Todo> query([String? connection]) =>
-      Model.query<Todo>(connection: connection);
+  static Query<$Todo> query([String? connection]) =>
+      Model.query<$Todo>(connection: connection);
 
-  static Future<Todo?> find(Object id, {String? connection}) =>
-      Model.find<Todo>(id, connection: connection);
+  static Future<$Todo?> find(Object id, {String? connection}) =>
+      Model.find<$Todo>(id, connection: connection);
 
-  static Future<Todo> findOrFail(Object id, {String? connection}) =>
-      Model.findOrFail<Todo>(id, connection: connection);
+  static Future<$Todo> findOrFail(Object id, {String? connection}) =>
+      Model.findOrFail<$Todo>(id, connection: connection);
 
-  static Future<List<Todo>> all({String? connection}) =>
-      Model.all<Todo>(connection: connection);
+  static Future<List<$Todo>> all({String? connection}) =>
+      Model.all<$Todo>(connection: connection);
 
   static Future<int> count({String? connection}) =>
-      Model.count<Todo>(connection: connection);
+      Model.count<$Todo>(connection: connection);
 
-  static Future<bool> exists({String? connection}) =>
-      Model.exists<Todo>(connection: connection);
+  static Future<bool> anyExist({String? connection}) =>
+      Model.anyExist<$Todo>(connection: connection);
 
-  static Query<Todo> where(
+  static Query<$Todo> where(
     String column,
     String operator,
     dynamic value, {
     String? connection,
-  }) => Model.where<Todo>(column, operator, value, connection: connection);
+  }) => Model.where<$Todo>(column, operator, value, connection: connection);
 
-  static Query<Todo> whereIn(
+  static Query<$Todo> whereIn(
     String column,
     List<dynamic> values, {
     String? connection,
-  }) => Model.whereIn<Todo>(column, values, connection: connection);
+  }) => Model.whereIn<$Todo>(column, values, connection: connection);
 
-  static Query<Todo> orderBy(
+  static Query<$Todo> orderBy(
     String column, {
     String direction = "asc",
     String? connection,
-  }) =>
-      Model.orderBy<Todo>(column, direction: direction, connection: connection);
+  }) => Model.orderBy<$Todo>(
+    column,
+    direction: direction,
+    connection: connection,
+  );
 
-  static Query<Todo> limit(int count, {String? connection}) =>
-      Model.limit<Todo>(count, connection: connection);
+  static Query<$Todo> limit(int count, {String? connection}) =>
+      Model.limit<$Todo>(count, connection: connection);
+
+  static Repository<$Todo> repo([String? connection]) =>
+      Model.repository<$Todo>(connection: connection);
 }
 
 class TodoModelFactory {
   const TodoModelFactory._();
 
-  static ModelDefinition<Todo> get definition => _$TodoModelDefinition;
+  static ModelDefinition<$Todo> get definition => _$TodoDefinition;
 
-  static ModelCodec<Todo> get codec => definition.codec;
+  static ModelCodec<$Todo> get codec => definition.codec;
 
   static Todo fromMap(
     Map<String, Object?> data, {
@@ -125,7 +131,7 @@ class TodoModelFactory {
   static Map<String, Object?> toMap(
     Todo model, {
     ValueCodecRegistry? registry,
-  }) => definition.toMap(model, registry: registry);
+  }) => definition.toMap(model.toTracked(), registry: registry);
 
   static void registerWith(ModelRegistry registry) =>
       registry.register(definition);
@@ -141,11 +147,10 @@ class TodoModelFactory {
   );
 }
 
-class _$TodoModelCodec extends ModelCodec<Todo> {
-  const _$TodoModelCodec();
-
+class _$TodoCodec extends ModelCodec<$Todo> {
+  const _$TodoCodec();
   @override
-  Map<String, Object?> encode(Todo model, ValueCodecRegistry registry) {
+  Map<String, Object?> encode($Todo model, ValueCodecRegistry registry) {
     return <String, Object?>{
       'id': registry.encodeField(_$TodoIdField, model.id),
       'title': registry.encodeField(_$TodoTitleField, model.title),
@@ -154,7 +159,7 @@ class _$TodoModelCodec extends ModelCodec<Todo> {
   }
 
   @override
-  Todo decode(Map<String, Object?> data, ValueCodecRegistry registry) {
+  $Todo decode(Map<String, Object?> data, ValueCodecRegistry registry) {
     final int todoIdValue =
         registry.decodeField<int>(_$TodoIdField, data['id']) ??
         (throw StateError('Field id on Todo cannot be null.'));
@@ -164,7 +169,7 @@ class _$TodoModelCodec extends ModelCodec<Todo> {
     final bool todoCompletedValue =
         registry.decodeField<bool>(_$TodoCompletedField, data['completed']) ??
         (throw StateError('Field completed on Todo cannot be null.'));
-    final model = _$TodoModel(
+    final model = $Todo(
       id: todoIdValue,
       title: todoTitleValue,
       completed: todoCompletedValue,
@@ -178,14 +183,27 @@ class _$TodoModelCodec extends ModelCodec<Todo> {
   }
 }
 
-class _$TodoModel extends Todo {
-  _$TodoModel({required int id, required String title, required bool completed})
+/// Generated tracked model class for [Todo].
+///
+/// This class extends the user-defined [Todo] model and adds
+/// attribute tracking, change detection, and relationship management.
+/// Instances of this class are returned by queries and repositories.
+///
+/// **Do not instantiate this class directly.** Use queries, repositories,
+/// or model factories to create tracked model instances.
+class $Todo extends Todo with ModelAttributes, ModelRelations {
+  $Todo({required int id, required String title, required bool completed})
     : super.new(id: id, title: title, completed: completed) {
     _attachOrmRuntimeMetadata({
       'id': id,
       'title': title,
       'completed': completed,
     });
+  }
+
+  /// Creates a tracked model instance from a user-defined model instance.
+  factory $Todo.fromModel(Todo model) {
+    return $Todo(id: model.id, title: model.title, completed: model.completed);
   }
 
   @override
@@ -205,6 +223,20 @@ class _$TodoModel extends Todo {
 
   void _attachOrmRuntimeMetadata(Map<String, Object?> values) {
     replaceAttributes(values);
-    attachModelDefinition(_$TodoModelDefinition);
+    attachModelDefinition(_$TodoDefinition);
+  }
+}
+
+extension TodoOrmExtension on Todo {
+  /// The Type of the generated ORM-managed model class.
+  /// Use this when you need to specify the tracked model type explicitly,
+  /// for example in generic type parameters.
+  static Type get trackedType => $Todo;
+
+  /// Converts this immutable model to a tracked ORM-managed model.
+  /// The tracked model supports attribute tracking, change detection,
+  /// and persistence operations like save() and touch().
+  $Todo toTracked() {
+    return $Todo.fromModel(this);
   }
 }

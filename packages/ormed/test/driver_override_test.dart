@@ -24,7 +24,6 @@ void main() {
       final repo = Repository<DriverOverrideModel>(
         definition: definition,
         driverName: 'postgres',
-        codecs: ValueCodecRegistry.standard(),
         runMutation: (plan) async {
           captured = plan;
           return const MutationResult(affectedRows: 0);
@@ -43,17 +42,17 @@ void main() {
 
   group('Driver-specific codecs', () {
     final definition = DriverOverrideModelOrmDefinition.definition;
-    final baseRegistry = ValueCodecRegistry.standard()
+    final baseRegistry = ValueCodecRegistry.instance
       ..registerCodecFor(PostgresPayloadCodec, const PostgresPayloadCodec())
       ..registerCodecFor(SqlitePayloadCodec, const SqlitePayloadCodec());
 
     test('encode uses codec override per driver', () {
       final postgresMap = definition.toMap(
-        const DriverOverrideModel(id: 1, payload: {'mode': 'dark'}),
+        const DriverOverrideModel(id: 1, payload: {'mode': 'dark'}).toTracked(),
         registry: baseRegistry.forDriver('postgres'),
       );
       final sqliteMap = definition.toMap(
-        const DriverOverrideModel(id: 2, payload: {'mode': 'dark'}),
+        const DriverOverrideModel(id: 2, payload: {'mode': 'dark'}).toTracked(),
         registry: baseRegistry.forDriver('sqlite'),
       );
 

@@ -79,6 +79,30 @@ const FieldDefinition _$PostPublishedAtField = FieldDefinition(
   autoIncrement: false,
 );
 
+const FieldDefinition _$PostCreatedAtField = FieldDefinition(
+  name: 'createdAt',
+  columnName: 'created_at',
+  dartType: 'DateTime',
+  resolvedType: 'DateTime?',
+  isPrimaryKey: false,
+  isNullable: true,
+  isUnique: false,
+  isIndexed: false,
+  autoIncrement: false,
+);
+
+const FieldDefinition _$PostUpdatedAtField = FieldDefinition(
+  name: 'updatedAt',
+  columnName: 'updated_at',
+  dartType: 'DateTime',
+  resolvedType: 'DateTime?',
+  isPrimaryKey: false,
+  isNullable: true,
+  isUnique: false,
+  isIndexed: false,
+  autoIncrement: false,
+);
+
 const RelationDefinition _$PostAuthorRelation = RelationDefinition(
   name: 'author',
   kind: RelationKind.belongsTo,
@@ -105,7 +129,7 @@ const RelationDefinition _$PostPhotosRelation = RelationDefinition(
   morphClass: 'Post',
 );
 
-final ModelDefinition<Post> _$PostModelDefinition = ModelDefinition(
+final ModelDefinition<$Post> _$PostDefinition = ModelDefinition(
   modelName: 'Post',
   tableName: 'posts',
   fields: const [
@@ -115,6 +139,8 @@ final ModelDefinition<Post> _$PostModelDefinition = ModelDefinition(
     _$PostContentField,
     _$PostViewsField,
     _$PostPublishedAtField,
+    _$PostCreatedAtField,
+    _$PostUpdatedAtField,
   ],
   relations: const [
     _$PostAuthorRelation,
@@ -131,69 +157,75 @@ final ModelDefinition<Post> _$PostModelDefinition = ModelDefinition(
     softDeletes: false,
     softDeleteColumn: 'deleted_at',
   ),
-  codec: _$PostModelCodec(),
+  codec: _$PostCodec(),
 );
 
 // ignore: unused_element
-final postModelDefinitionRegistration = ModelFactoryRegistry.register<Post>(
-  _$PostModelDefinition,
+final postModelDefinitionRegistration = ModelFactoryRegistry.register<$Post>(
+  _$PostDefinition,
 );
 
 extension PostOrmDefinition on Post {
-  static ModelDefinition<Post> get definition => _$PostModelDefinition;
+  static ModelDefinition<$Post> get definition => _$PostDefinition;
 }
 
 class Posts {
   const Posts._();
 
-  static Query<Post> query([String? connection]) =>
-      Model.query<Post>(connection: connection);
+  static Query<$Post> query([String? connection]) =>
+      Model.query<$Post>(connection: connection);
 
-  static Future<Post?> find(Object id, {String? connection}) =>
-      Model.find<Post>(id, connection: connection);
+  static Future<$Post?> find(Object id, {String? connection}) =>
+      Model.find<$Post>(id, connection: connection);
 
-  static Future<Post> findOrFail(Object id, {String? connection}) =>
-      Model.findOrFail<Post>(id, connection: connection);
+  static Future<$Post> findOrFail(Object id, {String? connection}) =>
+      Model.findOrFail<$Post>(id, connection: connection);
 
-  static Future<List<Post>> all({String? connection}) =>
-      Model.all<Post>(connection: connection);
+  static Future<List<$Post>> all({String? connection}) =>
+      Model.all<$Post>(connection: connection);
 
   static Future<int> count({String? connection}) =>
-      Model.count<Post>(connection: connection);
+      Model.count<$Post>(connection: connection);
 
-  static Future<bool> exists({String? connection}) =>
-      Model.exists<Post>(connection: connection);
+  static Future<bool> anyExist({String? connection}) =>
+      Model.anyExist<$Post>(connection: connection);
 
-  static Query<Post> where(
+  static Query<$Post> where(
     String column,
     String operator,
     dynamic value, {
     String? connection,
-  }) => Model.where<Post>(column, operator, value, connection: connection);
+  }) => Model.where<$Post>(column, operator, value, connection: connection);
 
-  static Query<Post> whereIn(
+  static Query<$Post> whereIn(
     String column,
     List<dynamic> values, {
     String? connection,
-  }) => Model.whereIn<Post>(column, values, connection: connection);
+  }) => Model.whereIn<$Post>(column, values, connection: connection);
 
-  static Query<Post> orderBy(
+  static Query<$Post> orderBy(
     String column, {
     String direction = "asc",
     String? connection,
-  }) =>
-      Model.orderBy<Post>(column, direction: direction, connection: connection);
+  }) => Model.orderBy<$Post>(
+    column,
+    direction: direction,
+    connection: connection,
+  );
 
-  static Query<Post> limit(int count, {String? connection}) =>
-      Model.limit<Post>(count, connection: connection);
+  static Query<$Post> limit(int count, {String? connection}) =>
+      Model.limit<$Post>(count, connection: connection);
+
+  static Repository<$Post> repo([String? connection]) =>
+      Model.repository<$Post>(connection: connection);
 }
 
 class PostModelFactory {
   const PostModelFactory._();
 
-  static ModelDefinition<Post> get definition => _$PostModelDefinition;
+  static ModelDefinition<$Post> get definition => _$PostDefinition;
 
-  static ModelCodec<Post> get codec => definition.codec;
+  static ModelCodec<$Post> get codec => definition.codec;
 
   static Post fromMap(
     Map<String, Object?> data, {
@@ -203,7 +235,7 @@ class PostModelFactory {
   static Map<String, Object?> toMap(
     Post model, {
     ValueCodecRegistry? registry,
-  }) => definition.toMap(model, registry: registry);
+  }) => definition.toMap(model.toTracked(), registry: registry);
 
   static void registerWith(ModelRegistry registry) =>
       registry.register(definition);
@@ -219,11 +251,10 @@ class PostModelFactory {
   );
 }
 
-class _$PostModelCodec extends ModelCodec<Post> {
-  const _$PostModelCodec();
-
+class _$PostCodec extends ModelCodec<$Post> {
+  const _$PostCodec();
   @override
-  Map<String, Object?> encode(Post model, ValueCodecRegistry registry) {
+  Map<String, Object?> encode($Post model, ValueCodecRegistry registry) {
     return <String, Object?>{
       'id': registry.encodeField(_$PostIdField, model.id),
       'author_id': registry.encodeField(_$PostAuthorIdField, model.authorId),
@@ -234,11 +265,23 @@ class _$PostModelCodec extends ModelCodec<Post> {
         _$PostPublishedAtField,
         model.publishedAt,
       ),
+      'created_at': registry.encodeField(
+        _$PostCreatedAtField,
+        (model is ModelAttributes
+            ? model.getAttribute<DateTime?>('created_at')
+            : null),
+      ),
+      'updated_at': registry.encodeField(
+        _$PostUpdatedAtField,
+        (model is ModelAttributes
+            ? model.getAttribute<DateTime?>('updated_at')
+            : null),
+      ),
     };
   }
 
   @override
-  Post decode(Map<String, Object?> data, ValueCodecRegistry registry) {
+  $Post decode(Map<String, Object?> data, ValueCodecRegistry registry) {
     final int postIdValue =
         registry.decodeField<int>(_$PostIdField, data['id']) ??
         (throw StateError('Field id on Post cannot be null.'));
@@ -262,7 +305,15 @@ class _$PostModelCodec extends ModelCodec<Post> {
           data['published_at'],
         ) ??
         (throw StateError('Field publishedAt on Post cannot be null.'));
-    final model = _$PostModel(
+    final DateTime? postCreatedAtValue = registry.decodeField<DateTime?>(
+      _$PostCreatedAtField,
+      data['created_at'],
+    );
+    final DateTime? postUpdatedAtValue = registry.decodeField<DateTime?>(
+      _$PostUpdatedAtField,
+      data['updated_at'],
+    );
+    final model = $Post(
       id: postIdValue,
       authorId: postAuthorIdValue,
       title: postTitleValue,
@@ -277,13 +328,24 @@ class _$PostModelCodec extends ModelCodec<Post> {
       'content': postContentValue,
       'views': postViewsValue,
       'published_at': postPublishedAtValue,
+      'created_at': postCreatedAtValue,
+      'updated_at': postUpdatedAtValue,
     });
     return model;
   }
 }
 
-class _$PostModel extends Post {
-  _$PostModel({
+/// Generated tracked model class for [Post].
+///
+/// This class extends the user-defined [Post] model and adds
+/// attribute tracking, change detection, and relationship management.
+/// Instances of this class are returned by queries and repositories.
+///
+/// **Do not instantiate this class directly.** Use queries, repositories,
+/// or model factories to create tracked model instances.
+class $Post extends Post
+    with ModelAttributes, ModelRelations, TimestampsTZImpl {
+  $Post({
     required int id,
     required int authorId,
     required String title,
@@ -306,6 +368,18 @@ class _$PostModel extends Post {
       'views': views,
       'published_at': publishedAt,
     });
+  }
+
+  /// Creates a tracked model instance from a user-defined model instance.
+  factory $Post.fromModel(Post model) {
+    return $Post(
+      id: model.id,
+      authorId: model.authorId,
+      title: model.title,
+      content: model.content,
+      views: model.views,
+      publishedAt: model.publishedAt,
+    );
   }
 
   @override
@@ -341,7 +415,7 @@ class _$PostModel extends Post {
 
   void _attachOrmRuntimeMetadata(Map<String, Object?> values) {
     replaceAttributes(values);
-    attachModelDefinition(_$PostModelDefinition);
+    attachModelDefinition(_$PostDefinition);
   }
 
   @override
@@ -382,5 +456,19 @@ extension PostRelationQueries on Post {
     throw UnimplementedError(
       "Polymorphic relation query generation not yet supported",
     );
+  }
+}
+
+extension PostOrmExtension on Post {
+  /// The Type of the generated ORM-managed model class.
+  /// Use this when you need to specify the tracked model type explicitly,
+  /// for example in generic type parameters.
+  static Type get trackedType => $Post;
+
+  /// Converts this immutable model to a tracked ORM-managed model.
+  /// The tracked model supports attribute tracking, change detection,
+  /// and persistence operations like save() and touch().
+  $Post toTracked() {
+    return $Post.fromModel(this);
   }
 }

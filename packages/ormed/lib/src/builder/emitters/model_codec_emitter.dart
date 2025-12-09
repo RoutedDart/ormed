@@ -22,18 +22,19 @@ class ModelCodecEmitter {
     List<FieldDescriptor> fields,
   ) {
     final className = context.className;
-    final codecName = '_\$${className}ModelCodec';
+    final generatedClassName = context.trackedModelClassName;
+    final codecName = '_${generatedClassName}Codec';
     final buffer = StringBuffer();
-    buffer.writeln('class $codecName extends ModelCodec<$className> {');
+    buffer.writeln('class $codecName extends ModelCodec<$generatedClassName> {');
     buffer.writeln('  const $codecName();');
-    buffer.writeln('\n  @override');
+    buffer.writeln('  @override');
     buffer.writeln(
-      '  Map<String, Object?> encode($className model, ValueCodecRegistry registry) {',
+      '  Map<String, Object?> encode($generatedClassName model, ValueCodecRegistry registry) {',
     );
     buffer.writeln('    return <String, Object?>{');
     for (final field in fields) {
       final accessor = field.isVirtual
-          ? "model.getAttribute<${field.resolvedType}>('${field.columnName}')"
+          ? "(model is ModelAttributes ? model.getAttribute<${field.resolvedType}>('${field.columnName}') : null)"
           : 'model.${field.name}';
       buffer.writeln(
         "      '${field.columnName}': registry.encodeField(${field.identifier}, $accessor),",
@@ -44,7 +45,7 @@ class ModelCodecEmitter {
 
     buffer.writeln('  @override');
     buffer.writeln(
-      '  $className decode(Map<String, Object?> data, ValueCodecRegistry registry) {',
+      '  $generatedClassName decode(Map<String, Object?> data, ValueCodecRegistry registry) {',
     );
     for (final field in fields) {
       buffer.writeln(
@@ -73,7 +74,7 @@ class ModelCodecEmitter {
   }) {
     final buffer = StringBuffer();
     final targetClass = subclass
-        ? '_\$${context.className}Model'
+        ? context.trackedModelClassName
         : context.className;
     buffer.writeln('$targetClass(');
     if (constructor.formalParameters.isEmpty) {

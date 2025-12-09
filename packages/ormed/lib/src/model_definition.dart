@@ -1,4 +1,7 @@
+import 'dart:mirrors';
+
 import 'package:collection/collection.dart';
+import 'package:ormed/ormed.dart';
 
 import 'annotations.dart';
 import 'model_mixins/model_attributes.dart';
@@ -70,20 +73,48 @@ class ModelDefinition<TModel> {
   }
 
   /// Encodes a model instance to a map using the model's codec.
-  Map<String, Object?> toMap(TModel model, {ValueCodecRegistry? registry}) =>
-      codec.encode(model, registry ?? ValueCodecRegistry.standard());
+  /// 
+  /// Accepts both the user-defined model and the generated tracked model.
+  /// Automatically converts user-defined models to tracked models if needed.
+  Map<String, Object?> toMap(covariant dynamic model, {ValueCodecRegistry? registry}) {
+    // Check if already a tracked model
+    if (model is TModel && model is ModelAttributes) {
+      return codec.encode(model, registry ?? ValueCodecRegistry.instance);
+    }
+    
+    // Not a tracked model - read fields using reflection
+    final Map<String, Object?> data = {};
+    final reg = registry ?? ValueCodecRegistry.instance;
+    final instanceMirror = reflect(model);
+    
+    for (final field in fields) {
+      try {
+        final fieldSymbol = Symbol(field.name);
+        final value = instanceMirror.getField(fieldSymbol).reflectee;
+        data[field.columnName] = reg.encodeField(field, value);
+      } catch (e) {
+        // Field not accessible or doesn't exist, skip it
+      }
+    }
+    
+    return data;
+  }
 
   /// Decodes a map to a model instance using the model's codec.
   ///
   /// Automatically attaches model definition and soft delete metadata if the
   /// model implements [ModelAttributes].
   TModel fromMap(Map<String, Object?> data, {ValueCodecRegistry? registry}) {
-    final model = codec.decode(data, registry ?? ValueCodecRegistry.standard());
+    final model = codec.decode(data, registry ?? ValueCodecRegistry.instance);
     if (model is ModelAttributes) {
       model.attachModelDefinition(this);
       if (usesSoftDeletes) {
         model.attachSoftDeleteColumn(metadata.softDeleteColumn);
       }
+    }
+    // Sync original attributes for change tracking
+    if (model is ModelAttributes) {
+      (model as ModelAttributes).syncOriginal();
     }
     return model;
   }

@@ -122,18 +122,7 @@ class CommentSeeder extends DatabaseSeeder {
 
   @override
   Future<void> run() async {
-    await seed<Comment>(
-      defaultComments
-          .map(
-            (c) => {
-              'id': c.id,
-              'body': c.body,
-              if (c.deletedAt != null)
-                'deleted_at': c.deletedAt!.toIso8601String(),
-            },
-          )
-          .toList(),
-    );
+    await seed<Comment>(defaultComments);
   }
 }
 

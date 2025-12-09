@@ -43,7 +43,7 @@ const FieldDefinition _$CommentDeletedAtField = FieldDefinition(
   autoIncrement: false,
 );
 
-final ModelDefinition<Comment> _$CommentModelDefinition = ModelDefinition(
+final ModelDefinition<$Comment> _$CommentDefinition = ModelDefinition(
   modelName: 'Comment',
   tableName: 'comments',
   fields: const [_$CommentIdField, _$CommentBodyField, _$CommentDeletedAtField],
@@ -58,71 +58,74 @@ final ModelDefinition<Comment> _$CommentModelDefinition = ModelDefinition(
     softDeletes: true,
     softDeleteColumn: 'deleted_at',
   ),
-  codec: _$CommentModelCodec(),
+  codec: _$CommentCodec(),
 );
 
 // ignore: unused_element
 final commentModelDefinitionRegistration =
-    ModelFactoryRegistry.register<Comment>(_$CommentModelDefinition);
+    ModelFactoryRegistry.register<$Comment>(_$CommentDefinition);
 
 extension CommentOrmDefinition on Comment {
-  static ModelDefinition<Comment> get definition => _$CommentModelDefinition;
+  static ModelDefinition<$Comment> get definition => _$CommentDefinition;
 }
 
 class Comments {
   const Comments._();
 
-  static Query<Comment> query([String? connection]) =>
-      Model.query<Comment>(connection: connection);
+  static Query<$Comment> query([String? connection]) =>
+      Model.query<$Comment>(connection: connection);
 
-  static Future<Comment?> find(Object id, {String? connection}) =>
-      Model.find<Comment>(id, connection: connection);
+  static Future<$Comment?> find(Object id, {String? connection}) =>
+      Model.find<$Comment>(id, connection: connection);
 
-  static Future<Comment> findOrFail(Object id, {String? connection}) =>
-      Model.findOrFail<Comment>(id, connection: connection);
+  static Future<$Comment> findOrFail(Object id, {String? connection}) =>
+      Model.findOrFail<$Comment>(id, connection: connection);
 
-  static Future<List<Comment>> all({String? connection}) =>
-      Model.all<Comment>(connection: connection);
+  static Future<List<$Comment>> all({String? connection}) =>
+      Model.all<$Comment>(connection: connection);
 
   static Future<int> count({String? connection}) =>
-      Model.count<Comment>(connection: connection);
+      Model.count<$Comment>(connection: connection);
 
-  static Future<bool> exists({String? connection}) =>
-      Model.exists<Comment>(connection: connection);
+  static Future<bool> anyExist({String? connection}) =>
+      Model.anyExist<$Comment>(connection: connection);
 
-  static Query<Comment> where(
+  static Query<$Comment> where(
     String column,
     String operator,
     dynamic value, {
     String? connection,
-  }) => Model.where<Comment>(column, operator, value, connection: connection);
+  }) => Model.where<$Comment>(column, operator, value, connection: connection);
 
-  static Query<Comment> whereIn(
+  static Query<$Comment> whereIn(
     String column,
     List<dynamic> values, {
     String? connection,
-  }) => Model.whereIn<Comment>(column, values, connection: connection);
+  }) => Model.whereIn<$Comment>(column, values, connection: connection);
 
-  static Query<Comment> orderBy(
+  static Query<$Comment> orderBy(
     String column, {
     String direction = "asc",
     String? connection,
-  }) => Model.orderBy<Comment>(
+  }) => Model.orderBy<$Comment>(
     column,
     direction: direction,
     connection: connection,
   );
 
-  static Query<Comment> limit(int count, {String? connection}) =>
-      Model.limit<Comment>(count, connection: connection);
+  static Query<$Comment> limit(int count, {String? connection}) =>
+      Model.limit<$Comment>(count, connection: connection);
+
+  static Repository<$Comment> repo([String? connection]) =>
+      Model.repository<$Comment>(connection: connection);
 }
 
 class CommentModelFactory {
   const CommentModelFactory._();
 
-  static ModelDefinition<Comment> get definition => _$CommentModelDefinition;
+  static ModelDefinition<$Comment> get definition => _$CommentDefinition;
 
-  static ModelCodec<Comment> get codec => definition.codec;
+  static ModelCodec<$Comment> get codec => definition.codec;
 
   static Comment fromMap(
     Map<String, Object?> data, {
@@ -132,7 +135,7 @@ class CommentModelFactory {
   static Map<String, Object?> toMap(
     Comment model, {
     ValueCodecRegistry? registry,
-  }) => definition.toMap(model, registry: registry);
+  }) => definition.toMap(model.toTracked(), registry: registry);
 
   static void registerWith(ModelRegistry registry) =>
       registry.register(definition);
@@ -148,23 +151,24 @@ class CommentModelFactory {
   );
 }
 
-class _$CommentModelCodec extends ModelCodec<Comment> {
-  const _$CommentModelCodec();
-
+class _$CommentCodec extends ModelCodec<$Comment> {
+  const _$CommentCodec();
   @override
-  Map<String, Object?> encode(Comment model, ValueCodecRegistry registry) {
+  Map<String, Object?> encode($Comment model, ValueCodecRegistry registry) {
     return <String, Object?>{
       'id': registry.encodeField(_$CommentIdField, model.id),
       'body': registry.encodeField(_$CommentBodyField, model.body),
       'deleted_at': registry.encodeField(
         _$CommentDeletedAtField,
-        model.getAttribute<DateTime?>('deleted_at'),
+        (model is ModelAttributes
+            ? model.getAttribute<DateTime?>('deleted_at')
+            : null),
       ),
     };
   }
 
   @override
-  Comment decode(Map<String, Object?> data, ValueCodecRegistry registry) {
+  $Comment decode(Map<String, Object?> data, ValueCodecRegistry registry) {
     final int commentIdValue =
         registry.decodeField<int>(_$CommentIdField, data['id']) ??
         (throw StateError('Field id on Comment cannot be null.'));
@@ -175,7 +179,7 @@ class _$CommentModelCodec extends ModelCodec<Comment> {
       _$CommentDeletedAtField,
       data['deleted_at'],
     );
-    final model = _$CommentModel(id: commentIdValue, body: commentBodyValue);
+    final model = $Comment(id: commentIdValue, body: commentBodyValue);
     model._attachOrmRuntimeMetadata({
       'id': commentIdValue,
       'body': commentBodyValue,
@@ -185,10 +189,24 @@ class _$CommentModelCodec extends ModelCodec<Comment> {
   }
 }
 
-class _$CommentModel extends Comment {
-  _$CommentModel({required int id, required String body})
+/// Generated tracked model class for [Comment].
+///
+/// This class extends the user-defined [Comment] model and adds
+/// attribute tracking, change detection, and relationship management.
+/// Instances of this class are returned by queries and repositories.
+///
+/// **Do not instantiate this class directly.** Use queries, repositories,
+/// or model factories to create tracked model instances.
+class $Comment extends Comment
+    with ModelAttributes, ModelRelations, SoftDeletesImpl {
+  $Comment({required int id, required String body})
     : super.new(id: id, body: body) {
     _attachOrmRuntimeMetadata({'id': id, 'body': body});
+  }
+
+  /// Creates a tracked model instance from a user-defined model instance.
+  factory $Comment.fromModel(Comment model) {
+    return $Comment(id: model.id, body: model.body);
   }
 
   @override
@@ -203,7 +221,21 @@ class _$CommentModel extends Comment {
 
   void _attachOrmRuntimeMetadata(Map<String, Object?> values) {
     replaceAttributes(values);
-    attachModelDefinition(_$CommentModelDefinition);
+    attachModelDefinition(_$CommentDefinition);
     attachSoftDeleteColumn('deleted_at');
+  }
+}
+
+extension CommentOrmExtension on Comment {
+  /// The Type of the generated ORM-managed model class.
+  /// Use this when you need to specify the tracked model type explicitly,
+  /// for example in generic type parameters.
+  static Type get trackedType => $Comment;
+
+  /// Converts this immutable model to a tracked ORM-managed model.
+  /// The tracked model supports attribute tracking, change detection,
+  /// and persistence operations like save() and touch().
+  $Comment toTracked() {
+    return $Comment.fromModel(this);
   }
 }

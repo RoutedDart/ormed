@@ -56,7 +56,7 @@ const FieldDefinition _$DerivedForFactoryBaseNameField = FieldDefinition(
   autoIncrement: false,
 );
 
-final ModelDefinition<DerivedForFactory> _$DerivedForFactoryModelDefinition =
+final ModelDefinition<$DerivedForFactory> _$DerivedForFactoryDefinition =
     ModelDefinition(
       modelName: 'DerivedForFactory',
       tableName: 'derived_for_factories',
@@ -83,83 +83,86 @@ final ModelDefinition<DerivedForFactory> _$DerivedForFactoryModelDefinition =
         softDeletes: false,
         softDeleteColumn: 'deleted_at',
       ),
-      codec: _$DerivedForFactoryModelCodec(),
+      codec: _$DerivedForFactoryCodec(),
     );
 
 // ignore: unused_element
 final derivedforfactoryModelDefinitionRegistration =
-    ModelFactoryRegistry.register<DerivedForFactory>(
-      _$DerivedForFactoryModelDefinition,
+    ModelFactoryRegistry.register<$DerivedForFactory>(
+      _$DerivedForFactoryDefinition,
     );
 
 extension DerivedForFactoryOrmDefinition on DerivedForFactory {
-  static ModelDefinition<DerivedForFactory> get definition =>
-      _$DerivedForFactoryModelDefinition;
+  static ModelDefinition<$DerivedForFactory> get definition =>
+      _$DerivedForFactoryDefinition;
 }
 
 class DerivedForFactorys {
   const DerivedForFactorys._();
 
-  static Query<DerivedForFactory> query([String? connection]) =>
-      Model.query<DerivedForFactory>(connection: connection);
+  static Query<$DerivedForFactory> query([String? connection]) =>
+      Model.query<$DerivedForFactory>(connection: connection);
 
-  static Future<DerivedForFactory?> find(Object id, {String? connection}) =>
-      Model.find<DerivedForFactory>(id, connection: connection);
+  static Future<$DerivedForFactory?> find(Object id, {String? connection}) =>
+      Model.find<$DerivedForFactory>(id, connection: connection);
 
-  static Future<DerivedForFactory> findOrFail(
+  static Future<$DerivedForFactory> findOrFail(
     Object id, {
     String? connection,
-  }) => Model.findOrFail<DerivedForFactory>(id, connection: connection);
+  }) => Model.findOrFail<$DerivedForFactory>(id, connection: connection);
 
-  static Future<List<DerivedForFactory>> all({String? connection}) =>
-      Model.all<DerivedForFactory>(connection: connection);
+  static Future<List<$DerivedForFactory>> all({String? connection}) =>
+      Model.all<$DerivedForFactory>(connection: connection);
 
   static Future<int> count({String? connection}) =>
-      Model.count<DerivedForFactory>(connection: connection);
+      Model.count<$DerivedForFactory>(connection: connection);
 
-  static Future<bool> exists({String? connection}) =>
-      Model.exists<DerivedForFactory>(connection: connection);
+  static Future<bool> anyExist({String? connection}) =>
+      Model.anyExist<$DerivedForFactory>(connection: connection);
 
-  static Query<DerivedForFactory> where(
+  static Query<$DerivedForFactory> where(
     String column,
     String operator,
     dynamic value, {
     String? connection,
-  }) => Model.where<DerivedForFactory>(
+  }) => Model.where<$DerivedForFactory>(
     column,
     operator,
     value,
     connection: connection,
   );
 
-  static Query<DerivedForFactory> whereIn(
+  static Query<$DerivedForFactory> whereIn(
     String column,
     List<dynamic> values, {
     String? connection,
   }) =>
-      Model.whereIn<DerivedForFactory>(column, values, connection: connection);
+      Model.whereIn<$DerivedForFactory>(column, values, connection: connection);
 
-  static Query<DerivedForFactory> orderBy(
+  static Query<$DerivedForFactory> orderBy(
     String column, {
     String direction = "asc",
     String? connection,
-  }) => Model.orderBy<DerivedForFactory>(
+  }) => Model.orderBy<$DerivedForFactory>(
     column,
     direction: direction,
     connection: connection,
   );
 
-  static Query<DerivedForFactory> limit(int count, {String? connection}) =>
-      Model.limit<DerivedForFactory>(count, connection: connection);
+  static Query<$DerivedForFactory> limit(int count, {String? connection}) =>
+      Model.limit<$DerivedForFactory>(count, connection: connection);
+
+  static Repository<$DerivedForFactory> repo([String? connection]) =>
+      Model.repository<$DerivedForFactory>(connection: connection);
 }
 
 class DerivedForFactoryModelFactory {
   const DerivedForFactoryModelFactory._();
 
-  static ModelDefinition<DerivedForFactory> get definition =>
-      _$DerivedForFactoryModelDefinition;
+  static ModelDefinition<$DerivedForFactory> get definition =>
+      _$DerivedForFactoryDefinition;
 
-  static ModelCodec<DerivedForFactory> get codec => definition.codec;
+  static ModelCodec<$DerivedForFactory> get codec => definition.codec;
 
   static DerivedForFactory fromMap(
     Map<String, Object?> data, {
@@ -169,7 +172,7 @@ class DerivedForFactoryModelFactory {
   static Map<String, Object?> toMap(
     DerivedForFactory model, {
     ValueCodecRegistry? registry,
-  }) => definition.toMap(model, registry: registry);
+  }) => definition.toMap(model.toTracked(), registry: registry);
 
   static void registerWith(ModelRegistry registry) =>
       registry.register(definition);
@@ -189,12 +192,11 @@ class DerivedForFactoryModelFactory {
   );
 }
 
-class _$DerivedForFactoryModelCodec extends ModelCodec<DerivedForFactory> {
-  const _$DerivedForFactoryModelCodec();
-
+class _$DerivedForFactoryCodec extends ModelCodec<$DerivedForFactory> {
+  const _$DerivedForFactoryCodec();
   @override
   Map<String, Object?> encode(
-    DerivedForFactory model,
+    $DerivedForFactory model,
     ValueCodecRegistry registry,
   ) {
     return <String, Object?>{
@@ -215,7 +217,7 @@ class _$DerivedForFactoryModelCodec extends ModelCodec<DerivedForFactory> {
   }
 
   @override
-  DerivedForFactory decode(
+  $DerivedForFactory decode(
     Map<String, Object?> data,
     ValueCodecRegistry registry,
   ) {
@@ -237,7 +239,7 @@ class _$DerivedForFactoryModelCodec extends ModelCodec<DerivedForFactory> {
           _$DerivedForFactoryBaseNameField,
           data['baseName'],
         );
-    final model = _$DerivedForFactoryModel(
+    final model = $DerivedForFactory(
       id: derivedForFactoryIdValue,
       baseName: derivedForFactoryBaseNameValue,
       layerOneNotes: derivedForFactoryLayerOneNotesValue,
@@ -253,8 +255,17 @@ class _$DerivedForFactoryModelCodec extends ModelCodec<DerivedForFactory> {
   }
 }
 
-class _$DerivedForFactoryModel extends DerivedForFactory {
-  _$DerivedForFactoryModel({
+/// Generated tracked model class for [DerivedForFactory].
+///
+/// This class extends the user-defined [DerivedForFactory] model and adds
+/// attribute tracking, change detection, and relationship management.
+/// Instances of this class are returned by queries and repositories.
+///
+/// **Do not instantiate this class directly.** Use queries, repositories,
+/// or model factories to create tracked model instances.
+class $DerivedForFactory extends DerivedForFactory
+    with ModelAttributes, ModelRelations {
+  $DerivedForFactory({
     required int id,
     String? baseName,
     Map<String, Object?>? layerOneNotes,
@@ -271,6 +282,16 @@ class _$DerivedForFactoryModel extends DerivedForFactory {
       'id': id,
       'baseName': baseName,
     });
+  }
+
+  /// Creates a tracked model instance from a user-defined model instance.
+  factory $DerivedForFactory.fromModel(DerivedForFactory model) {
+    return $DerivedForFactory(
+      layerTwoFlag: model.layerTwoFlag,
+      layerOneNotes: model.layerOneNotes,
+      id: model.id,
+      baseName: model.baseName,
+    );
   }
 
   @override
@@ -299,6 +320,20 @@ class _$DerivedForFactoryModel extends DerivedForFactory {
 
   void _attachOrmRuntimeMetadata(Map<String, Object?> values) {
     replaceAttributes(values);
-    attachModelDefinition(_$DerivedForFactoryModelDefinition);
+    attachModelDefinition(_$DerivedForFactoryDefinition);
+  }
+}
+
+extension DerivedForFactoryOrmExtension on DerivedForFactory {
+  /// The Type of the generated ORM-managed model class.
+  /// Use this when you need to specify the tracked model type explicitly,
+  /// for example in generic type parameters.
+  static Type get trackedType => $DerivedForFactory;
+
+  /// Converts this immutable model to a tracked ORM-managed model.
+  /// The tracked model supports attribute tracking, change detection,
+  /// and persistence operations like save() and touch().
+  $DerivedForFactory toTracked() {
+    return $DerivedForFactory.fromModel(this);
   }
 }

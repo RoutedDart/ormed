@@ -12,6 +12,7 @@ dependencies:
   ormed:
     path: ../ormed
   postgres: ^3.5.9
+  carbonized: ^0.1.0
   meta: ^1.17.0
 
 dev_dependencies:

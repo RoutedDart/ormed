@@ -2,6 +2,8 @@
 
 Models in Ormed represent your application's data and business logic. They provide a clean, object-oriented interface to interact with your database.
 
+> **📘 Design Philosophy**: Read [Immutable Models and Attribute Tracking](immutable_models.md) to understand Ormed's approach to model immutability and how the attribute tracking system works.
+
 ## Table of Contents
 
 - [Defining Models](#defining-models)
@@ -14,31 +16,39 @@ Models in Ormed represent your application's data and business logic. They provi
 
 ## Defining Models
 
-Models are defined using the `@Orm()` annotation and extend the `Model` base class:
+Models are defined using the `@OrmModel()` annotation and extend the `Model` base class. 
+
+**Important**: User-defined model classes should be **immutable**. The attribute tracking system only works on the generated tracked classes (prefixed with `_$`).
 
 ```dart
 import 'package:ormed/ormed.dart';
 
 part 'user.orm.dart';
 
-@Orm()
+@OrmModel()
 class User extends Model<User> {
   @PrimaryKey(autoIncrement: true)
-  int? id;
+  final int? id;
 
   @Column()
-  String name;
+  final String name;
 
   @Column()
-  String email;
+  final String email;
 
   @Timestamp()
-  DateTime? createdAt;
+  final DateTime? createdAt;
 
   @Timestamp()
-  DateTime? updatedAt;
+  final DateTime? updatedAt;
 
-  User({this.id, required this.name, required this.email});
+  const User({
+    this.id, 
+    required this.name, 
+    required this.email,
+    this.createdAt,
+    this.updatedAt,
+  });
 }
 ```
 
@@ -47,6 +57,14 @@ Run code generation to create the ORM definitions:
 ```bash
 dart run build_runner build
 ```
+
+This will generate a `_$UserModel` class that:
+- Extends your `User` class
+- Adds attribute tracking capabilities
+- Provides change detection
+- Handles relationship loading
+
+The query builder automatically returns instances of `_$UserModel` (the tracked version), which means you can use all ORM features like attribute access, change tracking, and relationships.
 
 ## Static Query Helpers
 
@@ -155,14 +173,17 @@ The `DataSource` automatically registers itself with the `ConnectionManager` dur
 
 ## Attribute Management
 
-Models provide several methods for working with attributes (database columns):
+**Important**: Attribute management methods (`getAttribute`, `setAttribute`, `hasAttribute`, etc.) only work on tracked model instances returned by queries, not on user-created instances.
+
+The query builder automatically returns the generated tracked model type (`_$UserModel`), which has attribute tracking capabilities.
 
 ### Getting Attributes
 
 ```dart
-final user = await User.find(1);
+// Get a tracked instance from the database
+final user = await User.find(1); // Returns _$UserModel instance
 
-// Get single attribute
+// Get single attribute (works because user is a tracked instance)
 final name = user.getAttribute('name');
 
 // Get all attributes as Map
@@ -177,12 +198,17 @@ if (user.hasAttribute('email')) {
 ### Setting Attributes
 
 ```dart
-final user = User(name: 'John', email: 'john@example.com');
+// Only works on tracked instances from queries
+final user = await User.find(1);
 
 // Set single attribute
 user.setAttribute('name', 'Jane');
 
-// Set multiple attributes
+// The following will NOT work - user-created instances are immutable:
+// final newUser = User(name: 'John', email: 'john@example.com');
+// newUser.setAttribute('name', 'Jane'); // Error! No setAttribute on User
+
+// To update attributes on a tracked model
 user.setAttributes({
   'name': 'Jane Doe',
   'email': 'jane@example.com',

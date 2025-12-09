@@ -5,7 +5,7 @@ import 'package:ormed/ormed.dart' as json_path show jsonPathSegments;
 /// Deterministic driver adapter that evaluates plans against in-memory rows.
 class InMemoryQueryExecutor implements DriverAdapter {
   InMemoryQueryExecutor({ValueCodecRegistry? codecRegistry})
-    : codecRegistry = codecRegistry ?? ValueCodecRegistry.standard();
+    : codecRegistry = codecRegistry ?? ValueCodecRegistry.instance;
 
   final ValueCodecRegistry codecRegistry;
   final Map<String, List<Map<String, Object?>>> _tables = {};

@@ -9,6 +9,7 @@ import 'package:ormed_mysql/ormed_mysql.dart';
 import 'package:ormed_postgres/ormed_postgres.dart';
 import 'package:ormed_sqlite/ormed_sqlite.dart';
 import 'package:path/path.dart' as p;
+import 'package:meta/meta.dart';
 
 import '../config.dart';
 
@@ -69,7 +70,6 @@ void main(List<String> args) {
     final plan = entry.migration.plan(direction, snapshot: snapshot);
     print(jsonEncode(plan.toJson()));
   }
-}
 ''';
 
 const String defaultOrmYaml = '''
@@ -228,7 +228,13 @@ Future<List<MigrationDescriptor>> loadMigrations(
   if (result.exitCode != 0) {
     throw StateError('Failed to load migrations:\n${result.stderr}');
   }
-  final payload = jsonDecode(result.stdout as String) as List;
+  final stdoutText = result.stdout as String;
+  final payloadText = _extractJsonPayload(
+    stdoutText,
+    context: 'migration registry',
+    expectArray: true,
+  );
+  final payload = jsonDecode(payloadText) as List;
   return payload
       .map(
         (entry) => MigrationDescriptor.fromJson(
@@ -277,7 +283,12 @@ Future<SchemaPlan> buildRuntimePlan({
       'Migration registry produced no plan output.\n${result.stderr}',
     );
   }
-  final payload = jsonDecode(stdoutText) as Map<String, Object?>;
+  final payloadText = _extractJsonPayload(
+    stdoutText,
+    context: 'migration plan',
+    expectArray: false,
+  );
+  final payload = jsonDecode(payloadText) as Map<String, Object?>;
   return SchemaPlan.fromJson(payload);
 }
 
@@ -444,3 +455,48 @@ String insertBetweenMarkers(
   final newBetween = between.isEmpty ? snippet : '$between\n$indent$snippet';
   return '$before\n$indent$newBetween$after';
 }
+
+String _extractJsonPayload(
+  String stdoutText, {
+  required String context,
+  required bool expectArray,
+}) {
+  final sanitized = _cleanProcessStdout(stdoutText);
+  final trimmed = sanitized.trim();
+  final startChar = expectArray ? '[' : '{';
+  final endChar = expectArray ? ']' : '}';
+  final start = trimmed.indexOf(startChar);
+  final end = trimmed.lastIndexOf(endChar);
+  if (start == -1 || end == -1 || end < start) {
+    throw StateError(
+      'Failed to parse $context output as JSON. Received:\n$stdoutText',
+    );
+  }
+  return trimmed.substring(start, end + 1);
+}
+
+@visibleForTesting
+String extractJsonPayloadForTest(
+  String stdoutText, {
+  required String context,
+  required bool expectArray,
+}) =>
+    _extractJsonPayload(
+      stdoutText,
+      context: context,
+      expectArray: expectArray,
+    );
+
+String _cleanProcessStdout(String stdoutText) {
+  if (stdoutText.isEmpty) {
+    return stdoutText;
+  }
+  final withoutOsc = stdoutText.replaceAll(_oscControlPattern, '');
+  final withoutAnsi = withoutOsc.replaceAll(_ansiEscapePattern, '');
+  return withoutAnsi.replaceAll('\r', '\n');
+}
+
+final RegExp _ansiEscapePattern =
+    RegExp('\x1B\\[[0-9;?]*[ -/]*[@-~]');
+final RegExp _oscControlPattern =
+    RegExp('\x1B\\][^\x07]*\x07');

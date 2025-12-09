@@ -8,15 +8,36 @@ import 'mysql_codecs.dart';
 import 'mysql_connector.dart';
 import 'mysql_grammar.dart';
 import 'mysql_schema_dialect.dart';
+import 'mysql_type_mapper.dart';
 import 'schema_state.dart';
 
 /// Shared MySQL/MariaDB implementation of the routed ORM driver adapter.
 class MySqlDriverAdapter
     implements DriverAdapter, SchemaDriver, SchemaStateProvider {
+  
+  /// Registers MySQL/MariaDB-specific codecs and type mapper with the global registries.
+  /// Call this once during application initialization before using MySQL.
+  static void registerCodecs() {
+    final mapper = MysqlTypeMapper();
+    TypeMapperRegistry.register('mysql', mapper);
+    TypeMapperRegistry.register('mariadb', mapper);
+    
+    // Register codecs from TypeMapper to eliminate duplication
+    final codecs = <String, ValueCodec<dynamic>>{};
+    for (final mapping in mapper.typeMappings) {
+      if (mapping.codec != null) {
+        final typeKey = mapping.dartType.toString();
+        codecs[typeKey] = mapping.codec!;
+        codecs['$typeKey?'] = mapping.codec!;  // Nullable variant
+      }
+    }
+    ValueCodecRegistry.instance.registerDriver('mysql', codecs);
+    ValueCodecRegistry.instance.registerDriver('mariadb', codecs);
+  }
+
   MySqlDriverAdapter.custom({
     required DatabaseConfig config,
     ConnectionFactory? connections,
-    ValueCodecRegistry? codecRegistry,
     String driverName = 'mysql',
     bool isMariaDb = false,
   }) : _driverName = driverName,
@@ -37,8 +58,13 @@ class MySqlDriverAdapter
            DriverCapability.threadCount,
            DriverCapability.transactions,
            DriverCapability.adHocQueryUpdates,
+           DriverCapability.rawSQL,
            DriverCapability.increment,
            DriverCapability.rightJoin,
+           DriverCapability.relationAggregates,
+           DriverCapability.returning,
+           DriverCapability.databaseManagement,
+           DriverCapability.foreignKeyConstraintControl,
          },
        ),
        _schemaCompiler = SchemaPlanCompiler(
@@ -54,9 +80,10 @@ class MySqlDriverAdapter
              },
            ),
        _config = config,
-       _codecs = augmentMySqlCodecs(
-         codecRegistry ?? ValueCodecRegistry.standard(),
-       ) {
+       _codecs = ValueCodecRegistry.instance.forDriver(driverName) {
+    // Auto-register MySQL codecs on first instantiation
+    registerMySqlCodecs();
+    
     _planCompiler = ClosurePlanCompiler(
       compileSelect: _compileSelectPreview,
       compileMutation: _compileMutationPreview,
@@ -65,11 +92,9 @@ class MySqlDriverAdapter
 
   factory MySqlDriverAdapter.fromUrl(
     String url, {
-    ValueCodecRegistry? codecRegistry,
     ConnectionFactory? connections,
   }) => MySqlDriverAdapter.custom(
     config: DatabaseConfig(driver: 'mysql', options: {'url': url}),
-    codecRegistry: codecRegistry,
     connections: connections,
   );
 
@@ -79,7 +104,7 @@ class MySqlDriverAdapter
     String? password,
     int port = 3306,
     String host = '127.0.0.1',
-    ValueCodecRegistry? codecRegistry,
+    String? timezone,
     ConnectionFactory? connections,
   }) => MySqlDriverAdapter.custom(
     config: DatabaseConfig(
@@ -90,9 +115,9 @@ class MySqlDriverAdapter
         'database': database,
         'username': username,
         if (password != null) 'password': password,
+        if (timezone != null) 'timezone': timezone,
       },
     ),
-    codecRegistry: codecRegistry,
     connections: connections,
   );
 
@@ -108,6 +133,7 @@ class MySqlDriverAdapter
   ConnectionHandle<MySQLConnection>? _primaryHandle;
   bool _closed = false;
   int _transactionDepth = 0;
+  String? _currentDatabase;
   @override
   PlanCompiler get planCompiler => _planCompiler;
 
@@ -132,6 +158,12 @@ class MySqlDriverAdapter
     String sql, [
     List<Object?> parameters = const [],
   ]) async {
+    // Track USE database commands to maintain current database context
+    final trimmedSql = sql.trim();
+    if (trimmedSql.toUpperCase().startsWith('USE ')) {
+      final dbName = trimmedSql.substring(4).trim().replaceAll(RegExp(r'[`;]'), '');
+      _currentDatabase = dbName;
+    }
     await _executeStatement(sql, parameters);
   }
 
@@ -250,11 +282,7 @@ class MySqlDriverAdapter
         return null;
       }
       final row = rows.first;
-      final value =
-          row['Value'] ??
-          row['VALUE'] ??
-          row['variable_value'] ??
-          row['VARIABLE_VALUE'];
+      final value = row['value'];
       if (value is num) {
         return value.toInt();
       }
@@ -461,20 +489,19 @@ class MySqlDriverAdapter
 
   @override
   Future<List<SchemaColumn>> listColumns(String table, {String? schema}) async {
-    final clause = schema == null
-        ? 'table_schema = DATABASE()'
-        : 'table_schema = ?';
+    final effectiveSchema = schema ?? _getCurrentDatabase() ?? 'test';
     final rows = await queryRaw(
       'SELECT table_schema, column_name, column_type, data_type, column_default, '
       'is_nullable, column_comment, character_maximum_length, numeric_precision, '
       'numeric_scale, extra '
       'FROM information_schema.columns '
-      'WHERE table_name = ? AND $clause '
+      'WHERE table_name = ? AND table_schema = ? '
       'ORDER BY ordinal_position',
-      schema == null ? [table] : [table, schema],
+      [table, effectiveSchema],
     );
     final pkColumns = await _primaryKeyColumns(table, schema: schema);
     return rows
+        .where((row) => row['column_name'] != null)
         .map(
           (row) => SchemaColumn(
             name: row['column_name'] as String,
@@ -497,19 +524,18 @@ class MySqlDriverAdapter
 
   @override
   Future<List<SchemaIndex>> listIndexes(String table, {String? schema}) async {
-    final clause = schema == null
-        ? 'table_schema = DATABASE()'
-        : 'table_schema = ?';
+    final effectiveSchema = schema ?? _getCurrentDatabase() ?? 'test';
     final rows = await queryRaw(
       'SELECT index_name, non_unique, index_type, '
       'GROUP_CONCAT(column_name ORDER BY seq_in_index) AS columns '
       'FROM information_schema.statistics '
-      'WHERE table_name = ? AND $clause '
+      'WHERE table_name = ? AND table_schema = ? '
       'GROUP BY index_name, non_unique, index_type '
       'ORDER BY index_name',
-      schema == null ? [table] : [table, schema],
+      [table, effectiveSchema],
     );
     return rows
+        .where((row) => row['index_name'] != null && row['columns'] != null)
         .map((row) {
           final name = row['index_name'] as String;
           final columns = _splitColumns(row['columns'] as String?);
@@ -570,6 +596,203 @@ class MySqlDriverAdapter
         .toList(growable: false);
   }
 
+  // ========== Database Management ==========
+
+  @override
+  Future<bool> createDatabase(
+    String name, {
+    Map<String, Object?>? options,
+  }) async {
+    final sql = _schemaCompiler.dialect.compileCreateDatabase(name, options);
+    if (sql == null) {
+      throw UnsupportedError('MySQL should support database creation');
+    }
+
+    try {
+      await executeRaw(sql);
+      return true;
+    } on Exception catch (e) {
+      // Check if error is "database exists" (error 1007)
+      final errorMsg = e.toString();
+      if (errorMsg.contains('1007') ||
+          errorMsg.toLowerCase().contains('database exists')) {
+        return false;
+      }
+      rethrow;
+    }
+  }
+
+  @override
+  Future<bool> dropDatabase(String name) async {
+    final sql = 'DROP DATABASE ${_quote(name)}';
+    await executeRaw(sql);
+    return true;
+  }
+
+  @override
+  Future<bool> dropDatabaseIfExists(String name) async {
+    // Check if database exists first
+    final databases = await listDatabases();
+    if (!databases.contains(name)) {
+      return false;
+    }
+
+    final sql = _schemaCompiler.dialect.compileDropDatabaseIfExists(name);
+    if (sql == null) {
+      throw UnsupportedError('MySQL should support database dropping');
+    }
+
+    await executeRaw(sql);
+    return true;
+  }
+
+  @override
+  @override
+  Future<List<String>> listDatabases() async {
+    final sql = _schemaCompiler.dialect.compileListDatabases();
+    if (sql == null) {
+      throw UnsupportedError('MySQL should support listing databases');
+    }
+
+    final results = await queryRaw(sql);
+    return results.map((row) => row['database'] as String).toList();
+  }
+
+  /// Get the current database name from the connection configuration.
+  /// This matches Laravel's approach of using the connection's database name
+  /// rather than relying on the DATABASE() SQL function.
+  /// Also tracks USE commands to maintain correct database context.
+  String? _getCurrentDatabase() {
+    // If we've executed a USE command, return that database
+    if (_currentDatabase != null) {
+      return _currentDatabase;
+    }
+    // Try to get from URL first
+    final url = _config.options['url'] as String?;
+    if (url != null) {
+      final uri = Uri.parse(url);
+      if (uri.pathSegments.isNotEmpty) {
+        return uri.pathSegments.first;
+      }
+    }
+    // Fallback to 'database' option
+    return _config.options['database'] as String?;
+  }
+
+  // ========== Foreign Key Constraint Management ==========
+
+  @override
+  Future<bool> enableForeignKeyConstraints() async {
+    final sql = _schemaCompiler.dialect.compileEnableForeignKeyConstraints();
+    if (sql == null) {
+      throw UnsupportedError('MySQL should support FK constraint management');
+    }
+    await executeRaw(sql);
+    return true;
+  }
+
+  @override
+  Future<bool> disableForeignKeyConstraints() async {
+    final sql = _schemaCompiler.dialect.compileDisableForeignKeyConstraints();
+    if (sql == null) {
+      throw UnsupportedError('MySQL should support FK constraint management');
+    }
+    await executeRaw(sql);
+    return true;
+  }
+
+  @override
+  Future<T> withoutForeignKeyConstraints<T>(
+    Future<T> Function() callback,
+  ) async {
+    await disableForeignKeyConstraints();
+    try {
+      return await callback();
+    } finally {
+      await enableForeignKeyConstraints();
+    }
+  }
+
+  // ========== Bulk Operations ==========
+
+  @override
+  Future<void> dropAllTables({String? schema}) async {
+    final tables = await listTables(schema: schema);
+
+    if (tables.isEmpty) return;
+
+    await disableForeignKeyConstraints();
+
+    try {
+      for (final table in tables) {
+        final tableName = schema != null
+            ? '${_quote(schema)}.${_quote(table.name)}'
+            : _quote(table.name);
+        await executeRaw('DROP TABLE IF EXISTS $tableName');
+      }
+    } finally {
+      await enableForeignKeyConstraints();
+    }
+  }
+
+  // ========== Existence Checking ==========
+
+  @override
+  Future<bool> hasTable(String table, {String? schema}) async {
+    final effectiveSchema = schema ?? _getCurrentDatabase() ?? 'test';
+    final rows = await queryRaw(
+      'SELECT 1 FROM information_schema.tables '
+      'WHERE LOWER(table_name) = LOWER(?) AND table_schema = ? '
+      'LIMIT 1',
+      [table, effectiveSchema],
+    );
+    return rows.isNotEmpty;
+  }
+
+  @override
+  Future<bool> hasView(String view, {String? schema}) async {
+    final views = await listViews(schema: schema);
+    return views.any((v) => v.name.toLowerCase() == view.toLowerCase());
+  }
+
+  @override
+  Future<bool> hasColumn(String table, String column, {String? schema}) async {
+    final columns = await listColumns(table, schema: schema);
+    return columns.any((c) => c.name.toLowerCase() == column.toLowerCase());
+  }
+
+  @override
+  Future<bool> hasColumns(String table, List<String> columns, {String? schema}) async {
+    final tableColumns = await listColumns(table, schema: schema);
+    final lowerCaseColumns = tableColumns.map((c) => c.name.toLowerCase()).toSet();
+    
+    for (final column in columns) {
+      if (!lowerCaseColumns.contains(column.toLowerCase())) {
+        return false;
+      }
+    }
+    
+    return true;
+  }
+
+  @override
+  Future<bool> hasIndex(String table, String index, {String? schema, String? type}) async {
+    final indexes = await listIndexes(table, schema: schema);
+    
+    for (final idx in indexes) {
+      final typeMatches = type == null ||
+          (type == 'primary' && idx.primary) ||
+          (type == 'unique' && idx.unique) ||
+          type.toLowerCase() == idx.type?.toLowerCase();
+      
+      if (idx.name.toLowerCase() == index.toLowerCase() && typeMatches) {
+        return true;
+      }
+    }
+    
+    return false;
+  }
+
   Future<MutationResult> _runInsert(MutationPlan plan) async {
     final shape = _buildInsertShape(plan);
     return _executeMutation(shape);
@@ -619,7 +842,8 @@ class MySqlDriverAdapter
     var affected = 0;
     final returnedRows = <Map<String, Object?>>[];
 
-    for (final parameters in shape.parameterSets) {
+    for (int i = 0; i < shape.parameterSets.length; i++) {
+      final parameters = shape.parameterSets[i];
       final statement = _prepareStatement(shape.sql, parameters);
       final result = await connection.execute(
         statement.sql,
@@ -641,6 +865,27 @@ class MySqlDriverAdapter
           returnedRows.add({pkField.columnName: result.lastInsertID.toInt()});
         } catch (_) {
           // No primary key found, skip
+        }
+      }
+
+      // For UPSERTs with RETURNING, we need to re-query to get the actual row data
+      // since MySQL doesn't support RETURNING and we need accurate post-update values
+      if (shape.isUpsert && shape.returning && shape.definition != null) {
+        final pkValue = await _extractPrimaryKeyForUpsert(
+          shape,
+          result,
+          parameters,
+          i,
+        );
+        if (pkValue != null) {
+          final row = await _fetchRowByPrimaryKey(
+            shape.definition!,
+            pkValue,
+            connection,
+          );
+          if (row != null) {
+            returnedRows.add(row);
+          }
         }
       }
     }
@@ -937,6 +1182,10 @@ class MySqlDriverAdapter
     return _MySqlMutationShape(
       sql: buffer.toString(),
       parameterSets: parameterSets,
+      isUpsert: true,
+      definition: plan.definition,
+      returning: plan.returning,
+      plan: plan,
     );
   }
 
@@ -972,6 +1221,9 @@ class MySqlDriverAdapter
         : 'UPDATE $table SET $updateClause WHERE $whereClause';
 
     var affected = 0;
+    final returnedRows = <Map<String, Object?>>[];
+    final connection = await _connection();
+
     for (final row in plan.rows) {
       final selectors = uniqueColumns
           .map((column) => row.values[column])
@@ -988,6 +1240,21 @@ class MySqlDriverAdapter
           final result = await _executeStatement(updateSql, updateParams);
           affected += result.affectedRows.toInt();
         }
+        
+        // If returning is requested, fetch the updated row
+        if (plan.returning) {
+          final pkValue = _extractPrimaryKeyFromRow(plan.definition, row);
+          if (pkValue != null) {
+            final fetchedRow = await _fetchRowByPrimaryKey(
+              plan.definition,
+              pkValue,
+              connection,
+            );
+            if (fetchedRow != null) {
+              returnedRows.add(fetchedRow);
+            }
+          }
+        }
         continue;
       }
       final values = columns
@@ -995,8 +1262,41 @@ class MySqlDriverAdapter
           .toList(growable: false);
       final result = await _executeStatement(insertSql, values);
       affected += result.affectedRows.toInt();
+      
+      // If returning is requested and we have a PK, fetch the inserted row
+      if (plan.returning) {
+        final pkValue = result.lastInsertID.toInt() > 0
+            ? result.lastInsertID.toInt()
+            : _extractPrimaryKeyFromRow(plan.definition, row);
+        if (pkValue != null) {
+          final fetchedRow = await _fetchRowByPrimaryKey(
+            plan.definition,
+            pkValue,
+            connection,
+          );
+          if (fetchedRow != null) {
+            returnedRows.add(fetchedRow);
+          }
+        }
+      }
     }
-    return MutationResult(affectedRows: affected);
+    return MutationResult(
+      affectedRows: affected,
+      returnedRows: plan.returning && returnedRows.isNotEmpty ? returnedRows : null,
+    );
+  }
+
+  /// Extracts primary key value from a mutation row
+  Object? _extractPrimaryKeyFromRow(
+    ModelDefinition<dynamic> definition,
+    MutationRow row,
+  ) {
+    try {
+      final pkField = definition.fields.firstWhere((f) => f.isPrimaryKey);
+      return row.values[pkField.columnName];
+    } catch (_) {
+      return null;
+    }
   }
 
   List<_JsonUpdateTemplate> _jsonUpdateTemplates(MutationRow row) {
@@ -1086,6 +1386,104 @@ class MySqlDriverAdapter
     return insertColumns.where((c) => !uniques.contains(c)).toList();
   }
 
+  /// Extracts the primary key value for an upserted row
+  /// Returns the PK value if available, null otherwise
+  Future<Object?> _extractPrimaryKeyForUpsert(
+    _MySqlMutationShape shape,
+    IResultSet result,
+    List<Object?> parameters,
+    int rowIndex,
+  ) async {
+    if (shape.definition == null) return null;
+
+    try {
+      final pkField = shape.definition!.fields.firstWhere(
+        (f) => f.isPrimaryKey,
+      );
+      final pkColumnName = pkField.columnName;
+
+      // If lastInsertID > 0, it was an INSERT
+      if (result.lastInsertID.toInt() > 0) {
+        return result.lastInsertID.toInt();
+      }
+
+      // Otherwise it was an UPDATE, extract PK from the row data
+      // The PK should be in the parameters corresponding to the row
+      if (shape.plan != null && rowIndex < shape.plan!.rows.length) {
+        final row = shape.plan!.rows[rowIndex];
+        return row.values[pkColumnName];
+      }
+
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Fetches a single row by primary key
+  Future<Map<String, Object?>?> _fetchRowByPrimaryKey(
+    ModelDefinition<dynamic> definition,
+    Object pkValue,
+    MySQLConnection connection,
+  ) async {
+    try {
+      final pkField = definition.fields.firstWhere((f) => f.isPrimaryKey);
+      final table = _tableIdentifier(definition);
+      final pkColumn = _quote(pkField.columnName);
+      
+      final sql = 'SELECT * FROM $table WHERE $pkColumn = ? LIMIT 1';
+      final statement = _prepareStatement(sql, [pkValue]);
+      
+      final result = await connection.execute(
+        statement.sql,
+        statement.parameters.isEmpty ? null : statement.parameters,
+      );
+
+      if (result.rows.isEmpty) return null;
+
+      final row = result.rows.first;
+      final map = <String, Object?>{};
+      
+      // MySQL returns values that need proper type conversion
+      final colsList = result.cols.toList();
+      for (var i = 0; i < colsList.length; i++) {
+        final col = colsList[i];
+        final columnName = col.name;
+        final rawValue = row.colAt(i);
+        
+        // Debug: check what type we're getting
+        if (rawValue != null && rawValue is String && rawValue.isNotEmpty) {
+          // Try to parse numeric strings
+          final intValue = int.tryParse(rawValue);
+          if (intValue != null) {
+            map[columnName] = intValue;
+            continue;
+          }
+          final doubleValue = double.tryParse(rawValue);
+          if (doubleValue != null) {
+            map[columnName] = doubleValue;
+            continue;
+          }
+        }
+        
+        map[columnName] = rawValue;
+      }
+
+      return map;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Converts MySQL raw values to proper Dart types
+  Object? _convertMySqlValue(Object? value, dynamic column) {
+    if (value == null) return null;
+    
+    // MySQL client returns properly typed values for most types,
+    // but we need to handle any edge cases
+    return value;
+  }
+
   Future<MySQLConnection> _connection() async {
     if (_closed) {
       throw StateError('MySqlDriverAdapter has already been closed.');
@@ -1154,7 +1552,9 @@ class MySqlDriverAdapter
 
   Map<String, Object?> _decodeRow(dynamic row) {
     final typed = Map<String, Object?>.from(row.typedAssoc());
-    return typed.map((key, value) => MapEntry(key, _decodeResultValue(value)));
+    // Normalize keys to lowercase for consistency
+    return typed.map((key, value) => 
+      MapEntry(key.toString().toLowerCase(), _decodeResultValue(value)));
   }
 
   String _tableIdentifier(ModelDefinition<dynamic> definition) {
@@ -1179,20 +1579,22 @@ class MySqlDriverAdapter
   }
 
   Future<Set<String>> _primaryKeyColumns(String table, {String? schema}) async {
-    final clause = schema == null
-        ? 'table_schema = DATABASE()'
-        : 'table_schema = ?';
+    final effectiveSchema = schema ?? _getCurrentDatabase() ?? 'test';
     final rows = await queryRaw(
       'SELECT kcu.column_name '
       'FROM information_schema.table_constraints tc '
       'JOIN information_schema.key_column_usage kcu '
       ' ON tc.constraint_name = kcu.constraint_name '
       ' AND tc.table_schema = kcu.table_schema '
-      "WHERE tc.constraint_type = 'PRIMARY KEY' AND tc.table_name = ? AND $clause "
+      "WHERE tc.constraint_type = 'PRIMARY KEY' AND tc.table_name = ? AND tc.table_schema = ? "
       'ORDER BY kcu.ordinal_position',
-      schema == null ? [table] : [table, schema],
+      [table, effectiveSchema],
     );
-    return rows.map((row) => row['column_name'] as String).toSet();
+    return rows
+        .map((row) => row['column_name'] as String?)
+        .where((name) => name != null)
+        .cast<String>()
+        .toSet();
   }
 
   List<String> _splitColumns(String? value) {
@@ -1285,16 +1687,13 @@ class MariaDbDriverAdapter extends MySqlDriverAdapter {
   MariaDbDriverAdapter.custom({
     required super.config,
     super.connections,
-    super.codecRegistry,
   }) : super.custom(driverName: 'mariadb', isMariaDb: true);
 
   factory MariaDbDriverAdapter.fromUrl(
     String url, {
-    ValueCodecRegistry? codecRegistry,
     ConnectionFactory? connections,
   }) => MariaDbDriverAdapter.custom(
     config: DatabaseConfig(driver: 'mariadb', options: {'url': url}),
-    codecRegistry: codecRegistry,
     connections: connections,
   );
 
@@ -1304,7 +1703,7 @@ class MariaDbDriverAdapter extends MySqlDriverAdapter {
     String? password,
     int port = 3306,
     String host = '127.0.0.1',
-    ValueCodecRegistry? codecRegistry,
+    String? timezone,
     ConnectionFactory? connections,
   }) => MariaDbDriverAdapter.custom(
     config: DatabaseConfig(
@@ -1315,9 +1714,9 @@ class MariaDbDriverAdapter extends MySqlDriverAdapter {
         'database': database,
         'username': username,
         if (password != null) 'password': password,
+        if (timezone != null) 'timezone': timezone,
       },
     ),
-    codecRegistry: codecRegistry,
     connections: connections,
   );
 }
@@ -1334,15 +1733,19 @@ class _MySqlMutationShape {
     required this.sql,
     required this.parameterSets,
     this.isInsert = false,
+    this.isUpsert = false,
     this.definition,
     this.returning = false,
+    this.plan,
   });
 
   final String sql;
   final List<List<Object?>> parameterSets;
   final bool isInsert;
+  final bool isUpsert;
   final ModelDefinition<dynamic>? definition;
   final bool returning;
+  final MutationPlan? plan;
 
   static _MySqlMutationShape empty() =>
       const _MySqlMutationShape(sql: '<no-op>', parameterSets: []);

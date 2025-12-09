@@ -6,28 +6,42 @@ import 'package:ormed_sqlite/ormed_sqlite.dart';
 void main() {
   test('insertMany should insert all records', () async {
     registerDriverTestFactories();
+    
+    // Build and register models with type aliases
+    final registry = buildOrmRegistry();
 
-    // Create custom codecs map
+    // Register SQLite codecs
+    SqliteDriverAdapter.registerCodecs();
+
+    // Register custom test codecs
+    ValueCodecRegistry.instance.registerCodec(
+      key: 'PostgresPayloadCodec',
+      codec: const PostgresPayloadCodec(),
+    );
+    ValueCodecRegistry.instance.registerCodec(
+      key: 'SqlitePayloadCodec',
+      codec: const SqlitePayloadCodec(),
+    );
+    ValueCodecRegistry.instance.registerCodec(
+      key: 'JsonMapCodec',
+      codec: const JsonMapCodec(),
+    );
+
     final customCodecs = <String, ValueCodec<dynamic>>{
       'PostgresPayloadCodec': const PostgresPayloadCodec(),
       'SqlitePayloadCodec': const SqlitePayloadCodec(),
       'JsonMapCodec': const JsonMapCodec(),
     };
 
-    // Create codec registry for the adapter
-    final codecRegistry = ValueCodecRegistry.standard();
-    for (final entry in customCodecs.entries) {
-      codecRegistry.registerCodec(key: entry.key, codec: entry.value);
-    }
-
-    // Create adapter with the codec registry
-    final driverAdapter = SqliteDriverAdapter.inMemory(codecRegistry: codecRegistry);
+    // Create adapter
+    final driverAdapter = SqliteDriverAdapter.inMemory();
 
     final dataSource = DataSource(
       DataSourceOptions(
         name: 'default',
         driver: driverAdapter,
-        entities: generatedOrmModelDefinitions,
+        entities: registry.allDefinitions,
+        registry: registry,
         codecs: customCodecs,
       ),
     );

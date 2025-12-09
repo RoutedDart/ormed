@@ -476,6 +476,7 @@ class _SelectCompilation {
   );
 
   String get sql => _sql;
+
   GroupLimit? get activeGroupLimit => _groupLimit;
 
   String _compile() {
@@ -1019,32 +1020,57 @@ class _SelectCompilation {
     if (predicate == null) {
       return null;
     }
-    if (predicate is PredicateGroup) {
-      return _compilePredicateGroup(
-        predicate,
-        tableIdentifier: tableIdentifier,
-        resolveAggregates: resolveAggregates,
-      );
+
+    switch (predicate) {
+      case BitwisePredicate():
+        return _compileBitwisePredicate(predicate, tableIdentifier);
+      case PredicateGroup():
+        return _compilePredicateGroup(
+          predicate,
+          tableIdentifier: tableIdentifier,
+          resolveAggregates: resolveAggregates,
+        );
+      case FieldPredicate():
+        return _compileFieldPredicate(
+          predicate,
+          tableIdentifier,
+          resolveAggregates: resolveAggregates,
+        );
+      case RawPredicate():
+        bindings.addAll(predicate.bindings);
+        return '(${predicate.sql})';
+      case SubqueryPredicate():
+        return _compileSubqueryPredicate(predicate);
+      case RelationPredicate():
+        final parentAlias = tableIdentifier ?? _baseTable;
+        return _compileRelationPredicate(predicate, parentAlias);
+
+      }
+  }
+
+  String _compileSubqueryPredicate(SubqueryPredicate predicate) {
+    // For subqueries, disable auto-hydration to only select the specified columns
+    final subqueryPlan = predicate.subquery.copyWith(
+      disableAutoHydration: true,
+    );
+
+    // Compile the subquery
+    final subqueryCompilation = _SelectCompilation(subqueryPlan, grammar);
+    final subquerySql = subqueryCompilation._sql;
+
+    // Add bindings from subquery
+    bindings.addAll(subqueryCompilation.bindings);
+
+    if (predicate.type == SubqueryType.whereIn) {
+      // WHERE field IN (subquery) or WHERE field NOT IN (subquery)
+      final operator = predicate.negate ? 'NOT IN' : 'IN';
+      final field = grammar.wrapIdentifier(predicate.field!);
+      return '$field $operator ($subquerySql)';
+    } else {
+      // WHERE EXISTS (subquery) or WHERE NOT EXISTS (subquery)
+      final operator = predicate.negate ? 'NOT EXISTS' : 'EXISTS';
+      return '$operator ($subquerySql)';
     }
-    if (predicate is FieldPredicate) {
-      return _compileFieldPredicate(
-        predicate,
-        tableIdentifier,
-        resolveAggregates: resolveAggregates,
-      );
-    }
-    if (predicate is BitwisePredicate) {
-      return _compileBitwisePredicate(predicate, tableIdentifier);
-    }
-    if (predicate is RawPredicate) {
-      bindings.addAll(predicate.bindings);
-      return '(${predicate.sql})';
-    }
-    if (predicate is RelationPredicate) {
-      final parentAlias = tableIdentifier ?? _baseTable;
-      return _compileRelationPredicate(predicate, parentAlias);
-    }
-    throw UnsupportedError('Unsupported predicate ${predicate.runtimeType}');
   }
 
   String _compilePredicateGroup(
@@ -1283,6 +1309,17 @@ class _SelectCompilation {
   }
 
   String _columnReference(String column, String? tableIdentifier) {
+    // Check if column is already table-qualified (e.g., "users.id" for correlated subqueries)
+    if (column.contains('.')) {
+      final parts = column.split('.');
+      if (parts.length == 2) {
+        // It's table.column format - wrap each part separately
+        final table = grammar.wrapIdentifier(parts[0]);
+        final col = grammar.wrapIdentifier(parts[1]);
+        return '$table.$col';
+      }
+    }
+
     final wrapped = grammar.wrapIdentifier(column);
     if (tableIdentifier == null) {
       return wrapped;

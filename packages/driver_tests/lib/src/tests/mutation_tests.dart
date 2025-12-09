@@ -531,7 +531,7 @@ void runDriverMutationTests({required DataSource dataSource}) {
 
       expectPreviewMetadata(preview);
       final normalized = preview.normalized;
-      expect(normalized.parameters, hasLength(7));
+      expect(normalized.parameters, hasLength(8));
       expect(normalized.parameters[0], 9);
       expect(normalized.parameters[1], 'preview@example.com');
       expect(
@@ -543,6 +543,7 @@ void runDriverMutationTests({required DataSource dataSource}) {
       expect(normalized.parameters[4], isNull); // age
       expect(normalized.parameters[5], isNull); // createdAt
       expect(normalized.parameters[6], isNull); // profile
+      expect(normalized.parameters[7], isNull); // metadata
     });
 
     test('mutation events include normalized parameters', () async {
@@ -558,7 +559,7 @@ void runDriverMutationTests({required DataSource dataSource}) {
       final event = events.single;
       expectPreviewMetadata(event.preview);
       final normalized = event.preview.normalized;
-      expect(normalized.parameters.length, 7);
+      expect(normalized.parameters.length, 8);
       expect(normalized.parameters[0], 11);
       expect(normalized.parameters[1], 'events@example.com');
       expect(
@@ -570,6 +571,7 @@ void runDriverMutationTests({required DataSource dataSource}) {
       expect(normalized.parameters[4], isNull); // age
       expect(normalized.parameters[5], isNull); // createdAt
       expect(normalized.parameters[6], isNull); // profile
+      expect(normalized.parameters[7], isNull); // metadata
       expect(event.affectedRows, 1);
       expect(event.succeeded, isTrue);
     });
@@ -642,44 +644,6 @@ void runDriverMutationTests({required DataSource dataSource}) {
       expect(meta, isNotNull);
       expect(meta!['count'], equals(5));
     });
-    //
-    // test('sqlite truncate resets auto-increment sequences', () async {
-    //   if (config.driverName != 'SqliteDriverAdapter') {
-    //     return;
-    //   }
-    //   await dataSource.connection.driver.executeRaw('DELETE FROM serial_tests');
-    //   await dataSource.connection.driver.executeRaw(
-    //     'INSERT INTO serial_tests (label) VALUES (?)',
-    //     ['first'],
-    //   );
-    //   await dataSource.connection.driver.executeRaw(
-    //     'INSERT INTO serial_tests (label) VALUES (?)',
-    //     ['second'],
-    //   );
-    //
-    //   final connection = OrmConnection(
-    //     config: ConnectionConfig(
-    //       name: 'sqlite-testing',
-    //       tablePrefix: dataSource.context.connectionTablePrefix ?? '',
-    //     ),
-    //     driver: dataSource.connection.driver,
-    //     registry: dataSource.context.registry,
-    //     codecRegistry: dataSource.context.codecRegistry,
-    //     context: dataSource.context,
-    //   );
-    //   final seeder = OrmSeeder(connection);
-    //   await seeder.truncate('serial_tests');
-    //
-    //   await dataSource.connection.driver.executeRaw(
-    //     'INSERT INTO serial_tests (label) VALUES (?)',
-    //     ['reset'],
-    //   );
-    //
-    //   final rows = await dataSource.connection.driver.queryRaw(
-    //     'SELECT id FROM serial_tests ORDER BY id',
-    //   );
-    //   expect(rows.single['id'], 1);
-    // });
 
     test(
       'insert/update/delete returning payloads',

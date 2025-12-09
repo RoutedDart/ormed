@@ -54,7 +54,7 @@ void main() {
         'published_at': null,
         'created_at': null,
         'updated_at': null,
-      }, ValueCodecRegistry.standard());
+      }, ValueCodecRegistry.instance);
 
       final query = post.authorQuery();
 

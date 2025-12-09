@@ -55,7 +55,7 @@ const FieldDefinition _$PhotoPathField = FieldDefinition(
   autoIncrement: false,
 );
 
-final ModelDefinition<Photo> _$PhotoModelDefinition = ModelDefinition(
+final ModelDefinition<$Photo> _$PhotoDefinition = ModelDefinition(
   modelName: 'Photo',
   tableName: 'photos',
   fields: const [
@@ -75,72 +75,75 @@ final ModelDefinition<Photo> _$PhotoModelDefinition = ModelDefinition(
     softDeletes: false,
     softDeleteColumn: 'deleted_at',
   ),
-  codec: _$PhotoModelCodec(),
+  codec: _$PhotoCodec(),
 );
 
 // ignore: unused_element
-final photoModelDefinitionRegistration = ModelFactoryRegistry.register<Photo>(
-  _$PhotoModelDefinition,
+final photoModelDefinitionRegistration = ModelFactoryRegistry.register<$Photo>(
+  _$PhotoDefinition,
 );
 
 extension PhotoOrmDefinition on Photo {
-  static ModelDefinition<Photo> get definition => _$PhotoModelDefinition;
+  static ModelDefinition<$Photo> get definition => _$PhotoDefinition;
 }
 
 class Photos {
   const Photos._();
 
-  static Query<Photo> query([String? connection]) =>
-      Model.query<Photo>(connection: connection);
+  static Query<$Photo> query([String? connection]) =>
+      Model.query<$Photo>(connection: connection);
 
-  static Future<Photo?> find(Object id, {String? connection}) =>
-      Model.find<Photo>(id, connection: connection);
+  static Future<$Photo?> find(Object id, {String? connection}) =>
+      Model.find<$Photo>(id, connection: connection);
 
-  static Future<Photo> findOrFail(Object id, {String? connection}) =>
-      Model.findOrFail<Photo>(id, connection: connection);
+  static Future<$Photo> findOrFail(Object id, {String? connection}) =>
+      Model.findOrFail<$Photo>(id, connection: connection);
 
-  static Future<List<Photo>> all({String? connection}) =>
-      Model.all<Photo>(connection: connection);
+  static Future<List<$Photo>> all({String? connection}) =>
+      Model.all<$Photo>(connection: connection);
 
   static Future<int> count({String? connection}) =>
-      Model.count<Photo>(connection: connection);
+      Model.count<$Photo>(connection: connection);
 
-  static Future<bool> exists({String? connection}) =>
-      Model.exists<Photo>(connection: connection);
+  static Future<bool> anyExist({String? connection}) =>
+      Model.anyExist<$Photo>(connection: connection);
 
-  static Query<Photo> where(
+  static Query<$Photo> where(
     String column,
     String operator,
     dynamic value, {
     String? connection,
-  }) => Model.where<Photo>(column, operator, value, connection: connection);
+  }) => Model.where<$Photo>(column, operator, value, connection: connection);
 
-  static Query<Photo> whereIn(
+  static Query<$Photo> whereIn(
     String column,
     List<dynamic> values, {
     String? connection,
-  }) => Model.whereIn<Photo>(column, values, connection: connection);
+  }) => Model.whereIn<$Photo>(column, values, connection: connection);
 
-  static Query<Photo> orderBy(
+  static Query<$Photo> orderBy(
     String column, {
     String direction = "asc",
     String? connection,
-  }) => Model.orderBy<Photo>(
+  }) => Model.orderBy<$Photo>(
     column,
     direction: direction,
     connection: connection,
   );
 
-  static Query<Photo> limit(int count, {String? connection}) =>
-      Model.limit<Photo>(count, connection: connection);
+  static Query<$Photo> limit(int count, {String? connection}) =>
+      Model.limit<$Photo>(count, connection: connection);
+
+  static Repository<$Photo> repo([String? connection]) =>
+      Model.repository<$Photo>(connection: connection);
 }
 
 class PhotoModelFactory {
   const PhotoModelFactory._();
 
-  static ModelDefinition<Photo> get definition => _$PhotoModelDefinition;
+  static ModelDefinition<$Photo> get definition => _$PhotoDefinition;
 
-  static ModelCodec<Photo> get codec => definition.codec;
+  static ModelCodec<$Photo> get codec => definition.codec;
 
   static Photo fromMap(
     Map<String, Object?> data, {
@@ -150,7 +153,7 @@ class PhotoModelFactory {
   static Map<String, Object?> toMap(
     Photo model, {
     ValueCodecRegistry? registry,
-  }) => definition.toMap(model, registry: registry);
+  }) => definition.toMap(model.toTracked(), registry: registry);
 
   static void registerWith(ModelRegistry registry) =>
       registry.register(definition);
@@ -166,11 +169,10 @@ class PhotoModelFactory {
   );
 }
 
-class _$PhotoModelCodec extends ModelCodec<Photo> {
-  const _$PhotoModelCodec();
-
+class _$PhotoCodec extends ModelCodec<$Photo> {
+  const _$PhotoCodec();
   @override
-  Map<String, Object?> encode(Photo model, ValueCodecRegistry registry) {
+  Map<String, Object?> encode($Photo model, ValueCodecRegistry registry) {
     return <String, Object?>{
       'id': registry.encodeField(_$PhotoIdField, model.id),
       'imageable_id': registry.encodeField(
@@ -186,7 +188,7 @@ class _$PhotoModelCodec extends ModelCodec<Photo> {
   }
 
   @override
-  Photo decode(Map<String, Object?> data, ValueCodecRegistry registry) {
+  $Photo decode(Map<String, Object?> data, ValueCodecRegistry registry) {
     final int photoIdValue =
         registry.decodeField<int>(_$PhotoIdField, data['id']) ??
         (throw StateError('Field id on Photo cannot be null.'));
@@ -205,7 +207,7 @@ class _$PhotoModelCodec extends ModelCodec<Photo> {
     final String photoPathValue =
         registry.decodeField<String>(_$PhotoPathField, data['path']) ??
         (throw StateError('Field path on Photo cannot be null.'));
-    final model = _$PhotoModel(
+    final model = $Photo(
       id: photoIdValue,
       imageableId: photoImageableIdValue,
       imageableType: photoImageableTypeValue,
@@ -221,8 +223,16 @@ class _$PhotoModelCodec extends ModelCodec<Photo> {
   }
 }
 
-class _$PhotoModel extends Photo {
-  _$PhotoModel({
+/// Generated tracked model class for [Photo].
+///
+/// This class extends the user-defined [Photo] model and adds
+/// attribute tracking, change detection, and relationship management.
+/// Instances of this class are returned by queries and repositories.
+///
+/// **Do not instantiate this class directly.** Use queries, repositories,
+/// or model factories to create tracked model instances.
+class $Photo extends Photo with ModelAttributes, ModelRelations {
+  $Photo({
     required int id,
     required int imageableId,
     required String imageableType,
@@ -239,6 +249,16 @@ class _$PhotoModel extends Photo {
       'imageable_type': imageableType,
       'path': path,
     });
+  }
+
+  /// Creates a tracked model instance from a user-defined model instance.
+  factory $Photo.fromModel(Photo model) {
+    return $Photo(
+      id: model.id,
+      imageableId: model.imageableId,
+      imageableType: model.imageableType,
+      path: model.path,
+    );
   }
 
   @override
@@ -264,6 +284,20 @@ class _$PhotoModel extends Photo {
 
   void _attachOrmRuntimeMetadata(Map<String, Object?> values) {
     replaceAttributes(values);
-    attachModelDefinition(_$PhotoModelDefinition);
+    attachModelDefinition(_$PhotoDefinition);
+  }
+}
+
+extension PhotoOrmExtension on Photo {
+  /// The Type of the generated ORM-managed model class.
+  /// Use this when you need to specify the tracked model type explicitly,
+  /// for example in generic type parameters.
+  static Type get trackedType => $Photo;
+
+  /// Converts this immutable model to a tracked ORM-managed model.
+  /// The tracked model supports attribute tracking, change detection,
+  /// and persistence operations like save() and touch().
+  $Photo toTracked() {
+    return $Photo.fromModel(this);
   }
 }

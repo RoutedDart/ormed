@@ -10,7 +10,7 @@ import 'photo.dart';
 part 'post.orm.dart';
 
 @OrmModel(table: 'posts')
-class Post extends Model<Post> with ModelFactoryCapable {
+class Post extends Model<Post> with ModelFactoryCapable, TimestampsTZ {
   const Post({
     required this.id,
     required this.authorId,

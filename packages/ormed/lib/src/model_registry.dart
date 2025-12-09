@@ -21,6 +21,9 @@ class ModelRegistry {
   }
 
   void register<T>(ModelDefinition<T> definition) {
+    if (_definitions.containsKey(definition.modelType)) {
+      return; // Skip already registered types
+    }
     _definitions[definition.modelType] = definition;
     _definitionsByName[definition.modelName] = definition;
     _onRegistered.add(definition);
@@ -31,6 +34,9 @@ class ModelRegistry {
 
   void registerAll(Iterable<ModelDefinition<dynamic>> definitions) {
     for (final definition in definitions) {
+      if (_definitions.containsKey(definition.modelType)) {
+        continue; // Skip already registered types
+      }
       _definitions[definition.modelType] = definition;
       _definitionsByName[definition.modelName] = definition;
       _onRegistered.add(definition);
@@ -38,6 +44,26 @@ class ModelRegistry {
         callback(definition);
       }
     }
+  }
+  
+  /// Register a type alias that maps to an existing definition
+  void registerTypeAlias<T>(ModelDefinition existingDefinition) {
+    if (_definitions.containsKey(T)) {
+      return; // Skip already registered types
+    }
+    _definitions[T] = existingDefinition;
+  }
+  
+  /// Returns all registered model definitions (deduplicated)
+  List<ModelDefinition<dynamic>> get allDefinitions {
+    final seen = <String>{};
+    final result = <ModelDefinition<dynamic>>[];
+    for (final def in _definitions.values) {
+      if (seen.add(def.modelName)) {
+        result.add(def);
+      }
+    }
+    return result;
   }
 
   ModelDefinition<T> registerAlias<T>(

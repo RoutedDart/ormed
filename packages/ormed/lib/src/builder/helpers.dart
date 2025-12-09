@@ -66,6 +66,27 @@ bool isSoftDeletesMixin(InterfaceType type) {
       libraryUri == 'package:ormed/src/model_mixins/soft_deletes.dart';
 }
 
+bool isSoftDeletesTZMixin(InterfaceType type) {
+  final element = type.element;
+  final libraryUri = element.library.identifier;
+  return element.name == 'SoftDeletesTZ' &&
+      libraryUri == 'package:ormed/src/model_mixins/timestamps.dart';
+}
+
+bool isTimestampsMixin(InterfaceType type) {
+  final element = type.element;
+  final libraryUri = element.library.identifier;
+  return element.name == 'Timestamps' &&
+      libraryUri == 'package:ormed/src/model_mixins/timestamps.dart';
+}
+
+bool isTimestampsTZMixin(InterfaceType type) {
+  final element = type.element;
+  final libraryUri = element.library.identifier;
+  return element.name == 'TimestampsTZ' &&
+      libraryUri == 'package:ormed/src/model_mixins/timestamps.dart';
+}
+
 bool isModelAttributesMixin(InterfaceType type) {
   final element = type.element;
   final libraryUri = element.library.identifier;

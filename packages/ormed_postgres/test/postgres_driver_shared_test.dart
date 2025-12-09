@@ -9,12 +9,20 @@ Future<void> main() async {
   late DataSource dataSource;
   late PostgresDriverAdapter driverAdapter;
 
+  registerDriverTestFactories();
+  
+  // Build and register models with type aliases
+  final registry = buildOrmRegistry();
+
   // Configure the Postgres driver
   final url =
       Platform.environment['POSTGRES_URL'] ??
       'postgres://postgres:postgres@localhost:6543/orm_test';
 
-  // Create custom codecs map
+  // Register PostgreSQL codecs
+  PostgresDriverAdapter.registerCodecs();
+
+  // Register custom test codecs
   final customCodecs = <String, ValueCodec<dynamic>>{
     'PostgresPayloadCodec': const PostgresPayloadCodec(),
     'SqlitePayloadCodec': const SqlitePayloadCodec(),
@@ -24,24 +32,24 @@ Future<void> main() async {
     'Map<String, Object?>?': const JsonMapCodec(),
   };
 
-  // Create codec registry for the adapter
-  final codecRegistry = ValueCodecRegistry.standard();
   for (final entry in customCodecs.entries) {
-    codecRegistry.registerCodec(key: entry.key, codec: entry.value);
+    ValueCodecRegistry.instance.registerCodec(key: entry.key, codec: entry.value);
   }
 
   driverAdapter = PostgresDriverAdapter.custom(
     config: DatabaseConfig(driver: 'postgres', options: {'url': url}),
-    codecRegistry: codecRegistry,
   );
 
   // Create the DataSource
   dataSource = DataSource(
     DataSourceOptions(
+      name: 'default',
       driver: driverAdapter,
-      entities: generatedOrmModelDefinitions,
+      entities: registry.allDefinitions,
+      registry: registry,
       codecs: customCodecs,
       logging: true,
+      enableNamedTimezones: true,
     ),
   );
 
@@ -52,9 +60,9 @@ Future<void> main() async {
   // Enable SQL query logging
   dataSource.connection.onBeforeQuery((plan) {
     final preview = dataSource.connection.driver.describeQuery(plan);
-    // print('[QUERY SQL] ${preview.normalized.command}');
+    print('[QUERY SQL] ${preview.normalized.command}');
     if (preview.normalized.parameters.isNotEmpty) {
-      // print('[PARAMS] ${preview.normalized.parameters}');
+      print('[PARAMS] ${preview.normalized.parameters}');
     }
   });
 

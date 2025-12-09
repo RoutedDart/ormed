@@ -20,6 +20,9 @@ class ModelContext {
       schema = annotation.peek('schema')?.stringValue,
       generateCodec = annotation.peek('generateCodec')?.boolValue ?? true,
       mixinSoftDeletes = element.mixins.any(isSoftDeletesMixin),
+      mixinSoftDeletesTZ = element.mixins.any(isSoftDeletesTZMixin),
+      mixinTimestamps = element.mixins.any(isTimestampsMixin),
+      mixinTimestampsTZ = element.mixins.any(isTimestampsTZMixin),
       mixinModelAttributes = classOrSuperHasMixin(
         element,
         isModelAttributesMixin,
@@ -98,6 +101,9 @@ class ModelContext {
   final String? schema;
   final bool generateCodec;
   final bool mixinSoftDeletes;
+  final bool mixinSoftDeletesTZ;
+  final bool mixinTimestamps;
+  final bool mixinTimestampsTZ;
   final bool mixinModelAttributes;
   final bool mixinModelConnection;
   final bool mixinModelFactory;
@@ -120,6 +126,10 @@ class ModelContext {
   late final String? softDeleteColumn;
   late final bool effectiveSoftDeletes;
   late final ConstructorElement constructor;
+
+  /// Returns the generated tracked model class name.
+  /// Always just adds $ prefix to the class name.
+  String get trackedModelClassName => '\$' + className;
 
   ConstructorElement _resolveConstructor() {
     final constructorName = constructorOverride;
@@ -187,7 +197,7 @@ class ModelContext {
 
     collectFrom(element);
 
-    final requiresSoftDeletes = mixinSoftDeletes || annotationSoftDeletesFlag;
+    final requiresSoftDeletes = mixinSoftDeletes || mixinSoftDeletesTZ || annotationSoftDeletesFlag;
     if (requiresSoftDeletes &&
         !descriptors.any((descriptor) => descriptor.isSoftDelete)) {
       descriptors.add(
@@ -212,6 +222,56 @@ class ModelContext {
               annotationSoftDeleteColumnOverride ?? SoftDeletes.defaultColumn,
         ),
       );
+    }
+
+    // Add virtual timestamp fields if using Timestamps or TimestampsTZ mixins
+    final requiresTimestamps = mixinTimestamps || mixinTimestampsTZ;
+    if (requiresTimestamps) {
+      // Add createdAt field if not already present
+      if (!descriptors.any((d) => d.name == 'createdAt')) {
+        descriptors.add(
+          FieldDescriptor(
+            owner: className,
+            name: 'createdAt',
+            columnName: 'created_at',
+            dartType: 'DateTime',
+            resolvedType: 'DateTime?',
+            isPrimaryKey: false,
+            isNullable: true,
+            isUnique: false,
+            isIndexed: false,
+            autoIncrement: false,
+            columnType: null,
+            defaultValueSql: null,
+            codecType: null,
+            isSoftDelete: false,
+            isVirtual: true,
+          ),
+        );
+      }
+
+      // Add updatedAt field if not already present
+      if (!descriptors.any((d) => d.name == 'updatedAt')) {
+        descriptors.add(
+          FieldDescriptor(
+            owner: className,
+            name: 'updatedAt',
+            columnName: 'updated_at',
+            dartType: 'DateTime',
+            resolvedType: 'DateTime?',
+            isPrimaryKey: false,
+            isNullable: true,
+            isUnique: false,
+            isIndexed: false,
+            autoIncrement: false,
+            columnType: null,
+            defaultValueSql: null,
+            codecType: null,
+            isSoftDelete: false,
+            isVirtual: true,
+          ),
+        );
+      }
     }
 
     return descriptors;

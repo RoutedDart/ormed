@@ -65,6 +65,26 @@ extension GroupingExtension<T> on Query<T> {
     return _appendHavingPredicate(predicate, PredicateLogicalOperator.and);
   }
 
+  /// Adds a raw HAVING fragment using OR logic.
+  ///
+  /// This method is similar to [havingRaw] but applies `OR` logic when
+  /// combining with previous `HAVING` clauses.
+  ///
+  /// Example:
+  /// ```dart
+  /// final customHaving = await context.query<User>()
+  ///   .select(['city'])
+  ///   .countAggregate(alias: 'userCount')
+  ///   .groupBy(['city'])
+  ///   .havingRaw('COUNT(*) > ?', [100])
+  ///   .orHavingRaw('SUM(age) > ?', [500])
+  ///   .get();
+  /// ```
+  Query<T> orHavingRaw(String sql, [List<Object?> bindings = const []]) {
+    final predicate = RawPredicate(sql: sql, bindings: bindings);
+    return _appendHavingPredicate(predicate, PredicateLogicalOperator.or);
+  }
+
   /// Adds a HAVING clause with a bitwise operator.
   ///
   /// This method allows you to apply bitwise operations in the `HAVING` clause.

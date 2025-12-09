@@ -100,8 +100,8 @@ class Tags {
   static Future<int> count({String? connection}) =>
       Model.count<Tag>(connection: connection);
 
-  static Future<bool> exists({String? connection}) =>
-      Model.exists<Tag>(connection: connection);
+  static Future<bool> anyExist({String? connection}) =>
+      Model.anyExist<Tag>(connection: connection);
 
   static Query<Tag> where(
     String column,
@@ -146,6 +146,9 @@ class TagModelFactory {
 
   static void registerWith(ModelRegistry registry) =>
       registry.register(definition);
+
+  static ModelFactoryConnection<Tag> withConnection(QueryContext context) =>
+      ModelFactoryConnection<Tag>(definition: definition, context: context);
 
   static ModelFactoryBuilder<Tag> factory({
     GeneratorProvider? generatorProvider,
@@ -247,11 +250,4 @@ class _$TagModel extends Tag {
     replaceAttributes(values);
     attachModelDefinition(_$TagModelDefinition);
   }
-}
-
-extension TagAttributeSetters on Tag {
-  set id(int? value) => setAttribute('id', value);
-  set name(String value) => setAttribute('name', value);
-  set createdAt(DateTime? value) => setAttribute('created_at', value);
-  set updatedAt(DateTime? value) => setAttribute('updated_at', value);
 }

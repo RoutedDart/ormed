@@ -1,150 +1,97 @@
 part of '../query_builder.dart';
 
-/// Extension providing scope and query customization methods.
 extension ScopeExtension<T> on Query<T> {
-  /// Removes a global scope by [identifier] from the query.
+  /// Applies a registered local scope to the query.
   ///
-  /// This allows you to temporarily disable a global scope that would otherwise
-  /// be applied to all queries of this model type.
-  ///
-  /// Example:
-  /// ```dart
-  /// // Get all users, including soft-deleted ones
-  /// final allUsers = await context.query<User>()
-  ///   .withoutGlobalScope(ScopeRegistry.softDeleteScopeIdentifier)
-  ///   .get();
-  /// ```
-  Query<T> withoutGlobalScope(String identifier) {
-    final updated = {..._ignoredGlobalScopes, identifier};
-    return _copyWith(ignoredScopes: updated, globalScopesApplied: false);
-  }
-
-  /// Removes multiple global scopes or all global scopes from the query.
-  ///
-  /// If [identifiers] is `null`, all global scopes will be ignored.
-  /// Otherwise, only the global scopes with the specified identifiers will be ignored.
+  /// Local scopes allow you to define reusable query constraints that can be
+  /// applied to specific queries.
   ///
   /// Example:
   /// ```dart
-  /// // Get all users, ignoring all global scopes
-  /// final allUsers = await context.query<User>()
-  ///   .withoutGlobalScopes()
-  ///   .get();
+  /// // Register a local scope
+  /// context.scopeRegistry.addLocalScope<User>('active', (query, args) {
+  ///   return query.where('status', 'active');
+  /// });
   ///
-  /// // Ignore specific global scopes
-  /// final users = await context.query<User>()
-  ///   .withoutGlobalScopes(['scope1', 'scope2'])
-  ///   .get();
-  /// ```
-  Query<T> withoutGlobalScopes([List<String>? identifiers]) {
-    if (identifiers == null) {
-      return _copyWith(ignoreAllGlobalScopes: true, globalScopesApplied: false);
-    }
-    final updated = {..._ignoredGlobalScopes, ...identifiers};
-    return _copyWith(ignoredScopes: updated, globalScopesApplied: false);
-  }
-
-  /// Applies a named local scope to the query.
-  ///
-  /// Local scopes are reusable query constraints defined on the model.
-  ///
-  /// [name] is the name of the local scope.
-  /// [args] are optional arguments to pass to the local scope.
-  ///
-  /// Example:
-  /// ```dart
-  /// // Assuming a local scope 'active' is defined on User model
+  /// // Apply the scope to a query
   /// final activeUsers = await context.query<User>()
   ///   .scope('active')
   ///   .get();
-  ///
-  /// // With arguments
-  /// final usersByRole = await context.query<User>()
-  ///   .scope('byRole', ['admin'])
-  ///   .get();
   /// ```
-  Query<T> scope(String name, [List<Object?> args = const []]) => context
-      .scopeRegistry
-      .callLocalScope(definition.modelType, name, this, args);
+  Query<T> scope(String name, [List<Object?> args = const []]) {
+    final scopeRegistry = context.scopeRegistry;
 
-  /// Calls a registered query macro.
-  ///
-  /// Macros provide a way to extend the query builder with custom, reusable logic.
-  ///
-  /// [name] is the name of the macro.
-  /// [args] are optional arguments to pass to the macro.
-  ///
-  /// Example:
-  /// ```dart
-  /// // Assuming a macro 'recent' is defined
-  /// final recentPosts = await context.query<Post>()
-  ///   .macro('recent', [Duration(days: 7)])
-  ///   .get();
-  /// ```
-  Query<T> macro(String name, [List<Object?> args = const []]) =>
-      context.scopeRegistry.callMacro(name, this, args);
-
-  /// Limits the number of rows returned per group.
-  ///
-  /// This is useful for "top N per group" queries.
-  ///
-  /// [limit] is the maximum number of rows to return for each group.
-  /// [column] is the column used for grouping.
-  /// [offset] is an optional offset within each group.
-  ///
-  /// Example:
-  /// ```dart
-  /// // Get the 3 latest posts for each user
-  /// final latestPostsPerUser = await context.query<Post>()
-  ///   .orderBy('createdAt', descending: true)
-  ///   .limitPerGroup(3, 'userId')
-  ///   .get();
-  /// ```
-  Query<T> limitPerGroup(int limit, String column, {int? offset}) {
-    if (limit <= 0) {
-      throw ArgumentError.value(limit, 'limit', 'Must be greater than zero');
+    try {
+      return scopeRegistry.callLocalScope(T, name, this, args);
+    } catch (e) {
+      throw ArgumentError('Local scope "$name" not found for ${T.toString()}');
     }
-    if (offset != null && offset < 0) {
-      throw ArgumentError.value(offset, 'offset', 'Must be non-negative');
-    }
-    final resolved = _resolveGroupLimitColumn(column);
-    final next = GroupLimit(column: resolved, limit: limit, offset: offset);
-    return _copyWith(groupLimit: next);
   }
 
-  /// Applies ad-hoc table scopes to the query.
+  /// Applies a registered query macro to the query.
   ///
-  /// This is typically used internally or for dynamic table-specific scopes.
-  Query<T> withTableScopes(List<String> scopes) => _copyWith(
-    adHocScopes: [..._adHocScopes, ...scopes],
-    globalScopesApplied: false,
-  );
-
-  /// Sets an alias for the main table in the query.
+  /// Query macros are global reusable query constraints that can be applied
+  /// to any query, regardless of model type.
   ///
   /// Example:
   /// ```dart
-  /// final aliasedUsers = await context.query<User>()
-  ///   .withAlias('u')
-  ///   .where('u.isActive', true)
+  /// // Register a macro
+  /// context.scopeRegistry.addMacro('recent', (query, args) {
+  ///   final days = args.isNotEmpty ? args[0] as int : 7;
+  ///   final cutoff = DateTime.now().subtract(Duration(days: days));
+  ///   return query.where('createdAt', cutoff, PredicateOperator.greaterThan);
+  /// });
+  ///
+  /// // Apply the macro to any query
+  /// final recentPosts = await context.query<Post>()
+  ///   .macro('recent', [7])
   ///   .get();
   /// ```
-  Query<T> withAlias(String alias) => _copyWith(tableAlias: alias);
+  Query<T> macro(String name, [List<Object?> args = const []]) {
+    final scopeRegistry = context.scopeRegistry;
 
-  /// Marks global scopes as having been applied to this query.
-  ///
-  /// This is typically used internally by the query builder.
-  Query<T> markGlobalScopesApplied() => _copyWith(globalScopesApplied: true);
+    try {
+      return scopeRegistry.callMacro(name, this, args);
+    } catch (e) {
+      throw ArgumentError('Query macro "$name" not found');
+    }
+  }
 
-  /// Applies the soft delete filter to the query.
+  /// Removes all global scopes from the query.
   ///
-  /// This is typically used internally to apply soft delete scoping.
-  Query<T> applySoftDeleteFilter(FieldDefinition field) {
-    final predicate = FieldPredicate(
-      field: field.columnName,
-      operator: PredicateOperator.isNull,
-      value: null,
-    );
-    return _appendPredicate(predicate, PredicateLogicalOperator.and);
+  /// This method allows you to retrieve all records, even those that would
+  /// normally be filtered by global scopes (like soft-deleted records).
+  ///
+  /// Example:
+  /// ```dart
+  /// // Get all posts, including soft-deleted ones
+  /// final allPosts = await context.query<Post>()
+  ///   .withoutGlobalScopes()
+  ///   .get();
+  /// ```
+  Query<T> withoutGlobalScopes([List<String>? scopes]) {
+    if (scopes == null || scopes.isEmpty) {
+      return _copyWith(ignoreAllGlobalScopes: true);
+    }
+
+    final currentIgnored = ignoredGlobalScopes;
+    currentIgnored.addAll(scopes);
+    return _copyWith(ignoredScopes: currentIgnored);
+  }
+
+  /// Removes a specific global scope from the query.
+  ///
+  /// Example:
+  /// ```dart
+  /// // Get all posts, including soft-deleted ones
+  /// final allPosts = await context.query<Post>()
+  ///   .withoutGlobalScope('softDeletes')
+  ///   .get();
+  /// ```
+  Query<T> withoutGlobalScope(String scope) {
+    final currentIgnored = ignoredGlobalScopes;
+    currentIgnored.add(scope);
+    return _copyWith(ignoredScopes: currentIgnored);
   }
 }
+

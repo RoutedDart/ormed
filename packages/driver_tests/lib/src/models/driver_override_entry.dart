@@ -5,7 +5,7 @@ part 'driver_override_entry.orm.dart';
 
 @OrmModel(table: 'driver_override_entries')
 class DriverOverrideEntry extends Model<DriverOverrideEntry>
-    with ModelFactoryCapable {
+    {
   const DriverOverrideEntry({required this.id, required this.payload});
 
   @OrmField(isPrimaryKey: true)

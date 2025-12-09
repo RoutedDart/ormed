@@ -2,10 +2,14 @@
 /// ecosystem.
 library;
 
+export 'package:carbonized/carbonized.dart' show Carbon, CarbonInterface;
 export 'src/annotations.dart';
+export 'src/carbon_config.dart';
+export 'src/core/orm_config.dart';
 export 'src/model_definition.dart';
 export 'src/model_registry.dart';
 export 'src/model.dart';
+export 'src/model_extensions.dart';
 export 'src/value_codec.dart';
 export 'src/exceptions.dart';
 export 'src/query/query.dart';
@@ -29,17 +33,23 @@ export 'src/driver/driver.dart';
 export 'src/driver/driver_capability.dart';
 export 'src/driver/schema_state.dart';
 export 'src/driver/schema_state_provider.dart';
+export 'src/driver/type_mapping.dart';
 export 'src/repository/repository.dart';
 export 'migrations.dart';
 export 'src/migrations/seeder.dart' show DatabaseSeeder, Seeder, SeederRegistry;
 export 'src/model_mixins/model_attributes.dart';
 export 'src/model_mixins/model_attribute_extensions.dart';
+export 'src/model_mixins/model_with_tracked.dart';
 export 'src/model_mixins/soft_deletes.dart';
+export 'src/model_mixins/soft_deletes_impl.dart';
+export 'src/model_mixins/timestamps.dart';
+export 'src/model_mixins/timestamps_impl.dart';
 export 'src/model_mixins/model_connection.dart';
 export 'src/model_mixins/model_relations.dart';
 export 'src/model_factory_connection.dart';
 export 'src/model_factory.dart';
 export 'src/model_mixins/model_factory.dart';
+export 'src/model_companion.dart';
 export 'src/orm_project_config.dart';
 export 'src/orm_project_config_loader.dart';
 export 'src/driver/driver_registry.dart';

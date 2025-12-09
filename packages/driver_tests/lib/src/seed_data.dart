@@ -44,9 +44,9 @@ const defaultPhotos = [
   Photo(id: 5, imageableId: 102, imageableType: 'Image', path: 'alt.jpg'),
 ];
 
-final defaultComments = <Comment>[
-  Comment(id: 1, body: 'Visible'),
-  Comment(id: 2, body: 'Hidden')..deletedAt = DateTime.utc(2024, 4, 1),
+final defaultComments = <Map<String, dynamic>>[
+  {'id': 1, 'body': 'Visible'},
+  {'id': 2, 'body': 'Hidden', 'deleted_at': DateTime.utc(2024, 4, 1)},
 ];
 
 final sampleArticles = [
@@ -128,5 +128,5 @@ Future<void> seedGraph(DataSource dataSource, {List<User>? users}) async {
   await dataSource.repo<PostTag>().insertMany(defaultPostTags.toList());
   await dataSource.repo<Image>().insertMany(defaultImages.toList());
   await dataSource.repo<Photo>().insertMany(defaultPhotos.toList());
-  await dataSource.repo<Comment>().insertMany(defaultComments.toList());
+  await dataSource.context.query<Comment>().createMany(defaultComments);
 }

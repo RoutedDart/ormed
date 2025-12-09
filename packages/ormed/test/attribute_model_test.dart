@@ -13,7 +13,7 @@ void main() {
       expect(metadata.fieldOverrides['secret']?.hidden, isTrue);
       expect(metadata.casts['profile'], 'json');
 
-      final registry = ValueCodecRegistry.standard();
+      final registry = ValueCodecRegistry.instance;
       registry.registerCodec(key: 'json', codec: _JsonCodec());
 
       final user = AttributeUserOrmDefinition.definition.codec.decode({
@@ -44,7 +44,7 @@ void main() {
     });
 
     test('fillable guards drop unlisted attributes', () {
-      final registry = ValueCodecRegistry.standard();
+      final registry = ValueCodecRegistry.instance;
       final user = AttributeUserOrmDefinition.definition.codec.decode({
         'id': 2,
         'email': 'c@x.dev',
@@ -62,7 +62,7 @@ void main() {
       // Final fields cannot be assigned through the static `AttributeUser`
       // type, so we keep this test to ensure the helper API still syncs the
       // attribute bag when using the generated setter extension.
-      final registry = ValueCodecRegistry.standard();
+      final registry = ValueCodecRegistry.instance;
       final user = AttributeUserOrmDefinition.definition.codec.decode({
         'id': 3,
         'email': 'd@x.dev',
@@ -94,7 +94,7 @@ void main() {
 
       final snapshot = AttributeUserModelFactory.toMap(
         user,
-        registry: ValueCodecRegistry.standard(),
+        registry: ValueCodecRegistry.instance,
       );
       expect(snapshot['email'], 'f@x.dev');
       expect(snapshot['secret'], 'exposed');

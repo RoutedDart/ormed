@@ -43,4 +43,72 @@ abstract class SchemaDriver {
     String table, {
     String? schema,
   });
+
+  // ========== Existence Checking ==========
+
+  /// Determines if the given table exists.
+  Future<bool> hasTable(String table, {String? schema});
+
+  /// Determines if the given view exists.
+  Future<bool> hasView(String view, {String? schema});
+
+  /// Determines if the given table has a specific column.
+  Future<bool> hasColumn(String table, String column, {String? schema});
+
+  /// Determines if the given table has all of the specified columns.
+  Future<bool> hasColumns(String table, List<String> columns, {String? schema});
+
+  /// Determines if the given table has a specific index.
+  /// Optionally check by index type ('primary', 'unique', or specific driver type).
+  Future<bool> hasIndex(String table, String index, {String? schema, String? type});
+
+  // ========== Database Management ==========
+
+  /// Creates a new database with the given name.
+  ///
+  /// Options are driver-specific:
+  /// - MySQL: `{charset: 'utf8mb4', collation: 'utf8mb4_unicode_ci'}`
+  /// - Postgres: `{encoding: 'UTF8', owner: 'username', template: 'template0',
+  ///             locale: 'en_US.UTF-8', lc_collate: 'en_US.UTF-8',
+  ///             lc_ctype: 'en_US.UTF-8', tablespace: 'pg_default',
+  ///             connection_limit: -1}`
+  /// - SQLite: (no options - file-based)
+  ///
+  /// Returns true if created, false if already exists.
+  /// Throws [DriverException] on error.
+  Future<bool> createDatabase(
+    String name, {
+    Map<String, Object?>? options,
+  });
+
+  /// Drops a database with the given name.
+  /// Throws if database doesn't exist.
+  Future<bool> dropDatabase(String name);
+
+  /// Drops a database if it exists.
+  /// Returns true if dropped, false if didn't exist.
+  Future<bool> dropDatabaseIfExists(String name);
+
+  /// Lists all databases/catalogs accessible to the current connection.
+  Future<List<String>> listDatabases();
+
+  // ========== Foreign Key Constraint Management ==========
+
+  /// Enables foreign key constraint checking.
+  /// Returns true if successful.
+  Future<bool> enableForeignKeyConstraints();
+
+  /// Disables foreign key constraint checking.
+  /// Returns true if successful.
+  Future<bool> disableForeignKeyConstraints();
+
+  /// Executes a callback with foreign key constraints disabled.
+  /// Automatically re-enables constraints after callback completes.
+  Future<T> withoutForeignKeyConstraints<T>(Future<T> Function() callback);
+
+  // ========== Bulk Operations ==========
+
+  /// Drops all tables from the database.
+  /// Automatically handles foreign key constraints.
+  Future<void> dropAllTables({String? schema});
 }

@@ -68,7 +68,7 @@ const FieldDefinition _$ActiveUserDeletedAtField = FieldDefinition(
   autoIncrement: false,
 );
 
-final ModelDefinition<ActiveUser> _$ActiveUserModelDefinition = ModelDefinition(
+final ModelDefinition<$ActiveUser> _$ActiveUserDefinition = ModelDefinition(
   modelName: 'ActiveUser',
   tableName: 'active_users',
   fields: const [
@@ -90,70 +90,71 @@ final ModelDefinition<ActiveUser> _$ActiveUserModelDefinition = ModelDefinition(
     softDeletes: true,
     softDeleteColumn: 'deleted_at',
   ),
-  codec: _$ActiveUserModelCodec(),
+  codec: _$ActiveUserCodec(),
 );
 
 extension ActiveUserOrmDefinition on ActiveUser {
-  static ModelDefinition<ActiveUser> get definition =>
-      _$ActiveUserModelDefinition;
+  static ModelDefinition<$ActiveUser> get definition => _$ActiveUserDefinition;
 }
 
 class ActiveUsers {
   const ActiveUsers._();
 
-  static Query<ActiveUser> query([String? connection]) =>
-      Model.query<ActiveUser>(connection: connection);
+  static Query<$ActiveUser> query([String? connection]) =>
+      Model.query<$ActiveUser>(connection: connection);
 
-  static Future<ActiveUser?> find(Object id, {String? connection}) =>
-      Model.find<ActiveUser>(id, connection: connection);
+  static Future<$ActiveUser?> find(Object id, {String? connection}) =>
+      Model.find<$ActiveUser>(id, connection: connection);
 
-  static Future<ActiveUser> findOrFail(Object id, {String? connection}) =>
-      Model.findOrFail<ActiveUser>(id, connection: connection);
+  static Future<$ActiveUser> findOrFail(Object id, {String? connection}) =>
+      Model.findOrFail<$ActiveUser>(id, connection: connection);
 
-  static Future<List<ActiveUser>> all({String? connection}) =>
-      Model.all<ActiveUser>(connection: connection);
+  static Future<List<$ActiveUser>> all({String? connection}) =>
+      Model.all<$ActiveUser>(connection: connection);
 
   static Future<int> count({String? connection}) =>
-      Model.count<ActiveUser>(connection: connection);
+      Model.count<$ActiveUser>(connection: connection);
 
-  static Future<bool> exists({String? connection}) =>
-      Model.exists<ActiveUser>(connection: connection);
+  static Future<bool> anyExist({String? connection}) =>
+      Model.anyExist<$ActiveUser>(connection: connection);
 
-  static Query<ActiveUser> where(
+  static Query<$ActiveUser> where(
     String column,
     String operator,
     dynamic value, {
     String? connection,
   }) =>
-      Model.where<ActiveUser>(column, operator, value, connection: connection);
+      Model.where<$ActiveUser>(column, operator, value, connection: connection);
 
-  static Query<ActiveUser> whereIn(
+  static Query<$ActiveUser> whereIn(
     String column,
     List<dynamic> values, {
     String? connection,
-  }) => Model.whereIn<ActiveUser>(column, values, connection: connection);
+  }) => Model.whereIn<$ActiveUser>(column, values, connection: connection);
 
-  static Query<ActiveUser> orderBy(
+  static Query<$ActiveUser> orderBy(
     String column, {
     String direction = "asc",
     String? connection,
-  }) => Model.orderBy<ActiveUser>(
+  }) => Model.orderBy<$ActiveUser>(
     column,
     direction: direction,
     connection: connection,
   );
 
-  static Query<ActiveUser> limit(int count, {String? connection}) =>
-      Model.limit<ActiveUser>(count, connection: connection);
+  static Query<$ActiveUser> limit(int count, {String? connection}) =>
+      Model.limit<$ActiveUser>(count, connection: connection);
+
+  static Repository<$ActiveUser> repo([String? connection]) =>
+      Model.repository<$ActiveUser>(connection: connection);
 }
 
 class ActiveUserModelFactory {
   const ActiveUserModelFactory._();
 
-  static ModelDefinition<ActiveUser> get definition =>
-      _$ActiveUserModelDefinition;
+  static ModelDefinition<$ActiveUser> get definition => _$ActiveUserDefinition;
 
-  static ModelCodec<ActiveUser> get codec => definition.codec;
+  static ModelCodec<$ActiveUser> get codec => definition.codec;
 
   static ActiveUser fromMap(
     Map<String, Object?> data, {
@@ -163,7 +164,7 @@ class ActiveUserModelFactory {
   static Map<String, Object?> toMap(
     ActiveUser model, {
     ValueCodecRegistry? registry,
-  }) => definition.toMap(model, registry: registry);
+  }) => definition.toMap(model.toTracked(), registry: registry);
 
   static void registerWith(ModelRegistry registry) =>
       registry.register(definition);
@@ -183,11 +184,10 @@ class ActiveUserModelFactory {
   );
 }
 
-class _$ActiveUserModelCodec extends ModelCodec<ActiveUser> {
-  const _$ActiveUserModelCodec();
-
+class _$ActiveUserCodec extends ModelCodec<$ActiveUser> {
+  const _$ActiveUserCodec();
   @override
-  Map<String, Object?> encode(ActiveUser model, ValueCodecRegistry registry) {
+  Map<String, Object?> encode($ActiveUser model, ValueCodecRegistry registry) {
     return <String, Object?>{
       'id': registry.encodeField(_$ActiveUserIdField, model.id),
       'email': registry.encodeField(_$ActiveUserEmailField, model.email),
@@ -198,13 +198,13 @@ class _$ActiveUserModelCodec extends ModelCodec<ActiveUser> {
       ),
       'deleted_at': registry.encodeField(
         _$ActiveUserDeletedAtField,
-        model.getAttribute<DateTime?>('deleted_at'),
+        (model.getAttribute<DateTime?>('deleted_at')),
       ),
     };
   }
 
   @override
-  ActiveUser decode(Map<String, Object?> data, ValueCodecRegistry registry) {
+  $ActiveUser decode(Map<String, Object?> data, ValueCodecRegistry registry) {
     final int? activeUserIdValue = registry.decodeField<int?>(
       _$ActiveUserIdField,
       data['id'],
@@ -226,7 +226,7 @@ class _$ActiveUserModelCodec extends ModelCodec<ActiveUser> {
       _$ActiveUserDeletedAtField,
       data['deleted_at'],
     );
-    final model = _$ActiveUserModel(
+    final model = $ActiveUser(
       id: activeUserIdValue,
       email: activeUserEmailValue,
       name: activeUserNameValue,
@@ -243,8 +243,17 @@ class _$ActiveUserModelCodec extends ModelCodec<ActiveUser> {
   }
 }
 
-class _$ActiveUserModel extends ActiveUser {
-  _$ActiveUserModel({
+/// Generated tracked model class for [ActiveUser].
+///
+/// This class extends the user-defined [ActiveUser] model and adds
+/// attribute tracking, change detection, and relationship management.
+/// Instances of this class are returned by queries and repositories.
+///
+/// **Do not instantiate this class directly.** Use queries, repositories,
+/// or model factories to create tracked model instances.
+class $ActiveUser extends ActiveUser
+    with ModelAttributes, ModelRelations, SoftDeletesImpl {
+  $ActiveUser({
     int? id,
     required String email,
     String? name,
@@ -256,6 +265,16 @@ class _$ActiveUserModel extends ActiveUser {
       'name': name,
       'settings': settings,
     });
+  }
+
+  /// Creates a tracked model instance from a user-defined model instance.
+  factory $ActiveUser.fromModel(ActiveUser model) {
+    return $ActiveUser(
+      id: model.id,
+      email: model.email,
+      name: model.name,
+      settings: model.settings,
+    );
   }
 
   @override
@@ -281,7 +300,21 @@ class _$ActiveUserModel extends ActiveUser {
 
   void _attachOrmRuntimeMetadata(Map<String, Object?> values) {
     replaceAttributes(values);
-    attachModelDefinition(_$ActiveUserModelDefinition);
+    attachModelDefinition(_$ActiveUserDefinition);
     attachSoftDeleteColumn('deleted_at');
+  }
+}
+
+extension ActiveUserOrmExtension on ActiveUser {
+  /// The Type of the generated ORM-managed model class.
+  /// Use this when you need to specify the tracked model type explicitly,
+  /// for example in generic type parameters.
+  static Type get trackedType => $ActiveUser;
+
+  /// Converts this immutable model to a tracked ORM-managed model.
+  /// The tracked model supports attribute tracking, change detection,
+  /// and persistence operations like save() and touch().
+  $ActiveUser toTracked() {
+    return $ActiveUser.fromModel(this);
   }
 }

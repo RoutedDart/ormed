@@ -40,7 +40,7 @@ const RelationDefinition _$TagPostsRelation = RelationDefinition(
   pivotRelatedKey: 'post_id',
 );
 
-final ModelDefinition<Tag> _$TagModelDefinition = ModelDefinition(
+final ModelDefinition<$Tag> _$TagDefinition = ModelDefinition(
   modelName: 'Tag',
   tableName: 'tags',
   fields: const [_$TagIdField, _$TagLabelField],
@@ -55,69 +55,72 @@ final ModelDefinition<Tag> _$TagModelDefinition = ModelDefinition(
     softDeletes: false,
     softDeleteColumn: 'deleted_at',
   ),
-  codec: _$TagModelCodec(),
+  codec: _$TagCodec(),
 );
 
 // ignore: unused_element
-final tagModelDefinitionRegistration = ModelFactoryRegistry.register<Tag>(
-  _$TagModelDefinition,
+final tagModelDefinitionRegistration = ModelFactoryRegistry.register<$Tag>(
+  _$TagDefinition,
 );
 
 extension TagOrmDefinition on Tag {
-  static ModelDefinition<Tag> get definition => _$TagModelDefinition;
+  static ModelDefinition<$Tag> get definition => _$TagDefinition;
 }
 
 class Tags {
   const Tags._();
 
-  static Query<Tag> query([String? connection]) =>
-      Model.query<Tag>(connection: connection);
+  static Query<$Tag> query([String? connection]) =>
+      Model.query<$Tag>(connection: connection);
 
-  static Future<Tag?> find(Object id, {String? connection}) =>
-      Model.find<Tag>(id, connection: connection);
+  static Future<$Tag?> find(Object id, {String? connection}) =>
+      Model.find<$Tag>(id, connection: connection);
 
-  static Future<Tag> findOrFail(Object id, {String? connection}) =>
-      Model.findOrFail<Tag>(id, connection: connection);
+  static Future<$Tag> findOrFail(Object id, {String? connection}) =>
+      Model.findOrFail<$Tag>(id, connection: connection);
 
-  static Future<List<Tag>> all({String? connection}) =>
-      Model.all<Tag>(connection: connection);
+  static Future<List<$Tag>> all({String? connection}) =>
+      Model.all<$Tag>(connection: connection);
 
   static Future<int> count({String? connection}) =>
-      Model.count<Tag>(connection: connection);
+      Model.count<$Tag>(connection: connection);
 
-  static Future<bool> exists({String? connection}) =>
-      Model.exists<Tag>(connection: connection);
+  static Future<bool> anyExist({String? connection}) =>
+      Model.anyExist<$Tag>(connection: connection);
 
-  static Query<Tag> where(
+  static Query<$Tag> where(
     String column,
     String operator,
     dynamic value, {
     String? connection,
-  }) => Model.where<Tag>(column, operator, value, connection: connection);
+  }) => Model.where<$Tag>(column, operator, value, connection: connection);
 
-  static Query<Tag> whereIn(
+  static Query<$Tag> whereIn(
     String column,
     List<dynamic> values, {
     String? connection,
-  }) => Model.whereIn<Tag>(column, values, connection: connection);
+  }) => Model.whereIn<$Tag>(column, values, connection: connection);
 
-  static Query<Tag> orderBy(
+  static Query<$Tag> orderBy(
     String column, {
     String direction = "asc",
     String? connection,
   }) =>
-      Model.orderBy<Tag>(column, direction: direction, connection: connection);
+      Model.orderBy<$Tag>(column, direction: direction, connection: connection);
 
-  static Query<Tag> limit(int count, {String? connection}) =>
-      Model.limit<Tag>(count, connection: connection);
+  static Query<$Tag> limit(int count, {String? connection}) =>
+      Model.limit<$Tag>(count, connection: connection);
+
+  static Repository<$Tag> repo([String? connection]) =>
+      Model.repository<$Tag>(connection: connection);
 }
 
 class TagModelFactory {
   const TagModelFactory._();
 
-  static ModelDefinition<Tag> get definition => _$TagModelDefinition;
+  static ModelDefinition<$Tag> get definition => _$TagDefinition;
 
-  static ModelCodec<Tag> get codec => definition.codec;
+  static ModelCodec<$Tag> get codec => definition.codec;
 
   static Tag fromMap(
     Map<String, Object?> data, {
@@ -127,7 +130,7 @@ class TagModelFactory {
   static Map<String, Object?> toMap(
     Tag model, {
     ValueCodecRegistry? registry,
-  }) => definition.toMap(model, registry: registry);
+  }) => definition.toMap(model.toTracked(), registry: registry);
 
   static void registerWith(ModelRegistry registry) =>
       registry.register(definition);
@@ -143,11 +146,10 @@ class TagModelFactory {
   );
 }
 
-class _$TagModelCodec extends ModelCodec<Tag> {
-  const _$TagModelCodec();
-
+class _$TagCodec extends ModelCodec<$Tag> {
+  const _$TagCodec();
   @override
-  Map<String, Object?> encode(Tag model, ValueCodecRegistry registry) {
+  Map<String, Object?> encode($Tag model, ValueCodecRegistry registry) {
     return <String, Object?>{
       'id': registry.encodeField(_$TagIdField, model.id),
       'label': registry.encodeField(_$TagLabelField, model.label),
@@ -155,23 +157,36 @@ class _$TagModelCodec extends ModelCodec<Tag> {
   }
 
   @override
-  Tag decode(Map<String, Object?> data, ValueCodecRegistry registry) {
+  $Tag decode(Map<String, Object?> data, ValueCodecRegistry registry) {
     final int tagIdValue =
         registry.decodeField<int>(_$TagIdField, data['id']) ??
         (throw StateError('Field id on Tag cannot be null.'));
     final String tagLabelValue =
         registry.decodeField<String>(_$TagLabelField, data['label']) ??
         (throw StateError('Field label on Tag cannot be null.'));
-    final model = _$TagModel(id: tagIdValue, label: tagLabelValue);
+    final model = $Tag(id: tagIdValue, label: tagLabelValue);
     model._attachOrmRuntimeMetadata({'id': tagIdValue, 'label': tagLabelValue});
     return model;
   }
 }
 
-class _$TagModel extends Tag {
-  _$TagModel({required int id, required String label})
+/// Generated tracked model class for [Tag].
+///
+/// This class extends the user-defined [Tag] model and adds
+/// attribute tracking, change detection, and relationship management.
+/// Instances of this class are returned by queries and repositories.
+///
+/// **Do not instantiate this class directly.** Use queries, repositories,
+/// or model factories to create tracked model instances.
+class $Tag extends Tag with ModelAttributes, ModelRelations {
+  $Tag({required int id, required String label})
     : super.new(id: id, label: label) {
     _attachOrmRuntimeMetadata({'id': id, 'label': label});
+  }
+
+  /// Creates a tracked model instance from a user-defined model instance.
+  factory $Tag.fromModel(Tag model) {
+    return $Tag(id: model.id, label: model.label);
   }
 
   @override
@@ -186,7 +201,7 @@ class _$TagModel extends Tag {
 
   void _attachOrmRuntimeMetadata(Map<String, Object?> values) {
     replaceAttributes(values);
-    attachModelDefinition(_$TagModelDefinition);
+    attachModelDefinition(_$TagDefinition);
   }
 
   @override
@@ -201,5 +216,19 @@ class _$TagModel extends Tag {
 extension TagRelationQueries on Tag {
   Query<Post> postsQuery() {
     throw UnimplementedError("ManyToMany query generation not yet supported");
+  }
+}
+
+extension TagOrmExtension on Tag {
+  /// The Type of the generated ORM-managed model class.
+  /// Use this when you need to specify the tracked model type explicitly,
+  /// for example in generic type parameters.
+  static Type get trackedType => $Tag;
+
+  /// Converts this immutable model to a tracked ORM-managed model.
+  /// The tracked model supports attribute tracking, change detection,
+  /// and persistence operations like save() and touch().
+  $Tag toTracked() {
+    return $Tag.fromModel(this);
   }
 }

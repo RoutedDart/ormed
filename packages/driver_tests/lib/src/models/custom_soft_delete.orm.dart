@@ -43,7 +43,7 @@ const FieldDefinition _$CustomSoftDeleteDeletedAtField = FieldDefinition(
   autoIncrement: false,
 );
 
-final ModelDefinition<CustomSoftDelete> _$CustomSoftDeleteModelDefinition =
+final ModelDefinition<$CustomSoftDelete> _$CustomSoftDeleteDefinition =
     ModelDefinition(
       modelName: 'CustomSoftDelete',
       tableName: 'custom_soft_delete_models',
@@ -63,74 +63,80 @@ final ModelDefinition<CustomSoftDelete> _$CustomSoftDeleteModelDefinition =
         softDeletes: true,
         softDeleteColumn: 'removed_on',
       ),
-      codec: _$CustomSoftDeleteModelCodec(),
+      codec: _$CustomSoftDeleteCodec(),
     );
 
 extension CustomSoftDeleteOrmDefinition on CustomSoftDelete {
-  static ModelDefinition<CustomSoftDelete> get definition =>
-      _$CustomSoftDeleteModelDefinition;
+  static ModelDefinition<$CustomSoftDelete> get definition =>
+      _$CustomSoftDeleteDefinition;
 }
 
 class CustomSoftDeletes {
   const CustomSoftDeletes._();
 
-  static Query<CustomSoftDelete> query([String? connection]) =>
-      Model.query<CustomSoftDelete>(connection: connection);
+  static Query<$CustomSoftDelete> query([String? connection]) =>
+      Model.query<$CustomSoftDelete>(connection: connection);
 
-  static Future<CustomSoftDelete?> find(Object id, {String? connection}) =>
-      Model.find<CustomSoftDelete>(id, connection: connection);
+  static Future<$CustomSoftDelete?> find(Object id, {String? connection}) =>
+      Model.find<$CustomSoftDelete>(id, connection: connection);
 
-  static Future<CustomSoftDelete> findOrFail(Object id, {String? connection}) =>
-      Model.findOrFail<CustomSoftDelete>(id, connection: connection);
+  static Future<$CustomSoftDelete> findOrFail(
+    Object id, {
+    String? connection,
+  }) => Model.findOrFail<$CustomSoftDelete>(id, connection: connection);
 
-  static Future<List<CustomSoftDelete>> all({String? connection}) =>
-      Model.all<CustomSoftDelete>(connection: connection);
+  static Future<List<$CustomSoftDelete>> all({String? connection}) =>
+      Model.all<$CustomSoftDelete>(connection: connection);
 
   static Future<int> count({String? connection}) =>
-      Model.count<CustomSoftDelete>(connection: connection);
+      Model.count<$CustomSoftDelete>(connection: connection);
 
-  static Future<bool> exists({String? connection}) =>
-      Model.exists<CustomSoftDelete>(connection: connection);
+  static Future<bool> anyExist({String? connection}) =>
+      Model.anyExist<$CustomSoftDelete>(connection: connection);
 
-  static Query<CustomSoftDelete> where(
+  static Query<$CustomSoftDelete> where(
     String column,
     String operator,
     dynamic value, {
     String? connection,
-  }) => Model.where<CustomSoftDelete>(
+  }) => Model.where<$CustomSoftDelete>(
     column,
     operator,
     value,
     connection: connection,
   );
 
-  static Query<CustomSoftDelete> whereIn(
+  static Query<$CustomSoftDelete> whereIn(
     String column,
     List<dynamic> values, {
     String? connection,
-  }) => Model.whereIn<CustomSoftDelete>(column, values, connection: connection);
+  }) =>
+      Model.whereIn<$CustomSoftDelete>(column, values, connection: connection);
 
-  static Query<CustomSoftDelete> orderBy(
+  static Query<$CustomSoftDelete> orderBy(
     String column, {
     String direction = "asc",
     String? connection,
-  }) => Model.orderBy<CustomSoftDelete>(
+  }) => Model.orderBy<$CustomSoftDelete>(
     column,
     direction: direction,
     connection: connection,
   );
 
-  static Query<CustomSoftDelete> limit(int count, {String? connection}) =>
-      Model.limit<CustomSoftDelete>(count, connection: connection);
+  static Query<$CustomSoftDelete> limit(int count, {String? connection}) =>
+      Model.limit<$CustomSoftDelete>(count, connection: connection);
+
+  static Repository<$CustomSoftDelete> repo([String? connection]) =>
+      Model.repository<$CustomSoftDelete>(connection: connection);
 }
 
 class CustomSoftDeleteModelFactory {
   const CustomSoftDeleteModelFactory._();
 
-  static ModelDefinition<CustomSoftDelete> get definition =>
-      _$CustomSoftDeleteModelDefinition;
+  static ModelDefinition<$CustomSoftDelete> get definition =>
+      _$CustomSoftDeleteDefinition;
 
-  static ModelCodec<CustomSoftDelete> get codec => definition.codec;
+  static ModelCodec<$CustomSoftDelete> get codec => definition.codec;
 
   static CustomSoftDelete fromMap(
     Map<String, Object?> data, {
@@ -140,7 +146,7 @@ class CustomSoftDeleteModelFactory {
   static Map<String, Object?> toMap(
     CustomSoftDelete model, {
     ValueCodecRegistry? registry,
-  }) => definition.toMap(model, registry: registry);
+  }) => definition.toMap(model.toTracked(), registry: registry);
 
   static void registerWith(ModelRegistry registry) =>
       registry.register(definition);
@@ -160,12 +166,11 @@ class CustomSoftDeleteModelFactory {
   );
 }
 
-class _$CustomSoftDeleteModelCodec extends ModelCodec<CustomSoftDelete> {
-  const _$CustomSoftDeleteModelCodec();
-
+class _$CustomSoftDeleteCodec extends ModelCodec<$CustomSoftDelete> {
+  const _$CustomSoftDeleteCodec();
   @override
   Map<String, Object?> encode(
-    CustomSoftDelete model,
+    $CustomSoftDelete model,
     ValueCodecRegistry registry,
   ) {
     return <String, Object?>{
@@ -173,13 +178,15 @@ class _$CustomSoftDeleteModelCodec extends ModelCodec<CustomSoftDelete> {
       'title': registry.encodeField(_$CustomSoftDeleteTitleField, model.title),
       'removed_on': registry.encodeField(
         _$CustomSoftDeleteDeletedAtField,
-        model.getAttribute<DateTime?>('removed_on'),
+        (model is ModelAttributes
+            ? model.getAttribute<DateTime?>('removed_on')
+            : null),
       ),
     };
   }
 
   @override
-  CustomSoftDelete decode(
+  $CustomSoftDelete decode(
     Map<String, Object?> data,
     ValueCodecRegistry registry,
   ) {
@@ -197,7 +204,7 @@ class _$CustomSoftDeleteModelCodec extends ModelCodec<CustomSoftDelete> {
           _$CustomSoftDeleteDeletedAtField,
           data['removed_on'],
         );
-    final model = _$CustomSoftDeleteModel(
+    final model = $CustomSoftDelete(
       id: customSoftDeleteIdValue,
       title: customSoftDeleteTitleValue,
     );
@@ -210,10 +217,24 @@ class _$CustomSoftDeleteModelCodec extends ModelCodec<CustomSoftDelete> {
   }
 }
 
-class _$CustomSoftDeleteModel extends CustomSoftDelete {
-  _$CustomSoftDeleteModel({required int id, required String title})
+/// Generated tracked model class for [CustomSoftDelete].
+///
+/// This class extends the user-defined [CustomSoftDelete] model and adds
+/// attribute tracking, change detection, and relationship management.
+/// Instances of this class are returned by queries and repositories.
+///
+/// **Do not instantiate this class directly.** Use queries, repositories,
+/// or model factories to create tracked model instances.
+class $CustomSoftDelete extends CustomSoftDelete
+    with ModelAttributes, ModelRelations, SoftDeletesImpl {
+  $CustomSoftDelete({required int id, required String title})
     : super.new(id: id, title: title) {
     _attachOrmRuntimeMetadata({'id': id, 'title': title});
+  }
+
+  /// Creates a tracked model instance from a user-defined model instance.
+  factory $CustomSoftDelete.fromModel(CustomSoftDelete model) {
+    return $CustomSoftDelete(id: model.id, title: model.title);
   }
 
   @override
@@ -228,7 +249,21 @@ class _$CustomSoftDeleteModel extends CustomSoftDelete {
 
   void _attachOrmRuntimeMetadata(Map<String, Object?> values) {
     replaceAttributes(values);
-    attachModelDefinition(_$CustomSoftDeleteModelDefinition);
+    attachModelDefinition(_$CustomSoftDeleteDefinition);
     attachSoftDeleteColumn('removed_on');
+  }
+}
+
+extension CustomSoftDeleteOrmExtension on CustomSoftDelete {
+  /// The Type of the generated ORM-managed model class.
+  /// Use this when you need to specify the tracked model type explicitly,
+  /// for example in generic type parameters.
+  static Type get trackedType => $CustomSoftDelete;
+
+  /// Converts this immutable model to a tracked ORM-managed model.
+  /// The tracked model supports attribute tracking, change detection,
+  /// and persistence operations like save() and touch().
+  $CustomSoftDelete toTracked() {
+    return $CustomSoftDelete.fromModel(this);
   }
 }

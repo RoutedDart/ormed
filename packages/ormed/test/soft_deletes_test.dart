@@ -8,7 +8,7 @@ void main() {
     late ValueCodecRegistry registry;
 
     setUp(() {
-      registry = ValueCodecRegistry.standard();
+      registry = ValueCodecRegistry.instance;
     });
 
     test('uses custom column overrides from metadata', () {

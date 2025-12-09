@@ -9,7 +9,7 @@ void main() {
   group('ValueCodecRegistry default codecs', () {
     for (final testCase in _codecCases) {
       test('encodes and decodes ${testCase.label}', () {
-        final registry = ValueCodecRegistry.standard();
+        final registry = ValueCodecRegistry.instance;
         final field = _field(
           dartType: testCase.codecKey,
           resolvedType: testCase.resolvedType,
@@ -27,7 +27,7 @@ void main() {
 
   group('ValueCodecRegistry custom codecs', () {
     test('throws when codec missing', () {
-      final registry = ValueCodecRegistry.standard();
+      final registry = ValueCodecRegistry.instance;
       final field = _field(dartType: 'NonExisting', resolvedType: 'Object');
 
       expect(
@@ -37,7 +37,7 @@ void main() {
     });
 
     test('registerCodecFor wires custom codec by Type name', () {
-      final registry = ValueCodecRegistry.standard();
+      final registry = ValueCodecRegistry.instance;
       registry.registerCodecFor(_UpperCaseCodec, const _UpperCaseCodec());
 
       final field = _field(
@@ -58,7 +58,7 @@ void main() {
     final field = _field(dartType: 'String', resolvedType: 'String');
 
     test('registers overlays without affecting base registry', () {
-      final registry = ValueCodecRegistry.standard();
+      final registry = ValueCodecRegistry.instance;
       final postgresView = registry.forDriver('postgres');
       postgresView.registerCodec(key: 'String', codec: const _UpperCaseCodec());
 
@@ -67,7 +67,7 @@ void main() {
     });
 
     test('fork retains driver overlays', () {
-      final registry = ValueCodecRegistry.standard();
+      final registry = ValueCodecRegistry.instance;
       registry
           .forDriver('postgres')
           .registerCodec(key: 'String', codec: const _UpperCaseCodec());
@@ -78,7 +78,7 @@ void main() {
     });
 
     test('query context injects driver-specific registry views', () {
-      final baseRegistry = ValueCodecRegistry.standard();
+      final baseRegistry = ValueCodecRegistry.instance;
       baseRegistry
           .forDriver('postgres')
           .registerCodec(key: 'String', codec: const _UpperCaseCodec());
@@ -106,7 +106,7 @@ void main() {
 
   group('Field driver override lookups', () {
     test('prefers driver-specific codec type when available', () {
-      final registry = ValueCodecRegistry.standard();
+      final registry = ValueCodecRegistry.instance;
       registry.registerCodec(
         key: 'BaseCodec',
         codec: const _SuffixCodec('-base'),
@@ -128,6 +128,81 @@ void main() {
 
       expect(driverView.encodeField(field, 'value'), 'value-pg');
       expect(registry.encodeField(field, 'value'), 'value-base');
+    });
+  });
+
+  group('ValueCodecRegistry singleton', () {
+    tearDown(() {
+      ValueCodecRegistry.instance.clearAll();
+    });
+
+    test('instance returns singleton', () {
+      final instance1 = ValueCodecRegistry.instance;
+      final instance2 = ValueCodecRegistry.instance;
+      expect(identical(instance1, instance2), isTrue);
+    });
+
+    test('registerDriver adds driver-specific codecs', () {
+      ValueCodecRegistry.instance.registerDriver('testdriver', {
+        'String': const _UpperCaseCodec(),
+      });
+
+      final driverRegistry = ValueCodecRegistry.instance.forDriver('testdriver');
+      final field = _field(dartType: 'String', resolvedType: 'String');
+
+      final encoded = driverRegistry.encodeField(field, 'hello');
+      expect(encoded, 'HELLO');
+    });
+
+    test('unregisterDriver removes driver codecs', () {
+      ValueCodecRegistry.instance.registerDriver('testdriver', {
+        'String': const _UpperCaseCodec(),
+      });
+
+      ValueCodecRegistry.instance.unregisterDriver('testdriver');
+
+      final driverRegistry = ValueCodecRegistry.instance.forDriver('testdriver');
+      final field = _field(dartType: 'String', resolvedType: 'String');
+
+      // Should use default IdentityCodec, not UpperCaseCodec
+      final encoded = driverRegistry.encodeField(field, 'hello');
+      expect(encoded, 'hello');
+    });
+
+    test('clearAll resets to default codecs', () {
+      ValueCodecRegistry.instance.registerCodec(
+        key: 'String',
+        codec: const _UpperCaseCodec(),
+      );
+      ValueCodecRegistry.instance.registerDriver('testdriver', {
+        'String': const _SuffixCodec('_test'),
+      });
+
+      ValueCodecRegistry.instance.clearAll();
+
+      final field = _field(dartType: 'String', resolvedType: 'String');
+      final encoded = ValueCodecRegistry.instance.encodeField(field, 'hello');
+      expect(encoded, 'hello'); // IdentityCodec
+
+      final driverRegistry = ValueCodecRegistry.instance.forDriver('testdriver');
+      final encodedDriver = driverRegistry.encodeField(field, 'hello');
+      expect(encodedDriver, 'hello'); // No driver codecs left
+    });
+
+    test('registerDriver with multiple codecs', () {
+      ValueCodecRegistry.instance.registerDriver('multicodec', {
+        'String': const _UpperCaseCodec(),
+        'bool': const _SuffixCodec('_bool'),
+      });
+
+      final driverRegistry = ValueCodecRegistry.instance.forDriver('multicodec');
+
+      final stringField = _field(dartType: 'String', resolvedType: 'String');
+      expect(driverRegistry.encodeField(stringField, 'test'), 'TEST');
+
+      // Bool codec doesn't exist normally, so this tests the registration worked
+      final boolField = _field(dartType: 'bool', resolvedType: 'bool');
+      expect(driverRegistry.encodeField(boolField, 'value'), 'value_bool');
     });
   });
 }

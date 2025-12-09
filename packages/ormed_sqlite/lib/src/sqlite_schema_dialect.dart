@@ -489,6 +489,8 @@ class SqliteSchemaDialect extends SchemaDialect {
     return _mapType(override?.type ?? definition.type);
   }
 
+
+
   String _defaultExpression(ColumnDefault value) {
     if (value.useCurrentTimestamp) return 'CURRENT_TIMESTAMP';
     if (value.expression != null) return value.expression!;
@@ -522,5 +524,37 @@ class SqliteSchemaDialect extends SchemaDialect {
   String _tableNameFromBlueprint(TableBlueprint blueprint) {
     // Ignore blueprint.schema for SQLite - it doesn't support schemas
     return _tableName(blueprint.table);
+  }
+
+  // ========== Database Management ==========
+
+  @override
+  String? compileCreateDatabase(String name, Map<String, Object?>? options) {
+    // SQLite is file-based, handled at adapter level
+    return null;
+  }
+
+  @override
+  String? compileDropDatabaseIfExists(String name) {
+    // SQLite is file-based, handled at adapter level
+    return null;
+  }
+
+  @override
+  String? compileListDatabases() {
+    // SQLite doesn't have a database catalog concept in the traditional sense
+    return null;
+  }
+
+  // ========== Foreign Key Constraint Management ==========
+
+  @override
+  String? compileEnableForeignKeyConstraints() {
+    return 'PRAGMA foreign_keys = ON';
+  }
+
+  @override
+  String? compileDisableForeignKeyConstraints() {
+    return 'PRAGMA foreign_keys = OFF';
   }
 }

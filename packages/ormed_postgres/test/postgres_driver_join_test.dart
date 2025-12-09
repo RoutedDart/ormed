@@ -24,19 +24,23 @@ void main() {
       };
 
       // Create codec registry for the adapter
-      final codecRegistry = ValueCodecRegistry.standard();
+  PostgresDriverAdapter.registerCodecs();
+
+      
       for (final entry in customCodecs.entries) {
-        codecRegistry.registerCodec(key: entry.key, codec: entry.value);
+        ValueCodecRegistry.instance.registerCodec(key: entry.key, codec: entry.value);
       }
 
       driverAdapter = PostgresDriverAdapter.custom(
         config: DatabaseConfig(driver: 'postgres', options: {'url': url}),
-        codecRegistry: codecRegistry,
+        
       );
 
+      final registry = buildOrmRegistry();
       dataSource = DataSource(DataSourceOptions(
         driver: driverAdapter,
-        entities: generatedOrmModelDefinitions,
+        entities: registry.allDefinitions,
+        registry: registry,
         codecs: customCodecs,
       ));
 

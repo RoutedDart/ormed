@@ -41,4 +41,38 @@ abstract class SchemaDialect {
   String get driverName;
 
   List<SchemaStatement> compileMutation(SchemaMutation mutation);
+
+  // ========== Database Management ==========
+
+  /// Compiles SQL to create a database.
+  /// Returns null if this dialect doesn't support database creation via SQL.
+  String? compileCreateDatabase(String name, Map<String, Object?>? options) {
+    return null;
+  }
+
+  /// Compiles SQL to drop a database if it exists.
+  /// Returns null if this dialect doesn't support database dropping via SQL.
+  String? compileDropDatabaseIfExists(String name) {
+    return null;
+  }
+
+  /// Compiles SQL to list all databases.
+  /// Returns null if this dialect doesn't support listing databases via SQL.
+  String? compileListDatabases() {
+    return null;
+  }
+
+  // ========== Foreign Key Constraint Management ==========
+
+  /// Compiles SQL to enable foreign key constraint checking.
+  /// Returns null if this dialect doesn't support FK constraint control.
+  String? compileEnableForeignKeyConstraints() {
+    return null;
+  }
+
+  /// Compiles SQL to disable foreign key constraint checking.
+  /// Returns null if this dialect doesn't support FK constraint control.
+  String? compileDisableForeignKeyConstraints() {
+    return null;
+  }
 }

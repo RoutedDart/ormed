@@ -18,7 +18,7 @@ extension ModelAttributeMapExtensions on Map<String, Object?> {
     ValueCodecRegistry? registry,
   }) {
     final inspector = AttributeInspector(metadata: metadata, fields: fields);
-    final codecs = registry ?? ValueCodecRegistry.standard();
+    final codecs = registry ?? ValueCodecRegistry.instance;
     final filtered = <String, Object?>{};
     final discarded = <String>[];
 

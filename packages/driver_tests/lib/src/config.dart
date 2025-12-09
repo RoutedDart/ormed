@@ -79,6 +79,10 @@ class DriverTestConfig {
       case DriverCapability.distinctOn:
         // TODO: Handle this case.
         throw UnimplementedError();
+      case DriverCapability.databaseManagement:
+        return _capabilities.contains(DriverCapability.databaseManagement);
+      case DriverCapability.foreignKeyConstraintControl:
+        return _capabilities.contains(DriverCapability.foreignKeyConstraintControl);
     }
   }
 }

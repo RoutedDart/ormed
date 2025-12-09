@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'carbon_config.dart';
 import 'connection/connection.dart';
 import 'connection/connection_manager.dart';
 import 'connection/orm_connection.dart';
@@ -23,9 +24,10 @@ import 'value_codec.dart';
 /// );
 /// ```
 class DataSourceOptions {
-  const DataSourceOptions({
+  DataSourceOptions({
     required this.driver,
-    required this.entities,
+    this.entities = const [],
+    this.registry,
     this.name = 'default',
     this.database,
     this.tablePrefix = '',
@@ -33,13 +35,23 @@ class DataSourceOptions {
     this.codecs = const {},
     this.synchronize = false,
     this.logging = false,
-  });
+    this.carbonTimezone = 'UTC',
+    this.carbonLocale = 'en_US',
+    this.enableNamedTimezones = false,
+  }) : assert(
+         entities.isNotEmpty || registry != null,
+         'Either entities or registry must be provided',
+       );
 
   /// The database driver adapter to use for connections.
   final DriverAdapter driver;
 
   /// List of model definitions (entities) to register with this data source.
   final List<ModelDefinition<dynamic>> entities;
+
+  /// Optional pre-built model registry with type aliases already registered.
+  /// If provided, this registry will be used instead of creating a new one.
+  final ModelRegistry? registry;
 
   /// Logical name for this connection. Defaults to 'default'.
   final String name;
@@ -63,6 +75,20 @@ class DataSourceOptions {
   /// Whether to enable query logging.
   final bool logging;
 
+  /// Default timezone for Carbon date/time instances.
+  /// Defaults to 'UTC'. Use 'America/New_York', 'Europe/London', etc.
+  /// for named timezones (requires [enableNamedTimezones] = true).
+  final String carbonTimezone;
+
+  /// Default locale for Carbon date/time formatting.
+  /// Defaults to 'en_US'. Supports 170+ locales like 'fr_FR', 'es_ES', etc.
+  final String carbonLocale;
+
+  /// Whether to enable named timezone support via TimeMachine.
+  /// Set to true if you need named timezones like 'America/New_York'.
+  /// UTC and fixed offsets ('+05:30') work without this.
+  final bool enableNamedTimezones;
+
   DataSourceOptions copyWith({
     DriverAdapter? driver,
     List<ModelDefinition<dynamic>>? entities,
@@ -73,6 +99,9 @@ class DataSourceOptions {
     Map<String, ValueCodec<dynamic>>? codecs,
     bool? synchronize,
     bool? logging,
+    String? carbonTimezone,
+    String? carbonLocale,
+    bool? enableNamedTimezones,
   }) => DataSourceOptions(
     driver: driver ?? this.driver,
     entities: entities ?? this.entities,
@@ -83,6 +112,9 @@ class DataSourceOptions {
     codecs: codecs ?? this.codecs,
     synchronize: synchronize ?? this.synchronize,
     logging: logging ?? this.logging,
+    carbonTimezone: carbonTimezone ?? this.carbonTimezone,
+    carbonLocale: carbonLocale ?? this.carbonLocale,
+    enableNamedTimezones: enableNamedTimezones ?? this.enableNamedTimezones,
   );
 }
 
@@ -140,8 +172,8 @@ class DataSourceOptions {
 class DataSource {
   /// Creates a new data source with the given configuration options.
   DataSource(this.options)
-    : _registry = ModelRegistry(),
-      _codecRegistry = ValueCodecRegistry() {
+    : _registry = options.registry ?? ModelRegistry(),
+      _codecRegistry = ValueCodecRegistry.instance {
     // Register custom codecs
     for (final entry in options.codecs.entries) {
       _codecRegistry.registerCodec(key: entry.key, codec: entry.value);
@@ -190,6 +222,10 @@ class DataSource {
   /// Automatically registers this DataSource with ConnectionManager.
   /// If this is the first DataSource registered, it becomes the default.
   ///
+  /// Also automatically configures Carbon date/time library based on
+  /// the [DataSourceOptions.carbonTimezone], [DataSourceOptions.carbonLocale],
+  /// and [DataSourceOptions.enableNamedTimezones] settings.
+  ///
   /// Must be called before using [query], [repo], or other database operations.
   ///
   /// ```dart
@@ -202,6 +238,21 @@ class DataSource {
   Future<void> init() async {
     if (_initialized) {
       return;
+    }
+
+    // Configure Carbon date/time library if not already configured
+    if (!CarbonConfig.isTimeMachineConfigured && options.enableNamedTimezones) {
+      await CarbonConfig.configureWithTimeMachine(
+        defaultTimezone: options.carbonTimezone,
+        defaultLocale: options.carbonLocale,
+      );
+    } else if (CarbonConfig.defaultTimezone == 'UTC' &&
+        CarbonConfig.defaultLocale == 'en_US') {
+      // Only configure if still at default values (allow manual pre-configuration)
+      CarbonConfig.configure(
+        defaultTimezone: options.carbonTimezone,
+        defaultLocale: options.carbonLocale,
+      );
     }
 
     // Register all model definitions

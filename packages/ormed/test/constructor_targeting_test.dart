@@ -35,9 +35,9 @@ void main() {
         value: 42,
       );
 
-      final registry = ValueCodecRegistry.standard();
+      final registry = ValueCodecRegistry.instance;
       final encoded = NamedConstructorModelOrmDefinition.definition.toMap(
-        model,
+        model.toTracked(),
         registry: registry,
       );
 
@@ -49,7 +49,7 @@ void main() {
     test('can decode map to model using generated codec', () {
       final data = {'id': 2, 'name': 'Decoded Model', 'value': 99};
 
-      final registry = ValueCodecRegistry.standard();
+      final registry = ValueCodecRegistry.instance;
       final model = NamedConstructorModelOrmDefinition.definition.fromMap(
         data,
         registry: registry,
@@ -99,7 +99,7 @@ void main() {
         'name': 'Order Test',
       };
 
-      final registry = ValueCodecRegistry.standard();
+      final registry = ValueCodecRegistry.instance;
       final model = NamedConstructorModelOrmDefinition.definition.fromMap(
         data,
         registry: registry,
@@ -114,7 +114,7 @@ void main() {
     test('model attributes are accessible through getAttribute', () {
       final data = {'id': 5, 'name': 'Attribute Test', 'value': 777};
 
-      final registry = ValueCodecRegistry.standard();
+      final registry = ValueCodecRegistry.instance;
       final model = NamedConstructorModelOrmDefinition.definition.fromMap(
         data,
         registry: registry,
@@ -140,9 +140,9 @@ void main() {
       // Other models can use default constructors (implicit)
       // This shows the feature is opt-in per model
 
-      final registry = ValueCodecRegistry.standard();
+      final registry = ValueCodecRegistry.instance;
       final encoded = NamedConstructorModelOrmDefinition.definition.toMap(
-        namedModel,
+        namedModel.toTracked(),
         registry: registry,
       );
 

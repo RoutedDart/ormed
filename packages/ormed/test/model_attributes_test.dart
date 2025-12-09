@@ -86,7 +86,7 @@ void main() {
         casts: const {'profile': 'json'},
       );
       model.attachModelDefinition(_definitionWith(metadata));
-      final registry = ValueCodecRegistry.standard();
+      final registry = ValueCodecRegistry.instance;
       registry.registerCodec(key: 'json', codec: _JsonCodec());
 
       model.fill({'profile': '{"bio":"x"}'}, registry: registry);

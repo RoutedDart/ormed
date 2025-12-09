@@ -88,7 +88,20 @@ String renderRegistryContent(List<ModelSummary> models) {
     ..writeln('];')
     ..writeln('')
     ..writeln('ModelRegistry buildOrmRegistry() => ModelRegistry()')
-    ..writeln('  ..registerAll(_\$ormModelDefinitions);')
+    ..writeln('  ..registerAll(_\$ormModelDefinitions)')
+    ..write('  ');
+  
+  // Register user type aliases
+  for (final summary in summaries) {
+    final userClassName = summary.className.startsWith('\$') 
+        ? summary.className.substring(1) 
+        : summary.className;
+    buffer.writeln('..registerTypeAlias<$userClassName>(_\$ormModelDefinitions[${summaries.indexOf(summary)}])');
+    buffer.write('  ');
+  }
+  
+  buffer
+    ..writeln(';')
     ..writeln('')
     ..writeln(
       'List<ModelDefinition<dynamic>> get generatedOrmModelDefinitions =>',
@@ -97,7 +110,17 @@ String renderRegistryContent(List<ModelSummary> models) {
     ..writeln('')
     ..writeln('extension GeneratedOrmModels on ModelRegistry {')
     ..writeln('  ModelRegistry registerGeneratedModels() {')
-    ..writeln('    registerAll(_\$ormModelDefinitions);')
+    ..writeln('    registerAll(_\$ormModelDefinitions);');
+    
+  // Register user type aliases in extension too
+  for (final summary in summaries) {
+    final userClassName = summary.className.startsWith('\$') 
+        ? summary.className.substring(1) 
+        : summary.className;
+    buffer.writeln('    registerTypeAlias<$userClassName>(_\$ormModelDefinitions[${summaries.indexOf(summary)}]);');
+  }
+  
+  buffer
     ..writeln('    return this;')
     ..writeln('  }')
     ..writeln('}');

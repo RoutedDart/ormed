@@ -42,35 +42,35 @@ const FieldDefinition _$DriverOverrideModelPayloadField = FieldDefinition(
   },
 );
 
-final ModelDefinition<DriverOverrideModel>
-_$DriverOverrideModelModelDefinition = ModelDefinition(
-  modelName: 'DriverOverrideModel',
-  tableName: 'driver_overrides',
-  fields: const [
-    _$DriverOverrideModelIdField,
-    _$DriverOverrideModelPayloadField,
-  ],
-  relations: const [],
-  softDeleteColumn: 'deleted_at',
-  metadata: ModelAttributesMetadata(
-    hidden: const <String>[],
-    visible: const <String>[],
-    fillable: const <String>[],
-    guarded: const <String>[],
-    casts: const <String, String>{},
-    softDeletes: false,
-    softDeleteColumn: 'deleted_at',
-  ),
-  codec: _$DriverOverrideModelModelCodec(),
-);
+final ModelDefinition<$DriverOverrideModel> _$DriverOverrideModelDefinition =
+    ModelDefinition(
+      modelName: 'DriverOverrideModel',
+      tableName: 'driver_overrides',
+      fields: const [
+        _$DriverOverrideModelIdField,
+        _$DriverOverrideModelPayloadField,
+      ],
+      relations: const [],
+      softDeleteColumn: 'deleted_at',
+      metadata: ModelAttributesMetadata(
+        hidden: const <String>[],
+        visible: const <String>[],
+        fillable: const <String>[],
+        guarded: const <String>[],
+        casts: const <String, String>{},
+        softDeletes: false,
+        softDeleteColumn: 'deleted_at',
+      ),
+      codec: _$DriverOverrideModelCodec(),
+    );
 
 extension DriverOverrideModelOrmDefinition on DriverOverrideModel {
-  static ModelDefinition<DriverOverrideModel> get definition =>
-      _$DriverOverrideModelModelDefinition;
+  static ModelDefinition<$DriverOverrideModel> get definition =>
+      _$DriverOverrideModelDefinition;
 }
 
-class DriverOverrideModelModelFactory {
-  const DriverOverrideModelModelFactory._();
+class DriverOverrideModelFactory {
+  const DriverOverrideModelFactory._();
 
   static ModelDefinition<DriverOverrideModel> get definition =>
       DriverOverrideModelOrmDefinition.definition;
@@ -85,7 +85,7 @@ class DriverOverrideModelModelFactory {
   static Map<String, Object?> toMap(
     DriverOverrideModel model, {
     ValueCodecRegistry? registry,
-  }) => definition.toMap(model, registry: registry);
+  }) => definition.toMap(model.toTracked(), registry: registry);
 
   static void registerWith(ModelRegistry registry) =>
       registry.register(definition);
@@ -119,9 +119,9 @@ class DriverOverrideModelModelFactory {
     Map<String, dynamic> attributes, [
     String? connection,
   ]) async {
-    final model = const _$DriverOverrideModelModelCodec().decode(
+    final model = const _$DriverOverrideModelCodec().decode(
       attributes,
-      ValueCodecRegistry.standard(),
+      ValueCodecRegistry.instance,
     );
     final connName = connection ?? definition.metadata.connection;
     final conn = ConnectionManager.instance.connection(
@@ -138,9 +138,9 @@ class DriverOverrideModelModelFactory {
   ]) async {
     final models = records
         .map(
-          (r) => const _$DriverOverrideModelModelCodec().decode(
+          (r) => const _$DriverOverrideModelCodec().decode(
             r,
-            ValueCodecRegistry.standard(),
+            ValueCodecRegistry.instance,
           ),
         )
         .toList();
@@ -158,9 +158,9 @@ class DriverOverrideModelModelFactory {
   ]) async {
     final models = records
         .map(
-          (r) => const _$DriverOverrideModelModelCodec().decode(
+          (r) => const _$DriverOverrideModelCodec().decode(
             r,
-            ValueCodecRegistry.standard(),
+            ValueCodecRegistry.instance,
           ),
         )
         .toList();
@@ -239,96 +239,94 @@ extension DriverOverrideModelModelHelpers on DriverOverrideModel {
   // Factory
   static ModelFactoryBuilder<DriverOverrideModel> factory({
     GeneratorProvider? generatorProvider,
-  }) => DriverOverrideModelModelFactory.factory(
-    generatorProvider: generatorProvider,
-  );
+  }) =>
+      DriverOverrideModelFactory.factory(generatorProvider: generatorProvider);
 
   // Query builder
   static Query<DriverOverrideModel> query([String? connection]) =>
-      DriverOverrideModelModelFactory.query(connection);
+      DriverOverrideModelFactory.query(connection);
 
   // CRUD operations
   static Future<List<DriverOverrideModel>> all([String? connection]) =>
-      DriverOverrideModelModelFactory.all(connection);
+      DriverOverrideModelFactory.all(connection);
 
   static Future<DriverOverrideModel?> find(Object id, [String? connection]) =>
-      DriverOverrideModelModelFactory.find(id, connection);
+      DriverOverrideModelFactory.find(id, connection);
 
   static Future<DriverOverrideModel> findOrFail(
     Object id, [
     String? connection,
-  ]) => DriverOverrideModelModelFactory.findOrFail(id, connection);
+  ]) => DriverOverrideModelFactory.findOrFail(id, connection);
 
   static Future<List<DriverOverrideModel>> findMany(
     List<Object> ids, [
     String? connection,
-  ]) => DriverOverrideModelModelFactory.findMany(ids, connection);
+  ]) => DriverOverrideModelFactory.findMany(ids, connection);
 
   static Future<DriverOverrideModel?> first([String? connection]) =>
-      DriverOverrideModelModelFactory.first(connection);
+      DriverOverrideModelFactory.first(connection);
 
   static Future<DriverOverrideModel> firstOrFail([String? connection]) =>
-      DriverOverrideModelModelFactory.firstOrFail(connection);
+      DriverOverrideModelFactory.firstOrFail(connection);
 
   static Future<DriverOverrideModel> create(
     Map<String, dynamic> attributes, [
     String? connection,
-  ]) => DriverOverrideModelModelFactory.create(attributes, connection);
+  ]) => DriverOverrideModelFactory.create(attributes, connection);
 
   static Future<List<DriverOverrideModel>> createMany(
     List<Map<String, dynamic>> records, [
     String? connection,
-  ]) => DriverOverrideModelModelFactory.createMany(records, connection);
+  ]) => DriverOverrideModelFactory.createMany(records, connection);
 
   static Future<void> insert(
     List<Map<String, dynamic>> records, [
     String? connection,
-  ]) => DriverOverrideModelModelFactory.insert(records, connection);
+  ]) => DriverOverrideModelFactory.insert(records, connection);
 
   static Future<int> destroy(List<Object> ids, [String? connection]) =>
-      DriverOverrideModelModelFactory.destroy(ids, connection);
+      DriverOverrideModelFactory.destroy(ids, connection);
 
   static Future<int> count([String? connection]) =>
-      DriverOverrideModelModelFactory.count(connection);
+      DriverOverrideModelFactory.count(connection);
 
   static Future<bool> exists([String? connection]) =>
-      DriverOverrideModelModelFactory.exists(connection);
+      DriverOverrideModelFactory.exists(connection);
 
   static Query<DriverOverrideModel> where(
     String column,
     dynamic value, [
     String? connection,
-  ]) => DriverOverrideModelModelFactory.where(column, value, connection);
+  ]) => DriverOverrideModelFactory.where(column, value, connection);
 
   static Query<DriverOverrideModel> whereIn(
     String column,
     List<dynamic> values, [
     String? connection,
-  ]) => DriverOverrideModelModelFactory.whereIn(column, values, connection);
+  ]) => DriverOverrideModelFactory.whereIn(column, values, connection);
 
   static Query<DriverOverrideModel> orderBy(
     String column, {
     String direction = "asc",
     String? connection,
-  }) => DriverOverrideModelModelFactory.orderBy(
+  }) => DriverOverrideModelFactory.orderBy(
     column,
     direction: direction,
     connection: connection,
   );
 
   static Query<DriverOverrideModel> limit(int count, [String? connection]) =>
-      DriverOverrideModelModelFactory.limit(count, connection);
+      DriverOverrideModelFactory.limit(count, connection);
 
   // Instance method
   Future<void> delete([String? connection]) async {
     final connName =
-        connection ??
-        DriverOverrideModelModelFactory.definition.metadata.connection;
+        connection ?? DriverOverrideModelFactory.definition.metadata.connection;
     final conn = ConnectionManager.instance.connection(
       connName ?? ConnectionManager.instance.defaultConnectionName ?? "default",
     );
     final repo = conn.context.repository<DriverOverrideModel>();
-    final primaryKeys = DriverOverrideModelModelFactory.definition.fields
+    final primaryKeys = DriverOverrideModelFactory.definition.fields
         .where((f) => f.isPrimaryKey)
         .toList();
     if (primaryKeys.isEmpty) {
@@ -336,18 +334,17 @@ extension DriverOverrideModelModelHelpers on DriverOverrideModel {
     }
     final keyMap = <String, Object?>{
       for (final key in primaryKeys)
-        key.columnName: DriverOverrideModelModelFactory.toMap(this)[key.name],
+        key.columnName: DriverOverrideModelFactory.toMap(this)[key.name],
     };
     await repo.deleteByKeys([keyMap]);
   }
 }
 
-class _$DriverOverrideModelModelCodec extends ModelCodec<DriverOverrideModel> {
-  const _$DriverOverrideModelModelCodec();
-
+class _$DriverOverrideModelCodec extends ModelCodec<$DriverOverrideModel> {
+  const _$DriverOverrideModelCodec();
   @override
   Map<String, Object?> encode(
-    DriverOverrideModel model,
+    $DriverOverrideModel model,
     ValueCodecRegistry registry,
   ) {
     return <String, Object?>{
@@ -360,7 +357,7 @@ class _$DriverOverrideModelModelCodec extends ModelCodec<DriverOverrideModel> {
   }
 
   @override
-  DriverOverrideModel decode(
+  $DriverOverrideModel decode(
     Map<String, Object?> data,
     ValueCodecRegistry registry,
   ) {
@@ -375,7 +372,7 @@ class _$DriverOverrideModelModelCodec extends ModelCodec<DriverOverrideModel> {
         (throw StateError(
           'Field payload on DriverOverrideModel cannot be null.',
         ));
-    final model = _$DriverOverrideModelModel(
+    final model = $DriverOverrideModel(
       id: driverOverrideModelIdValue,
       payload: driverOverrideModelPayloadValue,
     );
@@ -387,13 +384,24 @@ class _$DriverOverrideModelModelCodec extends ModelCodec<DriverOverrideModel> {
   }
 }
 
-class _$DriverOverrideModelModel extends DriverOverrideModel
+/// Generated tracked model class for [DriverOverrideModel].
+///
+/// This class extends the user-defined [DriverOverrideModel] model and adds
+/// attribute tracking, change detection, and relationship management.
+/// Instances of this class are returned by queries and repositories.
+///
+/// **Do not instantiate this class directly.** Use queries, repositories,
+/// or model factories to create tracked model instances.
+class $DriverOverrideModel extends DriverOverrideModel
     with ModelAttributes, ModelConnection, ModelRelations {
-  _$DriverOverrideModelModel({
-    required int id,
-    required Map<String, Object?> payload,
-  }) : super.new(id: id, payload: payload) {
+  $DriverOverrideModel({required int id, required Map<String, Object?> payload})
+    : super.new(id: id, payload: payload) {
     _attachOrmRuntimeMetadata({'id': id, 'payload': payload});
+  }
+
+  /// Creates a tracked model instance from a user-defined model instance.
+  factory $DriverOverrideModel.fromModel(DriverOverrideModel model) {
+    return $DriverOverrideModel(id: model.id, payload: model.payload);
   }
 
   @override
@@ -409,6 +417,20 @@ class _$DriverOverrideModelModel extends DriverOverrideModel
 
   void _attachOrmRuntimeMetadata(Map<String, Object?> values) {
     replaceAttributes(values);
-    attachModelDefinition(_$DriverOverrideModelModelDefinition);
+    attachModelDefinition(_$DriverOverrideModelDefinition);
+  }
+}
+
+extension DriverOverrideModelOrmExtension on DriverOverrideModel {
+  /// The Type of the generated ORM-managed model class.
+  /// Use this when you need to specify the tracked model type explicitly,
+  /// for example in generic type parameters.
+  static Type get trackedType => $DriverOverrideModel;
+
+  /// Converts this immutable model to a tracked ORM-managed model.
+  /// The tracked model supports attribute tracking, change detection,
+  /// and persistence operations like save() and touch().
+  $DriverOverrideModel toTracked() {
+    return $DriverOverrideModel.fromModel(this);
   }
 }

@@ -71,8 +71,8 @@ class PostTags {
   static Future<int> count({String? connection}) =>
       Model.count<PostTag>(connection: connection);
 
-  static Future<bool> exists({String? connection}) =>
-      Model.exists<PostTag>(connection: connection);
+  static Future<bool> anyExist({String? connection}) =>
+      Model.anyExist<PostTag>(connection: connection);
 
   static Query<PostTag> where(
     String column,
@@ -120,6 +120,9 @@ class PostTagModelFactory {
 
   static void registerWith(ModelRegistry registry) =>
       registry.register(definition);
+
+  static ModelFactoryConnection<PostTag> withConnection(QueryContext context) =>
+      ModelFactoryConnection<PostTag>(definition: definition, context: context);
 
   static ModelFactoryBuilder<PostTag> factory({
     GeneratorProvider? generatorProvider,
@@ -180,9 +183,4 @@ class _$PostTagModel extends PostTag {
     replaceAttributes(values);
     attachModelDefinition(_$PostTagModelDefinition);
   }
-}
-
-extension PostTagAttributeSetters on PostTag {
-  set postId(int value) => setAttribute('post_id', value);
-  set tagId(int value) => setAttribute('tag_id', value);
 }

@@ -9,6 +9,7 @@ class CreateAuthorsTable extends Migration {
       table.integer('id').primaryKey();
       table.string('name');
       table.boolean('active').defaultValue(false);
+      table.nullableTimestamps(precision: 6); // Adds created_at and updated_at (non-TZ, nullable, microsecond precision)
     });
   }
 

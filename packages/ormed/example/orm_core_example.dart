@@ -45,7 +45,7 @@ Future<void> main() async {
   print('Ad-hoc rows -> $adHocRows');
 
   // Manual encode/decode flows still work via ModelDefinition.
-  final row = TodoOrmDefinition.definition.toMap(pending.first);
+  final row = TodoOrmDefinition.definition.toMap(pending.first.toTracked());
   print('Encoded row -> $row');
   final decoded = TodoOrmDefinition.definition.fromMap(row);
   print('Decoded back -> ${decoded.title}');

@@ -30,9 +30,10 @@ class ModelDefinitionEmitter {
     _writeFields(buffer, fields);
     _writeRelations(buffer, relations);
 
-    final modelVar = '_\$${className}ModelDefinition';
+    final generatedClassName = context.trackedModelClassName;
+    final modelVar = '_$generatedClassName' + 'Definition';
     buffer.writeln(
-      'final ModelDefinition<$className> $modelVar = ModelDefinition(',
+      'final ModelDefinition<$generatedClassName> $modelVar = ModelDefinition(',
     );
     buffer.writeln("  modelName: '${escape(className)}',");
     buffer.writeln("  tableName: '${escape(tableName!)}',");
@@ -105,16 +106,16 @@ class ModelDefinitionEmitter {
     );
     buffer.writeln('  ),');
     if (generateCodec) {
-      buffer.writeln('  codec: _\$${className}ModelCodec(),');
+      buffer.writeln('  codec: _${generatedClassName}Codec(),');
     } else {
-      buffer.writeln('  codec: _\$${className}UnsupportedCodec(),');
+      buffer.writeln('  codec: _${generatedClassName}UnsupportedCodec(),');
     }
     buffer.writeln(');\n');
 
     if (context.mixinModelFactory) {
       buffer.writeln('// ignore: unused_element');
       buffer.writeln(
-        'final ${className.toLowerCase()}ModelDefinitionRegistration = ModelFactoryRegistry.register<$className>(',
+        'final ${className.toLowerCase()}ModelDefinitionRegistration = ModelFactoryRegistry.register<$generatedClassName>(',
       );
       buffer.writeln('  $modelVar,');
       buffer.writeln(');\n');
@@ -123,7 +124,7 @@ class ModelDefinitionEmitter {
     // Generate instance extension
     buffer.writeln('extension ${className}OrmDefinition on $className {');
     buffer.writeln(
-      '  static ModelDefinition<$className> get definition => $modelVar;',
+      '  static ModelDefinition<$generatedClassName> get definition => $modelVar;',
     );
     buffer.writeln('}\n');
 

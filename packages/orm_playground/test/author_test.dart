@@ -1,6 +1,6 @@
 import 'package:ormed/ormed.dart';
 import 'package:driver_tests/driver_tests.dart'
-    hide Author, AuthorOrmDefinition;
+    hide Author, AuthorOrmDefinition, Authors;
 import 'package:orm_playground/src/models/author.dart';
 import 'package:test/test.dart';
 

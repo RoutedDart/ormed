@@ -1,5 +1,6 @@
 import 'dart:convert' show jsonEncode;
 
+import 'package:carbonized/carbonized.dart';
 import 'package:collection/collection.dart';
 import 'package:meta/meta.dart' show visibleForTesting;
 import 'package:ormed/src/query/plan/join_definition.dart';
@@ -9,6 +10,7 @@ import 'package:ormed/src/query/query_plan.dart';
 import 'package:ormed/src/query/relation_loader.dart';
 import 'package:ormed/src/query/relation_resolver.dart';
 
+import '../core/orm_config.dart';
 import '../driver/driver.dart';
 import '../exceptions.dart';
 import '../model_definition.dart';
@@ -19,22 +21,28 @@ import 'json_path.dart' as json_path;
 import 'query.dart';
 
 part 'builder/aggregate.dart';
+part 'builder/batch.dart';
+part 'builder/caching.dart';
 part 'builder/crud.dart';
 part 'builder/distinct.dart';
 part 'builder/grouping.dart';
 part 'builder/helper.dart';
 part 'builder/index.dart';
 part 'builder/join.dart';
+part 'builder/json.dart';
 part 'builder/json_builder.dart';
 part 'builder/lock.dart';
 part 'builder/models.dart';
 part 'builder/order.dart';
 part 'builder/paginate.dart';
 part 'builder/predicate.dart';
+part 'builder/raw.dart';
 part 'builder/relation.dart';
 part 'builder/scope.dart';
 part 'builder/select.dart';
 part 'builder/soft_delete.dart';
+part 'builder/streaming.dart';
+part 'builder/subquery.dart';
 part 'builder/union.dart';
 part 'builder/utility.dart';
 part 'builder/where.dart';
@@ -99,6 +107,8 @@ class Query<T> {
     bool distinct = false,
     List<DistinctOnClause>? distinctOn,
     List<QueryUnion>? unions,
+    Duration? cacheTtl,
+    bool disableCache = false,
   }) : _filters = filters ?? <FilterClause>[],
        _orders = orders ?? <OrderClause>[],
        _relations = relations ?? <RelationLoad>[],
@@ -137,7 +147,11 @@ class Query<T> {
        _distinctOn = List<DistinctOnClause>.from(
          distinctOn ?? const <DistinctOnClause>[],
        ),
-       _unions = unions ?? const <QueryUnion>[];
+       _unions = unions ?? const <QueryUnion>[],
+       _cacheTtl = cacheTtl,
+       _disableCache = disableCache {
+    OrmConfig.ensureInitialized();
+  }
 
   final ModelDefinition<T> definition;
   final QueryContext context;
@@ -174,6 +188,8 @@ class Query<T> {
   final bool _distinct;
   final List<DistinctOnClause> _distinctOn;
   final List<QueryUnion> _unions;
+  final Duration? _cacheTtl;
+  final bool _disableCache;
 
   static const String _softDeleteScope =
       ScopeRegistry.softDeleteScopeIdentifier;
@@ -330,6 +346,11 @@ class Query<T> {
       }
     }
 
+    // Sync original state for change tracking
+    if (model is ModelAttributes) {
+      model.syncOriginal();
+    }
+
     return QueryRow<T>(model: model, row: _projectionRow(row, plan));
   }
 
@@ -444,6 +465,8 @@ class Query<T> {
       distinct: _distinct,
       distinctOn: _distinctOn,
       unions: _unions,
+      cacheTtl: _cacheTtl,
+      disableCache: _disableCache,
     );
   }
 
@@ -842,6 +865,8 @@ class Query<T> {
     bool? distinct,
     List<DistinctOnClause>? distinctOn,
     List<QueryUnion>? unions,
+    Duration? cacheTtl,
+    bool? disableCache,
   }) => Query(
     definition: definition,
     context: context,
@@ -880,6 +905,8 @@ class Query<T> {
     distinct: distinct ?? _distinct,
     distinctOn: distinctOn ?? _distinctOn,
     unions: unions ?? _unions,
+    cacheTtl: cacheTtl ?? _cacheTtl,
+    disableCache: disableCache ?? _disableCache,
   );
 
   Query<T> _join({

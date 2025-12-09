@@ -5,15 +5,34 @@ import 'postgres_codecs.dart';
 import 'postgres_connector.dart';
 import 'postgres_grammar.dart';
 import 'postgres_schema_dialect.dart';
+import 'postgres_type_mapper.dart';
 import 'schema_state.dart';
 
 /// PostgreSQL implementation of the routed ORM driver adapter.
 class PostgresDriverAdapter
     implements DriverAdapter, SchemaDriver, SchemaStateProvider {
+  
+  /// Registers PostgreSQL-specific codecs and type mapper with the global registries.
+  /// Call this once during application initialization before using PostgreSQL.
+  static void registerCodecs() {
+    final mapper = PostgresTypeMapper();
+    TypeMapperRegistry.register('postgres', mapper);
+    
+    // Register codecs from TypeMapper to eliminate duplication
+    final codecs = <String, ValueCodec<dynamic>>{};
+    for (final mapping in mapper.typeMappings) {
+      if (mapping.codec != null) {
+        final typeKey = mapping.dartType.toString();
+        codecs[typeKey] = mapping.codec!;
+        codecs['$typeKey?'] = mapping.codec!;  // Nullable variant
+      }
+    }
+    ValueCodecRegistry.instance.registerDriver('postgres', codecs);
+  }
+
   PostgresDriverAdapter.custom({
     required DatabaseConfig config,
     ConnectionFactory? connections,
-    ValueCodecRegistry? codecRegistry,
   }) : _metadata = const DriverMetadata(
          name: 'postgres',
          supportsReturning: true,
@@ -39,6 +58,11 @@ class PostgresDriverAdapter
            DriverCapability.caseInsensitiveLike,
            DriverCapability.distinctOn,
            DriverCapability.rightJoin,
+           DriverCapability.rawSQL,
+           DriverCapability.advancedQueryBuilders,
+           DriverCapability.sqlPreviews,
+           DriverCapability.databaseManagement,
+           DriverCapability.foreignKeyConstraintControl,
          },
        ),
        _schemaCompiler = SchemaPlanCompiler(PostgresSchemaDialect()),
@@ -49,9 +73,10 @@ class PostgresDriverAdapter
              connectors: {'postgres': () => PostgresConnector()},
            ),
        _config = config,
-       _codecs = augmentPostgresCodecs(
-         codecRegistry ?? ValueCodecRegistry.standard(),
-       ) {
+       _codecs = ValueCodecRegistry.instance.forDriver('postgres') {
+    // Auto-register PostgreSQL codecs on first instantiation
+    registerPostgresCodecs();
+    
     _planCompiler = ClosurePlanCompiler(
       compileSelect: _compileSelectPreview,
       compileMutation: _compileMutationPreview,
@@ -60,11 +85,9 @@ class PostgresDriverAdapter
 
   factory PostgresDriverAdapter.fromUrl(
     String url, {
-    ValueCodecRegistry? codecRegistry,
     ConnectionFactory? connections,
   }) => PostgresDriverAdapter.custom(
     config: DatabaseConfig(driver: 'postgres', options: {'url': url}),
-    codecRegistry: codecRegistry,
     connections: connections,
   );
 
@@ -72,7 +95,6 @@ class PostgresDriverAdapter
     String database = 'postgres',
     String username = 'postgres',
     String? password,
-    ValueCodecRegistry? codecRegistry,
     ConnectionFactory? connections,
   }) => PostgresDriverAdapter.custom(
     config: DatabaseConfig(
@@ -85,7 +107,6 @@ class PostgresDriverAdapter
         if (password != null) 'password': password,
       },
     ),
-    codecRegistry: codecRegistry,
     connections: connections,
   );
 
@@ -576,6 +597,193 @@ class PostgresDriverAdapter
           );
         })
         .toList(growable: false);
+  }
+
+  // ========== Database Management ==========
+
+  @override
+  Future<bool> createDatabase(
+    String name, {
+    Map<String, Object?>? options,
+  }) async {
+    final sql = _schemaCompiler.dialect.compileCreateDatabase(name, options);
+    if (sql == null) {
+      throw UnsupportedError('PostgreSQL should support database creation');
+    }
+
+    // Postgres requires being outside a transaction block for CREATE DATABASE
+    if (_transactionDepth > 0) {
+      throw StateError('Cannot create database within a transaction');
+    }
+
+    try {
+      await executeRaw(sql);
+      return true;
+    } on Exception catch (e) {
+      // Check if error is "database exists" (error code 42P04)
+      final errorMsg = e.toString();
+      if (errorMsg.contains('42P04') ||
+          errorMsg.toLowerCase().contains('already exists')) {
+        return false;
+      }
+      rethrow;
+    }
+  }
+
+  @override
+  Future<bool> dropDatabase(String name) async {
+    final sql = 'DROP DATABASE ${_quote(name)}';
+
+    if (_transactionDepth > 0) {
+      throw StateError('Cannot drop database within a transaction');
+    }
+
+    await executeRaw(sql);
+    return true;
+  }
+
+  @override
+  Future<bool> dropDatabaseIfExists(String name) async {
+    if (_transactionDepth > 0) {
+      throw StateError('Cannot drop database within a transaction');
+    }
+
+    // Check if database exists first
+    final databases = await listDatabases();
+    if (!databases.contains(name)) {
+      return false;
+    }
+
+    final sql = _schemaCompiler.dialect.compileDropDatabaseIfExists(name);
+    if (sql == null) {
+      throw UnsupportedError('PostgreSQL should support database dropping');
+    }
+
+    await executeRaw(sql);
+    return true;
+  }
+
+  @override
+  Future<List<String>> listDatabases() async {
+    final sql = _schemaCompiler.dialect.compileListDatabases();
+    if (sql == null) {
+      throw UnsupportedError('PostgreSQL should support listing databases');
+    }
+
+    final results = await queryRaw(sql);
+    return results.map((row) => row['datname'] as String).toList();
+  }
+
+  // ========== Foreign Key Constraint Management ==========
+
+  @override
+  Future<bool> enableForeignKeyConstraints() async {
+    // PostgreSQL doesn't have session-level FK disable
+    // Must use ALTER TABLE ... ENABLE TRIGGER ALL on each table
+    final tables = await listTables();
+
+    for (final table in tables) {
+      final tableName = table.schema != null
+          ? '${_quote(table.schema!)}.${_quote(table.name)}'
+          : _quote(table.name);
+      await executeRaw('ALTER TABLE $tableName ENABLE TRIGGER ALL');
+    }
+
+    return true;
+  }
+
+  @override
+  Future<bool> disableForeignKeyConstraints() async {
+    final tables = await listTables();
+
+    for (final table in tables) {
+      final tableName = table.schema != null
+          ? '${_quote(table.schema!)}.${_quote(table.name)}'
+          : _quote(table.name);
+      await executeRaw('ALTER TABLE $tableName DISABLE TRIGGER ALL');
+    }
+
+    return true;
+  }
+
+  @override
+  Future<T> withoutForeignKeyConstraints<T>(
+    Future<T> Function() callback,
+  ) async {
+    await disableForeignKeyConstraints();
+    try {
+      return await callback();
+    } finally {
+      await enableForeignKeyConstraints();
+    }
+  }
+
+  // ========== Bulk Operations ==========
+
+  @override
+  Future<void> dropAllTables({String? schema}) async {
+    final schemaName = schema ?? 'public';
+    final tables = await listTables(schema: schemaName);
+
+    if (tables.isEmpty) return;
+
+    // PostgreSQL can drop with CASCADE to handle FKs
+    for (final table in tables) {
+      final tableName = '${_quote(schemaName)}.${_quote(table.name)}';
+      await executeRaw('DROP TABLE IF EXISTS $tableName CASCADE');
+    }
+  }
+
+  // ========== Existence Checking ==========
+
+  @override
+  Future<bool> hasTable(String table, {String? schema}) async {
+    final tables = await listTables(schema: schema ?? 'public');
+    return tables.any((t) => t.name.toLowerCase() == table.toLowerCase());
+  }
+
+  @override
+  Future<bool> hasView(String view, {String? schema}) async {
+    final views = await listViews(schema: schema ?? 'public');
+    return views.any((v) => v.name.toLowerCase() == view.toLowerCase());
+  }
+
+  @override
+  Future<bool> hasColumn(String table, String column, {String? schema}) async {
+    final columns = await listColumns(table, schema: schema);
+    return columns.any((c) => c.name.toLowerCase() == column.toLowerCase());
+  }
+
+  @override
+  Future<bool> hasColumns(String table, List<String> columns, {String? schema}) async {
+    final tableColumns = await listColumns(table, schema: schema);
+    final lowerCaseColumns = tableColumns.map((c) => c.name.toLowerCase()).toSet();
+    
+    for (final column in columns) {
+      if (!lowerCaseColumns.contains(column.toLowerCase())) {
+        return false;
+      }
+    }
+    
+    return true;
+  }
+
+  @override
+  Future<bool> hasIndex(String table, String index, {String? schema, String? type}) async {
+    final indexes = await listIndexes(table, schema: schema);
+    
+    for (final idx in indexes) {
+      final typeMatches = type == null ||
+          (type == 'primary' && idx.primary) ||
+          (type == 'unique' && idx.unique) ||
+          type.toLowerCase() == idx.type?.toLowerCase();
+      
+      if (idx.name.toLowerCase() == index.toLowerCase() && typeMatches) {
+        return true;
+      }
+    }
+    
+    return false;
   }
 
   Future<MutationResult> _runInsert(MutationPlan plan) async {

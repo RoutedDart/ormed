@@ -55,7 +55,7 @@ const FieldDefinition _$MutationTargetCategoryField = FieldDefinition(
   autoIncrement: false,
 );
 
-final ModelDefinition<MutationTarget> _$MutationTargetModelDefinition =
+final ModelDefinition<$MutationTarget> _$MutationTargetDefinition =
     ModelDefinition(
       modelName: 'MutationTarget',
       tableName: 'mutation_targets',
@@ -76,80 +76,81 @@ final ModelDefinition<MutationTarget> _$MutationTargetModelDefinition =
         softDeletes: false,
         softDeleteColumn: 'deleted_at',
       ),
-      codec: _$MutationTargetModelCodec(),
+      codec: _$MutationTargetCodec(),
     );
 
 // ignore: unused_element
 final mutationtargetModelDefinitionRegistration =
-    ModelFactoryRegistry.register<MutationTarget>(
-      _$MutationTargetModelDefinition,
-    );
+    ModelFactoryRegistry.register<$MutationTarget>(_$MutationTargetDefinition);
 
 extension MutationTargetOrmDefinition on MutationTarget {
-  static ModelDefinition<MutationTarget> get definition =>
-      _$MutationTargetModelDefinition;
+  static ModelDefinition<$MutationTarget> get definition =>
+      _$MutationTargetDefinition;
 }
 
 class MutationTargets {
   const MutationTargets._();
 
-  static Query<MutationTarget> query([String? connection]) =>
-      Model.query<MutationTarget>(connection: connection);
+  static Query<$MutationTarget> query([String? connection]) =>
+      Model.query<$MutationTarget>(connection: connection);
 
-  static Future<MutationTarget?> find(Object id, {String? connection}) =>
-      Model.find<MutationTarget>(id, connection: connection);
+  static Future<$MutationTarget?> find(Object id, {String? connection}) =>
+      Model.find<$MutationTarget>(id, connection: connection);
 
-  static Future<MutationTarget> findOrFail(Object id, {String? connection}) =>
-      Model.findOrFail<MutationTarget>(id, connection: connection);
+  static Future<$MutationTarget> findOrFail(Object id, {String? connection}) =>
+      Model.findOrFail<$MutationTarget>(id, connection: connection);
 
-  static Future<List<MutationTarget>> all({String? connection}) =>
-      Model.all<MutationTarget>(connection: connection);
+  static Future<List<$MutationTarget>> all({String? connection}) =>
+      Model.all<$MutationTarget>(connection: connection);
 
   static Future<int> count({String? connection}) =>
-      Model.count<MutationTarget>(connection: connection);
+      Model.count<$MutationTarget>(connection: connection);
 
-  static Future<bool> exists({String? connection}) =>
-      Model.exists<MutationTarget>(connection: connection);
+  static Future<bool> anyExist({String? connection}) =>
+      Model.anyExist<$MutationTarget>(connection: connection);
 
-  static Query<MutationTarget> where(
+  static Query<$MutationTarget> where(
     String column,
     String operator,
     dynamic value, {
     String? connection,
-  }) => Model.where<MutationTarget>(
+  }) => Model.where<$MutationTarget>(
     column,
     operator,
     value,
     connection: connection,
   );
 
-  static Query<MutationTarget> whereIn(
+  static Query<$MutationTarget> whereIn(
     String column,
     List<dynamic> values, {
     String? connection,
-  }) => Model.whereIn<MutationTarget>(column, values, connection: connection);
+  }) => Model.whereIn<$MutationTarget>(column, values, connection: connection);
 
-  static Query<MutationTarget> orderBy(
+  static Query<$MutationTarget> orderBy(
     String column, {
     String direction = "asc",
     String? connection,
-  }) => Model.orderBy<MutationTarget>(
+  }) => Model.orderBy<$MutationTarget>(
     column,
     direction: direction,
     connection: connection,
   );
 
-  static Query<MutationTarget> limit(int count, {String? connection}) =>
-      Model.limit<MutationTarget>(count, connection: connection);
+  static Query<$MutationTarget> limit(int count, {String? connection}) =>
+      Model.limit<$MutationTarget>(count, connection: connection);
+
+  static Repository<$MutationTarget> repo([String? connection]) =>
+      Model.repository<$MutationTarget>(connection: connection);
 }
 
 class MutationTargetModelFactory {
   const MutationTargetModelFactory._();
 
-  static ModelDefinition<MutationTarget> get definition =>
-      _$MutationTargetModelDefinition;
+  static ModelDefinition<$MutationTarget> get definition =>
+      _$MutationTargetDefinition;
 
-  static ModelCodec<MutationTarget> get codec => definition.codec;
+  static ModelCodec<$MutationTarget> get codec => definition.codec;
 
   static MutationTarget fromMap(
     Map<String, Object?> data, {
@@ -159,7 +160,7 @@ class MutationTargetModelFactory {
   static Map<String, Object?> toMap(
     MutationTarget model, {
     ValueCodecRegistry? registry,
-  }) => definition.toMap(model, registry: registry);
+  }) => definition.toMap(model.toTracked(), registry: registry);
 
   static void registerWith(ModelRegistry registry) =>
       registry.register(definition);
@@ -179,12 +180,11 @@ class MutationTargetModelFactory {
   );
 }
 
-class _$MutationTargetModelCodec extends ModelCodec<MutationTarget> {
-  const _$MutationTargetModelCodec();
-
+class _$MutationTargetCodec extends ModelCodec<$MutationTarget> {
+  const _$MutationTargetCodec();
   @override
   Map<String, Object?> encode(
-    MutationTarget model,
+    $MutationTarget model,
     ValueCodecRegistry registry,
   ) {
     return <String, Object?>{
@@ -199,7 +199,7 @@ class _$MutationTargetModelCodec extends ModelCodec<MutationTarget> {
   }
 
   @override
-  MutationTarget decode(
+  $MutationTarget decode(
     Map<String, Object?> data,
     ValueCodecRegistry registry,
   ) {
@@ -218,7 +218,7 @@ class _$MutationTargetModelCodec extends ModelCodec<MutationTarget> {
       _$MutationTargetCategoryField,
       data['category'],
     );
-    final model = _$MutationTargetModel(
+    final model = $MutationTarget(
       id: mutationTargetIdValue,
       name: mutationTargetNameValue,
       active: mutationTargetActiveValue,
@@ -234,8 +234,17 @@ class _$MutationTargetModelCodec extends ModelCodec<MutationTarget> {
   }
 }
 
-class _$MutationTargetModel extends MutationTarget {
-  _$MutationTargetModel({
+/// Generated tracked model class for [MutationTarget].
+///
+/// This class extends the user-defined [MutationTarget] model and adds
+/// attribute tracking, change detection, and relationship management.
+/// Instances of this class are returned by queries and repositories.
+///
+/// **Do not instantiate this class directly.** Use queries, repositories,
+/// or model factories to create tracked model instances.
+class $MutationTarget extends MutationTarget
+    with ModelAttributes, ModelRelations {
+  $MutationTarget({
     required String id,
     String? name,
     bool? active,
@@ -247,6 +256,16 @@ class _$MutationTargetModel extends MutationTarget {
       'active': active,
       'category': category,
     });
+  }
+
+  /// Creates a tracked model instance from a user-defined model instance.
+  factory $MutationTarget.fromModel(MutationTarget model) {
+    return $MutationTarget(
+      id: model.id,
+      name: model.name,
+      active: model.active,
+      category: model.category,
+    );
   }
 
   @override
@@ -271,6 +290,20 @@ class _$MutationTargetModel extends MutationTarget {
 
   void _attachOrmRuntimeMetadata(Map<String, Object?> values) {
     replaceAttributes(values);
-    attachModelDefinition(_$MutationTargetModelDefinition);
+    attachModelDefinition(_$MutationTargetDefinition);
+  }
+}
+
+extension MutationTargetOrmExtension on MutationTarget {
+  /// The Type of the generated ORM-managed model class.
+  /// Use this when you need to specify the tracked model type explicitly,
+  /// for example in generic type parameters.
+  static Type get trackedType => $MutationTarget;
+
+  /// Converts this immutable model to a tracked ORM-managed model.
+  /// The tracked model supports attribute tracking, change detection,
+  /// and persistence operations like save() and touch().
+  $MutationTarget toTracked() {
+    return $MutationTarget.fromModel(this);
   }
 }

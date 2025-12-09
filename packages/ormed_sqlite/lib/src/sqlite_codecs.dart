@@ -6,15 +6,33 @@ import 'dart:convert';
 import 'package:ormed/ormed.dart';
 import 'package:sqlite3/sqlite3.dart';
 
-ValueCodecRegistry augmentSqliteCodecs(ValueCodecRegistry registry) {
-  registry.registerCodecFor(bool, const SqliteBoolCodec());
-  registry.registerCodec(key: 'bool?', codec: const SqliteBoolCodec());
-  registry.registerCodecFor(DateTime, const SqliteDateTimeCodec());
-  registry.registerCodec(key: 'DateTime?', codec: const SqliteDateTimeCodec());
-  registry.registerCodecFor(double, const SqliteDoubleCodec());
-  registry.registerCodec(key: 'double?', codec: const SqliteDoubleCodec());
-  registry.registerCodec(key: 'json', codec: const SqliteJsonCodec());
-  return registry;
+/// Registers SQLite-specific codecs with the global codec registry.
+void registerSqliteCodecs() {
+  ValueCodecRegistry.instance.registerDriver('sqlite', {
+    // Boolean codecs
+    'bool': const SqliteBoolCodec(),
+    'bool?': const SqliteBoolCodec(),
+    'boolean': const SqliteBoolCodec(),
+    
+    // DateTime codecs
+    'DateTime': const SqliteDateTimeCodec(),
+    'DateTime?': const SqliteDateTimeCodec(),
+    'datetime': const SqliteDateTimeCodec(),
+    
+    // Carbon codecs
+    'Carbon': const SqliteCarbonCodec(),
+    'Carbon?': const SqliteCarbonCodec(),
+    'CarbonInterface': const SqliteCarbonInterfaceCodec(),
+    'CarbonInterface?': const SqliteCarbonInterfaceCodec(),
+    'carbon': const SqliteCarbonCodec(),
+    
+    // Numeric codecs
+    'double': const SqliteDoubleCodec(),
+    'double?': const SqliteDoubleCodec(),
+    
+    // JSON codec
+    'json': const SqliteJsonCodec(),
+  });
 }
 
 class SqliteBoolCodec extends ValueCodec<bool> {
@@ -36,13 +54,95 @@ class SqliteDateTimeCodec extends ValueCodec<DateTime> {
   const SqliteDateTimeCodec();
 
   @override
-  Object? encode(DateTime? value) => value?.toUtc().toIso8601String();
+  Object? encode(DateTime? value) {
+    if (value == null) return null;
+    return value.toUtc().toIso8601String();
+  }
 
   @override
   DateTime? decode(Object? value) {
     if (value == null) return null;
     if (value is DateTime) return value;
-    return DateTime.parse(value as String);
+    if (value is String) return DateTime.parse(value);
+    throw ArgumentError(
+      'SqliteDateTimeCodec.decode expects String or DateTime, got ${value.runtimeType}',
+    );
+  }
+}
+
+/// Codec for Carbon instances that stores as ISO8601 strings in SQLite.
+/// 
+/// This codec handles both encoding Carbon to text and decoding text back to Carbon.
+/// All times are stored in UTC to ensure consistency across timezones.
+/// When decoding, Carbon instances are created with the configured default timezone.
+class SqliteCarbonCodec extends ValueCodec<Carbon> {
+  const SqliteCarbonCodec();
+
+  @override
+  Object? encode(Carbon? value) {
+    if (value == null) return null;
+    // Convert to UTC and store as ISO8601 string
+    return value.toUtc().toIso8601String();
+  }
+
+  @override
+  Carbon? decode(Object? value) {
+    if (value == null) return null;
+    // If already Carbon, return as-is
+    if (value is Carbon) return value;
+    // If CarbonInterface but not Carbon, convert to Carbon
+    if (value is CarbonInterface) {
+      return Carbon.fromDateTime(value.toDateTime()).tz(CarbonConfig.defaultTimezone) as Carbon;
+    }
+    // If DateTime, wrap in Carbon with configured timezone
+    if (value is DateTime) {
+      final utcDateTime = value.isUtc ? value : value.toUtc();
+      return Carbon.fromDateTime(utcDateTime).tz(CarbonConfig.defaultTimezone) as Carbon;
+    }
+    // Parse ISO8601 string using CarbonConfig for proper timezone handling
+    if (value is String) {
+      final parsed = CarbonConfig.parseCarbon(value);
+      return parsed.tz(CarbonConfig.defaultTimezone) as Carbon;
+    }
+    throw ArgumentError(
+      'SqliteCarbonCodec.decode expects String, DateTime, or Carbon, got ${value.runtimeType}',
+    );
+  }
+}
+
+/// Codec for CarbonInterface instances that stores as ISO8601 strings in SQLite.
+/// 
+/// This codec handles the CarbonInterface type, which includes both Carbon and
+/// CarbonImmutable implementations. Decodes to Carbon (mutable) by default.
+/// When decoding, Carbon instances are created with the configured default timezone.
+class SqliteCarbonInterfaceCodec extends ValueCodec<CarbonInterface> {
+  const SqliteCarbonInterfaceCodec();
+
+  @override
+  Object? encode(CarbonInterface? value) {
+    if (value == null) return null;
+    // Convert to UTC and store as ISO8601 string
+    return value.toUtc().toIso8601String();
+  }
+
+  @override
+  CarbonInterface? decode(Object? value) {
+    if (value == null) return null;
+    // If already CarbonInterface, return as-is
+    if (value is CarbonInterface) return value;
+    // If DateTime, wrap in Carbon with configured timezone
+    if (value is DateTime) {
+      final utcDateTime = value.isUtc ? value : value.toUtc();
+      return Carbon.fromDateTime(utcDateTime).tz(CarbonConfig.defaultTimezone);
+    }
+    // Parse ISO8601 string using CarbonConfig for proper timezone handling
+    if (value is String) {
+      final parsed = CarbonConfig.parseCarbon(value);
+      return parsed.tz(CarbonConfig.defaultTimezone);
+    }
+    throw ArgumentError(
+      'SqliteCarbonInterfaceCodec.decode expects String, DateTime, or CarbonInterface, got ${value.runtimeType}',
+    );
   }
 }
 
@@ -88,6 +188,7 @@ List<Object?> normalizeSqliteParameters(List<Object?> values) =>
 Object? _normalizeValue(Object? value) {
   if (value is bool) return value ? 1 : 0;
   if (value is DateTime) return value.toUtc().toIso8601String();
+  if (value is CarbonInterface) return value.toUtc().toIso8601String();
   if (value is List) {
     return value.map<Object?>(_normalizeValue).toList();
   }

@@ -31,7 +31,7 @@ const FieldDefinition _$SerialTestLabelField = FieldDefinition(
   autoIncrement: false,
 );
 
-final ModelDefinition<SerialTest> _$SerialTestModelDefinition = ModelDefinition(
+final ModelDefinition<$SerialTest> _$SerialTestDefinition = ModelDefinition(
   modelName: 'SerialTest',
   tableName: 'serial_tests',
   fields: const [_$SerialTestIdField, _$SerialTestLabelField],
@@ -46,74 +46,75 @@ final ModelDefinition<SerialTest> _$SerialTestModelDefinition = ModelDefinition(
     softDeletes: false,
     softDeleteColumn: 'deleted_at',
   ),
-  codec: _$SerialTestModelCodec(),
+  codec: _$SerialTestCodec(),
 );
 
 // ignore: unused_element
 final serialtestModelDefinitionRegistration =
-    ModelFactoryRegistry.register<SerialTest>(_$SerialTestModelDefinition);
+    ModelFactoryRegistry.register<$SerialTest>(_$SerialTestDefinition);
 
 extension SerialTestOrmDefinition on SerialTest {
-  static ModelDefinition<SerialTest> get definition =>
-      _$SerialTestModelDefinition;
+  static ModelDefinition<$SerialTest> get definition => _$SerialTestDefinition;
 }
 
 class SerialTests {
   const SerialTests._();
 
-  static Query<SerialTest> query([String? connection]) =>
-      Model.query<SerialTest>(connection: connection);
+  static Query<$SerialTest> query([String? connection]) =>
+      Model.query<$SerialTest>(connection: connection);
 
-  static Future<SerialTest?> find(Object id, {String? connection}) =>
-      Model.find<SerialTest>(id, connection: connection);
+  static Future<$SerialTest?> find(Object id, {String? connection}) =>
+      Model.find<$SerialTest>(id, connection: connection);
 
-  static Future<SerialTest> findOrFail(Object id, {String? connection}) =>
-      Model.findOrFail<SerialTest>(id, connection: connection);
+  static Future<$SerialTest> findOrFail(Object id, {String? connection}) =>
+      Model.findOrFail<$SerialTest>(id, connection: connection);
 
-  static Future<List<SerialTest>> all({String? connection}) =>
-      Model.all<SerialTest>(connection: connection);
+  static Future<List<$SerialTest>> all({String? connection}) =>
+      Model.all<$SerialTest>(connection: connection);
 
   static Future<int> count({String? connection}) =>
-      Model.count<SerialTest>(connection: connection);
+      Model.count<$SerialTest>(connection: connection);
 
-  static Future<bool> exists({String? connection}) =>
-      Model.exists<SerialTest>(connection: connection);
+  static Future<bool> anyExist({String? connection}) =>
+      Model.anyExist<$SerialTest>(connection: connection);
 
-  static Query<SerialTest> where(
+  static Query<$SerialTest> where(
     String column,
     String operator,
     dynamic value, {
     String? connection,
   }) =>
-      Model.where<SerialTest>(column, operator, value, connection: connection);
+      Model.where<$SerialTest>(column, operator, value, connection: connection);
 
-  static Query<SerialTest> whereIn(
+  static Query<$SerialTest> whereIn(
     String column,
     List<dynamic> values, {
     String? connection,
-  }) => Model.whereIn<SerialTest>(column, values, connection: connection);
+  }) => Model.whereIn<$SerialTest>(column, values, connection: connection);
 
-  static Query<SerialTest> orderBy(
+  static Query<$SerialTest> orderBy(
     String column, {
     String direction = "asc",
     String? connection,
-  }) => Model.orderBy<SerialTest>(
+  }) => Model.orderBy<$SerialTest>(
     column,
     direction: direction,
     connection: connection,
   );
 
-  static Query<SerialTest> limit(int count, {String? connection}) =>
-      Model.limit<SerialTest>(count, connection: connection);
+  static Query<$SerialTest> limit(int count, {String? connection}) =>
+      Model.limit<$SerialTest>(count, connection: connection);
+
+  static Repository<$SerialTest> repo([String? connection]) =>
+      Model.repository<$SerialTest>(connection: connection);
 }
 
 class SerialTestModelFactory {
   const SerialTestModelFactory._();
 
-  static ModelDefinition<SerialTest> get definition =>
-      _$SerialTestModelDefinition;
+  static ModelDefinition<$SerialTest> get definition => _$SerialTestDefinition;
 
-  static ModelCodec<SerialTest> get codec => definition.codec;
+  static ModelCodec<$SerialTest> get codec => definition.codec;
 
   static SerialTest fromMap(
     Map<String, Object?> data, {
@@ -123,7 +124,7 @@ class SerialTestModelFactory {
   static Map<String, Object?> toMap(
     SerialTest model, {
     ValueCodecRegistry? registry,
-  }) => definition.toMap(model, registry: registry);
+  }) => definition.toMap(model.toTracked(), registry: registry);
 
   static void registerWith(ModelRegistry registry) =>
       registry.register(definition);
@@ -143,11 +144,10 @@ class SerialTestModelFactory {
   );
 }
 
-class _$SerialTestModelCodec extends ModelCodec<SerialTest> {
-  const _$SerialTestModelCodec();
-
+class _$SerialTestCodec extends ModelCodec<$SerialTest> {
+  const _$SerialTestCodec();
   @override
-  Map<String, Object?> encode(SerialTest model, ValueCodecRegistry registry) {
+  Map<String, Object?> encode($SerialTest model, ValueCodecRegistry registry) {
     return <String, Object?>{
       'id': registry.encodeField(_$SerialTestIdField, model.id),
       'label': registry.encodeField(_$SerialTestLabelField, model.label),
@@ -155,13 +155,13 @@ class _$SerialTestModelCodec extends ModelCodec<SerialTest> {
   }
 
   @override
-  SerialTest decode(Map<String, Object?> data, ValueCodecRegistry registry) {
+  $SerialTest decode(Map<String, Object?> data, ValueCodecRegistry registry) {
     final int serialTestIdValue =
         registry.decodeField<int>(_$SerialTestIdField, data['id']) ?? 0;
     final String serialTestLabelValue =
         registry.decodeField<String>(_$SerialTestLabelField, data['label']) ??
         (throw StateError('Field label on SerialTest cannot be null.'));
-    final model = _$SerialTestModel(
+    final model = $SerialTest(
       id: serialTestIdValue,
       label: serialTestLabelValue,
     );
@@ -173,10 +173,23 @@ class _$SerialTestModelCodec extends ModelCodec<SerialTest> {
   }
 }
 
-class _$SerialTestModel extends SerialTest {
-  _$SerialTestModel({required int id, required String label})
+/// Generated tracked model class for [SerialTest].
+///
+/// This class extends the user-defined [SerialTest] model and adds
+/// attribute tracking, change detection, and relationship management.
+/// Instances of this class are returned by queries and repositories.
+///
+/// **Do not instantiate this class directly.** Use queries, repositories,
+/// or model factories to create tracked model instances.
+class $SerialTest extends SerialTest with ModelAttributes, ModelRelations {
+  $SerialTest({required int id, required String label})
     : super.new(id: id, label: label) {
     _attachOrmRuntimeMetadata({'id': id, 'label': label});
+  }
+
+  /// Creates a tracked model instance from a user-defined model instance.
+  factory $SerialTest.fromModel(SerialTest model) {
+    return $SerialTest(id: model.id, label: model.label);
   }
 
   @override
@@ -191,6 +204,20 @@ class _$SerialTestModel extends SerialTest {
 
   void _attachOrmRuntimeMetadata(Map<String, Object?> values) {
     replaceAttributes(values);
-    attachModelDefinition(_$SerialTestModelDefinition);
+    attachModelDefinition(_$SerialTestDefinition);
+  }
+}
+
+extension SerialTestOrmExtension on SerialTest {
+  /// The Type of the generated ORM-managed model class.
+  /// Use this when you need to specify the tracked model type explicitly,
+  /// for example in generic type parameters.
+  static Type get trackedType => $SerialTest;
+
+  /// Converts this immutable model to a tracked ORM-managed model.
+  /// The tracked model supports attribute tracking, change detection,
+  /// and persistence operations like save() and touch().
+  $SerialTest toTracked() {
+    return $SerialTest.fromModel(this);
   }
 }

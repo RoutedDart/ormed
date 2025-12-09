@@ -16,6 +16,7 @@ class User extends Model<User> with ModelFactoryCapable {
     this.name,
     this.age,
     this.profile,
+    this.metadata,
     this.createdAt,
   });
 
@@ -35,6 +36,9 @@ class User extends Model<User> with ModelFactoryCapable {
 
   @OrmField(codec: JsonMapCodec)
   final Map<String, Object?>? profile;
+
+  @OrmField(codec: JsonMapCodec)
+  final Map<String, Object?>? metadata;
 }
 
 

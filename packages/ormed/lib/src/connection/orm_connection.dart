@@ -32,7 +32,6 @@ class OrmConnection implements ConnectionResolver {
         QueryContext(
           registry: registry,
           driver: driver,
-          codecRegistry: codecRegistry,
           scopeRegistry: scopeRegistry,
           connectionName: config.name,
           connectionDatabase: config.database,

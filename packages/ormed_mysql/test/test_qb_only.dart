@@ -32,24 +32,26 @@ Future<void> main() async {
       Platform.environment['MYSQL_URL'] ??
       'mysql://root:secret@localhost:6605/orm_test';
 
-  final codecRegistry = ValueCodecRegistry.standard();
-  codecRegistry.registerCodec(
+  // Register MySQL codecs
+  MySqlDriverAdapter.registerCodecs();
+
+  // Register custom test codecs
+  ValueCodecRegistry.instance.registerCodec(
     key: 'PostgresPayloadCodec',
     codec: const PostgresPayloadCodec(),
   );
-  codecRegistry.registerCodec(
+  ValueCodecRegistry.instance.registerCodec(
     key: 'SqlitePayloadCodec',
     codec: const SqlitePayloadCodec(),
   );
-  codecRegistry.registerCodec(
+  ValueCodecRegistry.instance.registerCodec(
     key: 'MariaDbPayloadCodec',
     codec: const MariaDbPayloadCodec(),
   );
-  codecRegistry.registerCodec(key: 'JsonMapCodec', codec: const JsonMapCodec());
+  ValueCodecRegistry.instance.registerCodec(key: 'JsonMapCodec', codec: const JsonMapCodec());
 
   final driverAdapter = MySqlDriverAdapter.custom(
     config: DatabaseConfig(driver: 'mysql', options: {'url': url, 'ssl': true}),
-    codecRegistry: codecRegistry,
   );
 
   final customCodecs = <String, ValueCodec<dynamic>>{

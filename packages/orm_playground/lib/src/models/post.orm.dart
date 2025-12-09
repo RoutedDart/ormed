@@ -181,8 +181,8 @@ class Posts {
   static Future<int> count({String? connection}) =>
       Model.count<Post>(connection: connection);
 
-  static Future<bool> exists({String? connection}) =>
-      Model.exists<Post>(connection: connection);
+  static Future<bool> anyExist({String? connection}) =>
+      Model.anyExist<Post>(connection: connection);
 
   static Query<Post> where(
     String column,
@@ -227,6 +227,9 @@ class PostModelFactory {
 
   static void registerWith(ModelRegistry registry) =>
       registry.register(definition);
+
+  static ModelFactoryConnection<Post> withConnection(QueryContext context) =>
+      ModelFactoryConnection<Post>(definition: definition, context: context);
 
   static ModelFactoryBuilder<Post> factory({
     GeneratorProvider? generatorProvider,
@@ -428,15 +431,4 @@ extension PostRelationQueries on Post {
   Query<Comment> commentsQuery() {
     return Model.query<Comment>().where('post_id', id);
   }
-}
-
-extension PostAttributeSetters on Post {
-  set id(int? value) => setAttribute('id', value);
-  set userId(int value) => setAttribute('user_id', value);
-  set title(String value) => setAttribute('title', value);
-  set body(String? value) => setAttribute('body', value);
-  set published(bool value) => setAttribute('published', value);
-  set publishedAt(DateTime? value) => setAttribute('published_at', value);
-  set createdAt(DateTime? value) => setAttribute('created_at', value);
-  set updatedAt(DateTime? value) => setAttribute('updated_at', value);
 }

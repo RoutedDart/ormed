@@ -126,8 +126,8 @@ class Users {
   static Future<int> count({String? connection}) =>
       Model.count<User>(connection: connection);
 
-  static Future<bool> exists({String? connection}) =>
-      Model.exists<User>(connection: connection);
+  static Future<bool> anyExist({String? connection}) =>
+      Model.anyExist<User>(connection: connection);
 
   static Query<User> where(
     String column,
@@ -172,6 +172,9 @@ class UserModelFactory {
 
   static void registerWith(ModelRegistry registry) =>
       registry.register(definition);
+
+  static ModelFactoryConnection<User> withConnection(QueryContext context) =>
+      ModelFactoryConnection<User>(definition: definition, context: context);
 
   static ModelFactoryBuilder<User> factory({
     GeneratorProvider? generatorProvider,
@@ -301,13 +304,4 @@ class _$UserModel extends User {
     replaceAttributes(values);
     attachModelDefinition(_$UserModelDefinition);
   }
-}
-
-extension UserAttributeSetters on User {
-  set id(int? value) => setAttribute('id', value);
-  set email(String value) => setAttribute('email', value);
-  set name(String value) => setAttribute('name', value);
-  set active(bool value) => setAttribute('active', value);
-  set createdAt(DateTime? value) => setAttribute('created_at', value);
-  set updatedAt(DateTime? value) => setAttribute('updated_at', value);
 }

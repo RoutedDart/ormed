@@ -7,19 +7,24 @@ class ModelFactoryEmitter {
 
   String emit() {
     final className = context.className;
+    final generatedClassName = context.trackedModelClassName;
     final buffer = StringBuffer();
 
-    buffer.writeln('class ${className}ModelFactory {');
-    buffer.writeln('  const ${className}ModelFactory._();');
+    // Use base class name without doubling "Model" suffix for factory name
+    final factoryName = className.endsWith('Model') 
+        ? '${className}Factory' 
+        : '${className}ModelFactory';
+    buffer.writeln('class $factoryName {');
+    buffer.writeln('  const $factoryName._();');
     buffer.writeln();
 
     // Static getters for definition and codec
     buffer.writeln(
-      '  static ModelDefinition<$className> get definition => _\$${className}ModelDefinition;',
+      '  static ModelDefinition<$generatedClassName> get definition => _${generatedClassName}Definition;',
     );
     buffer.writeln();
     buffer.writeln(
-      '  static ModelCodec<$className> get codec => definition.codec;',
+      '  static ModelCodec<$generatedClassName> get codec => definition.codec;',
     );
     buffer.writeln();
 
@@ -32,7 +37,7 @@ class ModelFactoryEmitter {
     buffer.writeln('  static Map<String, Object?> toMap(');
     buffer.writeln('    $className model, {');
     buffer.writeln('    ValueCodecRegistry? registry,');
-    buffer.writeln('  }) => definition.toMap(model, registry: registry);');
+    buffer.writeln('  }) => definition.toMap(model.toTracked(), registry: registry);');
     buffer.writeln();
 
     // registerWith method

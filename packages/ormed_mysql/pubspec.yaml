@@ -11,6 +11,7 @@ environment:
 dependencies:
   ormed:
   mysql_client_plus: ^0.1.2
+  carbonized: ^0.1.0
   meta: ^1.17.0
 
 dev_dependencies:

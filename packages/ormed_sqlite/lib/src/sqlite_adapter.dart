@@ -2,6 +2,7 @@
 library;
 
 import 'dart:convert';
+import 'dart:io';
 import 'dart:math';
 
 import 'package:ormed/ormed.dart';
@@ -12,36 +13,53 @@ import 'sqlite_codecs.dart';
 import 'sqlite_connector.dart';
 import 'sqlite_grammar.dart';
 import 'sqlite_schema_dialect.dart';
+import 'sqlite_type_mapper.dart';
 
 /// Adapter that executes [QueryPlan] objects against SQLite databases.
 class SqliteDriverAdapter
     implements DriverAdapter, SchemaDriver, SchemaStateProvider {
+  
+  /// Registers SQLite-specific codecs and type mapper with the global registries.
+  /// Call this once during application initialization before using SQLite.
+  static void registerCodecs() {
+    final mapper = SqliteTypeMapper();
+    TypeMapperRegistry.register('sqlite', mapper);
+    
+    // Register codecs from TypeMapper to eliminate duplication
+    final codecs = <String, ValueCodec<dynamic>>{};
+    for (final mapping in mapper.typeMappings) {
+      if (mapping.codec != null) {
+        final typeKey = mapping.dartType.toString();
+        codecs[typeKey] = mapping.codec!;
+        codecs['$typeKey?'] = mapping.codec!;  // Nullable variant
+      }
+    }
+    ValueCodecRegistry.instance.registerDriver('sqlite', codecs);
+  }
+
   /// Opens an in-memory database connection using the shared connector.
-  SqliteDriverAdapter.inMemory({ValueCodecRegistry? codecRegistry})
+  SqliteDriverAdapter.inMemory()
     : this.custom(
         config: const DatabaseConfig(
           driver: 'sqlite',
           options: {'memory': true},
         ),
-        codecRegistry: codecRegistry,
       );
 
   /// Opens a database stored at [path].
-  SqliteDriverAdapter.file(String path, {ValueCodecRegistry? codecRegistry})
+  SqliteDriverAdapter.file(String path)
     : this.custom(
         config: DatabaseConfig(
           driver: 'sqlite',
           options: {'path': path},
           name: path,
         ),
-        codecRegistry: codecRegistry,
       );
 
   /// Creates an adapter for the provided [config] and [connections].
   SqliteDriverAdapter.custom({
     required DatabaseConfig config,
     ConnectionFactory? connections,
-    ValueCodecRegistry? codecRegistry,
   }) : _metadata = const DriverMetadata(
          name: 'sqlite',
          supportsReturning: true,
@@ -63,7 +81,10 @@ class SqliteDriverAdapter
            DriverCapability.rawSQL,
            DriverCapability.increment,
            DriverCapability.returning,
+           DriverCapability.relationAggregates,
            DriverCapability.caseInsensitiveLike,
+           DriverCapability.databaseManagement,
+           DriverCapability.foreignKeyConstraintControl,
          },
        ),
        _schemaCompiler = SchemaPlanCompiler(SqliteSchemaDialect()),
@@ -75,9 +96,10 @@ class SqliteDriverAdapter
            connections ??
            ConnectionFactory(connectors: {'sqlite': () => SqliteConnector()}),
        _config = config,
-       _codecs = augmentSqliteCodecs(
-         codecRegistry ?? ValueCodecRegistry.standard(),
-       ) {
+       _codecs = ValueCodecRegistry.instance.forDriver('sqlite') {
+    // Auto-register SQLite codecs on first instantiation
+    registerSqliteCodecs();
+    
     _planCompiler = ClosurePlanCompiler(
       compileSelect: _compileSelectPreview,
       compileMutation: _compileMutationPreview,
@@ -572,6 +594,170 @@ class SqliteDriverAdapter
     return foreignKeys;
   }
 
+  // ========== Database Management ==========
+
+  @override
+  Future<bool> createDatabase(
+    String name, {
+    Map<String, Object?>? options,
+  }) async {
+    // SQLite databases are files
+    final file = File(name);
+
+    if (await file.exists()) {
+      return false; // Already exists
+    }
+
+    // Create parent directory if needed
+    final parentDir = file.parent;
+    if (!await parentDir.exists()) {
+      await parentDir.create(recursive: true);
+    }
+
+    // Create empty database file by opening connection
+    // sqlite3.dart will create the file automatically
+    final tempDb = sqlite.sqlite3.open(name);
+    tempDb.dispose();
+
+    return true;
+  }
+
+  @override
+  Future<bool> dropDatabase(String name) async {
+    final file = File(name);
+
+    if (!await file.exists()) {
+      throw StateError('Database file does not exist: $name');
+    }
+
+    await file.delete();
+    return true;
+  }
+
+  @override
+  Future<bool> dropDatabaseIfExists(String name) async {
+    final file = File(name);
+
+    if (!await file.exists()) {
+      return false;
+    }
+
+    await file.delete();
+    return true;
+  }
+
+  @override
+  Future<List<String>> listDatabases() async {
+    // SQLite doesn't have a catalog concept
+    // Could list *.db files in a directory, but that's application-specific
+    throw UnsupportedError('SQLite does not support listing databases');
+  }
+
+  // ========== Foreign Key Constraint Management ==========
+
+  @override
+  Future<bool> enableForeignKeyConstraints() async {
+    final sql = _schemaCompiler.dialect.compileEnableForeignKeyConstraints();
+    if (sql == null) {
+      throw UnsupportedError('SQLite should support FK constraint management');
+    }
+    await executeRaw(sql);
+    return true;
+  }
+
+  @override
+  Future<bool> disableForeignKeyConstraints() async {
+    final sql = _schemaCompiler.dialect.compileDisableForeignKeyConstraints();
+    if (sql == null) {
+      throw UnsupportedError('SQLite should support FK constraint management');
+    }
+    await executeRaw(sql);
+    return true;
+  }
+
+  @override
+  Future<T> withoutForeignKeyConstraints<T>(
+    Future<T> Function() callback,
+  ) async {
+    await disableForeignKeyConstraints();
+    try {
+      return await callback();
+    } finally {
+      await enableForeignKeyConstraints();
+    }
+  }
+
+  // ========== Bulk Operations ==========
+
+  @override
+  Future<void> dropAllTables({String? schema}) async {
+    final tables = await listTables();
+
+    if (tables.isEmpty) return;
+
+    await disableForeignKeyConstraints();
+
+    try {
+      for (final table in tables) {
+        await executeRaw('DROP TABLE IF EXISTS ${_quote(table.name)}');
+      }
+    } finally {
+      await enableForeignKeyConstraints();
+    }
+  }
+
+  // ========== Existence Checking ==========
+
+  @override
+  Future<bool> hasTable(String table, {String? schema}) async {
+    final tables = await listTables(schema: schema);
+    return tables.any((t) => t.name.toLowerCase() == table.toLowerCase());
+  }
+
+  @override
+  Future<bool> hasView(String view, {String? schema}) async {
+    final views = await listViews(schema: schema);
+    return views.any((v) => v.name.toLowerCase() == view.toLowerCase());
+  }
+
+  @override
+  Future<bool> hasColumn(String table, String column, {String? schema}) async {
+    final columns = await listColumns(table, schema: schema);
+    return columns.any((c) => c.name.toLowerCase() == column.toLowerCase());
+  }
+
+  @override
+  Future<bool> hasColumns(String table, List<String> columns, {String? schema}) async {
+    final tableColumns = await listColumns(table, schema: schema);
+    final lowerCaseColumns = tableColumns.map((c) => c.name.toLowerCase()).toSet();
+    
+    for (final column in columns) {
+      if (!lowerCaseColumns.contains(column.toLowerCase())) {
+        return false;
+      }
+    }
+    
+    return true;
+  }
+
+  @override
+  Future<bool> hasIndex(String table, String index, {String? schema, String? type}) async {
+    final indexes = await listIndexes(table, schema: schema);
+    
+    for (final idx in indexes) {
+      final typeMatches = type == null ||
+          (type == 'primary' && idx.primary) ||
+          (type == 'unique' && idx.unique) ||
+          type.toLowerCase() == idx.type?.toLowerCase();
+      
+      if (idx.name.toLowerCase() == index.toLowerCase() && typeMatches) {
+        return true;
+      }
+    }
+    
+    return false;
+  }
+
   Future<sqlite.Database> _database() async {
     if (_closed) {
       throw StateError('SqliteDriverAdapter has already been closed.');
@@ -692,6 +878,9 @@ class SqliteDriverAdapter
     }
     if (_usesPrimaryKeyUpsert(plan)) {
       final shape = _buildUpsertShape(plan);
+      if (plan.returning) {
+        return _executeShapeWithReturning(shape, plan);
+      }
       return _executeShape(shape);
     }
     return _runManualUpsert(plan);
@@ -699,9 +888,8 @@ class SqliteDriverAdapter
 
   bool _usesPrimaryKeyUpsert(MutationPlan plan) {
     final pk = plan.definition.primaryKeyField?.columnName;
-    return pk != null &&
-        plan.upsertUniqueColumns.length == 1 &&
-        plan.upsertUniqueColumns.first == pk;
+    final uniqueColumns = _resolveUpsertUniqueColumns(plan);
+    return pk != null && uniqueColumns.length == 1 && uniqueColumns.first == pk;
   }
 
   Future<MutationResult> _executeShape(_SqliteMutationShape shape) async {
@@ -717,6 +905,35 @@ class SqliteDriverAdapter
         affected += database.updatedRows;
       }
       return MutationResult(affectedRows: affected);
+    } finally {
+      stmt.dispose();
+    }
+  }
+
+  Future<MutationResult> _executeShapeWithReturning(
+    _SqliteMutationShape shape,
+    MutationPlan plan,
+  ) async {
+    if (shape.parameterSets.isEmpty) {
+      return const MutationResult(affectedRows: 0);
+    }
+    final database = await _database();
+    final stmt = _prepareStatement(database, shape.sql);
+    try {
+      var affected = 0;
+      final returnedRows = <Map<String, Object?>>[];
+      final columnNames = plan.definition.fields
+          .map((f) => f.columnName)
+          .toList(growable: false);
+      for (final parameters in shape.parameterSets) {
+        final result = stmt.select(normalizeSqliteParameters(parameters));
+        affected += database.updatedRows;
+        if (result.isNotEmpty) {
+          final rawRow = rowToMap(result.first, columnNames);
+          returnedRows.add(rawRow);
+        }
+      }
+      return MutationResult(affectedRows: affected, returnedRows: returnedRows);
     } finally {
       stmt.dispose();
     }
@@ -1153,6 +1370,15 @@ class SqliteDriverAdapter
           ..write(
             updateClause.isEmpty ? 'NOTHING' : 'UPDATE SET $updateClause',
           );
+
+    // Add RETURNING clause if requested
+    if (plan.returning) {
+      final allColumns = plan.definition.fields
+          .map((f) => f.columnName)
+          .map(_quote)
+          .join(', ');
+      sql.write(' RETURNING $allColumns');
+    }
     final parameters = plan.rows
         .map((row) => columns.map((column) => row.values[column]).toList())
         .toList(growable: false);

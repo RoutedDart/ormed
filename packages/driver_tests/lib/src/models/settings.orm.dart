@@ -32,7 +32,7 @@ const FieldDefinition _$SettingPayloadField = FieldDefinition(
   codecType: 'json',
 );
 
-final ModelDefinition<Setting> _$SettingModelDefinition = ModelDefinition(
+final ModelDefinition<$Setting> _$SettingDefinition = ModelDefinition(
   modelName: 'Setting',
   tableName: 'settings',
   fields: const [_$SettingIdField, _$SettingPayloadField],
@@ -48,71 +48,74 @@ final ModelDefinition<Setting> _$SettingModelDefinition = ModelDefinition(
     softDeletes: false,
     softDeleteColumn: 'deleted_at',
   ),
-  codec: _$SettingModelCodec(),
+  codec: _$SettingCodec(),
 );
 
 // ignore: unused_element
 final settingModelDefinitionRegistration =
-    ModelFactoryRegistry.register<Setting>(_$SettingModelDefinition);
+    ModelFactoryRegistry.register<$Setting>(_$SettingDefinition);
 
 extension SettingOrmDefinition on Setting {
-  static ModelDefinition<Setting> get definition => _$SettingModelDefinition;
+  static ModelDefinition<$Setting> get definition => _$SettingDefinition;
 }
 
 class Settings {
   const Settings._();
 
-  static Query<Setting> query([String? connection]) =>
-      Model.query<Setting>(connection: connection);
+  static Query<$Setting> query([String? connection]) =>
+      Model.query<$Setting>(connection: connection);
 
-  static Future<Setting?> find(Object id, {String? connection}) =>
-      Model.find<Setting>(id, connection: connection);
+  static Future<$Setting?> find(Object id, {String? connection}) =>
+      Model.find<$Setting>(id, connection: connection);
 
-  static Future<Setting> findOrFail(Object id, {String? connection}) =>
-      Model.findOrFail<Setting>(id, connection: connection);
+  static Future<$Setting> findOrFail(Object id, {String? connection}) =>
+      Model.findOrFail<$Setting>(id, connection: connection);
 
-  static Future<List<Setting>> all({String? connection}) =>
-      Model.all<Setting>(connection: connection);
+  static Future<List<$Setting>> all({String? connection}) =>
+      Model.all<$Setting>(connection: connection);
 
   static Future<int> count({String? connection}) =>
-      Model.count<Setting>(connection: connection);
+      Model.count<$Setting>(connection: connection);
 
-  static Future<bool> exists({String? connection}) =>
-      Model.exists<Setting>(connection: connection);
+  static Future<bool> anyExist({String? connection}) =>
+      Model.anyExist<$Setting>(connection: connection);
 
-  static Query<Setting> where(
+  static Query<$Setting> where(
     String column,
     String operator,
     dynamic value, {
     String? connection,
-  }) => Model.where<Setting>(column, operator, value, connection: connection);
+  }) => Model.where<$Setting>(column, operator, value, connection: connection);
 
-  static Query<Setting> whereIn(
+  static Query<$Setting> whereIn(
     String column,
     List<dynamic> values, {
     String? connection,
-  }) => Model.whereIn<Setting>(column, values, connection: connection);
+  }) => Model.whereIn<$Setting>(column, values, connection: connection);
 
-  static Query<Setting> orderBy(
+  static Query<$Setting> orderBy(
     String column, {
     String direction = "asc",
     String? connection,
-  }) => Model.orderBy<Setting>(
+  }) => Model.orderBy<$Setting>(
     column,
     direction: direction,
     connection: connection,
   );
 
-  static Query<Setting> limit(int count, {String? connection}) =>
-      Model.limit<Setting>(count, connection: connection);
+  static Query<$Setting> limit(int count, {String? connection}) =>
+      Model.limit<$Setting>(count, connection: connection);
+
+  static Repository<$Setting> repo([String? connection]) =>
+      Model.repository<$Setting>(connection: connection);
 }
 
 class SettingModelFactory {
   const SettingModelFactory._();
 
-  static ModelDefinition<Setting> get definition => _$SettingModelDefinition;
+  static ModelDefinition<$Setting> get definition => _$SettingDefinition;
 
-  static ModelCodec<Setting> get codec => definition.codec;
+  static ModelCodec<$Setting> get codec => definition.codec;
 
   static Setting fromMap(
     Map<String, Object?> data, {
@@ -122,7 +125,7 @@ class SettingModelFactory {
   static Map<String, Object?> toMap(
     Setting model, {
     ValueCodecRegistry? registry,
-  }) => definition.toMap(model, registry: registry);
+  }) => definition.toMap(model.toTracked(), registry: registry);
 
   static void registerWith(ModelRegistry registry) =>
       registry.register(definition);
@@ -138,11 +141,10 @@ class SettingModelFactory {
   );
 }
 
-class _$SettingModelCodec extends ModelCodec<Setting> {
-  const _$SettingModelCodec();
-
+class _$SettingCodec extends ModelCodec<$Setting> {
+  const _$SettingCodec();
   @override
-  Map<String, Object?> encode(Setting model, ValueCodecRegistry registry) {
+  Map<String, Object?> encode($Setting model, ValueCodecRegistry registry) {
     return <String, Object?>{
       'id': registry.encodeField(_$SettingIdField, model.id),
       'payload': registry.encodeField(_$SettingPayloadField, model.payload),
@@ -150,7 +152,7 @@ class _$SettingModelCodec extends ModelCodec<Setting> {
   }
 
   @override
-  Setting decode(Map<String, Object?> data, ValueCodecRegistry registry) {
+  $Setting decode(Map<String, Object?> data, ValueCodecRegistry registry) {
     final int settingIdValue =
         registry.decodeField<int>(_$SettingIdField, data['id']) ??
         (throw StateError('Field id on Setting cannot be null.'));
@@ -160,10 +162,7 @@ class _$SettingModelCodec extends ModelCodec<Setting> {
           data['payload'],
         ) ??
         (throw StateError('Field payload on Setting cannot be null.'));
-    final model = _$SettingModel(
-      id: settingIdValue,
-      payload: settingPayloadValue,
-    );
+    final model = $Setting(id: settingIdValue, payload: settingPayloadValue);
     model._attachOrmRuntimeMetadata({
       'id': settingIdValue,
       'payload': settingPayloadValue,
@@ -172,10 +171,23 @@ class _$SettingModelCodec extends ModelCodec<Setting> {
   }
 }
 
-class _$SettingModel extends Setting {
-  _$SettingModel({required int id, required Map<String, dynamic> payload})
+/// Generated tracked model class for [Setting].
+///
+/// This class extends the user-defined [Setting] model and adds
+/// attribute tracking, change detection, and relationship management.
+/// Instances of this class are returned by queries and repositories.
+///
+/// **Do not instantiate this class directly.** Use queries, repositories,
+/// or model factories to create tracked model instances.
+class $Setting extends Setting with ModelAttributes, ModelRelations {
+  $Setting({required int id, required Map<String, dynamic> payload})
     : super.new(id: id, payload: payload) {
     _attachOrmRuntimeMetadata({'id': id, 'payload': payload});
+  }
+
+  /// Creates a tracked model instance from a user-defined model instance.
+  factory $Setting.fromModel(Setting model) {
+    return $Setting(id: model.id, payload: model.payload);
   }
 
   @override
@@ -191,6 +203,20 @@ class _$SettingModel extends Setting {
 
   void _attachOrmRuntimeMetadata(Map<String, Object?> values) {
     replaceAttributes(values);
-    attachModelDefinition(_$SettingModelDefinition);
+    attachModelDefinition(_$SettingDefinition);
+  }
+}
+
+extension SettingOrmExtension on Setting {
+  /// The Type of the generated ORM-managed model class.
+  /// Use this when you need to specify the tracked model type explicitly,
+  /// for example in generic type parameters.
+  static Type get trackedType => $Setting;
+
+  /// Converts this immutable model to a tracked ORM-managed model.
+  /// The tracked model supports attribute tracking, change detection,
+  /// and persistence operations like save() and touch().
+  $Setting toTracked() {
+    return $Setting.fromModel(this);
   }
 }

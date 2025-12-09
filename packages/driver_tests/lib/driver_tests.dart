@@ -1,5 +1,5 @@
 export 'package:driver_tests/orm_registry.g.dart'
-    show generatedOrmModelDefinitions;
+    show generatedOrmModelDefinitions, buildOrmRegistry;
 
 export 'models.dart';
 export 'src/config.dart';

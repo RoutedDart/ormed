@@ -9,31 +9,36 @@ Future<void> main() async {
   late DataSource dataSource;
   late MySqlDriverAdapter driverAdapter;
 
+  registerDriverTestFactories();
+  
+  // Build and register models with type aliases
+  final registry = buildOrmRegistry();
+
   // Configure the MySQL driver
   final url =
       Platform.environment['MYSQL_URL'] ??
       'mysql://root:secret@localhost:6605/orm_test';
 
-  // Create custom codecs map and register in driver's codec registry
-  // The driver will augment this with MySQL-specific codecs (e.g., MySqlBoolCodec)
-  final codecRegistry = ValueCodecRegistry.standard();
-  codecRegistry.registerCodec(
+  // Register MySQL codecs
+  MySqlDriverAdapter.registerCodecs();
+
+  // Register custom test codecs
+  ValueCodecRegistry.instance.registerCodec(
     key: 'PostgresPayloadCodec',
     codec: const PostgresPayloadCodec(),
   );
-  codecRegistry.registerCodec(
+  ValueCodecRegistry.instance.registerCodec(
     key: 'SqlitePayloadCodec',
     codec: const SqlitePayloadCodec(),
   );
-  codecRegistry.registerCodec(
+  ValueCodecRegistry.instance.registerCodec(
     key: 'MariaDbPayloadCodec',
     codec: const MariaDbPayloadCodec(),
   );
-  codecRegistry.registerCodec(key: 'JsonMapCodec', codec: const JsonMapCodec());
+  ValueCodecRegistry.instance.registerCodec(key: 'JsonMapCodec', codec: const JsonMapCodec());
 
   driverAdapter = MySqlDriverAdapter.custom(
     config: DatabaseConfig(driver: 'mysql', options: {'url': url, 'ssl': true}),
-    codecRegistry: codecRegistry,
   );
 
   // Create the DataSource - pass codecs again so DataSource has access to them
@@ -51,10 +56,13 @@ Future<void> main() async {
 
   dataSource = DataSource(
     DataSourceOptions(
+      name: 'default',
       driver: driverAdapter,
-      entities: generatedOrmModelDefinitions,
+      entities: registry.allDefinitions,
+      registry: registry,
       codecs: customCodecs,
       logging: true,
+      enableNamedTimezones: true,
     ),
   );
   await dataSource.init();
@@ -82,7 +90,6 @@ Future<void> main() async {
     }
   });
 
-  registerDriverTestFactories();
   await resetDriverTestSchema(driverAdapter, schema: null);
 
   tearDownAll(() async {

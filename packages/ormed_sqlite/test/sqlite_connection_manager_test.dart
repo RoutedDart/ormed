@@ -27,13 +27,13 @@ void main() {
       await manager.use('sqlite.testing', (connection) async {
         final adapter = connection.driver as SqliteDriverAdapter;
         await adapter.executeRaw(
-          'CREATE TABLE authors (id INTEGER PRIMARY KEY, name TEXT, active INTEGER)',
+          'CREATE TABLE authors (id INTEGER PRIMARY KEY, name TEXT, active INTEGER, created_at TEXT, updated_at TEXT)',
         );
         await adapter.executeRaw(
-          "INSERT INTO authors (id, name, active) VALUES (1, 'Alice', 1)",
+          "INSERT INTO authors (id, name, active, created_at, updated_at) VALUES (1, 'Alice', 1, NULL, NULL)",
         );
 
-        final authors = await connection.query<Author>().get();
+        final authors = await connection.query<$Author>().get();
         expect(authors.map((a) => a.name), ['Alice']);
       });
       await handle.dispose();

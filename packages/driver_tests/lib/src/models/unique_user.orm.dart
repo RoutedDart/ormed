@@ -43,7 +43,7 @@ const FieldDefinition _$UniqueUserActiveField = FieldDefinition(
   autoIncrement: false,
 );
 
-final ModelDefinition<UniqueUser> _$UniqueUserModelDefinition = ModelDefinition(
+final ModelDefinition<$UniqueUser> _$UniqueUserDefinition = ModelDefinition(
   modelName: 'UniqueUser',
   tableName: 'unique_users',
   fields: const [
@@ -62,74 +62,75 @@ final ModelDefinition<UniqueUser> _$UniqueUserModelDefinition = ModelDefinition(
     softDeletes: false,
     softDeleteColumn: 'deleted_at',
   ),
-  codec: _$UniqueUserModelCodec(),
+  codec: _$UniqueUserCodec(),
 );
 
 // ignore: unused_element
 final uniqueuserModelDefinitionRegistration =
-    ModelFactoryRegistry.register<UniqueUser>(_$UniqueUserModelDefinition);
+    ModelFactoryRegistry.register<$UniqueUser>(_$UniqueUserDefinition);
 
 extension UniqueUserOrmDefinition on UniqueUser {
-  static ModelDefinition<UniqueUser> get definition =>
-      _$UniqueUserModelDefinition;
+  static ModelDefinition<$UniqueUser> get definition => _$UniqueUserDefinition;
 }
 
 class UniqueUsers {
   const UniqueUsers._();
 
-  static Query<UniqueUser> query([String? connection]) =>
-      Model.query<UniqueUser>(connection: connection);
+  static Query<$UniqueUser> query([String? connection]) =>
+      Model.query<$UniqueUser>(connection: connection);
 
-  static Future<UniqueUser?> find(Object id, {String? connection}) =>
-      Model.find<UniqueUser>(id, connection: connection);
+  static Future<$UniqueUser?> find(Object id, {String? connection}) =>
+      Model.find<$UniqueUser>(id, connection: connection);
 
-  static Future<UniqueUser> findOrFail(Object id, {String? connection}) =>
-      Model.findOrFail<UniqueUser>(id, connection: connection);
+  static Future<$UniqueUser> findOrFail(Object id, {String? connection}) =>
+      Model.findOrFail<$UniqueUser>(id, connection: connection);
 
-  static Future<List<UniqueUser>> all({String? connection}) =>
-      Model.all<UniqueUser>(connection: connection);
+  static Future<List<$UniqueUser>> all({String? connection}) =>
+      Model.all<$UniqueUser>(connection: connection);
 
   static Future<int> count({String? connection}) =>
-      Model.count<UniqueUser>(connection: connection);
+      Model.count<$UniqueUser>(connection: connection);
 
-  static Future<bool> exists({String? connection}) =>
-      Model.exists<UniqueUser>(connection: connection);
+  static Future<bool> anyExist({String? connection}) =>
+      Model.anyExist<$UniqueUser>(connection: connection);
 
-  static Query<UniqueUser> where(
+  static Query<$UniqueUser> where(
     String column,
     String operator,
     dynamic value, {
     String? connection,
   }) =>
-      Model.where<UniqueUser>(column, operator, value, connection: connection);
+      Model.where<$UniqueUser>(column, operator, value, connection: connection);
 
-  static Query<UniqueUser> whereIn(
+  static Query<$UniqueUser> whereIn(
     String column,
     List<dynamic> values, {
     String? connection,
-  }) => Model.whereIn<UniqueUser>(column, values, connection: connection);
+  }) => Model.whereIn<$UniqueUser>(column, values, connection: connection);
 
-  static Query<UniqueUser> orderBy(
+  static Query<$UniqueUser> orderBy(
     String column, {
     String direction = "asc",
     String? connection,
-  }) => Model.orderBy<UniqueUser>(
+  }) => Model.orderBy<$UniqueUser>(
     column,
     direction: direction,
     connection: connection,
   );
 
-  static Query<UniqueUser> limit(int count, {String? connection}) =>
-      Model.limit<UniqueUser>(count, connection: connection);
+  static Query<$UniqueUser> limit(int count, {String? connection}) =>
+      Model.limit<$UniqueUser>(count, connection: connection);
+
+  static Repository<$UniqueUser> repo([String? connection]) =>
+      Model.repository<$UniqueUser>(connection: connection);
 }
 
 class UniqueUserModelFactory {
   const UniqueUserModelFactory._();
 
-  static ModelDefinition<UniqueUser> get definition =>
-      _$UniqueUserModelDefinition;
+  static ModelDefinition<$UniqueUser> get definition => _$UniqueUserDefinition;
 
-  static ModelCodec<UniqueUser> get codec => definition.codec;
+  static ModelCodec<$UniqueUser> get codec => definition.codec;
 
   static UniqueUser fromMap(
     Map<String, Object?> data, {
@@ -139,7 +140,7 @@ class UniqueUserModelFactory {
   static Map<String, Object?> toMap(
     UniqueUser model, {
     ValueCodecRegistry? registry,
-  }) => definition.toMap(model, registry: registry);
+  }) => definition.toMap(model.toTracked(), registry: registry);
 
   static void registerWith(ModelRegistry registry) =>
       registry.register(definition);
@@ -159,11 +160,10 @@ class UniqueUserModelFactory {
   );
 }
 
-class _$UniqueUserModelCodec extends ModelCodec<UniqueUser> {
-  const _$UniqueUserModelCodec();
-
+class _$UniqueUserCodec extends ModelCodec<$UniqueUser> {
+  const _$UniqueUserCodec();
   @override
-  Map<String, Object?> encode(UniqueUser model, ValueCodecRegistry registry) {
+  Map<String, Object?> encode($UniqueUser model, ValueCodecRegistry registry) {
     return <String, Object?>{
       'id': registry.encodeField(_$UniqueUserIdField, model.id),
       'email': registry.encodeField(_$UniqueUserEmailField, model.email),
@@ -172,7 +172,7 @@ class _$UniqueUserModelCodec extends ModelCodec<UniqueUser> {
   }
 
   @override
-  UniqueUser decode(Map<String, Object?> data, ValueCodecRegistry registry) {
+  $UniqueUser decode(Map<String, Object?> data, ValueCodecRegistry registry) {
     final int uniqueUserIdValue =
         registry.decodeField<int>(_$UniqueUserIdField, data['id']) ??
         (throw StateError('Field id on UniqueUser cannot be null.'));
@@ -182,7 +182,7 @@ class _$UniqueUserModelCodec extends ModelCodec<UniqueUser> {
     final bool uniqueUserActiveValue =
         registry.decodeField<bool>(_$UniqueUserActiveField, data['active']) ??
         (throw StateError('Field active on UniqueUser cannot be null.'));
-    final model = _$UniqueUserModel(
+    final model = $UniqueUser(
       id: uniqueUserIdValue,
       email: uniqueUserEmailValue,
       active: uniqueUserActiveValue,
@@ -196,13 +196,23 @@ class _$UniqueUserModelCodec extends ModelCodec<UniqueUser> {
   }
 }
 
-class _$UniqueUserModel extends UniqueUser {
-  _$UniqueUserModel({
-    required int id,
-    required String email,
-    required bool active,
-  }) : super.new(id: id, email: email, active: active) {
+/// Generated tracked model class for [UniqueUser].
+///
+/// This class extends the user-defined [UniqueUser] model and adds
+/// attribute tracking, change detection, and relationship management.
+/// Instances of this class are returned by queries and repositories.
+///
+/// **Do not instantiate this class directly.** Use queries, repositories,
+/// or model factories to create tracked model instances.
+class $UniqueUser extends UniqueUser with ModelAttributes, ModelRelations {
+  $UniqueUser({required int id, required String email, required bool active})
+    : super.new(id: id, email: email, active: active) {
     _attachOrmRuntimeMetadata({'id': id, 'email': email, 'active': active});
+  }
+
+  /// Creates a tracked model instance from a user-defined model instance.
+  factory $UniqueUser.fromModel(UniqueUser model) {
+    return $UniqueUser(id: model.id, email: model.email, active: model.active);
   }
 
   @override
@@ -222,6 +232,20 @@ class _$UniqueUserModel extends UniqueUser {
 
   void _attachOrmRuntimeMetadata(Map<String, Object?> values) {
     replaceAttributes(values);
-    attachModelDefinition(_$UniqueUserModelDefinition);
+    attachModelDefinition(_$UniqueUserDefinition);
+  }
+}
+
+extension UniqueUserOrmExtension on UniqueUser {
+  /// The Type of the generated ORM-managed model class.
+  /// Use this when you need to specify the tracked model type explicitly,
+  /// for example in generic type parameters.
+  static Type get trackedType => $UniqueUser;
+
+  /// Converts this immutable model to a tracked ORM-managed model.
+  /// The tracked model supports attribute tracking, change detection,
+  /// and persistence operations like save() and touch().
+  $UniqueUser toTracked() {
+    return $UniqueUser.fromModel(this);
   }
 }

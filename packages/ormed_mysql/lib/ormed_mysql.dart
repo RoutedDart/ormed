@@ -13,6 +13,7 @@ export 'src/mysql_codecs.dart';
 export 'src/mysql_connector.dart';
 export 'src/mysql_grammar.dart';
 export 'src/mysql_schema_dialect.dart';
+export 'src/mysql_type_mapper.dart';
 
 OrmConnectionHandle registerMySqlOrmConnection({
   required String name,
@@ -21,8 +22,10 @@ OrmConnectionHandle registerMySqlOrmConnection({
   ConnectionConfig? connection,
   ConnectionManager? manager,
   bool singleton = true,
-  ValueCodecRegistry? codecRegistry,
 }) {
+  // Ensure MySQL codecs are registered
+  MySqlDriverAdapter.registerCodecs();
+  
   final factory = OrmConnectionFactory(manager: manager);
   final connectionConfig = connection ?? ConnectionConfig(name: name);
   return factory.register(
@@ -32,12 +35,10 @@ OrmConnectionHandle registerMySqlOrmConnection({
     builder: (_) {
       final adapter = MySqlDriverAdapter.custom(
         config: database,
-        codecRegistry: codecRegistry,
       );
       final context = QueryContext(
         registry: registry,
         driver: adapter,
-        codecRegistry: adapter.codecs,
       );
       return OrmConnection(
         config: connectionConfig,

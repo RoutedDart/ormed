@@ -43,8 +43,8 @@ const FieldDefinition _$NamedConstructorModelValueField = FieldDefinition(
   autoIncrement: false,
 );
 
-final ModelDefinition<NamedConstructorModel>
-_$NamedConstructorModelModelDefinition = ModelDefinition(
+final ModelDefinition<$NamedConstructorModel>
+_$NamedConstructorModelDefinition = ModelDefinition(
   modelName: 'NamedConstructorModel',
   tableName: 'named_constructor_models',
   fields: const [
@@ -63,80 +63,85 @@ _$NamedConstructorModelModelDefinition = ModelDefinition(
     softDeletes: false,
     softDeleteColumn: 'deleted_at',
   ),
-  codec: _$NamedConstructorModelModelCodec(),
+  codec: _$NamedConstructorModelCodec(),
 );
 
 extension NamedConstructorModelOrmDefinition on NamedConstructorModel {
-  static ModelDefinition<NamedConstructorModel> get definition =>
-      _$NamedConstructorModelModelDefinition;
+  static ModelDefinition<$NamedConstructorModel> get definition =>
+      _$NamedConstructorModelDefinition;
 }
 
 class NamedConstructorModels {
   const NamedConstructorModels._();
 
-  static Query<NamedConstructorModel> query([String? connection]) =>
-      Model.query<NamedConstructorModel>(connection: connection);
+  static Query<$NamedConstructorModel> query([String? connection]) =>
+      Model.query<$NamedConstructorModel>(connection: connection);
 
-  static Future<NamedConstructorModel?> find(Object id, {String? connection}) =>
-      Model.find<NamedConstructorModel>(id, connection: connection);
-
-  static Future<NamedConstructorModel> findOrFail(
+  static Future<$NamedConstructorModel?> find(
     Object id, {
     String? connection,
-  }) => Model.findOrFail<NamedConstructorModel>(id, connection: connection);
+  }) => Model.find<$NamedConstructorModel>(id, connection: connection);
 
-  static Future<List<NamedConstructorModel>> all({String? connection}) =>
-      Model.all<NamedConstructorModel>(connection: connection);
+  static Future<$NamedConstructorModel> findOrFail(
+    Object id, {
+    String? connection,
+  }) => Model.findOrFail<$NamedConstructorModel>(id, connection: connection);
+
+  static Future<List<$NamedConstructorModel>> all({String? connection}) =>
+      Model.all<$NamedConstructorModel>(connection: connection);
 
   static Future<int> count({String? connection}) =>
-      Model.count<NamedConstructorModel>(connection: connection);
+      Model.count<$NamedConstructorModel>(connection: connection);
 
-  static Future<bool> exists({String? connection}) =>
-      Model.exists<NamedConstructorModel>(connection: connection);
+  static Future<bool> anyExist({String? connection}) =>
+      Model.anyExist<$NamedConstructorModel>(connection: connection);
 
-  static Query<NamedConstructorModel> where(
+  static Query<$NamedConstructorModel> where(
     String column,
     String operator,
     dynamic value, {
     String? connection,
-  }) => Model.where<NamedConstructorModel>(
+  }) => Model.where<$NamedConstructorModel>(
     column,
     operator,
     value,
     connection: connection,
   );
 
-  static Query<NamedConstructorModel> whereIn(
+  static Query<$NamedConstructorModel> whereIn(
     String column,
     List<dynamic> values, {
     String? connection,
-  }) => Model.whereIn<NamedConstructorModel>(
+  }) => Model.whereIn<$NamedConstructorModel>(
     column,
     values,
     connection: connection,
   );
 
-  static Query<NamedConstructorModel> orderBy(
+  static Query<$NamedConstructorModel> orderBy(
     String column, {
     String direction = "asc",
     String? connection,
-  }) => Model.orderBy<NamedConstructorModel>(
+  }) => Model.orderBy<$NamedConstructorModel>(
     column,
     direction: direction,
     connection: connection,
   );
 
-  static Query<NamedConstructorModel> limit(int count, {String? connection}) =>
-      Model.limit<NamedConstructorModel>(count, connection: connection);
+  static Query<$NamedConstructorModel> limit(int count, {String? connection}) =>
+      Model.limit<$NamedConstructorModel>(count, connection: connection);
+
+  static Repository<$NamedConstructorModel> repo([String? connection]) =>
+      Model.repository<$NamedConstructorModel>(connection: connection);
 }
 
-class NamedConstructorModelModelFactory {
-  const NamedConstructorModelModelFactory._();
+class NamedConstructorModelFactory {
+  const NamedConstructorModelFactory._();
 
-  static ModelDefinition<NamedConstructorModel> get definition =>
-      _$NamedConstructorModelModelDefinition;
+  static ModelDefinition<$NamedConstructorModel> get definition =>
+      _$NamedConstructorModelDefinition;
 
-  static ModelCodec<NamedConstructorModel> get codec => definition.codec;
+  static ModelCodec<$NamedConstructorModel> get codec => definition.codec;
 
   static NamedConstructorModel fromMap(
     Map<String, Object?> data, {
@@ -146,7 +151,7 @@ class NamedConstructorModelModelFactory {
   static Map<String, Object?> toMap(
     NamedConstructorModel model, {
     ValueCodecRegistry? registry,
-  }) => definition.toMap(model, registry: registry);
+  }) => definition.toMap(model.toTracked(), registry: registry);
 
   static void registerWith(ModelRegistry registry) =>
       registry.register(definition);
@@ -166,13 +171,11 @@ class NamedConstructorModelModelFactory {
   );
 }
 
-class _$NamedConstructorModelModelCodec
-    extends ModelCodec<NamedConstructorModel> {
-  const _$NamedConstructorModelModelCodec();
-
+class _$NamedConstructorModelCodec extends ModelCodec<$NamedConstructorModel> {
+  const _$NamedConstructorModelCodec();
   @override
   Map<String, Object?> encode(
-    NamedConstructorModel model,
+    $NamedConstructorModel model,
     ValueCodecRegistry registry,
   ) {
     return <String, Object?>{
@@ -189,7 +192,7 @@ class _$NamedConstructorModelModelCodec
   }
 
   @override
-  NamedConstructorModel decode(
+  $NamedConstructorModel decode(
     Map<String, Object?> data,
     ValueCodecRegistry registry,
   ) {
@@ -213,7 +216,7 @@ class _$NamedConstructorModelModelCodec
         (throw StateError(
           'Field value on NamedConstructorModel cannot be null.',
         ));
-    final model = _$NamedConstructorModelModel(
+    final model = $NamedConstructorModel(
       id: namedConstructorModelIdValue,
       name: namedConstructorModelNameValue,
       value: namedConstructorModelValueValue,
@@ -227,13 +230,31 @@ class _$NamedConstructorModelModelCodec
   }
 }
 
-class _$NamedConstructorModelModel extends NamedConstructorModel {
-  _$NamedConstructorModelModel({
+/// Generated tracked model class for [NamedConstructorModel].
+///
+/// This class extends the user-defined [NamedConstructorModel] model and adds
+/// attribute tracking, change detection, and relationship management.
+/// Instances of this class are returned by queries and repositories.
+///
+/// **Do not instantiate this class directly.** Use queries, repositories,
+/// or model factories to create tracked model instances.
+class $NamedConstructorModel extends NamedConstructorModel
+    with ModelAttributes, ModelRelations {
+  $NamedConstructorModel({
     required int? id,
     required String name,
     required int value,
   }) : super.fromDatabase(id: id, name: name, value: value) {
     _attachOrmRuntimeMetadata({'id': id, 'name': name, 'value': value});
+  }
+
+  /// Creates a tracked model instance from a user-defined model instance.
+  factory $NamedConstructorModel.fromModel(NamedConstructorModel model) {
+    return $NamedConstructorModel(
+      id: model.id,
+      name: model.name,
+      value: model.value,
+    );
   }
 
   @override
@@ -253,6 +274,20 @@ class _$NamedConstructorModelModel extends NamedConstructorModel {
 
   void _attachOrmRuntimeMetadata(Map<String, Object?> values) {
     replaceAttributes(values);
-    attachModelDefinition(_$NamedConstructorModelModelDefinition);
+    attachModelDefinition(_$NamedConstructorModelDefinition);
+  }
+}
+
+extension NamedConstructorModelOrmExtension on NamedConstructorModel {
+  /// The Type of the generated ORM-managed model class.
+  /// Use this when you need to specify the tracked model type explicitly,
+  /// for example in generic type parameters.
+  static Type get trackedType => $NamedConstructorModel;
+
+  /// Converts this immutable model to a tracked ORM-managed model.
+  /// The tracked model supports attribute tracking, change detection,
+  /// and persistence operations like save() and touch().
+  $NamedConstructorModel toTracked() {
+    return $NamedConstructorModel.fromModel(this);
   }
 }

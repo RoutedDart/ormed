@@ -72,12 +72,13 @@ class ValueCodecRegistry {
   ValueCodecRegistry._(this._codecs, this._driverCodecs, {String? activeDriver})
     : _activeDriver = activeDriver;
 
-  factory ValueCodecRegistry({
-    Map<String, ValueCodec<dynamic>> codecs = const {},
-  }) => ValueCodecRegistry._({
-    ..._defaultCodecs,
-    ...codecs,
-  }, <String, Map<String, ValueCodec<dynamic>>>{});
+  static final ValueCodecRegistry _instance = ValueCodecRegistry._(
+    Map<String, ValueCodec<dynamic>>.from(_defaultCodecs),
+    <String, Map<String, ValueCodec<dynamic>>>{},
+  );
+
+  /// Global singleton instance of the codec registry.
+  static ValueCodecRegistry get instance => _instance;
 
   final Map<String, ValueCodec<dynamic>> _codecs;
   final Map<String, Map<String, ValueCodec<dynamic>>> _driverCodecs;
@@ -114,6 +115,7 @@ class ValueCodecRegistry {
         () => <String, ValueCodec<dynamic>>{},
       );
       overlay[key] = codec;
+
       return;
     }
     _codecs[key] = codec;
@@ -124,8 +126,31 @@ class ValueCodecRegistry {
     registerCodec(key: codecType.toString(), codec: codec);
   }
 
-  /// Returns a standard registry with built-in primitives.
-  factory ValueCodecRegistry.standard() => ValueCodecRegistry();
+  /// Register all codecs for a specific driver.
+  /// This is typically called during driver initialization.
+  void registerDriver(String driver, Map<String, ValueCodec<dynamic>> codecs) {
+    final normalized = _normalizeDriver(driver);
+    final overlay = _driverCodecs.putIfAbsent(
+      normalized,
+      () => <String, ValueCodec<dynamic>>{},
+    );
+    overlay.addAll(codecs);
+  }
+
+  /// Unregister all codecs for a specific driver.
+  /// Primarily used for testing cleanup.
+  void unregisterDriver(String driver) {
+    final normalized = _normalizeDriver(driver);
+    _driverCodecs.remove(normalized);
+  }
+
+  /// Clear all registered codecs (both global and driver-specific).
+  /// Resets to default codecs only. Primarily used for testing cleanup.
+  void clearAll() {
+    _codecs.clear();
+    _codecs.addAll(_defaultCodecs);
+    _driverCodecs.clear();
+  }
 
   Object? encodeField(FieldDefinition field, Object? value) =>
       _codecFor(field).encode(value);
@@ -207,7 +232,7 @@ String _normalizeDriver(String driver) {
 }
 
 /// Default codecs available in all registries.
-/// 
+///
 /// Basic types use IdentityCodec (no conversion).
 /// Cast keys support Laravel-style @OrmField(cast: 'json') syntax:
 /// - 'json' / 'object': Encodes Map to JSON string, decodes JSON string to Map
@@ -222,11 +247,12 @@ Map<String, ValueCodec<dynamic>> get _defaultCodecs => const {
   'num': IdentityCodec<num>(),
   'bool': IdentityCodec<bool>(),
   'DateTime': IdentityCodec<DateTime>(),
+  'datetime': IdentityCodec<DateTime>(), // Lowercase alias
   'Map<String, Object?>': IdentityCodec<Map<String, Object?>>(),
   'Map<String, dynamic>': IdentityCodec<Map<String, dynamic>>(),
   'List<Object?>': IdentityCodec<List<Object?>>(),
   'List<dynamic>': IdentityCodec<List<dynamic>>(),
-  
+
   // Common cast keys (Laravel-style)
   'json': JsonCodec(),
   'array': JsonArrayCodec(),

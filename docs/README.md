@@ -13,6 +13,8 @@ Welcome to Ormed - a powerful, flexible ORM for Dart that supports multiple data
 
 ## Advanced Topics
 
+- [Query Caching](query-caching.md) - Cache query results with TTL and events (Better than Laravel!)
+- [Model Methods](model-methods.md) - Laravel-inspired convenience methods (replicate, compare, refresh)
 - [Multi-Database Support](multi-database.md) - Multiple connections, read replicas, and multi-tenancy
 - [Data Sources](data_source.md) - Connection management and configuration
 - [Testing](testing.md) - Testing strategies, factories, and best practices
@@ -96,6 +98,46 @@ final user = await User.query()
     .withCount('posts')
     .withSum('orders', 'total')
     .find(1);
+```
+
+#### Query Caching
+
+```dart
+// Cache for 5 minutes
+final users = await User.query()
+    .where('active', true)
+    .remember(Duration(minutes: 5))
+    .get();
+
+// Cache forever
+final countries = await Country.query()
+    .rememberForever()
+    .get();
+
+// Cache events (unique to this ORM!)
+context.queryCache.listen((event) {
+  if (event is CacheHitEvent) {
+    print('Cache hit: ${event.sql}');
+  }
+});
+```
+
+#### Model Methods
+
+```dart
+// Replicate a model
+final duplicate = user.replicate();
+duplicate.setAttribute('email', 'new@example.com');
+await duplicate.save();
+
+// Compare models
+if (user1.isSameAs(user2)) {
+  print('Same database record');
+}
+
+// Refresh from database
+final fresh = await user.fresh(); // New instance
+await user.refresh(); // Reload current instance
 
 print('User has ${user.postsCount} posts');
 print('Total orders: \$${user.ordersSum}');

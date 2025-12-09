@@ -46,7 +46,28 @@ final List<ModelDefinition<dynamic>> _$ormModelDefinitions = [
 ];
 
 ModelRegistry buildOrmRegistry() => ModelRegistry()
-  ..registerAll(_$ormModelDefinitions);
+  ..registerAll(_$ormModelDefinitions)
+  ..registerTypeAlias<ActiveUser>(_$ormModelDefinitions[0])
+  ..registerTypeAlias<Article>(_$ormModelDefinitions[1])
+  ..registerTypeAlias<AttributeUser>(_$ormModelDefinitions[2])
+  ..registerTypeAlias<Author>(_$ormModelDefinitions[3])
+  ..registerTypeAlias<Comment>(_$ormModelDefinitions[4])
+  ..registerTypeAlias<CustomSoftDelete>(_$ormModelDefinitions[5])
+  ..registerTypeAlias<DerivedForFactory>(_$ormModelDefinitions[6])
+  ..registerTypeAlias<DriverOverrideEntry>(_$ormModelDefinitions[7])
+  ..registerTypeAlias<DriverOverrideModel>(_$ormModelDefinitions[8])
+  ..registerTypeAlias<Image>(_$ormModelDefinitions[9])
+  ..registerTypeAlias<MutationTarget>(_$ormModelDefinitions[10])
+  ..registerTypeAlias<NamedConstructorModel>(_$ormModelDefinitions[11])
+  ..registerTypeAlias<Photo>(_$ormModelDefinitions[12])
+  ..registerTypeAlias<Post>(_$ormModelDefinitions[13])
+  ..registerTypeAlias<PostTag>(_$ormModelDefinitions[14])
+  ..registerTypeAlias<SerialTest>(_$ormModelDefinitions[15])
+  ..registerTypeAlias<Setting>(_$ormModelDefinitions[16])
+  ..registerTypeAlias<Tag>(_$ormModelDefinitions[17])
+  ..registerTypeAlias<UniqueUser>(_$ormModelDefinitions[18])
+  ..registerTypeAlias<User>(_$ormModelDefinitions[19])
+  ;
 
 List<ModelDefinition<dynamic>> get generatedOrmModelDefinitions =>
     List.unmodifiable(_$ormModelDefinitions);
@@ -54,6 +75,26 @@ List<ModelDefinition<dynamic>> get generatedOrmModelDefinitions =>
 extension GeneratedOrmModels on ModelRegistry {
   ModelRegistry registerGeneratedModels() {
     registerAll(_$ormModelDefinitions);
+    registerTypeAlias<ActiveUser>(_$ormModelDefinitions[0]);
+    registerTypeAlias<Article>(_$ormModelDefinitions[1]);
+    registerTypeAlias<AttributeUser>(_$ormModelDefinitions[2]);
+    registerTypeAlias<Author>(_$ormModelDefinitions[3]);
+    registerTypeAlias<Comment>(_$ormModelDefinitions[4]);
+    registerTypeAlias<CustomSoftDelete>(_$ormModelDefinitions[5]);
+    registerTypeAlias<DerivedForFactory>(_$ormModelDefinitions[6]);
+    registerTypeAlias<DriverOverrideEntry>(_$ormModelDefinitions[7]);
+    registerTypeAlias<DriverOverrideModel>(_$ormModelDefinitions[8]);
+    registerTypeAlias<Image>(_$ormModelDefinitions[9]);
+    registerTypeAlias<MutationTarget>(_$ormModelDefinitions[10]);
+    registerTypeAlias<NamedConstructorModel>(_$ormModelDefinitions[11]);
+    registerTypeAlias<Photo>(_$ormModelDefinitions[12]);
+    registerTypeAlias<Post>(_$ormModelDefinitions[13]);
+    registerTypeAlias<PostTag>(_$ormModelDefinitions[14]);
+    registerTypeAlias<SerialTest>(_$ormModelDefinitions[15]);
+    registerTypeAlias<Setting>(_$ormModelDefinitions[16]);
+    registerTypeAlias<Tag>(_$ormModelDefinitions[17]);
+    registerTypeAlias<UniqueUser>(_$ormModelDefinitions[18]);
+    registerTypeAlias<User>(_$ormModelDefinitions[19]);
     return this;
   }
 }

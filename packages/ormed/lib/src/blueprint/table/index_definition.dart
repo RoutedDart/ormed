@@ -55,4 +55,23 @@ class IndexDefinition {
             ) ??
             const {},
       );
+
+  /// Creates a copy with additional driver-specific options.
+  IndexDefinition withDriverOptions(
+    String driverName,
+    Map<String, Object?> options,
+  ) {
+    final newDriverOptions = Map<String, Map<String, Object?>>.from(driverOptions);
+    newDriverOptions[driverName] = {
+      ...?newDriverOptions[driverName],
+      ...options,
+    };
+    return IndexDefinition(
+      name: name,
+      type: type,
+      columns: columns,
+      raw: raw,
+      driverOptions: newDriverOptions,
+    );
+  }
 }

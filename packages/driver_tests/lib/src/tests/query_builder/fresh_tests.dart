@@ -275,12 +275,25 @@ void runFreshTests(DataSource dataSource) {
       );
 
       test('fresh() throws for model without primary key value', () async {
-        // Create an author instance without saving (no id from database)
-        final unsavedAuthor = const Author(id: 999999, name: 'Unsaved');
+        // Insert an author with a known ID
+        final author = const Author(id: 999999, name: 'Test');
+        await dataSource.repo<Author>().insert(author);
 
-        // This should throw because the model doesn't exist in database
+        // Fetch to get tracked model
+        final tracked = await dataSource.context
+            .query<Author>()
+            .where('id', 999999)
+            .first();
+
+        // Now delete from database to simulate non-existent record
+        await dataSource.context
+            .query<Author>()
+            .where('id', 999999)
+            .delete();
+
+        // This should throw because the model no longer exists in database
         expect(
-          () => unsavedAuthor.fresh(),
+          () => tracked!.fresh(),
           throwsA(isA<ModelNotFoundException>()),
         );
       });

@@ -31,7 +31,7 @@ const FieldDefinition _$PostTagTagIdField = FieldDefinition(
   autoIncrement: false,
 );
 
-final ModelDefinition<PostTag> _$PostTagModelDefinition = ModelDefinition(
+final ModelDefinition<$PostTag> _$PostTagDefinition = ModelDefinition(
   modelName: 'PostTag',
   tableName: 'post_tags',
   fields: const [_$PostTagPostIdField, _$PostTagTagIdField],
@@ -46,71 +46,74 @@ final ModelDefinition<PostTag> _$PostTagModelDefinition = ModelDefinition(
     softDeletes: false,
     softDeleteColumn: 'deleted_at',
   ),
-  codec: _$PostTagModelCodec(),
+  codec: _$PostTagCodec(),
 );
 
 // ignore: unused_element
 final posttagModelDefinitionRegistration =
-    ModelFactoryRegistry.register<PostTag>(_$PostTagModelDefinition);
+    ModelFactoryRegistry.register<$PostTag>(_$PostTagDefinition);
 
 extension PostTagOrmDefinition on PostTag {
-  static ModelDefinition<PostTag> get definition => _$PostTagModelDefinition;
+  static ModelDefinition<$PostTag> get definition => _$PostTagDefinition;
 }
 
 class PostTags {
   const PostTags._();
 
-  static Query<PostTag> query([String? connection]) =>
-      Model.query<PostTag>(connection: connection);
+  static Query<$PostTag> query([String? connection]) =>
+      Model.query<$PostTag>(connection: connection);
 
-  static Future<PostTag?> find(Object id, {String? connection}) =>
-      Model.find<PostTag>(id, connection: connection);
+  static Future<$PostTag?> find(Object id, {String? connection}) =>
+      Model.find<$PostTag>(id, connection: connection);
 
-  static Future<PostTag> findOrFail(Object id, {String? connection}) =>
-      Model.findOrFail<PostTag>(id, connection: connection);
+  static Future<$PostTag> findOrFail(Object id, {String? connection}) =>
+      Model.findOrFail<$PostTag>(id, connection: connection);
 
-  static Future<List<PostTag>> all({String? connection}) =>
-      Model.all<PostTag>(connection: connection);
+  static Future<List<$PostTag>> all({String? connection}) =>
+      Model.all<$PostTag>(connection: connection);
 
   static Future<int> count({String? connection}) =>
-      Model.count<PostTag>(connection: connection);
+      Model.count<$PostTag>(connection: connection);
 
-  static Future<bool> exists({String? connection}) =>
-      Model.exists<PostTag>(connection: connection);
+  static Future<bool> anyExist({String? connection}) =>
+      Model.anyExist<$PostTag>(connection: connection);
 
-  static Query<PostTag> where(
+  static Query<$PostTag> where(
     String column,
     String operator,
     dynamic value, {
     String? connection,
-  }) => Model.where<PostTag>(column, operator, value, connection: connection);
+  }) => Model.where<$PostTag>(column, operator, value, connection: connection);
 
-  static Query<PostTag> whereIn(
+  static Query<$PostTag> whereIn(
     String column,
     List<dynamic> values, {
     String? connection,
-  }) => Model.whereIn<PostTag>(column, values, connection: connection);
+  }) => Model.whereIn<$PostTag>(column, values, connection: connection);
 
-  static Query<PostTag> orderBy(
+  static Query<$PostTag> orderBy(
     String column, {
     String direction = "asc",
     String? connection,
-  }) => Model.orderBy<PostTag>(
+  }) => Model.orderBy<$PostTag>(
     column,
     direction: direction,
     connection: connection,
   );
 
-  static Query<PostTag> limit(int count, {String? connection}) =>
-      Model.limit<PostTag>(count, connection: connection);
+  static Query<$PostTag> limit(int count, {String? connection}) =>
+      Model.limit<$PostTag>(count, connection: connection);
+
+  static Repository<$PostTag> repo([String? connection]) =>
+      Model.repository<$PostTag>(connection: connection);
 }
 
 class PostTagModelFactory {
   const PostTagModelFactory._();
 
-  static ModelDefinition<PostTag> get definition => _$PostTagModelDefinition;
+  static ModelDefinition<$PostTag> get definition => _$PostTagDefinition;
 
-  static ModelCodec<PostTag> get codec => definition.codec;
+  static ModelCodec<$PostTag> get codec => definition.codec;
 
   static PostTag fromMap(
     Map<String, Object?> data, {
@@ -120,7 +123,7 @@ class PostTagModelFactory {
   static Map<String, Object?> toMap(
     PostTag model, {
     ValueCodecRegistry? registry,
-  }) => definition.toMap(model, registry: registry);
+  }) => definition.toMap(model.toTracked(), registry: registry);
 
   static void registerWith(ModelRegistry registry) =>
       registry.register(definition);
@@ -136,11 +139,10 @@ class PostTagModelFactory {
   );
 }
 
-class _$PostTagModelCodec extends ModelCodec<PostTag> {
-  const _$PostTagModelCodec();
-
+class _$PostTagCodec extends ModelCodec<$PostTag> {
+  const _$PostTagCodec();
   @override
-  Map<String, Object?> encode(PostTag model, ValueCodecRegistry registry) {
+  Map<String, Object?> encode($PostTag model, ValueCodecRegistry registry) {
     return <String, Object?>{
       'post_id': registry.encodeField(_$PostTagPostIdField, model.postId),
       'tag_id': registry.encodeField(_$PostTagTagIdField, model.tagId),
@@ -148,14 +150,14 @@ class _$PostTagModelCodec extends ModelCodec<PostTag> {
   }
 
   @override
-  PostTag decode(Map<String, Object?> data, ValueCodecRegistry registry) {
+  $PostTag decode(Map<String, Object?> data, ValueCodecRegistry registry) {
     final int postTagPostIdValue =
         registry.decodeField<int>(_$PostTagPostIdField, data['post_id']) ??
         (throw StateError('Field postId on PostTag cannot be null.'));
     final int postTagTagIdValue =
         registry.decodeField<int>(_$PostTagTagIdField, data['tag_id']) ??
         (throw StateError('Field tagId on PostTag cannot be null.'));
-    final model = _$PostTagModel(
+    final model = $PostTag(
       postId: postTagPostIdValue,
       tagId: postTagTagIdValue,
     );
@@ -167,10 +169,23 @@ class _$PostTagModelCodec extends ModelCodec<PostTag> {
   }
 }
 
-class _$PostTagModel extends PostTag {
-  _$PostTagModel({required int postId, required int tagId})
+/// Generated tracked model class for [PostTag].
+///
+/// This class extends the user-defined [PostTag] model and adds
+/// attribute tracking, change detection, and relationship management.
+/// Instances of this class are returned by queries and repositories.
+///
+/// **Do not instantiate this class directly.** Use queries, repositories,
+/// or model factories to create tracked model instances.
+class $PostTag extends PostTag with ModelAttributes, ModelRelations {
+  $PostTag({required int postId, required int tagId})
     : super.new(postId: postId, tagId: tagId) {
     _attachOrmRuntimeMetadata({'post_id': postId, 'tag_id': tagId});
+  }
+
+  /// Creates a tracked model instance from a user-defined model instance.
+  factory $PostTag.fromModel(PostTag model) {
+    return $PostTag(postId: model.postId, tagId: model.tagId);
   }
 
   @override
@@ -185,6 +200,20 @@ class _$PostTagModel extends PostTag {
 
   void _attachOrmRuntimeMetadata(Map<String, Object?> values) {
     replaceAttributes(values);
-    attachModelDefinition(_$PostTagModelDefinition);
+    attachModelDefinition(_$PostTagDefinition);
+  }
+}
+
+extension PostTagOrmExtension on PostTag {
+  /// The Type of the generated ORM-managed model class.
+  /// Use this when you need to specify the tracked model type explicitly,
+  /// for example in generic type parameters.
+  static Type get trackedType => $PostTag;
+
+  /// Converts this immutable model to a tracked ORM-managed model.
+  /// The tracked model supports attribute tracking, change detection,
+  /// and persistence operations like save() and touch().
+  $PostTag toTracked() {
+    return $PostTag.fromModel(this);
   }
 }

@@ -189,6 +189,8 @@ void runDriverRepositoryTests({required DataSource dataSource}) {
         final upserted = await userRepo.upsertMany(users, returning: true);
 
         expect(upserted.length, 2);
+        expect(upserted[0].email, 'new1@example.com');
+        expect(upserted[1].email, 'new2@example.com');
       });
 
       test('upsertMany() updates existing records', () async {
@@ -236,6 +238,161 @@ void runDriverRepositoryTests({required DataSource dataSource}) {
 
         expect(upserted.length, 1);
         expect(upserted[0].active, isTrue);
+
+        // Verify only one record with this email exists
+        final all = await dataSource
+            .query<User>()
+            .whereEquals('email', 'unique@example.com')
+            .get();
+        expect(all.length, 1);
+      });
+
+      test('upsertMany() with updateColumns restricts updates', () async {
+        await userRepo.insert(
+          const User(id: 4100, email: 'restrict@example.com', active: true),
+        );
+
+        // Upsert with selective update (only active)
+        const updated = User(
+          id: 4100,
+          email: 'newemail@example.com',
+          active: false,
+        );
+
+        final upserted = await userRepo.upsertMany(
+          [updated],
+          updateColumns: ['active'],
+          returning: true,
+        );
+
+        expect(upserted.length, 1);
+        // Email should not have changed
+        expect(upserted[0].email, 'restrict@example.com');
+        // Active should have changed
+        expect(upserted[0].active, isFalse);
+      });
+
+      test('upsertMany() handles mix of inserts and updates', () async {
+        // Insert one record
+        await userRepo.insert(
+          const User(id: 4200, email: 'existing@example.com', active: true),
+        );
+
+        const records = [
+          User(id: 4200, email: 'updated@example.com', active: false), // Update
+          User(id: 4201, email: 'new1@example.com', active: true), // Insert
+          User(id: 4202, email: 'new2@example.com', active: true), // Insert
+        ];
+
+        final upserted = await userRepo.upsertMany(records, returning: true);
+
+        expect(upserted.length, 3);
+        expect(upserted[0].email, 'updated@example.com');
+        expect(upserted[1].email, 'new1@example.com');
+        expect(upserted[2].email, 'new2@example.com');
+      });
+
+      test('upsertMany() with batch operations', () async {
+        // Create initial batch
+        final initial = List.generate(
+          10,
+          (i) => User(id: 4300 + i, email: 'batch$i@example.com', active: true),
+        );
+        await userRepo.insertMany(initial);
+
+        // Upsert batch with half updates, half inserts
+        final batch = [
+          ...List.generate(
+            5,
+            (i) => User(
+              id: 4300 + i,
+              email: 'updated$i@example.com',
+              active: false,
+            ),
+          ),
+          ...List.generate(
+            5,
+            (i) => User(id: 4310 + i, email: 'new$i@example.com', active: true),
+          ),
+        ];
+
+        final upserted = await userRepo.upsertMany(batch, returning: true);
+
+        expect(upserted.length, 10);
+        // Verify updates
+        for (var i = 0; i < 5; i++) {
+          expect(upserted[i].email, 'updated$i@example.com');
+          expect(upserted[i].active, isFalse);
+        }
+        // Verify inserts
+        for (var i = 5; i < 10; i++) {
+          expect(upserted[i].email, 'new${i - 5}@example.com');
+        }
+      });
+
+      test('upsertMany() maintains data integrity', () async {
+        const userId = 4400;
+
+        // First upsert (insert)
+        const user1 = User(
+          id: userId,
+          email: 'integrity@example.com',
+          active: true,
+        );
+        final result1 = await userRepo.upsertMany([user1], returning: true);
+        expect(result1[0].active, isTrue);
+
+        // Second upsert (update)
+        const user2 = User(
+          id: userId,
+          email: 'integrity@example.com',
+          active: false,
+        );
+        final result2 = await userRepo.upsertMany([user2], returning: true);
+        expect(result2[0].active, isFalse);
+
+        // Third upsert (another update)
+        const user3 = User(
+          id: userId,
+          email: 'integrity-updated@example.com',
+          active: true,
+        );
+        final result3 = await userRepo.upsertMany([user3], returning: true);
+        expect(result3[0].email, 'integrity-updated@example.com');
+
+        // Verify only one record exists
+        final all = await dataSource
+            .query<User>()
+            .whereEquals('id', userId)
+            .get();
+        expect(all.length, 1);
+      });
+
+      test('upsertMany() without returning parameter', () async {
+        const users = [
+          User(id: 4500, email: 'noreturn1@example.com', active: true),
+          User(id: 4501, email: 'noreturn2@example.com', active: true),
+        ];
+
+        final upserted = await userRepo.upsertMany(users, returning: false);
+
+        // Should still return models (driver may provide data)
+        expect(upserted.length, 2);
+      });
+
+      test('upsertMany() with Author model (has timestamps)', () async {
+        const author1 = Author(id: 4600, name: 'Original Author', active: true);
+        await authorRepo.insert(author1);
+
+        // Upsert should update
+        const author2 = Author(id: 4600, name: 'Updated Author', active: false);
+        final upserted = await authorRepo.upsertMany([
+          author2,
+        ], returning: true);
+
+        expect(upserted.length, 1);
+        expect(upserted[0].name, 'Updated Author');
+        expect(upserted[0].active, isFalse);
       });
     });
 
@@ -272,13 +429,19 @@ void runDriverRepositoryTests({required DataSource dataSource}) {
     });
 
     group('Preview Operations', () {
+      final supportsSqlPreviews = metadata.supportsCapability(
+        DriverCapability.sqlPreviews,
+      );
+
       test('previewInsert() returns statement', () async {
         const user = User(id: 6000, email: 'preview@example.com', active: true);
 
         final preview = userRepo.previewInsert(user);
 
         expect(preview.normalized.command, isNotEmpty);
-        expect(preview.normalized.command, contains('INSERT'));
+        if (supportsSqlPreviews) {
+          expect(preview.normalized.command, contains('INSERT'));
+        }
       });
 
       test('previewInsertMany() returns statement', () async {
@@ -290,7 +453,9 @@ void runDriverRepositoryTests({required DataSource dataSource}) {
         final preview = userRepo.previewInsertMany(users);
 
         expect(preview.normalized.command, isNotEmpty);
-        expect(preview.normalized.command, contains('INSERT'));
+        if (supportsSqlPreviews) {
+          expect(preview.normalized.command, contains('INSERT'));
+        }
       });
 
       test('previewInsertOrIgnoreMany() returns statement', () async {
@@ -307,7 +472,9 @@ void runDriverRepositoryTests({required DataSource dataSource}) {
         final preview = userRepo.previewUpdateMany([user]);
 
         expect(preview.normalized.command, isNotEmpty);
-        expect(preview.normalized.command, contains('UPDATE'));
+        if (supportsSqlPreviews) {
+          expect(preview.normalized.command, contains('UPDATE'));
+        }
       });
 
       test('previewUpsertMany() returns statement', () async {
@@ -324,14 +491,18 @@ void runDriverRepositoryTests({required DataSource dataSource}) {
         ]);
 
         expect(preview.normalized.command, isNotEmpty);
-        expect(preview.normalized.command, contains('DELETE'));
+        if (supportsSqlPreviews) {
+          expect(preview.normalized.command, contains('DELETE'));
+        }
       });
 
       test('previewDelete() returns statement', () async {
         final preview = userRepo.previewDelete({'id': 1});
 
         expect(preview.normalized.command, isNotEmpty);
-        expect(preview.normalized.command, contains('DELETE'));
+        if (supportsSqlPreviews) {
+          expect(preview.normalized.command, contains('DELETE'));
+        }
       });
 
       test('preview methods throw on empty models', () async {

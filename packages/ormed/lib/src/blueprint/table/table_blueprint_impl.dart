@@ -570,26 +570,29 @@ class TableBlueprint {
     String name, {
     ColumnMutation mutation = ColumnMutation.add,
     bool timezoneAware = false,
+    int? precision,
   }) => column(
     name,
-    ColumnType.timestamp(timezoneAware: timezoneAware),
+    ColumnType.timestamp(timezoneAware: timezoneAware, precision: precision),
     mutation: mutation,
   );
 
   ColumnBuilder dateTimeTz(
     String name, {
     ColumnMutation mutation = ColumnMutation.add,
-  }) => dateTime(name, mutation: mutation, timezoneAware: true);
+    int? precision,
+  }) => dateTime(name, mutation: mutation, timezoneAware: true, precision: precision);
 
   /// Adds a timestamp column.
   ColumnBuilder timestamp(
     String name, {
     bool timezoneAware = false,
     ColumnMutation mutation = ColumnMutation.add,
+    int? precision,
   }) {
     return column(
       name,
-      ColumnType.timestamp(timezoneAware: timezoneAware),
+      ColumnType.timestamp(timezoneAware: timezoneAware, precision: precision),
       mutation: mutation,
     );
   }
@@ -597,7 +600,8 @@ class TableBlueprint {
   ColumnBuilder timestampTz(
     String name, {
     ColumnMutation mutation = ColumnMutation.add,
-  }) => timestamp(name, mutation: mutation, timezoneAware: true);
+    int? precision,
+  }) => timestamp(name, mutation: mutation, timezoneAware: true, precision: precision);
 
   /// Adds a decimal column.
   ColumnBuilder decimal(
@@ -749,9 +753,10 @@ class TableBlueprint {
     bool useCurrent = true,
     bool timezoneAware = false,
     bool nullable = false,
+    int precision = 3,
   }) {
-    final created = timestamp('created_at', timezoneAware: timezoneAware);
-    final updated = timestamp('updated_at', timezoneAware: timezoneAware);
+    final created = timestamp('created_at', timezoneAware: timezoneAware, precision: precision);
+    final updated = timestamp('updated_at', timezoneAware: timezoneAware, precision: precision);
     if (useCurrent) {
       created.useCurrentTimestamp();
       updated.useCurrentTimestamp().useCurrentOnUpdate();
@@ -762,26 +767,28 @@ class TableBlueprint {
     }
   }
 
-  void timestampsTz({bool useCurrent = true}) {
-    timestamps(useCurrent: useCurrent, timezoneAware: true);
+  void timestampsTz({bool useCurrent = true, int precision = 3}) {
+    timestamps(useCurrent: useCurrent, timezoneAware: true, precision: precision);
   }
 
-  void nullableTimestamps({bool timezoneAware = false}) {
-    timestamps(useCurrent: false, timezoneAware: timezoneAware, nullable: true);
+  void nullableTimestamps({bool timezoneAware = false, int precision = 3}) {
+    timestamps(useCurrent: false, timezoneAware: timezoneAware, nullable: true, precision: precision);
   }
 
-  void nullableTimestampsTz() {
-    timestamps(useCurrent: false, timezoneAware: true, nullable: true);
+  void nullableTimestampsTz({int precision = 3}) {
+    timestamps(useCurrent: false, timezoneAware: true, nullable: true, precision: precision);
   }
 
-  List<ColumnBuilder> datetimes({bool timezoneAware = false}) {
+  List<ColumnBuilder> datetimes({bool timezoneAware = false, int precision = 3}) {
     final created = dateTime(
       'created_at',
       timezoneAware: timezoneAware,
+      precision: precision,
     ).nullable();
     final updated = dateTime(
       'updated_at',
       timezoneAware: timezoneAware,
+      precision: precision,
     ).nullable();
     return [created, updated];
   }
@@ -789,16 +796,17 @@ class TableBlueprint {
   void softDeletes({
     String columnName = 'deleted_at',
     bool timezoneAware = false,
+    int precision = 3,
   }) {
-    timestamp(columnName, timezoneAware: timezoneAware).nullable();
+    timestamp(columnName, timezoneAware: timezoneAware, precision: precision).nullable();
   }
 
-  void softDeletesTz({String columnName = 'deleted_at'}) {
-    softDeletes(columnName: columnName, timezoneAware: true);
+  void softDeletesTz({String columnName = 'deleted_at', int precision = 3}) {
+    softDeletes(columnName: columnName, timezoneAware: true, precision: precision);
   }
 
-  void softDeletesDatetime({String columnName = 'deleted_at'}) {
-    dateTime(columnName).nullable();
+  void softDeletesDatetime({String columnName = 'deleted_at', int precision = 3}) {
+    dateTime(columnName, precision: precision).nullable();
   }
 
   void morphs(String name, {bool nullable = false}) {
@@ -831,24 +839,32 @@ class TableBlueprint {
   }
 
   /// Adds an index across the provided columns.
-  IndexDefinition index(Iterable<String> columns, {String? name}) {
+  IndexDefinition index(
+    Iterable<String> columns, {
+    String? name,
+    Map<String, Map<String, Object?>>? driverOptions,
+  }) {
     return _addIndex(
       columns,
       IndexType.regular,
       nameSuffix: 'index',
       explicitName: name,
-      driverOptions: null,
+      driverOptions: driverOptions,
     );
   }
 
   /// Adds a unique index across the provided columns.
-  IndexDefinition unique(Iterable<String> columns, {String? name}) {
+  IndexDefinition unique(
+    Iterable<String> columns, {
+    String? name,
+    Map<String, Map<String, Object?>>? driverOptions,
+  }) {
     return _addIndex(
       columns,
       IndexType.unique,
       nameSuffix: 'unique',
       explicitName: name,
-      driverOptions: null,
+      driverOptions: driverOptions,
     );
   }
 

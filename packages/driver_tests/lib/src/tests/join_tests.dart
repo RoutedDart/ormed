@@ -41,7 +41,7 @@ void runDriverJoinTests({required DataSource dataSource}) {
       await dataSource.repo<PostTag>().insertMany(defaultPostTags.toList());
       await dataSource.repo<Image>().insertMany(defaultImages.toList());
       await dataSource.repo<Photo>().insertMany(defaultPhotos.toList());
-      await dataSource.repo<Comment>().insertMany(defaultComments.toList());
+      await dataSource.context.query<Comment>().createMany(defaultComments);
     });
 
     tearDown(() async => manager.endTest('join_tests', dataSource));

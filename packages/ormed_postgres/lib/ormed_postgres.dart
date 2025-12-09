@@ -11,6 +11,7 @@ export 'src/postgres_connector.dart';
 export 'src/postgres_codecs.dart';
 export 'src/postgres_grammar.dart';
 export 'src/postgres_schema_dialect.dart';
+export 'src/postgres_type_mapper.dart';
 
 OrmConnectionHandle registerPostgresOrmConnection({
   required String name,
@@ -19,8 +20,10 @@ OrmConnectionHandle registerPostgresOrmConnection({
   ConnectionConfig? connection,
   ConnectionManager? manager,
   bool singleton = true,
-  ValueCodecRegistry? codecRegistry,
 }) {
+  // Ensure PostgreSQL codecs are registered
+  PostgresDriverAdapter.registerCodecs();
+  
   final factory = OrmConnectionFactory(manager: manager);
   final connectionConfig = connection ?? ConnectionConfig(name: name);
   return factory.register(
@@ -30,12 +33,10 @@ OrmConnectionHandle registerPostgresOrmConnection({
     builder: (_) {
       final adapter = PostgresDriverAdapter.custom(
         config: database,
-        codecRegistry: codecRegistry,
       );
       final context = QueryContext(
         registry: registry,
         driver: adapter,
-        codecRegistry: adapter.codecs,
       );
       return OrmConnection(
         config: connectionConfig,

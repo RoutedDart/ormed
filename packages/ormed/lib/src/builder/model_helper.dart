@@ -1,7 +1,16 @@
 String modelHelperClass(String className) {
+  // Don't double "Model" suffix if class name already ends with "Model"
+  final trackedClassName = className.endsWith('Model') 
+      ? '\$$className' 
+      : '\$${className}Model';
+  final codecName = '_${trackedClassName}Codec';
+  final factoryName = className.endsWith('Model') 
+      ? '${className}Factory' 
+      : '${className}ModelFactory';
+  
   final buffer = StringBuffer();
-  buffer.writeln('class ${className}ModelFactory {');
-  buffer.writeln('  const ${className}ModelFactory._();');
+  buffer.writeln('class $factoryName {');
+  buffer.writeln('  const $factoryName._();');
   buffer.writeln();
   buffer.writeln('  static ModelDefinition<$className> get definition =>');
   buffer.writeln('      ${className}OrmDefinition.definition;');
@@ -20,7 +29,7 @@ String modelHelperClass(String className) {
   buffer.writeln('    $className model, {');
   buffer.writeln('    ValueCodecRegistry? registry,');
   buffer.writeln('  }) =>');
-  buffer.writeln('      definition.toMap(model, registry: registry);');
+  buffer.writeln('      definition.toMap(model.toTracked(), registry: registry);');
   buffer.writeln();
   buffer.writeln('  static void registerWith(ModelRegistry registry) =>');
   buffer.writeln('      registry.register(definition);');
@@ -60,7 +69,7 @@ String modelHelperClass(String className) {
     '  static Future<$className> create(Map<String, dynamic> attributes, [String? connection]) async {',
   );
   buffer.writeln(
-    '    final model = const _\$${className}ModelCodec().decode(attributes, ValueCodecRegistry.standard());',
+    '    final model = const $codecName().decode(attributes, ValueCodecRegistry.instance);',
   );
   buffer.writeln(
     '    final connName = connection ?? definition.metadata.connection;',
@@ -79,7 +88,7 @@ String modelHelperClass(String className) {
     '  static Future<List<$className>> createMany(List<Map<String, dynamic>> records, [String? connection]) async {',
   );
   buffer.writeln(
-    '    final models = records.map((r) => const _\$${className}ModelCodec().decode(r, ValueCodecRegistry.standard())).toList();',
+    '    final models = records.map((r) => const $codecName().decode(r, ValueCodecRegistry.instance)).toList();',
   );
   buffer.writeln(
     '    final connName = connection ?? definition.metadata.connection;',
@@ -95,7 +104,7 @@ String modelHelperClass(String className) {
     '  static Future<void> insert(List<Map<String, dynamic>> records, [String? connection]) async {',
   );
   buffer.writeln(
-    '    final models = records.map((r) => const _\$${className}ModelCodec().decode(r, ValueCodecRegistry.standard())).toList();',
+    '    final models = records.map((r) => const $codecName().decode(r, ValueCodecRegistry.instance)).toList();',
   );
   buffer.writeln(
     '    final connName = connection ?? definition.metadata.connection;',

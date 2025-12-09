@@ -52,7 +52,7 @@ void main() {
     expect(sql, contains('GENERATED AS (lower(code)) VIRTUAL'));
     expect(sql, contains('`owner_id` BIGINT UNSIGNED'));
     expect(sql, contains('`remember_token` VARCHAR(100)'));
-    expect(sql, contains('`deleted_at` DATETIME(6)'));
+    expect(sql, contains('`deleted_at` DATETIME(3)'));
     expect(
       sql,
       contains(

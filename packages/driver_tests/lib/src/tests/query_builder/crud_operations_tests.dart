@@ -228,62 +228,79 @@ void runCrudOperationsTests(DataSource dataSource) {
     });
 
     group('Upsert Operations', () {
-      // TODO: Implement upsert() method
       test('upsert() - inserts new records', () async {
-        // await Model.query<User>().upsert(
-        //   [
-        //     {'email': 'john@example.com', 'name': 'John Doe', 'active': true},
-        //     {'email': 'jane@example.com', 'name': 'Jane Smith', 'active': true},
-        //   ],
-        //   ['email'],
-        //   ['name'],
-        // );
-        //
-        // expect(await Model.query<User>().count(), equals(2));
-        // final john =
-        //     await Model.query<User>().where('email', 'john@example.com').first();
-        // expect(john?.name, equals('John Doe'));
-      }, skip: 'upsert not yet implemented');
+        await dataSource.query<Author>().upsertMany(
+          [
+            {'id': 5001, 'name': 'John Doe', 'active': true},
+            {'id': 5002, 'name': 'Jane Smith', 'active': true},
+          ],
+          uniqueBy: ['id'],
+        );
+
+        expect(await dataSource.query<Author>().count(), greaterThanOrEqualTo(2));
+        final john =
+            await dataSource.query<Author>().where('id', 5001).first();
+        expect(john?.name, equals('John Doe'));
+      });
 
       test('upsert() - updates existing records', () async {
-        // await Model.query<User>()
-        //     .create({'email': 'john@example.com', 'name': 'John Original', 'active': true});
-        //
-        // await Model.query<User>().upsert(
-        //   [
-        //     {'email': 'john@example.com', 'name': 'John Updated', 'active': true},
-        //   ],
-        //   ['email'],
-        //   ['name'],
-        // );
-        //
-        // expect(await Model.query<User>().count(), equals(1));
-        // final john =
-        //     await Model.query<User>().where('email', 'john@example.com').first();
-        // expect(john?.name, equals('John Updated'));
-      }, skip: 'upsert not yet implemented');
+        await dataSource.query<Author>()
+            .create({'id': 5003, 'name': 'John Original', 'active': true});
+
+        await dataSource.query<Author>().upsertMany(
+          [
+            {'id': 5003, 'name': 'John Updated', 'active': false},
+          ],
+          uniqueBy: ['id'],
+        );
+
+        final john =
+            await dataSource.query<Author>().where('id', 5003).first();
+        expect(john?.name, equals('John Updated'));
+        expect(john?.active, equals(false));
+      });
 
       test('upsert() - mixed insert and update', () async {
-        // await Model.query<User>()
-        //     .create({'email': 'john@example.com', 'name': 'John Original', 'active': true});
-        //
-        // await Model.query<User>().upsert(
-        //   [
-        //     {'email': 'john@example.com', 'name': 'John Updated', 'active': true},
-        //     {'email': 'jane@example.com', 'name': 'Jane New', 'active': true},
-        //   ],
-        //   ['email'],
-        //   ['name'],
-        // );
-        //
-        // expect(await Model.query<User>().count(), equals(2));
-        // final john =
-        //     await Model.query<User>().where('email', 'john@example.com').first();
-        // expect(john?.name, equals('John Updated'));
-        // final jane =
-        //     await Model.query<User>().where('email', 'jane@example.com').first();
-        // expect(jane?.name, equals('Jane New'));
-      }, skip: 'upsert not yet implemented');
+        await dataSource.query<Author>()
+            .create({'id': 5004, 'name': 'John Original', 'active': true});
+
+        await dataSource.query<Author>().upsertMany(
+          [
+            {'id': 5004, 'name': 'John Updated', 'active': true},
+            {'id': 5005, 'name': 'Jane New', 'active': true},
+          ],
+          uniqueBy: ['id'],
+        );
+
+        final john =
+            await dataSource.query<Author>().where('id', 5004).first();
+        expect(john?.name, equals('John Updated'));
+        final jane =
+            await dataSource.query<Author>().where('id', 5005).first();
+        expect(jane?.name, equals('Jane New'));
+      });
+
+      test('Model.upsert() - static method works', () async {
+        final author = await Model.upsert<Author>(
+          {'id': 5006, 'name': 'Static Upsert', 'active': true},
+          uniqueBy: ['id'],
+        );
+        expect(author.name, equals('Static Upsert'));
+        expect(author.id, equals(5006));
+      });
+
+      test('Model.upsertMany() - static method works', () async {
+        final authors = await Model.upsertMany<Author>(
+          [
+            {'id': 5007, 'name': 'Bulk Static 1', 'active': true},
+            {'id': 5008, 'name': 'Bulk Static 2', 'active': false},
+          ],
+          uniqueBy: ['id'],
+        );
+        expect(authors.length, equals(2));
+        expect(authors[0].name, equals('Bulk Static 1'));
+        expect(authors[1].name, equals('Bulk Static 2'));
+      });
     });
 
     group('Retrieval Operations', () {

@@ -35,13 +35,13 @@ extension CrudExtension<T> on Query<T> {
   /// ```
   Future<List<T>> createMany(List<Map<String, dynamic>> records) async {
     final models = records.map((attrs) {
-      return definition.codec.decode(attrs, context.codecRegistry);
+      final normalized = _normalizeAttributeKeys(attrs);
+      return definition.codec.decode(normalized, context.codecRegistry);
     }).toList();
 
     final repo = Repository<T>(
       definition: definition,
       driverName: context.driver.metadata.name,
-      codecs: context.codecRegistry,
       runMutation: context.runMutation,
       describeMutation: context.describeMutation,
       attachRuntimeMetadata: (model) {
@@ -54,7 +54,8 @@ extension CrudExtension<T> on Query<T> {
 
     return await repo.insertMany(
       models,
-      returning: true, // Always request returning; drivers will use fallback if needed
+      returning:
+          true, // Always request returning; drivers will use fallback if needed
     );
   }
 
@@ -360,7 +361,11 @@ extension CrudExtension<T> on Query<T> {
     if (values.isEmpty) {
       return 0;
     }
-    final payload = _normalizeUpdateValues(values);
+    
+    // Add automatic timestamp management for updated_at
+    final valuesWithTimestamp = _addUpdateTimestamp(values);
+    
+    final payload = _normalizeUpdateValues(valuesWithTimestamp);
     if (payload.isEmpty) {
       return 0;
     }
@@ -371,6 +376,39 @@ extension CrudExtension<T> on Query<T> {
     );
     final result = await context.runMutation(mutation);
     return result.affectedRows;
+  }
+  
+  /// Adds updated_at timestamp to update values if the model has a timestamp field.
+  /// Only adds if not already present in values and field exists with snake_case name.
+  /// Returns the raw value (DateTime or Carbon) based on field type - not encoded since _normalizeUpdateValues will handle encoding.
+  Map<String, Object?> _addUpdateTimestamp(Map<String, Object?> values) {
+    // Check if model has updated_at field (snake_case only)
+    try {
+      final updatedAtField = definition.fields.firstWhere(
+        (f) => f.columnName == 'updated_at',
+      );
+      
+      final columnName = updatedAtField.columnName;
+      
+      // Only set if not already provided by user
+      if (!values.containsKey(columnName)) {
+        // Use Carbon for Carbon/CarbonInterface fields, DateTime for DateTime fields
+        final now = Carbon.now();
+        final fieldType = updatedAtField.dartType;
+        
+        if (fieldType == 'Carbon' || fieldType == 'Carbon?' ||
+            fieldType == 'CarbonInterface' || fieldType == 'CarbonInterface?') {
+          return {...values, columnName: now};
+        } else {
+          // Convert to DateTime for DateTime fields
+          return {...values, columnName: now.toDateTime()};
+        }
+      }
+    } catch (_) {
+      // Field doesn't exist, return values as-is
+    }
+    
+    return values;
   }
 
   /// Increments the value of a numeric [column] by [amount].
@@ -417,6 +455,28 @@ extension CrudExtension<T> on Query<T> {
   /// print('Deleted $deletedCount inactive users.');
   /// ```
   Future<int> delete() async {
+    // If model supports soft deletes, perform soft delete instead
+    final softDeleteField = _softDeleteField;
+    if (softDeleteField != null) {
+      final keys = await _collectPrimaryKeyConditions(this);
+      if (keys.isEmpty) {
+        return 0;
+      }
+      final now = Carbon.now();
+      final rows = keys.map((key) => MutationRow(
+        values: {softDeleteField.columnName: now},
+        keys: key,
+      )).toList();
+      final mutation = MutationPlan.update(
+        definition: definition,
+        rows: rows,
+        driverName: context.driver.metadata.name,
+      );
+      final result = await context.runMutation(mutation);
+      return result.affectedRows;
+    }
+
+    // Otherwise, perform hard delete
     final pkField = definition.primaryKeyField;
     if (pkField == null) {
       throw StateError(
@@ -432,6 +492,125 @@ extension CrudExtension<T> on Query<T> {
     );
     final result = await context.runMutation(mutation);
     return result.affectedRows;
+  }
+
+  /// Upserts (insert or update) a single record.
+  ///
+  /// If a record with the same unique key exists, it will be updated.
+  /// Otherwise, a new record will be inserted.
+  ///
+  /// [attributes] contains the data to insert/update.
+  /// [uniqueBy] specifies which fields make up the unique key (defaults to primary key).
+  /// [updateColumns] specifies which columns to update on conflict (defaults to all non-unique columns).
+  ///
+  /// Returns the upserted model instance.
+  ///
+  /// Example:
+  /// ```dart
+  /// final user = await User.query().upsert(
+  ///   {'email': 'john@example.com', 'name': 'John Doe', 'age': 30},
+  ///   uniqueBy: ['email'],
+  /// );
+  /// ```
+  Future<T> upsert(
+    Map<String, dynamic> attributes, {
+    List<String>? uniqueBy,
+    List<String>? updateColumns,
+  }) async {
+    final results = await upsertMany(
+      [attributes],
+      uniqueBy: uniqueBy,
+      updateColumns: updateColumns,
+    );
+    if (results.isEmpty) {
+      throw StateError('Failed to upsert record');
+    }
+    return results.first;
+  }
+
+  /// Upserts (inserts or updates) multiple records.
+  ///
+  /// If records with the same unique keys exist, they will be updated.
+  /// Otherwise, new records will be inserted.
+  ///
+  /// [records] is a list of attribute maps to upsert.
+  /// [uniqueBy] specifies which fields make up the unique key (defaults to primary key).
+  /// [updateColumns] specifies which columns to update on conflict (defaults to all non-unique columns).
+  ///
+  /// Returns the list of upserted model instances.
+  ///
+  /// Example:
+  /// ```dart
+  /// final users = await User.query().upsertMany([
+  ///   {'email': 'john@example.com', 'name': 'John Doe'},
+  ///   {'email': 'jane@example.com', 'name': 'Jane Smith'},
+  /// ], uniqueBy: ['email']);
+  /// ```
+  Future<List<T>> upsertMany(
+    List<Map<String, dynamic>> records, {
+    List<String>? uniqueBy,
+    List<String>? updateColumns,
+  }) async {
+    if (records.isEmpty) return const [];
+
+    final models = records.map((attrs) {
+      final normalized = _normalizeAttributeKeys(attrs);
+      return definition.codec.decode(normalized, context.codecRegistry);
+    }).toList();
+
+    final repo = _buildRepository();
+
+    return await repo.upsertMany(
+      models,
+      uniqueBy: uniqueBy,
+      updateColumns: updateColumns,
+      returning: true,
+    );
+  }
+
+  /// Helper method to build a repository instance.
+  Repository<T> _buildRepository() {
+    return Repository<T>(
+      definition: definition,
+      driverName: context.driver.metadata.name,
+      runMutation: context.runMutation,
+      describeMutation: context.describeMutation,
+      attachRuntimeMetadata: (model) {
+        if (model is ModelConnection) {
+          model.attachConnectionResolver(context);
+        }
+      },
+    );
+  }
+
+  /// Normalizes attribute keys to use column names.
+  /// Accepts both Dart property names (camelCase) and database column names (snake_case).
+  Map<String, dynamic> _normalizeAttributeKeys(Map<String, dynamic> attributes) {
+    final normalized = <String, dynamic>{};
+    
+    for (final entry in attributes.entries) {
+      final key = entry.key;
+      final value = entry.value;
+      
+      // Try to find field by property name first
+      final fieldByName = definition.fieldByName(key);
+      if (fieldByName != null) {
+        normalized[fieldByName.columnName] = value;
+        continue;
+      }
+      
+      // Try to find by column name
+      final fieldByColumn = definition.fieldByColumn(key);
+      if (fieldByColumn != null) {
+        normalized[key] = value;
+        continue;
+      }
+      
+      // If no field found, keep the original key (might be a virtual field or attribute)
+      normalized[key] = value;
+    }
+    
+    return normalized;
   }
 
   /// Updates existing record or inserts if it doesn't exist.

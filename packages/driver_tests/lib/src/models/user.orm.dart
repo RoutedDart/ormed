@@ -78,6 +78,7 @@ const FieldDefinition _$UserCreatedAtField = FieldDefinition(
   isUnique: false,
   isIndexed: false,
   autoIncrement: false,
+  codecType: 'datetime',
 );
 
 const FieldDefinition _$UserProfileField = FieldDefinition(
@@ -93,7 +94,20 @@ const FieldDefinition _$UserProfileField = FieldDefinition(
   codecType: 'JsonMapCodec',
 );
 
-final ModelDefinition<User> _$UserModelDefinition = ModelDefinition(
+const FieldDefinition _$UserMetadataField = FieldDefinition(
+  name: 'metadata',
+  columnName: 'metadata',
+  dartType: 'Map<String, Object?>',
+  resolvedType: 'Map<String, Object?>?',
+  isPrimaryKey: false,
+  isNullable: true,
+  isUnique: false,
+  isIndexed: false,
+  autoIncrement: false,
+  codecType: 'JsonMapCodec',
+);
+
+final ModelDefinition<$User> _$UserDefinition = ModelDefinition(
   modelName: 'User',
   tableName: 'users',
   fields: const [
@@ -104,6 +118,7 @@ final ModelDefinition<User> _$UserModelDefinition = ModelDefinition(
     _$UserAgeField,
     _$UserCreatedAtField,
     _$UserProfileField,
+    _$UserMetadataField,
   ],
   relations: const [],
   softDeleteColumn: 'deleted_at',
@@ -116,69 +131,75 @@ final ModelDefinition<User> _$UserModelDefinition = ModelDefinition(
     softDeletes: false,
     softDeleteColumn: 'deleted_at',
   ),
-  codec: _$UserModelCodec(),
+  codec: _$UserCodec(),
 );
 
 // ignore: unused_element
-final userModelDefinitionRegistration = ModelFactoryRegistry.register<User>(
-  _$UserModelDefinition,
+final userModelDefinitionRegistration = ModelFactoryRegistry.register<$User>(
+  _$UserDefinition,
 );
 
 extension UserOrmDefinition on User {
-  static ModelDefinition<User> get definition => _$UserModelDefinition;
+  static ModelDefinition<$User> get definition => _$UserDefinition;
 }
 
 class Users {
   const Users._();
 
-  static Query<User> query([String? connection]) =>
-      Model.query<User>(connection: connection);
+  static Query<$User> query([String? connection]) =>
+      Model.query<$User>(connection: connection);
 
-  static Future<User?> find(Object id, {String? connection}) =>
-      Model.find<User>(id, connection: connection);
+  static Future<$User?> find(Object id, {String? connection}) =>
+      Model.find<$User>(id, connection: connection);
 
-  static Future<User> findOrFail(Object id, {String? connection}) =>
-      Model.findOrFail<User>(id, connection: connection);
+  static Future<$User> findOrFail(Object id, {String? connection}) =>
+      Model.findOrFail<$User>(id, connection: connection);
 
-  static Future<List<User>> all({String? connection}) =>
-      Model.all<User>(connection: connection);
+  static Future<List<$User>> all({String? connection}) =>
+      Model.all<$User>(connection: connection);
 
   static Future<int> count({String? connection}) =>
-      Model.count<User>(connection: connection);
+      Model.count<$User>(connection: connection);
 
-  static Future<bool> exists({String? connection}) =>
-      Model.exists<User>(connection: connection);
+  static Future<bool> anyExist({String? connection}) =>
+      Model.anyExist<$User>(connection: connection);
 
-  static Query<User> where(
+  static Query<$User> where(
     String column,
     String operator,
     dynamic value, {
     String? connection,
-  }) => Model.where<User>(column, operator, value, connection: connection);
+  }) => Model.where<$User>(column, operator, value, connection: connection);
 
-  static Query<User> whereIn(
+  static Query<$User> whereIn(
     String column,
     List<dynamic> values, {
     String? connection,
-  }) => Model.whereIn<User>(column, values, connection: connection);
+  }) => Model.whereIn<$User>(column, values, connection: connection);
 
-  static Query<User> orderBy(
+  static Query<$User> orderBy(
     String column, {
     String direction = "asc",
     String? connection,
-  }) =>
-      Model.orderBy<User>(column, direction: direction, connection: connection);
+  }) => Model.orderBy<$User>(
+    column,
+    direction: direction,
+    connection: connection,
+  );
 
-  static Query<User> limit(int count, {String? connection}) =>
-      Model.limit<User>(count, connection: connection);
+  static Query<$User> limit(int count, {String? connection}) =>
+      Model.limit<$User>(count, connection: connection);
+
+  static Repository<$User> repo([String? connection]) =>
+      Model.repository<$User>(connection: connection);
 }
 
 class UserModelFactory {
   const UserModelFactory._();
 
-  static ModelDefinition<User> get definition => _$UserModelDefinition;
+  static ModelDefinition<$User> get definition => _$UserDefinition;
 
-  static ModelCodec<User> get codec => definition.codec;
+  static ModelCodec<$User> get codec => definition.codec;
 
   static User fromMap(
     Map<String, Object?> data, {
@@ -188,7 +209,7 @@ class UserModelFactory {
   static Map<String, Object?> toMap(
     User model, {
     ValueCodecRegistry? registry,
-  }) => definition.toMap(model, registry: registry);
+  }) => definition.toMap(model.toTracked(), registry: registry);
 
   static void registerWith(ModelRegistry registry) =>
       registry.register(definition);
@@ -204,11 +225,10 @@ class UserModelFactory {
   );
 }
 
-class _$UserModelCodec extends ModelCodec<User> {
-  const _$UserModelCodec();
-
+class _$UserCodec extends ModelCodec<$User> {
+  const _$UserCodec();
   @override
-  Map<String, Object?> encode(User model, ValueCodecRegistry registry) {
+  Map<String, Object?> encode($User model, ValueCodecRegistry registry) {
     return <String, Object?>{
       'id': registry.encodeField(_$UserIdField, model.id),
       'email': registry.encodeField(_$UserEmailField, model.email),
@@ -217,11 +237,12 @@ class _$UserModelCodec extends ModelCodec<User> {
       'age': registry.encodeField(_$UserAgeField, model.age),
       'createdAt': registry.encodeField(_$UserCreatedAtField, model.createdAt),
       'profile': registry.encodeField(_$UserProfileField, model.profile),
+      'metadata': registry.encodeField(_$UserMetadataField, model.metadata),
     };
   }
 
   @override
-  User decode(Map<String, Object?> data, ValueCodecRegistry registry) {
+  $User decode(Map<String, Object?> data, ValueCodecRegistry registry) {
     final int userIdValue =
         registry.decodeField<int>(_$UserIdField, data['id']) ?? 0;
     final String userEmailValue =
@@ -246,13 +267,19 @@ class _$UserModelCodec extends ModelCodec<User> {
           _$UserProfileField,
           data['profile'],
         );
-    final model = _$UserModel(
+    final Map<String, Object?>? userMetadataValue = registry
+        .decodeField<Map<String, Object?>?>(
+          _$UserMetadataField,
+          data['metadata'],
+        );
+    final model = $User(
       id: userIdValue,
       email: userEmailValue,
       active: userActiveValue,
       name: userNameValue,
       age: userAgeValue,
       profile: userProfileValue,
+      metadata: userMetadataValue,
       createdAt: userCreatedAtValue,
     );
     model._attachOrmRuntimeMetadata({
@@ -263,19 +290,29 @@ class _$UserModelCodec extends ModelCodec<User> {
       'age': userAgeValue,
       'createdAt': userCreatedAtValue,
       'profile': userProfileValue,
+      'metadata': userMetadataValue,
     });
     return model;
   }
 }
 
-class _$UserModel extends User {
-  _$UserModel({
+/// Generated tracked model class for [User].
+///
+/// This class extends the user-defined [User] model and adds
+/// attribute tracking, change detection, and relationship management.
+/// Instances of this class are returned by queries and repositories.
+///
+/// **Do not instantiate this class directly.** Use queries, repositories,
+/// or model factories to create tracked model instances.
+class $User extends User with ModelAttributes, ModelRelations {
+  $User({
     required int id,
     required String email,
     required bool active,
     String? name,
     int? age,
     Map<String, Object?>? profile,
+    Map<String, Object?>? metadata,
     DateTime? createdAt,
   }) : super.new(
          id: id,
@@ -284,6 +321,7 @@ class _$UserModel extends User {
          name: name,
          age: age,
          profile: profile,
+         metadata: metadata,
          createdAt: createdAt,
        ) {
     _attachOrmRuntimeMetadata({
@@ -294,7 +332,22 @@ class _$UserModel extends User {
       'age': age,
       'createdAt': createdAt,
       'profile': profile,
+      'metadata': metadata,
     });
+  }
+
+  /// Creates a tracked model instance from a user-defined model instance.
+  factory $User.fromModel(User model) {
+    return $User(
+      id: model.id,
+      email: model.email,
+      active: model.active,
+      name: model.name,
+      age: model.age,
+      createdAt: model.createdAt,
+      profile: model.profile,
+      metadata: model.metadata,
+    );
   }
 
   @override
@@ -334,8 +387,28 @@ class _$UserModel extends User {
 
   set profile(Map<String, Object?>? value) => setAttribute('profile', value);
 
+  @override
+  Map<String, Object?>? get metadata =>
+      getAttribute<Map<String, Object?>?>('metadata') ?? super.metadata;
+
+  set metadata(Map<String, Object?>? value) => setAttribute('metadata', value);
+
   void _attachOrmRuntimeMetadata(Map<String, Object?> values) {
     replaceAttributes(values);
-    attachModelDefinition(_$UserModelDefinition);
+    attachModelDefinition(_$UserDefinition);
+  }
+}
+
+extension UserOrmExtension on User {
+  /// The Type of the generated ORM-managed model class.
+  /// Use this when you need to specify the tracked model type explicitly,
+  /// for example in generic type parameters.
+  static Type get trackedType => $User;
+
+  /// Converts this immutable model to a tracked ORM-managed model.
+  /// The tracked model supports attribute tracking, change detection,
+  /// and persistence operations like save() and touch().
+  $User toTracked() {
+    return $User.fromModel(this);
   }
 }

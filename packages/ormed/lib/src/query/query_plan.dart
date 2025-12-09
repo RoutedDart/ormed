@@ -38,6 +38,8 @@ class QueryPlan {
     List<DistinctOnClause>? distinctOn,
     List<QueryUnion>? unions,
     this.disableAutoHydration = false,
+    this.cacheTtl,
+    this.disableCache = false,
   }) : filters = List.unmodifiable(filters ?? const []),
        orders = List.unmodifiable(orders ?? const []),
        relations = List.unmodifiable(relations ?? const []),
@@ -98,6 +100,8 @@ class QueryPlan {
   final List<DistinctOnClause> distinctOn;
   final List<QueryUnion> unions;
   final bool disableAutoHydration;
+  final Duration? cacheTtl;
+  final bool disableCache;
 
   QueryPlan copyWith({
     List<FilterClause>? filters,
@@ -129,6 +133,8 @@ class QueryPlan {
     List<DistinctOnClause>? distinctOn,
     List<QueryUnion>? unions,
     bool? disableAutoHydration,
+    Duration? cacheTtl,
+    bool? disableCache,
   }) => QueryPlan(
     definition: definition,
     driverName: driverName,
@@ -161,6 +167,8 @@ class QueryPlan {
     distinctOn: distinctOn ?? this.distinctOn,
     unions: unions ?? this.unions,
     disableAutoHydration: disableAutoHydration ?? this.disableAutoHydration,
+    cacheTtl: cacheTtl ?? this.cacheTtl,
+    disableCache: disableCache ?? this.disableCache,
   );
 
   @override
@@ -397,7 +405,7 @@ class BitwisePredicate extends QueryPredicate {
 }
 
 /// Base type for predicate nodes.
-abstract class QueryPredicate {
+sealed class QueryPredicate {
   const QueryPredicate();
 }
 
@@ -446,6 +454,30 @@ class RawPredicate extends QueryPredicate {
 
   final String sql;
   final List<Object?> bindings;
+}
+
+/// Subquery predicate for WHERE IN, WHERE EXISTS, etc.
+class SubqueryPredicate extends QueryPredicate {
+  const SubqueryPredicate({
+    required this.type,
+    required this.subquery,
+    this.field,
+    this.negate = false,
+  });
+
+  final SubqueryType type;
+  final QueryPlan subquery;
+  final String? field; // Used for IN/NOT IN
+  final bool negate;
+}
+
+/// Types of subquery predicates.
+enum SubqueryType {
+  /// WHERE field IN (subquery)
+  whereIn,
+
+  /// WHERE EXISTS (subquery)
+  exists,
 }
 
 /// Raw select expression.

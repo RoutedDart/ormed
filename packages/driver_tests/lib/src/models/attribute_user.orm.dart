@@ -68,7 +68,7 @@ const FieldDefinition _$AttributeUserProfileField = FieldDefinition(
   codecType: 'json',
 );
 
-final ModelDefinition<AttributeUser> _$AttributeUserModelDefinition =
+final ModelDefinition<$AttributeUser> _$AttributeUserDefinition =
     ModelDefinition(
       modelName: 'AttributeUser',
       tableName: 'attribute_users',
@@ -96,80 +96,81 @@ final ModelDefinition<AttributeUser> _$AttributeUserModelDefinition =
         softDeletes: false,
         softDeleteColumn: 'deleted_at',
       ),
-      codec: _$AttributeUserModelCodec(),
+      codec: _$AttributeUserCodec(),
     );
 
 // ignore: unused_element
 final attributeuserModelDefinitionRegistration =
-    ModelFactoryRegistry.register<AttributeUser>(
-      _$AttributeUserModelDefinition,
-    );
+    ModelFactoryRegistry.register<$AttributeUser>(_$AttributeUserDefinition);
 
 extension AttributeUserOrmDefinition on AttributeUser {
-  static ModelDefinition<AttributeUser> get definition =>
-      _$AttributeUserModelDefinition;
+  static ModelDefinition<$AttributeUser> get definition =>
+      _$AttributeUserDefinition;
 }
 
 class AttributeUsers {
   const AttributeUsers._();
 
-  static Query<AttributeUser> query([String? connection]) =>
-      Model.query<AttributeUser>(connection: connection);
+  static Query<$AttributeUser> query([String? connection]) =>
+      Model.query<$AttributeUser>(connection: connection);
 
-  static Future<AttributeUser?> find(Object id, {String? connection}) =>
-      Model.find<AttributeUser>(id, connection: connection);
+  static Future<$AttributeUser?> find(Object id, {String? connection}) =>
+      Model.find<$AttributeUser>(id, connection: connection);
 
-  static Future<AttributeUser> findOrFail(Object id, {String? connection}) =>
-      Model.findOrFail<AttributeUser>(id, connection: connection);
+  static Future<$AttributeUser> findOrFail(Object id, {String? connection}) =>
+      Model.findOrFail<$AttributeUser>(id, connection: connection);
 
-  static Future<List<AttributeUser>> all({String? connection}) =>
-      Model.all<AttributeUser>(connection: connection);
+  static Future<List<$AttributeUser>> all({String? connection}) =>
+      Model.all<$AttributeUser>(connection: connection);
 
   static Future<int> count({String? connection}) =>
-      Model.count<AttributeUser>(connection: connection);
+      Model.count<$AttributeUser>(connection: connection);
 
-  static Future<bool> exists({String? connection}) =>
-      Model.exists<AttributeUser>(connection: connection);
+  static Future<bool> anyExist({String? connection}) =>
+      Model.anyExist<$AttributeUser>(connection: connection);
 
-  static Query<AttributeUser> where(
+  static Query<$AttributeUser> where(
     String column,
     String operator,
     dynamic value, {
     String? connection,
-  }) => Model.where<AttributeUser>(
+  }) => Model.where<$AttributeUser>(
     column,
     operator,
     value,
     connection: connection,
   );
 
-  static Query<AttributeUser> whereIn(
+  static Query<$AttributeUser> whereIn(
     String column,
     List<dynamic> values, {
     String? connection,
-  }) => Model.whereIn<AttributeUser>(column, values, connection: connection);
+  }) => Model.whereIn<$AttributeUser>(column, values, connection: connection);
 
-  static Query<AttributeUser> orderBy(
+  static Query<$AttributeUser> orderBy(
     String column, {
     String direction = "asc",
     String? connection,
-  }) => Model.orderBy<AttributeUser>(
+  }) => Model.orderBy<$AttributeUser>(
     column,
     direction: direction,
     connection: connection,
   );
 
-  static Query<AttributeUser> limit(int count, {String? connection}) =>
-      Model.limit<AttributeUser>(count, connection: connection);
+  static Query<$AttributeUser> limit(int count, {String? connection}) =>
+      Model.limit<$AttributeUser>(count, connection: connection);
+
+  static Repository<$AttributeUser> repo([String? connection]) =>
+      Model.repository<$AttributeUser>(connection: connection);
 }
 
 class AttributeUserModelFactory {
   const AttributeUserModelFactory._();
 
-  static ModelDefinition<AttributeUser> get definition =>
-      _$AttributeUserModelDefinition;
+  static ModelDefinition<$AttributeUser> get definition =>
+      _$AttributeUserDefinition;
 
-  static ModelCodec<AttributeUser> get codec => definition.codec;
+  static ModelCodec<$AttributeUser> get codec => definition.codec;
 
   static AttributeUser fromMap(
     Map<String, Object?> data, {
@@ -179,7 +180,7 @@ class AttributeUserModelFactory {
   static Map<String, Object?> toMap(
     AttributeUser model, {
     ValueCodecRegistry? registry,
-  }) => definition.toMap(model, registry: registry);
+  }) => definition.toMap(model.toTracked(), registry: registry);
 
   static void registerWith(ModelRegistry registry) =>
       registry.register(definition);
@@ -199,12 +200,11 @@ class AttributeUserModelFactory {
   );
 }
 
-class _$AttributeUserModelCodec extends ModelCodec<AttributeUser> {
-  const _$AttributeUserModelCodec();
-
+class _$AttributeUserCodec extends ModelCodec<$AttributeUser> {
+  const _$AttributeUserCodec();
   @override
   Map<String, Object?> encode(
-    AttributeUser model,
+    $AttributeUser model,
     ValueCodecRegistry registry,
   ) {
     return <String, Object?>{
@@ -220,7 +220,10 @@ class _$AttributeUserModelCodec extends ModelCodec<AttributeUser> {
   }
 
   @override
-  AttributeUser decode(Map<String, Object?> data, ValueCodecRegistry registry) {
+  $AttributeUser decode(
+    Map<String, Object?> data,
+    ValueCodecRegistry registry,
+  ) {
     final int attributeUserIdValue =
         registry.decodeField<int>(_$AttributeUserIdField, data['id']) ??
         (throw StateError('Field id on AttributeUser cannot be null.'));
@@ -245,7 +248,7 @@ class _$AttributeUserModelCodec extends ModelCodec<AttributeUser> {
           _$AttributeUserProfileField,
           data['profile'],
         );
-    final model = _$AttributeUserModel(
+    final model = $AttributeUser(
       id: attributeUserIdValue,
       email: attributeUserEmailValue,
       secret: attributeUserSecretValue,
@@ -263,8 +266,17 @@ class _$AttributeUserModelCodec extends ModelCodec<AttributeUser> {
   }
 }
 
-class _$AttributeUserModel extends AttributeUser {
-  _$AttributeUserModel({
+/// Generated tracked model class for [AttributeUser].
+///
+/// This class extends the user-defined [AttributeUser] model and adds
+/// attribute tracking, change detection, and relationship management.
+/// Instances of this class are returned by queries and repositories.
+///
+/// **Do not instantiate this class directly.** Use queries, repositories,
+/// or model factories to create tracked model instances.
+class $AttributeUser extends AttributeUser
+    with ModelAttributes, ModelRelations {
+  $AttributeUser({
     required int id,
     required String email,
     required String secret,
@@ -284,6 +296,17 @@ class _$AttributeUserModel extends AttributeUser {
       'role': role,
       'profile': profile,
     });
+  }
+
+  /// Creates a tracked model instance from a user-defined model instance.
+  factory $AttributeUser.fromModel(AttributeUser model) {
+    return $AttributeUser(
+      id: model.id,
+      email: model.email,
+      secret: model.secret,
+      role: model.role,
+      profile: model.profile,
+    );
   }
 
   @override
@@ -314,6 +337,20 @@ class _$AttributeUserModel extends AttributeUser {
 
   void _attachOrmRuntimeMetadata(Map<String, Object?> values) {
     replaceAttributes(values);
-    attachModelDefinition(_$AttributeUserModelDefinition);
+    attachModelDefinition(_$AttributeUserDefinition);
+  }
+}
+
+extension AttributeUserOrmExtension on AttributeUser {
+  /// The Type of the generated ORM-managed model class.
+  /// Use this when you need to specify the tracked model type explicitly,
+  /// for example in generic type parameters.
+  static Type get trackedType => $AttributeUser;
+
+  /// Converts this immutable model to a tracked ORM-managed model.
+  /// The tracked model supports attribute tracking, change detection,
+  /// and persistence operations like save() and touch().
+  $AttributeUser toTracked() {
+    return $AttributeUser.fromModel(this);
   }
 }

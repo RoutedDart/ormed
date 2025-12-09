@@ -1,7 +1,17 @@
 /// Provides per-instance attribute storage for ORM models.
 ///
+/// **Important**: This mixin is designed to work on ORM-managed tracked instances
+/// (those returned by queries or created via ORM methods like `Model.create()`).
+/// It will not work as expected on manually instantiated user model classes.
+///
+/// User-defined model classes should be immutable with `final` fields. The
+/// generated `_$ModelName` classes extend user models and use this mixin to
+/// provide attribute tracking, change detection, and relationship management.
+///
 /// Attributes are guarded/encoded through the decorators defined on the
 /// attached [ModelDefinition].
+///
+/// See: docs/immutable_models.md for detailed design philosophy.
 library;
 
 import 'dart:collection';
@@ -34,6 +44,8 @@ mixin ModelAttributes {
   );
   static final Expando<List<JsonAttributeUpdate>> _jsonUpdates =
       Expando<List<JsonAttributeUpdate>>('_ormJsonUpdates');
+  static final Expando<Map<String, Object?>> _originalAttributes =
+      Expando<Map<String, Object?>>('_ormOriginalAttributes');
 
   Map<String, Object?> _ensureAttributes() =>
       _store[this] ??= <String, Object?>{};
@@ -41,9 +53,23 @@ mixin ModelAttributes {
   List<JsonAttributeUpdate> _ensureJsonUpdates() =>
       _jsonUpdates[this] ??= <JsonAttributeUpdate>[];
 
+  Map<String, Object?>? _getOriginalAttributes() =>
+      _originalAttributes[this];
+
   /// Snapshot of the current attribute map.
   Map<String, Object?> get attributes =>
       UnmodifiableMapView(_ensureAttributes());
+
+  /// Convenience method to get all attributes as a map.
+  ///
+  /// This is equivalent to the [attributes] getter but provided as a method
+  /// for API consistency.
+  ///
+  /// Returns an unmodifiable view of the attribute map.
+  ///
+  /// Note: This only returns tracked attributes. On plain model instances
+  /// (not ORM-managed), this may return an empty map.
+  Map<String, Object?> getAttributes() => attributes;
 
   /// Reads an attribute by column name.
   T? getAttribute<T>(String column) => _ensureAttributes()[column] as T?;
@@ -56,6 +82,26 @@ mixin ModelAttributes {
   /// Replaces the entire attribute map.
   void replaceAttributes(Map<String, Object?> values) {
     _store[this] = Map<String, Object?>.from(values);
+  }
+
+  /// Checks if an attribute exists in the attribute map.
+  ///
+  /// Returns true if the attribute has been set, even if its value is null.
+  /// Returns false if the attribute has never been set or if attribute tracking
+  /// is not initialized (e.g., on plain model instances not managed by the ORM).
+  ///
+  /// Note: This only works on ORM-managed model instances (those created by
+  /// queries or with attribute tracking properly initialized).
+  ///
+  /// Example:
+  /// ```dart
+  /// final user = await Users.query().where('id', 1).first();
+  /// print(user.hasAttribute('email')); // true
+  /// print(user.hasAttribute('nonexistent')); // false
+  /// ```
+  bool hasAttribute(String column) {
+    final attrs = _store[this];
+    return attrs != null && attrs.containsKey(column);
   }
 
   /// Associates the generated model definition with this instance.
@@ -157,7 +203,7 @@ mixin ModelAttributes {
     ValueCodecRegistry? registry,
   }) {
     final inspector = _attributeInspector();
-    final codecs = registry ?? ValueCodecRegistry.standard();
+    final codecs = registry ?? ValueCodecRegistry.instance;
     final filled = <String, Object?>{};
     final discarded = <String>[];
     for (final entry in payload.entries) {
@@ -189,7 +235,7 @@ mixin ModelAttributes {
     ValueCodecRegistry? registry,
   }) {
     final inspector = _attributeInspector();
-    final codecs = registry ?? ValueCodecRegistry.standard();
+    final codecs = registry ?? ValueCodecRegistry.instance;
     final result = <String, Object?>{};
     final definition = _definition;
     for (final entry in _ensureAttributes().entries) {
@@ -259,6 +305,220 @@ mixin ModelAttributes {
     }
     return registry.encodeField(field, value);
   }
+
+  /// Convenience method to fill attributes from a map, respecting fillable/guarded rules.
+  ///
+  /// This is a wrapper around [fillAttributes] that makes the API more intuitive.
+  /// Only attributes marked as fillable (or not guarded) will be set.
+  ///
+  /// Example:
+  /// ```dart
+  /// final user = await Users.query().where('id', 1).first();
+  /// user.fill({
+  ///   'name': 'New Name',
+  ///   'email': 'new@example.com',
+  /// });
+  /// ```
+  ///
+  /// Note: This only works properly on ORM-managed model instances.
+
+  // NOTE: fill() and forceFill() methods have been moved to the Model class
+  // to avoid return type conflicts. The Model class methods return Model<TModel>
+  // for method chaining, while calling this mixin's fillAttributes() internally.
+
+  /// Convenience method to set multiple attributes at once without guards.
+  ///
+  /// Unlike [fill] and [forceFill], this directly sets attributes without
+  /// going through the fillable/guarded logic. It's the most permissive way
+  /// to bulk-set attributes.
+  ///
+  /// Example:
+  /// ```dart
+  /// final user = await Users.query().where('id', 1).first();
+  /// user.setAttributes({
+  ///   'name': 'New Name',
+  ///   'email': 'new@example.com',
+  ///   'active': true,
+  /// });
+  /// ```
+  ///
+  /// Note: This only works properly on ORM-managed model instances.
+  void setAttributes(Map<String, Object?> attributes) {
+    for (final entry in attributes.entries) {
+      setAttribute(entry.key, entry.value);
+    }
+  }
+
+  /// Syncs the current attributes as the "original" state for change tracking.
+  ///
+  /// After calling this, [isDirty] will return false until attributes are modified.
+  /// This is typically called automatically when a model is loaded from the database.
+  ///
+  /// Example:
+  /// ```dart
+  /// final user = await Users.query().where('id', 1).first();
+  /// user.setAttribute('name', 'Changed');
+  /// print(user.isDirty()); // true
+  /// user.syncOriginal();
+  /// print(user.isDirty()); // false
+  /// ```
+  void syncOriginal() {
+    _originalAttributes[this] = Map<String, Object?>.from(_ensureAttributes());
+  }
+
+  /// Checks if any attributes have been modified since the last sync.
+  ///
+  /// When [attributes] is provided, checks if those specific attributes are dirty.
+  /// - If a single String is provided, checks that one attribute
+  /// - If a List<String> is provided, checks if any of those attributes are dirty
+  /// When [attributes] is null, checks if any attribute is dirty.
+  ///
+  /// Returns false if no original state is tracked (e.g., on new unsaved models).
+  ///
+  /// Example:
+  /// ```dart
+  /// final user = await Users.query().where('id', 1).first();
+  /// print(user.isDirty()); // false
+  /// user.setAttribute('name', 'New Name');
+  /// print(user.isDirty()); // true
+  /// print(user.isDirty('name')); // true
+  /// print(user.isDirty(['name', 'email'])); // true (name is dirty)
+  /// print(user.isDirty('email')); // false
+  /// ```
+  bool isDirty([Object? attributes]) {
+    final original = _getOriginalAttributes();
+    if (original == null) {
+      return false; // No original state tracked
+    }
+
+    final current = _ensureAttributes();
+
+    if (attributes == null) {
+      // Check if any attribute is dirty
+      final allKeys = {...original.keys, ...current.keys};
+      for (final key in allKeys) {
+        if (original[key] != current[key]) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    // Handle both String and List<String>
+    final List<String> attrsToCheck;
+    if (attributes is String) {
+      attrsToCheck = [attributes];
+    } else if (attributes is List<String>) {
+      attrsToCheck = attributes;
+    } else {
+      throw ArgumentError(
+        'attributes must be a String or List<String>, got ${attributes.runtimeType}',
+      );
+    }
+
+    // Check specific attributes
+    for (final attr in attrsToCheck) {
+      if (original[attr] != current[attr]) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /// Checks if attributes have NOT been modified since the last sync.
+  ///
+  /// This is the inverse of [isDirty].
+  ///
+  /// When [attributes] is provided, checks if those specific attributes are clean.
+  /// - If a single String is provided, checks that one attribute
+  /// - If a List<String> is provided, checks if all those attributes are clean
+  /// When [attributes] is null, checks if all attributes are clean.
+  ///
+  /// Example:
+  /// ```dart
+  /// final user = await Users.query().where('id', 1).first();
+  /// print(user.isClean()); // true
+  /// user.setAttribute('name', 'New Name');
+  /// print(user.isClean()); // false
+  /// print(user.isClean('email')); // true
+  /// print(user.isClean(['email'])); // true
+  /// ```
+  bool isClean([Object? attributes]) => !isDirty(attributes);
+
+  /// Gets the original value(s) before modifications.
+  ///
+  /// When [attribute] is provided, returns the original value for that specific attribute.
+  /// When [attribute] is null, returns a map of all original attributes.
+  ///
+  /// If no original state is tracked, returns the current value(s).
+  ///
+  /// Example:
+  /// ```dart
+  /// final user = await Users.query().where('id', 1).first();
+  /// user.setAttribute('name', 'New Name');
+  /// print(user.getOriginal('name')); // Original name
+  /// print(user.getAttribute('name')); // 'New Name'
+  /// ```
+  Object? getOriginal([String? attribute]) {
+    final original = _getOriginalAttributes();
+
+    if (original == null) {
+      // No original tracked, return current state
+      if (attribute == null) {
+        return Map<String, Object?>.from(_ensureAttributes());
+      }
+      return _ensureAttributes()[attribute];
+    }
+
+    if (attribute == null) {
+      return Map<String, Object?>.from(original);
+    }
+
+    return original[attribute];
+  }
+
+  /// Gets only the attributes that have been modified.
+  ///
+  /// Returns a map containing only the changed attributes with their new values.
+  /// Returns an empty map if nothing has changed or no original state is tracked.
+  ///
+  /// Example:
+  /// ```dart
+  /// final user = await Users.query().where('id', 1).first();
+  /// user.setAttribute('name', 'New Name');
+  /// user.setAttribute('email', 'new@example.com');
+  /// print(user.getDirty()); // {'name': 'New Name', 'email': 'new@example.com'}
+  /// ```
+  Map<String, Object?> getDirty() {
+    final original = _getOriginalAttributes();
+    if (original == null) {
+      return const {};
+    }
+
+    final current = _ensureAttributes();
+    final dirty = <String, Object?>{};
+
+    for (final entry in current.entries) {
+      if (original[entry.key] != entry.value) {
+        dirty[entry.key] = entry.value;
+      }
+    }
+
+    return dirty;
+  }
+
+  /// Checks if a specific attribute was modified.
+  ///
+  /// This is a convenience method equivalent to `isDirty(attribute)`.
+  ///
+  /// Example:
+  /// ```dart
+  /// final user = await Users.query().where('id', 1).first();
+  /// user.setAttribute('name', 'New Name');
+  /// print(user.wasChanged('name')); // true
+  /// print(user.wasChanged('email')); // false
+  /// ```
+  bool wasChanged(String attribute) => isDirty(attribute);
 }
 
 /// Represents a queued JSON attribute operation.

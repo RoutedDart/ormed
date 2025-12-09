@@ -3,6 +3,7 @@ library;
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:carbonized/carbonized.dart';
 import 'package:ormed/src/annotations.dart';
 
 import 'connection/connection.dart';
@@ -26,10 +27,33 @@ import 'value_codec.dart';
 typedef ConnectionResolverFactory =
     ConnectionResolver Function(String connectionName);
 
-/// Base class that unifies attribute storage, connection awareness, and
-/// self-persisting helpers for routed ORM models.
-abstract class Model<TModel extends Model<TModel>>
-    with ModelAttributes, ModelConnection, ModelRelations {
+/// Base class for ORM models.
+///
+/// User-defined model classes extend this as immutable data classes with
+/// final fields and const constructors. The ORM generates tracked wrapper
+/// classes (prefixed with _$) that override property getters/setters to use
+/// the attribute tracking system.
+///
+/// **Best Practice**: Define your model classes with:
+/// - `final` fields for all properties
+/// - `const` constructors
+/// - No mutable state
+///
+/// The generated `_$ModelName` class will handle attribute tracking,
+/// change detection, and relationship management automatically.
+///
+/// **Important**: User-defined model classes are immutable. Only the generated
+/// tracked model classes (returned from queries/repositories) have the attribute
+/// system, change tracking, and relationship loading capabilities.
+///
+/// **Instance Methods**: Many instance methods in this class (like `save()`,
+/// `delete()`, `refresh()`, `load()`, etc.) internally depend on the attribute
+/// and relation tracking systems provided by the ModelAttributes and ModelRelations
+/// mixins. These methods will only work correctly on instances returned from
+/// queries or repositories, which are of the generated tracked model type.
+/// Attempting to call these methods on manually instantiated model objects will
+/// result in runtime errors.
+abstract class Model<TModel extends Model<TModel>> with ModelConnection {
   const Model();
 
   static ConnectionResolverFactory? _resolverFactory;
@@ -42,6 +66,50 @@ abstract class Model<TModel extends Model<TModel>>
   // ignore: unused_element
   bool get _exists => _modelExists[this] ?? false;
   set _exists(bool value) => _modelExists[this] = value;
+
+  /// Check if the model exists in the database.
+  ///
+  /// Returns true if the model has been persisted (saved/fetched from database).
+  /// Returns false for new model instances that haven't been saved yet.
+  ///
+  /// Example:
+  /// ```dart
+  /// final user = User(name: 'John', email: 'john@example.com');
+  /// print(user.exists); // false
+  /// await user.save();
+  /// print(user.exists); // true
+  /// ```
+  bool get exists => _exists;
+
+  /// Marks this model as existing in the database.
+  ///
+  /// This is typically called internally when a model is loaded from the database
+  /// or after a successful save operation. You generally don't need to call this
+  /// method directly.
+  ///
+  /// Example:
+  /// ```dart
+  /// final user = User(name: 'John');
+  /// print(user.exists); // false
+  /// user.markAsExisting();
+  /// print(user.exists); // true
+  /// ```
+  void markAsExisting() {
+    _exists = true;
+  }
+
+  // ============================================================================
+  // Protected helpers to access mixin functionality
+  // These are only available on tracked model instances (generated classes)
+  // ============================================================================
+
+  /// Access to ModelAttributes mixin functionality.
+  /// Only works on tracked instances (those with the mixin).
+  ModelAttributes get _asAttributes => this as ModelAttributes;
+
+  /// Access to ModelRelations mixin functionality.
+  /// Only works on tracked instances (those with the mixin).
+  ModelRelations get _asRelations => this as ModelRelations;
 
   /// Binds a global resolver factory so model helpers know how to persist.
   static void bindConnectionResolver({
@@ -82,6 +150,33 @@ abstract class Model<TModel extends Model<TModel>>
 
     final context = _requireQueryContext(initialResolver);
     return context.queryFromDefinition(definition);
+  }
+
+  /// Creates a [Repository] for [TModel], honoring the model's preferred connection.
+  static Repository<TModel> repository<TModel>({String? connection}) {
+    // Try to resolve and get definition
+    final initialResolver = _resolveBoundResolverFlexible<TModel>(connection);
+    final definition = initialResolver.registry.expect<TModel>();
+
+    // Determine the effective connection: explicit param > model's configured connection
+    final effectiveConnection = connection ?? definition.metadata.connection;
+
+    // If we need a different connection than what we initially resolved, re-resolve
+    final resolver = _shouldRebindResolver(connection, effectiveConnection)
+        ? _resolveBoundResolver(effectiveConnection)
+        : initialResolver;
+
+    return Repository<TModel>(
+      definition: definition,
+      driverName: resolver.driver.metadata.name,
+      runMutation: resolver.runMutation,
+      describeMutation: resolver.describeMutation,
+      attachRuntimeMetadata: (model) {
+        if (model is ModelConnection) {
+          model.attachConnectionResolver(resolver);
+        }
+      },
+    );
   }
 
   /// Returns a factory builder that mirrors Laravel’s `Model::factory()` DSL.
@@ -190,13 +285,17 @@ abstract class Model<TModel extends Model<TModel>>
   static Future<int> count<TModel>({String? connection}) =>
       query<TModel>(connection: connection).count();
 
-  /// Check if any models exist.
-  static Future<bool> exists<TModel>({String? connection}) async =>
+  /// Check if any models exist in the database.
+  ///
+  /// Note: Renamed from `exists()` to avoid conflict with instance property.
+  static Future<bool> anyExist<TModel>({String? connection}) async =>
       await count<TModel>(connection: connection) > 0;
 
-  /// Check if no models exist.
-  static Future<bool> doesntExist<TModel>({String? connection}) async =>
-      !await exists<TModel>(connection: connection);
+  /// Check if no models exist in the database.
+  ///
+  /// Note: Renamed from `doesntExist()` for consistency.
+  static Future<bool> noneExist<TModel>({String? connection}) async =>
+      !await anyExist<TModel>(connection: connection);
 
   /// Delete all models matching a condition (dangerous!).
   static Future<int> destroy<TModel extends Model<TModel>>(
@@ -242,6 +341,34 @@ abstract class Model<TModel extends Model<TModel>>
     );
   }
 
+  /// Create a new model or get the first existing one.
+  ///
+  /// This is similar to [firstOrCreate] but with different argument order
+  /// to match Laravel's API.
+  ///
+  /// Example:
+  /// ```dart
+  /// final user = await User.createOrFirst(
+  ///   {'email': 'john@example.com'},
+  ///   {'name': 'John Doe'},
+  /// );
+  /// ```
+  ///
+  /// Note: This is a placeholder - actual implementation requires codec access.
+  /// Use the generated static helper on your model class instead.
+  static Future<TModel> createOrFirst<TModel extends Model<TModel>>(
+    Map<String, dynamic> attributes, {
+    Map<String, dynamic> values = const {},
+    String? connection,
+  }) async {
+    // This is essentially the same as firstOrCreate, just with different naming
+    return firstOrCreate<TModel>(
+      attributes,
+      values: values,
+      connection: connection,
+    );
+  }
+
   /// Update existing model or create new one.
   ///
   /// Note: This is a placeholder - actual implementation requires codec access.
@@ -256,9 +383,65 @@ abstract class Model<TModel extends Model<TModel>>
     );
   }
 
+  /// Upserts a single record (insert or update on conflict).
+  ///
+  /// If a record with the same unique key exists, it will be updated.
+  /// Otherwise, a new record will be inserted.
+  ///
+  /// [attributes] are the values to upsert.
+  /// [uniqueBy] specifies which fields make up the unique key (defaults to primary key).
+  /// [updateColumns] specifies which columns to update on conflict (defaults to all).
+  ///
+  /// Example:
+  /// ```dart
+  /// final user = await Model.upsert<User>(
+  ///   {'email': 'john@example.com', 'name': 'John Doe'},
+  ///   uniqueBy: ['email'],
+  /// );
+  /// ```
+  static Future<TModel> upsert<TModel extends Model<TModel>>(
+    Map<String, dynamic> attributes, {
+    List<String>? uniqueBy,
+    List<String>? updateColumns,
+    String? connection,
+  }) =>
+      query<TModel>(connection: connection).upsert(
+        attributes,
+        uniqueBy: uniqueBy,
+        updateColumns: updateColumns,
+      );
+
+  /// Upserts multiple records (insert or update on conflict).
+  ///
+  /// If records with the same unique keys exist, they will be updated.
+  /// Otherwise, new records will be inserted.
+  ///
+  /// [records] is a list of attribute maps to upsert.
+  /// [uniqueBy] specifies which fields make up the unique key (defaults to primary key).
+  /// [updateColumns] specifies which columns to update on conflict (defaults to all).
+  ///
+  /// Example:
+  /// ```dart
+  /// final users = await Model.upsertMany<User>([
+  ///   {'email': 'john@example.com', 'name': 'John Doe'},
+  ///   {'email': 'jane@example.com', 'name': 'Jane Smith'},
+  /// ], uniqueBy: ['email']);
+  /// ```
+  static Future<List<TModel>> upsertMany<TModel extends Model<TModel>>(
+    List<Map<String, dynamic>> records, {
+    List<String>? uniqueBy,
+    List<String>? updateColumns,
+    String? connection,
+  }) =>
+      query<TModel>(connection: connection).upsertMany(
+        records,
+        uniqueBy: uniqueBy,
+        updateColumns: updateColumns,
+      );
+
   /// Typed accessor to the attached [ModelDefinition], when available.
   ModelDefinition<TModel>? get definition =>
-      modelDefinition as ModelDefinition<TModel>?;
+      _asAttributes.modelDefinition as ModelDefinition<TModel>?;
 
   /// Whether a [ModelDefinition] has been attached to this instance.
   bool get hasDefinition => definition != null;
@@ -287,7 +470,7 @@ abstract class Model<TModel extends Model<TModel>>
     final codecs =
         registry ??
         connectionResolver?.codecRegistry ??
-        ValueCodecRegistry.standard();
+        ValueCodecRegistry.instance;
     return def.toMap(_self(), registry: codecs);
   }
 
@@ -298,13 +481,13 @@ abstract class Model<TModel extends Model<TModel>>
   ValueCodecRegistry _effectiveCodecRegistry(ValueCodecRegistry? registry) =>
       registry ??
       connectionResolver?.codecRegistry ??
-      ValueCodecRegistry.standard();
+      ValueCodecRegistry.instance;
 
   /// Converts the model into a metadata-aware map, honoring hidden/visible lists.
   Map<String, Object?> toArray({
     ValueCodecRegistry? registry,
     bool includeHidden = false,
-  }) => serializableAttributes(
+  }) => _asAttributes.serializableAttributes(
     includeHidden: includeHidden,
     registry: _effectiveCodecRegistry(registry),
   );
@@ -322,10 +505,10 @@ abstract class Model<TModel extends Model<TModel>>
   /// Mass assigns [attributes], honoring fillable/guarded metadata.
   Model<TModel> fill(
     Map<String, Object?> attributes, {
-    bool strict = true,
+    bool strict = false,
     ValueCodecRegistry? registry,
   }) {
-    fillAttributes(
+    _asAttributes.fillAttributes(
       attributes,
       strict: strict,
       registry: _effectiveCodecRegistry(registry),
@@ -336,17 +519,17 @@ abstract class Model<TModel extends Model<TModel>>
   /// Mass assigns only values that are currently absent.
   Model<TModel> fillIfAbsent(
     Map<String, Object?> attributes, {
-    bool strict = true,
+    bool strict = false,
     ValueCodecRegistry? registry,
   }) {
     final pending = <String, Object?>{};
-    final existing = this.attributes;
+    final existing = _asAttributes.attributes;
     for (final entry in attributes.entries) {
       if (!existing.containsKey(entry.key) || existing[entry.key] == null) {
         pending[entry.key] = entry.value;
       }
     }
-    fillAttributes(
+    _asAttributes.fillAttributes(
       pending,
       strict: strict,
       registry: _effectiveCodecRegistry(registry),
@@ -371,18 +554,18 @@ abstract class Model<TModel extends Model<TModel>>
   /// Queues a JSON update using Laravel-style selector syntax
   /// (`column->path`). Call [save] to persist the change.
   void jsonSet(String selector, Object? value) =>
-      setJsonAttributeValue(selector, value);
+      _asAttributes.setJsonAttributeValue(selector, value);
 
   /// Queues a JSON update by explicitly providing [path] relative to [column].
   void jsonSetPath(String column, String path, Object? value) =>
-      setJsonAttributeValue(column, value, pathOverride: path);
+      _asAttributes.setJsonAttributeValue(column, value, pathOverride: path);
 
   /// Queues a JSON patch merge for [column] using the provided [delta] map.
   void jsonPatch(String column, Map<String, Object?> delta) =>
-      setJsonAttributePatch(column, delta);
+      _asAttributes.setJsonAttributePatch(column, delta);
 
   /// Clears any queued JSON mutations without persisting them.
-  void clearQueuedJsonMutations() => clearJsonAttributeUpdates();
+  void clearQueuedJsonMutations() => _asAttributes.clearJsonAttributeUpdates();
 
   /// Persists the model using the active resolver and returns the stored copy.
   Future<TModel> save({bool returning = true}) async {
@@ -426,8 +609,8 @@ abstract class Model<TModel extends Model<TModel>>
     if (!force && def.usesSoftDeletes) {
       final column =
           def.softDeleteField?.columnName ?? def.metadata.softDeleteColumn;
-      final timestamp = DateTime.now().toUtc();
-      setAttribute(column, timestamp);
+      final timestamp = Carbon.now();
+      _asAttributes.setAttribute(column, timestamp);
       final plan = MutationPlan.update(
         definition: def,
         rows: [
@@ -482,7 +665,7 @@ abstract class Model<TModel extends Model<TModel>>
       driverName: resolver.driver.metadata.name,
     );
     await resolver.runMutation(plan);
-    setAttribute(column, null);
+    _asAttributes.setAttribute(column, null);
   }
 
   /// Returns a fresh instance of this model from the database.
@@ -573,14 +756,136 @@ abstract class Model<TModel extends Model<TModel>>
     // Sync relations from the fresh model if any were loaded
     if (withRelations != null && withRelations.isNotEmpty) {
       for (final relationName in withRelations) {
-        if (fresh.relationLoaded(relationName)) {
-          final value = fresh.loadedRelations[relationName];
-          setRelation(relationName, value);
+        final freshAsRelations = (fresh as Model<TModel>)._asRelations;
+        if (freshAsRelations.relationLoaded(relationName)) {
+          final value = freshAsRelations.loadedRelations[relationName];
+          _asRelations.setRelation(relationName, value);
         }
       }
     }
     return _self();
   }
+
+  /// Clone the model into a new, non-existing instance.
+  ///
+  /// Creates a copy of this model without:
+  /// - Primary key
+  /// - Timestamps (created_at, updated_at if they exist)
+  /// - Unique identifiers
+  ///
+  /// The [except] parameter allows you to specify additional fields to exclude
+  /// from the replication.
+  ///
+  /// Example:
+  /// ```dart
+  /// final user = await User.query().find(1);
+  /// final duplicate = user.replicate(except: ['email']);
+  /// duplicate.setAttribute('email', 'new@example.com');
+  /// await duplicate.save();
+  /// ```
+  TModel replicate({List<String>? except}) {
+    final def = expectDefinition();
+
+    // Default fields to exclude
+    final defaultExclude = <String>{
+      if (def.primaryKeyField != null) def.primaryKeyField!.name,
+      // Exclude common timestamp fields
+      'created_at',
+      'updated_at',
+      'createdAt',
+      'updatedAt',
+    };
+
+    // Merge with user-provided exclusions
+    final excluded = except != null
+        ? {...defaultExclude, ...except}
+        : defaultExclude;
+
+    // Get all current field values by serializing the model
+    final currentAttributes = toRecord();
+
+    // Copy current attributes and null out excluded fields
+    final newAttributes = Map<String, Object?>.from(currentAttributes);
+    for (final field in def.fields) {
+      if (excluded.contains(field.name) || excluded.contains(field.columnName)) {
+        // Excluded fields are set to null (codec will handle validation/defaults)
+        newAttributes[field.name] = null;
+      }
+    }
+
+    // Create and return new instance using codec
+    // Use the connection resolver's codec registry to ensure driver-specific codecs are used
+    final registry = connectionResolver?.codecRegistry;
+    final instance = def.fromMap(newAttributes, registry: registry);
+
+    // Mark as new (not yet persisted) using the Expando
+    _modelExists[instance] = false;
+
+    return instance;
+  }
+
+  /// Determine if two models represent the same database record.
+  ///
+  /// Compares:
+  /// - Primary key values
+  /// - Table names
+  /// - Connection names (if available)
+  ///
+  /// Example:
+  /// ```dart
+  /// final user1 = await User.query().find(1);
+  /// final user2 = await User.query().find(1);
+  /// print(user1.isSameAs(user2)); // true
+  ///
+  /// final user3 = await User.query().find(2);
+  /// print(user1.isSameAs(user3)); // false
+  /// ```
+  bool isSameAs(Model? other) {
+    if (other == null) return false;
+
+    final def1 = expectDefinition();
+    final def2 = (other as Model<dynamic>).expectDefinition();
+
+    // Compare primary keys
+    final pk1 = _primaryKeyValue(def1);
+    final pk2 = (other as Model<dynamic>)._primaryKeyValue(def2);
+
+    if (pk1 == null || pk2 == null) return false;
+
+    // Compare table names
+    if (def1.tableName != def2.tableName) return false;
+
+    // Compare connections if both are OrmConnections
+    if (connection is OrmConnection && other.connection is OrmConnection) {
+      // Type promotion works when checking directly on the property
+      final thisName = (connection as OrmConnection).name;
+      final otherName = (other.connection as OrmConnection).name;
+      if (thisName != otherName) {
+        return false;
+      }
+    }
+
+    return pk1 == pk2;
+  }
+
+  /// Determine if two models are different.
+  ///
+  /// This is the inverse of [isSameAs].
+  ///
+  /// Example:
+  /// ```dart
+  /// if (user1.isDifferentFrom(user2)) {
+  ///   print('Different users');
+  /// }
+  /// ```
+  bool isDifferentFrom(Model? other) => !isSameAs(other);
+
+  // ============================================================================
+  // Change Tracking Methods
+  // ============================================================================
+  // Note: Change tracking methods (isDirty, syncOriginal, getOriginal, etc.)
+  // are provided by the generated tracked model classes that include the
+  // ModelAttributes mixin.
 
   TModel _self() => this as TModel;
 
@@ -705,7 +1010,6 @@ abstract class Model<TModel extends Model<TModel>>
   ) => Repository<TModel>(
     definition: definition,
     driverName: resolver.driver.metadata.name,
-    codecs: resolver.codecRegistry,
     runMutation: resolver.runMutation,
     describeMutation: resolver.describeMutation,
     attachRuntimeMetadata: (model) {
@@ -720,12 +1024,12 @@ abstract class Model<TModel extends Model<TModel>>
     if (field == null) {
       return null;
     }
-    final keyed = getAttribute<Object?>(field.columnName);
+    final keyed = _asAttributes.getAttribute<Object?>(field.columnName);
     if (keyed != null) {
       return keyed;
     }
     final codecs =
-        connectionResolver?.codecRegistry ?? ValueCodecRegistry.standard();
+        connectionResolver?.codecRegistry ?? ValueCodecRegistry.instance;
     final values = definition.toMap(_self(), registry: codecs);
     return values[field.columnName];
   }
@@ -737,15 +1041,16 @@ abstract class Model<TModel extends Model<TModel>>
   ) {
     attachConnectionResolver(resolver);
     _attachDefinition(definition);
-    final values = Map<String, Object?>.from(source.attributes);
-    replaceAttributes(values);
+    final sourceAsAttributes = (source as Model<TModel>)._asAttributes;
+    final values = Map<String, Object?>.from(sourceAsAttributes.attributes);
+    _asAttributes.replaceAttributes(values);
     _exists = true;
   }
 
   void _attachDefinition(ModelDefinition<TModel> definition) {
-    attachModelDefinition(definition);
+    _asAttributes.attachModelDefinition(definition);
     if (definition.usesSoftDeletes) {
-      attachSoftDeleteColumn(definition.metadata.softDeleteColumn);
+      _asAttributes.attachSoftDeleteColumn(definition.metadata.softDeleteColumn);
     }
   }
 
@@ -848,7 +1153,7 @@ abstract class Model<TModel extends Model<TModel>>
     }
 
     // Load the first relation if not already loaded
-    if (!relationLoaded(firstRelation)) {
+    if (!_asRelations.relationLoaded(firstRelation)) {
       final row = QueryRow<TModel>(
         model: _self(),
         row: def.toMap(_self(), registry: context.codecRegistry),
@@ -861,7 +1166,7 @@ abstract class Model<TModel extends Model<TModel>>
 
     // If there's more path to load, recurse into the loaded relations
     if (remainingPath.isNotEmpty) {
-      final loadedValue = getRelation<dynamic>(firstRelation);
+      final loadedValue = _asRelations.getRelation<dynamic>(firstRelation);
 
       if (loadedValue == null) {
         return; // Nothing to recurse into
@@ -878,9 +1183,6 @@ abstract class Model<TModel extends Model<TModel>>
             await item.load(remainingPath, nextConstraint);
           }
         }
-      } else if (loadedValue is Model) {
-        // Load nested relation on the single model
-        await loadedValue.load(remainingPath, nextConstraint);
       }
     }
   }
@@ -897,7 +1199,7 @@ abstract class Model<TModel extends Model<TModel>>
   /// ```
   Future<TModel> loadMissing(Iterable<String> relations) async {
     for (final relation in relations) {
-      if (!relationLoaded(relation)) {
+      if (!_asRelations.relationLoaded(relation)) {
         await load(relation);
       }
     }
@@ -1058,7 +1360,7 @@ abstract class Model<TModel extends Model<TModel>>
     for (final relation in relations) {
       // Filter to models that don't have this relation loaded
       final needsLoading = models
-          .where((m) => !m.relationLoaded(relation))
+          .where((m) => !(m as Model)._asRelations.relationLoaded(relation))
           .toList();
       if (needsLoading.isNotEmpty) {
         await loadRelations(needsLoading, relation);
@@ -1115,7 +1417,7 @@ abstract class Model<TModel extends Model<TModel>>
       throw StateError('Cannot load count on model without primary key');
     }
 
-    final pkValue = getAttribute(pkField.columnName);
+    final pkValue = _asAttributes.getAttribute(pkField.columnName);
     if (pkValue == null) {
       throw StateError('Cannot load count on model without primary key value');
     }
@@ -1127,8 +1429,8 @@ abstract class Model<TModel extends Model<TModel>>
     final rows = await query.get();
     if (rows.isNotEmpty) {
       final result = rows.first;
-      final count = result.getAttribute<int>(countAlias) ?? 0;
-      setAttribute(countAlias, count);
+      final count = result._asAttributes.getAttribute<int>(countAlias) ?? 0;
+      _asAttributes.setAttribute(countAlias, count);
     }
 
     return _self();
@@ -1179,7 +1481,7 @@ abstract class Model<TModel extends Model<TModel>>
       throw StateError('Cannot load exists on model without primary key');
     }
 
-    final pkValue = getAttribute(pkField.columnName);
+    final pkValue = _asAttributes.getAttribute(pkField.columnName);
     if (pkValue == null) {
       throw StateError('Cannot load exists on model without primary key value');
     }
@@ -1193,9 +1495,9 @@ abstract class Model<TModel extends Model<TModel>>
     if (rows.isNotEmpty) {
       final result = rows.first;
       // SQL returns 1/0 for EXISTS, convert to boolean
-      final value = result.getAttribute(existsAlias);
+      final value = result._asAttributes.getAttribute(existsAlias);
       final exists = value == true || value == 1;
-      setAttribute(existsAlias, exists);
+      _asAttributes.setAttribute(existsAlias, exists);
     }
 
     return _self();
@@ -1337,7 +1639,7 @@ abstract class Model<TModel extends Model<TModel>>
       );
     }
 
-    final pkValue = getAttribute(pkField.columnName);
+    final pkValue = _asAttributes.getAttribute(pkField.columnName);
     if (pkValue == null) {
       throw StateError(
         'Cannot load $aggregateType on model without primary key value',
@@ -1379,8 +1681,8 @@ abstract class Model<TModel extends Model<TModel>>
     final rows = await queryWithAggregate.get();
     if (rows.isNotEmpty) {
       final result = rows.first;
-      final value = result.getAttribute(aggregateAlias);
-      setAttribute(aggregateAlias, value);
+      final value = result._asAttributes.getAttribute(aggregateAlias);
+      _asAttributes.setAttribute(aggregateAlias, value);
     }
 
     return _self();
@@ -1450,10 +1752,10 @@ abstract class Model<TModel extends Model<TModel>>
     );
 
     // Update the foreign key attribute
-    setAttribute(field.columnName, parentPkValue);
+    _asAttributes.setAttribute(field.columnName, parentPkValue);
 
     // Cache the parent in relations
-    setRelation(relationName, parent);
+    _asRelations.setRelation(relationName, parent);
 
     return _self();
   }
@@ -1498,10 +1800,10 @@ abstract class Model<TModel extends Model<TModel>>
       (f) => f.columnName == foreignKeyName || f.name == foreignKeyName,
     );
 
-    setAttribute(field.columnName, null);
+    _asAttributes.setAttribute(field.columnName, null);
 
     // Remove from relation cache
-    unsetRelation(relationName);
+    _asRelations.unsetRelation(relationName);
 
     return _self();
   }

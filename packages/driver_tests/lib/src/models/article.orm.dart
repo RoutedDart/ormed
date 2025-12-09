@@ -115,7 +115,7 @@ const FieldDefinition _$ArticleCategoryIdField = FieldDefinition(
   autoIncrement: false,
 );
 
-final ModelDefinition<Article> _$ArticleModelDefinition = ModelDefinition(
+final ModelDefinition<$Article> _$ArticleDefinition = ModelDefinition(
   modelName: 'Article',
   tableName: 'articles',
   fields: const [
@@ -140,71 +140,74 @@ final ModelDefinition<Article> _$ArticleModelDefinition = ModelDefinition(
     softDeletes: false,
     softDeleteColumn: 'deleted_at',
   ),
-  codec: _$ArticleModelCodec(),
+  codec: _$ArticleCodec(),
 );
 
 // ignore: unused_element
 final articleModelDefinitionRegistration =
-    ModelFactoryRegistry.register<Article>(_$ArticleModelDefinition);
+    ModelFactoryRegistry.register<$Article>(_$ArticleDefinition);
 
 extension ArticleOrmDefinition on Article {
-  static ModelDefinition<Article> get definition => _$ArticleModelDefinition;
+  static ModelDefinition<$Article> get definition => _$ArticleDefinition;
 }
 
 class Articles {
   const Articles._();
 
-  static Query<Article> query([String? connection]) =>
-      Model.query<Article>(connection: connection);
+  static Query<$Article> query([String? connection]) =>
+      Model.query<$Article>(connection: connection);
 
-  static Future<Article?> find(Object id, {String? connection}) =>
-      Model.find<Article>(id, connection: connection);
+  static Future<$Article?> find(Object id, {String? connection}) =>
+      Model.find<$Article>(id, connection: connection);
 
-  static Future<Article> findOrFail(Object id, {String? connection}) =>
-      Model.findOrFail<Article>(id, connection: connection);
+  static Future<$Article> findOrFail(Object id, {String? connection}) =>
+      Model.findOrFail<$Article>(id, connection: connection);
 
-  static Future<List<Article>> all({String? connection}) =>
-      Model.all<Article>(connection: connection);
+  static Future<List<$Article>> all({String? connection}) =>
+      Model.all<$Article>(connection: connection);
 
   static Future<int> count({String? connection}) =>
-      Model.count<Article>(connection: connection);
+      Model.count<$Article>(connection: connection);
 
-  static Future<bool> exists({String? connection}) =>
-      Model.exists<Article>(connection: connection);
+  static Future<bool> anyExist({String? connection}) =>
+      Model.anyExist<$Article>(connection: connection);
 
-  static Query<Article> where(
+  static Query<$Article> where(
     String column,
     String operator,
     dynamic value, {
     String? connection,
-  }) => Model.where<Article>(column, operator, value, connection: connection);
+  }) => Model.where<$Article>(column, operator, value, connection: connection);
 
-  static Query<Article> whereIn(
+  static Query<$Article> whereIn(
     String column,
     List<dynamic> values, {
     String? connection,
-  }) => Model.whereIn<Article>(column, values, connection: connection);
+  }) => Model.whereIn<$Article>(column, values, connection: connection);
 
-  static Query<Article> orderBy(
+  static Query<$Article> orderBy(
     String column, {
     String direction = "asc",
     String? connection,
-  }) => Model.orderBy<Article>(
+  }) => Model.orderBy<$Article>(
     column,
     direction: direction,
     connection: connection,
   );
 
-  static Query<Article> limit(int count, {String? connection}) =>
-      Model.limit<Article>(count, connection: connection);
+  static Query<$Article> limit(int count, {String? connection}) =>
+      Model.limit<$Article>(count, connection: connection);
+
+  static Repository<$Article> repo([String? connection]) =>
+      Model.repository<$Article>(connection: connection);
 }
 
 class ArticleModelFactory {
   const ArticleModelFactory._();
 
-  static ModelDefinition<Article> get definition => _$ArticleModelDefinition;
+  static ModelDefinition<$Article> get definition => _$ArticleDefinition;
 
-  static ModelCodec<Article> get codec => definition.codec;
+  static ModelCodec<$Article> get codec => definition.codec;
 
   static Article fromMap(
     Map<String, Object?> data, {
@@ -214,7 +217,7 @@ class ArticleModelFactory {
   static Map<String, Object?> toMap(
     Article model, {
     ValueCodecRegistry? registry,
-  }) => definition.toMap(model, registry: registry);
+  }) => definition.toMap(model.toTracked(), registry: registry);
 
   static void registerWith(ModelRegistry registry) =>
       registry.register(definition);
@@ -230,11 +233,10 @@ class ArticleModelFactory {
   );
 }
 
-class _$ArticleModelCodec extends ModelCodec<Article> {
-  const _$ArticleModelCodec();
-
+class _$ArticleCodec extends ModelCodec<$Article> {
+  const _$ArticleCodec();
   @override
-  Map<String, Object?> encode(Article model, ValueCodecRegistry registry) {
+  Map<String, Object?> encode($Article model, ValueCodecRegistry registry) {
     return <String, Object?>{
       'id': registry.encodeField(_$ArticleIdField, model.id),
       'title': registry.encodeField(_$ArticleTitleField, model.title),
@@ -258,7 +260,7 @@ class _$ArticleModelCodec extends ModelCodec<Article> {
   }
 
   @override
-  Article decode(Map<String, Object?> data, ValueCodecRegistry registry) {
+  $Article decode(Map<String, Object?> data, ValueCodecRegistry registry) {
     final int articleIdValue =
         registry.decodeField<int>(_$ArticleIdField, data['id']) ??
         (throw StateError('Field id on Article cannot be null.'));
@@ -294,7 +296,7 @@ class _$ArticleModelCodec extends ModelCodec<Article> {
           data['category_id'],
         ) ??
         (throw StateError('Field categoryId on Article cannot be null.'));
-    final model = _$ArticleModel(
+    final model = $Article(
       id: articleIdValue,
       title: articleTitleValue,
       body: articleBodyValue,
@@ -320,8 +322,16 @@ class _$ArticleModelCodec extends ModelCodec<Article> {
   }
 }
 
-class _$ArticleModel extends Article {
-  _$ArticleModel({
+/// Generated tracked model class for [Article].
+///
+/// This class extends the user-defined [Article] model and adds
+/// attribute tracking, change detection, and relationship management.
+/// Instances of this class are returned by queries and repositories.
+///
+/// **Do not instantiate this class directly.** Use queries, repositories,
+/// or model factories to create tracked model instances.
+class $Article extends Article with ModelAttributes, ModelRelations {
+  $Article({
     required int id,
     required String title,
     String? body,
@@ -353,6 +363,21 @@ class _$ArticleModel extends Article {
       'reviewed_at': reviewedAt,
       'category_id': categoryId,
     });
+  }
+
+  /// Creates a tracked model instance from a user-defined model instance.
+  factory $Article.fromModel(Article model) {
+    return $Article(
+      id: model.id,
+      title: model.title,
+      body: model.body,
+      status: model.status,
+      rating: model.rating,
+      priority: model.priority,
+      publishedAt: model.publishedAt,
+      reviewedAt: model.reviewedAt,
+      categoryId: model.categoryId,
+    );
   }
 
   @override
@@ -404,6 +429,20 @@ class _$ArticleModel extends Article {
 
   void _attachOrmRuntimeMetadata(Map<String, Object?> values) {
     replaceAttributes(values);
-    attachModelDefinition(_$ArticleModelDefinition);
+    attachModelDefinition(_$ArticleDefinition);
+  }
+}
+
+extension ArticleOrmExtension on Article {
+  /// The Type of the generated ORM-managed model class.
+  /// Use this when you need to specify the tracked model type explicitly,
+  /// for example in generic type parameters.
+  static Type get trackedType => $Article;
+
+  /// Converts this immutable model to a tracked ORM-managed model.
+  /// The tracked model supports attribute tracking, change detection,
+  /// and persistence operations like save() and touch().
+  $Article toTracked() {
+    return $Article.fromModel(this);
   }
 }

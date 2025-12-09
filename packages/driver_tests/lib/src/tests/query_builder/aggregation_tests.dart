@@ -216,5 +216,261 @@ void runAggregationTests(DataSource dataSource) {
       expect(results, hasLength(1));
       expect(results.first.row['status'], 'draft');
     });
+
+    test('multiple aggregates in single query', () async {
+      await dataSource.repo<Article>().insertMany([
+        Article(
+          id: 1,
+          title: 'a',
+          status: 'draft',
+          rating: 5.0,
+          priority: 1,
+          publishedAt: DateTime.now(),
+          categoryId: 1,
+        ),
+        Article(
+          id: 2,
+          title: 'b',
+          status: 'draft',
+          rating: 3.0,
+          priority: 2,
+          publishedAt: DateTime.now(),
+          categoryId: 1,
+        ),
+      ]);
+
+      final result = await dataSource.context
+          .query<Article>()
+          .select(['status'])
+          .countAggregate(alias: 'count')
+          .withAggregate(AggregateFunction.sum, 'rating', alias: 'total_rating')
+          .withAggregate(AggregateFunction.avg, 'rating', alias: 'avg_rating')
+          .groupBy(['status'])
+          .rows();
+
+      expect(result, hasLength(1));
+      expect(result.first.row['count'], 2);
+      expect(result.first.row['total_rating'], 8.0);
+      expect(result.first.row['avg_rating'], 4.0);
+    });
+
+    test('GROUP BY with multiple columns', () async {
+      await dataSource.repo<Article>().insertMany([
+        Article(
+          id: 1,
+          title: 'a',
+          status: 'draft',
+          rating: 1.0,
+          priority: 1,
+          publishedAt: DateTime.now(),
+          categoryId: 1,
+        ),
+        Article(
+          id: 2,
+          title: 'b',
+          status: 'draft',
+          rating: 2.0,
+          priority: 2,
+          publishedAt: DateTime.now(),
+          categoryId: 2,
+        ),
+        Article(
+          id: 3,
+          title: 'c',
+          status: 'published',
+          rating: 3.0,
+          priority: 3,
+          publishedAt: DateTime.now(),
+          categoryId: 1,
+        ),
+      ]);
+
+      final results = await dataSource.context
+          .query<Article>()
+          .select(['status', 'categoryId'])
+          .countAggregate(alias: 'count')
+          .groupBy(['status', 'categoryId'])
+          .rows();
+
+      expect(results, hasLength(3));
+    });
+
+    // TODO: Implement orderBy support for aggregate aliases
+    // test('GROUP BY with ORDER BY', () async {
+    //   await dataSource.repo<Article>().insertMany([
+    //     Article(
+    //       id: 1,
+    //       title: 'a',
+    //       status: 'draft',
+    //       rating: 1.0,
+    //       priority: 1,
+    //       publishedAt: DateTime.now(),
+    //       categoryId: 1,
+    //     ),
+    //     Article(
+    //       id: 2,
+    //       title: 'b',
+    //       status: 'published',
+    //       rating: 2.0,
+    //       priority: 2,
+    //       publishedAt: DateTime.now(),
+    //       categoryId: 1,
+    //     ),
+    //     Article(
+    //       id: 3,
+    //       title: 'c',
+    //       status: 'draft',
+    //       rating: 3.0,
+    //       priority: 3,
+    //       publishedAt: DateTime.now(),
+    //       categoryId: 2,
+    //     ),
+    //   ]);
+
+    //   final results = await dataSource.context
+    //       .query<Article>()
+    //       .select(['status'])
+    //       .countAggregate(alias: 'count')
+    //       .groupBy(['status'])
+    //       .orderBy('count', descending: true)
+    //       .rows();
+
+    //   expect(results, hasLength(2));
+    //   final firstCount = results.first.row['count'] as num;
+    //   final lastCount = results.last.row['count'] as num;
+    //   expect(firstCount, greaterThanOrEqualTo(lastCount));
+    // });
+
+    test('HAVING with multiple conditions', () async {
+      await dataSource.repo<Article>().insertMany([
+        Article(
+          id: 1,
+          title: 'a',
+          status: 'draft',
+          rating: 5.0,
+          priority: 1,
+          publishedAt: DateTime.now(),
+          categoryId: 1,
+        ),
+        Article(
+          id: 2,
+          title: 'b',
+          status: 'draft',
+          rating: 3.0,
+          priority: 2,
+          publishedAt: DateTime.now(),
+          categoryId: 1,
+        ),
+        Article(
+          id: 3,
+          title: 'c',
+          status: 'published',
+          rating: 2.0,
+          priority: 3,
+          publishedAt: DateTime.now(),
+          categoryId: 2,
+        ),
+      ]);
+
+      final results = await dataSource.context
+          .query<Article>()
+          .select(['status'])
+          .countAggregate(alias: 'count')
+          .withAggregate(AggregateFunction.avg, 'rating', alias: 'avg_rating')
+          .groupBy(['status'])
+          .having('count', PredicateOperator.greaterThan, 1)
+          .having('avg_rating', PredicateOperator.greaterThan, 3.0)
+          .rows();
+
+      expect(results, hasLength(1));
+      expect(results.first.row['status'], 'draft');
+    });
+
+    test('aggregate with WHERE clause', () async {
+      await dataSource.repo<Article>().insertMany([
+        Article(
+          id: 1,
+          title: 'a',
+          status: 'draft',
+          rating: 1.0,
+          priority: 1,
+          publishedAt: DateTime.now(),
+          categoryId: 1,
+        ),
+        Article(
+          id: 2,
+          title: 'b',
+          status: 'published',
+          rating: 2.0,
+          priority: 2,
+          publishedAt: DateTime.now(),
+          categoryId: 1,
+        ),
+        Article(
+          id: 3,
+          title: 'c',
+          status: 'draft',
+          rating: 3.0,
+          priority: 3,
+          publishedAt: DateTime.now(),
+          categoryId: 2,
+        ),
+      ]);
+
+      final count = await dataSource.context
+          .query<Article>()
+          .whereEquals('status', 'draft')
+          .count();
+
+      expect(count, 2);
+    });
+
+    test('min/max with WHERE clause', () async {
+      await dataSource.repo<Article>().insertMany([
+        Article(
+          id: 1,
+          title: 'a',
+          status: 'draft',
+          rating: 1.0,
+          priority: 1,
+          publishedAt: DateTime.now(),
+          categoryId: 1,
+        ),
+        Article(
+          id: 2,
+          title: 'b',
+          status: 'draft',
+          rating: 5.0,
+          priority: 2,
+          publishedAt: DateTime.now(),
+          categoryId: 1,
+        ),
+        Article(
+          id: 3,
+          title: 'c',
+          status: 'published',
+          rating: 10.0,
+          priority: 3,
+          publishedAt: DateTime.now(),
+          categoryId: 2,
+        ),
+      ]);
+
+      final maxDraftRating = await dataSource.context
+          .query<Article>()
+          .whereEquals('status', 'draft')
+          .maxValue('rating');
+
+      expect(maxDraftRating, 5.0);
+    });
+
+    test('aggregate on empty result set', () async {
+      final count = await dataSource.context
+          .query<Article>()
+          .whereEquals('id', 99999)
+          .count();
+
+      expect(count, 0);
+    });
   });
 }

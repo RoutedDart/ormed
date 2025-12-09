@@ -10,6 +10,7 @@ import 'src/sqlite_adapter.dart';
 export 'src/sqlite_grammar.dart';
 export 'src/sqlite_adapter.dart';
 export 'src/sqlite_connector.dart';
+export 'src/sqlite_codecs.dart';
 
 final _sqliteDriverRegistration = (() {
   DriverRegistry.registerDriver('sqlite', ({
@@ -47,8 +48,10 @@ OrmConnectionHandle registerSqliteOrmConnection({
   ConnectionConfig? connection,
   ConnectionManager? manager,
   bool singleton = true,
-  ValueCodecRegistry? codecRegistry,
 }) {
+  // Ensure SQLite codecs are registered
+  SqliteDriverAdapter.registerCodecs();
+  
   final factory = OrmConnectionFactory(manager: manager);
   final connectionConfig = connection ?? ConnectionConfig(name: name);
   return factory.register(
@@ -58,12 +61,10 @@ OrmConnectionHandle registerSqliteOrmConnection({
     builder: (_) {
       final adapter = SqliteDriverAdapter.custom(
         config: database,
-        codecRegistry: codecRegistry,
       );
       final context = QueryContext(
         registry: registry,
         driver: adapter,
-        codecRegistry: adapter.codecs,
       );
       return OrmConnection(
         config: connectionConfig,

@@ -35,11 +35,8 @@ class SqlMigrationLedger implements MigrationLedger {
   Future<T> _withDriver<T>(Future<T> Function(DriverAdapter driver) action) =>
       _driverInvoker.invoke(action);
 
-  QueryContext _contextForDriver(DriverAdapter driver) => QueryContext(
-    registry: _ledgerRegistry,
-    driver: driver,
-    codecRegistry: driver.codecs,
-  );
+  QueryContext _contextForDriver(DriverAdapter driver) =>
+      QueryContext(registry: _ledgerRegistry, driver: driver);
 
   @override
   Future<void> ensureInitialized() => _withDriver((driver) async {
@@ -84,7 +81,7 @@ class SqlMigrationLedger implements MigrationLedger {
       _withDriver((driver) async {
         final context = _contextForDriver(driver);
         final records = await context
-            .query<OrmMigrationRecord>()
+            .query<$OrmMigrationRecord>()
             .orderBy('appliedAt')
             .get();
         return records
@@ -106,9 +103,9 @@ class SqlMigrationLedger implements MigrationLedger {
     required int batch,
   }) => _withDriver((driver) async {
     final context = _contextForDriver(driver);
-    final repository = context.repository<OrmMigrationRecord>();
+    final repository = context.repository<$OrmMigrationRecord>();
     await repository.insert(
-      OrmMigrationRecord(
+      $OrmMigrationRecord(
         id: descriptor.id.toString(),
         checksum: descriptor.checksum,
         appliedAt: appliedAt.toUtc(),
@@ -119,25 +116,26 @@ class SqlMigrationLedger implements MigrationLedger {
 
   @override
   Future<int> nextBatchNumber() => _withDriver((driver) async {
-    final table = _quoteIdentifier(driver, tableName);
-    final batchColumn = _quoteIdentifier(driver, 'batch');
-    final rows = await driver.queryRaw(
-      'SELECT MAX($batchColumn) as max_batch FROM $table',
-    );
-    if (rows.isEmpty) return 1;
-    final value = rows.first['max_batch'];
-    if (value == null) return 1;
-    if (value is num) {
-      return value.toInt() + 1;
-    }
-    final parsed = int.tryParse(value.toString());
-    return (parsed ?? 0) + 1;
+    final context = _contextForDriver(driver);
+
+    // Find the max batch number by processing records in chunks
+    var maxBatch = 0;
+    await context.query<$OrmMigrationRecord>().chunk(50, (rows) {
+      for (final row in rows) {
+        if (row.model.batch > maxBatch) {
+          maxBatch = row.model.batch;
+        }
+      }
+      return true; // Continue processing
+    });
+
+    return maxBatch + 1;
   });
 
   @override
   Future<void> remove(MigrationId id) => _withDriver((driver) async {
     final context = _contextForDriver(driver);
-    final repository = context.repository<OrmMigrationRecord>();
+    final repository = context.repository<$OrmMigrationRecord>();
     await repository.deleteByKeys([
       {'id': id.toString()},
     ]);

@@ -15,4 +15,6 @@ enum DriverCapability {
   caseInsensitiveLike,
   rightJoin,
   distinctOn,
+  databaseManagement,
+  foreignKeyConstraintControl,
 }

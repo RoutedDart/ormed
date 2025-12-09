@@ -26,7 +26,6 @@ void main() {
     final context = QueryContext(
       registry: registry,
       driver: adapter,
-      codecRegistry: adapter.codecs,
     );
     
     // Clean up and create schema

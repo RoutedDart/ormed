@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import 'package:ormed/ormed.dart';
 
-
 /// SQLite-specific codec that stores JSON scalars directly as strings.
 class SqlitePayloadCodec extends ValueCodec<Map<String, Object?>> {
   const SqlitePayloadCodec();
@@ -16,6 +15,10 @@ class SqlitePayloadCodec extends ValueCodec<Map<String, Object?>> {
   @override
   Map<String, Object?>? decode(Object? value) {
     if (value == null) return null;
+    // SQLite may return already-decoded Map in some cases
+    if (value is Map) {
+      return Map<String, Object?>.from(value);
+    }
     final input = value as String;
     final decoded = jsonDecode(input) as Map<String, dynamic>;
     return Map<String, Object?>.from(decoded);

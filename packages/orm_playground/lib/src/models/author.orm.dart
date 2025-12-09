@@ -100,8 +100,8 @@ class Authors {
   static Future<int> count({String? connection}) =>
       Model.count<Author>(connection: connection);
 
-  static Future<bool> exists({String? connection}) =>
-      Model.exists<Author>(connection: connection);
+  static Future<bool> anyExist({String? connection}) =>
+      Model.anyExist<Author>(connection: connection);
 
   static Query<Author> where(
     String column,
@@ -149,6 +149,9 @@ class AuthorModelFactory {
 
   static void registerWith(ModelRegistry registry) =>
       registry.register(definition);
+
+  static ModelFactoryConnection<Author> withConnection(QueryContext context) =>
+      ModelFactoryConnection<Author>(definition: definition, context: context);
 
   static ModelFactoryBuilder<Author> factory({
     GeneratorProvider? generatorProvider,
@@ -256,11 +259,4 @@ class _$AuthorModel extends Author {
     replaceAttributes(values);
     attachModelDefinition(_$AuthorModelDefinition);
   }
-}
-
-extension AuthorAttributeSetters on Author {
-  set id(int? value) => setAttribute('id', value);
-  set name(String value) => setAttribute('name', value);
-  set createdAt(DateTime? value) => setAttribute('created_at', value);
-  set updatedAt(DateTime? value) => setAttribute('updated_at', value);
 }
