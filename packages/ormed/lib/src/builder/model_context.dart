@@ -325,6 +325,30 @@ class ModelContext {
         ? maybeTypeName(codecType) 
         : (castString ?? modelLevelCast);
 
+    // Read insertable/updatable behavior controls
+    final insertableValue = reader?.peek('insertable');
+    final updatableValue = reader?.peek('updatable');
+    final defaultDartValueObj = reader?.peek('defaultDartValue');
+
+    // Extract the actual value from the DartObject
+    final bool? insertable = insertableValue?.isNull ?? true
+        ? null
+        : insertableValue?.boolValue;
+    final bool? updatable = updatableValue?.isNull ?? true
+        ? null
+        : updatableValue?.boolValue;
+    final Object? defaultDartValue = _extractDefaultDartValue(defaultDartValueObj);
+
+    // Check if this is an auto-increment field
+    final isAutoIncrement = reader?.peek('autoIncrement')?.boolValue ?? false;
+
+    // Infer insertable: false for auto-increment if not explicitly set
+    final effectiveInsertable = insertable ?? (isAutoIncrement ? false : null);
+
+    // Infer default dart value for auto-increment int fields
+    final effectiveDefaultDartValue = defaultDartValue ??
+        (isAutoIncrement && (type == 'int' || type == 'int?') ? 0 : null);
+
     return FieldDescriptor(
       owner: className,
       name: fieldName,
@@ -335,7 +359,7 @@ class ModelContext {
       isNullable: effectiveNullable,
       isUnique: reader?.peek('isUnique')?.boolValue ?? false,
       isIndexed: reader?.peek('isIndexed')?.boolValue ?? false,
-      autoIncrement: reader?.peek('autoIncrement')?.boolValue ?? false,
+      autoIncrement: isAutoIncrement,
       columnType: reader?.peek('columnType')?.stringValue,
       defaultValueSql: reader?.peek('defaultValueSql')?.stringValue,
       codecType: effectiveCodecType,
@@ -347,7 +371,20 @@ class ModelContext {
               : reader?.peek('columnName')?.stringValue),
       driverOverrides: driverOverrides,
       attributeMetadata: attributeMetadata,
+      insertable: effectiveInsertable,
+      updatable: updatable,
+      defaultDartValue: effectiveDefaultDartValue,
     );
+  }
+
+  /// Extracts a Dart value from a DartObject for defaultDartValue.
+  Object? _extractDefaultDartValue(ConstantReader? reader) {
+    if (reader == null || reader.isNull) return null;
+    if (reader.isBool) return reader.boolValue;
+    if (reader.isInt) return reader.intValue;
+    if (reader.isDouble) return reader.doubleValue;
+    if (reader.isString) return reader.stringValue;
+    return null;
   }
 
   FieldAttributeMetadata? _fieldAttributeMetadata(ConstantReader? reader) {

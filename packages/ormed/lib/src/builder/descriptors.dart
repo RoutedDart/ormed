@@ -25,6 +25,9 @@ class FieldDescriptor {
     this.softDeleteColumnName,
     this.driverOverrides = const {},
     this.attributeMetadata,
+    this.insertable,
+    this.updatable,
+    this.defaultDartValue,
   });
 
   final String owner;
@@ -45,6 +48,17 @@ class FieldDescriptor {
   final String? softDeleteColumnName;
   final Map<String, DriverFieldOverrideDescriptor> driverOverrides;
   final FieldAttributeMetadata? attributeMetadata;
+
+  /// Whether this field should be included in INSERT statements.
+  /// When `null`, defaults based on autoIncrement.
+  final bool? insertable;
+
+  /// Whether this field should be included in UPDATE statements.
+  /// When `null`, defaults based on isPrimaryKey.
+  final bool? updatable;
+
+  /// Default Dart value for new instances (sentinel for auto-increment).
+  final Object? defaultDartValue;
 
   String get identifier => '_\$$owner${pascalize(name)}Field';
 

@@ -245,10 +245,25 @@ class ModelSubclassEmitter {
           (f) => !f.isVirtual && f.name == paramName,
         );
         if (field == null) continue;
-        if (parameter.isRequired || !field.isNullable) {
+
+        // Check if this field has a default value (e.g., auto-increment sentinel)
+        final hasDefaultValue = field.defaultDartValue != null ||
+            (field.autoIncrement && !field.isNullable);
+
+        if (!hasDefaultValue && (parameter.isRequired || !field.isNullable)) {
           buffer.write('required ');
         }
-        buffer.write('${field.resolvedType} $paramName, ');
+        buffer.write('${field.resolvedType} $paramName');
+
+        // Add default value for auto-increment fields
+        if (hasDefaultValue) {
+          final defaultVal = field.defaultDartValue ??
+              (field.autoIncrement ? 0 : null);
+          if (defaultVal != null) {
+            buffer.write(' = ${_literalValue(defaultVal)}');
+          }
+        }
+        buffer.write(', ');
       }
     } else if (constructor.formalParameters.every(
       (param) => param.isPositional,
@@ -259,14 +274,37 @@ class ModelSubclassEmitter {
           (f) => !f.isVirtual && f.name == paramName,
         );
         if (field == null) continue;
-        if (parameter.isRequired || !field.isNullable) {
+
+        // Check if this field has a default value
+        final hasDefaultValue = field.defaultDartValue != null ||
+            (field.autoIncrement && !field.isNullable);
+
+        if (!hasDefaultValue && (parameter.isRequired || !field.isNullable)) {
           buffer.write('required ');
         }
-        buffer.write('${field.resolvedType} $paramName, ');
+        buffer.write('${field.resolvedType} $paramName');
+
+        // Add default value for auto-increment fields
+        if (hasDefaultValue) {
+          final defaultVal = field.defaultDartValue ??
+              (field.autoIncrement ? 0 : null);
+          if (defaultVal != null) {
+            buffer.write(' = ${_literalValue(defaultVal)}');
+          }
+        }
+        buffer.write(', ');
       }
     }
     buffer.write('})');
     return buffer.toString();
+  }
+
+  /// Converts a Dart value to its literal string representation.
+  String _literalValue(Object? value) {
+    if (value == null) return 'null';
+    if (value is String) return "'$value'";
+    if (value is int || value is double || value is bool) return '$value';
+    return '$value';
   }
 
   String _superInvocation(ConstructorElement constructor) {
