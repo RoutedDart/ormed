@@ -154,14 +154,19 @@ class QueryContext implements ConnectionResolver {
     );
   }
 
-  /// Starts a query builder targeting an arbitrary table.
+  /// Starts a query builder targeting a table by name.
   ///
-  /// This method allows you to query a table directly without a predefined model.
+  /// If a model is registered for the given table name, its definition will be used,
+  /// providing full field metadata for inserts, updates, and queries.
+  /// The registered model's schema is used (which is typically null for models
+  /// that don't specify a schema), ensuring consistency with typed queries.
+  /// Otherwise, an ad-hoc definition is created for raw map access.
+  ///
   /// The results will be returned as `Map<String, Object?>`.
   ///
   /// [table] is the name of the table to query.
   /// [as] is an optional alias for the table.
-  /// [schema] is an optional schema name for the table.
+  /// [schema] is an optional schema name for the table (only used for unregistered tables).
   /// [scopes] are optional ad-hoc scopes to apply to the query.
   /// [columns] are optional ad-hoc columns to include in the select statement.
   Query<Map<String, Object?>> table(
@@ -171,6 +176,31 @@ class QueryContext implements ConnectionResolver {
     List<String>? scopes,
     List<AdHocColumn> columns = const [],
   }) {
+    // Try to find a registered model definition for this table
+    final registeredDef = registry.findByTableName(table);
+
+    if (registeredDef != null) {
+      // Use the registered definition but wrap it to return Map<String, Object?>
+      // Use the registered definition's schema (typically null) to match typed query behavior.
+      // Only use the passed schema if the registered def has no schema AND a schema was explicitly provided.
+      final wrappedDefinition = TableQueryDefinition(
+        underlying: registeredDef,
+        // Don't override the registered model's schema with the context default.
+        // This ensures table("authors") behaves like query<$Author>().
+        schema: registeredDef.schema,
+        alias: as,
+      );
+      return Query(
+        definition: wrappedDefinition,
+        context: this,
+        tableAlias: as,
+        globalScopesApplied: false,
+        ignoreAllGlobalScopes: true,
+        adHocScopes: scopes ?? const [],
+      );
+    }
+
+    // Fall back to ad-hoc definition for unregistered tables
     final definition = AdHocModelDefinition(
       tableName: table,
       schema: schema,

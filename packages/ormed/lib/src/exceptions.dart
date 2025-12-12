@@ -32,6 +32,16 @@ class ModelNotRegisteredByName implements Exception {
   String toString() => 'ModelNotRegisteredByName: $name is not registered.';
 }
 
+/// Thrown when a model is requested by table name but not found in the registry.
+class ModelNotRegisteredByTableName implements Exception {
+  ModelNotRegisteredByTableName(this.tableName);
+
+  final String tableName;
+
+  @override
+  String toString() => 'ModelNotRegisteredByTableName: no model registered for table "$tableName".';
+}
+
 /// Thrown when a query expected at least one row but none were returned.
 class ModelNotFoundException implements Exception {
   ModelNotFoundException(this.modelName, {this.key});

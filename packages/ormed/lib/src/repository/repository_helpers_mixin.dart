@@ -6,17 +6,26 @@ mixin RepositoryHelpersMixin<T> on RepositoryBase<T> {
     T model, {
     JsonUpdateBuilder<T>? jsonUpdates,
   }) {
-    final values = definition.toMap(model, registry: codecs);
+    final allValues = definition.toMap(model, registry: codecs);
     final keyColumn = definition.primaryKeyField?.columnName;
     if (keyColumn == null) {
       throw StateError(
         'Primary key required for mutations on ${definition.modelName}.',
       );
     }
-    final keyValue = values[keyColumn];
+    final keyValue = allValues[keyColumn];
     if (keyValue == null) {
       throw StateError('Primary key column $keyColumn cannot be null.');
     }
+
+    // Filter out non-updatable fields (like primary keys)
+    final values = <String, Object?>{};
+    for (final field in definition.fields) {
+      if (field.isUpdatable && allValues.containsKey(field.columnName)) {
+        values[field.columnName] = allValues[field.columnName];
+      }
+    }
+
     final jsonClauses = jsonUpdatesFor(model, jsonUpdates);
     return MutationRow(
       values: values,
@@ -72,14 +81,15 @@ mixin RepositoryHelpersMixin<T> on RepositoryBase<T> {
           
           final map = definition.toMap(model, registry: codecs);
 
-          // Filter out auto-increment primary keys with default/zero values
-          // to allow the database to generate them
+          // Filter out non-insertable fields and auto-increment fields with sentinel values
           final filtered = Map<String, Object?>.from(map);
           for (final field in definition.fields) {
-            if (field.isPrimaryKey && field.autoIncrement) {
+            // Skip fields marked as non-insertable
+            if (!field.isInsertable) {
               final value = map[field.columnName];
-              // Remove if null, 0, or empty string (common sentinel values)
-              if (value == null || value == 0 || value == '') {
+              // Only remove if value is a sentinel (null, -1, 0, empty string)
+              // This allows explicitly set values to pass through
+              if (_isSentinelValue(value, field)) {
                 filtered.remove(field.columnName);
               }
             }
@@ -99,6 +109,26 @@ mixin RepositoryHelpersMixin<T> on RepositoryBase<T> {
       returning: returning,
       ignoreConflicts: ignoreConflicts,
     );
+  }
+
+  /// Checks if a value is a sentinel value indicating "not set".
+  ///
+  /// For auto-increment fields, sentinel values include:
+  /// - `null`
+  /// - `-1` (common sentinel for int IDs)
+  /// - `0` (alternative sentinel)
+  /// - Empty string (for non-int PKs)
+  bool _isSentinelValue(Object? value, FieldDefinition field) {
+    if (value == null) return true;
+    if (field.autoIncrement) {
+      if (value == 0 || value == -1) return true;
+    }
+    if (value == '') return true;
+    // Check against configured default dart value
+    if (field.defaultDartValue != null && value == field.defaultDartValue) {
+      return true;
+    }
+    return false;
   }
 
   MutationPlan buildUpdatePlan(
@@ -249,7 +279,7 @@ mixin RepositoryHelpersMixin<T> on RepositoryBase<T> {
   void _applyInsertTimestampsToModel(T model) {
     if (model is! ModelAttributes) return;
     
-    final now = Carbon.now().toDateTime();
+    final now = Carbon.now().toUtc().toDateTime();
     
     // Check if model has created_at field (snake_case only)
     try {
@@ -288,7 +318,7 @@ mixin RepositoryHelpersMixin<T> on RepositoryBase<T> {
   void _applyUpdateTimestampsToModel(T model) {
     if (model is! ModelAttributes) return;
     
-    final now = Carbon.now().toDateTime();
+    final now = Carbon.now().toUtc().toDateTime();
     
     // Check if model has updated_at field (snake_case only)
     try {
@@ -380,6 +410,6 @@ mixin RepositoryHelpersMixin<T> on RepositoryBase<T> {
   /// Creates an appropriate timestamp value based on the field's Dart type.
   /// Returns DateTime since codecs expect DateTime, not Carbon.
   Object _createTimestampValue(FieldDefinition field) {
-    return Carbon.now().toDateTime();
+    return Carbon.now().toUtc().toDateTime();
   }
 }

@@ -3,9 +3,6 @@ import 'dart:mirrors';
 import 'package:collection/collection.dart';
 import 'package:ormed/ormed.dart';
 
-import 'annotations.dart';
-import 'model_mixins/model_attributes.dart';
-import 'value_codec.dart';
 
 /// Runtime description of a generated ORM model.
 class ModelDefinition<TModel> {
@@ -76,7 +73,13 @@ class ModelDefinition<TModel> {
   /// 
   /// Accepts both the user-defined model and the generated tracked model.
   /// Automatically converts user-defined models to tracked models if needed.
+  /// For ad-hoc queries where TModel is Map<String, Object?>, returns the map directly.
   Map<String, Object?> toMap(covariant dynamic model, {ValueCodecRegistry? registry}) {
+    // Handle ad-hoc queries where model is already a Map
+    if (model is Map<String, Object?>) {
+      return Map<String, Object?>.from(model);
+    }
+
     // Check if already a tracked model
     if (model is TModel && model is ModelAttributes) {
       return codec.encode(model, registry ?? ValueCodecRegistry.instance);
@@ -256,6 +259,9 @@ class FieldDefinition {
     this.defaultValueSql,
     this.codecType,
     this.driverOverrides = const {},
+    this.insertable,
+    this.updatable,
+    this.defaultDartValue,
   });
 
   /// The Dart property name.
@@ -296,6 +302,33 @@ class FieldDefinition {
 
   /// Driver-specific overrides for this field.
   final Map<String, FieldDriverOverride> driverOverrides;
+
+  /// Whether this field should be included in INSERT statements.
+  ///
+  /// When `null`, computed based on:
+  /// - `false` for auto-increment fields
+  /// - `true` otherwise
+  final bool? insertable;
+
+  /// Whether this field should be included in UPDATE statements.
+  ///
+  /// When `null`, computed based on:
+  /// - `false` for primary key fields
+  /// - `true` otherwise
+  final bool? updatable;
+
+  /// Default Dart value for new instances (sentinel for auto-increment).
+  final Object? defaultDartValue;
+
+  /// Returns whether this field should be included in INSERT statements.
+  ///
+  /// Auto-increment fields are excluded by default unless explicitly set.
+  bool get isInsertable => insertable ?? !autoIncrement;
+
+  /// Returns whether this field should be included in UPDATE statements.
+  ///
+  /// Primary key fields are excluded by default unless explicitly set.
+  bool get isUpdatable => updatable ?? !isPrimaryKey;
 
   /// Returns the driver-specific override for this field, if any.
   FieldDriverOverride? overrideFor(String? driver) {
@@ -513,3 +546,84 @@ class _MapModelCodec extends ModelCodec<Map<String, Object?>> {
     ValueCodecRegistry registry,
   ) => Map<String, Object?>.from(data);
 }
+
+/// A wrapper definition that uses an underlying registered model definition
+/// but returns `Map<String, Object?>` for table() queries.
+///
+/// This allows `table("tableName")` to leverage the field metadata from
+/// registered models while still returning untyped maps.
+class TableQueryDefinition extends ModelDefinition<Map<String, Object?>> {
+  TableQueryDefinition({
+    required this.underlying,
+    String? schema,
+    this.alias,
+  }) : super(
+         modelName: 'TableQuery<${underlying.tableName}>',
+         tableName: underlying.tableName,
+         schema: schema ?? underlying.schema,
+         fields: underlying.fields,
+         relations: underlying.relations,
+         softDeleteColumn: underlying.softDeleteColumn,
+         metadata: underlying.metadata,
+         codec: _TableQueryCodec(underlying),
+       );
+
+  /// The underlying registered model definition.
+  final ModelDefinition<dynamic> underlying;
+
+  /// Optional table alias.
+  final String? alias;
+
+  @override
+  FieldDefinition? get primaryKeyField => underlying.primaryKeyField;
+}
+
+/// Codec for _TableQueryDefinition that encodes/decodes using the underlying
+/// model's codec but returns Map<String, Object?>.
+class _TableQueryCodec extends ModelCodec<Map<String, Object?>> {
+  const _TableQueryCodec(this.underlying);
+
+  final ModelDefinition<dynamic> underlying;
+
+  @override
+  Map<String, Object?> encode(
+    Map<String, Object?> model,
+    ValueCodecRegistry registry,
+  ) {
+    // Encode using field definitions for proper value transformation
+    final result = <String, Object?>{};
+    for (final field in underlying.fields) {
+      final key = field.columnName;
+      if (model.containsKey(key)) {
+        result[key] = registry.encodeField(field, model[key]);
+      } else if (model.containsKey(field.name)) {
+        // Also check by property name
+        result[key] = registry.encodeField(field, model[field.name]);
+      }
+    }
+    return result;
+  }
+
+  @override
+  Map<String, Object?> decode(
+    Map<String, Object?> data,
+    ValueCodecRegistry registry,
+  ) {
+    // Decode using field definitions for proper value transformation
+    final result = <String, Object?>{};
+    for (final field in underlying.fields) {
+      final key = field.columnName;
+      if (data.containsKey(key)) {
+        result[key] = registry.decodeField(field, data[key]);
+      }
+    }
+    // Also include any extra columns not in the definition
+    for (final entry in data.entries) {
+      if (!result.containsKey(entry.key)) {
+        result[entry.key] = entry.value;
+      }
+    }
+    return result;
+  }
+}
+

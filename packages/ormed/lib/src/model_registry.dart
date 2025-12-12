@@ -7,6 +7,7 @@ import 'model_definition.dart';
 class ModelRegistry {
   final Map<Type, ModelDefinition<dynamic>> _definitions = {};
   final Map<String, ModelDefinition<dynamic>> _definitionsByName = {};
+  final Map<String, ModelDefinition<dynamic>> _definitionsByTable = {};
   final StreamController<ModelDefinition<dynamic>> _onRegistered =
       StreamController.broadcast();
   final List<void Function(ModelDefinition<dynamic>)> _onRegisteredCallbacks =
@@ -26,6 +27,7 @@ class ModelRegistry {
     }
     _definitions[definition.modelType] = definition;
     _definitionsByName[definition.modelName] = definition;
+    _definitionsByTable[definition.tableName] = definition;
     _onRegistered.add(definition);
     for (final callback in _onRegisteredCallbacks) {
       callback(definition);
@@ -39,6 +41,7 @@ class ModelRegistry {
       }
       _definitions[definition.modelType] = definition;
       _definitionsByName[definition.modelName] = definition;
+      _definitionsByTable[definition.tableName] = definition;
       _onRegistered.add(definition);
       for (final callback in _onRegisteredCallbacks) {
         callback(definition);
@@ -94,6 +97,20 @@ class ModelRegistry {
     final definition = _definitionsByName[name];
     if (definition == null) {
       throw ModelNotRegisteredByName(name);
+    }
+    return definition;
+  }
+
+  /// Returns the model definition for the given [tableName], or null if not found.
+  ModelDefinition<dynamic>? findByTableName(String tableName) {
+    return _definitionsByTable[tableName];
+  }
+
+  /// Returns the model definition for the given [tableName] or throws.
+  ModelDefinition<dynamic> expectByTableName(String tableName) {
+    final definition = _definitionsByTable[tableName];
+    if (definition == null) {
+      throw ModelNotRegisteredByTableName(tableName);
     }
     return definition;
   }
