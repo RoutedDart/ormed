@@ -9,9 +9,10 @@ part 'author.orm.dart';
 
 @OrmModel(table: 'authors')
 class Author extends Model<Author> with ModelFactoryCapable, Timestamps {
-  const Author({required this.id, required this.name, this.active = false}) : posts = const [];
+  const Author({required this.id, required this.name, this.active = false})
+    : posts = const [];
 
-  @OrmField(isPrimaryKey: true)
+  @OrmField(isPrimaryKey: true, autoIncrement: true)
   final int id;
 
   final String name;

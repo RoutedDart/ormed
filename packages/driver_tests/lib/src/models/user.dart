@@ -7,12 +7,18 @@ import 'package:ormed/ormed.dart';
 
 part 'user.orm.dart';
 
-@OrmModel(table: 'users', hidden: ['profile'], fillable: ['email'], guarded: ['id'], casts: {'createdAt': 'datetime'})
+@OrmModel(
+  table: 'users',
+  hidden: ['profile'],
+  fillable: ['email'],
+  guarded: ['id'],
+  casts: {'createdAt': 'datetime'},
+)
 class User extends Model<User> with ModelFactoryCapable {
   const User({
     required this.id,
     required this.email,
-    this.active=false,
+    this.active = false,
     this.name,
     this.age,
     this.profile,
@@ -40,7 +46,6 @@ class User extends Model<User> with ModelFactoryCapable {
   @OrmField(codec: JsonMapCodec)
   final Map<String, Object?>? metadata;
 }
-
 
 class JsonMapCodec extends ValueCodec<Map<String, Object?>> {
   const JsonMapCodec();

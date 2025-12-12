@@ -16,7 +16,9 @@ const FieldDefinition _$AuthorIdField = FieldDefinition(
   isNullable: false,
   isUnique: false,
   isIndexed: false,
-  autoIncrement: false,
+  autoIncrement: true,
+  insertable: false,
+  defaultDartValue: 0,
 );
 
 const FieldDefinition _$AuthorNameField = FieldDefinition(
@@ -215,8 +217,7 @@ class _$AuthorCodec extends ModelCodec<$Author> {
   @override
   $Author decode(Map<String, Object?> data, ValueCodecRegistry registry) {
     final int authorIdValue =
-        registry.decodeField<int>(_$AuthorIdField, data['id']) ??
-        (throw StateError('Field id on Author cannot be null.'));
+        registry.decodeField<int>(_$AuthorIdField, data['id']) ?? 0;
     final String authorNameValue =
         registry.decodeField<String>(_$AuthorNameField, data['name']) ??
         (throw StateError('Field name on Author cannot be null.'));
@@ -257,7 +258,7 @@ class _$AuthorCodec extends ModelCodec<$Author> {
 /// or model factories to create tracked model instances.
 class $Author extends Author
     with ModelAttributes, ModelRelations, TimestampsImpl {
-  $Author({required int id, required String name, required bool active})
+  $Author({int id = 0, required String name, required bool active})
     : super.new(id: id, name: name, active: active) {
     _attachOrmRuntimeMetadata({'id': id, 'name': name, 'active': active});
   }

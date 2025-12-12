@@ -6,7 +6,7 @@ class CreateSettingsTable extends Migration {
   @override
   void up(SchemaBuilder schema) {
     schema.create('settings', (table) {
-      table.integer('id').primaryKey();
+      table.integer('id').primaryKey().autoIncrement();
       table.json('payload'); // Use json type for Map<String, dynamic>
     });
   }

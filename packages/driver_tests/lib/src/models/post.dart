@@ -22,7 +22,7 @@ class Post extends Model<Post> with ModelFactoryCapable, TimestampsTZ {
        tags = const [],
        photos = const [];
 
-  @OrmField(isPrimaryKey: true)
+  @OrmField(isPrimaryKey: true, autoIncrement: true)
   final int id;
 
   @OrmField(columnName: 'author_id')

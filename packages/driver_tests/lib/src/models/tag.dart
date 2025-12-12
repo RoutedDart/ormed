@@ -11,7 +11,7 @@ part 'tag.orm.dart';
 class Tag extends Model<Tag> with ModelFactoryCapable {
   const Tag({required this.id, required this.label}) : posts = const [];
 
-  @OrmField(isPrimaryKey: true)
+  @OrmField(isPrimaryKey: true, autoIncrement: true)
   final int id;
 
   final String label;

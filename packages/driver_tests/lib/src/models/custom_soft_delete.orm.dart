@@ -66,6 +66,12 @@ final ModelDefinition<$CustomSoftDelete> _$CustomSoftDeleteDefinition =
       codec: _$CustomSoftDeleteCodec(),
     );
 
+// ignore: unused_element
+final customsoftdeleteModelDefinitionRegistration =
+    ModelFactoryRegistry.register<$CustomSoftDelete>(
+      _$CustomSoftDeleteDefinition,
+    );
+
 extension CustomSoftDeleteOrmDefinition on CustomSoftDelete {
   static ModelDefinition<$CustomSoftDelete> get definition =>
       _$CustomSoftDeleteDefinition;

@@ -6,7 +6,7 @@ class CreateCommentsTable extends Migration {
   @override
   void up(SchemaBuilder schema) {
     schema.create('comments', (table) {
-      table.integer('id').primaryKey();
+      table.integer('id').primaryKey().autoIncrement();
       table.string('body');
       table.dateTime('deleted_at').nullable(); // nullable field
     });

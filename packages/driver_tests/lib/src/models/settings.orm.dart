@@ -16,7 +16,9 @@ const FieldDefinition _$SettingIdField = FieldDefinition(
   isNullable: false,
   isUnique: false,
   isIndexed: false,
-  autoIncrement: false,
+  autoIncrement: true,
+  insertable: false,
+  defaultDartValue: 0,
 );
 
 const FieldDefinition _$SettingPayloadField = FieldDefinition(
@@ -154,8 +156,7 @@ class _$SettingCodec extends ModelCodec<$Setting> {
   @override
   $Setting decode(Map<String, Object?> data, ValueCodecRegistry registry) {
     final int settingIdValue =
-        registry.decodeField<int>(_$SettingIdField, data['id']) ??
-        (throw StateError('Field id on Setting cannot be null.'));
+        registry.decodeField<int>(_$SettingIdField, data['id']) ?? 0;
     final Map<String, dynamic> settingPayloadValue =
         registry.decodeField<Map<String, dynamic>>(
           _$SettingPayloadField,
@@ -180,7 +181,7 @@ class _$SettingCodec extends ModelCodec<$Setting> {
 /// **Do not instantiate this class directly.** Use queries, repositories,
 /// or model factories to create tracked model instances.
 class $Setting extends Setting with ModelAttributes, ModelRelations {
-  $Setting({required int id, required Map<String, dynamic> payload})
+  $Setting({int id = 0, required Map<String, dynamic> payload})
     : super.new(id: id, payload: payload) {
     _attachOrmRuntimeMetadata({'id': id, 'payload': payload});
   }

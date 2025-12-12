@@ -14,7 +14,7 @@ class Photo extends Model<Photo> with ModelFactoryCapable {
     required this.path,
   });
 
-  @OrmField(isPrimaryKey: true)
+  @OrmField(isPrimaryKey: true, autoIncrement: true)
   final int id;
 
   @OrmField(columnName: 'imageable_id')

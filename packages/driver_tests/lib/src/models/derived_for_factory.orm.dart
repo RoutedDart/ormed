@@ -41,7 +41,9 @@ const FieldDefinition _$DerivedForFactoryIdField = FieldDefinition(
   isNullable: false,
   isUnique: false,
   isIndexed: false,
-  autoIncrement: false,
+  autoIncrement: true,
+  insertable: false,
+  defaultDartValue: 0,
 );
 
 const FieldDefinition _$DerivedForFactoryBaseNameField = FieldDefinition(
@@ -232,8 +234,7 @@ class _$DerivedForFactoryCodec extends ModelCodec<$DerivedForFactory> {
           data['layerOneNotes'],
         );
     final int derivedForFactoryIdValue =
-        registry.decodeField<int>(_$DerivedForFactoryIdField, data['id']) ??
-        (throw StateError('Field id on DerivedForFactory cannot be null.'));
+        registry.decodeField<int>(_$DerivedForFactoryIdField, data['id']) ?? 0;
     final String? derivedForFactoryBaseNameValue = registry
         .decodeField<String?>(
           _$DerivedForFactoryBaseNameField,
@@ -266,7 +267,7 @@ class _$DerivedForFactoryCodec extends ModelCodec<$DerivedForFactory> {
 class $DerivedForFactory extends DerivedForFactory
     with ModelAttributes, ModelRelations {
   $DerivedForFactory({
-    required int id,
+    int id = 0,
     String? baseName,
     Map<String, Object?>? layerOneNotes,
     bool? layerTwoFlag,

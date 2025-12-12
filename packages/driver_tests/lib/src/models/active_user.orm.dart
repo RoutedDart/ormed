@@ -17,6 +17,8 @@ const FieldDefinition _$ActiveUserIdField = FieldDefinition(
   isUnique: false,
   isIndexed: false,
   autoIncrement: true,
+  insertable: false,
+  defaultDartValue: 0,
 );
 
 const FieldDefinition _$ActiveUserEmailField = FieldDefinition(
@@ -92,6 +94,10 @@ final ModelDefinition<$ActiveUser> _$ActiveUserDefinition = ModelDefinition(
   ),
   codec: _$ActiveUserCodec(),
 );
+
+// ignore: unused_element
+final activeuserModelDefinitionRegistration =
+    ModelFactoryRegistry.register<$ActiveUser>(_$ActiveUserDefinition);
 
 extension ActiveUserOrmDefinition on ActiveUser {
   static ModelDefinition<$ActiveUser> get definition => _$ActiveUserDefinition;
@@ -198,7 +204,9 @@ class _$ActiveUserCodec extends ModelCodec<$ActiveUser> {
       ),
       'deleted_at': registry.encodeField(
         _$ActiveUserDeletedAtField,
-        (model.getAttribute<DateTime?>('deleted_at')),
+        (model is ModelAttributes
+            ? model.getAttribute<DateTime?>('deleted_at')
+            : null),
       ),
     };
   }
@@ -254,7 +262,7 @@ class _$ActiveUserCodec extends ModelCodec<$ActiveUser> {
 class $ActiveUser extends ActiveUser
     with ModelAttributes, ModelRelations, SoftDeletesImpl {
   $ActiveUser({
-    int? id,
+    int? id = 0,
     required String email,
     String? name,
     required Map<String, Object?> settings,

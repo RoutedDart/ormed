@@ -16,7 +16,9 @@ const FieldDefinition _$CommentIdField = FieldDefinition(
   isNullable: false,
   isUnique: false,
   isIndexed: false,
-  autoIncrement: false,
+  autoIncrement: true,
+  insertable: false,
+  defaultDartValue: 0,
 );
 
 const FieldDefinition _$CommentBodyField = FieldDefinition(
@@ -170,8 +172,7 @@ class _$CommentCodec extends ModelCodec<$Comment> {
   @override
   $Comment decode(Map<String, Object?> data, ValueCodecRegistry registry) {
     final int commentIdValue =
-        registry.decodeField<int>(_$CommentIdField, data['id']) ??
-        (throw StateError('Field id on Comment cannot be null.'));
+        registry.decodeField<int>(_$CommentIdField, data['id']) ?? 0;
     final String commentBodyValue =
         registry.decodeField<String>(_$CommentBodyField, data['body']) ??
         (throw StateError('Field body on Comment cannot be null.'));
@@ -199,8 +200,7 @@ class _$CommentCodec extends ModelCodec<$Comment> {
 /// or model factories to create tracked model instances.
 class $Comment extends Comment
     with ModelAttributes, ModelRelations, SoftDeletesImpl {
-  $Comment({required int id, required String body})
-    : super.new(id: id, body: body) {
+  $Comment({int id = 0, required String body}) : super.new(id: id, body: body) {
     _attachOrmRuntimeMetadata({'id': id, 'body': body});
   }
 

@@ -11,7 +11,7 @@ part 'image.orm.dart';
 class Image extends Model<Image> with ModelFactoryCapable {
   const Image({required this.id, required this.label}) : primaryPhoto = null;
 
-  @OrmField(isPrimaryKey: true)
+  @OrmField(isPrimaryKey: true, autoIncrement: true)
   final int id;
 
   final String label;

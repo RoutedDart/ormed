@@ -9,7 +9,7 @@ part 'comment.orm.dart';
 class Comment extends Model<Comment> with ModelFactoryCapable, SoftDeletes {
   const Comment({required this.id, required this.body});
 
-  @OrmField(isPrimaryKey: true)
+  @OrmField(isPrimaryKey: true, autoIncrement: true)
   final int id;
 
   final String body;

@@ -8,7 +8,7 @@ part 'named_constructor_model.orm.dart';
   table: 'named_constructor_models',
   constructor: 'fromDatabase', // Specify which constructor to use
 )
-class NamedConstructorModel extends Model<NamedConstructorModel> {
+class NamedConstructorModel extends Model<NamedConstructorModel> with ModelFactoryCapable {
   // Default constructor - NOT used by the generator
   const NamedConstructorModel({
     required this.id,

@@ -6,7 +6,7 @@ class CreateArticlesTable extends Migration {
   @override
   void up(SchemaBuilder schema) {
     schema.create('articles', (table) {
-      table.integer('id').primaryKey();
+      table.integer('id').primaryKey().autoIncrement();
       table.string('title');
       table.text('body').nullable();
       table.string('status');

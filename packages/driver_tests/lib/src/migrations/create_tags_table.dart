@@ -6,7 +6,7 @@ class CreateTagsTable extends Migration {
   @override
   void up(SchemaBuilder schema) {
     schema.create('tags', (table) {
-      table.integer('id').primaryKey();
+      table.integer('id').primaryKey().autoIncrement();
       table.string('label');
     });
   }

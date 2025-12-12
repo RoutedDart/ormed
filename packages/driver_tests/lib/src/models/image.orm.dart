@@ -16,7 +16,9 @@ const FieldDefinition _$ImageIdField = FieldDefinition(
   isNullable: false,
   isUnique: false,
   isIndexed: false,
-  autoIncrement: false,
+  autoIncrement: true,
+  insertable: false,
+  defaultDartValue: 0,
 );
 
 const FieldDefinition _$ImageLabelField = FieldDefinition(
@@ -162,8 +164,7 @@ class _$ImageCodec extends ModelCodec<$Image> {
   @override
   $Image decode(Map<String, Object?> data, ValueCodecRegistry registry) {
     final int imageIdValue =
-        registry.decodeField<int>(_$ImageIdField, data['id']) ??
-        (throw StateError('Field id on Image cannot be null.'));
+        registry.decodeField<int>(_$ImageIdField, data['id']) ?? 0;
     final String imageLabelValue =
         registry.decodeField<String>(_$ImageLabelField, data['label']) ??
         (throw StateError('Field label on Image cannot be null.'));
@@ -185,7 +186,7 @@ class _$ImageCodec extends ModelCodec<$Image> {
 /// **Do not instantiate this class directly.** Use queries, repositories,
 /// or model factories to create tracked model instances.
 class $Image extends Image with ModelAttributes, ModelRelations {
-  $Image({required int id, required String label})
+  $Image({int id = 0, required String label})
     : super.new(id: id, label: label) {
     _attachOrmRuntimeMetadata({'id': id, 'label': label});
   }

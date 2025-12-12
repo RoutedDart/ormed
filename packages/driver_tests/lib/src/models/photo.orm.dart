@@ -16,7 +16,9 @@ const FieldDefinition _$PhotoIdField = FieldDefinition(
   isNullable: false,
   isUnique: false,
   isIndexed: false,
-  autoIncrement: false,
+  autoIncrement: true,
+  insertable: false,
+  defaultDartValue: 0,
 );
 
 const FieldDefinition _$PhotoImageableIdField = FieldDefinition(
@@ -190,8 +192,7 @@ class _$PhotoCodec extends ModelCodec<$Photo> {
   @override
   $Photo decode(Map<String, Object?> data, ValueCodecRegistry registry) {
     final int photoIdValue =
-        registry.decodeField<int>(_$PhotoIdField, data['id']) ??
-        (throw StateError('Field id on Photo cannot be null.'));
+        registry.decodeField<int>(_$PhotoIdField, data['id']) ?? 0;
     final int photoImageableIdValue =
         registry.decodeField<int>(
           _$PhotoImageableIdField,
@@ -233,7 +234,7 @@ class _$PhotoCodec extends ModelCodec<$Photo> {
 /// or model factories to create tracked model instances.
 class $Photo extends Photo with ModelAttributes, ModelRelations {
   $Photo({
-    required int id,
+    int id = 0,
     required int imageableId,
     required String imageableType,
     required String path,

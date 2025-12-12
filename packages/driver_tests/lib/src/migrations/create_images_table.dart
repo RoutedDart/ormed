@@ -6,7 +6,7 @@ class CreateImagesTable extends Migration {
   @override
   void up(SchemaBuilder schema) {
     schema.create('images', (table) {
-      table.integer('id').primaryKey();
+      table.integer('id').primaryKey().autoIncrement();
       table.string('label');
     });
   }

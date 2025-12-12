@@ -8,7 +8,7 @@ part 'settings.orm.dart';
 class Setting extends Model<Setting> with ModelFactoryCapable {
   const Setting({required this.id, required this.payload});
 
-  @OrmField(isPrimaryKey: true)
+  @OrmField(isPrimaryKey: true, autoIncrement: true)
   final int id;
 
   @OrmField(cast: 'json')

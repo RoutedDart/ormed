@@ -16,7 +16,9 @@ const FieldDefinition _$UniqueUserIdField = FieldDefinition(
   isNullable: false,
   isUnique: false,
   isIndexed: false,
-  autoIncrement: false,
+  autoIncrement: true,
+  insertable: false,
+  defaultDartValue: 0,
 );
 
 const FieldDefinition _$UniqueUserEmailField = FieldDefinition(
@@ -174,8 +176,7 @@ class _$UniqueUserCodec extends ModelCodec<$UniqueUser> {
   @override
   $UniqueUser decode(Map<String, Object?> data, ValueCodecRegistry registry) {
     final int uniqueUserIdValue =
-        registry.decodeField<int>(_$UniqueUserIdField, data['id']) ??
-        (throw StateError('Field id on UniqueUser cannot be null.'));
+        registry.decodeField<int>(_$UniqueUserIdField, data['id']) ?? 0;
     final String uniqueUserEmailValue =
         registry.decodeField<String>(_$UniqueUserEmailField, data['email']) ??
         (throw StateError('Field email on UniqueUser cannot be null.'));
@@ -205,7 +206,7 @@ class _$UniqueUserCodec extends ModelCodec<$UniqueUser> {
 /// **Do not instantiate this class directly.** Use queries, repositories,
 /// or model factories to create tracked model instances.
 class $UniqueUser extends UniqueUser with ModelAttributes, ModelRelations {
-  $UniqueUser({required int id, required String email, required bool active})
+  $UniqueUser({int id = 0, required String email, required bool active})
     : super.new(id: id, email: email, active: active) {
     _attachOrmRuntimeMetadata({'id': id, 'email': email, 'active': active});
   }

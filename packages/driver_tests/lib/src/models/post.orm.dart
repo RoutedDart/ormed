@@ -16,7 +16,9 @@ const FieldDefinition _$PostIdField = FieldDefinition(
   isNullable: false,
   isUnique: false,
   isIndexed: false,
-  autoIncrement: false,
+  autoIncrement: true,
+  insertable: false,
+  defaultDartValue: 0,
 );
 
 const FieldDefinition _$PostAuthorIdField = FieldDefinition(
@@ -283,8 +285,7 @@ class _$PostCodec extends ModelCodec<$Post> {
   @override
   $Post decode(Map<String, Object?> data, ValueCodecRegistry registry) {
     final int postIdValue =
-        registry.decodeField<int>(_$PostIdField, data['id']) ??
-        (throw StateError('Field id on Post cannot be null.'));
+        registry.decodeField<int>(_$PostIdField, data['id']) ?? 0;
     final int postAuthorIdValue =
         registry.decodeField<int>(_$PostAuthorIdField, data['author_id']) ??
         (throw StateError('Field authorId on Post cannot be null.'));
@@ -346,7 +347,7 @@ class _$PostCodec extends ModelCodec<$Post> {
 class $Post extends Post
     with ModelAttributes, ModelRelations, TimestampsTZImpl {
   $Post({
-    required int id,
+    int id = 0,
     required int authorId,
     required String title,
     required DateTime publishedAt,

@@ -10,7 +10,7 @@ class UniqueUser extends Model<UniqueUser> with ModelFactoryCapable {
     required this.active,
   });
 
-  @OrmField(isPrimaryKey: true)
+  @OrmField(isPrimaryKey: true, autoIncrement: true)
   final int id;
 
   final String email;

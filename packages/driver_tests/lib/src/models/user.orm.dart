@@ -17,6 +17,8 @@ const FieldDefinition _$UserIdField = FieldDefinition(
   isUnique: false,
   isIndexed: false,
   autoIncrement: true,
+  insertable: false,
+  defaultDartValue: 0,
 );
 
 const FieldDefinition _$UserEmailField = FieldDefinition(
@@ -306,7 +308,7 @@ class _$UserCodec extends ModelCodec<$User> {
 /// or model factories to create tracked model instances.
 class $User extends User with ModelAttributes, ModelRelations {
   $User({
-    required int id,
+    int id = 0,
     required String email,
     required bool active,
     String? name,

@@ -6,7 +6,7 @@ class CreateDriverOverrideEntriesTable extends Migration {
   @override
   void up(SchemaBuilder schema) {
     schema.create('driver_override_entries', (table) {
-      table.integer('id').primaryKey();
+      table.integer('id').primaryKey().autoIncrement();
       table.json('payload');
     });
   }

@@ -6,7 +6,7 @@ class CreateUniqueUsersTable extends Migration {
   @override
   void up(SchemaBuilder schema) {
     schema.create('unique_users', (table) {
-      table.integer('id').primaryKey();
+      table.integer('id').primaryKey().autoIncrement();
       table.string('email').unique();
       table.boolean('active');
     });

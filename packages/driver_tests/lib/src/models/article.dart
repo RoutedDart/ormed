@@ -19,7 +19,7 @@ class Article extends Model<Article> with ModelFactoryCapable {
     required this.categoryId,
   });
 
-  @OrmField(isPrimaryKey: true)
+  @OrmField(isPrimaryKey: true, autoIncrement: true)
   final int id;
 
   final String title;

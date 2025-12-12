@@ -8,7 +8,7 @@ abstract class BaseForFactory<T extends Model<T>> extends Model<T>
     with ModelFactoryCapable {
   const BaseForFactory({required this.id, this.baseName});
 
-  @OrmField(isPrimaryKey: true, hidden: true)
+  @OrmField(isPrimaryKey: true, autoIncrement: true, hidden: true)
   final int id;
 
   @OrmField(fillable: true)

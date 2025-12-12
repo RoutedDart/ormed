@@ -17,6 +17,8 @@ const FieldDefinition _$NamedConstructorModelIdField = FieldDefinition(
   isUnique: false,
   isIndexed: false,
   autoIncrement: true,
+  insertable: false,
+  defaultDartValue: 0,
 );
 
 const FieldDefinition _$NamedConstructorModelNameField = FieldDefinition(
@@ -65,6 +67,12 @@ _$NamedConstructorModelDefinition = ModelDefinition(
   ),
   codec: _$NamedConstructorModelCodec(),
 );
+
+// ignore: unused_element
+final namedconstructormodelModelDefinitionRegistration =
+    ModelFactoryRegistry.register<$NamedConstructorModel>(
+      _$NamedConstructorModelDefinition,
+    );
 
 extension NamedConstructorModelOrmDefinition on NamedConstructorModel {
   static ModelDefinition<$NamedConstructorModel> get definition =>
@@ -241,7 +249,7 @@ class _$NamedConstructorModelCodec extends ModelCodec<$NamedConstructorModel> {
 class $NamedConstructorModel extends NamedConstructorModel
     with ModelAttributes, ModelRelations {
   $NamedConstructorModel({
-    required int? id,
+    int? id = 0,
     required String name,
     required int value,
   }) : super.fromDatabase(id: id, name: name, value: value) {

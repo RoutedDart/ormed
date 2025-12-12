@@ -16,7 +16,9 @@ const FieldDefinition _$TagIdField = FieldDefinition(
   isNullable: false,
   isUnique: false,
   isIndexed: false,
-  autoIncrement: false,
+  autoIncrement: true,
+  insertable: false,
+  defaultDartValue: 0,
 );
 
 const FieldDefinition _$TagLabelField = FieldDefinition(
@@ -159,8 +161,7 @@ class _$TagCodec extends ModelCodec<$Tag> {
   @override
   $Tag decode(Map<String, Object?> data, ValueCodecRegistry registry) {
     final int tagIdValue =
-        registry.decodeField<int>(_$TagIdField, data['id']) ??
-        (throw StateError('Field id on Tag cannot be null.'));
+        registry.decodeField<int>(_$TagIdField, data['id']) ?? 0;
     final String tagLabelValue =
         registry.decodeField<String>(_$TagLabelField, data['label']) ??
         (throw StateError('Field label on Tag cannot be null.'));
@@ -179,8 +180,7 @@ class _$TagCodec extends ModelCodec<$Tag> {
 /// **Do not instantiate this class directly.** Use queries, repositories,
 /// or model factories to create tracked model instances.
 class $Tag extends Tag with ModelAttributes, ModelRelations {
-  $Tag({required int id, required String label})
-    : super.new(id: id, label: label) {
+  $Tag({int id = 0, required String label}) : super.new(id: id, label: label) {
     _attachOrmRuntimeMetadata({'id': id, 'label': label});
   }
 

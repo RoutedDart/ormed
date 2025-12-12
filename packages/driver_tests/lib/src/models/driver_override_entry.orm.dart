@@ -16,7 +16,9 @@ const FieldDefinition _$DriverOverrideEntryIdField = FieldDefinition(
   isNullable: false,
   isUnique: false,
   isIndexed: false,
-  autoIncrement: false,
+  autoIncrement: true,
+  insertable: false,
+  defaultDartValue: 0,
 );
 
 const FieldDefinition _$DriverOverrideEntryPayloadField = FieldDefinition(
@@ -70,6 +72,12 @@ final ModelDefinition<$DriverOverrideEntry> _$DriverOverrideEntryDefinition =
         softDeleteColumn: 'deleted_at',
       ),
       codec: _$DriverOverrideEntryCodec(),
+    );
+
+// ignore: unused_element
+final driveroverrideentryModelDefinitionRegistration =
+    ModelFactoryRegistry.register<$DriverOverrideEntry>(
+      _$DriverOverrideEntryDefinition,
     );
 
 extension DriverOverrideEntryOrmDefinition on DriverOverrideEntry {
@@ -198,7 +206,7 @@ class _$DriverOverrideEntryCodec extends ModelCodec<$DriverOverrideEntry> {
   ) {
     final int driverOverrideEntryIdValue =
         registry.decodeField<int>(_$DriverOverrideEntryIdField, data['id']) ??
-        (throw StateError('Field id on DriverOverrideEntry cannot be null.'));
+        0;
     final Map<String, Object?> driverOverrideEntryPayloadValue =
         registry.decodeField<Map<String, Object?>>(
           _$DriverOverrideEntryPayloadField,
@@ -229,7 +237,7 @@ class _$DriverOverrideEntryCodec extends ModelCodec<$DriverOverrideEntry> {
 /// or model factories to create tracked model instances.
 class $DriverOverrideEntry extends DriverOverrideEntry
     with ModelAttributes, ModelRelations {
-  $DriverOverrideEntry({required int id, required Map<String, Object?> payload})
+  $DriverOverrideEntry({int id = 0, required Map<String, Object?> payload})
     : super.new(id: id, payload: payload) {
     _attachOrmRuntimeMetadata({'id': id, 'payload': payload});
   }

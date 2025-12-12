@@ -17,6 +17,8 @@ const FieldDefinition _$SerialTestIdField = FieldDefinition(
   isUnique: false,
   isIndexed: false,
   autoIncrement: true,
+  insertable: false,
+  defaultDartValue: 0,
 );
 
 const FieldDefinition _$SerialTestLabelField = FieldDefinition(
@@ -182,7 +184,7 @@ class _$SerialTestCodec extends ModelCodec<$SerialTest> {
 /// **Do not instantiate this class directly.** Use queries, repositories,
 /// or model factories to create tracked model instances.
 class $SerialTest extends SerialTest with ModelAttributes, ModelRelations {
-  $SerialTest({required int id, required String label})
+  $SerialTest({int id = 0, required String label})
     : super.new(id: id, label: label) {
     _attachOrmRuntimeMetadata({'id': id, 'label': label});
   }

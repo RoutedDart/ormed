@@ -16,7 +16,9 @@ const FieldDefinition _$ArticleIdField = FieldDefinition(
   isNullable: false,
   isUnique: false,
   isIndexed: false,
-  autoIncrement: false,
+  autoIncrement: true,
+  insertable: false,
+  defaultDartValue: 0,
 );
 
 const FieldDefinition _$ArticleTitleField = FieldDefinition(
@@ -262,8 +264,7 @@ class _$ArticleCodec extends ModelCodec<$Article> {
   @override
   $Article decode(Map<String, Object?> data, ValueCodecRegistry registry) {
     final int articleIdValue =
-        registry.decodeField<int>(_$ArticleIdField, data['id']) ??
-        (throw StateError('Field id on Article cannot be null.'));
+        registry.decodeField<int>(_$ArticleIdField, data['id']) ?? 0;
     final String articleTitleValue =
         registry.decodeField<String>(_$ArticleTitleField, data['title']) ??
         (throw StateError('Field title on Article cannot be null.'));
@@ -332,7 +333,7 @@ class _$ArticleCodec extends ModelCodec<$Article> {
 /// or model factories to create tracked model instances.
 class $Article extends Article with ModelAttributes, ModelRelations {
   $Article({
-    required int id,
+    int id = 0,
     required String title,
     String? body,
     required String status,
