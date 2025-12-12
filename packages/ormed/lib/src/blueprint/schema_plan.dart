@@ -16,6 +16,8 @@ enum SchemaMutationOperation {
   dropIndex,
   modifyValidator,
   rawSql,
+  createDatabase,
+  dropDatabase,
 }
 
 /// A mutation emitted by the schema builder.
@@ -35,6 +37,25 @@ class SchemaMutation {
         operation: SchemaMutationOperation.createTable,
         blueprint: blueprint,
       );
+
+  factory SchemaMutation.createDatabase({
+    required String name,
+    Map<String, Object?>? options,
+  }) => SchemaMutation._(
+    operation: SchemaMutationOperation.createDatabase,
+    documentPayload: {
+      'name': name,
+      if (options != null) 'options': options,
+    },
+  );
+
+  factory SchemaMutation.dropDatabase({
+    required String name,
+    bool ifExists = false,
+  }) => SchemaMutation._(
+    operation: SchemaMutationOperation.dropDatabase,
+    documentPayload: {'name': name, 'ifExists': ifExists},
+  );
 
   factory SchemaMutation.createCollection({
     required String collection,
@@ -175,10 +196,12 @@ class SchemaMutation {
       case SchemaMutationOperation.createIndex:
       case SchemaMutationOperation.dropIndex:
       case SchemaMutationOperation.modifyValidator:
+      case SchemaMutationOperation.createDatabase:
+      case SchemaMutationOperation.dropDatabase:
         return SchemaMutation._(
           operation: operation,
           documentPayload:
-              (json['payload'] as Map<String, Object?>?) ?? const {},
+              (json['payload'] as Map?)?.cast<String, Object?>() ?? const {},
         );
     }
   }

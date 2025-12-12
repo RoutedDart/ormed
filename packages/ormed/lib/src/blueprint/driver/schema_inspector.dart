@@ -15,18 +15,12 @@ class SchemaInspector {
 
   Future<bool> hasTable(String table, {String? schema}) async {
     final id = _identifier(table, schema);
-    final tables = await driver.listTables(schema: id.schema);
-    return tables.any(
-      (t) =>
-          _equalsIgnoreCase(t.name, id.name) ||
-          _equalsIgnoreCase(t.schemaQualifiedName, id.schemaQualifiedName),
-    );
+    return driver.hasTable(id.name, schema: id.schema);
   }
 
   Future<bool> hasColumn(String table, String column, {String? schema}) async {
     final id = _identifier(table, schema);
-    final columns = await driver.listColumns(id.name, schema: id.schema);
-    return columns.any((c) => _equalsIgnoreCase(c.name, column));
+    return driver.hasColumn(id.name, column, schema: id.schema);
   }
 
   Future<String?> columnType(

@@ -69,6 +69,23 @@ class SchemaBuilder {
     _mutations.add(SchemaMutation.renameTable(from: from, to: to));
   }
 
+  /// Creates a new database with optional driver-specific options.
+  void createDatabase(String name, {Map<String, Object?>? options}) {
+    _mutations.add(SchemaMutation.createDatabase(name: name, options: options));
+  }
+
+  /// Drops a database.
+  void dropDatabase(String name) {
+    _mutations.add(SchemaMutation.dropDatabase(name: name));
+  }
+
+  /// Drops a database if it exists.
+  void dropDatabaseIfExists(String name) {
+    _mutations.add(
+      SchemaMutation.dropDatabase(name: name, ifExists: true),
+    );
+  }
+
   /// Registers Mongo-style create collection command.
   void createCollection(
     String collection, {

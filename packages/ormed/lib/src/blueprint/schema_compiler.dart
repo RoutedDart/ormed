@@ -62,6 +62,26 @@ abstract class SchemaDialect {
     return null;
   }
 
+  // ========== Schema Introspection ==========
+
+  /// Compiles SQL to list schemas/namespaces.
+  String? compileSchemas({String? schema});
+
+  /// Compiles SQL to list tables for an optional schema.
+  String? compileTables({String? schema});
+
+  /// Compiles SQL to list views for an optional schema.
+  String? compileViews({String? schema});
+
+  /// Compiles SQL to list columns for a table within an optional schema.
+  String? compileColumns(String table, {String? schema});
+
+  /// Compiles SQL to list indexes for a table within an optional schema.
+  String? compileIndexes(String table, {String? schema});
+
+  /// Compiles SQL to list foreign keys for a table within an optional schema.
+  String? compileForeignKeys(String table, {String? schema});
+
   // ========== Foreign Key Constraint Management ==========
 
   /// Compiles SQL to enable foreign key constraint checking.
