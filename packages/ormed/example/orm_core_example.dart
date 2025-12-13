@@ -18,7 +18,7 @@ Future<void> main() async {
   await context.repository<Todo>().insertMany(const [
     Todo(id: 1, title: 'Write specs'),
     Todo(id: 2, title: 'Implement features'),
-  ], returning: false);
+  ]);
 
   final pending = await context
       .query<Todo>()

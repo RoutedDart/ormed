@@ -44,7 +44,6 @@ mixin RepositoryPreviewMixin<T extends OrmEntity>
     final hasTrackedModels = inputs.any((input) => isTrackedModel(input));
     final plan = buildInsertPlanFromInputs(
       inputs,
-      returning: false,
       applySentinelFiltering: hasTrackedModels,
     );
     return describeMutation(plan);
@@ -60,7 +59,6 @@ mixin RepositoryPreviewMixin<T extends OrmEntity>
     final hasTrackedModels = inputs.any((input) => isTrackedModel(input));
     final plan = buildInsertPlanFromInputs(
       inputs,
-      returning: false,
       ignoreConflicts: true,
       applySentinelFiltering: hasTrackedModels,
     );
@@ -87,7 +85,6 @@ mixin RepositoryPreviewMixin<T extends OrmEntity>
     final plan = buildUpdatePlanFromInputs(
       inputs,
       where: where,
-      returning: false,
       jsonUpdates: jsonUpdates,
     );
     return describeMutation(plan);

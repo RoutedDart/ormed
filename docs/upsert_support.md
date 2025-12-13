@@ -117,7 +117,7 @@ final users = await repo.upsertMany(
   [user1, user2, user3],
   uniqueBy: ['email'],
   updateColumns: ['name', 'age'],
-  returning: true,
+  ,
 );
 ```
 

@@ -11,6 +11,7 @@ Testing database-driven applications requires careful handling of test isolation
 - Seed test data
 - Clean up after tests
 - Support parallel test execution
+- Reuse migration-aware helpers (`setUpOrmed`, `ormedTest`, `TestDatabaseManager`) that respect database management and foreign-key controls
 
 ## Basic Test Setup
 
@@ -136,6 +137,41 @@ tearDown() async {
   }
 });
 ```
+
+## Migration-aware test harness
+
+When you want Laravel-style workflows (migrations + FK-safe cleanup) use the testing harness from `package:ormed/src/testing`:
+
+```dart
+import 'package:ormed/testing.dart';
+
+void main() {
+  setUpOrmed(
+    dataSource: myDataSource,
+    migrationDescriptors: [
+      MigrationDescriptor.fromMigration(
+        id: MigrationId(DateTime.utc(2024, 1, 1), 'create_users'),
+        migration: CreateUsersTable(),
+      ),
+    ],
+    seeders: [UserSeeder.new],
+    strategy: DatabaseIsolationStrategy.migrateWithTransactions,
+    parallel: true, // creates per-test schemas/databases using driver capabilities
+  );
+
+  ormedTest('creates a user', () async {
+    final user = User(name: 'Ada');
+    await user.save();
+    expect(user.id, isNotNull);
+  });
+}
+```
+
+Key behaviors:
+- Uses `TestSchemaManager` + `MigrationRunner` so migrations/seeders run once and ledger is kept in-sync.
+- For truncate/recreate strategies it calls `SchemaDriver.dropAllTables`, which handles FK toggling per driver.
+- In parallel mode it provisions isolated schemas (Postgres/MySQL/MariaDB) or databases/files (SQLite) to avoid cross-test collisions.
+- `seedTestData`/`previewTestSeed` let you apply or dry-run seeders against the current test connection.
 
 ## Multiple DataSources
 

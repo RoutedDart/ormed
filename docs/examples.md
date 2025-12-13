@@ -75,7 +75,7 @@ Future<void> main() async {
 
   await context.repository<User>().insertMany([
     const User(id: 1, email: 'example@example.com'),
-  ], returning: true);
+  ], );
 
   final emails = (await context.query<User>().orderBy('id').get())
       .map((user) => user.email)

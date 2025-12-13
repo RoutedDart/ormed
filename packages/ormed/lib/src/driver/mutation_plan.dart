@@ -39,7 +39,7 @@ class MutationPlan {
     required ModelDefinition<OrmEntity> definition,
     required List<Map<String, Object?>> rows,
     String? driverName,
-    bool returning = false,
+    bool returning = true,
     bool ignoreConflicts = false,
   }) => MutationPlan._(
     operation: MutationOperation.insert,
@@ -72,7 +72,7 @@ class MutationPlan {
     required ModelDefinition<OrmEntity> definition,
     required List<MutationRow> rows,
     String? driverName,
-    bool returning = false,
+    bool returning = true,
   }) => MutationPlan._(
     operation: MutationOperation.update,
     definition: definition,

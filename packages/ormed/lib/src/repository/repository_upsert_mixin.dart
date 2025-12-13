@@ -5,12 +5,13 @@ part of 'repository.dart';
 /// This mixin supports upserting data using:
 /// - Tracked models (`$Model`)
 /// - Insert DTOs (`$ModelInsertDto`)
+/// - Update DTOs (`$ModelUpdateDto`)
 /// - Raw maps (`Map<String, Object?>`)
 mixin RepositoryUpsertMixin<T extends OrmEntity>
     on RepositoryBase<T>, RepositoryHelpersMixin<T>, RepositoryInputHandlerMixin<T> {
-  /// Upserts a single item in the database.
+  /// Upserts a single item in the database and returns the result.
   ///
-  /// Accepts tracked models, insert DTOs, or raw maps.
+  /// Accepts tracked models, insert DTOs, update DTOs, or raw maps.
   ///
   /// If an item with the same unique key already exists, it is updated.
   /// Otherwise, a new item is inserted.
@@ -24,34 +25,32 @@ mixin RepositoryUpsertMixin<T extends OrmEntity>
   /// Example with tracked model:
   /// ```dart
   /// final user = $User(id: 1, name: 'John Doe', email: 'john@example.com');
-  /// final upserted = await repository.upsert(user, returning: true);
+  /// final upserted = await repository.upsert(user);
   /// ```
   ///
   /// Example with insert DTO:
   /// ```dart
   /// final dto = $UserInsertDto(name: 'John Doe', email: 'john@example.com');
-  /// final upserted = await repository.upsert(dto, uniqueBy: ['email'], returning: true);
+  /// final upserted = await repository.upsert(dto, uniqueBy: ['email']);
   /// ```
   Future<T> upsert(
     Object model, {
     List<String>? uniqueBy,
     List<String>? updateColumns,
-    bool returning = false,
     JsonUpdateBuilder<T>? jsonUpdates,
   }) async {
     final upserted = await upsertMany(
       [model],
       uniqueBy: uniqueBy,
       updateColumns: updateColumns,
-      returning: returning,
       jsonUpdates: jsonUpdates,
     );
     return upserted.first;
   }
 
-  /// Upserts multiple items in the database.
+  /// Upserts multiple items in the database and returns the results.
   ///
-  /// Accepts a list of tracked models, insert DTOs, or raw maps.
+  /// Accepts a list of tracked models, insert DTOs, update DTOs, or raw maps.
   ///
   /// If an item with the same unique key already exists, it is updated.
   /// Otherwise, a new item is inserted.
@@ -61,11 +60,6 @@ mixin RepositoryUpsertMixin<T extends OrmEntity>
   ///
   /// The [updateColumns] parameter specifies which columns to update if a
   /// conflict occurs. If not provided, all columns are updated.
-  ///
-  /// By default, the returned future completes with the same model instances
-  /// that were passed in. If [returning] is `true`, the returned future
-  /// completes with new model instances that contain the values that were
-  /// actually upserted in the database.
   ///
   /// An optional [jsonUpdates] builder can be provided to update JSON fields.
   ///
@@ -78,21 +72,19 @@ mixin RepositoryUpsertMixin<T extends OrmEntity>
   /// final upsertedUsers = await repository.upsertMany(
   ///   users,
   ///   uniqueBy: ['email'],
-  ///   returning: true,
   /// );
   /// ```
   Future<List<T>> upsertMany(
     List<Object> inputs, {
     List<String>? uniqueBy,
     List<String>? updateColumns,
-    bool returning = false,
     JsonUpdateBuilder<T>? jsonUpdates,
   }) async {
     if (inputs.isEmpty) return const [];
 
     final plan = buildUpsertPlanFromInputs(
       inputs,
-      returning: returning,
+      returning: true,
       uniqueBy: uniqueBy,
       updateColumns: updateColumns,
       jsonUpdates: jsonUpdates,
@@ -103,10 +95,16 @@ mixin RepositoryUpsertMixin<T extends OrmEntity>
 
     // Extract the input maps from the plan for merging with returned data
     final inputMaps = plan.rows.map((r) => r.values).toList();
-    return mapResultWithInputs(originalModels, inputMaps, result, returning);
+    return mapResultWithInputs(originalModels, inputMaps, result, true);
   }
 
   /// Builds an upsert plan from various input types.
+  ///
+  /// Supports the following input types:
+  /// - `T` (tracked model like `$User`) - Uses full definition encoding
+  /// - `InsertDto<T>` (like `UserInsertDto`) - Uses the DTO's `toMap()` directly
+  /// - `UpdateDto<T>` (like `UserUpdateDto`) - Uses the DTO's `toMap()` directly
+  /// - `Map<String, Object?>` - Uses as-is with column name normalization
   MutationPlan buildUpsertPlanFromInputs(
     List<Object> inputs, {
     required bool returning,
@@ -116,52 +114,22 @@ mixin RepositoryUpsertMixin<T extends OrmEntity>
   }) {
     final rows = inputs.map((input) {
       // For upserts, we need both insert and update values
-      final Map<String, Object?> values;
-      final Map<String, Object?> keys;
-
-      if (input is T) {
-        // For tracked models, use the full serialization
-        final allValues = definition.toMap(input, registry: codecs);
-
-        // Extract primary key for the keys map
-        final pkField = definition.primaryKeyField;
-        if (pkField == null) {
-          throw StateError(
-            'Primary key required for upserts on ${definition.modelName}.',
-          );
-        }
-        final pkValue = allValues[pkField.columnName];
-        if (pkValue == null) {
-          throw StateError('Primary key cannot be null for upsert.');
-        }
-        keys = {pkField.columnName: pkValue};
-
-        // For upserts, include ALL insertable fields in values (not just updatable)
-        // The INSERT part needs all fields, and the adapter will determine
-        // which columns to use for the ON CONFLICT DO UPDATE clause
-        values = <String, Object?>{};
-        for (final field in definition.fields) {
-          if (field.isInsertable && allValues.containsKey(field.columnName)) {
-            values[field.columnName] = allValues[field.columnName];
-          }
-        }
-        // Also include the primary key if it's specified and not auto-increment
-        // (or even if it's auto-increment, if the user provided a value)
-        if (allValues.containsKey(pkField.columnName)) {
-          values[pkField.columnName] = allValues[pkField.columnName];
-        }
-      } else {
-        // For DTOs/maps, convert to map and extract PK if available
-        values = insertInputToMap(input, applySentinelFiltering: false);
-
-        final pk = extractPrimaryKey(input);
-        final pkField = definition.primaryKeyField;
-        if (pkField != null && pk != null) {
-          keys = {pkField.columnName: pk};
-        } else {
-          keys = const {};
-        }
-      }
+      final (Map<String, Object?> values, Map<String, Object?> keys) = switch (input) {
+        // Tracked model ($User) - use full definition encoding
+        T model => _upsertValuesFromModel(model),
+        // InsertDto (UserInsertDto) - use the DTO's toMap() directly
+        InsertDto<T> dto => _upsertValuesFromDto(dto),
+        // UpdateDto (UserUpdateDto) - also supported for flexibility
+        UpdateDto<T> dto => _upsertValuesFromUpdateDto(dto),
+        // Raw Map - use as-is with column name normalization
+        Map<String, Object?> m => _upsertValuesFromMap(m),
+        // Fallback - throw for unsupported types
+        _ => throw ArgumentError.value(
+          input,
+          'input',
+          'Expected $T, InsertDto<$T>, UpdateDto<$T>, or Map<String, Object?>, got ${input.runtimeType}',
+        ),
+      };
 
       final jsonClauses = input is T ? jsonUpdatesFor(input, jsonUpdates) : <JsonUpdateClause>[];
 
@@ -183,5 +151,100 @@ mixin RepositoryUpsertMixin<T extends OrmEntity>
       uniqueBy: uniqueColumns,
       updateColumns: updateColumnNames,
     );
+  }
+
+  /// Extracts upsert values and keys from a tracked model.
+  (Map<String, Object?>, Map<String, Object?>) _upsertValuesFromModel(T model) {
+    final allValues = definition.toMap(model, registry: codecs);
+
+    // Extract primary key for the keys map
+    final pkField = definition.primaryKeyField;
+    if (pkField == null) {
+      throw StateError(
+        'Primary key required for upserts on ${definition.modelName}.',
+      );
+    }
+    final pkValue = allValues[pkField.columnName];
+    if (pkValue == null) {
+      throw StateError('Primary key cannot be null for upsert.');
+    }
+    final keys = {pkField.columnName: pkValue};
+
+    // For upserts, include ALL insertable fields in values (not just updatable)
+    // The INSERT part needs all fields, and the adapter will determine
+    // which columns to use for the ON CONFLICT DO UPDATE clause
+    final values = <String, Object?>{};
+    for (final field in definition.fields) {
+      if (field.isInsertable && allValues.containsKey(field.columnName)) {
+        values[field.columnName] = allValues[field.columnName];
+      }
+    }
+    // Also include the primary key if it's specified and not auto-increment
+    // (or even if it's auto-increment, if the user provided a value)
+    if (allValues.containsKey(pkField.columnName)) {
+      values[pkField.columnName] = allValues[pkField.columnName];
+    }
+
+    return (values, keys);
+  }
+
+  /// Extracts upsert values and keys from an InsertDto.
+  (Map<String, Object?>, Map<String, Object?>) _upsertValuesFromDto(InsertDto<T> dto) {
+    final values = _normalizeColumnNames(dto.toMap());
+    final pk = extractPrimaryKey(dto);
+    final pkField = definition.primaryKeyField;
+    final keys = (pkField != null && pk != null)
+        ? {pkField.columnName: pk}
+        : const <String, Object?>{};
+    return (values, keys);
+  }
+
+  /// Extracts upsert values and keys from an UpdateDto.
+  (Map<String, Object?>, Map<String, Object?>) _upsertValuesFromUpdateDto(UpdateDto<T> dto) {
+    final values = _normalizeColumnNames(dto.toMap());
+    final pk = extractPrimaryKey(dto);
+    final pkField = definition.primaryKeyField;
+    final keys = (pkField != null && pk != null)
+        ? {pkField.columnName: pk}
+        : const <String, Object?>{};
+    return (values, keys);
+  }
+
+  /// Extracts upsert values and keys from a raw Map.
+  (Map<String, Object?>, Map<String, Object?>) _upsertValuesFromMap(Map<String, Object?> data) {
+    final values = _normalizeColumnNames(data);
+    final pk = extractPrimaryKey(data);
+    final pkField = definition.primaryKeyField;
+    final keys = (pkField != null && pk != null)
+        ? {pkField.columnName: pk}
+        : const <String, Object?>{};
+    return (values, keys);
+  }
+
+  /// Normalizes field names to column names if needed.
+  @override
+  Map<String, Object?> _normalizeColumnNames(Map<String, Object?> input) {
+    final result = <String, Object?>{};
+    for (final entry in input.entries) {
+      final columnName = _fieldToColumnName(entry.key);
+      result[columnName] = entry.value;
+    }
+    return result;
+  }
+
+  /// Converts a field name to its corresponding column name.
+  @override
+  String _fieldToColumnName(String fieldOrColumn) {
+    for (final field in definition.fields) {
+      if (field.columnName == fieldOrColumn) {
+        return fieldOrColumn;
+      }
+    }
+    for (final field in definition.fields) {
+      if (field.name == fieldOrColumn) {
+        return field.columnName;
+      }
+    }
+    return fieldOrColumn;
   }
 }

@@ -31,7 +31,7 @@ void runDriverRepositoryTests() {
             active: true,
           );
 
-          final inserted = await userRepo.insert(user, returning: true);
+          final inserted = await userRepo.insert(user, );
 
           expect(inserted.id, isNotNull);
           expect(inserted.email, 'test@example.com');
@@ -45,7 +45,7 @@ void runDriverRepositoryTests() {
             $User(id: 1003, email: 'user3@example.com', active: true),
           ];
 
-          final inserted = await userRepo.insertMany(users, returning: true);
+          final inserted = await userRepo.insertMany(users, );
 
           expect(inserted.length, 3);
           expect(inserted[0].email, 'user1@example.com');
@@ -54,7 +54,7 @@ void runDriverRepositoryTests() {
         });
 
         test('insertMany() with empty list returns empty', () async {
-          final inserted = await userRepo.insertMany([], returning: true);
+          final inserted = await userRepo.insertMany([]);
           expect(inserted, isEmpty);
         });
 
@@ -115,7 +115,7 @@ void runDriverRepositoryTests() {
             name: 'DTO User',
           );
 
-          final inserted = await userRepo.insert(dto, returning: true);
+          final inserted = await userRepo.insert(dto, );
 
           expect(inserted.id, isNotNull);
           expect(inserted.email, 'dto-insert@example.com');
@@ -130,7 +130,7 @@ void runDriverRepositoryTests() {
             UserInsertDto(email: 'dto3@example.com', active: true, name: 'Third'),
           ];
 
-          final inserted = await userRepo.insertMany(dtos, returning: true);
+          final inserted = await userRepo.insertMany(dtos, );
 
           expect(inserted.length, 3);
           expect(inserted[0].email, 'dto1@example.com');
@@ -164,7 +164,7 @@ void runDriverRepositoryTests() {
             'name': 'Map User',
           };
 
-          final inserted = await userRepo.insert(map, returning: true);
+          final inserted = await userRepo.insert(map, );
 
           expect(inserted.id, isNotNull);
           expect(inserted.email, 'map-insert@example.com');
@@ -179,7 +179,7 @@ void runDriverRepositoryTests() {
             {'email': 'map3@example.com', 'active': true, 'age': 25},
           ];
 
-          final inserted = await userRepo.insertMany(maps, returning: true);
+          final inserted = await userRepo.insertMany(maps, );
 
           expect(inserted.length, 3);
           expect(inserted[0].email, 'map1@example.com');
@@ -211,7 +211,7 @@ void runDriverRepositoryTests() {
             {'email': 'map@example.com', 'active': true},
           ];
 
-          final inserted = await userRepo.insertMany(inputs, returning: true);
+          final inserted = await userRepo.insertMany(inputs, );
 
           expect(inserted.length, 3);
           expect(inserted[0].email, 'model@example.com');
@@ -226,12 +226,11 @@ void runDriverRepositoryTests() {
         test('update() single model', () async {
           await userRepo.insert(
             $User(id: 2000, email: 'original@example.com', active: true),
-            returning: true,
           );
 
           final updated = await userRepo.update(
             $User(id: 2000, email: 'updated@example.com', active: false),
-            returning: true,
+
           );
 
           expect(updated.email, 'updated@example.com');
@@ -241,12 +240,11 @@ void runDriverRepositoryTests() {
         test('updateMany() updates models', () async {
           await userRepo.insert(
             $User(id: 2001, email: 'original@example.com', active: true),
-            returning: true,
           );
 
           final updated = await userRepo.updateMany([
             $User(id: 2001, email: 'updated@example.com', active: false),
-          ], returning: true);
+          ], );
 
           expect(updated.length, 1);
           expect(updated[0].email, 'updated@example.com');
@@ -257,12 +255,12 @@ void runDriverRepositoryTests() {
           await userRepo.insertMany([
             $User(id: 2002, email: 'a@example.com', active: true),
             $User(id: 2003, email: 'b@example.com', active: true),
-          ], returning: true);
+          ], );
 
           final updated = await userRepo.updateMany([
             $User(id: 2002, email: 'updated-a@example.com', active: true),
             $User(id: 2003, email: 'updated-b@example.com', active: true),
-          ], returning: true);
+          ], );
 
           expect(updated.length, 2);
           expect(updated[0].email, 'updated-a@example.com');
@@ -270,14 +268,13 @@ void runDriverRepositoryTests() {
         });
 
         test('updateMany() with empty list returns empty', () async {
-          final updated = await userRepo.updateMany([], returning: true);
+          final updated = await userRepo.updateMany([], );
           expect(updated, isEmpty);
         });
 
         test('updateManyRaw() returns mutation result', () async {
           await userRepo.insert(
             $User(id: 2004, email: 'test@example.com', active: true),
-            returning: true,
           );
 
           final result = await userRepo.updateManyRaw([
@@ -302,7 +299,6 @@ void runDriverRepositoryTests() {
           final updated = await userRepo.update(
             dto,
             where: {'id': 2100},
-            returning: true,
           );
 
           expect(updated.email, 'dto-updated@example.com');
@@ -320,7 +316,7 @@ void runDriverRepositoryTests() {
             name: 'Updated Name',
           );
 
-          final updated = await userRepo.update(dto, returning: true);
+          final updated = await userRepo.update(dto, );
 
           expect(updated.email, 'dto-pk-updated@example.com');
           expect(updated.name, 'Updated Name');
@@ -337,7 +333,7 @@ void runDriverRepositoryTests() {
             UserUpdateDto(id: 2103, email: 'dto-b-updated@example.com'),
           ];
 
-          final updated = await userRepo.updateMany(dtos, returning: true);
+          final updated = await userRepo.updateMany(dtos, );
 
           expect(updated.length, 2);
           expect(updated[0].email, 'dto-a-updated@example.com');
@@ -355,7 +351,7 @@ void runDriverRepositoryTests() {
             active: false,
           );
 
-          final updated = await userRepo.update(dto, returning: true);
+          final updated = await userRepo.update(dto, );
 
           expect(updated.active, isFalse);
           // Name should remain unchanged
@@ -378,7 +374,6 @@ void runDriverRepositoryTests() {
           final updated = await userRepo.update(
             map,
             where: {'id': 2200},
-            returning: true,
           );
 
           expect(updated.email, 'map-updated@example.com');
@@ -396,7 +391,7 @@ void runDriverRepositoryTests() {
             'age': 30,
           };
 
-          final updated = await userRepo.update(map, returning: true);
+          final updated = await userRepo.update(map, );
 
           expect(updated.email, 'map-pk-updated@example.com');
           expect(updated.age, 30);
@@ -413,7 +408,7 @@ void runDriverRepositoryTests() {
             {'id': 2203, 'email': 'map-b-updated@example.com'},
           ];
 
-          final updated = await userRepo.updateMany(maps, returning: true);
+          final updated = await userRepo.updateMany(maps, );
 
           expect(updated.length, 2);
           expect(updated[0].email, 'map-a-updated@example.com');
@@ -427,7 +422,7 @@ void runDriverRepositoryTests() {
         test('upsert() inserts new record', () async {
           final user = $User(id: 3000, email: 'upsert-new@example.com', active: true);
 
-          final upserted = await userRepo.upsert(user, returning: true);
+          final upserted = await userRepo.upsert(user, );
 
           expect(upserted.id, 3000);
           expect(upserted.email, 'upsert-new@example.com');
@@ -439,7 +434,7 @@ void runDriverRepositoryTests() {
           );
 
           final user = $User(id: 3001, email: 'upsert-updated@example.com', active: false);
-          final upserted = await userRepo.upsert(user, returning: true);
+          final upserted = await userRepo.upsert(user, );
 
           expect(upserted.email, 'upsert-updated@example.com');
           expect(upserted.active, isFalse);
@@ -451,7 +446,7 @@ void runDriverRepositoryTests() {
             $User(id: 3003, email: 'new2@example.com', active: true),
           ];
 
-          final upserted = await userRepo.upsertMany(users, returning: true);
+          final upserted = await userRepo.upsertMany(users, );
 
           expect(upserted.length, 2);
           expect(upserted[0].email, 'new1@example.com');
@@ -461,7 +456,6 @@ void runDriverRepositoryTests() {
         test('upsertMany() updates existing records', () async {
           await userRepo.insert(
             $User(id: 7777, email: 'original@example.com', active: true),
-            returning: true,
           );
 
           final updated = $User(
@@ -470,7 +464,7 @@ void runDriverRepositoryTests() {
             active: false,
           );
 
-          final upserted = await userRepo.upsertMany([updated], returning: true);
+          final upserted = await userRepo.upsertMany([updated], );
 
           expect(upserted.length, 1);
           expect(upserted[0].email, 'updated@example.com');
@@ -478,7 +472,7 @@ void runDriverRepositoryTests() {
         });
 
         test('upsertMany() with empty list returns empty', () async {
-          final upserted = await userRepo.upsertMany([], returning: true);
+          final upserted = await userRepo.upsertMany([], );
           expect(upserted, isEmpty);
         });
 
@@ -498,7 +492,6 @@ void runDriverRepositoryTests() {
           final upserted = await userRepo.upsertMany(
             [updated],
             uniqueBy: ['email'],
-            returning: true,
           );
 
           expect(upserted.length, 1);
@@ -527,7 +520,6 @@ void runDriverRepositoryTests() {
           final upserted = await userRepo.upsertMany(
             [updated],
             updateColumns: ['active'],
-            returning: true,
           );
 
           expect(upserted.length, 1);
@@ -549,7 +541,7 @@ void runDriverRepositoryTests() {
             $User(id: 4202, email: 'new2@example.com', active: true), // Insert
           ];
 
-          final upserted = await userRepo.upsertMany(records, returning: true);
+          final upserted = await userRepo.upsertMany(records, );
 
           expect(upserted.length, 3);
           expect(upserted[0].email, 'updated@example.com');
@@ -566,7 +558,7 @@ void runDriverRepositoryTests() {
             name: 'DTO Upsert',
           );
 
-          final upserted = await userRepo.upsert(dto, returning: true);
+          final upserted = await userRepo.upsert(dto, );
 
           expect(upserted.id, isNotNull);
           expect(upserted.email, 'upsert-dto-new@example.com');
@@ -588,7 +580,6 @@ void runDriverRepositoryTests() {
           final upserted = await userRepo.upsertMany(
             [dto],
             uniqueBy: ['email'],
-            returning: true,
           );
 
           expect(upserted.length, 1);
@@ -606,7 +597,7 @@ void runDriverRepositoryTests() {
             'name': 'Map Upsert',
           };
 
-          final upserted = await userRepo.upsert(map, returning: true);
+          final upserted = await userRepo.upsert(map, );
 
           expect(upserted.id, 3200);
           expect(upserted.email, 'upsert-map-new@example.com');
@@ -624,7 +615,7 @@ void runDriverRepositoryTests() {
             'active': false,
           };
 
-          final upserted = await userRepo.upsert(map, returning: true);
+          final upserted = await userRepo.upsert(map, );
 
           expect(upserted.email, 'map-upsert-updated@example.com');
           expect(upserted.active, isFalse);
@@ -643,7 +634,6 @@ void runDriverRepositoryTests() {
           final upserted = await userRepo.upsertMany(
             maps,
             uniqueBy: ['email'],
-            returning: true,
           );
 
           expect(upserted.length, 2);
@@ -656,7 +646,7 @@ void runDriverRepositoryTests() {
         final users = await userRepo.insertMany([
           $User(id: 5000, email: 'delete1@example.com', active: true),
           $User(id: 5001, email: 'delete2@example.com', active: true),
-        ], returning: true);
+        ], );
 
         final keys = users.map((u) => {'id': u.id}).toList();
         final affected = await userRepo.deleteByKeys(keys);
@@ -821,7 +811,6 @@ void runDriverRepositoryTests() {
         // Insert author first
         final author = await authorRepo.insert(
           $Author(id: 7000, name: 'Test Author', active: true),
-          returning: true,
         );
 
         expect(author.id, 7000);
@@ -832,7 +821,6 @@ void runDriverRepositoryTests() {
         final futures = List.generate(5, (i) {
           return userRepo.insert(
             $User(id: 8000 + i, email: 'concurrent$i@example.com', active: true),
-            returning: true,
           );
         });
 
@@ -848,7 +836,7 @@ void runDriverRepositoryTests() {
           active: true,
         );
 
-        final inserted = await userRepo.insert(dto, returning: true);
+        final inserted = await userRepo.insert(dto, );
 
         expect(inserted.id, isNotNull);
         expect(inserted.id, greaterThan(0));
@@ -876,7 +864,7 @@ void runDriverRepositoryTests() {
           email: 'integrity@example.com',
           active: true,
         );
-        final result1 = await userRepo.upsertMany([user1], returning: true);
+        final result1 = await userRepo.upsertMany([user1], );
         expect(result1[0].active, isTrue);
 
         // Second upsert (update)
@@ -885,7 +873,7 @@ void runDriverRepositoryTests() {
           email: 'integrity@example.com',
           active: false,
         );
-        final result2 = await userRepo.upsertMany([user2], returning: true);
+        final result2 = await userRepo.upsertMany([user2], );
         expect(result2[0].active, isFalse);
 
         // Third upsert (another update)
@@ -894,7 +882,7 @@ void runDriverRepositoryTests() {
           email: 'integrity-updated@example.com',
           active: true,
         );
-        final result3 = await userRepo.upsertMany([user3], returning: true);
+        final result3 = await userRepo.upsertMany([user3], );
         expect(result3[0].email, 'integrity-updated@example.com');
 
         // Verify only one record exists
@@ -917,7 +905,7 @@ void runDriverRepositoryTests() {
           {'email': 'batch-map@example.com', 'active': true}, // Insert
         ];
 
-        final upserted = await userRepo.upsertMany(batch, returning: true);
+        final upserted = await userRepo.upsertMany(batch, );
 
         expect(upserted.length, 3);
         expect(upserted[0].email, 'batch-updated@example.com');
@@ -929,7 +917,7 @@ void runDriverRepositoryTests() {
     group('Author Repository (with timestamps)', () {
       test('insert Author with tracked model', () async {
         final author = $Author(id: 4600, name: 'Test Author', active: true);
-        final inserted = await authorRepo.insert(author, returning: true);
+        final inserted = await authorRepo.insert(author, );
 
         expect(inserted.id, 4600);
         expect(inserted.name, 'Test Author');
@@ -942,7 +930,7 @@ void runDriverRepositoryTests() {
 
         // Upsert should update
         final author2 = $Author(id: 4601, name: 'Updated Author', active: false);
-        final upserted = await authorRepo.upsertMany([author2], returning: true);
+        final upserted = await authorRepo.upsertMany([author2], );
 
         expect(upserted.length, 1);
         expect(upserted[0].name, 'Updated Author');

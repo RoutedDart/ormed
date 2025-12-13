@@ -126,7 +126,6 @@ Future<void> _demonstrateTenantIsolation(
   await defaultDs.transaction(() async {
     await defaultDs.repo<Tag>().insert(
       Tag(name: tempTagName, createdAt: now, updatedAt: now),
-      returning: false,
     );
 
     // Verify it doesn't exist in analytics tenant

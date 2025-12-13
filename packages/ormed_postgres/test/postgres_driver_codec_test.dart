@@ -93,7 +93,7 @@ void main() {
         occurredAt: DateTime.utc(2024, 5, 5, 12, 30),
       );
 
-      final inserted = await repo.insert(event, returning: true);
+      final inserted = await repo.insert(event, );
       expect(inserted.metadata['level'], 'info');
       expect(inserted.tags, equals(event.tags));
       // Skip Duration/interval test - Postgres interval type needs special handling

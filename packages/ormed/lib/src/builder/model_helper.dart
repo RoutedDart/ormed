@@ -79,7 +79,7 @@ String modelHelperClass(String className) {
   );
   buffer.writeln('    final repo = conn.context.repository<$className>();');
   buffer.writeln(
-    '    final result = await repo.insertMany([model], returning: true);',
+    '    final result = await repo.insertMany([model], );',
   );
   buffer.writeln('    return result.first;');
   buffer.writeln('  }');
@@ -97,7 +97,7 @@ String modelHelperClass(String className) {
     '    final conn = ConnectionManager.instance.connection(connName ?? ConnectionManager.instance.defaultConnectionName ?? "default");',
   );
   buffer.writeln('    final repo = conn.context.repository<$className>();');
-  buffer.writeln('    return await repo.insertMany(models, returning: true);');
+  buffer.writeln('    return await repo.insertMany(models, );');
   buffer.writeln('  }');
   buffer.writeln();
   buffer.writeln(

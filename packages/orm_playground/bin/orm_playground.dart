@@ -202,7 +202,6 @@ Future<void> _runModelCrudShowcase(DataSource ds) async {
 
   await tagRepo.insert(
     Tag(name: demoName, createdAt: now, updatedAt: now),
-    returning: false,
   );
 
   final inserted = await ds
@@ -324,7 +323,6 @@ Future<void> _runTransactionShowcase(DataSource ds) async {
       // Create a tag inside transaction
       await ds.repo<Tag>().insert(
         Tag(name: tempTagName, createdAt: now, updatedAt: now),
-        returning: false,
       );
 
       // Verify it exists

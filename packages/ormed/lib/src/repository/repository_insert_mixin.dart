@@ -8,48 +8,43 @@ part of 'repository.dart';
 /// - Raw maps (`Map<String, Object?>`)
 mixin RepositoryInsertMixin<T extends OrmEntity>
     on RepositoryBase<T>, RepositoryHelpersMixin<T>, RepositoryInputHandlerMixin<T> {
-  /// Inserts a single [model] into the database.
+  /// Inserts a single [model] into the database and returns the inserted record.
   ///
   /// Accepts tracked models, insert DTOs, or raw maps.
   ///
-  /// By default, the returned future completes with the same model instance
-  /// that was passed in (or a hydrated model if a DTO/map was used).
-  /// If [returning] is `true`, the returned future completes with a new model
-  /// instance that contains the values that were actually inserted into the
-  /// database.
+  /// The returned model contains the actual values from the database,
+  /// including any auto-generated fields (like primary keys).
   ///
   /// Example with tracked model:
   /// ```dart
   /// final user = $User(name: 'John Doe', email: 'john@example.com');
-  /// final insertedUser = await repository.insert(user, returning: true);
+  /// final insertedUser = await repository.insert(user);
   /// print(insertedUser.id); // The auto-generated primary key.
   /// ```
   ///
   /// Example with insert DTO:
   /// ```dart
   /// final dto = $UserInsertDto(name: 'John Doe', email: 'john@example.com');
-  /// final insertedUser = await repository.insert(dto, returning: true);
+  /// final insertedUser = await repository.insert(dto);
   /// ```
   ///
   /// Example with raw map:
   /// ```dart
   /// final data = {'name': 'John Doe', 'email': 'john@example.com'};
-  /// final insertedUser = await repository.insert(data, returning: true);
+  /// final insertedUser = await repository.insert(data);
   /// ```
-  Future<T> insert(Object model, {bool returning = false}) async {
-    final inserted = await insertMany([model], returning: returning);
+  Future<T> insert(Object model) async {
+    final inserted = await insertMany([model]);
     return inserted.first;
   }
 
-  /// Inserts multiple items into the database.
+  /// Inserts multiple items into the database and returns the inserted records.
   ///
   /// Accepts a list of tracked models, insert DTOs, or raw maps.
   /// All items in the list should be of the same type.
   ///
-  /// By default, the returned future completes with the same model instances
-  /// that were passed in. If [returning] is `true`, the returned future
-  /// completes with new model instances that contain the values that were
-  /// actually inserted into the database.
+  /// The returned models contain the actual values from the database,
+  /// including any auto-generated fields (like primary keys).
   ///
   /// Example:
   /// ```dart
@@ -57,9 +52,9 @@ mixin RepositoryInsertMixin<T extends OrmEntity>
   ///   $UserInsertDto(name: 'John', email: 'john@example.com'),
   ///   $UserInsertDto(name: 'Jane', email: 'jane@example.com'),
   /// ];
-  /// final insertedUsers = await repository.insertMany(users, returning: true);
+  /// final insertedUsers = await repository.insertMany(users);
   /// ```
-  Future<List<T>> insertMany(List<Object> inputs, {bool returning = false}) async {
+  Future<List<T>> insertMany(List<Object> inputs, {bool returning = true}) async {
     if (inputs.isEmpty) return const [];
 
     // Determine if we're dealing with tracked models for sentinel filtering
@@ -113,7 +108,6 @@ mixin RepositoryInsertMixin<T extends OrmEntity>
 
     final plan = buildInsertPlanFromInputs(
       inputs,
-      returning: false,
       ignoreConflicts: true,
       applySentinelFiltering: hasTrackedModels,
     );
@@ -124,7 +118,7 @@ mixin RepositoryInsertMixin<T extends OrmEntity>
   /// Builds an insert plan from various input types.
   MutationPlan buildInsertPlanFromInputs(
     List<Object> inputs, {
-    required bool returning,
+    bool returning = true,
     bool ignoreConflicts = false,
     bool applySentinelFiltering = false,
   }) {

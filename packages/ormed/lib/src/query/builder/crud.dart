@@ -52,11 +52,7 @@ extension CrudExtension<T extends OrmEntity> on Query<T> {
       },
     );
 
-    return await repo.insertMany(
-      models,
-      returning:
-          true, // Always request returning; drivers will use fallback if needed
-    );
+    return await repo.insertMany(models);
   }
 
   /// Finds the first record matching the attributes, or creates it if not found.
@@ -621,7 +617,6 @@ extension CrudExtension<T extends OrmEntity> on Query<T> {
       normalizedRecords,
       uniqueBy: uniqueBy,
       updateColumns: updateColumns,
-      returning: true,
     );
   }
 

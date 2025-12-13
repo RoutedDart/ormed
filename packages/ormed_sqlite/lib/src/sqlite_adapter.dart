@@ -902,14 +902,23 @@ class SqliteDriverAdapter
         affected += database.updatedRows;
 
         // If returning is requested and insert succeeded, return a row with the PK value
-        // SQLite doesn't support RETURNING, so we simulate it by returning just the PK
+        // SQLite doesn't support RETURNING for non-auto-increment PKs, so we simulate it
         if (plan.returning && database.updatedRows > 0) {
           final pkField = plan.definition.primaryKeyField;
           if (pkField != null) {
-            final lastId = database.lastInsertRowId;
-            // Return a minimal row with just the primary key
-            // The repository will merge this with the original model data
-            insertedRows.add({pkField.columnName: lastId});
+            // For auto-increment integer PKs, use lastInsertRowId
+            // For non-integer PKs (like String), use the value from the plan
+            final isIntegerPk = pkField.dartType == 'int' || pkField.dartType == 'int?';
+            final isAutoIncrement = pkField.autoIncrement;
+            if (isIntegerPk && isAutoIncrement) {
+              final lastId = database.lastInsertRowId;
+              // Return a minimal row with just the primary key
+              // The repository will merge this with the original model data
+              insertedRows.add({pkField.columnName: lastId});
+            } else {
+              // Non-integer or non-autoincrement PK: use the value from the plan
+              insertedRows.add(plan.rows[i].values);
+            }
           } else {
             // No PK field, return the original data from the plan
             insertedRows.add(plan.rows[i].values);

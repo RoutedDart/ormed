@@ -8,7 +8,7 @@ part of 'repository.dart';
 /// - Raw maps (`Map<String, Object?>`)
 mixin RepositoryUpdateMixin<T extends OrmEntity>
     on RepositoryBase<T>, RepositoryHelpersMixin<T>, RepositoryInputHandlerMixin<T> {
-  /// Updates a single [model] in the database.
+  /// Updates a single [model] in the database and returns the updated record.
   ///
   /// Accepts tracked models, update DTOs, or raw maps.
   ///
@@ -16,56 +16,44 @@ mixin RepositoryUpdateMixin<T extends OrmEntity>
   /// which row(s) to update. When using a tracked model, the primary key is
   /// extracted automatically.
   ///
-  /// By default, the returned future completes with the same model instance
-  /// that was passed in. If [returning] is `true`, the returned future
-  /// completes with a new model instance that contains the values that were
-  /// actually updated in the database.
-  ///
   /// Example with tracked model:
   /// ```dart
   /// final user = await repository.find(1);
   /// user.name = 'John Smith';
-  /// final updated = await repository.update(user, returning: true);
+  /// final updated = await repository.update(user);
   /// ```
   ///
   /// Example with update DTO:
   /// ```dart
   /// final dto = $UserUpdateDto(name: 'John Smith');
-  /// final updated = await repository.update(dto, where: {'id': 1}, returning: true);
+  /// final updated = await repository.update(dto, where: {'id': 1});
   /// ```
   ///
   /// Example with raw map:
   /// ```dart
   /// final data = {'name': 'John Smith'};
-  /// final updated = await repository.update(data, where: {'id': 1}, returning: true);
+  /// final updated = await repository.update(data, where: {'id': 1});
   /// ```
   Future<T> update(
     Object model, {
     Map<String, Object?>? where,
-    bool returning = false,
     JsonUpdateBuilder<T>? jsonUpdates,
   }) async {
     final updated = await updateMany(
       [model],
       where: where,
-      returning: returning,
       jsonUpdates: jsonUpdates,
     );
     return updated.first;
   }
 
-  /// Updates multiple items in the database.
+  /// Updates multiple items in the database and returns the updated records.
   ///
   /// Accepts a list of tracked models, update DTOs, or raw maps.
   ///
   /// When using DTOs or maps, a [where] clause must be provided to identify
   /// which row(s) to update. When using tracked models, the primary key is
   /// extracted automatically from each model.
-  ///
-  /// By default, the returned future completes with the same model instances
-  /// that were passed in. If [returning] is `true`, the returned future
-  /// completes with new model instances that contain the values that were
-  /// actually updated in the database.
   ///
   /// An optional [jsonUpdates] builder can be provided to update JSON fields.
   ///
@@ -75,12 +63,11 @@ mixin RepositoryUpdateMixin<T extends OrmEntity>
   /// for (final user in users) {
   ///   user.active = true;
   /// }
-  /// final updatedUsers = await repository.updateMany(users, returning: true);
+  /// final updatedUsers = await repository.updateMany(users);
   /// ```
   Future<List<T>> updateMany(
     List<Object> inputs, {
     Map<String, Object?>? where,
-    bool returning = false,
     JsonUpdateBuilder<T>? jsonUpdates,
   }) async {
     if (inputs.isEmpty) return const [];
@@ -88,7 +75,6 @@ mixin RepositoryUpdateMixin<T extends OrmEntity>
     final plan = buildUpdatePlanFromInputs(
       inputs,
       where: where,
-      returning: returning,
       jsonUpdates: jsonUpdates,
     );
     final result = await runMutation(plan);
@@ -103,16 +89,17 @@ mixin RepositoryUpdateMixin<T extends OrmEntity>
       originalModels,
       inputMaps,
       result,
-      returning,
+      true,
       canCreateFromInputs: false,
     );
   }
 
   /// Updates multiple items in the database and returns the raw result.
+  ///
+  /// Use this when you only need the affected row count, not the updated data.
   Future<MutationResult> updateManyRaw(
     List<Object> inputs, {
     Map<String, Object?>? where,
-    bool returning = false,
     JsonUpdateBuilder<T>? jsonUpdates,
   }) async {
     if (inputs.isEmpty) return const MutationResult(affectedRows: 0);
@@ -120,7 +107,6 @@ mixin RepositoryUpdateMixin<T extends OrmEntity>
     final plan = buildUpdatePlanFromInputs(
       inputs,
       where: where,
-      returning: returning,
       jsonUpdates: jsonUpdates,
     );
     return runMutation(plan);
@@ -130,7 +116,6 @@ mixin RepositoryUpdateMixin<T extends OrmEntity>
   MutationPlan buildUpdatePlanFromInputs(
     List<Object> inputs, {
     Map<String, Object?>? where,
-    required bool returning,
     JsonUpdateBuilder<T>? jsonUpdates,
   }) {
     final rows = inputs.map((input) {
@@ -190,7 +175,7 @@ mixin RepositoryUpdateMixin<T extends OrmEntity>
       definition: definition,
       rows: rows,
       driverName: driverName,
-      returning: returning,
+      returning: true,
     );
   }
 }

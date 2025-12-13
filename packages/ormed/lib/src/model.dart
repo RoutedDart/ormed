@@ -609,13 +609,9 @@ abstract class Model<TModel extends Model<TModel>>
     List<TModel> persisted;
 
     if (def.primaryKeyField == null || pkValue == null) {
-      persisted = await repository.insertMany(<TModel>[
-        _self(),
-      ], returning: returning);
+      persisted = await repository.insertMany(<TModel>[_self()]);
     } else {
-      persisted = await repository.upsertMany(<TModel>[
-        _self(),
-      ], returning: returning);
+      persisted = await repository.upsertMany(<TModel>[_self()]);
     }
 
     final result = persisted.isNotEmpty ? persisted.first : _self();

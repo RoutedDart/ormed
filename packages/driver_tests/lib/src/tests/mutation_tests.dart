@@ -607,7 +607,6 @@ void runDriverMutationTests() {
           JsonUpdateDefinition.selector('payload->mode', 'light'),
           JsonUpdateDefinition.path('payload', r'$.meta.count', 5),
         ],
-        returning: false,
       );
 
       final rows = await dataSource.connection.driver.queryRaw(
@@ -628,13 +627,12 @@ void runDriverMutationTests() {
         final repo = dataSource.context.repository<User>();
         final inserted = await repo.insert(
           const User(id: 20, email: 'returning@example.com', active: true),
-          returning: true,
         );
         expect(inserted.email, 'returning@example.com');
 
         final updated = await repo.updateMany([
           const User(id: 20, email: 'updated@returning.com', active: false),
-        ], returning: true);
+        ], );
         expect(updated.single.email, 'updated@returning.com');
         expect(updated.single.active, isFalse);
 
@@ -654,12 +652,12 @@ void runDriverMutationTests() {
         final repo = dataSource.context.repository<User>();
         final first = await repo.upsertMany([
           const User(id: 25, email: 'upsert@return.com', active: true),
-        ], returning: true);
+        ], );
         expect(first.single.email, 'upsert@return.com');
 
         final second = await repo.upsertMany([
           const User(id: 25, email: 'new@upsert.com', active: true),
-        ], returning: true);
+        ], );
         expect(second.single.email, 'new@upsert.com');
       },
       skip: metadata.supportsCapability(DriverCapability.returning)

@@ -29,7 +29,7 @@ Future<void> main() async {
       test('can create and retrieve users', () async {
         final user = await ds.repo<ActiveUser>().insert(
           ActiveUser(name: 'Alice', email: 'alice@test.com'),
-          returning: true,
+
         );
 
         expect(user.id, isNotNull);
@@ -42,7 +42,6 @@ Future<void> main() async {
       test('can update users', () async {
         final user = await ds.repo<ActiveUser>().insert(
           ActiveUser(name: 'Bob', email: 'bob@test.com'),
-          returning: true,
         );
         final userId = user.id!;
 
@@ -64,7 +63,6 @@ Future<void> main() async {
       test('can delete users', () async {
         final user = await ds.repo<ActiveUser>().insert(
           ActiveUser(name: 'Charlie', email: 'charlie@test.com'),
-          returning: true,
         );
         final userId = user.id!;
 
@@ -87,7 +85,6 @@ Future<void> main() async {
       test('changes persist within test', () async {
         final user = await ds.repo<ActiveUser>().insert(
           ActiveUser(name: 'Temporary', email: 'temp@test.com'),
-          returning: true,
         );
 
         expect(user.id, isNotNull);

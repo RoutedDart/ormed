@@ -43,7 +43,6 @@ Future<void> main() async {
     test('test 1: inserts data', () async {
       final user = await dataSource.repo<ActiveUser>().insert(
         ActiveUser(name: 'Test1', email: 'test1@example.com'),
-        returning: true,
       );
 
       expect(user.id, isNotNull);
@@ -61,7 +60,6 @@ Future<void> main() async {
     test('test 3: can insert again', () async {
       final user = await dataSource.repo<ActiveUser>().insert(
         ActiveUser(name: 'Test3', email: 'test3@example.com'),
-        returning: true,
       );
 
       expect(user.id, isNotNull);
@@ -91,7 +89,6 @@ Future<void> main() async {
       test('test 1: inserts data', () async {
         final user = await ds.repo<ActiveUser>().insert(
           ActiveUser(name: 'Group1', email: 'group1@example.com'),
-          returning: true,
         );
 
         expect(user.id, isNotNull);
@@ -134,7 +131,7 @@ Future<void> main() async {
 
       final user = await dataSource.repo<ActiveUser>().insert(
         ActiveUser(name: 'Manual', email: 'manual@example.com'),
-        returning: true,
+
       );
 
       expect(user.id, isNotNull);
@@ -152,7 +149,6 @@ Future<void> main() async {
 
       final user = await dataSource.repo<ActiveUser>().insert(
         ActiveUser(name: 'Committed', email: 'committed@example.com'),
-        returning: true,
       );
 
       expect(user.id, isNotNull);

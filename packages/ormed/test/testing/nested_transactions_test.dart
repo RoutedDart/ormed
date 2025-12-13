@@ -1,7 +1,7 @@
+import 'package:driver_tests/driver_tests.dart';
 import 'package:ormed/ormed.dart';
 import 'package:ormed_sqlite/ormed_sqlite.dart';
 import 'package:test/test.dart';
-import 'package:driver_tests/driver_tests.dart';
 
 /// Test demonstrating nested transaction support (savepoints)
 void main() {
@@ -9,7 +9,7 @@ void main() {
     DataSourceOptions(
       name: 'nested_transactions_test',
       driver: SqliteDriverAdapter.inMemory(),
-      registry: buildOrmRegistry()
+      registry: buildOrmRegistry(),
     ),
   );
 
@@ -41,7 +41,6 @@ void main() {
     // Insert user in outer transaction
     await dataSource.repo<ActiveUser>().insert(
       ActiveUser(name: 'User1', email: 'user1@example.com'),
-      returning: true,
     );
 
     // Begin nested transaction (creates savepoint)
@@ -50,7 +49,6 @@ void main() {
     // Insert user in nested transaction
     await dataSource.repo<ActiveUser>().insert(
       ActiveUser(name: 'User2', email: 'user2@example.com'),
-      returning: true,
     );
 
     // Both should exist
@@ -78,7 +76,6 @@ void main() {
     // Insert user in outer transaction
     await dataSource.repo<ActiveUser>().insert(
       ActiveUser(name: 'User3', email: 'user3@example.com'),
-      returning: true,
     );
 
     // Begin nested transaction (creates savepoint)
@@ -87,7 +84,6 @@ void main() {
     // Insert user in nested transaction
     await dataSource.repo<ActiveUser>().insert(
       ActiveUser(name: 'User4', email: 'user4@example.com'),
-      returning: true,
     );
 
     // Commit nested transaction (release savepoint)
@@ -110,21 +106,18 @@ void main() {
 
     await dataSource.repo<ActiveUser>().insert(
       ActiveUser(name: 'Level1', email: 'level1@example.com'),
-      returning: true,
     );
 
     await dataSource.beginTransaction(); // Level 2
 
     await dataSource.repo<ActiveUser>().insert(
       ActiveUser(name: 'Level2', email: 'level2@example.com'),
-      returning: true,
     );
 
     await dataSource.beginTransaction(); // Level 3
 
     await dataSource.repo<ActiveUser>().insert(
       ActiveUser(name: 'Level3', email: 'level3@example.com'),
-      returning: true,
     );
 
     // All three should exist
