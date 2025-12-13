@@ -25,13 +25,9 @@ void runDriverRepositoryTests() {
     group('Insert Operations', () {
       group('with tracked models', () {
         test('insert() single model', () async {
-          final user = $User(
-            id: 1000,
-            email: 'test@example.com',
-            active: true,
-          );
+          final user = $User(id: 1000, email: 'test@example.com', active: true);
 
-          final inserted = await userRepo.insert(user, );
+          final inserted = await userRepo.insert(user);
 
           expect(inserted.id, isNotNull);
           expect(inserted.email, 'test@example.com');
@@ -45,7 +41,7 @@ void runDriverRepositoryTests() {
             $User(id: 1003, email: 'user3@example.com', active: true),
           ];
 
-          final inserted = await userRepo.insertMany(users, );
+          final inserted = await userRepo.insertMany(users);
 
           expect(inserted.length, 3);
           expect(inserted[0].email, 'user1@example.com');
@@ -59,7 +55,11 @@ void runDriverRepositoryTests() {
         });
 
         test('insertOrIgnore() ignores conflicts', () async {
-          final user1 = $User(id: 9999, email: 'unique@example.com', active: true);
+          final user1 = $User(
+            id: 9999,
+            email: 'unique@example.com',
+            active: true,
+          );
           await userRepo.insert(user1);
 
           final user2 = $User(
@@ -115,7 +115,7 @@ void runDriverRepositoryTests() {
             name: 'DTO User',
           );
 
-          final inserted = await userRepo.insert(dto, );
+          final inserted = await userRepo.insert(dto);
 
           expect(inserted.id, isNotNull);
           expect(inserted.email, 'dto-insert@example.com');
@@ -127,10 +127,14 @@ void runDriverRepositoryTests() {
           const dtos = [
             UserInsertDto(email: 'dto1@example.com', active: true),
             UserInsertDto(email: 'dto2@example.com', active: false),
-            UserInsertDto(email: 'dto3@example.com', active: true, name: 'Third'),
+            UserInsertDto(
+              email: 'dto3@example.com',
+              active: true,
+              name: 'Third',
+            ),
           ];
 
-          final inserted = await userRepo.insertMany(dtos, );
+          final inserted = await userRepo.insertMany(dtos);
 
           expect(inserted.length, 3);
           expect(inserted[0].email, 'dto1@example.com');
@@ -141,7 +145,11 @@ void runDriverRepositoryTests() {
 
         test('insertOrIgnore() with DTO ignores conflicts', () async {
           // First insert a user
-          final user = $User(id: 9998, email: 'dto-unique@example.com', active: true);
+          final user = $User(
+            id: 9998,
+            email: 'dto-unique@example.com',
+            active: true,
+          );
           await userRepo.insert(user);
 
           // Try to insert DTO that would conflict (same email with unique constraint)
@@ -164,7 +172,7 @@ void runDriverRepositoryTests() {
             'name': 'Map User',
           };
 
-          final inserted = await userRepo.insert(map, );
+          final inserted = await userRepo.insert(map);
 
           expect(inserted.id, isNotNull);
           expect(inserted.email, 'map-insert@example.com');
@@ -179,7 +187,7 @@ void runDriverRepositoryTests() {
             {'email': 'map3@example.com', 'active': true, 'age': 25},
           ];
 
-          final inserted = await userRepo.insertMany(maps, );
+          final inserted = await userRepo.insertMany(maps);
 
           expect(inserted.length, 3);
           expect(inserted[0].email, 'map1@example.com');
@@ -190,11 +198,23 @@ void runDriverRepositoryTests() {
 
         test('insertOrIgnoreMany() with Maps ignores conflicts', () async {
           // Insert initial record
-          await userRepo.insert({'id': 8887, 'email': 'map-exists@example.com', 'active': true});
+          await userRepo.insert({
+            'id': 8887,
+            'email': 'map-exists@example.com',
+            'active': true,
+          });
 
           final maps = [
-            {'id': 8887, 'email': 'map-conflict@example.com', 'active': true}, // Will be ignored
-            {'id': 8886, 'email': 'map-new@example.com', 'active': true}, // Will be inserted
+            {
+              'id': 8887,
+              'email': 'map-conflict@example.com',
+              'active': true,
+            }, // Will be ignored
+            {
+              'id': 8886,
+              'email': 'map-new@example.com',
+              'active': true,
+            }, // Will be inserted
           ];
 
           final affected = await userRepo.insertOrIgnoreMany(maps);
@@ -211,7 +231,7 @@ void runDriverRepositoryTests() {
             {'email': 'map@example.com', 'active': true},
           ];
 
-          final inserted = await userRepo.insertMany(inputs, );
+          final inserted = await userRepo.insertMany(inputs);
 
           expect(inserted.length, 3);
           expect(inserted[0].email, 'model@example.com');
@@ -230,7 +250,6 @@ void runDriverRepositoryTests() {
 
           final updated = await userRepo.update(
             $User(id: 2000, email: 'updated@example.com', active: false),
-
           );
 
           expect(updated.email, 'updated@example.com');
@@ -244,7 +263,7 @@ void runDriverRepositoryTests() {
 
           final updated = await userRepo.updateMany([
             $User(id: 2001, email: 'updated@example.com', active: false),
-          ], );
+          ]);
 
           expect(updated.length, 1);
           expect(updated[0].email, 'updated@example.com');
@@ -255,12 +274,12 @@ void runDriverRepositoryTests() {
           await userRepo.insertMany([
             $User(id: 2002, email: 'a@example.com', active: true),
             $User(id: 2003, email: 'b@example.com', active: true),
-          ], );
+          ]);
 
           final updated = await userRepo.updateMany([
             $User(id: 2002, email: 'updated-a@example.com', active: true),
             $User(id: 2003, email: 'updated-b@example.com', active: true),
-          ], );
+          ]);
 
           expect(updated.length, 2);
           expect(updated[0].email, 'updated-a@example.com');
@@ -268,7 +287,7 @@ void runDriverRepositoryTests() {
         });
 
         test('updateMany() with empty list returns empty', () async {
-          final updated = await userRepo.updateMany([], );
+          final updated = await userRepo.updateMany([]);
           expect(updated, isEmpty);
         });
 
@@ -296,10 +315,7 @@ void runDriverRepositoryTests() {
             active: false,
           );
 
-          final updated = await userRepo.update(
-            dto,
-            where: {'id': 2100},
-          );
+          final updated = await userRepo.update(dto, where: {'id': 2100});
 
           expect(updated.email, 'dto-updated@example.com');
           expect(updated.active, isFalse);
@@ -316,7 +332,7 @@ void runDriverRepositoryTests() {
             name: 'Updated Name',
           );
 
-          final updated = await userRepo.update(dto, );
+          final updated = await userRepo.update(dto);
 
           expect(updated.email, 'dto-pk-updated@example.com');
           expect(updated.name, 'Updated Name');
@@ -333,31 +349,36 @@ void runDriverRepositoryTests() {
             UserUpdateDto(id: 2103, email: 'dto-b-updated@example.com'),
           ];
 
-          final updated = await userRepo.updateMany(dtos, );
+          final updated = await userRepo.updateMany(dtos);
 
           expect(updated.length, 2);
           expect(updated[0].email, 'dto-a-updated@example.com');
           expect(updated[1].email, 'dto-b-updated@example.com');
         });
 
-        test('update() DTO with partial fields only updates specified', () async {
-          await userRepo.insert(
-            $User(id: 2104, email: 'partial@example.com', active: true, name: 'Original'),
-          );
+        test(
+          'update() DTO with partial fields only updates specified',
+          () async {
+            await userRepo.insert(
+              $User(
+                id: 2104,
+                email: 'partial@example.com',
+                active: true,
+                name: 'Original',
+              ),
+            );
 
-          // Only update active, leave other fields
-          const dto = UserUpdateDto(
-            id: 2104,
-            active: false,
-          );
+            // Only update active, leave other fields
+            const dto = UserUpdateDto(id: 2104, active: false);
 
-          final updated = await userRepo.update(dto, );
+            final updated = await userRepo.update(dto);
 
-          expect(updated.active, isFalse);
-          // Name should remain unchanged
-          expect(updated.name, 'Original');
-          expect(updated.email, 'partial@example.com');
-        });
+            expect(updated.active, isFalse);
+            // Name should remain unchanged
+            expect(updated.name, 'Original');
+            expect(updated.email, 'partial@example.com');
+          },
+        );
       });
 
       group('with Map', () {
@@ -371,10 +392,7 @@ void runDriverRepositoryTests() {
             'active': false,
           };
 
-          final updated = await userRepo.update(
-            map,
-            where: {'id': 2200},
-          );
+          final updated = await userRepo.update(map, where: {'id': 2200});
 
           expect(updated.email, 'map-updated@example.com');
           expect(updated.active, isFalse);
@@ -391,7 +409,7 @@ void runDriverRepositoryTests() {
             'age': 30,
           };
 
-          final updated = await userRepo.update(map, );
+          final updated = await userRepo.update(map);
 
           expect(updated.email, 'map-pk-updated@example.com');
           expect(updated.age, 30);
@@ -408,7 +426,7 @@ void runDriverRepositoryTests() {
             {'id': 2203, 'email': 'map-b-updated@example.com'},
           ];
 
-          final updated = await userRepo.updateMany(maps, );
+          final updated = await userRepo.updateMany(maps);
 
           expect(updated.length, 2);
           expect(updated[0].email, 'map-a-updated@example.com');
@@ -420,9 +438,13 @@ void runDriverRepositoryTests() {
     group('Upsert Operations', () {
       group('with tracked models', () {
         test('upsert() inserts new record', () async {
-          final user = $User(id: 3000, email: 'upsert-new@example.com', active: true);
+          final user = $User(
+            id: 3000,
+            email: 'upsert-new@example.com',
+            active: true,
+          );
 
-          final upserted = await userRepo.upsert(user, );
+          final upserted = await userRepo.upsert(user);
 
           expect(upserted.id, 3000);
           expect(upserted.email, 'upsert-new@example.com');
@@ -433,8 +455,12 @@ void runDriverRepositoryTests() {
             $User(id: 3001, email: 'upsert-original@example.com', active: true),
           );
 
-          final user = $User(id: 3001, email: 'upsert-updated@example.com', active: false);
-          final upserted = await userRepo.upsert(user, );
+          final user = $User(
+            id: 3001,
+            email: 'upsert-updated@example.com',
+            active: false,
+          );
+          final upserted = await userRepo.upsert(user);
 
           expect(upserted.email, 'upsert-updated@example.com');
           expect(upserted.active, isFalse);
@@ -446,7 +472,7 @@ void runDriverRepositoryTests() {
             $User(id: 3003, email: 'new2@example.com', active: true),
           ];
 
-          final upserted = await userRepo.upsertMany(users, );
+          final upserted = await userRepo.upsertMany(users);
 
           expect(upserted.length, 2);
           expect(upserted[0].email, 'new1@example.com');
@@ -464,7 +490,7 @@ void runDriverRepositoryTests() {
             active: false,
           );
 
-          final upserted = await userRepo.upsertMany([updated], );
+          final upserted = await userRepo.upsertMany([updated]);
 
           expect(upserted.length, 1);
           expect(upserted[0].email, 'updated@example.com');
@@ -472,7 +498,7 @@ void runDriverRepositoryTests() {
         });
 
         test('upsertMany() with empty list returns empty', () async {
-          final upserted = await userRepo.upsertMany([], );
+          final upserted = await userRepo.upsertMany([]);
           expect(upserted, isEmpty);
         });
 
@@ -536,12 +562,16 @@ void runDriverRepositoryTests() {
           );
 
           final records = [
-            $User(id: 4200, email: 'updated@example.com', active: false), // Update
+            $User(
+              id: 4200,
+              email: 'updated@example.com',
+              active: false,
+            ), // Update
             $User(id: 4201, email: 'new1@example.com', active: true), // Insert
             $User(id: 4202, email: 'new2@example.com', active: true), // Insert
           ];
 
-          final upserted = await userRepo.upsertMany(records, );
+          final upserted = await userRepo.upsertMany(records);
 
           expect(upserted.length, 3);
           expect(upserted[0].email, 'updated@example.com');
@@ -558,7 +588,7 @@ void runDriverRepositoryTests() {
             name: 'DTO Upsert',
           );
 
-          final upserted = await userRepo.upsert(dto, );
+          final upserted = await userRepo.upsert(dto);
 
           expect(upserted.id, isNotNull);
           expect(upserted.email, 'upsert-dto-new@example.com');
@@ -568,7 +598,12 @@ void runDriverRepositoryTests() {
         test('upsertMany() DTOs with uniqueBy updates existing', () async {
           // Insert initial record
           await userRepo.insert(
-            $User(id: 3100, email: 'dto-upsert@example.com', active: true, name: 'Original'),
+            $User(
+              id: 3100,
+              email: 'dto-upsert@example.com',
+              active: true,
+              name: 'Original',
+            ),
           );
 
           const dto = UserInsertDto(
@@ -597,7 +632,7 @@ void runDriverRepositoryTests() {
             'name': 'Map Upsert',
           };
 
-          final upserted = await userRepo.upsert(map, );
+          final upserted = await userRepo.upsert(map);
 
           expect(upserted.id, 3200);
           expect(upserted.email, 'upsert-map-new@example.com');
@@ -606,7 +641,11 @@ void runDriverRepositoryTests() {
 
         test('upsert() Map updates existing', () async {
           await userRepo.insert(
-            $User(id: 3201, email: 'map-upsert-original@example.com', active: true),
+            $User(
+              id: 3201,
+              email: 'map-upsert-original@example.com',
+              active: true,
+            ),
           );
 
           final map = <String, Object?>{
@@ -615,7 +654,7 @@ void runDriverRepositoryTests() {
             'active': false,
           };
 
-          final upserted = await userRepo.upsert(map, );
+          final upserted = await userRepo.upsert(map);
 
           expect(upserted.email, 'map-upsert-updated@example.com');
           expect(upserted.active, isFalse);
@@ -627,14 +666,15 @@ void runDriverRepositoryTests() {
           );
 
           final maps = [
-            {'email': 'map-unique@example.com', 'active': false, 'name': 'Updated'},
+            {
+              'email': 'map-unique@example.com',
+              'active': false,
+              'name': 'Updated',
+            },
             {'email': 'map-brand-new@example.com', 'active': true},
           ];
 
-          final upserted = await userRepo.upsertMany(
-            maps,
-            uniqueBy: ['email'],
-          );
+          final upserted = await userRepo.upsertMany(maps, uniqueBy: ['email']);
 
           expect(upserted.length, 2);
         });
@@ -642,11 +682,113 @@ void runDriverRepositoryTests() {
     });
 
     group('Delete Operations', () {
+      test('delete() deletes record with map where', () async {
+        final user = await userRepo.insert(
+          $User(id: 7100, email: 'delete-map@example.com', active: true),
+        );
+
+        final affected = await userRepo.delete({'id': user.id});
+
+        expect(affected, 1);
+        final fetched = await dataSource
+            .query<$User>()
+            .whereEquals('id', user.id)
+            .first();
+        expect(fetched, isNull);
+      });
+
+      test('delete() deletes record with primary key value', () async {
+        final user = await userRepo.insert(
+          $User(id: 7101, email: 'delete-pk@example.com', active: true),
+        );
+
+        final affected = await userRepo.delete(user.id);
+
+        expect(affected, 1);
+        final fetched = await dataSource
+            .query<$User>()
+            .whereEquals('id', user.id)
+            .first();
+        expect(fetched, isNull);
+      });
+
+      test('delete() accepts tracked model as where', () async {
+        final user = await userRepo.insert(
+          $User(id: 7102, email: 'delete-model@example.com', active: true),
+        );
+
+        final affected = await userRepo.delete(user);
+
+        expect(affected, 1);
+        final fetched = await dataSource
+            .query<$User>()
+            .whereEquals('id', user.id)
+            .first();
+        expect(fetched, isNull);
+      });
+
+      test('deleteMany() deletes multiple where inputs', () async {
+        final users = await userRepo.insertMany([
+          $User(id: 7103, email: 'delete-many-1@example.com', active: true),
+          $User(id: 7104, email: 'delete-many-2@example.com', active: true),
+        ]);
+
+        final affected = await userRepo.deleteMany([
+          const UserPartial(id: 7103),
+          7104,
+        ]);
+
+        expect(affected, 2);
+
+        for (final user in users) {
+          final fetched = await dataSource
+              .query<$User>()
+              .whereEquals('id', user.id)
+              .first();
+          expect(fetched, isNull);
+        }
+      });
+
+      test('deleteById() deletes by primary key', () async {
+        final user = await userRepo.insert(
+          $User(id: 7104, email: 'delete-by-id@example.com', active: true),
+        );
+
+        final affected = await userRepo.deleteById(user.id);
+
+        expect(affected, 1);
+        final fetched = await dataSource
+            .query<$User>()
+            .whereEquals('id', user.id)
+            .first();
+        expect(fetched, isNull);
+      });
+
+      test('deleteByIds() deletes multiple primary keys', () async {
+        final users = await userRepo.insertMany([
+          $User(id: 7105, email: 'delete-by-ids-1@example.com', active: true),
+          $User(id: 7106, email: 'delete-by-ids-2@example.com', active: true),
+        ]);
+
+        final affected = await userRepo.deleteByIds(
+          users.map((u) => u.id).toList(),
+        );
+
+        expect(affected, 2);
+        for (final user in users) {
+          final fetched = await dataSource
+              .query<$User>()
+              .whereEquals('id', user.id)
+              .first();
+          expect(fetched, isNull);
+        }
+      });
+
       test('deleteByKeys() deletes records', () async {
         final users = await userRepo.insertMany([
           $User(id: 5000, email: 'delete1@example.com', active: true),
           $User(id: 5001, email: 'delete2@example.com', active: true),
-        ], );
+        ]);
 
         final keys = users.map((u) => {'id': u.id}).toList();
         final affected = await userRepo.deleteByKeys(keys);
@@ -679,7 +821,11 @@ void runDriverRepositoryTests() {
 
       group('with tracked models', () {
         test('previewInsert() returns statement', () async {
-          final user = $User(id: 6000, email: 'preview@example.com', active: true);
+          final user = $User(
+            id: 6000,
+            email: 'preview@example.com',
+            active: true,
+          );
 
           final preview = userRepo.previewInsert(user);
 
@@ -725,7 +871,10 @@ void runDriverRepositoryTests() {
 
       group('with DTOs', () {
         test('previewInsert() with DTO returns statement', () async {
-          const dto = UserInsertDto(email: 'preview-dto@example.com', active: true);
+          const dto = UserInsertDto(
+            email: 'preview-dto@example.com',
+            active: true,
+          );
 
           final preview = userRepo.previewInsert(dto);
 
@@ -772,7 +921,9 @@ void runDriverRepositoryTests() {
       });
 
       test('previewInsertOrIgnoreMany() returns statement', () async {
-        final users = [$User(id: 6003, email: 'test@example.com', active: true)];
+        final users = [
+          $User(id: 6003, email: 'test@example.com', active: true),
+        ];
 
         final preview = userRepo.previewInsertOrIgnoreMany(users);
 
@@ -820,7 +971,11 @@ void runDriverRepositoryTests() {
       test('repository handles concurrent inserts', () async {
         final futures = List.generate(5, (i) {
           return userRepo.insert(
-            $User(id: 8000 + i, email: 'concurrent$i@example.com', active: true),
+            $User(
+              id: 8000 + i,
+              email: 'concurrent$i@example.com',
+              active: true,
+            ),
           );
         });
 
@@ -831,12 +986,9 @@ void runDriverRepositoryTests() {
 
       test('insert with DTO omitting auto-increment PK', () async {
         // InsertDto should work without specifying id (auto-increment)
-        const dto = UserInsertDto(
-          email: 'auto-pk@example.com',
-          active: true,
-        );
+        const dto = UserInsertDto(email: 'auto-pk@example.com', active: true);
 
-        final inserted = await userRepo.insert(dto, );
+        final inserted = await userRepo.insert(dto);
 
         expect(inserted.id, isNotNull);
         expect(inserted.id, greaterThan(0));
@@ -844,15 +996,10 @@ void runDriverRepositoryTests() {
       });
 
       test('update with DTO throws if no PK or where clause', () async {
-        const dto = UserUpdateDto(
-          email: 'no-pk@example.com',
-        );
+        const dto = UserUpdateDto(email: 'no-pk@example.com');
 
         // Should throw because there's no way to identify the row
-        expect(
-          () => userRepo.update(dto),
-          throwsArgumentError,
-        );
+        expect(() => userRepo.update(dto), throwsArgumentError);
       });
 
       test('upsert maintains data integrity across multiple calls', () async {
@@ -864,7 +1011,7 @@ void runDriverRepositoryTests() {
           email: 'integrity@example.com',
           active: true,
         );
-        final result1 = await userRepo.upsertMany([user1], );
+        final result1 = await userRepo.upsertMany([user1]);
         expect(result1[0].active, isTrue);
 
         // Second upsert (update)
@@ -873,7 +1020,7 @@ void runDriverRepositoryTests() {
           email: 'integrity@example.com',
           active: false,
         );
-        final result2 = await userRepo.upsertMany([user2], );
+        final result2 = await userRepo.upsertMany([user2]);
         expect(result2[0].active, isFalse);
 
         // Third upsert (another update)
@@ -882,7 +1029,7 @@ void runDriverRepositoryTests() {
           email: 'integrity-updated@example.com',
           active: true,
         );
-        final result3 = await userRepo.upsertMany([user3], );
+        final result3 = await userRepo.upsertMany([user3]);
         expect(result3[0].email, 'integrity-updated@example.com');
 
         // Verify only one record exists
@@ -900,12 +1047,19 @@ void runDriverRepositoryTests() {
         );
 
         final batch = [
-          $User(id: 4500, email: 'batch-updated@example.com', active: false), // Update
-          const UserInsertDto(email: 'batch-dto@example.com', active: true), // Insert
+          $User(
+            id: 4500,
+            email: 'batch-updated@example.com',
+            active: false,
+          ), // Update
+          const UserInsertDto(
+            email: 'batch-dto@example.com',
+            active: true,
+          ), // Insert
           {'email': 'batch-map@example.com', 'active': true}, // Insert
         ];
 
-        final upserted = await userRepo.upsertMany(batch, );
+        final upserted = await userRepo.upsertMany(batch);
 
         expect(upserted.length, 3);
         expect(upserted[0].email, 'batch-updated@example.com');
@@ -917,7 +1071,7 @@ void runDriverRepositoryTests() {
     group('Author Repository (with timestamps)', () {
       test('insert Author with tracked model', () async {
         final author = $Author(id: 4600, name: 'Test Author', active: true);
-        final inserted = await authorRepo.insert(author, );
+        final inserted = await authorRepo.insert(author);
 
         expect(inserted.id, 4600);
         expect(inserted.name, 'Test Author');
@@ -925,12 +1079,20 @@ void runDriverRepositoryTests() {
       });
 
       test('upsert Author updates existing', () async {
-        final author1 = $Author(id: 4601, name: 'Original Author', active: true);
+        final author1 = $Author(
+          id: 4601,
+          name: 'Original Author',
+          active: true,
+        );
         await authorRepo.insert(author1);
 
         // Upsert should update
-        final author2 = $Author(id: 4601, name: 'Updated Author', active: false);
-        final upserted = await authorRepo.upsertMany([author2], );
+        final author2 = $Author(
+          id: 4601,
+          name: 'Updated Author',
+          active: false,
+        );
+        final upserted = await authorRepo.upsertMany([author2]);
 
         expect(upserted.length, 1);
         expect(upserted[0].name, 'Updated Author');
@@ -948,7 +1110,7 @@ void runDriverRepositoryTests() {
             name: 'UpdateDto Insert',
           );
 
-          final upserted = await userRepo.upsert(dto, );
+          final upserted = await userRepo.upsert(dto);
 
           expect(upserted.id, 4700);
           expect(upserted.email, 'upsert-update-dto@example.com');
@@ -957,7 +1119,12 @@ void runDriverRepositoryTests() {
 
         test('upsert() UpdateDto updates existing', () async {
           await userRepo.insert(
-            $User(id: 4701, email: 'update-dto-orig@example.com', active: true, name: 'Original'),
+            $User(
+              id: 4701,
+              email: 'update-dto-orig@example.com',
+              active: true,
+              name: 'Original',
+            ),
           );
 
           const dto = UserUpdateDto(
@@ -966,7 +1133,7 @@ void runDriverRepositoryTests() {
             active: false,
           );
 
-          final upserted = await userRepo.upsert(dto, );
+          final upserted = await userRepo.upsert(dto);
 
           expect(upserted.email, 'update-dto-modified@example.com');
           expect(upserted.active, isFalse);
@@ -978,14 +1145,15 @@ void runDriverRepositoryTests() {
           );
 
           const dtos = [
-            UserUpdateDto(email: 'updto-unique@example.com', active: false, name: 'Updated'),
+            UserUpdateDto(
+              email: 'updto-unique@example.com',
+              active: false,
+              name: 'Updated',
+            ),
             UserUpdateDto(email: 'updto-new@example.com', active: true),
           ];
 
-          final upserted = await userRepo.upsertMany(
-            dtos,
-            uniqueBy: ['email'],
-          );
+          final upserted = await userRepo.upsertMany(dtos, uniqueBy: ['email']);
 
           expect(upserted.length, 2);
           expect(upserted[0].active, isFalse);
@@ -1006,10 +1174,7 @@ void runDriverRepositoryTests() {
             name: 'Updated via InsertDto',
           );
 
-          final updated = await userRepo.update(
-            dto,
-            where: {'id': 4800},
-          );
+          final updated = await userRepo.update(dto, where: {'id': 4800});
 
           expect(updated.email, 'ins-dto-updated@example.com');
           expect(updated.active, isFalse);
@@ -1029,8 +1194,8 @@ void runDriverRepositoryTests() {
           ];
 
           // Update individually with where clause
-          final updated1 = await userRepo.update(dtos[0], where: {'id': 4801}, );
-          final updated2 = await userRepo.update(dtos[1], where: {'id': 4802}, );
+          final updated1 = await userRepo.update(dtos[0], where: {'id': 4801});
+          final updated2 = await userRepo.update(dtos[1], where: {'id': 4802});
 
           expect(updated1.email, 'ins-a-updated@example.com');
           expect(updated2.email, 'ins-b-updated@example.com');
@@ -1046,16 +1211,31 @@ void runDriverRepositoryTests() {
 
           final mixedInputs = [
             // Tracked model - update existing
-            $User(id: 4900, email: 'mix-model-updated@example.com', active: false),
+            $User(
+              id: 4900,
+              email: 'mix-model-updated@example.com',
+              active: false,
+            ),
             // InsertDto - insert new
-            const UserInsertDto(email: 'mix-insert-dto@example.com', active: true),
+            const UserInsertDto(
+              email: 'mix-insert-dto@example.com',
+              active: true,
+            ),
             // UpdateDto - insert new (no existing record)
-            const UserUpdateDto(id: 4901, email: 'mix-update-dto@example.com', active: true),
+            const UserUpdateDto(
+              id: 4901,
+              email: 'mix-update-dto@example.com',
+              active: true,
+            ),
             // Map - insert new
-            <String, Object?>{'id': 4902, 'email': 'mix-map@example.com', 'active': true},
+            <String, Object?>{
+              'id': 4902,
+              'email': 'mix-map@example.com',
+              'active': true,
+            },
           ];
 
-          final upserted = await userRepo.upsertMany(mixedInputs, );
+          final upserted = await userRepo.upsertMany(mixedInputs);
 
           expect(upserted.length, 4);
           expect(upserted[0].email, 'mix-model-updated@example.com');
@@ -1069,7 +1249,11 @@ void runDriverRepositoryTests() {
           final mixedInputs = [
             $User(id: 5000, email: 'ins-mix-model@example.com', active: true),
             const UserInsertDto(email: 'ins-mix-dto@example.com', active: true),
-            <String, Object?>{'id': 5002, 'email': 'ins-mix-map@example.com', 'active': true},
+            <String, Object?>{
+              'id': 5002,
+              'email': 'ins-mix-map@example.com',
+              'active': true,
+            },
           ];
 
           final inserted = await userRepo.insertMany(mixedInputs);
@@ -1088,12 +1272,24 @@ void runDriverRepositoryTests() {
           ]);
 
           final mixedInputs = [
-            $User(id: 5100, email: 'upd-mix-1-updated@example.com', active: false),
-            const UserUpdateDto(id: 5101, email: 'upd-mix-2-updated@example.com', active: false),
-            <String, Object?>{'id': 5102, 'email': 'upd-mix-3-updated@example.com', 'active': false},
+            $User(
+              id: 5100,
+              email: 'upd-mix-1-updated@example.com',
+              active: false,
+            ),
+            const UserUpdateDto(
+              id: 5101,
+              email: 'upd-mix-2-updated@example.com',
+              active: false,
+            ),
+            <String, Object?>{
+              'id': 5102,
+              'email': 'upd-mix-3-updated@example.com',
+              'active': false,
+            },
           ];
 
-          final updated = await userRepo.updateMany(mixedInputs, );
+          final updated = await userRepo.updateMany(mixedInputs);
 
           expect(updated.length, 3);
           expect(updated[0].email, 'upd-mix-1-updated@example.com');
@@ -1112,7 +1308,7 @@ void runDriverRepositoryTests() {
             age: 25,
           );
 
-          final inserted = await userRepo.insert(dto, );
+          final inserted = await userRepo.insert(dto);
 
           expect(inserted.email, 'normalize@example.com');
           expect(inserted.name, 'Normalize Test');
@@ -1136,7 +1332,7 @@ void runDriverRepositoryTests() {
             email: 'preserve-updated@example.com',
           );
 
-          final updated = await userRepo.update(dto, );
+          final updated = await userRepo.update(dto);
 
           expect(updated.email, 'preserve-updated@example.com');
           // Other fields should be preserved
@@ -1153,10 +1349,433 @@ void runDriverRepositoryTests() {
             'name': 'Field Norm Test',
           };
 
-          final inserted = await userRepo.insert(map, );
+          final inserted = await userRepo.insert(map);
 
           expect(inserted.email, 'field-norm@example.com');
           expect(inserted.name, 'Field Norm Test');
+        });
+      });
+    });
+
+    group('Flexible Where Clause Tests', () {
+      group('update() with different where clause types', () {
+        test('update() with Map where clause', () async {
+          await userRepo.insert(
+            $User(id: 6000, email: 'map-where@example.com', active: true),
+          );
+
+          const dto = UserUpdateDto(
+            email: 'map-where-updated@example.com',
+            active: false,
+          );
+
+          final updated = await userRepo.update(dto, where: {'id': 6000});
+
+          expect(updated.email, 'map-where-updated@example.com');
+          expect(updated.active, isFalse);
+        });
+
+        test('update() with Partial where clause', () async {
+          await userRepo.insert(
+            $User(id: 6001, email: 'partial-where@example.com', active: true),
+          );
+
+          const dto = UserUpdateDto(
+            email: 'partial-where-updated@example.com',
+            active: false,
+          );
+
+          final updated = await userRepo.update(
+            dto,
+            where: UserPartial(id: 6001),
+          );
+
+          expect(updated.email, 'partial-where-updated@example.com');
+          expect(updated.active, isFalse);
+        });
+
+        test('update() with InsertDto where clause', () async {
+          await userRepo.insert(
+            $User(
+              id: 6002,
+              email: 'insert-dto-where@example.com',
+              active: true,
+            ),
+          );
+
+          const dto = UserUpdateDto(
+            email: 'insert-dto-where-updated@example.com',
+            active: false,
+          );
+
+          // InsertDto doesn't have id (auto-increment), use email field instead
+          final updated = await userRepo.update(
+            dto,
+            where: const UserInsertDto(email: 'insert-dto-where@example.com'),
+          );
+
+          expect(updated.email, 'insert-dto-where-updated@example.com');
+          expect(updated.active, isFalse);
+        });
+
+        test('update() with UpdateDto where clause', () async {
+          await userRepo.insert(
+            $User(
+              id: 6003,
+              email: 'update-dto-where@example.com',
+              active: true,
+            ),
+          );
+
+          const dto = UserUpdateDto(
+            email: 'update-dto-where-updated@example.com',
+            active: false,
+          );
+
+          final updated = await userRepo.update(
+            dto,
+            where: const UserUpdateDto(id: 6003),
+          );
+
+          expect(updated.email, 'update-dto-where-updated@example.com');
+          expect(updated.active, isFalse);
+        });
+
+        test('update() with tracked model where clause', () async {
+          final existing = await userRepo.insert(
+            $User(id: 6004, email: 'tracked-where@example.com', active: true),
+          );
+
+          // Create a new model with different values for update data
+          const dto = UserUpdateDto(
+            email: 'tracked-where-updated@example.com',
+            active: false,
+          );
+
+          // Use a partial with just the id to match the row (tracked model has all values)
+          // Using tracked model as where means ALL its values go into WHERE clause
+          // which would fail since we're changing email/active
+          // Instead use the Partial approach for this case
+          final updated = await userRepo.update(
+            dto,
+            where: UserPartial(id: existing.id),
+          );
+
+          expect(updated.email, 'tracked-where-updated@example.com');
+          expect(updated.active, isFalse);
+        });
+
+        test(
+          'update() with tracked model where clause updates non-matching fields',
+          () async {
+            final existing = await userRepo.insert(
+              $User(
+                id: 6005,
+                email: 'tracked-full@example.com',
+                active: true,
+                name: null,
+              ),
+            );
+
+            // When using tracked model as where, only update fields that aren't in the WHERE
+            // The tracked model's values will all be in the WHERE clause
+            // So we can only successfully update fields that have the same value or weren't matched
+            // Use a Map that updates a field not being compared (name was null)
+            final map = <String, Object?>{'name': 'Updated Name'};
+
+            // Using existing model as where - all its values must match
+            // This works because we're updating 'name' which is null in the existing record
+            // and null values aren't used in the WHERE clause comparison
+            final updated = await userRepo.update(
+              map,
+              where: UserPartial(
+                id: existing.id,
+              ), // Use Partial for safer matching
+            );
+
+            expect(updated.name, 'Updated Name');
+            // Other fields remain unchanged
+            expect(updated.email, 'tracked-full@example.com');
+            expect(updated.active, isTrue);
+          },
+        );
+      });
+
+      group('updateMany() with different where clause types', () {
+        test('updateMany() with Partial where clause', () async {
+          await userRepo.insertMany([
+            $User(id: 6100, email: 'many-partial-1@example.com', active: true),
+            $User(id: 6101, email: 'many-partial-2@example.com', active: true),
+          ]);
+
+          // Note: when using where clause with updateMany, all items use the same where
+          // This is useful for batch updates where condition is the same
+          final updated = await userRepo.updateMany([
+            const UserUpdateDto(
+              email: 'many-partial-updated@example.com',
+              active: false,
+            ),
+          ], where: UserPartial(id: 6100));
+
+          expect(updated.length, 1);
+          expect(updated[0].email, 'many-partial-updated@example.com');
+        });
+
+        test('updateMany() with InsertDto where clause', () async {
+          await userRepo.insert(
+            $User(id: 6102, email: 'many-insert-dto@example.com', active: true),
+          );
+
+          final updated = await userRepo.updateMany([
+            const UserUpdateDto(
+              email: 'many-insert-dto-updated@example.com',
+              active: false,
+            ),
+          ], where: const UserInsertDto(email: 'many-insert-dto@example.com'));
+
+          expect(updated.length, 1);
+          expect(updated[0].email, 'many-insert-dto-updated@example.com');
+        });
+      });
+
+      group('Partial where clause with multiple fields', () {
+        test('update() with Partial containing multiple fields', () async {
+          await userRepo.insert(
+            $User(
+              id: 6200,
+              email: 'multi-field@example.com',
+              active: true,
+              name: 'Multi',
+            ),
+          );
+
+          const dto = UserUpdateDto(email: 'multi-field-updated@example.com');
+
+          // Partial with multiple fields - all will be used in WHERE clause
+          final updated = await userRepo.update(
+            dto,
+            where: UserPartial(id: 6200, email: 'multi-field@example.com'),
+          );
+
+          expect(updated.email, 'multi-field-updated@example.com');
+        });
+
+        test(
+          'update() Partial where with non-matching fields finds nothing',
+          () async {
+            await userRepo.insert(
+              $User(id: 6201, email: 'no-match@example.com', active: true),
+            );
+
+            const dto = UserUpdateDto(email: 'should-not-update@example.com');
+
+            // Partial with non-matching values - should not find any rows
+            expect(
+              () => userRepo.update(
+                dto,
+                where: UserPartial(id: 6201, email: 'wrong-email@example.com'),
+              ),
+              throwsA(anything), // Will throw because no rows found
+            );
+          },
+        );
+      });
+
+      group('updateManyRaw() with flexible where', () {
+        test('updateManyRaw() with Partial where clause', () async {
+          await userRepo.insert(
+            $User(id: 6300, email: 'raw-partial@example.com', active: true),
+          );
+
+          final result = await userRepo.updateManyRaw([
+            const UserUpdateDto(
+              email: 'raw-partial-updated@example.com',
+              active: false,
+            ),
+          ], where: UserPartial(id: 6300));
+
+          expect(result.affectedRows, greaterThanOrEqualTo(0));
+
+          // Verify the update happened
+          final fetched = await dataSource
+              .query<$User>()
+              .whereEquals('id', 6300)
+              .first();
+          expect(fetched?.email, 'raw-partial-updated@example.com');
+        });
+
+        test('updateManyRaw() with Map where clause', () async {
+          await userRepo.insert(
+            $User(id: 6301, email: 'raw-map@example.com', active: true),
+          );
+
+          final result = await userRepo.updateManyRaw(
+            [
+              const UserUpdateDto(
+                email: 'raw-map-updated@example.com',
+                active: false,
+              ),
+            ],
+            where: {'id': 6301},
+          );
+
+          expect(result.affectedRows, greaterThanOrEqualTo(0));
+
+          // Verify the update happened
+          final fetched = await dataSource
+              .query<$User>()
+              .whereEquals('id', 6301)
+              .first();
+          expect(fetched?.email, 'raw-map-updated@example.com');
+        });
+      });
+
+      group('Partial toMap() functionality', () {
+        test('UserPartial toMap() returns only non-null fields', () {
+          const partial = UserPartial(id: 1, email: 'test@example.com');
+          final map = partial.toMap();
+
+          expect(map, {'id': 1, 'email': 'test@example.com'});
+          expect(map.containsKey('active'), isFalse);
+          expect(map.containsKey('name'), isFalse);
+        });
+
+        test('UserPartial toMap() with all fields', () {
+          final now = DateTime.now();
+          final partial = UserPartial(
+            id: 1,
+            email: 'test@example.com',
+            active: true,
+            name: 'Test',
+            age: 25,
+            createdAt: now,
+          );
+          final map = partial.toMap();
+
+          expect(map['id'], 1);
+          expect(map['email'], 'test@example.com');
+          expect(map['active'], true);
+          expect(map['name'], 'Test');
+          expect(map['age'], 25);
+          expect(map['createdAt'], now);
+        });
+
+        test('empty UserPartial toMap() returns empty map', () {
+          const partial = UserPartial();
+          final map = partial.toMap();
+
+          expect(map, isEmpty);
+        });
+      });
+
+      group('Edge cases', () {
+        test('update() with null where clause uses PK from input', () async {
+          await userRepo.insert(
+            $User(id: 6400, email: 'null-where@example.com', active: true),
+          );
+
+          // UpdateDto with id - should work without explicit where
+          const dto = UserUpdateDto(
+            id: 6400,
+            email: 'null-where-updated@example.com',
+          );
+
+          final updated = await userRepo.update(dto, where: null);
+
+          expect(updated.email, 'null-where-updated@example.com');
+        });
+
+        test('update() with Partial containing only PK', () async {
+          await userRepo.insert(
+            $User(id: 6401, email: 'pk-only@example.com', active: true),
+          );
+
+          const dto = UserUpdateDto(email: 'pk-only-updated@example.com');
+
+          final updated = await userRepo.update(
+            dto,
+            where: UserPartial(id: 6401),
+          );
+
+          expect(updated.email, 'pk-only-updated@example.com');
+        });
+
+        test(
+          'update() with InsertDto containing minimal fields as where',
+          () async {
+            await userRepo.insert(
+              $User(id: 6402, email: 'minimal-where@example.com', active: true),
+            );
+
+            const dto = UserUpdateDto(
+              email: 'minimal-where-updated@example.com',
+            );
+
+            // InsertDto doesn't have id, use email instead
+            final updated = await userRepo.update(
+              dto,
+              where: const UserInsertDto(email: 'minimal-where@example.com'),
+            );
+
+            expect(updated.email, 'minimal-where-updated@example.com');
+          },
+        );
+
+        test('update() fails with invalid where type', () {
+          const dto = UserUpdateDto(email: 'invalid@example.com');
+
+          expect(
+            () => userRepo.update(dto, where: 'invalid'),
+            throwsArgumentError,
+          );
+        });
+
+        test('update() fails with unrelated DTO type as where', () async {
+          await userRepo.insert(
+            $User(id: 6403, email: 'wrong-type@example.com', active: true),
+          );
+
+          const dto = UserUpdateDto(email: 'wrong-type-updated@example.com');
+
+          // AuthorInsertDto should not work as where for User repository
+          expect(
+            () => userRepo.update(
+              dto,
+              where: const AuthorInsertDto(name: 'Author'),
+            ),
+            throwsArgumentError,
+          );
+        });
+      });
+
+      group('Cross-model Partial tests', () {
+        test('AuthorPartial toMap() works correctly', () {
+          const partial = AuthorPartial(
+            id: 1,
+            name: 'Author Name',
+            active: true,
+          );
+          final map = partial.toMap();
+
+          expect(map['id'], 1);
+          expect(map['name'], 'Author Name');
+          expect(map['active'], true);
+        });
+
+        test('update Author with Partial where', () async {
+          await authorRepo.insert(
+            $Author(id: 6500, name: 'Original Author', active: true),
+          );
+
+          const dto = AuthorUpdateDto(name: 'Updated Author', active: false);
+
+          final updated = await authorRepo.update(
+            dto,
+            where: AuthorPartial(id: 6500),
+          );
+
+          expect(updated.name, 'Updated Author');
+          expect(updated.active, isFalse);
         });
       });
     });

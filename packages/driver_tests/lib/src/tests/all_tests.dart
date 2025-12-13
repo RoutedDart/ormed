@@ -6,6 +6,7 @@ import 'mutation_tests.dart';
 import 'partial_entity_tests.dart';
 import 'query_builder_tests.dart';
 import 'query_tests.dart';
+import 'repository_input_variations_tests.dart';
 import 'repository_tests.dart';
 import 'transaction_tests.dart';
 
@@ -21,6 +22,7 @@ void runAllDriverTests() {
   runDriverOverrideTests();
   runDriverQueryBuilderTests();
   runDriverRepositoryTests();
+  runRepositoryInputVariationsTests();
   runDriverFactoryInheritanceTests();
   runPartialEntityTests();
 }

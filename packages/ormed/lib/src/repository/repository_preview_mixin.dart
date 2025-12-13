@@ -7,12 +7,14 @@ part of 'repository.dart';
 /// - Insert/Update DTOs
 /// - Raw maps (`Map<String, Object?>`)
 mixin RepositoryPreviewMixin<T extends OrmEntity>
-    on RepositoryBase<T>,
+    on
+        RepositoryBase<T>,
         RepositoryHelpersMixin<T>,
         RepositoryInputHandlerMixin<T>,
         RepositoryInsertMixin<T>,
         RepositoryUpdateMixin<T>,
-        RepositoryUpsertMixin<T> {
+        RepositoryUpsertMixin<T>,
+        RepositoryDeleteMixin<T> {
   /// Returns the statement preview for inserting a single item.
   ///
   /// Accepts tracked models, insert DTOs, or raw maps.
@@ -39,7 +41,11 @@ mixin RepositoryPreviewMixin<T extends OrmEntity>
   /// ```
   StatementPreview previewInsertMany(List<Object> inputs) {
     if (inputs.isEmpty) {
-      throw ArgumentError.value(inputs, 'inputs', 'previewInsertMany requires inputs');
+      throw ArgumentError.value(
+        inputs,
+        'inputs',
+        'previewInsertMany requires inputs',
+      );
     }
     final hasTrackedModels = inputs.any((input) => isTrackedModel(input));
     final plan = buildInsertPlanFromInputs(
@@ -54,7 +60,11 @@ mixin RepositoryPreviewMixin<T extends OrmEntity>
   /// Accepts a list of tracked models, insert DTOs, or raw maps.
   StatementPreview previewInsertOrIgnoreMany(List<Object> inputs) {
     if (inputs.isEmpty) {
-      throw ArgumentError.value(inputs, 'inputs', 'previewInsertOrIgnoreMany requires inputs');
+      throw ArgumentError.value(
+        inputs,
+        'inputs',
+        'previewInsertOrIgnoreMany requires inputs',
+      );
     }
     final hasTrackedModels = inputs.any((input) => isTrackedModel(input));
     final plan = buildInsertPlanFromInputs(
@@ -80,7 +90,11 @@ mixin RepositoryPreviewMixin<T extends OrmEntity>
     JsonUpdateBuilder<T>? jsonUpdates,
   }) {
     if (inputs.isEmpty) {
-      throw ArgumentError.value(inputs, 'inputs', 'previewUpdateMany requires inputs');
+      throw ArgumentError.value(
+        inputs,
+        'inputs',
+        'previewUpdateMany requires inputs',
+      );
     }
     final plan = buildUpdatePlanFromInputs(
       inputs,
@@ -109,7 +123,11 @@ mixin RepositoryPreviewMixin<T extends OrmEntity>
     JsonUpdateBuilder<T>? jsonUpdates,
   }) {
     if (inputs.isEmpty) {
-      throw ArgumentError.value(inputs, 'inputs', 'previewUpsertMany requires inputs');
+      throw ArgumentError.value(
+        inputs,
+        'inputs',
+        'previewUpsertMany requires inputs',
+      );
     }
     final plan = buildUpsertPlanFromInputs(
       inputs,
@@ -145,4 +163,23 @@ mixin RepositoryPreviewMixin<T extends OrmEntity>
   /// ```
   StatementPreview previewDelete(Map<String, Object?> key) =>
       previewDeleteByKeys([key]);
+
+  /// Returns the statement preview for deleting using flexible where inputs.
+  ///
+  /// Accepts the same inputs as [RepositoryDeleteMixin.delete].
+  StatementPreview previewDeleteMany(List<Object> wheres) {
+    if (wheres.isEmpty) {
+      throw ArgumentError.value(
+        wheres,
+        'wheres',
+        'previewDeleteMany requires inputs',
+      );
+    }
+    final plan = buildDeletePlanFromWhereInputs(wheres);
+    return describeMutation(plan);
+  }
+
+  /// Returns the statement preview for deleting a single where clause.
+  StatementPreview previewDeleteWhere(Object where) =>
+      previewDeleteMany([where]);
 }
