@@ -45,6 +45,9 @@ class ModelPartialEmitter {
       buffer.writeln('});');
     }
 
+    // Add fromRow factory for hydrating from database rows
+    _writeFromRowFactory(buffer, className, visible.toList());
+
     for (final field in visible) {
       buffer.writeln('  final ${field.dartType}? ${field.name};');
     }
@@ -74,5 +77,38 @@ class ModelPartialEmitter {
     buffer.writeln('    );');
     buffer.writeln('  }');
     buffer.writeln('}');
+  }
+
+  void _writeFromRowFactory(
+    StringBuffer buffer,
+    String className,
+    List<FieldDescriptor> fields,
+  ) {
+    buffer.writeln();
+    buffer.writeln('  /// Creates a partial from a database row map.');
+    buffer.writeln('  ///');
+    buffer.writeln('  /// The [row] keys should be column names (snake_case).');
+    buffer.writeln('  /// Missing columns will result in null field values.');
+    buffer.writeln(
+      '  factory ${className}Partial.fromRow(Map<String, Object?> row) {',
+    );
+    buffer.writeln('    return ${className}Partial(');
+    for (final field in fields) {
+      final columnName = field.columnName ?? _toSnakeCase(field.name);
+      buffer.writeln(
+        "      ${field.name}: row['$columnName'] as ${field.dartType}?,",
+      );
+    }
+    buffer.writeln('    );');
+    buffer.writeln('  }');
+    buffer.writeln();
+  }
+
+  /// Converts a camelCase string to snake_case.
+  static String _toSnakeCase(String input) {
+    return input.replaceAllMapped(
+      RegExp(r'[A-Z]'),
+      (match) => '_${match.group(0)!.toLowerCase()}',
+    );
   }
 }

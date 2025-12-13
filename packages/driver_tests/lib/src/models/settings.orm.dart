@@ -207,6 +207,18 @@ class SettingUpdateDto implements UpdateDto<$Setting> {
 /// All fields are nullable; intended for subset SELECTs.
 class SettingPartial implements PartialEntity<$Setting> {
   const SettingPartial({this.id, this.payload});
+
+  /// Creates a partial from a database row map.
+  ///
+  /// The [row] keys should be column names (snake_case).
+  /// Missing columns will result in null field values.
+  factory SettingPartial.fromRow(Map<String, Object?> row) {
+    return SettingPartial(
+      id: row['id'] as int?,
+      payload: row['payload'] as Map<String, dynamic>?,
+    );
+  }
+
   final int? id;
   final Map<String, dynamic>? payload;
 
@@ -216,9 +228,8 @@ class SettingPartial implements PartialEntity<$Setting> {
     final int? idValue = id;
     if (idValue == null) throw StateError('Missing required field: id');
     final Map<String, dynamic>? payloadValue = payload;
-    if (payloadValue == null) {
+    if (payloadValue == null)
       throw StateError('Missing required field: payload');
-    }
     return $Setting(id: idValue, payload: payloadValue);
   }
 }

@@ -291,6 +291,20 @@ class MutationTargetUpdateDto implements UpdateDto<$MutationTarget> {
 /// All fields are nullable; intended for subset SELECTs.
 class MutationTargetPartial implements PartialEntity<$MutationTarget> {
   const MutationTargetPartial({this.id, this.name, this.active, this.category});
+
+  /// Creates a partial from a database row map.
+  ///
+  /// The [row] keys should be column names (snake_case).
+  /// Missing columns will result in null field values.
+  factory MutationTargetPartial.fromRow(Map<String, Object?> row) {
+    return MutationTargetPartial(
+      id: row['_id'] as String?,
+      name: row['name'] as String?,
+      active: row['active'] as bool?,
+      category: row['category'] as String?,
+    );
+  }
+
   final String? id;
   final String? name;
   final bool? active;

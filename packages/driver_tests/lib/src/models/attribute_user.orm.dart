@@ -335,6 +335,21 @@ class AttributeUserPartial implements PartialEntity<$AttributeUser> {
     this.role,
     this.profile,
   });
+
+  /// Creates a partial from a database row map.
+  ///
+  /// The [row] keys should be column names (snake_case).
+  /// Missing columns will result in null field values.
+  factory AttributeUserPartial.fromRow(Map<String, Object?> row) {
+    return AttributeUserPartial(
+      id: row['id'] as int?,
+      email: row['email'] as String?,
+      secret: row['secret'] as String?,
+      role: row['role'] as String?,
+      profile: row['profile'] as Map<String, Object?>?,
+    );
+  }
+
   final int? id;
   final String? email;
   final String? secret;

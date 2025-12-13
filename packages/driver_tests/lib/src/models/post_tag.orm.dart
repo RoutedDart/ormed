@@ -208,6 +208,18 @@ class PostTagUpdateDto implements UpdateDto<$PostTag> {
 /// All fields are nullable; intended for subset SELECTs.
 class PostTagPartial implements PartialEntity<$PostTag> {
   const PostTagPartial({this.postId, this.tagId});
+
+  /// Creates a partial from a database row map.
+  ///
+  /// The [row] keys should be column names (snake_case).
+  /// Missing columns will result in null field values.
+  factory PostTagPartial.fromRow(Map<String, Object?> row) {
+    return PostTagPartial(
+      postId: row['post_id'] as int?,
+      tagId: row['tag_id'] as int?,
+    );
+  }
+
   final int? postId;
   final int? tagId;
 

@@ -162,7 +162,9 @@ class _$CommentCodec extends ModelCodec<$Comment> {
       'body': registry.encodeField(_$CommentBodyField, model.body),
       'deleted_at': registry.encodeField(
         _$CommentDeletedAtField,
-        (model.getAttribute<DateTime?>('deleted_at')),
+        (model is ModelAttributes
+            ? model.getAttribute<DateTime?>('deleted_at')
+            : null),
       ),
     };
   }
@@ -223,6 +225,15 @@ class CommentUpdateDto implements UpdateDto<$Comment> {
 /// All fields are nullable; intended for subset SELECTs.
 class CommentPartial implements PartialEntity<$Comment> {
   const CommentPartial({this.id, this.body});
+
+  /// Creates a partial from a database row map.
+  ///
+  /// The [row] keys should be column names (snake_case).
+  /// Missing columns will result in null field values.
+  factory CommentPartial.fromRow(Map<String, Object?> row) {
+    return CommentPartial(id: row['id'] as int?, body: row['body'] as String?);
+  }
+
   final int? id;
   final String? body;
 

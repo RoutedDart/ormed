@@ -206,6 +206,15 @@ class TagUpdateDto implements UpdateDto<$Tag> {
 /// All fields are nullable; intended for subset SELECTs.
 class TagPartial implements PartialEntity<$Tag> {
   const TagPartial({this.id, this.label});
+
+  /// Creates a partial from a database row map.
+  ///
+  /// The [row] keys should be column names (snake_case).
+  /// Missing columns will result in null field values.
+  factory TagPartial.fromRow(Map<String, Object?> row) {
+    return TagPartial(id: row['id'] as int?, label: row['label'] as String?);
+  }
+
   final int? id;
   final String? label;
 

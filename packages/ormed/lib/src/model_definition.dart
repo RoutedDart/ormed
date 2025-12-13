@@ -310,6 +310,10 @@ class FieldDefinition {
   /// When `null`, computed based on:
   /// - `false` for auto-increment fields
   /// - `true` otherwise
+  ///
+  /// **Deprecated:** Use generated `InsertDto` types instead. This field is
+  /// retained for backward compatibility.
+  @Deprecated('Use generated InsertDto types instead')
   final bool? insertable;
 
   /// Whether this field should be included in UPDATE statements.
@@ -317,9 +321,17 @@ class FieldDefinition {
   /// When `null`, computed based on:
   /// - `false` for primary key fields
   /// - `true` otherwise
+  ///
+  /// **Deprecated:** Use generated `UpdateDto` types instead. This field is
+  /// retained for backward compatibility.
+  @Deprecated('Use generated UpdateDto types instead')
   final bool? updatable;
 
   /// Default Dart value for new instances (sentinel for auto-increment).
+  ///
+  /// **Deprecated:** Use generated `InsertDto` types instead of sentinel
+  /// values. This field is retained for backward compatibility.
+  @Deprecated('Use generated InsertDto types instead of sentinel values')
   final Object? defaultDartValue;
 
   /// Returns whether this field should be included in INSERT statements.

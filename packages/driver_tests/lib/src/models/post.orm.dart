@@ -269,11 +269,15 @@ class _$PostCodec extends ModelCodec<$Post> {
       ),
       'created_at': registry.encodeField(
         _$PostCreatedAtField,
-        (model.getAttribute<DateTime?>('created_at')),
+        (model is ModelAttributes
+            ? model.getAttribute<DateTime?>('created_at')
+            : null),
       ),
       'updated_at': registry.encodeField(
         _$PostUpdatedAtField,
-        (model.getAttribute<DateTime?>('updated_at')),
+        (model is ModelAttributes
+            ? model.getAttribute<DateTime?>('updated_at')
+            : null),
       ),
     };
   }
@@ -405,6 +409,22 @@ class PostPartial implements PartialEntity<$Post> {
     this.views,
     this.publishedAt,
   });
+
+  /// Creates a partial from a database row map.
+  ///
+  /// The [row] keys should be column names (snake_case).
+  /// Missing columns will result in null field values.
+  factory PostPartial.fromRow(Map<String, Object?> row) {
+    return PostPartial(
+      id: row['id'] as int?,
+      authorId: row['author_id'] as int?,
+      title: row['title'] as String?,
+      content: row['content'] as String?,
+      views: row['views'] as int?,
+      publishedAt: row['published_at'] as DateTime?,
+    );
+  }
+
   final int? id;
   final int? authorId;
   final String? title;
@@ -418,15 +438,13 @@ class PostPartial implements PartialEntity<$Post> {
     final int? idValue = id;
     if (idValue == null) throw StateError('Missing required field: id');
     final int? authorIdValue = authorId;
-    if (authorIdValue == null) {
+    if (authorIdValue == null)
       throw StateError('Missing required field: authorId');
-    }
     final String? titleValue = title;
     if (titleValue == null) throw StateError('Missing required field: title');
     final DateTime? publishedAtValue = publishedAt;
-    if (publishedAtValue == null) {
+    if (publishedAtValue == null)
       throw StateError('Missing required field: publishedAt');
-    }
     return $Post(
       id: idValue,
       authorId: authorIdValue,

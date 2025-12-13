@@ -385,6 +385,24 @@ class UserPartial implements PartialEntity<$User> {
     this.profile,
     this.metadata,
   });
+
+  /// Creates a partial from a database row map.
+  ///
+  /// The [row] keys should be column names (snake_case).
+  /// Missing columns will result in null field values.
+  factory UserPartial.fromRow(Map<String, Object?> row) {
+    return UserPartial(
+      id: row['id'] as int?,
+      email: row['email'] as String?,
+      active: row['active'] as bool?,
+      name: row['name'] as String?,
+      age: row['age'] as int?,
+      createdAt: row['createdAt'] as DateTime?,
+      profile: row['profile'] as Map<String, Object?>?,
+      metadata: row['metadata'] as Map<String, Object?>?,
+    );
+  }
+
   final int? id;
   final String? email;
   final bool? active;

@@ -182,6 +182,55 @@ extension CrudExtension<T extends OrmEntity> on Query<T> {
   Future<List<T>> get() async =>
       (await rows()).map((row) => row.model).toList(growable: false);
 
+  /// Returns results hydrated into partial entities.
+  ///
+  /// Use this when you only need a subset of columns and want the
+  /// type safety of the generated partial class.
+  ///
+  /// The [factory] parameter is the `fromRow` factory from the generated
+  /// partial class (e.g., `UserPartial.fromRow`).
+  ///
+  /// Example:
+  /// ```dart
+  /// final partials = await context.query<User>()
+  ///   .select(['id', 'email'])
+  ///   .getPartial(UserPartial.fromRow);
+  ///
+  /// for (final partial in partials) {
+  ///   print('User email: ${partial.email}');
+  ///   // partial.toEntity() will throw if required fields are missing
+  /// }
+  /// ```
+  Future<List<P>> getPartial<P extends PartialEntity<T>>(
+    P Function(Map<String, Object?>) factory,
+  ) async {
+    final plan = _buildPlan();
+    final rows = await context.runSelect(plan);
+    return rows.map(factory).toList(growable: false);
+  }
+
+  /// Returns the first result as a partial entity or `null` if none exist.
+  ///
+  /// Use this when you only need a subset of columns from the first row.
+  ///
+  /// Example:
+  /// ```dart
+  /// final partial = await context.query<User>()
+  ///   .where('id', 1)
+  ///   .select(['id', 'email'])
+  ///   .firstPartial(UserPartial.fromRow);
+  ///
+  /// if (partial != null) {
+  ///   print('User email: ${partial.email}');
+  /// }
+  /// ```
+  Future<P?> firstPartial<P extends PartialEntity<T>>(
+    P Function(Map<String, Object?>) factory,
+  ) async {
+    final results = await limit(1).getPartial(factory);
+    return results.isEmpty ? null : results.first;
+  }
+
   /// Returns the first matching row or `null` if none exist.
   ///
   /// Example:

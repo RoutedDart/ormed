@@ -184,7 +184,9 @@ class _$CustomSoftDeleteCodec extends ModelCodec<$CustomSoftDelete> {
       'title': registry.encodeField(_$CustomSoftDeleteTitleField, model.title),
       'removed_on': registry.encodeField(
         _$CustomSoftDeleteDeletedAtField,
-        (model.getAttribute<DateTime?>('removed_on')),
+        (model is ModelAttributes
+            ? model.getAttribute<DateTime?>('removed_on')
+            : null),
       ),
     };
   }
@@ -260,6 +262,18 @@ class CustomSoftDeleteUpdateDto implements UpdateDto<$CustomSoftDelete> {
 /// All fields are nullable; intended for subset SELECTs.
 class CustomSoftDeletePartial implements PartialEntity<$CustomSoftDelete> {
   const CustomSoftDeletePartial({this.id, this.title});
+
+  /// Creates a partial from a database row map.
+  ///
+  /// The [row] keys should be column names (snake_case).
+  /// Missing columns will result in null field values.
+  factory CustomSoftDeletePartial.fromRow(Map<String, Object?> row) {
+    return CustomSoftDeletePartial(
+      id: row['id'] as int?,
+      title: row['title'] as String?,
+    );
+  }
+
   final int? id;
   final String? title;
 

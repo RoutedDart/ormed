@@ -315,6 +315,20 @@ class DerivedForFactoryPartial implements PartialEntity<$DerivedForFactory> {
     this.id,
     this.baseName,
   });
+
+  /// Creates a partial from a database row map.
+  ///
+  /// The [row] keys should be column names (snake_case).
+  /// Missing columns will result in null field values.
+  factory DerivedForFactoryPartial.fromRow(Map<String, Object?> row) {
+    return DerivedForFactoryPartial(
+      layerTwoFlag: row['layerTwoFlag'] as bool?,
+      layerOneNotes: row['layerOneNotes'] as Map<String, Object?>?,
+      id: row['id'] as int?,
+      baseName: row['baseName'] as String?,
+    );
+  }
+
   final bool? layerTwoFlag;
   final Map<String, Object?>? layerOneNotes;
   final int? id;

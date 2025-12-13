@@ -83,30 +83,32 @@ mixin RepositoryInputHandlerMixin<T extends OrmEntity> on RepositoryBase<T> {
   ///
   /// For tracked models (`ModelAttributes`), applies legacy sentinel filtering
   /// to maintain backward compatibility.
+  ///
+  /// Supports the following input types:
+  /// - `T` (tracked model like `$User`) - Uses definition encoding with optional sentinel filtering
+  /// - `InsertDto<T>` (like `UserInsertDto`) - Uses the DTO's `toMap()` directly
+  /// - `UpdateDto<T>` (like `UserUpdateDto`) - Uses the DTO's `toMap()` (for upserts)
+  /// - `Map<String, Object?>` - Uses as-is with column name normalization
   Map<String, Object?> insertInputToMap(
     Object input, {
     required bool applySentinelFiltering,
   }) {
-    // Handle InsertDto
-    if (input is InsertDto<T>) {
-      return _normalizeColumnNames(input.toMap());
-    }
-
-    // Handle raw Map
-    if (input is Map<String, Object?>) {
-      return _normalizeColumnNames(input);
-    }
-
-    // Handle model (T extends OrmEntity)
-    if (input is T) {
-      return _modelToInsertMap(input, applySentinelFiltering: applySentinelFiltering);
-    }
-
-    throw ArgumentError.value(
-      input,
-      'input',
-      'Expected InsertDto<$T>, Map<String, Object?>, or $T, got ${input.runtimeType}',
-    );
+    return switch (input) {
+      // Tracked model ($User) - use definition encoding
+      T model => _modelToInsertMap(model, applySentinelFiltering: applySentinelFiltering),
+      // InsertDto (UserInsertDto) - use the DTO's toMap() directly
+      InsertDto<T> dto => _normalizeColumnNames(dto.toMap()),
+      // UpdateDto (UserUpdateDto) - also supported for flexibility
+      UpdateDto<T> dto => _normalizeColumnNames(dto.toMap()),
+      // Raw Map - use as-is with column name normalization
+      Map<String, Object?> m => _normalizeColumnNames(m),
+      // Fallback - throw for unsupported types
+      _ => throw ArgumentError.value(
+        input,
+        'input',
+        'Expected $T, InsertDto<$T>, UpdateDto<$T>, or Map<String, Object?>, got ${input.runtimeType}',
+      ),
+    };
   }
 
   /// Converts a model to a map for insertion, with optional sentinel filtering.
@@ -134,27 +136,29 @@ mixin RepositoryInputHandlerMixin<T extends OrmEntity> on RepositoryBase<T> {
   }
 
   /// Converts an update input to a map suitable for updates.
+  ///
+  /// Supports the following input types:
+  /// - `T` (tracked model like `$User`) - Uses definition encoding, filtering non-updatable fields
+  /// - `UpdateDto<T>` (like `UserUpdateDto`) - Uses the DTO's `toMap()` directly
+  /// - `InsertDto<T>` (like `UserInsertDto`) - Uses the DTO's `toMap()` (for flexibility)
+  /// - `Map<String, Object?>` - Uses as-is with column name normalization
   Map<String, Object?> updateInputToMap(Object input) {
-    // Handle UpdateDto
-    if (input is UpdateDto<T>) {
-      return _normalizeColumnNames(input.toMap());
-    }
-
-    // Handle raw Map
-    if (input is Map<String, Object?>) {
-      return _normalizeColumnNames(input);
-    }
-
-    // Handle model (T extends OrmEntity)
-    if (input is T) {
-      return _modelToUpdateMap(input);
-    }
-
-    throw ArgumentError.value(
-      input,
-      'input',
-      'Expected UpdateDto<$T>, Map<String, Object?>, or $T, got ${input.runtimeType}',
-    );
+    return switch (input) {
+      // Tracked model ($User) - use definition encoding
+      T model => _modelToUpdateMap(model),
+      // UpdateDto (UserUpdateDto) - use the DTO's toMap() directly
+      UpdateDto<T> dto => _normalizeColumnNames(dto.toMap()),
+      // InsertDto (UserInsertDto) - also supported for flexibility
+      InsertDto<T> dto => _normalizeColumnNames(dto.toMap()),
+      // Raw Map - use as-is with column name normalization
+      Map<String, Object?> m => _normalizeColumnNames(m),
+      // Fallback - throw for unsupported types
+      _ => throw ArgumentError.value(
+        input,
+        'input',
+        'Expected $T, UpdateDto<$T>, InsertDto<$T>, or Map<String, Object?>, got ${input.runtimeType}',
+      ),
+    };
   }
 
   /// Converts a model to a map for updates.

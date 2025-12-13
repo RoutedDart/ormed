@@ -119,6 +119,10 @@ mixin RepositoryHelpersMixin<T extends OrmEntity> on RepositoryBase<T> {
     return const [];
   }
 
+  /// Builds an insert plan from tracked models only.
+  ///
+  /// This is the legacy method that only accepts tracked models.
+  /// For DTOs and Maps, use `buildInsertPlanFromInputs` from the insert mixin.
   MutationPlan buildInsertPlan(
     List<T> models, {
     required bool returning,

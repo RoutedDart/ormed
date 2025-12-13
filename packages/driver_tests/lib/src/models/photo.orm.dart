@@ -279,6 +279,20 @@ class PhotoPartial implements PartialEntity<$Photo> {
     this.imageableType,
     this.path,
   });
+
+  /// Creates a partial from a database row map.
+  ///
+  /// The [row] keys should be column names (snake_case).
+  /// Missing columns will result in null field values.
+  factory PhotoPartial.fromRow(Map<String, Object?> row) {
+    return PhotoPartial(
+      id: row['id'] as int?,
+      imageableId: row['imageable_id'] as int?,
+      imageableType: row['imageable_type'] as String?,
+      path: row['path'] as String?,
+    );
+  }
+
   final int? id;
   final int? imageableId;
   final String? imageableType;
@@ -290,13 +304,11 @@ class PhotoPartial implements PartialEntity<$Photo> {
     final int? idValue = id;
     if (idValue == null) throw StateError('Missing required field: id');
     final int? imageableIdValue = imageableId;
-    if (imageableIdValue == null) {
+    if (imageableIdValue == null)
       throw StateError('Missing required field: imageableId');
-    }
     final String? imageableTypeValue = imageableType;
-    if (imageableTypeValue == null) {
+    if (imageableTypeValue == null)
       throw StateError('Missing required field: imageableType');
-    }
     final String? pathValue = path;
     if (pathValue == null) throw StateError('Missing required field: path');
     return $Photo(

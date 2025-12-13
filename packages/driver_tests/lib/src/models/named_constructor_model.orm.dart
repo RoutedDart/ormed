@@ -282,6 +282,19 @@ class NamedConstructorModelUpdateDto
 class NamedConstructorModelPartial
     implements PartialEntity<$NamedConstructorModel> {
   const NamedConstructorModelPartial({this.id, this.name, this.value});
+
+  /// Creates a partial from a database row map.
+  ///
+  /// The [row] keys should be column names (snake_case).
+  /// Missing columns will result in null field values.
+  factory NamedConstructorModelPartial.fromRow(Map<String, Object?> row) {
+    return NamedConstructorModelPartial(
+      id: row['id'] as int?,
+      name: row['name'] as String?,
+      value: row['value'] as int?,
+    );
+  }
+
   final int? id;
   final String? name;
   final int? value;

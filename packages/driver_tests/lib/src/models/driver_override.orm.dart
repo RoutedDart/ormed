@@ -251,6 +251,18 @@ class DriverOverrideModelUpdateDto implements UpdateDto<$DriverOverrideModel> {
 class DriverOverrideModelPartial
     implements PartialEntity<$DriverOverrideModel> {
   const DriverOverrideModelPartial({this.id, this.payload});
+
+  /// Creates a partial from a database row map.
+  ///
+  /// The [row] keys should be column names (snake_case).
+  /// Missing columns will result in null field values.
+  factory DriverOverrideModelPartial.fromRow(Map<String, Object?> row) {
+    return DriverOverrideModelPartial(
+      id: row['id'] as int?,
+      payload: row['payload'] as Map<String, Object?>?,
+    );
+  }
+
   final int? id;
   final Map<String, Object?>? payload;
 
@@ -260,9 +272,8 @@ class DriverOverrideModelPartial
     final int? idValue = id;
     if (idValue == null) throw StateError('Missing required field: id');
     final Map<String, Object?>? payloadValue = payload;
-    if (payloadValue == null) {
+    if (payloadValue == null)
       throw StateError('Missing required field: payload');
-    }
     return $DriverOverrideModel(id: idValue, payload: payloadValue);
   }
 }
@@ -318,4 +329,3 @@ extension DriverOverrideModelOrmExtension on DriverOverrideModel {
     return $DriverOverrideModel.fromModel(this);
   }
 }
-

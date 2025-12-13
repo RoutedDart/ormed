@@ -949,5 +949,228 @@ void runDriverRepositoryTests() {
         expect(upserted[0].active, isFalse);
       });
     });
+
+    group('Cross-DTO Input Type Tests', () {
+      group('UpdateDto with upsert operations', () {
+        test('upsert() single UpdateDto inserts new', () async {
+          const dto = UserUpdateDto(
+            id: 4700,
+            email: 'upsert-update-dto@example.com',
+            active: true,
+            name: 'UpdateDto Insert',
+          );
+
+          final upserted = await userRepo.upsert(dto, );
+
+          expect(upserted.id, 4700);
+          expect(upserted.email, 'upsert-update-dto@example.com');
+          expect(upserted.name, 'UpdateDto Insert');
+        });
+
+        test('upsert() UpdateDto updates existing', () async {
+          await userRepo.insert(
+            $User(id: 4701, email: 'update-dto-orig@example.com', active: true, name: 'Original'),
+          );
+
+          const dto = UserUpdateDto(
+            id: 4701,
+            email: 'update-dto-modified@example.com',
+            active: false,
+          );
+
+          final upserted = await userRepo.upsert(dto, );
+
+          expect(upserted.email, 'update-dto-modified@example.com');
+          expect(upserted.active, isFalse);
+        });
+
+        test('upsertMany() UpdateDtos with uniqueBy', () async {
+          await userRepo.insert(
+            $User(id: 4702, email: 'updto-unique@example.com', active: true),
+          );
+
+          const dtos = [
+            UserUpdateDto(email: 'updto-unique@example.com', active: false, name: 'Updated'),
+            UserUpdateDto(email: 'updto-new@example.com', active: true),
+          ];
+
+          final upserted = await userRepo.upsertMany(
+            dtos,
+            uniqueBy: ['email'],
+          );
+
+          expect(upserted.length, 2);
+          expect(upserted[0].active, isFalse);
+          expect(upserted[0].name, 'Updated');
+          expect(upserted[1].email, 'updto-new@example.com');
+        });
+      });
+
+      group('InsertDto with update operations', () {
+        test('update() InsertDto with where clause', () async {
+          await userRepo.insert(
+            $User(id: 4800, email: 'ins-dto-orig@example.com', active: true),
+          );
+
+          const dto = UserInsertDto(
+            email: 'ins-dto-updated@example.com',
+            active: false,
+            name: 'Updated via InsertDto',
+          );
+
+          final updated = await userRepo.update(
+            dto,
+            where: {'id': 4800},
+          );
+
+          expect(updated.email, 'ins-dto-updated@example.com');
+          expect(updated.active, isFalse);
+          expect(updated.name, 'Updated via InsertDto');
+        });
+
+        test('updateMany() InsertDtos', () async {
+          await userRepo.insertMany([
+            $User(id: 4801, email: 'ins-a@example.com', active: true),
+            $User(id: 4802, email: 'ins-b@example.com', active: true),
+          ]);
+
+          // Use InsertDto for update (with id in where map)
+          const dtos = [
+            UserInsertDto(email: 'ins-a-updated@example.com', active: false),
+            UserInsertDto(email: 'ins-b-updated@example.com', active: false),
+          ];
+
+          // Update individually with where clause
+          final updated1 = await userRepo.update(dtos[0], where: {'id': 4801}, );
+          final updated2 = await userRepo.update(dtos[1], where: {'id': 4802}, );
+
+          expect(updated1.email, 'ins-a-updated@example.com');
+          expect(updated2.email, 'ins-b-updated@example.com');
+        });
+      });
+
+      group('Mixed input types in single operation', () {
+        test('upsertMany() with all input types', () async {
+          // Create initial record for update
+          await userRepo.insert(
+            $User(id: 4900, email: 'mix-existing@example.com', active: true),
+          );
+
+          final mixedInputs = [
+            // Tracked model - update existing
+            $User(id: 4900, email: 'mix-model-updated@example.com', active: false),
+            // InsertDto - insert new
+            const UserInsertDto(email: 'mix-insert-dto@example.com', active: true),
+            // UpdateDto - insert new (no existing record)
+            const UserUpdateDto(id: 4901, email: 'mix-update-dto@example.com', active: true),
+            // Map - insert new
+            <String, Object?>{'id': 4902, 'email': 'mix-map@example.com', 'active': true},
+          ];
+
+          final upserted = await userRepo.upsertMany(mixedInputs, );
+
+          expect(upserted.length, 4);
+          expect(upserted[0].email, 'mix-model-updated@example.com');
+          expect(upserted[0].active, isFalse);
+          expect(upserted[1].email, 'mix-insert-dto@example.com');
+          expect(upserted[2].email, 'mix-update-dto@example.com');
+          expect(upserted[3].email, 'mix-map@example.com');
+        });
+
+        test('insertMany() with all input types', () async {
+          final mixedInputs = [
+            $User(id: 5000, email: 'ins-mix-model@example.com', active: true),
+            const UserInsertDto(email: 'ins-mix-dto@example.com', active: true),
+            <String, Object?>{'id': 5002, 'email': 'ins-mix-map@example.com', 'active': true},
+          ];
+
+          final inserted = await userRepo.insertMany(mixedInputs);
+
+          expect(inserted.length, 3);
+          expect(inserted[0].email, 'ins-mix-model@example.com');
+          expect(inserted[1].email, 'ins-mix-dto@example.com');
+          expect(inserted[2].email, 'ins-mix-map@example.com');
+        });
+
+        test('updateMany() with all input types', () async {
+          await userRepo.insertMany([
+            $User(id: 5100, email: 'upd-mix-1@example.com', active: true),
+            $User(id: 5101, email: 'upd-mix-2@example.com', active: true),
+            $User(id: 5102, email: 'upd-mix-3@example.com', active: true),
+          ]);
+
+          final mixedInputs = [
+            $User(id: 5100, email: 'upd-mix-1-updated@example.com', active: false),
+            const UserUpdateDto(id: 5101, email: 'upd-mix-2-updated@example.com', active: false),
+            <String, Object?>{'id': 5102, 'email': 'upd-mix-3-updated@example.com', 'active': false},
+          ];
+
+          final updated = await userRepo.updateMany(mixedInputs, );
+
+          expect(updated.length, 3);
+          expect(updated[0].email, 'upd-mix-1-updated@example.com');
+          expect(updated[1].email, 'upd-mix-2-updated@example.com');
+          expect(updated[2].email, 'upd-mix-3-updated@example.com');
+        });
+      });
+
+      group('DTO field name normalization', () {
+        test('InsertDto uses column names correctly', () async {
+          // UserInsertDto fields should map to column names
+          const dto = UserInsertDto(
+            email: 'normalize@example.com',
+            active: true,
+            name: 'Normalize Test',
+            age: 25,
+          );
+
+          final inserted = await userRepo.insert(dto, );
+
+          expect(inserted.email, 'normalize@example.com');
+          expect(inserted.name, 'Normalize Test');
+          expect(inserted.age, 25);
+        });
+
+        test('UpdateDto partial update preserves other fields', () async {
+          await userRepo.insert(
+            $User(
+              id: 5200,
+              email: 'preserve@example.com',
+              active: true,
+              name: 'Original Name',
+              age: 30,
+            ),
+          );
+
+          // Only update email
+          const dto = UserUpdateDto(
+            id: 5200,
+            email: 'preserve-updated@example.com',
+          );
+
+          final updated = await userRepo.update(dto, );
+
+          expect(updated.email, 'preserve-updated@example.com');
+          // Other fields should be preserved
+          expect(updated.name, 'Original Name');
+          expect(updated.age, 30);
+          expect(updated.active, isTrue);
+        });
+
+        test('Map with field names gets normalized to column names', () async {
+          // 'createdAt' should be normalized to 'createdAt' column
+          final map = <String, Object?>{
+            'email': 'field-norm@example.com',
+            'active': true,
+            'name': 'Field Norm Test',
+          };
+
+          final inserted = await userRepo.insert(map, );
+
+          expect(inserted.email, 'field-norm@example.com');
+          expect(inserted.name, 'Field Norm Test');
+        });
+      });
+    });
   });
 }

@@ -151,7 +151,9 @@ class _$NoFactoryCodec extends ModelCodec<$NoFactory> {
       'id': registry.encodeField(_$NoFactoryIdField, model.id),
       'deleted_at': registry.encodeField(
         _$NoFactoryDeletedAtField,
-        (model.getAttribute<DateTime?>('deleted_at')),
+        (model is ModelAttributes
+            ? model.getAttribute<DateTime?>('deleted_at')
+            : null),
       ),
     };
   }
@@ -205,6 +207,15 @@ class NoFactoryUpdateDto implements UpdateDto<$NoFactory> {
 /// All fields are nullable; intended for subset SELECTs.
 class NoFactoryPartial implements PartialEntity<$NoFactory> {
   const NoFactoryPartial({this.id});
+
+  /// Creates a partial from a database row map.
+  ///
+  /// The [row] keys should be column names (snake_case).
+  /// Missing columns will result in null field values.
+  factory NoFactoryPartial.fromRow(Map<String, Object?> row) {
+    return NoFactoryPartial(id: row['id'] as int?);
+  }
+
   final int? id;
 
   @override

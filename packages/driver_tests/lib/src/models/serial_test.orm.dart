@@ -210,6 +210,18 @@ class SerialTestUpdateDto implements UpdateDto<$SerialTest> {
 /// All fields are nullable; intended for subset SELECTs.
 class SerialTestPartial implements PartialEntity<$SerialTest> {
   const SerialTestPartial({this.id, this.label});
+
+  /// Creates a partial from a database row map.
+  ///
+  /// The [row] keys should be column names (snake_case).
+  /// Missing columns will result in null field values.
+  factory SerialTestPartial.fromRow(Map<String, Object?> row) {
+    return SerialTestPartial(
+      id: row['id'] as int?,
+      label: row['label'] as String?,
+    );
+  }
+
   final int? id;
   final String? label;
 

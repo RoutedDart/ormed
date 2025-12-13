@@ -201,11 +201,15 @@ class _$AuthorCodec extends ModelCodec<$Author> {
       'active': registry.encodeField(_$AuthorActiveField, model.active),
       'created_at': registry.encodeField(
         _$AuthorCreatedAtField,
-        (model.getAttribute<DateTime?>('created_at')),
+        (model is ModelAttributes
+            ? model.getAttribute<DateTime?>('created_at')
+            : null),
       ),
       'updated_at': registry.encodeField(
         _$AuthorUpdatedAtField,
-        (model.getAttribute<DateTime?>('updated_at')),
+        (model is ModelAttributes
+            ? model.getAttribute<DateTime?>('updated_at')
+            : null),
       ),
     };
   }
@@ -285,6 +289,19 @@ class AuthorUpdateDto implements UpdateDto<$Author> {
 /// All fields are nullable; intended for subset SELECTs.
 class AuthorPartial implements PartialEntity<$Author> {
   const AuthorPartial({this.id, this.name, this.active});
+
+  /// Creates a partial from a database row map.
+  ///
+  /// The [row] keys should be column names (snake_case).
+  /// Missing columns will result in null field values.
+  factory AuthorPartial.fromRow(Map<String, Object?> row) {
+    return AuthorPartial(
+      id: row['id'] as int?,
+      name: row['name'] as String?,
+      active: row['active'] as bool?,
+    );
+  }
+
   final int? id;
   final String? name;
   final bool? active;

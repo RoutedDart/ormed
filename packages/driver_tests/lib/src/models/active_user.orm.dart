@@ -204,7 +204,9 @@ class _$ActiveUserCodec extends ModelCodec<$ActiveUser> {
       ),
       'deleted_at': registry.encodeField(
         _$ActiveUserDeletedAtField,
-        (model.getAttribute<DateTime?>('deleted_at')),
+        (model is ModelAttributes
+            ? model.getAttribute<DateTime?>('deleted_at')
+            : null),
       ),
     };
   }
@@ -294,6 +296,20 @@ class ActiveUserUpdateDto implements UpdateDto<$ActiveUser> {
 /// All fields are nullable; intended for subset SELECTs.
 class ActiveUserPartial implements PartialEntity<$ActiveUser> {
   const ActiveUserPartial({this.id, this.email, this.name, this.settings});
+
+  /// Creates a partial from a database row map.
+  ///
+  /// The [row] keys should be column names (snake_case).
+  /// Missing columns will result in null field values.
+  factory ActiveUserPartial.fromRow(Map<String, Object?> row) {
+    return ActiveUserPartial(
+      id: row['id'] as int?,
+      email: row['email'] as String?,
+      name: row['name'] as String?,
+      settings: row['settings'] as Map<String, Object?>?,
+    );
+  }
+
   final int? id;
   final String? email;
   final String? name;
@@ -305,9 +321,8 @@ class ActiveUserPartial implements PartialEntity<$ActiveUser> {
     final String? emailValue = email;
     if (emailValue == null) throw StateError('Missing required field: email');
     final Map<String, Object?>? settingsValue = settings;
-    if (settingsValue == null) {
+    if (settingsValue == null)
       throw StateError('Missing required field: settings');
-    }
     return $ActiveUser(
       id: id,
       email: emailValue,

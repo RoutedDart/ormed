@@ -417,6 +417,25 @@ class ArticlePartial implements PartialEntity<$Article> {
     this.reviewedAt,
     this.categoryId,
   });
+
+  /// Creates a partial from a database row map.
+  ///
+  /// The [row] keys should be column names (snake_case).
+  /// Missing columns will result in null field values.
+  factory ArticlePartial.fromRow(Map<String, Object?> row) {
+    return ArticlePartial(
+      id: row['id'] as int?,
+      title: row['title'] as String?,
+      body: row['body'] as String?,
+      status: row['status'] as String?,
+      rating: row['rating'] as double?,
+      priority: row['priority'] as int?,
+      publishedAt: row['published_at'] as DateTime?,
+      reviewedAt: row['reviewed_at'] as DateTime?,
+      categoryId: row['category_id'] as int?,
+    );
+  }
+
   final int? id;
   final String? title;
   final String? body;
@@ -439,17 +458,14 @@ class ArticlePartial implements PartialEntity<$Article> {
     final double? ratingValue = rating;
     if (ratingValue == null) throw StateError('Missing required field: rating');
     final int? priorityValue = priority;
-    if (priorityValue == null) {
+    if (priorityValue == null)
       throw StateError('Missing required field: priority');
-    }
     final DateTime? publishedAtValue = publishedAt;
-    if (publishedAtValue == null) {
+    if (publishedAtValue == null)
       throw StateError('Missing required field: publishedAt');
-    }
     final int? categoryIdValue = categoryId;
-    if (categoryIdValue == null) {
+    if (categoryIdValue == null)
       throw StateError('Missing required field: categoryId');
-    }
     return $Article(
       id: idValue,
       title: titleValue,
