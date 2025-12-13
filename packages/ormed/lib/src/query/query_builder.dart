@@ -1110,6 +1110,17 @@ class Query<T> {
     if (definition is AdHocModelDefinition) {
       return (definition as AdHocModelDefinition).fieldFor(name);
     }
+    // Allow arbitrary columns for TableQueryDefinition (table() queries)
+    if (definition is TableQueryDefinition) {
+      return FieldDefinition(
+        name: name,
+        columnName: name,
+        dartType: 'Object?',
+        resolvedType: 'Object?',
+        isPrimaryKey: false,
+        isNullable: true,
+      );
+    }
     throw ArgumentError.value(
       name,
       'field',
