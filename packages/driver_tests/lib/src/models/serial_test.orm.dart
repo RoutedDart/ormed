@@ -175,6 +175,55 @@ class _$SerialTestCodec extends ModelCodec<$SerialTest> {
   }
 }
 
+/// Insert DTO for [SerialTest].
+///
+/// Auto-increment/DB-generated fields are omitted by default.
+class SerialTestInsertDto implements InsertDto<$SerialTest> {
+  const SerialTestInsertDto({this.label});
+  final String? label;
+
+  @override
+  Map<String, Object?> toMap() {
+    return <String, Object?>{if (label != null) 'label': label};
+  }
+}
+
+/// Update DTO for [SerialTest].
+///
+/// All fields are optional; only provided entries are used in SET clauses.
+class SerialTestUpdateDto implements UpdateDto<$SerialTest> {
+  const SerialTestUpdateDto({this.id, this.label});
+  final int? id;
+  final String? label;
+
+  @override
+  Map<String, Object?> toMap() {
+    return <String, Object?>{
+      if (id != null) 'id': id,
+      if (label != null) 'label': label,
+    };
+  }
+}
+
+/// Partial projection for [SerialTest].
+///
+/// All fields are nullable; intended for subset SELECTs.
+class SerialTestPartial implements PartialEntity<$SerialTest> {
+  const SerialTestPartial({this.id, this.label});
+  final int? id;
+  final String? label;
+
+  @override
+  $SerialTest toEntity() {
+    // Basic required-field check: non-nullable fields must be present.
+    final int? idValue = id;
+    if (idValue == null) throw StateError('Missing required field: id');
+    final String? labelValue = label;
+    if (labelValue == null) throw StateError('Missing required field: label');
+    return $SerialTest(id: idValue, label: labelValue);
+  }
+}
+
 /// Generated tracked model class for [SerialTest].
 ///
 /// This class extends the user-defined [SerialTest] model and adds
@@ -183,7 +232,7 @@ class _$SerialTestCodec extends ModelCodec<$SerialTest> {
 ///
 /// **Do not instantiate this class directly.** Use queries, repositories,
 /// or model factories to create tracked model instances.
-class $SerialTest extends SerialTest with ModelAttributes {
+class $SerialTest extends SerialTest with ModelAttributes implements OrmEntity {
   $SerialTest({int id = 0, required String label})
     : super.new(id: id, label: label) {
     _attachOrmRuntimeMetadata({'id': id, 'label': label});

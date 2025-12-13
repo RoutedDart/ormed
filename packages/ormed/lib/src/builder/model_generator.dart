@@ -10,6 +10,8 @@ import 'emitters/companion_class_emitter.dart';
 import 'emitters/model_codec_emitter.dart';
 import 'emitters/model_definition_emitter.dart';
 import 'emitters/model_factory_emitter.dart';
+import 'emitters/model_dto_emitter.dart';
+import 'emitters/model_partial_emitter.dart';
 import 'emitters/model_subclass_emitter.dart';
 
 import 'model_context.dart';
@@ -50,13 +52,18 @@ class OrmModelGenerator extends GeneratorForAnnotation<OrmModel> {
     }
 
     buffer.writeln(ModelCodecEmitter(context).emit());
+    buffer.writeln(ModelDtoEmitter(context).emit());
+    buffer.writeln(ModelPartialEmitter(context).emit());
     buffer.writeln(ModelSubclassEmitter(context).emit());
 
     await _writeModelSummary(buildStep, context);
     return buffer.toString();
   }
 
-  Future<void> _writeModelSummary(BuildStep buildStep, ModelContext context) async {
+  Future<void> _writeModelSummary(
+    BuildStep buildStep,
+    ModelContext context,
+  ) async {
     final inputId = buildStep.inputId;
     if (!inputId.path.startsWith('lib/')) return;
     final relativeImport = inputId.path.substring('lib/'.length);

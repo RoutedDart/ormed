@@ -172,6 +172,57 @@ class _$SettingCodec extends ModelCodec<$Setting> {
   }
 }
 
+/// Insert DTO for [Setting].
+///
+/// Auto-increment/DB-generated fields are omitted by default.
+class SettingInsertDto implements InsertDto<$Setting> {
+  const SettingInsertDto({this.payload});
+  final Map<String, dynamic>? payload;
+
+  @override
+  Map<String, Object?> toMap() {
+    return <String, Object?>{if (payload != null) 'payload': payload};
+  }
+}
+
+/// Update DTO for [Setting].
+///
+/// All fields are optional; only provided entries are used in SET clauses.
+class SettingUpdateDto implements UpdateDto<$Setting> {
+  const SettingUpdateDto({this.id, this.payload});
+  final int? id;
+  final Map<String, dynamic>? payload;
+
+  @override
+  Map<String, Object?> toMap() {
+    return <String, Object?>{
+      if (id != null) 'id': id,
+      if (payload != null) 'payload': payload,
+    };
+  }
+}
+
+/// Partial projection for [Setting].
+///
+/// All fields are nullable; intended for subset SELECTs.
+class SettingPartial implements PartialEntity<$Setting> {
+  const SettingPartial({this.id, this.payload});
+  final int? id;
+  final Map<String, dynamic>? payload;
+
+  @override
+  $Setting toEntity() {
+    // Basic required-field check: non-nullable fields must be present.
+    final int? idValue = id;
+    if (idValue == null) throw StateError('Missing required field: id');
+    final Map<String, dynamic>? payloadValue = payload;
+    if (payloadValue == null) {
+      throw StateError('Missing required field: payload');
+    }
+    return $Setting(id: idValue, payload: payloadValue);
+  }
+}
+
 /// Generated tracked model class for [Setting].
 ///
 /// This class extends the user-defined [Setting] model and adds
@@ -180,7 +231,7 @@ class _$SettingCodec extends ModelCodec<$Setting> {
 ///
 /// **Do not instantiate this class directly.** Use queries, repositories,
 /// or model factories to create tracked model instances.
-class $Setting extends Setting with ModelAttributes {
+class $Setting extends Setting with ModelAttributes implements OrmEntity {
   $Setting({int id = 0, required Map<String, dynamic> payload})
     : super.new(id: id, payload: payload) {
     _attachOrmRuntimeMetadata({'id': id, 'payload': payload});

@@ -128,7 +128,7 @@ const RelationDefinition _$PostCommentsRelation = RelationDefinition(
   localKey: 'id',
 );
 
-final ModelDefinition<Post> _$PostModelDefinition = ModelDefinition(
+final ModelDefinition<$Post> _$PostDefinition = ModelDefinition(
   modelName: 'Post',
   tableName: 'posts',
   fields: const [
@@ -156,64 +156,70 @@ final ModelDefinition<Post> _$PostModelDefinition = ModelDefinition(
     softDeletes: false,
     softDeleteColumn: 'deleted_at',
   ),
-  codec: _$PostModelCodec(),
+  codec: _$PostCodec(),
 );
 
 extension PostOrmDefinition on Post {
-  static ModelDefinition<Post> get definition => _$PostModelDefinition;
+  static ModelDefinition<$Post> get definition => _$PostDefinition;
 }
 
 class Posts {
   const Posts._();
 
-  static Query<Post> query([String? connection]) =>
-      Model.query<Post>(connection: connection);
+  static Query<$Post> query([String? connection]) =>
+      Model.query<$Post>(connection: connection);
 
-  static Future<Post?> find(Object id, {String? connection}) =>
-      Model.find<Post>(id, connection: connection);
+  static Future<$Post?> find(Object id, {String? connection}) =>
+      Model.find<$Post>(id, connection: connection);
 
-  static Future<Post> findOrFail(Object id, {String? connection}) =>
-      Model.findOrFail<Post>(id, connection: connection);
+  static Future<$Post> findOrFail(Object id, {String? connection}) =>
+      Model.findOrFail<$Post>(id, connection: connection);
 
-  static Future<List<Post>> all({String? connection}) =>
-      Model.all<Post>(connection: connection);
+  static Future<List<$Post>> all({String? connection}) =>
+      Model.all<$Post>(connection: connection);
 
   static Future<int> count({String? connection}) =>
-      Model.count<Post>(connection: connection);
+      Model.count<$Post>(connection: connection);
 
   static Future<bool> anyExist({String? connection}) =>
-      Model.anyExist<Post>(connection: connection);
+      Model.anyExist<$Post>(connection: connection);
 
-  static Query<Post> where(
+  static Query<$Post> where(
     String column,
     String operator,
     dynamic value, {
     String? connection,
-  }) => Model.where<Post>(column, operator, value, connection: connection);
+  }) => Model.where<$Post>(column, operator, value, connection: connection);
 
-  static Query<Post> whereIn(
+  static Query<$Post> whereIn(
     String column,
     List<dynamic> values, {
     String? connection,
-  }) => Model.whereIn<Post>(column, values, connection: connection);
+  }) => Model.whereIn<$Post>(column, values, connection: connection);
 
-  static Query<Post> orderBy(
+  static Query<$Post> orderBy(
     String column, {
     String direction = "asc",
     String? connection,
-  }) =>
-      Model.orderBy<Post>(column, direction: direction, connection: connection);
+  }) => Model.orderBy<$Post>(
+    column,
+    direction: direction,
+    connection: connection,
+  );
 
-  static Query<Post> limit(int count, {String? connection}) =>
-      Model.limit<Post>(count, connection: connection);
+  static Query<$Post> limit(int count, {String? connection}) =>
+      Model.limit<$Post>(count, connection: connection);
+
+  static Repository<$Post> repo([String? connection]) =>
+      Model.repository<$Post>(connection: connection);
 }
 
 class PostModelFactory {
   const PostModelFactory._();
 
-  static ModelDefinition<Post> get definition => _$PostModelDefinition;
+  static ModelDefinition<$Post> get definition => _$PostDefinition;
 
-  static ModelCodec<Post> get codec => definition.codec;
+  static ModelCodec<$Post> get codec => definition.codec;
 
   static Post fromMap(
     Map<String, Object?> data, {
@@ -223,7 +229,7 @@ class PostModelFactory {
   static Map<String, Object?> toMap(
     Post model, {
     ValueCodecRegistry? registry,
-  }) => definition.toMap(model, registry: registry);
+  }) => definition.toMap(model.toTracked(), registry: registry);
 
   static void registerWith(ModelRegistry registry) =>
       registry.register(definition);
@@ -239,11 +245,10 @@ class PostModelFactory {
   );
 }
 
-class _$PostModelCodec extends ModelCodec<Post> {
-  const _$PostModelCodec();
-
+class _$PostCodec extends ModelCodec<$Post> {
+  const _$PostCodec();
   @override
-  Map<String, Object?> encode(Post model, ValueCodecRegistry registry) {
+  Map<String, Object?> encode($Post model, ValueCodecRegistry registry) {
     return <String, Object?>{
       'id': registry.encodeField(_$PostIdField, model.id),
       'user_id': registry.encodeField(_$PostUserIdField, model.userId),
@@ -260,7 +265,7 @@ class _$PostModelCodec extends ModelCodec<Post> {
   }
 
   @override
-  Post decode(Map<String, Object?> data, ValueCodecRegistry registry) {
+  $Post decode(Map<String, Object?> data, ValueCodecRegistry registry) {
     final int? postIdValue = registry.decodeField<int?>(
       _$PostIdField,
       data['id'],
@@ -290,7 +295,7 @@ class _$PostModelCodec extends ModelCodec<Post> {
       _$PostUpdatedAtField,
       data['updated_at'],
     );
-    final model = _$PostModel(
+    final model = $Post(
       id: postIdValue,
       userId: postUserIdValue,
       title: postTitleValue,
@@ -314,8 +319,138 @@ class _$PostModelCodec extends ModelCodec<Post> {
   }
 }
 
-class _$PostModel extends Post {
-  _$PostModel({
+/// Insert DTO for [Post].
+///
+/// Auto-increment/DB-generated fields are omitted by default.
+class PostInsertDto implements InsertDto<$Post> {
+  const PostInsertDto({
+    this.id,
+    this.userId,
+    this.title,
+    this.body,
+    this.published,
+    this.publishedAt,
+    this.createdAt,
+    this.updatedAt,
+  });
+  final int? id;
+  final int? userId;
+  final String? title;
+  final String? body;
+  final bool? published;
+  final DateTime? publishedAt;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+
+  @override
+  Map<String, Object?> toMap() {
+    return <String, Object?>{
+      if (id != null) 'id': id,
+      if (userId != null) 'user_id': userId,
+      if (title != null) 'title': title,
+      if (body != null) 'body': body,
+      if (published != null) 'published': published,
+      if (publishedAt != null) 'published_at': publishedAt,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+    };
+  }
+}
+
+/// Update DTO for [Post].
+///
+/// All fields are optional; only provided entries are used in SET clauses.
+class PostUpdateDto implements UpdateDto<$Post> {
+  const PostUpdateDto({
+    this.id,
+    this.userId,
+    this.title,
+    this.body,
+    this.published,
+    this.publishedAt,
+    this.createdAt,
+    this.updatedAt,
+  });
+  final int? id;
+  final int? userId;
+  final String? title;
+  final String? body;
+  final bool? published;
+  final DateTime? publishedAt;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+
+  @override
+  Map<String, Object?> toMap() {
+    return <String, Object?>{
+      if (id != null) 'id': id,
+      if (userId != null) 'user_id': userId,
+      if (title != null) 'title': title,
+      if (body != null) 'body': body,
+      if (published != null) 'published': published,
+      if (publishedAt != null) 'published_at': publishedAt,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+    };
+  }
+}
+
+/// Partial projection for [Post].
+///
+/// All fields are nullable; intended for subset SELECTs.
+class PostPartial implements PartialEntity<$Post> {
+  const PostPartial({
+    this.id,
+    this.userId,
+    this.title,
+    this.body,
+    this.published,
+    this.publishedAt,
+    this.createdAt,
+    this.updatedAt,
+  });
+  final int? id;
+  final int? userId;
+  final String? title;
+  final String? body;
+  final bool? published;
+  final DateTime? publishedAt;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+
+  @override
+  $Post toEntity() {
+    // Basic required-field check: non-nullable fields must be present.
+    final int? userIdValue = userId;
+    if (userIdValue == null) throw StateError('Missing required field: userId');
+    final String? titleValue = title;
+    if (titleValue == null) throw StateError('Missing required field: title');
+    final bool? publishedValue = published;
+    if (publishedValue == null)
+      throw StateError('Missing required field: published');
+    return $Post(
+      id: id,
+      userId: userIdValue,
+      title: titleValue,
+      body: body,
+      published: publishedValue,
+      publishedAt: publishedAt,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
+    );
+  }
+}
+
+/// Generated tracked model class for [Post].
+///
+/// This class extends the user-defined [Post] model and adds
+/// attribute tracking, change detection, and relationship management.
+/// Instances of this class are returned by queries and repositories.
+///
+/// **Do not instantiate this class directly.** Use queries, repositories,
+/// or model factories to create tracked model instances.
+class $Post extends Post with ModelAttributes implements OrmEntity {
+  $Post({
     int? id,
     required int userId,
     required String title,
@@ -344,6 +479,20 @@ class _$PostModel extends Post {
       'created_at': createdAt,
       'updated_at': updatedAt,
     });
+  }
+
+  /// Creates a tracked model instance from a user-defined model instance.
+  factory $Post.fromModel(Post model) {
+    return $Post(
+      id: model.id,
+      userId: model.userId,
+      title: model.title,
+      body: model.body,
+      published: model.published,
+      publishedAt: model.publishedAt,
+      createdAt: model.createdAt,
+      updatedAt: model.updatedAt,
+    );
   }
 
   @override
@@ -391,7 +540,7 @@ class _$PostModel extends Post {
 
   void _attachOrmRuntimeMetadata(Map<String, Object?> values) {
     replaceAttributes(values);
-    attachModelDefinition(_$PostModelDefinition);
+    attachModelDefinition(_$PostDefinition);
   }
 
   @override
@@ -430,5 +579,19 @@ extension PostRelationQueries on Post {
 
   Query<Comment> commentsQuery() {
     return Model.query<Comment>().where('post_id', id);
+  }
+}
+
+extension PostOrmExtension on Post {
+  /// The Type of the generated ORM-managed model class.
+  /// Use this when you need to specify the tracked model type explicitly,
+  /// for example in generic type parameters.
+  static Type get trackedType => $Post;
+
+  /// Converts this immutable model to a tracked ORM-managed model.
+  /// The tracked model supports attribute tracking, change detection,
+  /// and persistence operations like save() and touch().
+  $Post toTracked() {
+    return $Post.fromModel(this);
   }
 }

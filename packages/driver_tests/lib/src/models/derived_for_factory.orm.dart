@@ -256,6 +256,84 @@ class _$DerivedForFactoryCodec extends ModelCodec<$DerivedForFactory> {
   }
 }
 
+/// Insert DTO for [DerivedForFactory].
+///
+/// Auto-increment/DB-generated fields are omitted by default.
+class DerivedForFactoryInsertDto implements InsertDto<$DerivedForFactory> {
+  const DerivedForFactoryInsertDto({
+    this.layerTwoFlag,
+    this.layerOneNotes,
+    this.baseName,
+  });
+  final bool? layerTwoFlag;
+  final Map<String, Object?>? layerOneNotes;
+  final String? baseName;
+
+  @override
+  Map<String, Object?> toMap() {
+    return <String, Object?>{
+      if (layerTwoFlag != null) 'layerTwoFlag': layerTwoFlag,
+      if (layerOneNotes != null) 'layerOneNotes': layerOneNotes,
+      if (baseName != null) 'baseName': baseName,
+    };
+  }
+}
+
+/// Update DTO for [DerivedForFactory].
+///
+/// All fields are optional; only provided entries are used in SET clauses.
+class DerivedForFactoryUpdateDto implements UpdateDto<$DerivedForFactory> {
+  const DerivedForFactoryUpdateDto({
+    this.layerTwoFlag,
+    this.layerOneNotes,
+    this.id,
+    this.baseName,
+  });
+  final bool? layerTwoFlag;
+  final Map<String, Object?>? layerOneNotes;
+  final int? id;
+  final String? baseName;
+
+  @override
+  Map<String, Object?> toMap() {
+    return <String, Object?>{
+      if (layerTwoFlag != null) 'layerTwoFlag': layerTwoFlag,
+      if (layerOneNotes != null) 'layerOneNotes': layerOneNotes,
+      if (id != null) 'id': id,
+      if (baseName != null) 'baseName': baseName,
+    };
+  }
+}
+
+/// Partial projection for [DerivedForFactory].
+///
+/// All fields are nullable; intended for subset SELECTs.
+class DerivedForFactoryPartial implements PartialEntity<$DerivedForFactory> {
+  const DerivedForFactoryPartial({
+    this.layerTwoFlag,
+    this.layerOneNotes,
+    this.id,
+    this.baseName,
+  });
+  final bool? layerTwoFlag;
+  final Map<String, Object?>? layerOneNotes;
+  final int? id;
+  final String? baseName;
+
+  @override
+  $DerivedForFactory toEntity() {
+    // Basic required-field check: non-nullable fields must be present.
+    final int? idValue = id;
+    if (idValue == null) throw StateError('Missing required field: id');
+    return $DerivedForFactory(
+      layerTwoFlag: layerTwoFlag,
+      layerOneNotes: layerOneNotes,
+      id: idValue,
+      baseName: baseName,
+    );
+  }
+}
+
 /// Generated tracked model class for [DerivedForFactory].
 ///
 /// This class extends the user-defined [DerivedForFactory] model and adds
@@ -264,7 +342,9 @@ class _$DerivedForFactoryCodec extends ModelCodec<$DerivedForFactory> {
 ///
 /// **Do not instantiate this class directly.** Use queries, repositories,
 /// or model factories to create tracked model instances.
-class $DerivedForFactory extends DerivedForFactory with ModelAttributes {
+class $DerivedForFactory extends DerivedForFactory
+    with ModelAttributes
+    implements OrmEntity {
   $DerivedForFactory({
     int id = 0,
     String? baseName,

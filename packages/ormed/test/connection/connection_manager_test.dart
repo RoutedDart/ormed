@@ -1,4 +1,3 @@
-import 'package:driver_tests/orm_registry.g.dart';
 import 'package:ormed/ormed.dart';
 import 'package:test/test.dart';
 import 'package:driver_tests/driver_tests.dart';

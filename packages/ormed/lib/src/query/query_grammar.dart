@@ -4,6 +4,7 @@ import 'package:meta/meta.dart';
 import 'package:ormed/src/query/plan/join_definition.dart';
 import 'package:ormed/src/query/plan/join_type.dart';
 
+import '../contracts.dart';
 import '../driver/driver.dart';
 import '../model_definition.dart';
 import 'json_path.dart';
@@ -677,7 +678,7 @@ class _SelectCompilation {
       '$_baseTable.${grammar.wrapIdentifier(column)}';
 
   List<String> _hydrationColumns(
-    ModelDefinition<dynamic> definition,
+    ModelDefinition<OrmEntity> definition,
     Set<String> coveredColumns,
     bool aggregateExpressions,
   ) {
@@ -1753,7 +1754,7 @@ class _SelectCompilation {
         : '$childColumn = $parentColumn';
   }
 
-  String _qualifiedTable(ModelDefinition<dynamic> definition) {
+  String _qualifiedTable(ModelDefinition<OrmEntity> definition) {
     final table = grammar.wrapIdentifier(definition.tableName);
     final schema = definition.schema;
     if (schema == null || schema.isEmpty) {

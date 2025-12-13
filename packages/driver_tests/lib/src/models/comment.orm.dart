@@ -162,9 +162,7 @@ class _$CommentCodec extends ModelCodec<$Comment> {
       'body': registry.encodeField(_$CommentBodyField, model.body),
       'deleted_at': registry.encodeField(
         _$CommentDeletedAtField,
-        (model is ModelAttributes
-            ? model.getAttribute<DateTime?>('deleted_at')
-            : null),
+        (model.getAttribute<DateTime?>('deleted_at')),
       ),
     };
   }
@@ -190,6 +188,55 @@ class _$CommentCodec extends ModelCodec<$Comment> {
   }
 }
 
+/// Insert DTO for [Comment].
+///
+/// Auto-increment/DB-generated fields are omitted by default.
+class CommentInsertDto implements InsertDto<$Comment> {
+  const CommentInsertDto({this.body});
+  final String? body;
+
+  @override
+  Map<String, Object?> toMap() {
+    return <String, Object?>{if (body != null) 'body': body};
+  }
+}
+
+/// Update DTO for [Comment].
+///
+/// All fields are optional; only provided entries are used in SET clauses.
+class CommentUpdateDto implements UpdateDto<$Comment> {
+  const CommentUpdateDto({this.id, this.body});
+  final int? id;
+  final String? body;
+
+  @override
+  Map<String, Object?> toMap() {
+    return <String, Object?>{
+      if (id != null) 'id': id,
+      if (body != null) 'body': body,
+    };
+  }
+}
+
+/// Partial projection for [Comment].
+///
+/// All fields are nullable; intended for subset SELECTs.
+class CommentPartial implements PartialEntity<$Comment> {
+  const CommentPartial({this.id, this.body});
+  final int? id;
+  final String? body;
+
+  @override
+  $Comment toEntity() {
+    // Basic required-field check: non-nullable fields must be present.
+    final int? idValue = id;
+    if (idValue == null) throw StateError('Missing required field: id');
+    final String? bodyValue = body;
+    if (bodyValue == null) throw StateError('Missing required field: body');
+    return $Comment(id: idValue, body: bodyValue);
+  }
+}
+
 /// Generated tracked model class for [Comment].
 ///
 /// This class extends the user-defined [Comment] model and adds
@@ -198,7 +245,9 @@ class _$CommentCodec extends ModelCodec<$Comment> {
 ///
 /// **Do not instantiate this class directly.** Use queries, repositories,
 /// or model factories to create tracked model instances.
-class $Comment extends Comment with ModelAttributes, SoftDeletesImpl {
+class $Comment extends Comment
+    with ModelAttributes, SoftDeletesImpl
+    implements OrmEntity {
   $Comment({int id = 0, required String body}) : super.new(id: id, body: body) {
     _attachOrmRuntimeMetadata({'id': id, 'body': body});
   }

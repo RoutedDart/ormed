@@ -43,7 +43,7 @@ part of 'query.dart';
 /// // Both return the same Author instance
 /// assert(identical(queryRow.relation<Author>('author'), post.author));
 /// ```
-class QueryRow<T> {
+class QueryRow<T extends OrmEntity> {
   /// Creates a new [QueryRow].
   QueryRow({
     required this.model,
@@ -112,21 +112,24 @@ class QueryRow<T> {
 /// A callback that receives a chunk of [QueryRow]s.
 ///
 /// Return `false` to stop chunking.
-typedef ChunkCallback<T> = FutureOr<bool> Function(List<QueryRow<T>> chunk);
+typedef ChunkCallback<T extends OrmEntity> =
+    FutureOr<bool> Function(List<QueryRow<T>> chunk);
 
 /// A callback that receives a single [QueryRow].
 ///
 /// Return `false` to stop processing rows.
-typedef RowCallback<T> = FutureOr<bool> Function(QueryRow<T> row);
+typedef RowCallback<T extends OrmEntity> =
+    FutureOr<bool> Function(QueryRow<T> row);
 
 /// A callback that receives a [PredicateBuilder].
-typedef PredicateCallback<T> = void Function(PredicateBuilder<T> builder);
+typedef PredicateCallback<T extends OrmEntity> =
+    void Function(PredicateBuilder<T> builder);
 
 /// A callback that receives a [PredicateBuilder] for a relation.
 typedef RelationCallback = void Function(PredicateBuilder<dynamic> builder);
 
 /// Rich pagination payload returned by [Query.paginate].
-class PageResult<T> {
+class PageResult<T extends OrmEntity> {
   /// Creates a new [PageResult].
   PageResult({
     required List<QueryRow<T>> items,
@@ -159,7 +162,7 @@ class PageResult<T> {
 }
 
 /// Lightweight pagination payload that skips total counting.
-class SimplePageResult<T> {
+class SimplePageResult<T extends OrmEntity> {
   /// Creates a new [SimplePageResult].
   SimplePageResult({
     required List<QueryRow<T>> items,
@@ -185,7 +188,7 @@ class SimplePageResult<T> {
 }
 
 /// Cursor-based pagination payload.
-class CursorPageResult<T> {
+class CursorPageResult<T extends OrmEntity> {
   /// Creates a new [CursorPageResult].
   CursorPageResult({
     required List<QueryRow<T>> items,
@@ -207,12 +210,12 @@ class CursorPageResult<T> {
 }
 
 /// A query that maps its results to a different type.
-class MappedAdHocQuery<R> {
+class MappedAdHocQuery<R extends OrmEntity> {
   /// Creates a new [MappedAdHocQuery].
   MappedAdHocQuery(this._source, this._mapper);
 
-  final Query<Map<String, Object?>> _source;
-  final R Function(Map<String, Object?> row) _mapper;
+  final Query<AdHocRow> _source;
+  final R Function(AdHocRow row) _mapper;
 
   /// Executes the query and returns the mapped results.
   Future<List<R>> getMapped() async {

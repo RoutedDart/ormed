@@ -15,7 +15,7 @@ void main() {
       registry.register(NamedConstructorModelOrmDefinition.definition);
 
       // Setup test data in memory driver
-      driver.register(NamedConstructorModelOrmDefinition.definition, []);
+      driver.register(NamedConstructorModelOrmDefinition.definition, <$NamedConstructorModel>[]);
     });
 
     test('generates code using specified named constructor', () {

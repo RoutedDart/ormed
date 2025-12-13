@@ -1,7 +1,7 @@
 part of '../query_builder.dart';
 
 /// Extension providing soft delete functionality for models.
-extension SoftDeleteExtension<T> on Query<T> {
+extension SoftDeleteExtension<T extends OrmEntity> on Query<T> {
   /// Includes soft-deleted models in the query results.
   ///
   /// This method effectively disables the soft-delete global scope if it's applied.

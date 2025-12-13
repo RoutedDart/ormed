@@ -1,1 +1,1 @@
-{"className":"Author","import":"src/models/author.dart","definition":"AuthorOrmDefinition.definition"}
+{"className":"Author","import":"src/models/author.dart","definition":"AuthorOrmDefinition.definition","hasFactory":false}

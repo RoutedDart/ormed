@@ -298,6 +298,124 @@ class _$UserCodec extends ModelCodec<$User> {
   }
 }
 
+/// Insert DTO for [User].
+///
+/// Auto-increment/DB-generated fields are omitted by default.
+class UserInsertDto implements InsertDto<$User> {
+  const UserInsertDto({
+    this.email,
+    this.active,
+    this.name,
+    this.age,
+    this.createdAt,
+    this.profile,
+    this.metadata,
+  });
+  final String? email;
+  final bool? active;
+  final String? name;
+  final int? age;
+  final DateTime? createdAt;
+  final Map<String, Object?>? profile;
+  final Map<String, Object?>? metadata;
+
+  @override
+  Map<String, Object?> toMap() {
+    return <String, Object?>{
+      if (email != null) 'email': email,
+      if (active != null) 'active': active,
+      if (name != null) 'name': name,
+      if (age != null) 'age': age,
+      if (createdAt != null) 'createdAt': createdAt,
+      if (profile != null) 'profile': profile,
+      if (metadata != null) 'metadata': metadata,
+    };
+  }
+}
+
+/// Update DTO for [User].
+///
+/// All fields are optional; only provided entries are used in SET clauses.
+class UserUpdateDto implements UpdateDto<$User> {
+  const UserUpdateDto({
+    this.id,
+    this.email,
+    this.active,
+    this.name,
+    this.age,
+    this.createdAt,
+    this.profile,
+    this.metadata,
+  });
+  final int? id;
+  final String? email;
+  final bool? active;
+  final String? name;
+  final int? age;
+  final DateTime? createdAt;
+  final Map<String, Object?>? profile;
+  final Map<String, Object?>? metadata;
+
+  @override
+  Map<String, Object?> toMap() {
+    return <String, Object?>{
+      if (id != null) 'id': id,
+      if (email != null) 'email': email,
+      if (active != null) 'active': active,
+      if (name != null) 'name': name,
+      if (age != null) 'age': age,
+      if (createdAt != null) 'createdAt': createdAt,
+      if (profile != null) 'profile': profile,
+      if (metadata != null) 'metadata': metadata,
+    };
+  }
+}
+
+/// Partial projection for [User].
+///
+/// All fields are nullable; intended for subset SELECTs.
+class UserPartial implements PartialEntity<$User> {
+  const UserPartial({
+    this.id,
+    this.email,
+    this.active,
+    this.name,
+    this.age,
+    this.createdAt,
+    this.profile,
+    this.metadata,
+  });
+  final int? id;
+  final String? email;
+  final bool? active;
+  final String? name;
+  final int? age;
+  final DateTime? createdAt;
+  final Map<String, Object?>? profile;
+  final Map<String, Object?>? metadata;
+
+  @override
+  $User toEntity() {
+    // Basic required-field check: non-nullable fields must be present.
+    final int? idValue = id;
+    if (idValue == null) throw StateError('Missing required field: id');
+    final String? emailValue = email;
+    if (emailValue == null) throw StateError('Missing required field: email');
+    final bool? activeValue = active;
+    if (activeValue == null) throw StateError('Missing required field: active');
+    return $User(
+      id: idValue,
+      email: emailValue,
+      active: activeValue,
+      name: name,
+      age: age,
+      createdAt: createdAt,
+      profile: profile,
+      metadata: metadata,
+    );
+  }
+}
+
 /// Generated tracked model class for [User].
 ///
 /// This class extends the user-defined [User] model and adds
@@ -306,7 +424,7 @@ class _$UserCodec extends ModelCodec<$User> {
 ///
 /// **Do not instantiate this class directly.** Use queries, repositories,
 /// or model factories to create tracked model instances.
-class $User extends User with ModelAttributes {
+class $User extends User with ModelAttributes implements OrmEntity {
   $User({
     int id = 0,
     required String email,

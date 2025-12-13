@@ -23,7 +23,7 @@ import 'src/models/tag.dart';
 import 'src/models/unique_user.dart';
 import 'src/models/user.dart';
 
-final List<ModelDefinition<dynamic>> _$ormModelDefinitions = [
+final List<ModelDefinition<OrmEntity>> _$ormModelDefinitions = [
   ActiveUserOrmDefinition.definition,
   ArticleOrmDefinition.definition,
   AttributeUserOrmDefinition.definition,
@@ -72,7 +72,7 @@ ModelRegistry buildOrmRegistry() => ModelRegistry()
   ..registerTypeAlias<User>(_$ormModelDefinitions[20])
   ;
 
-List<ModelDefinition<dynamic>> get generatedOrmModelDefinitions =>
+List<ModelDefinition<OrmEntity>> get generatedOrmModelDefinitions =>
     List.unmodifiable(_$ormModelDefinitions);
 
 extension GeneratedOrmModels on ModelRegistry {

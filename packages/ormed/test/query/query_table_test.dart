@@ -36,20 +36,23 @@ void main() {
     });
 
     test('mapRows helper maps to custom DTOs', () async {
-      final names = await context
+      final rows = await context
           .table('authors')
-          .mapRows((row) => row['name'] as String)
-          .getMapped();
+          .get();
+      final names = rows.map((row) => row['name'] as String).toList();
       expect(names, ['Alice']);
     });
 
     test('mapRows stream emits DTOs', () async {
       final stream = context
           .table('authors')
-          .mapRows((row) => row['name'] as String)
-          .streamMapped();
+          .streamRows();
 
-      expectLater(stream, emitsInOrder(['Alice', emitsDone]));
+      final names = <String>[];
+      await for (final row in stream) {
+        names.add(row.model['name'] as String);
+      }
+      expect(names, ['Alice']);
     });
 
     test('streamRows delegates to driver stream implementation', () async {

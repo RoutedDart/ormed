@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import '../driver/driver.dart';
+import '../contracts.dart';
 import '../model_definition.dart';
 import 'query.dart';
 
@@ -95,7 +96,7 @@ class StructuredQueryLogger {
     required String kind,
     required StatementPreview preview,
     required Duration duration,
-    required ModelDefinition<dynamic> definition,
+    required ModelDefinition<OrmEntity> definition,
     required Object? rowCount,
     required Object? error,
     required StackTrace? stackTrace,

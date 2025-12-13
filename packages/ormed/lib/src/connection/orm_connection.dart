@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import '../driver/driver.dart';
+import '../contracts.dart';
 import '../model_definition.dart';
 import '../model_registry.dart';
 import '../query/query.dart';
@@ -160,7 +161,7 @@ class OrmConnection implements ConnectionResolver {
   ) => _context.whenQueryingForLongerThan(threshold, callback);
 
   /// Creates a typed query builder.
-  Query<T> query<T>() => _context.query<T>();
+  Query<T> query<T extends OrmEntity>() => _context.query<T>();
 
   /// Ensures the migrations ledger table exists for this connection.
   Future<void> ensureLedgerInitialized({String? tableName}) async {
@@ -196,7 +197,7 @@ class OrmConnection implements ConnectionResolver {
   );
 
   /// Queries using a specific model definition, optionally overriding table/schema.
-  Query<T> queryFromDefinition<T>(
+  Query<T> queryFromDefinition<T extends OrmEntity>(
     ModelDefinition<T> definition, {
     String? table,
     String? schema,
@@ -209,14 +210,14 @@ class OrmConnection implements ConnectionResolver {
   );
 
   /// Returns a repository for [T].
-  Repository<T> repository<T>() => _context.repository<T>();
+  Repository<T> repository<T extends OrmEntity>() => _context.repository<T>();
 
   /// Executes [callback] within a transaction boundary.
   Future<R> transaction<R>(Future<R> Function() callback) =>
       _context.transaction(callback);
 
   /// Builds a query against an arbitrary table name.
-  Query<Map<String, Object?>> table(
+  Query<AdHocRow> table(
     String table, {
     String? as,
     String? schema,
@@ -235,7 +236,7 @@ class OrmConnection implements ConnectionResolver {
   }
 
   /// Builds a query for [T] using an alternate table/schema/alias.
-  Query<T> queryAs<T>({String? table, String? schema, String? alias}) =>
+  Query<T> queryAs<T extends OrmEntity>({String? table, String? schema, String? alias}) =>
       queryFromDefinition(
         registry.expect<T>(),
         table: table,

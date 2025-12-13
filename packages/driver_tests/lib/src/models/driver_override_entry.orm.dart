@@ -227,6 +227,58 @@ class _$DriverOverrideEntryCodec extends ModelCodec<$DriverOverrideEntry> {
   }
 }
 
+/// Insert DTO for [DriverOverrideEntry].
+///
+/// Auto-increment/DB-generated fields are omitted by default.
+class DriverOverrideEntryInsertDto implements InsertDto<$DriverOverrideEntry> {
+  const DriverOverrideEntryInsertDto({this.payload});
+  final Map<String, Object?>? payload;
+
+  @override
+  Map<String, Object?> toMap() {
+    return <String, Object?>{if (payload != null) 'payload': payload};
+  }
+}
+
+/// Update DTO for [DriverOverrideEntry].
+///
+/// All fields are optional; only provided entries are used in SET clauses.
+class DriverOverrideEntryUpdateDto implements UpdateDto<$DriverOverrideEntry> {
+  const DriverOverrideEntryUpdateDto({this.id, this.payload});
+  final int? id;
+  final Map<String, Object?>? payload;
+
+  @override
+  Map<String, Object?> toMap() {
+    return <String, Object?>{
+      if (id != null) 'id': id,
+      if (payload != null) 'payload': payload,
+    };
+  }
+}
+
+/// Partial projection for [DriverOverrideEntry].
+///
+/// All fields are nullable; intended for subset SELECTs.
+class DriverOverrideEntryPartial
+    implements PartialEntity<$DriverOverrideEntry> {
+  const DriverOverrideEntryPartial({this.id, this.payload});
+  final int? id;
+  final Map<String, Object?>? payload;
+
+  @override
+  $DriverOverrideEntry toEntity() {
+    // Basic required-field check: non-nullable fields must be present.
+    final int? idValue = id;
+    if (idValue == null) throw StateError('Missing required field: id');
+    final Map<String, Object?>? payloadValue = payload;
+    if (payloadValue == null) {
+      throw StateError('Missing required field: payload');
+    }
+    return $DriverOverrideEntry(id: idValue, payload: payloadValue);
+  }
+}
+
 /// Generated tracked model class for [DriverOverrideEntry].
 ///
 /// This class extends the user-defined [DriverOverrideEntry] model and adds
@@ -235,7 +287,9 @@ class _$DriverOverrideEntryCodec extends ModelCodec<$DriverOverrideEntry> {
 ///
 /// **Do not instantiate this class directly.** Use queries, repositories,
 /// or model factories to create tracked model instances.
-class $DriverOverrideEntry extends DriverOverrideEntry with ModelAttributes {
+class $DriverOverrideEntry extends DriverOverrideEntry
+    with ModelAttributes
+    implements OrmEntity {
   $DriverOverrideEntry({int id = 0, required Map<String, Object?> payload})
     : super.new(id: id, payload: payload) {
     _attachOrmRuntimeMetadata({'id': id, 'payload': payload});

@@ -1,7 +1,7 @@
 part of '../query_builder.dart';
 
 /// Lightweight builder used for nested predicate callbacks.
-class PredicateBuilder<T> {
+class PredicateBuilder<T extends OrmEntity> {
   PredicateBuilder(this.definition);
 
   final ModelDefinition<T> definition;

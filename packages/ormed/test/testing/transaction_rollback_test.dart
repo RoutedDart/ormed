@@ -80,7 +80,6 @@ Future<void> main() async {
         registry: buildOrmRegistry(),
       ),
     );
-    ;
 
     setUpOrmed(dataSource: dataSource, migrations: [CreateUsersTable()]);
 

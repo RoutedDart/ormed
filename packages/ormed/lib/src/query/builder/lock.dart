@@ -1,7 +1,7 @@
 part of '../query_builder.dart';
 
 /// Extension providing row locking methods for transaction safety.
-extension LockExtension<T> on Query<T> {
+extension LockExtension<T extends OrmEntity> on Query<T> {
   /// Adds a `FOR UPDATE` lock clause to the query.
   ///
   /// This locks the selected rows for update, preventing other transactions

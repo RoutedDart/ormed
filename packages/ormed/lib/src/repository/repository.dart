@@ -4,6 +4,7 @@ library;
 import 'package:carbonized/carbonized.dart';
 
 import '../driver/driver.dart';
+import '../contracts.dart';
 import '../model_definition.dart';
 import '../model_mixins/model_attributes.dart';
 import '../query/json_path.dart' as json_path;
@@ -16,14 +17,15 @@ part 'repository_upsert_mixin.dart';
 part 'repository_delete_mixin.dart';
 part 'repository_preview_mixin.dart';
 part 'repository_helpers_mixin.dart';
+part 'repository_input_handler.dart';
 
-typedef JsonUpdateBuilder<T> = List<JsonUpdateDefinition> Function(T model);
+typedef JsonUpdateBuilder<T extends OrmEntity> = List<JsonUpdateDefinition> Function(T model);
 
 /// Base class for repositories.
 ///
 /// This abstract class provides the core dependencies and accessors that all
 /// repository mixins require.
-abstract class RepositoryBase<T> {
+abstract class RepositoryBase<T extends OrmEntity> {
   ModelDefinition<T> get definition;
   String get driverName;
   ValueCodecRegistry get codecs;
@@ -44,8 +46,9 @@ abstract class RepositoryBase<T> {
 /// - [RepositoryDeleteMixin] - Delete operations
 /// - [RepositoryPreviewMixin] - Preview methods for all operations
 /// - [RepositoryHelpersMixin] - Internal helper methods
-class Repository<T> extends RepositoryBase<T>
+class Repository<T extends OrmEntity> extends RepositoryBase<T>
     with
+        RepositoryInputHandlerMixin<T>,
         RepositoryHelpersMixin<T>,
         RepositoryInsertMixin<T>,
         RepositoryUpdateMixin<T>,

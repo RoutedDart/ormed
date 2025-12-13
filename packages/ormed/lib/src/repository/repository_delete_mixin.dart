@@ -1,7 +1,7 @@
 part of 'repository.dart';
 
 /// Mixin that provides delete operations for repositories.
-mixin RepositoryDeleteMixin<T> on RepositoryBase<T>, RepositoryHelpersMixin<T> {
+mixin RepositoryDeleteMixin<T extends OrmEntity> on RepositoryBase<T>, RepositoryHelpersMixin<T> {
   /// Deletes records from the database by their [keys].
   ///
   /// Each key is a map of column names to values.

@@ -2,11 +2,12 @@ import 'dart:math';
 
 import 'model.dart';
 import 'model_definition.dart';
+import 'contracts.dart';
 import 'query/query.dart';
 import 'value_codec.dart';
 
 /// Context passed to generators while building factory output.
-class ModelFactoryGenerationContext<TModel> {
+class ModelFactoryGenerationContext<TModel extends OrmEntity> {
   ModelFactoryGenerationContext({
     required this.definition,
     required this.random,
@@ -14,14 +15,14 @@ class ModelFactoryGenerationContext<TModel> {
     this.seed,
   });
 
-  final ModelDefinition<TModel> definition;
+  final ModelDefinition<TModel > definition;
   final Random random;
   final Map<String, Object?> overrides;
   final int? seed;
 }
 
 /// Signature used to generate a field value for a factory.
-typedef FieldValueGenerator<TModel> =
+typedef FieldValueGenerator<TModel extends OrmEntity> =
     Object? Function(
       FieldDefinition field,
       ModelFactoryGenerationContext<TModel> context,
@@ -31,7 +32,7 @@ typedef FieldValueGenerator<TModel> =
 abstract class GeneratorProvider {
   const GeneratorProvider();
 
-  Object? generate<TModel>(
+  Object? generate<TModel extends OrmEntity>(
     FieldDefinition field,
     ModelFactoryGenerationContext<TModel> context,
   );
@@ -42,7 +43,7 @@ class DefaultFieldGeneratorProvider extends GeneratorProvider {
   const DefaultFieldGeneratorProvider();
 
   @override
-  Object? generate<TModel>(
+  Object? generate<TModel extends OrmEntity>(
     FieldDefinition field,
     ModelFactoryGenerationContext<TModel> context,
   ) {
@@ -83,7 +84,7 @@ class DefaultFieldGeneratorProvider extends GeneratorProvider {
 }
 
 /// Builder used by generated factory helpers.
-class ModelFactoryBuilder<TModel> {
+class ModelFactoryBuilder<TModel extends OrmEntity> {
   ModelFactoryBuilder({
     required this.definition,
     GeneratorProvider? generatorProvider,
@@ -240,9 +241,9 @@ class ModelFactoryBuilder<TModel> {
 class ModelFactoryRegistry {
   ModelFactoryRegistry._();
 
-  static final Map<Type, ModelDefinition<dynamic>> _definitions = {};
+  static final Map<Type, ModelDefinition<OrmEntity>> _definitions = {};
 
-  static ModelDefinition<TModel> register<TModel>(
+  static ModelDefinition<TModel> register<TModel extends OrmEntity>(
     ModelDefinition<TModel> definition,
   ) {
     _definitions[TModel] = definition;
@@ -251,7 +252,7 @@ class ModelFactoryRegistry {
 
   /// Registers a definition only if one is not already registered for the type.
   /// Returns the existing or newly registered definition.
-  static ModelDefinition<TModel> registerIfAbsent<TModel>(
+  static ModelDefinition<TModel> registerIfAbsent<TModel extends OrmEntity>(
     ModelDefinition<TModel> definition,
   ) {
     return _definitions.putIfAbsent(TModel, () => definition)

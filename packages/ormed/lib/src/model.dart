@@ -11,6 +11,7 @@ import 'connection/connection_manager.dart';
 import 'connection/connection_resolver.dart';
 import 'connection/orm_connection.dart';
 import 'driver/driver.dart';
+import 'contracts.dart';
 import 'model_definition.dart';
 import 'model_factory.dart';
 import 'model_mixins/model_attributes.dart';
@@ -54,7 +55,8 @@ typedef ConnectionResolverFactory =
 /// Attempting to call these methods on manually instantiated model objects will
 /// result in runtime errors.
 abstract class Model<TModel extends Model<TModel>>
-    with ModelConnection, ModelRelations {
+    with ModelConnection, ModelRelations
+    implements OrmEntity {
   const Model();
 
   static ConnectionResolverFactory? _resolverFactory;
@@ -147,7 +149,7 @@ abstract class Model<TModel extends Model<TModel>>
   }
 
   /// Starts a [Query] for [TModel], honoring the model's preferred connection.
-  static Query<TModel> query<TModel>({String? connection}) {
+  static Query<TModel> query<TModel extends OrmEntity>({String? connection}) {
     // Try to resolve and get definition
     final initialResolver = _resolveBoundResolverFlexible<TModel>(connection);
     final definition = initialResolver.registry.expect<TModel>();
@@ -167,7 +169,9 @@ abstract class Model<TModel extends Model<TModel>>
   }
 
   /// Creates a [Repository] for [TModel], honoring the model's preferred connection.
-  static Repository<TModel> repository<TModel>({String? connection}) {
+  static Repository<TModel> repository<TModel extends OrmEntity>({
+    String? connection,
+  }) {
     // Try to resolve and get definition
     final initialResolver = _resolveBoundResolverFlexible<TModel>(connection);
     final definition = initialResolver.registry.expect<TModel>();
@@ -205,8 +209,9 @@ abstract class Model<TModel extends Model<TModel>>
   }
 
   /// Convenience to fetch every model instance.
-  static Future<List<TModel>> all<TModel>({String? connection}) =>
-      query<TModel>(connection: connection).get();
+  static Future<List<TModel>> all<TModel extends OrmEntity>({
+    String? connection,
+  }) => query<TModel>(connection: connection).get();
 
   /// Creates and immediately persists a new model from attributes map.
   /// Note: This is a placeholder - actual implementation requires codec access.
@@ -233,7 +238,7 @@ abstract class Model<TModel extends Model<TModel>>
   }
 
   /// Starts a query with a where clause.
-  static Query<TModel> where<TModel>(
+  static Query<TModel> where<TModel extends OrmEntity>(
     String column,
     String operator,
     dynamic value, {
@@ -241,14 +246,14 @@ abstract class Model<TModel extends Model<TModel>>
   }) => query<TModel>(connection: connection).where(column, operator, value);
 
   /// Starts a query with a whereIn clause.
-  static Query<TModel> whereIn<TModel>(
+  static Query<TModel> whereIn<TModel extends OrmEntity>(
     String column,
     List<dynamic> values, {
     String? connection,
   }) => query<TModel>(connection: connection).whereIn(column, values);
 
   /// Starts a query with an orderBy clause.
-  static Query<TModel> orderBy<TModel>(
+  static Query<TModel> orderBy<TModel extends OrmEntity>(
     String column, {
     String direction = 'asc',
     String? connection,
@@ -257,15 +262,19 @@ abstract class Model<TModel extends Model<TModel>>
   ).orderBy(column, descending: direction.toLowerCase() == 'desc');
 
   /// Starts a query with a limit clause.
-  static Query<TModel> limit<TModel>(int count, {String? connection}) =>
-      query<TModel>(connection: connection).limit(count);
+  static Query<TModel> limit<TModel extends OrmEntity>(
+    int count, {
+    String? connection,
+  }) => query<TModel>(connection: connection).limit(count);
 
   /// Find a model by its primary key, returns null if not found.
-  static Future<TModel?> find<TModel>(Object id, {String? connection}) =>
-      query<TModel>(connection: connection).find(id);
+  static Future<TModel?> find<TModel extends OrmEntity>(
+    Object id, {
+    String? connection,
+  }) => query<TModel>(connection: connection).find(id);
 
   /// Find a model by its primary key, throws if not found.
-  static Future<TModel> findOrFail<TModel>(
+  static Future<TModel> findOrFail<TModel extends OrmEntity>(
     Object id, {
     String? connection,
   }) async {
@@ -277,17 +286,20 @@ abstract class Model<TModel extends Model<TModel>>
   }
 
   /// Find multiple models by their primary keys.
-  static Future<List<TModel>> findMany<TModel>(
+  static Future<List<TModel>> findMany<TModel extends OrmEntity>(
     List<Object> ids, {
     String? connection,
   }) => query<TModel>(connection: connection).findMany(ids);
 
   /// Get the first model matching the query, or null.
-  static Future<TModel?> first<TModel>({String? connection}) =>
-      query<TModel>(connection: connection).first();
+  static Future<TModel?> first<TModel extends OrmEntity>({
+    String? connection,
+  }) => query<TModel>(connection: connection).first();
 
   /// Get the first model matching the query, or throw.
-  static Future<TModel> firstOrFail<TModel>({String? connection}) async {
+  static Future<TModel> firstOrFail<TModel extends OrmEntity>({
+    String? connection,
+  }) async {
     final result = await first<TModel>(connection: connection);
     if (result == null) {
       throw StateError('No model found');
@@ -296,20 +308,22 @@ abstract class Model<TModel extends Model<TModel>>
   }
 
   /// Count the number of models.
-  static Future<int> count<TModel>({String? connection}) =>
+  static Future<int> count<TModel extends OrmEntity>({String? connection}) =>
       query<TModel>(connection: connection).count();
 
   /// Check if any models exist in the database.
   ///
   /// Note: Renamed from `exists()` to avoid conflict with instance property.
-  static Future<bool> anyExist<TModel>({String? connection}) async =>
-      await count<TModel>(connection: connection) > 0;
+  static Future<bool> anyExist<TModel extends OrmEntity>({
+    String? connection,
+  }) async => await count<TModel>(connection: connection) > 0;
 
   /// Check if no models exist in the database.
   ///
   /// Note: Renamed from `doesntExist()` for consistency.
-  static Future<bool> noneExist<TModel>({String? connection}) async =>
-      !await anyExist<TModel>(connection: connection);
+  static Future<bool> noneExist<TModel extends OrmEntity>({
+    String? connection,
+  }) async => !await anyExist<TModel>(connection: connection);
 
   /// Delete all models matching a condition (dangerous!).
   static Future<int> destroy<TModel extends Model<TModel>>(
@@ -324,7 +338,7 @@ abstract class Model<TModel extends Model<TModel>>
   }
 
   /// Get a single model and throw if zero or more than one result is found.
-  static Future<TModel> sole<TModel>({String? connection}) =>
+  static Future<TModel> sole<TModel extends OrmEntity>({String? connection}) =>
       query<TModel>(connection: connection).sole();
 
   /// Get first model or create new (but don't persist yet).
@@ -1117,7 +1131,7 @@ abstract class Model<TModel extends Model<TModel>>
   /// Throws [LazyLoadingViolationException] if [ModelRelations.preventsLazyLoading] is true.
   Future<TModel> load(
     String relation, [
-    PredicateCallback<dynamic>? constraint,
+    PredicateCallback<OrmEntity>? constraint,
   ]) async {
     if (ModelRelations.preventsLazyLoading) {
       throw LazyLoadingViolationException(runtimeType, relation);
@@ -1171,7 +1185,7 @@ abstract class Model<TModel extends Model<TModel>>
   /// Splits the path and recursively loads each segment.
   Future<void> _loadNestedRelation(
     String path,
-    PredicateCallback<dynamic>? constraint,
+    PredicateCallback<OrmEntity>? constraint,
     ModelDefinition<TModel> def,
     QueryContext context,
   ) async {
@@ -1258,7 +1272,7 @@ abstract class Model<TModel extends Model<TModel>>
   /// });
   /// ```
   Future<TModel> loadMany(
-    Map<String, PredicateCallback<dynamic>?> relations,
+    Map<String, PredicateCallback<OrmEntity>?> relations,
   ) async {
     for (final entry in relations.entries) {
       await load(entry.key, entry.value);
@@ -1289,7 +1303,7 @@ abstract class Model<TModel extends Model<TModel>>
   static Future<void> loadRelations<T extends Model<T>>(
     Iterable<T> models,
     String relation, [
-    PredicateCallback<dynamic>? constraint,
+    PredicateCallback<OrmEntity>? constraint,
   ]) async {
     if (ModelRelations.preventsLazyLoading) {
       if (models.isNotEmpty) {
@@ -1425,7 +1439,7 @@ abstract class Model<TModel extends Model<TModel>>
   Future<TModel> loadCount(
     String relation, {
     String? alias,
-    PredicateCallback<dynamic>? constraint,
+    PredicateCallback<OrmEntity>? constraint,
   }) async {
     if (ModelRelations.preventsLazyLoading) {
       throw LazyLoadingViolationException(runtimeType, relation);
@@ -1489,7 +1503,7 @@ abstract class Model<TModel extends Model<TModel>>
   Future<TModel> loadExists(
     String relation, {
     String? alias,
-    PredicateCallback<dynamic>? constraint,
+    PredicateCallback<OrmEntity>? constraint,
   }) async {
     if (ModelRelations.preventsLazyLoading) {
       throw LazyLoadingViolationException(runtimeType, relation);
@@ -1555,10 +1569,10 @@ abstract class Model<TModel extends Model<TModel>>
     String relation,
     String column, {
     String? alias,
-    PredicateCallback<dynamic>? constraint,
+    PredicateCallback<OrmEntity>? constraint,
   }) async {
     return _loadAggregate(
-      'sum',
+      RelationAggregateType.sum,
       relation,
       column,
       alias: alias,
@@ -1579,10 +1593,10 @@ abstract class Model<TModel extends Model<TModel>>
     String relation,
     String column, {
     String? alias,
-    PredicateCallback<dynamic>? constraint,
+    PredicateCallback<OrmEntity>? constraint,
   }) async {
     return _loadAggregate(
-      'avg',
+      RelationAggregateType.avg,
       relation,
       column,
       alias: alias,
@@ -1603,10 +1617,10 @@ abstract class Model<TModel extends Model<TModel>>
     String relation,
     String column, {
     String? alias,
-    PredicateCallback<dynamic>? constraint,
+    PredicateCallback<OrmEntity>? constraint,
   }) async {
     return _loadAggregate(
-      'max',
+      RelationAggregateType.max,
       relation,
       column,
       alias: alias,
@@ -1627,10 +1641,10 @@ abstract class Model<TModel extends Model<TModel>>
     String relation,
     String column, {
     String? alias,
-    PredicateCallback<dynamic>? constraint,
+    PredicateCallback<OrmEntity>? constraint,
   }) async {
     return _loadAggregate(
-      'min',
+      RelationAggregateType.min,
       relation,
       column,
       alias: alias,
@@ -1640,11 +1654,11 @@ abstract class Model<TModel extends Model<TModel>>
 
   /// Internal helper to load aggregates on relations.
   Future<TModel> _loadAggregate(
-    String aggregateType,
+    RelationAggregateType type,
     String relation,
     String column, {
     String? alias,
-    PredicateCallback<dynamic>? constraint,
+    PredicateCallback<OrmEntity>? constraint,
   }) async {
     if (ModelRelations.preventsLazyLoading) {
       throw LazyLoadingViolationException(runtimeType, relation);
@@ -1665,7 +1679,7 @@ abstract class Model<TModel extends Model<TModel>>
     }
 
     final aggregateAlias =
-        alias ?? '${relation}_${aggregateType}_${column.replaceAll('.', '_')}';
+        alias ?? '${relation}_${type.name}_${column.replaceAll('.', '_')}';
 
     // Build a query for this model with the aggregate
     final query = context.queryFromDefinition(def);
@@ -1673,48 +1687,45 @@ abstract class Model<TModel extends Model<TModel>>
     // Get the primary key value
     final pkField = def.primaryKeyField;
     if (pkField == null) {
-      throw StateError(
-        'Cannot load $aggregateType on model without primary key',
-      );
+      throw StateError('Cannot load ${type.name} on model without primary key');
     }
 
     final pkValue = _asAttributes.getAttribute(pkField.columnName);
     if (pkValue == null) {
       throw StateError(
-        'Cannot load $aggregateType on model without primary key value',
+        'Cannot load ${type.name} on model without primary key value',
       );
     }
 
     // Query for this specific model with aggregate
-    var queryWithFilter = query.where(pkField.columnName, pkValue);
+    final queryWithFilter = query.where(pkField.columnName, pkValue);
 
-    // Call the appropriate withAggregate method
-    final queryWithAggregate = switch (aggregateType) {
-      'sum' => queryWithFilter.withSum(
+    final queryWithAggregate = switch (type) {
+      RelationAggregateType.sum => queryWithFilter.withSum(
         relation,
         column,
         alias: aggregateAlias,
         constraint: constraint,
       ),
-      'avg' => queryWithFilter.withAvg(
+      RelationAggregateType.avg => queryWithFilter.withAvg(
         relation,
         column,
         alias: aggregateAlias,
         constraint: constraint,
       ),
-      'max' => queryWithFilter.withMax(
+      RelationAggregateType.max => queryWithFilter.withMax(
         relation,
         column,
         alias: aggregateAlias,
         constraint: constraint,
       ),
-      'min' => queryWithFilter.withMin(
+      RelationAggregateType.min => queryWithFilter.withMin(
         relation,
         column,
         alias: aggregateAlias,
         constraint: constraint,
       ),
-      _ => throw ArgumentError('Unsupported aggregate type: $aggregateType'),
+      _ => throw ArgumentError('Unsupported aggregate type: ${type.name}'),
     };
 
     final rows = await queryWithAggregate.get();
@@ -2110,7 +2121,7 @@ abstract class Model<TModel extends Model<TModel>>
   ///
   /// Uses 'int' as the type for all columns since pivot keys are typically integers.
   /// The codec handles conversion appropriately.
-  static ModelDefinition<Map<String, dynamic>> _createPivotDefinition(
+  static ModelDefinition<AdHocRow> _createPivotDefinition(
     String tableName,
     String? schema,
     Map<String, FieldDefinition?> columnFields,
@@ -2130,7 +2141,7 @@ abstract class Model<TModel extends Model<TModel>>
       );
     }).toList();
 
-    return ModelDefinition<Map<String, dynamic>>(
+    return ModelDefinition<AdHocRow>(
       modelName: tableName,
       tableName: tableName,
       schema: schema,
@@ -2142,20 +2153,16 @@ abstract class Model<TModel extends Model<TModel>>
 }
 
 /// Simple codec for pivot table operations (raw maps).
-class _PivotTableCodec extends ModelCodec<Map<String, dynamic>> {
+class _PivotTableCodec extends ModelCodec<AdHocRow> {
   const _PivotTableCodec();
 
   @override
-  Map<String, Object?> encode(
-    Map<String, dynamic> model,
-    ValueCodecRegistry registry,
-  ) => model;
+  Map<String, Object?> encode(AdHocRow model, ValueCodecRegistry registry) =>
+      Map<String, Object?>.from(model);
 
   @override
-  Map<String, dynamic> decode(
-    Map<String, Object?> data,
-    ValueCodecRegistry registry,
-  ) => Map<String, dynamic>.from(data);
+  AdHocRow decode(Map<String, Object?> data, ValueCodecRegistry registry) =>
+      AdHocRow(data);
 }
 
 extension ModelRegistryX on ModelRegistry {

@@ -171,6 +171,55 @@ class _$TagCodec extends ModelCodec<$Tag> {
   }
 }
 
+/// Insert DTO for [Tag].
+///
+/// Auto-increment/DB-generated fields are omitted by default.
+class TagInsertDto implements InsertDto<$Tag> {
+  const TagInsertDto({this.label});
+  final String? label;
+
+  @override
+  Map<String, Object?> toMap() {
+    return <String, Object?>{if (label != null) 'label': label};
+  }
+}
+
+/// Update DTO for [Tag].
+///
+/// All fields are optional; only provided entries are used in SET clauses.
+class TagUpdateDto implements UpdateDto<$Tag> {
+  const TagUpdateDto({this.id, this.label});
+  final int? id;
+  final String? label;
+
+  @override
+  Map<String, Object?> toMap() {
+    return <String, Object?>{
+      if (id != null) 'id': id,
+      if (label != null) 'label': label,
+    };
+  }
+}
+
+/// Partial projection for [Tag].
+///
+/// All fields are nullable; intended for subset SELECTs.
+class TagPartial implements PartialEntity<$Tag> {
+  const TagPartial({this.id, this.label});
+  final int? id;
+  final String? label;
+
+  @override
+  $Tag toEntity() {
+    // Basic required-field check: non-nullable fields must be present.
+    final int? idValue = id;
+    if (idValue == null) throw StateError('Missing required field: id');
+    final String? labelValue = label;
+    if (labelValue == null) throw StateError('Missing required field: label');
+    return $Tag(id: idValue, label: labelValue);
+  }
+}
+
 /// Generated tracked model class for [Tag].
 ///
 /// This class extends the user-defined [Tag] model and adds
@@ -179,7 +228,7 @@ class _$TagCodec extends ModelCodec<$Tag> {
 ///
 /// **Do not instantiate this class directly.** Use queries, repositories,
 /// or model factories to create tracked model instances.
-class $Tag extends Tag with ModelAttributes {
+class $Tag extends Tag with ModelAttributes implements OrmEntity {
   $Tag({int id = 0, required String label}) : super.new(id: id, label: label) {
     _attachOrmRuntimeMetadata({'id': id, 'label': label});
   }

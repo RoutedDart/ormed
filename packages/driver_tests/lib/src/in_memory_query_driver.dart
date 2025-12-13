@@ -25,7 +25,10 @@ class InMemoryQueryExecutor implements DriverAdapter {
   );
 
   /// Registers [records] for the table described by [definition].
-  void register<T>(ModelDefinition<T> definition, Iterable<T> records) {
+  void register<T extends OrmEntity>(
+    ModelDefinition<T> definition,
+    Iterable<T> records,
+  ) {
     final table = _tables.putIfAbsent(
       definition.tableName,
       () => <Map<String, Object?>>[],
@@ -284,7 +287,7 @@ class InMemoryQueryExecutor implements DriverAdapter {
     return rows;
   }
 
-  List<Map<String, Object?>> _table(ModelDefinition<dynamic> definition) =>
+  List<Map<String, Object?>> _table(ModelDefinition<OrmEntity> definition) =>
       _tables.putIfAbsent(definition.tableName, () => <Map<String, Object?>>[]);
 
   bool _matches(Map<String, Object?> candidate, Map<String, Object?> keys) {
@@ -614,7 +617,7 @@ class InMemoryQueryExecutor implements DriverAdapter {
 
   /// Generates a primary key value if the field is null and is auto-incrementing.
   void _generatePrimaryKey(
-    ModelDefinition<dynamic> definition,
+    ModelDefinition<OrmEntity> definition,
     Map<String, Object?> values,
   ) {
     final pkField = definition.primaryKeyField;

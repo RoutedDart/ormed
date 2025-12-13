@@ -176,7 +176,7 @@ void main() {
   });
 
   test('model snapshot converts model definitions to blueprints', () {
-    final definition = ModelDefinition<Map<String, Object?>>(
+    final definition = ModelDefinition<AdHocRow>(
       modelName: 'User',
       tableName: 'users',
       codec: const _FakeCodec(),
@@ -241,18 +241,18 @@ class _CreateUsersMigration extends Migration {
   }
 }
 
-class _FakeCodec extends ModelCodec<Map<String, Object?>> {
+class _FakeCodec extends ModelCodec<AdHocRow> {
   const _FakeCodec();
 
   @override
   Map<String, Object?> encode(
-    Map<String, Object?> model,
+    AdHocRow model,
     ValueCodecRegistry registry,
-  ) => model;
+  ) => Map<String, Object?>.from(model);
 
   @override
-  Map<String, Object?> decode(
+  AdHocRow decode(
     Map<String, Object?> data,
     ValueCodecRegistry registry,
-  ) => data;
+  ) => AdHocRow(data);
 }

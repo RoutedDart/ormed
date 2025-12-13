@@ -4,6 +4,7 @@ library;
 
 export 'package:carbonized/carbonized.dart' show Carbon, CarbonInterface;
 export 'src/annotations.dart';
+export 'src/contracts.dart';
 export 'src/carbon_config.dart';
 export 'src/core/orm_config.dart';
 export 'src/model_definition.dart';

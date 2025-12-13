@@ -1,6 +1,6 @@
 part of '../query_builder.dart';
 
-extension WhereExtension<T> on Query<T> {
+extension WhereExtension<T extends OrmEntity> on Query<T> {
   /// Adds an `IN` comparison for [field] using [values].
   ///
   /// This method adds a `WHERE field IN (value1, value2, ...)` clause to the query.
@@ -653,7 +653,7 @@ extension WhereExtension<T> on Query<T> {
   /// ```
   Query<T> orWhereHas(
     String relation, [
-    PredicateCallback<dynamic>? constraint,
+    PredicateCallback<OrmEntity>? constraint,
   ]) => _addRelationWhere(
     relation,
     constraint,
@@ -682,7 +682,7 @@ extension WhereExtension<T> on Query<T> {
   /// ```
   Query<T> whereHas(
     String relation, [
-    PredicateCallback<dynamic>? constraint,
+    PredicateCallback<OrmEntity>? constraint,
   ]) => _addRelationWhere(
     relation,
     constraint,
@@ -747,7 +747,7 @@ extension WhereExtension<T> on Query<T> {
 
   Query<T> _addRelationWhere(
     String relation,
-    PredicateCallback<dynamic>? constraint, {
+    PredicateCallback<OrmEntity>? constraint, {
     required PredicateLogicalOperator logical,
   }) {
     final path = _resolveRelationPath(relation);

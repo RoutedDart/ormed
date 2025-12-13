@@ -3,7 +3,7 @@ import 'package:ormed/ormed.dart';
 
 /// Captures the tables derived from the current [ModelDefinition] registry.
 class ModelGraphSnapshot {
-  ModelGraphSnapshot(Iterable<ModelDefinition<dynamic>> definitions)
+  ModelGraphSnapshot(Iterable<ModelDefinition<OrmEntity>> definitions)
     : tables = List.unmodifiable(
         definitions.map(ModelTableSnapshot.fromDefinition),
       );
@@ -24,7 +24,7 @@ class ModelTableSnapshot {
   });
 
   factory ModelTableSnapshot.fromDefinition(
-    ModelDefinition<dynamic> definition,
+    ModelDefinition<OrmEntity> definition,
   ) {
     final columns = definition.fields
         .map(

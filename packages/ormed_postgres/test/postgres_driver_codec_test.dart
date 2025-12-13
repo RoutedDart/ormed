@@ -80,8 +80,8 @@ void main() {
 
       await schemaDriver.applySchemaPlan(builder.build());
 
-      final repo = dataSource.context.repository<EventRecord>();
-      final event = EventRecord(
+      final repo = dataSource.context.repository<$EventRecord>();
+      final event = $EventRecord(
         id: 1,
         metadata: {
           'level': 'info',
@@ -100,7 +100,7 @@ void main() {
       // expect(inserted.elapsed, event.elapsed);
 
       final fetched = await dataSource.context
-          .query<EventRecord>()
+          .query<$EventRecord>()
           .whereEquals('id', 1)
           .firstOrFail();
       expect(fetched.metadata['nested'], equals({'flag': true}));
@@ -112,7 +112,7 @@ void main() {
   });
 }
 
-class EventRecord {
+class EventRecord extends Model<EventRecord> {
   const EventRecord({
     required this.id,
     required this.metadata,
@@ -126,6 +126,17 @@ class EventRecord {
   final List<String> tags;
   final Duration? elapsed;
   final DateTime occurredAt;
+}
+
+/// Tracked model class for EventRecord
+class $EventRecord extends EventRecord with ModelAttributes implements OrmEntity {
+  $EventRecord({
+    required super.id,
+    required super.metadata,
+    required super.tags,
+    required super.elapsed,
+    required super.occurredAt,
+  });
 }
 
 const FieldDefinition _eventIdField = FieldDefinition(
@@ -184,7 +195,7 @@ const FieldDefinition _eventOccurredAtField = FieldDefinition(
   isUnique: false,
 );
 
-final ModelDefinition<EventRecord> eventRecordDefinition = ModelDefinition(
+final ModelDefinition<$EventRecord> eventRecordDefinition = ModelDefinition(
   modelName: 'EventRecord',
   tableName: 'event_records',
   fields: const [
@@ -198,11 +209,11 @@ final ModelDefinition<EventRecord> eventRecordDefinition = ModelDefinition(
   codec: _EventRecordCodec(),
 );
 
-class _EventRecordCodec extends ModelCodec<EventRecord> {
+class _EventRecordCodec extends ModelCodec<$EventRecord> {
   const _EventRecordCodec();
 
   @override
-  Map<String, Object?> encode(EventRecord model, ValueCodecRegistry registry) {
+  Map<String, Object?> encode($EventRecord model, ValueCodecRegistry registry) {
     return <String, Object?>{
       'id': registry.encodeField(_eventIdField, model.id),
       'metadata': registry.encodeField(_eventMetadataField, model.metadata),
@@ -216,8 +227,8 @@ class _EventRecordCodec extends ModelCodec<EventRecord> {
   }
 
   @override
-  EventRecord decode(Map<String, Object?> data, ValueCodecRegistry registry) {
-    return EventRecord(
+  $EventRecord decode(Map<String, Object?> data, ValueCodecRegistry registry) {
+    return $EventRecord(
       id:
           registry.decodeField<int>(_eventIdField, data['id']) ??
           (throw StateError('Field id on EventRecord cannot be null.')),

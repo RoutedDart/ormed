@@ -234,6 +234,82 @@ class _$MutationTargetCodec extends ModelCodec<$MutationTarget> {
   }
 }
 
+/// Insert DTO for [MutationTarget].
+///
+/// Auto-increment/DB-generated fields are omitted by default.
+class MutationTargetInsertDto implements InsertDto<$MutationTarget> {
+  const MutationTargetInsertDto({
+    this.id,
+    this.name,
+    this.active,
+    this.category,
+  });
+  final String? id;
+  final String? name;
+  final bool? active;
+  final String? category;
+
+  @override
+  Map<String, Object?> toMap() {
+    return <String, Object?>{
+      if (id != null) '_id': id,
+      if (name != null) 'name': name,
+      if (active != null) 'active': active,
+      if (category != null) 'category': category,
+    };
+  }
+}
+
+/// Update DTO for [MutationTarget].
+///
+/// All fields are optional; only provided entries are used in SET clauses.
+class MutationTargetUpdateDto implements UpdateDto<$MutationTarget> {
+  const MutationTargetUpdateDto({
+    this.id,
+    this.name,
+    this.active,
+    this.category,
+  });
+  final String? id;
+  final String? name;
+  final bool? active;
+  final String? category;
+
+  @override
+  Map<String, Object?> toMap() {
+    return <String, Object?>{
+      if (id != null) '_id': id,
+      if (name != null) 'name': name,
+      if (active != null) 'active': active,
+      if (category != null) 'category': category,
+    };
+  }
+}
+
+/// Partial projection for [MutationTarget].
+///
+/// All fields are nullable; intended for subset SELECTs.
+class MutationTargetPartial implements PartialEntity<$MutationTarget> {
+  const MutationTargetPartial({this.id, this.name, this.active, this.category});
+  final String? id;
+  final String? name;
+  final bool? active;
+  final String? category;
+
+  @override
+  $MutationTarget toEntity() {
+    // Basic required-field check: non-nullable fields must be present.
+    final String? idValue = id;
+    if (idValue == null) throw StateError('Missing required field: id');
+    return $MutationTarget(
+      id: idValue,
+      name: name,
+      active: active,
+      category: category,
+    );
+  }
+}
+
 /// Generated tracked model class for [MutationTarget].
 ///
 /// This class extends the user-defined [MutationTarget] model and adds
@@ -242,7 +318,9 @@ class _$MutationTargetCodec extends ModelCodec<$MutationTarget> {
 ///
 /// **Do not instantiate this class directly.** Use queries, repositories,
 /// or model factories to create tracked model instances.
-class $MutationTarget extends MutationTarget with ModelAttributes {
+class $MutationTarget extends MutationTarget
+    with ModelAttributes
+    implements OrmEntity {
   $MutationTarget({
     required String id,
     String? name,

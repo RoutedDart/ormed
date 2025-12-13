@@ -112,7 +112,7 @@ class QueryContext implements ConnectionResolver {
   /// ```dart
   /// final users = await context.query<User>().get();
   /// ```
-  Query<T> query<T>() {
+  Query<T> query<T extends OrmEntity>() {
     final definition = registry.expect<T>();
     final defaultQuery = Query(definition: definition, context: this);
     final hook = _resolveQueryBuilderHook(definition);
@@ -131,7 +131,7 @@ class QueryContext implements ConnectionResolver {
   /// [table] is an optional table name override.
   /// [schema] is an optional schema name override.
   /// [alias] is an optional alias for the table.
-  Query<T> queryFromDefinition<T>(
+  Query<T> queryFromDefinition<T extends OrmEntity>(
     ModelDefinition<T> definition, {
     String? table,
     String? schema,
@@ -169,7 +169,7 @@ class QueryContext implements ConnectionResolver {
   /// [schema] is an optional schema name for the table (only used for unregistered tables).
   /// [scopes] are optional ad-hoc scopes to apply to the query.
   /// [columns] are optional ad-hoc columns to include in the select statement.
-  Query<Map<String, Object?>> table(
+  Query<AdHocRow> table(
     String table, {
     String? as,
     String? schema,
@@ -223,7 +223,7 @@ class QueryContext implements ConnectionResolver {
   ///
   /// [identifier] is a unique identifier for the global scope.
   /// [scope] is the callback function that applies the scope's constraints to a query.
-  void registerGlobalScope<T>(
+  void registerGlobalScope<T extends OrmEntity>(
     String identifier,
     GlobalScopeCallback<T> scope,
   ) {
@@ -236,7 +236,7 @@ class QueryContext implements ConnectionResolver {
         scopeRegistry.addGlobalScopeForType(
           actualType,
           identifier,
-          (query) => scope(query as Query<T>) as Query<dynamic>,
+          (query) => scope(query as Query<T>) as Query<OrmEntity>,
         );
       }
     } catch (_) {
@@ -251,13 +251,13 @@ class QueryContext implements ConnectionResolver {
   /// [identifier] is a unique identifier for the global scope.
   /// [scope] is the callback function that applies the scope's constraints to a query.
   /// [pattern] is a glob-style pattern to match against model names (e.g., 'User*', '*Post').
-  void registerGlobalScopePattern<T>(
+  void registerGlobalScopePattern<T extends OrmEntity>(
     String identifier,
     GlobalScopeCallback<T> scope, {
     String pattern = '*',
   }) => scopeRegistry.addGlobalScopePattern(
     identifier,
-    (query) => scope(query as Query<T>) as Query<dynamic>,
+    (query) => scope(query as Query<T>) as Query<OrmEntity>,
     pattern: pattern,
   );
 
@@ -268,7 +268,7 @@ class QueryContext implements ConnectionResolver {
   ///
   /// [name] is the name of the local scope.
   /// [scope] is the callback function that applies the scope's constraints to a query.
-  void registerLocalScope<T>(String name, LocalScopeCallback<T> scope) =>
+  void registerLocalScope<T extends OrmEntity>(String name, LocalScopeCallback<T> scope) =>
       scopeRegistry.addLocalScope<T>(name, scope);
 
   /// Registers a local scope pattern for models of type [T].
@@ -278,13 +278,13 @@ class QueryContext implements ConnectionResolver {
   /// [name] is the name of the local scope.
   /// [scope] is the callback function that applies the scope's constraints to a query.
   /// [pattern] is a glob-style pattern to match against model names (e.g., 'User*', '*Post').
-  void registerLocalScopePattern<T>(
+  void registerLocalScopePattern<T extends OrmEntity>(
     String name,
     LocalScopeCallback<T> scope, {
     String pattern = '*',
   }) => scopeRegistry.addLocalScopePattern(
     name,
-    (query, args) => scope(query as Query<T>, args) as Query<dynamic>,
+    (query, args) => scope(query as Query<T>, args) as Query<OrmEntity>,
     pattern: pattern,
   );
 
@@ -332,7 +332,7 @@ class QueryContext implements ConnectionResolver {
   /// final userRepository = context.repository<User>();
   /// final newUser = await userRepository.create({'name': 'John Doe'});
   /// ```
-  Repository<T> repository<T>() {
+  Repository<T> repository<T extends OrmEntity>() {
     final definition = registry.expect<T>();
     final defaultRepository = Repository(
       definition: definition,
@@ -349,7 +349,7 @@ class QueryContext implements ConnectionResolver {
   }
 
   QueryBuilderHook? _resolveQueryBuilderHook(
-    ModelDefinition<dynamic> definition,
+    ModelDefinition<OrmEntity> definition,
   ) {
     for (final annotation in definition.metadata.driverAnnotations) {
       final hook =
@@ -361,7 +361,7 @@ class QueryContext implements ConnectionResolver {
     return driver.metadata.queryBuilderHook;
   }
 
-  RepositoryHook? _resolveRepositoryHook(ModelDefinition<dynamic> definition) {
+  RepositoryHook? _resolveRepositoryHook(ModelDefinition<OrmEntity> definition) {
     for (final annotation in definition.metadata.driverAnnotations) {
       final hook =
           driver.metadata.annotationRepositoryHooks?[annotation.runtimeType];
@@ -909,7 +909,7 @@ class QueryContext implements ConnectionResolver {
 
   void _recordQueryLog({
     required String type,
-    required ModelDefinition<dynamic> definition,
+    required ModelDefinition<OrmEntity> definition,
     required StatementPreview preview,
     required Duration duration,
     int? rowCount,
@@ -968,7 +968,7 @@ class QueryContext implements ConnectionResolver {
   /// ```
   CacheStats get queryCacheStats => queryCache.stats;
 
-  void _handleLateRegistration(ModelDefinition<dynamic> definition) {
+  void _handleLateRegistration(ModelDefinition<OrmEntity> definition) {
     final field = definition.softDeleteField;
     if (field == null) return;
     scopeRegistry.addGlobalScopeForType(

@@ -1,94 +1,121 @@
 part of 'repository.dart';
 
 /// Mixin that provides preview methods for repository operations.
-mixin RepositoryPreviewMixin<T>
-    on RepositoryBase<T>, RepositoryHelpersMixin<T> {
-  /// Returns the statement preview for inserting [model].
+///
+/// This mixin supports previewing operations with:
+/// - Tracked models (`$Model`)
+/// - Insert/Update DTOs
+/// - Raw maps (`Map<String, Object?>`)
+mixin RepositoryPreviewMixin<T extends OrmEntity>
+    on RepositoryBase<T>,
+        RepositoryHelpersMixin<T>,
+        RepositoryInputHandlerMixin<T>,
+        RepositoryInsertMixin<T>,
+        RepositoryUpdateMixin<T>,
+        RepositoryUpsertMixin<T> {
+  /// Returns the statement preview for inserting a single item.
+  ///
+  /// Accepts tracked models, insert DTOs, or raw maps.
   ///
   /// Example:
   /// ```dart
-  /// final user = User(name: 'John Doe');
+  /// final user = $User(name: 'John Doe', email: 'john@example.com');
   /// final preview = repository.previewInsert(user);
   /// print(preview.statement); // The SQL statement that would be executed.
-  /// print(preview.parameters); // The parameters for the SQL statement.
   /// ```
-  StatementPreview previewInsert(T model) => previewInsertMany([model]);
+  StatementPreview previewInsert(Object model) => previewInsertMany([model]);
 
-  /// Returns the statement preview for inserting [models].
+  /// Returns the statement preview for inserting multiple items.
+  ///
+  /// Accepts a list of tracked models, insert DTOs, or raw maps.
   ///
   /// Example:
   /// ```dart
-  /// final users = [User(name: 'John Doe'), User(name: 'Jane Doe')];
+  /// final users = [
+  ///   $UserInsertDto(name: 'John', email: 'john@example.com'),
+  ///   {'name': 'Jane', 'email': 'jane@example.com'},
+  /// ];
   /// final preview = repository.previewInsertMany(users);
-  /// print(preview.statement); // The SQL statement that would be executed.
-  /// print(preview.parameters); // The parameters for the SQL statement.
   /// ```
-  StatementPreview previewInsertMany(List<T> models) {
-    requireModels(models, 'previewInsertMany');
-    final plan = buildInsertPlan(models, returning: false);
-    return describeMutation(plan);
-  }
-
-  /// Returns the statement preview for inserting [models] while ignoring conflicts.
-  ///
-  /// Example:
-  /// ```dart
-  /// final users = [User(id: 1, name: 'John Doe'), User(id: 2, name: 'Jane Doe')];
-  /// final preview = repository.previewInsertOrIgnoreMany(users);
-  /// print(preview.statement); // The SQL statement that would be executed.
-  /// print(preview.parameters); // The parameters for the SQL statement.
-  /// ```
-  StatementPreview previewInsertOrIgnoreMany(List<T> models) {
-    requireModels(models, 'previewInsertOrIgnoreMany');
-    final plan = buildInsertPlan(
-      models,
+  StatementPreview previewInsertMany(List<Object> inputs) {
+    if (inputs.isEmpty) {
+      throw ArgumentError.value(inputs, 'inputs', 'previewInsertMany requires inputs');
+    }
+    final hasTrackedModels = inputs.any((input) => isTrackedModel(input));
+    final plan = buildInsertPlanFromInputs(
+      inputs,
       returning: false,
-      ignoreConflicts: true,
+      applySentinelFiltering: hasTrackedModels,
     );
     return describeMutation(plan);
   }
 
-  /// Returns the statement preview for updating [models].
+  /// Returns the statement preview for inserting items while ignoring conflicts.
+  ///
+  /// Accepts a list of tracked models, insert DTOs, or raw maps.
+  StatementPreview previewInsertOrIgnoreMany(List<Object> inputs) {
+    if (inputs.isEmpty) {
+      throw ArgumentError.value(inputs, 'inputs', 'previewInsertOrIgnoreMany requires inputs');
+    }
+    final hasTrackedModels = inputs.any((input) => isTrackedModel(input));
+    final plan = buildInsertPlanFromInputs(
+      inputs,
+      returning: false,
+      ignoreConflicts: true,
+      applySentinelFiltering: hasTrackedModels,
+    );
+    return describeMutation(plan);
+  }
+
+  /// Returns the statement preview for updating items.
+  ///
+  /// Accepts a list of tracked models, update DTOs, or raw maps.
   ///
   /// Example:
   /// ```dart
-  /// final user = await repository.find(1);
-  /// user.name = 'John Smith';
-  /// final preview = repository.previewUpdateMany([user]);
-  /// print(preview.statement); // The SQL statement that would be executed.
-  /// print(preview.parameters); // The parameters for the SQL statement.
+  /// final dto = $UserUpdateDto(id: 1, email: 'newemail@example.com');
+  /// final preview = repository.previewUpdateMany([dto]);
   /// ```
   StatementPreview previewUpdateMany(
-    List<T> models, {
+    List<Object> inputs, {
+    Map<String, Object?>? where,
     JsonUpdateBuilder<T>? jsonUpdates,
   }) {
-    requireModels(models, 'previewUpdateMany');
-    final plan = buildUpdatePlan(
-      models,
+    if (inputs.isEmpty) {
+      throw ArgumentError.value(inputs, 'inputs', 'previewUpdateMany requires inputs');
+    }
+    final plan = buildUpdatePlanFromInputs(
+      inputs,
+      where: where,
       returning: false,
       jsonUpdates: jsonUpdates,
     );
     return describeMutation(plan);
   }
 
-  /// Returns the statement preview for upserting [models].
+  /// Returns the statement preview for upserting items.
+  ///
+  /// Accepts a list of tracked models, insert DTOs, or raw maps.
   ///
   /// Example:
   /// ```dart
-  /// final users = [User(id: 1, name: 'John Doe'), User(name: 'Jane Doe')];
-  /// final preview = repository.previewUpsertMany(users);
-  /// print(preview.statement); // The SQL statement that would be executed.
-  /// print(preview.parameters); // The parameters for the SQL statement.
+  /// final users = [
+  ///   $User(id: 1, name: 'John Doe', email: 'john@example.com'),
+  ///   {'name': 'Jane Doe', 'email': 'jane@example.com'},
+  /// ];
+  /// final preview = repository.previewUpsertMany(users, uniqueBy: ['email']);
   /// ```
   StatementPreview previewUpsertMany(
-    List<T> models, {
+    List<Object> inputs, {
     List<String>? uniqueBy,
     List<String>? updateColumns,
     JsonUpdateBuilder<T>? jsonUpdates,
   }) {
-    requireModels(models, 'previewUpsertMany');
-    final plan = buildUpsertPlan(
-      models,
+    if (inputs.isEmpty) {
+      throw ArgumentError.value(inputs, 'inputs', 'previewUpsertMany requires inputs');
+    }
+    final plan = buildUpsertPlanFromInputs(
+      inputs,
       returning: false,
       uniqueBy: uniqueBy,
       updateColumns: updateColumns,

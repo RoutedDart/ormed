@@ -1,22 +1,22 @@
 part of 'query.dart';
 
 /// A callback for a global scope.
-typedef GlobalScopeCallback<T> = Query<T> Function(Query<T> query);
+typedef GlobalScopeCallback<T extends OrmEntity> = Query<T> Function(Query<T > query);
 
 /// A callback for a local scope.
-typedef LocalScopeCallback<T> =
+typedef LocalScopeCallback<T extends OrmEntity> =
     Query<T> Function(Query<T> query, List<Object?> args);
 
 /// A callback for a query macro.
 typedef QueryMacroCallback =
-    Query<dynamic> Function(Query<dynamic> query, List<Object?> args);
+    Query<OrmEntity> Function(Query<OrmEntity> query, List<Object?> args);
 
 /// An untyped global scope.
-typedef UntypedScope = Query<dynamic> Function(Query<dynamic> query);
+typedef UntypedScope = Query<OrmEntity> Function(Query<OrmEntity> query);
 
 /// An untyped local scope.
 typedef UntypedLocalScope =
-    Query<dynamic> Function(Query<dynamic> query, List<Object?> args);
+    Query<OrmEntity> Function(Query<OrmEntity> query, List<Object?> args);
 
 /// A registry for query scopes and macros.
 ///
@@ -48,11 +48,11 @@ class ScopeRegistry {
   ///   return query.where('status', '=', 'active');
   /// });
   /// ```
-  void addGlobalScope<T>(String identifier, GlobalScopeCallback<T> scope) =>
+  void addGlobalScope<T extends OrmEntity>(String identifier, GlobalScopeCallback<T> scope) =>
       addGlobalScopeForType(
         T,
         identifier,
-        (query) => scope(query as Query<T>) as Query<dynamic>,
+        (query) => scope(query as Query<T>) as Query<OrmEntity>,
       );
 
   /// Adds a global scope for a model of the given [modelType].
@@ -87,14 +87,14 @@ class ScopeRegistry {
   }
 
   /// Applies all registered global scopes to the given [query].
-  Query<T> applyGlobalScopes<T>(Query<T> query) {
+  Query<T > applyGlobalScopes<T extends OrmEntity>(Query<T> query) {
     if (query.globalScopesApplied) {
       return query;
     }
     if (query.ignoreAllGlobalScopes) {
       return _applyAdHocScopes(query).markGlobalScopesApplied();
     }
-    var builder = query as Query<dynamic>;
+    var builder = query as Query<OrmEntity>;
     final modelScopes = _globalScopes[query.definition.modelType];
     if (modelScopes != null && modelScopes.isNotEmpty) {
       for (final entry in modelScopes.entries) {
@@ -117,7 +117,7 @@ class ScopeRegistry {
     return _applyAdHocScopes(builder as Query<T>).markGlobalScopesApplied();
   }
 
-  Query<T> _applyAdHocScopes<T>(Query<T> query) {
+  Query<T> _applyAdHocScopes<T extends OrmEntity>(Query<T> query) {
     // Apply ad-hoc scopes to both AdHocModelDefinition and TableQueryDefinition
     if (query.definition is! AdHocModelDefinition &&
         query.definition is! TableQueryDefinition) {
@@ -127,7 +127,7 @@ class ScopeRegistry {
       return query;
     }
     final tableName = query.definition.tableName;
-    var builder = query as Query<dynamic>;
+    var builder = query as Query<OrmEntity>;
     for (final scopeName in query.adHocScopes) {
       final registrations = _adHocScopes[scopeName];
       if (registrations == null || registrations.isEmpty) {
@@ -173,7 +173,7 @@ class ScopeRegistry {
 
   bool _matchesModelPattern(
     String pattern,
-    ModelDefinition<dynamic> definition,
+    ModelDefinition<OrmEntity> definition,
   ) {
     if (_matches(pattern, definition.modelName)) {
       return true;
@@ -192,7 +192,7 @@ class ScopeRegistry {
   /// // Later, in a query:
   /// final popularUsers = await query.scope('popular', [100]).get();
   /// ```
-  void addLocalScope<T>(String name, LocalScopeCallback<T> scope) {
+  void addLocalScope<T extends OrmEntity>(String name, LocalScopeCallback<T> scope) {
     final scopes = _localScopes.putIfAbsent(T, () => <String, Object>{});
     scopes[name] = scope;
   }
@@ -213,7 +213,7 @@ class ScopeRegistry {
   }
 
   /// Calls a local scope by [name] on the given [query].
-  Query<T> callLocalScope<T>(
+  Query<T> callLocalScope<T extends OrmEntity>(
     Type modelType,
     String name,
     Query<T> query,
@@ -229,7 +229,7 @@ class ScopeRegistry {
     if (patternScopes != null) {
       for (final registration in patternScopes) {
         if (_matchesModelPattern(registration.pattern, query.definition)) {
-          final result = registration.scope(query as Query<dynamic>, args);
+          final result = registration.scope(query as Query<OrmEntity>, args);
           return result as Query<T>;
         }
       }
@@ -253,12 +253,12 @@ class ScopeRegistry {
   }
 
   /// Calls a macro by [name] on the given [query].
-  Query<T> callMacro<T>(String name, Query<T> query, List<Object?> args) {
+  Query<T> callMacro<T extends OrmEntity>(String name, Query<T> query, List<Object?> args) {
     final macro = _macros[name];
     if (macro == null) {
       throw ArgumentError.value(name, 'name', 'Macro not registered.');
     }
-    final result = macro(query as Query<dynamic>, args);
+    final result = macro(query as Query<OrmEntity>, args);
     return result as Query<T>;
   }
 }

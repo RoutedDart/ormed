@@ -204,9 +204,7 @@ class _$ActiveUserCodec extends ModelCodec<$ActiveUser> {
       ),
       'deleted_at': registry.encodeField(
         _$ActiveUserDeletedAtField,
-        (model is ModelAttributes
-            ? model.getAttribute<DateTime?>('deleted_at')
-            : null),
+        (model.getAttribute<DateTime?>('deleted_at')),
       ),
     };
   }
@@ -251,6 +249,74 @@ class _$ActiveUserCodec extends ModelCodec<$ActiveUser> {
   }
 }
 
+/// Insert DTO for [ActiveUser].
+///
+/// Auto-increment/DB-generated fields are omitted by default.
+class ActiveUserInsertDto implements InsertDto<$ActiveUser> {
+  const ActiveUserInsertDto({this.email, this.name, this.settings});
+  final String? email;
+  final String? name;
+  final Map<String, Object?>? settings;
+
+  @override
+  Map<String, Object?> toMap() {
+    return <String, Object?>{
+      if (email != null) 'email': email,
+      if (name != null) 'name': name,
+      if (settings != null) 'settings': settings,
+    };
+  }
+}
+
+/// Update DTO for [ActiveUser].
+///
+/// All fields are optional; only provided entries are used in SET clauses.
+class ActiveUserUpdateDto implements UpdateDto<$ActiveUser> {
+  const ActiveUserUpdateDto({this.id, this.email, this.name, this.settings});
+  final int? id;
+  final String? email;
+  final String? name;
+  final Map<String, Object?>? settings;
+
+  @override
+  Map<String, Object?> toMap() {
+    return <String, Object?>{
+      if (id != null) 'id': id,
+      if (email != null) 'email': email,
+      if (name != null) 'name': name,
+      if (settings != null) 'settings': settings,
+    };
+  }
+}
+
+/// Partial projection for [ActiveUser].
+///
+/// All fields are nullable; intended for subset SELECTs.
+class ActiveUserPartial implements PartialEntity<$ActiveUser> {
+  const ActiveUserPartial({this.id, this.email, this.name, this.settings});
+  final int? id;
+  final String? email;
+  final String? name;
+  final Map<String, Object?>? settings;
+
+  @override
+  $ActiveUser toEntity() {
+    // Basic required-field check: non-nullable fields must be present.
+    final String? emailValue = email;
+    if (emailValue == null) throw StateError('Missing required field: email');
+    final Map<String, Object?>? settingsValue = settings;
+    if (settingsValue == null) {
+      throw StateError('Missing required field: settings');
+    }
+    return $ActiveUser(
+      id: id,
+      email: emailValue,
+      name: name,
+      settings: settingsValue,
+    );
+  }
+}
+
 /// Generated tracked model class for [ActiveUser].
 ///
 /// This class extends the user-defined [ActiveUser] model and adds
@@ -259,7 +325,9 @@ class _$ActiveUserCodec extends ModelCodec<$ActiveUser> {
 ///
 /// **Do not instantiate this class directly.** Use queries, repositories,
 /// or model factories to create tracked model instances.
-class $ActiveUser extends ActiveUser with ModelAttributes, SoftDeletesImpl {
+class $ActiveUser extends ActiveUser
+    with ModelAttributes, SoftDeletesImpl
+    implements OrmEntity {
   $ActiveUser({
     int? id = 0,
     required String email,

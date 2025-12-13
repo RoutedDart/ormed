@@ -15,8 +15,8 @@ class RelationJoinRequest {
   final JoinType joinType;
 }
 
-extension MapQueryExtensions on Query<Map<String, Object?>> {
-  MappedAdHocQuery<R> mapRows<R>(R Function(Map<String, Object?> row) mapper) =>
+extension MapQueryExtensions on Query<AdHocRow> {
+  MappedAdHocQuery<R> mapRows<R extends OrmEntity>(R Function(AdHocRow row) mapper) =>
       MappedAdHocQuery<R>(this, mapper);
 }
 

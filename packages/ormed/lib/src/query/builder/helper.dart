@@ -1,6 +1,6 @@
 part of '../query_builder.dart';
 
-extension QueryHelpers<T> on Query<T> {
+extension QueryHelpers<T extends OrmEntity> on Query<T> {
   /// Resolves a JSON reference from a field expression.
   ///
   /// Handles both simple column references and JSON path expressions.

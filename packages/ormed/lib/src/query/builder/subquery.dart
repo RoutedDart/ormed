@@ -1,7 +1,7 @@
 part of '../query_builder.dart';
 
 /// Extension providing subquery support for query builder.
-extension SubqueryExtension<T> on Query<T> {
+extension SubqueryExtension<T extends OrmEntity> on Query<T> {
   /// Adds a WHERE IN subquery predicate.
   ///
   /// This method allows you to filter records where a column's value exists

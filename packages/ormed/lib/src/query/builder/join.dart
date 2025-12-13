@@ -1,6 +1,6 @@
 part of '../query_builder.dart';
 
-extension JoinExtension<T> on Query<T> {
+extension JoinExtension<T extends OrmEntity> on Query<T> {
   /// Adds an INNER JOIN clause to the query.
   ///
   /// The [table] parameter can be a table name (String) or a subquery ([Query]).

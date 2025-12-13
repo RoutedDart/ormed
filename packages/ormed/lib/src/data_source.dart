@@ -5,6 +5,7 @@ import 'connection/connection.dart';
 import 'connection/connection_manager.dart';
 import 'connection/orm_connection.dart';
 import 'driver/driver.dart';
+import 'contracts.dart';
 import 'model.dart';
 import 'model_definition.dart';
 import 'model_registry.dart';
@@ -47,7 +48,7 @@ class DataSourceOptions {
   final DriverAdapter driver;
 
   /// List of model definitions (entities) to register with this data source.
-  final List<ModelDefinition<dynamic>> entities;
+  final List<ModelDefinition<OrmEntity>> entities;
 
   /// Optional pre-built model registry with type aliases already registered.
   /// If provided, this registry will be used instead of creating a new one.
@@ -91,7 +92,7 @@ class DataSourceOptions {
 
   DataSourceOptions copyWith({
     DriverAdapter? driver,
-    List<ModelDefinition<dynamic>>? entities,
+    List<ModelDefinition<OrmEntity>>? entities,
     ModelRegistry? registry,
     String? name,
     String? database,
@@ -361,7 +362,7 @@ class DataSource {
   ///     .limit(10)
   ///     .get();
   /// ```
-  Query<T> query<T>() {
+  Query<T> query<T extends OrmEntity>() {
     _ensureInitialized();
     return _connection!.query<T>();
   }
@@ -374,13 +375,13 @@ class DataSource {
   /// await userRepo.updateMany([updatedUser]);
   /// await userRepo.deleteByKeys([{'id': userId}]);
   /// ```
-  Repository<T> repo<T>() {
+  Repository<T> repo<T extends OrmEntity>() {
     _ensureInitialized();
     return _connection!.repository<T>();
   }
 
   /// Alias for [repo]. Returns a repository for the specified model type.
-  Repository<T> getRepository<T>() => repo<T>();
+  Repository<T> getRepository<T extends OrmEntity>() => repo<T>();
 
   /// Executes the provided callback within a database transaction.
   ///
@@ -442,7 +443,7 @@ class DataSource {
   ///     .limit(100)
   ///     .get();
   /// ```
-  Query<Map<String, Object?>> table(
+  Query<AdHocRow> table(
     String table, {
     String? as,
     String? schema,

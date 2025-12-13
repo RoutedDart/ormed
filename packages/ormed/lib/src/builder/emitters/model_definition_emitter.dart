@@ -31,7 +31,7 @@ class ModelDefinitionEmitter {
     _writeRelations(buffer, relations);
 
     final generatedClassName = context.trackedModelClassName;
-    final modelVar = '_$generatedClassName' + 'Definition';
+    final modelVar = '_$generatedClassName' 'Definition';
     buffer.writeln(
       'final ModelDefinition<$generatedClassName> $modelVar = ModelDefinition(',
     );

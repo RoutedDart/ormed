@@ -1,6 +1,6 @@
 part of '../query_builder.dart';
 
-extension JsonExtension<T> on Query<T> {
+extension JsonExtension<T extends OrmEntity> on Query<T> {
 
 
   /// Adds a JSON containment predicate (dialect-aware).

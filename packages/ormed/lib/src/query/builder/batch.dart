@@ -1,7 +1,7 @@
 part of '../query_builder.dart';
 
 /// Extension providing batch operation methods for efficient bulk queries.
-extension BatchOperationsExtension<T> on Query<T> {
+extension BatchOperationsExtension<T extends OrmEntity> on Query<T> {
   /// Updates multiple rows with different values in a single batch operation.
   ///
   /// This method allows you to update multiple records with different values

@@ -1,7 +1,7 @@
 part of '../query_builder.dart';
 
 /// Extension providing GROUP BY and HAVING clause methods for query results.
-extension GroupingExtension<T> on Query<T> {
+extension GroupingExtension<T extends OrmEntity>  on Query<T> {
   /// Groups rows by the provided [columns].
   ///
   /// This method adds a `GROUP BY` clause to the query, often used in conjunction

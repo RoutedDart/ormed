@@ -1,1 +1,1 @@
-{"className":"Post","import":"src/models/post.dart","definition":"PostOrmDefinition.definition"}
+{"className":"Post","import":"src/models/post.dart","definition":"PostOrmDefinition.definition","hasFactory":false}

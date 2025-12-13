@@ -127,7 +127,7 @@ void main() {
 
       final query = dataSource.table('some_table');
 
-      expect(query, isA<Query<Map<String, Object?>>>());
+      expect(query, isA<Query<AdHocRow>>());
     });
 
     test('dispose closes the connection', () async {

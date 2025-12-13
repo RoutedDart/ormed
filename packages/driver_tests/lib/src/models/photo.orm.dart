@@ -224,6 +224,90 @@ class _$PhotoCodec extends ModelCodec<$Photo> {
   }
 }
 
+/// Insert DTO for [Photo].
+///
+/// Auto-increment/DB-generated fields are omitted by default.
+class PhotoInsertDto implements InsertDto<$Photo> {
+  const PhotoInsertDto({this.imageableId, this.imageableType, this.path});
+  final int? imageableId;
+  final String? imageableType;
+  final String? path;
+
+  @override
+  Map<String, Object?> toMap() {
+    return <String, Object?>{
+      if (imageableId != null) 'imageable_id': imageableId,
+      if (imageableType != null) 'imageable_type': imageableType,
+      if (path != null) 'path': path,
+    };
+  }
+}
+
+/// Update DTO for [Photo].
+///
+/// All fields are optional; only provided entries are used in SET clauses.
+class PhotoUpdateDto implements UpdateDto<$Photo> {
+  const PhotoUpdateDto({
+    this.id,
+    this.imageableId,
+    this.imageableType,
+    this.path,
+  });
+  final int? id;
+  final int? imageableId;
+  final String? imageableType;
+  final String? path;
+
+  @override
+  Map<String, Object?> toMap() {
+    return <String, Object?>{
+      if (id != null) 'id': id,
+      if (imageableId != null) 'imageable_id': imageableId,
+      if (imageableType != null) 'imageable_type': imageableType,
+      if (path != null) 'path': path,
+    };
+  }
+}
+
+/// Partial projection for [Photo].
+///
+/// All fields are nullable; intended for subset SELECTs.
+class PhotoPartial implements PartialEntity<$Photo> {
+  const PhotoPartial({
+    this.id,
+    this.imageableId,
+    this.imageableType,
+    this.path,
+  });
+  final int? id;
+  final int? imageableId;
+  final String? imageableType;
+  final String? path;
+
+  @override
+  $Photo toEntity() {
+    // Basic required-field check: non-nullable fields must be present.
+    final int? idValue = id;
+    if (idValue == null) throw StateError('Missing required field: id');
+    final int? imageableIdValue = imageableId;
+    if (imageableIdValue == null) {
+      throw StateError('Missing required field: imageableId');
+    }
+    final String? imageableTypeValue = imageableType;
+    if (imageableTypeValue == null) {
+      throw StateError('Missing required field: imageableType');
+    }
+    final String? pathValue = path;
+    if (pathValue == null) throw StateError('Missing required field: path');
+    return $Photo(
+      id: idValue,
+      imageableId: imageableIdValue,
+      imageableType: imageableTypeValue,
+      path: pathValue,
+    );
+  }
+}
+
 /// Generated tracked model class for [Photo].
 ///
 /// This class extends the user-defined [Photo] model and adds
@@ -232,7 +316,7 @@ class _$PhotoCodec extends ModelCodec<$Photo> {
 ///
 /// **Do not instantiate this class directly.** Use queries, repositories,
 /// or model factories to create tracked model instances.
-class $Photo extends Photo with ModelAttributes {
+class $Photo extends Photo with ModelAttributes implements OrmEntity {
   $Photo({
     int id = 0,
     required int imageableId,

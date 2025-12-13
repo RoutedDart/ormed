@@ -1,7 +1,7 @@
 part of '../query_builder.dart';
 
 /// Extension providing additional raw SQL query helpers for advanced use cases.
-extension RawQueryExtension<T> on Query<T> {
+extension RawQueryExtension<T extends OrmEntity> on Query<T> {
   /// Adds a raw ORDER BY expression.
   ///
   /// This method allows you to add custom SQL to the ORDER BY clause

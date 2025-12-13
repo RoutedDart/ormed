@@ -269,15 +269,11 @@ class _$PostCodec extends ModelCodec<$Post> {
       ),
       'created_at': registry.encodeField(
         _$PostCreatedAtField,
-        (model is ModelAttributes
-            ? model.getAttribute<DateTime?>('created_at')
-            : null),
+        (model.getAttribute<DateTime?>('created_at')),
       ),
       'updated_at': registry.encodeField(
         _$PostUpdatedAtField,
-        (model is ModelAttributes
-            ? model.getAttribute<DateTime?>('updated_at')
-            : null),
+        (model.getAttribute<DateTime?>('updated_at')),
       ),
     };
   }
@@ -336,6 +332,112 @@ class _$PostCodec extends ModelCodec<$Post> {
   }
 }
 
+/// Insert DTO for [Post].
+///
+/// Auto-increment/DB-generated fields are omitted by default.
+class PostInsertDto implements InsertDto<$Post> {
+  const PostInsertDto({
+    this.authorId,
+    this.title,
+    this.content,
+    this.views,
+    this.publishedAt,
+  });
+  final int? authorId;
+  final String? title;
+  final String? content;
+  final int? views;
+  final DateTime? publishedAt;
+
+  @override
+  Map<String, Object?> toMap() {
+    return <String, Object?>{
+      if (authorId != null) 'author_id': authorId,
+      if (title != null) 'title': title,
+      if (content != null) 'content': content,
+      if (views != null) 'views': views,
+      if (publishedAt != null) 'published_at': publishedAt,
+    };
+  }
+}
+
+/// Update DTO for [Post].
+///
+/// All fields are optional; only provided entries are used in SET clauses.
+class PostUpdateDto implements UpdateDto<$Post> {
+  const PostUpdateDto({
+    this.id,
+    this.authorId,
+    this.title,
+    this.content,
+    this.views,
+    this.publishedAt,
+  });
+  final int? id;
+  final int? authorId;
+  final String? title;
+  final String? content;
+  final int? views;
+  final DateTime? publishedAt;
+
+  @override
+  Map<String, Object?> toMap() {
+    return <String, Object?>{
+      if (id != null) 'id': id,
+      if (authorId != null) 'author_id': authorId,
+      if (title != null) 'title': title,
+      if (content != null) 'content': content,
+      if (views != null) 'views': views,
+      if (publishedAt != null) 'published_at': publishedAt,
+    };
+  }
+}
+
+/// Partial projection for [Post].
+///
+/// All fields are nullable; intended for subset SELECTs.
+class PostPartial implements PartialEntity<$Post> {
+  const PostPartial({
+    this.id,
+    this.authorId,
+    this.title,
+    this.content,
+    this.views,
+    this.publishedAt,
+  });
+  final int? id;
+  final int? authorId;
+  final String? title;
+  final String? content;
+  final int? views;
+  final DateTime? publishedAt;
+
+  @override
+  $Post toEntity() {
+    // Basic required-field check: non-nullable fields must be present.
+    final int? idValue = id;
+    if (idValue == null) throw StateError('Missing required field: id');
+    final int? authorIdValue = authorId;
+    if (authorIdValue == null) {
+      throw StateError('Missing required field: authorId');
+    }
+    final String? titleValue = title;
+    if (titleValue == null) throw StateError('Missing required field: title');
+    final DateTime? publishedAtValue = publishedAt;
+    if (publishedAtValue == null) {
+      throw StateError('Missing required field: publishedAt');
+    }
+    return $Post(
+      id: idValue,
+      authorId: authorIdValue,
+      title: titleValue,
+      content: content,
+      views: views,
+      publishedAt: publishedAtValue,
+    );
+  }
+}
+
 /// Generated tracked model class for [Post].
 ///
 /// This class extends the user-defined [Post] model and adds
@@ -344,7 +446,9 @@ class _$PostCodec extends ModelCodec<$Post> {
 ///
 /// **Do not instantiate this class directly.** Use queries, repositories,
 /// or model factories to create tracked model instances.
-class $Post extends Post with ModelAttributes, TimestampsTZImpl {
+class $Post extends Post
+    with ModelAttributes, TimestampsTZImpl
+    implements OrmEntity {
   $Post({
     int id = 0,
     required int authorId,

@@ -1,7 +1,7 @@
 part of '../query_builder.dart';
 
 /// Extension providing ordering methods for query results.
-extension OrderExtension<T> on Query<T> {
+extension OrderExtension<T extends OrmEntity> on Query<T> {
   /// Orders results by [field]. Set [descending] to sort in reverse.
   ///
   /// [field] can be a simple column name or a JSON path expression (e.g., 'data->name').

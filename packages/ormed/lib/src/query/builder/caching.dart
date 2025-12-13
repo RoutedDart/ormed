@@ -1,7 +1,7 @@
 part of '../query_builder.dart';
 
 /// Extension providing query result caching (Laravel-style remember).
-extension QueryCachingExtension<T> on Query<T> {
+extension QueryCachingExtension<T extends OrmEntity> on Query<T> {
   /// Cache query results for the specified duration.
   ///
   /// Results are stored in memory and reused for subsequent identical queries

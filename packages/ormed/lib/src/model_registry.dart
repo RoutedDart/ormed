@@ -1,27 +1,28 @@
 import 'dart:async';
 
 import 'exceptions.dart';
+import 'contracts.dart';
 import 'model_definition.dart';
 
 /// Simple registry to share model definitions across the app/runtime.
 class ModelRegistry {
-  final Map<Type, ModelDefinition<dynamic>> _definitions = {};
-  final Map<String, ModelDefinition<dynamic>> _definitionsByName = {};
-  final Map<String, ModelDefinition<dynamic>> _definitionsByTable = {};
-  final StreamController<ModelDefinition<dynamic>> _onRegistered =
+  final Map<Type, ModelDefinition<OrmEntity>> _definitions = {};
+  final Map<String, ModelDefinition<OrmEntity>> _definitionsByName = {};
+  final Map<String, ModelDefinition<OrmEntity>> _definitionsByTable = {};
+  final StreamController<ModelDefinition<OrmEntity>> _onRegistered =
       StreamController.broadcast();
-  final List<void Function(ModelDefinition<dynamic>)> _onRegisteredCallbacks =
+  final List<void Function(ModelDefinition<OrmEntity>)> _onRegisteredCallbacks =
       [];
 
-  Stream<ModelDefinition<dynamic>> get onRegistered => _onRegistered.stream;
+  Stream<ModelDefinition<OrmEntity>> get onRegistered => _onRegistered.stream;
 
   void addOnRegisteredCallback(
-    void Function(ModelDefinition<dynamic>) callback,
+    void Function(ModelDefinition<OrmEntity>) callback,
   ) {
     _onRegisteredCallbacks.add(callback);
   }
 
-  void register<T>(ModelDefinition<T> definition) {
+  void register<T extends OrmEntity>(ModelDefinition<T> definition) {
     if (_definitions.containsKey(definition.modelType)) {
       return; // Skip already registered types
     }
@@ -34,7 +35,7 @@ class ModelRegistry {
     }
   }
 
-  void registerAll(Iterable<ModelDefinition<dynamic>> definitions) {
+  void registerAll(Iterable<ModelDefinition<OrmEntity>> definitions) {
     for (final definition in definitions) {
       if (_definitions.containsKey(definition.modelType)) {
         continue; // Skip already registered types
@@ -50,7 +51,7 @@ class ModelRegistry {
   }
   
   /// Register a type alias that maps to an existing definition
-  void registerTypeAlias<T>(ModelDefinition existingDefinition) {
+  void registerTypeAlias<T extends OrmEntity>(ModelDefinition<OrmEntity> existingDefinition) {
     if (_definitions.containsKey(T)) {
       return; // Skip already registered types
     }
@@ -58,9 +59,9 @@ class ModelRegistry {
   }
   
   /// Returns all registered model definitions (deduplicated)
-  List<ModelDefinition<dynamic>> get allDefinitions {
+  List<ModelDefinition<OrmEntity>> get allDefinitions {
     final seen = <String>{};
-    final result = <ModelDefinition<dynamic>>[];
+    final result = <ModelDefinition<OrmEntity>>[];
     for (final def in _definitions.values) {
       if (seen.add(def.modelName)) {
         result.add(def);
@@ -69,7 +70,7 @@ class ModelRegistry {
     return result;
   }
 
-  ModelDefinition<T> registerAlias<T>(
+  ModelDefinition<T> registerAlias<T extends OrmEntity>(
     ModelDefinition<T> base, {
     required String aliasModelName,
     String? tableName,
@@ -84,7 +85,7 @@ class ModelRegistry {
     return aliased;
   }
 
-  ModelDefinition<T> expect<T>() {
+  ModelDefinition<T> expect<T extends OrmEntity>() {
     final definition = _definitions[T];
     if (definition == null) {
       throw ModelNotRegistered(T);
@@ -93,7 +94,7 @@ class ModelRegistry {
   }
 
   /// Returns the model definition registered under [name] or throws.
-  ModelDefinition<dynamic> expectByName(String name) {
+  ModelDefinition<OrmEntity> expectByName(String name) {
     final definition = _definitionsByName[name];
     if (definition == null) {
       throw ModelNotRegisteredByName(name);
@@ -102,12 +103,12 @@ class ModelRegistry {
   }
 
   /// Returns the model definition for the given [tableName], or null if not found.
-  ModelDefinition<dynamic>? findByTableName(String tableName) {
+  ModelDefinition<OrmEntity>? findByTableName(String tableName) {
     return _definitionsByTable[tableName];
   }
 
   /// Returns the model definition for the given [tableName] or throws.
-  ModelDefinition<dynamic> expectByTableName(String tableName) {
+  ModelDefinition<OrmEntity> expectByTableName(String tableName) {
     final definition = _definitionsByTable[tableName];
     if (definition == null) {
       throw ModelNotRegisteredByTableName(tableName);
@@ -117,5 +118,5 @@ class ModelRegistry {
 
   bool contains<T>() => _definitions.containsKey(T);
 
-  Iterable<ModelDefinition<dynamic>> get values => _definitions.values;
+  Iterable<ModelDefinition<OrmEntity>> get values => _definitions.values;
 }

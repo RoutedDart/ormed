@@ -1,7 +1,7 @@
 part of '../query_builder.dart';
 
 /// Extension providing DISTINCT clause methods for query results.
-extension DistinctExtension<T> on Query<T> {
+extension DistinctExtension<T extends OrmEntity> on Query<T> {
   /// Applies DISTINCT (and optional DISTINCT ON) semantics to the select.
   ///
   /// [columns] are optional columns to apply `DISTINCT ON` to (PostgreSQL specific).

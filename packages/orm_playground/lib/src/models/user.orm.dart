@@ -79,7 +79,7 @@ const FieldDefinition _$UserUpdatedAtField = FieldDefinition(
   autoIncrement: false,
 );
 
-final ModelDefinition<User> _$UserModelDefinition = ModelDefinition(
+final ModelDefinition<$User> _$UserDefinition = ModelDefinition(
   modelName: 'User',
   tableName: 'users',
   fields: const [
@@ -101,64 +101,70 @@ final ModelDefinition<User> _$UserModelDefinition = ModelDefinition(
     softDeletes: false,
     softDeleteColumn: 'deleted_at',
   ),
-  codec: _$UserModelCodec(),
+  codec: _$UserCodec(),
 );
 
 extension UserOrmDefinition on User {
-  static ModelDefinition<User> get definition => _$UserModelDefinition;
+  static ModelDefinition<$User> get definition => _$UserDefinition;
 }
 
 class Users {
   const Users._();
 
-  static Query<User> query([String? connection]) =>
-      Model.query<User>(connection: connection);
+  static Query<$User> query([String? connection]) =>
+      Model.query<$User>(connection: connection);
 
-  static Future<User?> find(Object id, {String? connection}) =>
-      Model.find<User>(id, connection: connection);
+  static Future<$User?> find(Object id, {String? connection}) =>
+      Model.find<$User>(id, connection: connection);
 
-  static Future<User> findOrFail(Object id, {String? connection}) =>
-      Model.findOrFail<User>(id, connection: connection);
+  static Future<$User> findOrFail(Object id, {String? connection}) =>
+      Model.findOrFail<$User>(id, connection: connection);
 
-  static Future<List<User>> all({String? connection}) =>
-      Model.all<User>(connection: connection);
+  static Future<List<$User>> all({String? connection}) =>
+      Model.all<$User>(connection: connection);
 
   static Future<int> count({String? connection}) =>
-      Model.count<User>(connection: connection);
+      Model.count<$User>(connection: connection);
 
   static Future<bool> anyExist({String? connection}) =>
-      Model.anyExist<User>(connection: connection);
+      Model.anyExist<$User>(connection: connection);
 
-  static Query<User> where(
+  static Query<$User> where(
     String column,
     String operator,
     dynamic value, {
     String? connection,
-  }) => Model.where<User>(column, operator, value, connection: connection);
+  }) => Model.where<$User>(column, operator, value, connection: connection);
 
-  static Query<User> whereIn(
+  static Query<$User> whereIn(
     String column,
     List<dynamic> values, {
     String? connection,
-  }) => Model.whereIn<User>(column, values, connection: connection);
+  }) => Model.whereIn<$User>(column, values, connection: connection);
 
-  static Query<User> orderBy(
+  static Query<$User> orderBy(
     String column, {
     String direction = "asc",
     String? connection,
-  }) =>
-      Model.orderBy<User>(column, direction: direction, connection: connection);
+  }) => Model.orderBy<$User>(
+    column,
+    direction: direction,
+    connection: connection,
+  );
 
-  static Query<User> limit(int count, {String? connection}) =>
-      Model.limit<User>(count, connection: connection);
+  static Query<$User> limit(int count, {String? connection}) =>
+      Model.limit<$User>(count, connection: connection);
+
+  static Repository<$User> repo([String? connection]) =>
+      Model.repository<$User>(connection: connection);
 }
 
 class UserModelFactory {
   const UserModelFactory._();
 
-  static ModelDefinition<User> get definition => _$UserModelDefinition;
+  static ModelDefinition<$User> get definition => _$UserDefinition;
 
-  static ModelCodec<User> get codec => definition.codec;
+  static ModelCodec<$User> get codec => definition.codec;
 
   static User fromMap(
     Map<String, Object?> data, {
@@ -168,7 +174,7 @@ class UserModelFactory {
   static Map<String, Object?> toMap(
     User model, {
     ValueCodecRegistry? registry,
-  }) => definition.toMap(model, registry: registry);
+  }) => definition.toMap(model.toTracked(), registry: registry);
 
   static void registerWith(ModelRegistry registry) =>
       registry.register(definition);
@@ -184,11 +190,10 @@ class UserModelFactory {
   );
 }
 
-class _$UserModelCodec extends ModelCodec<User> {
-  const _$UserModelCodec();
-
+class _$UserCodec extends ModelCodec<$User> {
+  const _$UserCodec();
   @override
-  Map<String, Object?> encode(User model, ValueCodecRegistry registry) {
+  Map<String, Object?> encode($User model, ValueCodecRegistry registry) {
     return <String, Object?>{
       'id': registry.encodeField(_$UserIdField, model.id),
       'email': registry.encodeField(_$UserEmailField, model.email),
@@ -200,7 +205,7 @@ class _$UserModelCodec extends ModelCodec<User> {
   }
 
   @override
-  User decode(Map<String, Object?> data, ValueCodecRegistry registry) {
+  $User decode(Map<String, Object?> data, ValueCodecRegistry registry) {
     final int? userIdValue = registry.decodeField<int?>(
       _$UserIdField,
       data['id'],
@@ -222,7 +227,7 @@ class _$UserModelCodec extends ModelCodec<User> {
       _$UserUpdatedAtField,
       data['updated_at'],
     );
-    final model = _$UserModel(
+    final model = $User(
       id: userIdValue,
       email: userEmailValue,
       name: userNameValue,
@@ -242,8 +247,119 @@ class _$UserModelCodec extends ModelCodec<User> {
   }
 }
 
-class _$UserModel extends User {
-  _$UserModel({
+/// Insert DTO for [User].
+///
+/// Auto-increment/DB-generated fields are omitted by default.
+class UserInsertDto implements InsertDto<$User> {
+  const UserInsertDto({
+    this.id,
+    this.email,
+    this.name,
+    this.active,
+    this.createdAt,
+    this.updatedAt,
+  });
+  final int? id;
+  final String? email;
+  final String? name;
+  final bool? active;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+
+  @override
+  Map<String, Object?> toMap() {
+    return <String, Object?>{
+      if (id != null) 'id': id,
+      if (email != null) 'email': email,
+      if (name != null) 'name': name,
+      if (active != null) 'active': active,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+    };
+  }
+}
+
+/// Update DTO for [User].
+///
+/// All fields are optional; only provided entries are used in SET clauses.
+class UserUpdateDto implements UpdateDto<$User> {
+  const UserUpdateDto({
+    this.id,
+    this.email,
+    this.name,
+    this.active,
+    this.createdAt,
+    this.updatedAt,
+  });
+  final int? id;
+  final String? email;
+  final String? name;
+  final bool? active;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+
+  @override
+  Map<String, Object?> toMap() {
+    return <String, Object?>{
+      if (id != null) 'id': id,
+      if (email != null) 'email': email,
+      if (name != null) 'name': name,
+      if (active != null) 'active': active,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+    };
+  }
+}
+
+/// Partial projection for [User].
+///
+/// All fields are nullable; intended for subset SELECTs.
+class UserPartial implements PartialEntity<$User> {
+  const UserPartial({
+    this.id,
+    this.email,
+    this.name,
+    this.active,
+    this.createdAt,
+    this.updatedAt,
+  });
+  final int? id;
+  final String? email;
+  final String? name;
+  final bool? active;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+
+  @override
+  $User toEntity() {
+    // Basic required-field check: non-nullable fields must be present.
+    final String? emailValue = email;
+    if (emailValue == null) throw StateError('Missing required field: email');
+    final String? nameValue = name;
+    if (nameValue == null) throw StateError('Missing required field: name');
+    final bool? activeValue = active;
+    if (activeValue == null) throw StateError('Missing required field: active');
+    return $User(
+      id: id,
+      email: emailValue,
+      name: nameValue,
+      active: activeValue,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
+    );
+  }
+}
+
+/// Generated tracked model class for [User].
+///
+/// This class extends the user-defined [User] model and adds
+/// attribute tracking, change detection, and relationship management.
+/// Instances of this class are returned by queries and repositories.
+///
+/// **Do not instantiate this class directly.** Use queries, repositories,
+/// or model factories to create tracked model instances.
+class $User extends User with ModelAttributes implements OrmEntity {
+  $User({
     int? id,
     required String email,
     required String name,
@@ -266,6 +382,18 @@ class _$UserModel extends User {
       'created_at': createdAt,
       'updated_at': updatedAt,
     });
+  }
+
+  /// Creates a tracked model instance from a user-defined model instance.
+  factory $User.fromModel(User model) {
+    return $User(
+      id: model.id,
+      email: model.email,
+      name: model.name,
+      active: model.active,
+      createdAt: model.createdAt,
+      updatedAt: model.updatedAt,
+    );
   }
 
   @override
@@ -302,6 +430,20 @@ class _$UserModel extends User {
 
   void _attachOrmRuntimeMetadata(Map<String, Object?> values) {
     replaceAttributes(values);
-    attachModelDefinition(_$UserModelDefinition);
+    attachModelDefinition(_$UserDefinition);
+  }
+}
+
+extension UserOrmExtension on User {
+  /// The Type of the generated ORM-managed model class.
+  /// Use this when you need to specify the tracked model type explicitly,
+  /// for example in generic type parameters.
+  static Type get trackedType => $User;
+
+  /// Converts this immutable model to a tracked ORM-managed model.
+  /// The tracked model supports attribute tracking, change detection,
+  /// and persistence operations like save() and touch().
+  $User toTracked() {
+    return $User.fromModel(this);
   }
 }

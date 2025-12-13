@@ -151,9 +151,7 @@ class _$NoFactoryCodec extends ModelCodec<$NoFactory> {
       'id': registry.encodeField(_$NoFactoryIdField, model.id),
       'deleted_at': registry.encodeField(
         _$NoFactoryDeletedAtField,
-        (model is ModelAttributes
-            ? model.getAttribute<DateTime?>('deleted_at')
-            : null),
+        (model.getAttribute<DateTime?>('deleted_at')),
       ),
     };
   }
@@ -177,6 +175,45 @@ class _$NoFactoryCodec extends ModelCodec<$NoFactory> {
   }
 }
 
+/// Insert DTO for [NoFactory].
+///
+/// Auto-increment/DB-generated fields are omitted by default.
+class NoFactoryInsertDto implements InsertDto<$NoFactory> {
+  const NoFactoryInsertDto();
+
+  @override
+  Map<String, Object?> toMap() {
+    return <String, Object?>{};
+  }
+}
+
+/// Update DTO for [NoFactory].
+///
+/// All fields are optional; only provided entries are used in SET clauses.
+class NoFactoryUpdateDto implements UpdateDto<$NoFactory> {
+  const NoFactoryUpdateDto({this.id});
+  final int? id;
+
+  @override
+  Map<String, Object?> toMap() {
+    return <String, Object?>{if (id != null) 'id': id};
+  }
+}
+
+/// Partial projection for [NoFactory].
+///
+/// All fields are nullable; intended for subset SELECTs.
+class NoFactoryPartial implements PartialEntity<$NoFactory> {
+  const NoFactoryPartial({this.id});
+  final int? id;
+
+  @override
+  $NoFactory toEntity() {
+    // Basic required-field check: non-nullable fields must be present.
+    return $NoFactory(id: id);
+  }
+}
+
 /// Generated tracked model class for [NoFactory].
 ///
 /// This class extends the user-defined [NoFactory] model and adds
@@ -185,7 +222,9 @@ class _$NoFactoryCodec extends ModelCodec<$NoFactory> {
 ///
 /// **Do not instantiate this class directly.** Use queries, repositories,
 /// or model factories to create tracked model instances.
-class $NoFactory extends NoFactory with ModelAttributes, SoftDeletesImpl {
+class $NoFactory extends NoFactory
+    with ModelAttributes, SoftDeletesImpl
+    implements OrmEntity {
   $NoFactory({int? id = 0}) : super.new(id: id) {
     _attachOrmRuntimeMetadata({'id': id});
   }

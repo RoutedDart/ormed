@@ -197,6 +197,64 @@ class _$UniqueUserCodec extends ModelCodec<$UniqueUser> {
   }
 }
 
+/// Insert DTO for [UniqueUser].
+///
+/// Auto-increment/DB-generated fields are omitted by default.
+class UniqueUserInsertDto implements InsertDto<$UniqueUser> {
+  const UniqueUserInsertDto({this.email, this.active});
+  final String? email;
+  final bool? active;
+
+  @override
+  Map<String, Object?> toMap() {
+    return <String, Object?>{
+      if (email != null) 'email': email,
+      if (active != null) 'active': active,
+    };
+  }
+}
+
+/// Update DTO for [UniqueUser].
+///
+/// All fields are optional; only provided entries are used in SET clauses.
+class UniqueUserUpdateDto implements UpdateDto<$UniqueUser> {
+  const UniqueUserUpdateDto({this.id, this.email, this.active});
+  final int? id;
+  final String? email;
+  final bool? active;
+
+  @override
+  Map<String, Object?> toMap() {
+    return <String, Object?>{
+      if (id != null) 'id': id,
+      if (email != null) 'email': email,
+      if (active != null) 'active': active,
+    };
+  }
+}
+
+/// Partial projection for [UniqueUser].
+///
+/// All fields are nullable; intended for subset SELECTs.
+class UniqueUserPartial implements PartialEntity<$UniqueUser> {
+  const UniqueUserPartial({this.id, this.email, this.active});
+  final int? id;
+  final String? email;
+  final bool? active;
+
+  @override
+  $UniqueUser toEntity() {
+    // Basic required-field check: non-nullable fields must be present.
+    final int? idValue = id;
+    if (idValue == null) throw StateError('Missing required field: id');
+    final String? emailValue = email;
+    if (emailValue == null) throw StateError('Missing required field: email');
+    final bool? activeValue = active;
+    if (activeValue == null) throw StateError('Missing required field: active');
+    return $UniqueUser(id: idValue, email: emailValue, active: activeValue);
+  }
+}
+
 /// Generated tracked model class for [UniqueUser].
 ///
 /// This class extends the user-defined [UniqueUser] model and adds
@@ -205,7 +263,7 @@ class _$UniqueUserCodec extends ModelCodec<$UniqueUser> {
 ///
 /// **Do not instantiate this class directly.** Use queries, repositories,
 /// or model factories to create tracked model instances.
-class $UniqueUser extends UniqueUser with ModelAttributes {
+class $UniqueUser extends UniqueUser with ModelAttributes implements OrmEntity {
   $UniqueUser({int id = 0, required String email, required bool active})
     : super.new(id: id, email: email, active: active) {
     _attachOrmRuntimeMetadata({'id': id, 'email': email, 'active': active});

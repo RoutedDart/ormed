@@ -1,7 +1,7 @@
 part of '../query_builder.dart';
 
 /// Extension providing utility methods for query inspection and validation.
-extension UtilityExtension<T> on Query<T> {
+extension UtilityExtension<T extends OrmEntity> on Query<T> {
   /// Returns the SQL preview without executing the query.
   ///
   /// This method is useful for debugging and understanding the generated SQL.

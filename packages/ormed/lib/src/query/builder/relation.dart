@@ -1,7 +1,7 @@
 part of '../query_builder.dart';
 
 /// Extension providing relation eager loading and aggregate methods.
-extension RelationExtension<T> on Query<T> {
+extension RelationExtension<T extends OrmEntity> on Query<T> {
   /// Requests eager loading for the relation named [name].
   ///
   /// Eager loading fetches related models in the same query or a minimal number
@@ -23,7 +23,10 @@ extension RelationExtension<T> on Query<T> {
   ///   .withRelation('posts', (query) => query.where('isPublished', true))
   ///   .get();
   /// ```
-  Query<T> withRelation(String name, [PredicateCallback<dynamic>? constraint]) {
+  Query<T> withRelation(
+    String name, [
+    PredicateCallback<OrmEntity>? constraint,
+  ]) {
     final relation = definition.relations.firstWhereOrNull(
       (r) => r.name == name,
     );
@@ -72,7 +75,7 @@ extension RelationExtension<T> on Query<T> {
   Query<T> withCount(
     String relation, {
     String? alias,
-    PredicateCallback<dynamic>? constraint,
+    PredicateCallback<OrmEntity>? constraint,
     bool distinct = false,
   }) {
     final aggregate = _buildRelationAggregate(
@@ -103,7 +106,7 @@ extension RelationExtension<T> on Query<T> {
   Query<T> withExists(
     String relation, {
     String? alias,
-    PredicateCallback<dynamic>? constraint,
+    PredicateCallback<OrmEntity>? constraint,
   }) {
     final aggregate = _buildRelationAggregate(
       relation,
@@ -133,7 +136,7 @@ extension RelationExtension<T> on Query<T> {
     String relation,
     String column, {
     String? alias,
-    PredicateCallback<dynamic>? constraint,
+    PredicateCallback<OrmEntity>? constraint,
   }) {
     final aggregate = _buildRelationAggregate(
       relation,
@@ -164,7 +167,7 @@ extension RelationExtension<T> on Query<T> {
     String relation,
     String column, {
     String? alias,
-    PredicateCallback<dynamic>? constraint,
+    PredicateCallback<OrmEntity>? constraint,
   }) {
     final aggregate = _buildRelationAggregate(
       relation,
@@ -195,7 +198,7 @@ extension RelationExtension<T> on Query<T> {
     String relation,
     String column, {
     String? alias,
-    PredicateCallback<dynamic>? constraint,
+    PredicateCallback<OrmEntity>? constraint,
   }) {
     final aggregate = _buildRelationAggregate(
       relation,
@@ -226,7 +229,7 @@ extension RelationExtension<T> on Query<T> {
     String relation,
     String column, {
     String? alias,
-    PredicateCallback<dynamic>? constraint,
+    PredicateCallback<OrmEntity>? constraint,
   }) {
     final aggregate = _buildRelationAggregate(
       relation,
@@ -260,7 +263,7 @@ extension RelationExtension<T> on Query<T> {
     String relation, {
     bool descending = false,
     RelationAggregateType aggregate = RelationAggregateType.count,
-    PredicateCallback<dynamic>? constraint,
+    PredicateCallback<OrmEntity>? constraint,
     bool distinct = false,
   }) {
     if (aggregate != RelationAggregateType.count && distinct) {

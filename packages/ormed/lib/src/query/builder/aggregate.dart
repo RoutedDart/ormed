@@ -1,7 +1,7 @@
 part of '../query_builder.dart';
 
 /// Extension providing aggregate functions for query results.
-extension AggregateExtension<T> on Query<T> {
+extension AggregateExtension<T extends OrmEntity> on Query<T> {
   /// Registers an aggregate projection, e.g. `count('*')`.
   ///
   /// This method allows you to include aggregate functions in the `SELECT` clause.

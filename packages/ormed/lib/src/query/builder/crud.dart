@@ -1,6 +1,6 @@
 part of '../query_builder.dart';
 
-extension CrudExtension<T> on Query<T> {
+extension CrudExtension<T extends OrmEntity> on Query<T> {
   // ========================================================================
   // CRUD Operations
   // ========================================================================
@@ -361,10 +361,10 @@ extension CrudExtension<T> on Query<T> {
     if (values.isEmpty) {
       return 0;
     }
-    
+
     // Add automatic timestamp management for updated_at
     final valuesWithTimestamp = _addUpdateTimestamp(values);
-    
+
     final payload = _normalizeUpdateValues(valuesWithTimestamp);
     if (payload.isEmpty) {
       return 0;
@@ -377,7 +377,7 @@ extension CrudExtension<T> on Query<T> {
     final result = await context.runMutation(mutation);
     return result.affectedRows;
   }
-  
+
   /// Adds updated_at timestamp to update values if the model has a timestamp field.
   /// Only adds if not already present in values and field exists with snake_case name.
   /// Returns the raw value (DateTime or Carbon) based on field type - not encoded since _normalizeUpdateValues will handle encoding.
@@ -387,17 +387,19 @@ extension CrudExtension<T> on Query<T> {
       final updatedAtField = definition.fields.firstWhere(
         (f) => f.columnName == 'updated_at',
       );
-      
+
       final columnName = updatedAtField.columnName;
-      
+
       // Only set if not already provided by user
       if (!values.containsKey(columnName)) {
         // Use Carbon for Carbon/CarbonInterface fields, DateTime for DateTime fields
         final now = Carbon.now();
         final fieldType = updatedAtField.dartType;
-        
-        if (fieldType == 'Carbon' || fieldType == 'Carbon?' ||
-            fieldType == 'CarbonInterface' || fieldType == 'CarbonInterface?') {
+
+        if (fieldType == 'Carbon' ||
+            fieldType == 'Carbon?' ||
+            fieldType == 'CarbonInterface' ||
+            fieldType == 'CarbonInterface?') {
           return {...values, columnName: now};
         } else {
           // Convert to DateTime for DateTime fields
@@ -407,7 +409,7 @@ extension CrudExtension<T> on Query<T> {
     } catch (_) {
       // Field doesn't exist, return values as-is
     }
-    
+
     return values;
   }
 
@@ -463,10 +465,14 @@ extension CrudExtension<T> on Query<T> {
         return 0;
       }
       final now = Carbon.now();
-      final rows = keys.map((key) => MutationRow(
-        values: {softDeleteField.columnName: now},
-        keys: key,
-      )).toList();
+      final rows = keys
+          .map(
+            (key) => MutationRow(
+              values: {softDeleteField.columnName: now},
+              keys: key,
+            ),
+          )
+          .toList();
       final mutation = MutationPlan.update(
         definition: definition,
         rows: rows,
@@ -553,15 +559,17 @@ extension CrudExtension<T> on Query<T> {
   }) async {
     if (records.isEmpty) return const [];
 
-    final models = records.map((attrs) {
-      final normalized = _normalizeAttributeKeys(attrs);
-      return definition.codec.decode(normalized, context.codecRegistry);
+    // Normalize attribute keys but don't decode to models
+    // Decoding to models would add default values like id: 0 for auto-increment fields
+    final normalizedRecords = records.map((attrs) {
+      return _normalizeAttributeKeys(attrs);
     }).toList();
 
     final repo = _buildRepository();
 
+    // Pass maps directly - the repository handles DTOs/Maps
     return await repo.upsertMany(
-      models,
+      normalizedRecords,
       uniqueBy: uniqueBy,
       updateColumns: updateColumns,
       returning: true,
@@ -585,31 +593,33 @@ extension CrudExtension<T> on Query<T> {
 
   /// Normalizes attribute keys to use column names.
   /// Accepts both Dart property names (camelCase) and database column names (snake_case).
-  Map<String, dynamic> _normalizeAttributeKeys(Map<String, dynamic> attributes) {
+  Map<String, dynamic> _normalizeAttributeKeys(
+    Map<String, dynamic> attributes,
+  ) {
     final normalized = <String, dynamic>{};
-    
+
     for (final entry in attributes.entries) {
       final key = entry.key;
       final value = entry.value;
-      
+
       // Try to find field by property name first
       final fieldByName = definition.fieldByName(key);
       if (fieldByName != null) {
         normalized[fieldByName.columnName] = value;
         continue;
       }
-      
+
       // Try to find by column name
       final fieldByColumn = definition.fieldByColumn(key);
       if (fieldByColumn != null) {
         normalized[key] = value;
         continue;
       }
-      
+
       // If no field found, keep the original key (might be a virtual field or attribute)
       normalized[key] = value;
     }
-    
+
     return normalized;
   }
 

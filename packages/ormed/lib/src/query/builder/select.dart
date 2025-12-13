@@ -1,7 +1,7 @@
 part of '../query_builder.dart';
 
 /// Extension providing SELECT clause and projection methods for query results.
-extension SelectExtension<T> on Query<T> {
+extension SelectExtension<T extends OrmEntity> on Query<T> {
   /// Only the specified [columns] will be retrieved from the database.
   ///
   /// Example:

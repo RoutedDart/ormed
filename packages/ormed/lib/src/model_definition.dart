@@ -1,3 +1,4 @@
+import 'dart:collection';
 import 'dart:mirrors';
 
 import 'package:collection/collection.dart';
@@ -5,7 +6,7 @@ import 'package:ormed/ormed.dart';
 
 
 /// Runtime description of a generated ORM model.
-class ModelDefinition<TModel> {
+class ModelDefinition<TModel extends OrmEntity> {
   const ModelDefinition({
     required this.modelName,
     required this.tableName,
@@ -70,11 +71,14 @@ class ModelDefinition<TModel> {
   }
 
   /// Encodes a model instance to a map using the model's codec.
-  /// 
+  ///
   /// Accepts both the user-defined model and the generated tracked model.
   /// Automatically converts user-defined models to tracked models if needed.
   /// For ad-hoc queries where TModel is Map<String, Object?>, returns the map directly.
-  Map<String, Object?> toMap(covariant dynamic model, {ValueCodecRegistry? registry}) {
+  Map<String, Object?> toMap(
+    covariant dynamic model, {
+    ValueCodecRegistry? registry,
+  }) {
     // Handle ad-hoc queries where model is already a Map
     if (model is Map<String, Object?>) {
       return Map<String, Object?>.from(model);
@@ -84,12 +88,12 @@ class ModelDefinition<TModel> {
     if (model is TModel && model is ModelAttributes) {
       return codec.encode(model, registry ?? ValueCodecRegistry.instance);
     }
-    
+
     // Not a tracked model - read fields using reflection
     final Map<String, Object?> data = {};
     final reg = registry ?? ValueCodecRegistry.instance;
     final instanceMirror = reflect(model);
-    
+
     for (final field in fields) {
       try {
         final fieldSymbol = Symbol(field.name);
@@ -99,7 +103,7 @@ class ModelDefinition<TModel> {
         // Field not accessible or doesn't exist, skip it
       }
     }
-    
+
     return data;
   }
 
@@ -110,14 +114,12 @@ class ModelDefinition<TModel> {
   TModel fromMap(Map<String, Object?> data, {ValueCodecRegistry? registry}) {
     final model = codec.decode(data, registry ?? ValueCodecRegistry.instance);
     if (model is ModelAttributes) {
-      model.attachModelDefinition(this);
+      final attributes = model as ModelAttributes;
+      attributes.attachModelDefinition(this as ModelDefinition<OrmEntity>);
       if (usesSoftDeletes) {
-        model.attachSoftDeleteColumn(metadata.softDeleteColumn);
+        attributes.attachSoftDeleteColumn(metadata.softDeleteColumn);
       }
-    }
-    // Sync original attributes for change tracking
-    if (model is ModelAttributes) {
-      (model as ModelAttributes).syncOriginal();
+      attributes.syncOriginal();
     }
     return model;
   }
@@ -370,6 +372,31 @@ class FieldDriverOverride {
 
 String _normalizeDriver(String driver) => driver.trim().toLowerCase();
 
+/// Map-backed row returned for ad-hoc table queries.
+class AdHocRow extends MapBase<String, Object?> implements OrmEntity {
+  AdHocRow([Map<String, Object?>? initial])
+    : _data = Map<String, Object?>.from(initial ?? const {});
+
+  final Map<String, Object?> _data;
+
+  @override
+  Object? operator [](Object? key) => _data[key];
+
+  @override
+  void operator []=(String key, Object? value) {
+    _data[key] = value;
+  }
+
+  @override
+  void clear() => _data.clear();
+
+  @override
+  Iterable<String> get keys => _data.keys;
+
+  @override
+  Object? remove(Object? key) => key is String ? _data.remove(key) : null;
+}
+
 /// Metadata for a relationship between two models.
 class RelationDefinition {
   const RelationDefinition({
@@ -430,7 +457,7 @@ abstract class ModelCodec<TModel> {
 /// A model definition for ad-hoc queries without a concrete model class.
 ///
 /// Used internally for table queries and raw SQL results.
-class AdHocModelDefinition extends ModelDefinition<Map<String, Object?>> {
+class AdHocModelDefinition extends ModelDefinition<AdHocRow> {
   AdHocModelDefinition({
     required super.tableName,
     super.schema,
@@ -531,20 +558,16 @@ class AdHocColumn {
   final bool isPrimaryKey;
 }
 
-class _MapModelCodec extends ModelCodec<Map<String, Object?>> {
+class _MapModelCodec extends ModelCodec<AdHocRow> {
   const _MapModelCodec();
 
   @override
-  Map<String, Object?> encode(
-    Map<String, Object?> model,
-    ValueCodecRegistry registry,
-  ) => Map<String, Object?>.from(model);
+  Map<String, Object?> encode(AdHocRow model, ValueCodecRegistry registry) =>
+      Map<String, Object?>.from(model);
 
   @override
-  Map<String, Object?> decode(
-    Map<String, Object?> data,
-    ValueCodecRegistry registry,
-  ) => Map<String, Object?>.from(data);
+  AdHocRow decode(Map<String, Object?> data, ValueCodecRegistry registry) =>
+      AdHocRow(data);
 }
 
 /// A wrapper definition that uses an underlying registered model definition
@@ -552,24 +575,22 @@ class _MapModelCodec extends ModelCodec<Map<String, Object?>> {
 ///
 /// This allows `table("tableName")` to leverage the field metadata from
 /// registered models while still returning untyped maps.
-class TableQueryDefinition extends ModelDefinition<Map<String, Object?>> {
-  TableQueryDefinition({
-    required this.underlying,
-    String? schema,
-    this.alias,
-  }) : super(
-         modelName: 'TableQuery<${underlying.tableName}>',
-         tableName: underlying.tableName,
-         schema: schema ?? underlying.schema,
-         fields: underlying.fields,
-         relations: underlying.relations,
-         softDeleteColumn: underlying.softDeleteColumn,
-         metadata: underlying.metadata,
-         codec: _TableQueryCodec(underlying),
-       );
+class TableQueryDefinition<T extends OrmEntity>
+    extends ModelDefinition<AdHocRow> {
+  TableQueryDefinition({required this.underlying, String? schema, this.alias})
+    : super(
+        modelName: 'TableQuery<${underlying.tableName}>',
+        tableName: underlying.tableName,
+        schema: schema ?? underlying.schema,
+        fields: underlying.fields,
+        relations: underlying.relations,
+        softDeleteColumn: underlying.softDeleteColumn,
+        metadata: underlying.metadata,
+        codec: _TableQueryCodec<T>(underlying),
+      );
 
   /// The underlying registered model definition.
-  final ModelDefinition<dynamic> underlying;
+  final ModelDefinition<T> underlying;
 
   /// Optional table alias.
   final String? alias;
@@ -580,16 +601,13 @@ class TableQueryDefinition extends ModelDefinition<Map<String, Object?>> {
 
 /// Codec for _TableQueryDefinition that encodes/decodes using the underlying
 /// model's codec but returns Map<String, Object?>.
-class _TableQueryCodec extends ModelCodec<Map<String, Object?>> {
+class _TableQueryCodec<T extends OrmEntity> extends ModelCodec<AdHocRow> {
   const _TableQueryCodec(this.underlying);
 
-  final ModelDefinition<dynamic> underlying;
+  final ModelDefinition<T> underlying;
 
   @override
-  Map<String, Object?> encode(
-    Map<String, Object?> model,
-    ValueCodecRegistry registry,
-  ) {
+  Map<String, Object?> encode(AdHocRow model, ValueCodecRegistry registry) {
     // Encode using field definitions for proper value transformation
     final result = <String, Object?>{};
     for (final field in underlying.fields) {
@@ -605,10 +623,7 @@ class _TableQueryCodec extends ModelCodec<Map<String, Object?>> {
   }
 
   @override
-  Map<String, Object?> decode(
-    Map<String, Object?> data,
-    ValueCodecRegistry registry,
-  ) {
+  AdHocRow decode(Map<String, Object?> data, ValueCodecRegistry registry) {
     // Decode using field definitions for proper value transformation
     final result = <String, Object?>{};
     for (final field in underlying.fields) {
@@ -623,7 +638,6 @@ class _TableQueryCodec extends ModelCodec<Map<String, Object?>> {
         result[entry.key] = entry.value;
       }
     }
-    return result;
+    return AdHocRow(result);
   }
 }
-

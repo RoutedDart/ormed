@@ -184,9 +184,7 @@ class _$CustomSoftDeleteCodec extends ModelCodec<$CustomSoftDelete> {
       'title': registry.encodeField(_$CustomSoftDeleteTitleField, model.title),
       'removed_on': registry.encodeField(
         _$CustomSoftDeleteDeletedAtField,
-        (model is ModelAttributes
-            ? model.getAttribute<DateTime?>('removed_on')
-            : null),
+        (model.getAttribute<DateTime?>('removed_on')),
       ),
     };
   }
@@ -223,6 +221,59 @@ class _$CustomSoftDeleteCodec extends ModelCodec<$CustomSoftDelete> {
   }
 }
 
+/// Insert DTO for [CustomSoftDelete].
+///
+/// Auto-increment/DB-generated fields are omitted by default.
+class CustomSoftDeleteInsertDto implements InsertDto<$CustomSoftDelete> {
+  const CustomSoftDeleteInsertDto({this.id, this.title});
+  final int? id;
+  final String? title;
+
+  @override
+  Map<String, Object?> toMap() {
+    return <String, Object?>{
+      if (id != null) 'id': id,
+      if (title != null) 'title': title,
+    };
+  }
+}
+
+/// Update DTO for [CustomSoftDelete].
+///
+/// All fields are optional; only provided entries are used in SET clauses.
+class CustomSoftDeleteUpdateDto implements UpdateDto<$CustomSoftDelete> {
+  const CustomSoftDeleteUpdateDto({this.id, this.title});
+  final int? id;
+  final String? title;
+
+  @override
+  Map<String, Object?> toMap() {
+    return <String, Object?>{
+      if (id != null) 'id': id,
+      if (title != null) 'title': title,
+    };
+  }
+}
+
+/// Partial projection for [CustomSoftDelete].
+///
+/// All fields are nullable; intended for subset SELECTs.
+class CustomSoftDeletePartial implements PartialEntity<$CustomSoftDelete> {
+  const CustomSoftDeletePartial({this.id, this.title});
+  final int? id;
+  final String? title;
+
+  @override
+  $CustomSoftDelete toEntity() {
+    // Basic required-field check: non-nullable fields must be present.
+    final int? idValue = id;
+    if (idValue == null) throw StateError('Missing required field: id');
+    final String? titleValue = title;
+    if (titleValue == null) throw StateError('Missing required field: title');
+    return $CustomSoftDelete(id: idValue, title: titleValue);
+  }
+}
+
 /// Generated tracked model class for [CustomSoftDelete].
 ///
 /// This class extends the user-defined [CustomSoftDelete] model and adds
@@ -232,7 +283,8 @@ class _$CustomSoftDeleteCodec extends ModelCodec<$CustomSoftDelete> {
 /// **Do not instantiate this class directly.** Use queries, repositories,
 /// or model factories to create tracked model instances.
 class $CustomSoftDelete extends CustomSoftDelete
-    with ModelAttributes, SoftDeletesImpl {
+    with ModelAttributes, SoftDeletesImpl
+    implements OrmEntity {
   $CustomSoftDelete({required int id, required String title})
     : super.new(id: id, title: title) {
     _attachOrmRuntimeMetadata({'id': id, 'title': title});

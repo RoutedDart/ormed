@@ -5,7 +5,7 @@ import '../driver_override_codecs.dart';
 part 'driver_override.orm.dart';
 
 @OrmModel(table: 'driver_overrides')
-class DriverOverrideModel {
+class DriverOverrideModel extends Model<DriverOverrideModel> {
   const DriverOverrideModel({required this.id, required this.payload});
 
   @OrmField(isPrimaryKey: true)

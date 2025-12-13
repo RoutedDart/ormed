@@ -18,6 +18,7 @@ import 'dart:collection';
 
 import '../exceptions.dart';
 import '../model_definition.dart';
+import '../contracts.dart';
 import '../query/json_path.dart' as json_path;
 import '../value_codec.dart';
 import 'model_attribute_inspector.dart';
@@ -37,8 +38,8 @@ mixin ModelAttributes {
 
   static final Expando<Map<String, Object?>> _store =
       Expando<Map<String, Object?>>('_ormAttributes');
-  static final Expando<ModelDefinition<dynamic>> _definitions =
-      Expando<ModelDefinition<dynamic>>('_ormModelDefinition');
+  static final Expando<ModelDefinition<OrmEntity>> _definitions =
+      Expando<ModelDefinition<OrmEntity>>('_ormModelDefinition');
   static final Expando<String> _softDeleteColumns = Expando<String>(
     '_ormSoftDeleteColumn',
   );
@@ -105,12 +106,12 @@ mixin ModelAttributes {
   }
 
   /// Associates the generated model definition with this instance.
-  void attachModelDefinition(ModelDefinition<dynamic> definition) {
+  void attachModelDefinition(ModelDefinition<OrmEntity> definition) {
     _definitions[this] = definition;
   }
 
   /// Definition metadata attached to this model, when available.
-  ModelDefinition<dynamic>? get modelDefinition => _definitions[this];
+  ModelDefinition<OrmEntity>? get modelDefinition => _definitions[this];
 
   /// Stores the effective soft delete column for this instance.
   void attachSoftDeleteColumn(String column) {
@@ -191,7 +192,7 @@ mixin ModelAttributes {
   ModelAttributesMetadata get _metadata =>
       modelDefinition?.metadata ?? const ModelAttributesMetadata();
 
-  ModelDefinition<dynamic>? get _definition => modelDefinition;
+  ModelDefinition<OrmEntity>? get _definition => modelDefinition;
 
   /// Fills attributes from [payload], respecting fillable/guarded metadata.
   ///
@@ -268,7 +269,7 @@ mixin ModelAttributes {
     required String column,
     required Object? value,
     required ValueCodecRegistry registry,
-    required ModelDefinition<dynamic>? definition,
+    required ModelDefinition<OrmEntity>? definition,
     required AttributeInspector inspector,
   }) {
     final cast = inspector.castFor(column);
@@ -289,7 +290,7 @@ mixin ModelAttributes {
     required String column,
     required Object? value,
     required ValueCodecRegistry registry,
-    required ModelDefinition<dynamic>? definition,
+    required ModelDefinition<OrmEntity>? definition,
     required AttributeInspector inspector,
   }) {
     final cast = inspector.castFor(column);

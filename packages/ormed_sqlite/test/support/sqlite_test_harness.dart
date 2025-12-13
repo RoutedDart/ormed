@@ -24,7 +24,7 @@ class SqliteTestHarness {
   final bool logging;
 
   /// Returns a fresh in-memory adapter for isolated databases.
-  SqliteDriverAdapter createTestAdapter(String _testDbName) {
+  SqliteDriverAdapter createTestAdapter(String testDbName) {
     // In-memory adapter is sufficient; database name is irrelevant for sqlite.
     return SqliteDriverAdapter.inMemory();
   }

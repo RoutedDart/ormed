@@ -3,7 +3,7 @@ import 'package:ormed/ormed.dart';
 part 'cli_user.orm.dart';
 
 @OrmModel(table: 'users')
-class CliUser {
+class CliUser extends Model<CliUser> {
   const CliUser({required this.id, required this.email, required this.active});
 
   @OrmField(isPrimaryKey: true)

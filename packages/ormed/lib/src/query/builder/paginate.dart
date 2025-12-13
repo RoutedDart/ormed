@@ -1,7 +1,7 @@
 part of '../query_builder.dart';
 
 /// Extension providing pagination and limit/offset methods for query results.
-extension PaginateExtension<T> on Query<T> {
+extension PaginateExtension<T extends OrmEntity> on Query<T> {
   /// Limits the number of rows returned.
   ///
   /// Example:

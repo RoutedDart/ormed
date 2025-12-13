@@ -497,7 +497,7 @@ class MySqlDriverAdapter
 
     final rows = await queryRaw(sql, [table, effectiveSchema]);
     final pkColumns = await _primaryKeyColumns(table, schema: schema);
-    String? _field(Map<String, Object?> row, String key) {
+    String? field(Map<String, Object?> row, String key) {
       final value =
           row[key] ??
           row[key.toLowerCase()] ??
@@ -513,15 +513,15 @@ class MySqlDriverAdapter
 
     return rows
         .map((row) {
-          final columnName = _field(row, 'column_name');
+          final columnName = field(row, 'column_name');
           if (columnName == null) return null;
-          final tableSchema = _field(row, 'table_schema');
-          final columnType = _field(row, 'column_type');
-          final dataType = _field(row, 'data_type');
-          final defaultValue = _field(row, 'column_default');
-          final extra = _field(row, 'extra');
-          final nullable = _field(row, 'is_nullable');
-          final comment = _field(row, 'column_comment');
+          final tableSchema = field(row, 'table_schema');
+          final columnType = field(row, 'column_type');
+          final dataType = field(row, 'data_type');
+          final defaultValue = field(row, 'column_default');
+          final extra = field(row, 'extra');
+          final nullable = field(row, 'is_nullable');
+          final comment = field(row, 'column_comment');
 
           return SchemaColumn(
             name: columnName,
@@ -861,6 +861,110 @@ class MySqlDriverAdapter
   }
 
   Future<MutationResult> _runInsert(MutationPlan plan) async {
+    if (plan.rows.isEmpty) {
+      return const MutationResult(affectedRows: 0);
+    }
+
+    final pkField = plan.definition.primaryKeyField;
+    final pkColumn = pkField?.columnName;
+
+    // Check if we have mixed rows (some with PK, some without) for auto-increment PKs
+    if (pkColumn != null && pkField!.autoIncrement) {
+      final rowsWithPk = <MutationRow>[];
+      final rowsWithoutPk = <MutationRow>[];
+
+      for (final row in plan.rows) {
+        final pkValue = row.values[pkColumn];
+        if (pkValue != null && pkValue != 0) {
+          rowsWithPk.add(row);
+        } else {
+          // Remove the PK from values for rows without it
+          final newValues = Map<String, Object?>.from(row.values);
+          newValues.remove(pkColumn);
+          rowsWithoutPk.add(MutationRow(
+            values: newValues,
+            keys: row.keys,
+            jsonUpdates: row.jsonUpdates,
+          ));
+        }
+      }
+
+      // If we have both types, execute separately and combine results
+      if (rowsWithPk.isNotEmpty && rowsWithoutPk.isNotEmpty) {
+        // Execute rows with PK
+        final planWithPk = MutationPlan.insert(
+          definition: plan.definition,
+          rows: rowsWithPk.map((r) => r.values).toList(),
+          driverName: plan.driverName,
+          returning: plan.returning,
+          ignoreConflicts: plan.ignoreConflicts,
+        );
+        final shapeWithPk = _buildInsertShape(planWithPk);
+        final resultWithPk = await _executeMutation(shapeWithPk);
+
+        // Execute rows without PK
+        final planWithoutPk = MutationPlan.insert(
+          definition: plan.definition,
+          rows: rowsWithoutPk.map((r) => r.values).toList(),
+          driverName: plan.driverName,
+          returning: plan.returning,
+          ignoreConflicts: plan.ignoreConflicts,
+        );
+        final shapeWithoutPk = _buildInsertShape(planWithoutPk);
+        final resultWithoutPk = await _executeMutation(shapeWithoutPk);
+
+        // Combine results in original order
+        final combinedRows = <Map<String, Object?>>[];
+        int withPkIndex = 0;
+        int withoutPkIndex = 0;
+        for (final row in plan.rows) {
+          final pkValue = row.values[pkColumn];
+          if (pkValue != null && pkValue != 0) {
+            if (resultWithPk.returnedRows != null &&
+                withPkIndex < resultWithPk.returnedRows!.length) {
+              combinedRows.add(resultWithPk.returnedRows![withPkIndex]);
+            }
+            withPkIndex++;
+          } else {
+            if (resultWithoutPk.returnedRows != null &&
+                withoutPkIndex < resultWithoutPk.returnedRows!.length) {
+              combinedRows.add(resultWithoutPk.returnedRows![withoutPkIndex]);
+            }
+            withoutPkIndex++;
+          }
+        }
+
+        return MutationResult(
+          affectedRows: resultWithPk.affectedRows + resultWithoutPk.affectedRows,
+          returnedRows: plan.returning ? combinedRows : null,
+        );
+      }
+
+      // Only one type of rows
+      if (rowsWithPk.isNotEmpty) {
+        final newPlan = MutationPlan.insert(
+          definition: plan.definition,
+          rows: rowsWithPk.map((r) => r.values).toList(),
+          driverName: plan.driverName,
+          returning: plan.returning,
+          ignoreConflicts: plan.ignoreConflicts,
+        );
+        final shape = _buildInsertShape(newPlan);
+        return _executeMutation(shape);
+      } else {
+        final newPlan = MutationPlan.insert(
+          definition: plan.definition,
+          rows: rowsWithoutPk.map((r) => r.values).toList(),
+          driverName: plan.driverName,
+          returning: plan.returning,
+          ignoreConflicts: plan.ignoreConflicts,
+        );
+        final shape = _buildInsertShape(newPlan);
+        return _executeMutation(shape);
+      }
+    }
+
+    // Non-auto-increment PK or no PK - use standard shape
     final shape = _buildInsertShape(plan);
     return _executeMutation(shape);
   }
@@ -871,8 +975,47 @@ class MySqlDriverAdapter
   }
 
   Future<MutationResult> _runUpdate(MutationPlan plan) async {
+    if (plan.rows.isEmpty) {
+      return const MutationResult(affectedRows: 0);
+    }
+
     final shape = _buildUpdateShape(plan);
-    return _executeMutation(shape);
+    final result = await _executeMutation(shape);
+
+    // If returning is requested, re-query to get the updated rows
+    // MySQL doesn't support RETURNING for UPDATE, so we simulate it
+    if (plan.returning) {
+      final pkField = plan.definition.primaryKeyField;
+      if (pkField != null) {
+        final pkColumn = pkField.columnName;
+        final connection = await _connection();
+        final returnedRows = <Map<String, Object?>>[];
+
+        for (final row in plan.rows) {
+          // Get the PK value from the keys (WHERE clause)
+          final pkValue = row.keys[pkColumn];
+          if (pkValue != null) {
+            final fetchedRow = await _fetchRowByPrimaryKey(
+              plan.definition,
+              pkValue,
+              connection,
+            );
+            if (fetchedRow != null) {
+              returnedRows.add(fetchedRow);
+            }
+          }
+        }
+
+        if (returnedRows.isNotEmpty) {
+          return MutationResult(
+            affectedRows: result.affectedRows > 0 ? result.affectedRows : returnedRows.length,
+            returnedRows: returnedRows,
+          );
+        }
+      }
+    }
+
+    return result;
   }
 
   Future<MutationResult> _runDelete(MutationPlan plan) async {
@@ -889,6 +1032,117 @@ class MySqlDriverAdapter
     if (plan.rows.isEmpty) {
       return const MutationResult(affectedRows: 0);
     }
+
+    final pkField = plan.definition.primaryKeyField;
+    final pkColumn = pkField?.columnName;
+
+    // Check if we have mixed rows (some with PK, some without) for auto-increment PKs
+    if (pkColumn != null && pkField!.autoIncrement) {
+      final rowsWithPk = <MutationRow>[];
+      final rowsWithoutPk = <MutationRow>[];
+
+      for (final row in plan.rows) {
+        final pkValue = row.values[pkColumn];
+        if (pkValue != null && pkValue != 0) {
+          rowsWithPk.add(row);
+        } else {
+          // Remove the PK from values for rows without it
+          final newValues = Map<String, Object?>.from(row.values);
+          newValues.remove(pkColumn);
+          rowsWithoutPk.add(MutationRow(
+            values: newValues,
+            keys: row.keys,
+            jsonUpdates: row.jsonUpdates,
+          ));
+        }
+      }
+
+      // If we have both types, execute separately and combine results
+      if (rowsWithPk.isNotEmpty && rowsWithoutPk.isNotEmpty) {
+        // Execute rows with PK
+        final planWithPk = MutationPlan.upsert(
+          definition: plan.definition,
+          rows: rowsWithPk,
+          driverName: plan.driverName,
+          returning: plan.returning,
+          uniqueBy: plan.upsertUniqueColumns,
+          updateColumns: plan.upsertUpdateColumns,
+        );
+        final resultWithPk = _usesPrimaryKeyUpsert(planWithPk)
+            ? await _executeMutation(_buildUpsertShape(planWithPk))
+            : await _runManualUpsert(planWithPk);
+
+        // Execute rows without PK
+        final planWithoutPk = MutationPlan.upsert(
+          definition: plan.definition,
+          rows: rowsWithoutPk,
+          driverName: plan.driverName,
+          returning: plan.returning,
+          uniqueBy: plan.upsertUniqueColumns,
+          updateColumns: plan.upsertUpdateColumns,
+        );
+        final resultWithoutPk = _usesPrimaryKeyUpsert(planWithoutPk)
+            ? await _executeMutation(_buildUpsertShape(planWithoutPk))
+            : await _runManualUpsert(planWithoutPk);
+
+        // Combine results in original order
+        final combinedRows = <Map<String, Object?>>[];
+        int withPkIndex = 0;
+        int withoutPkIndex = 0;
+        for (final row in plan.rows) {
+          final pkValue = row.values[pkColumn];
+          if (pkValue != null && pkValue != 0) {
+            if (resultWithPk.returnedRows != null &&
+                withPkIndex < resultWithPk.returnedRows!.length) {
+              combinedRows.add(resultWithPk.returnedRows![withPkIndex]);
+            }
+            withPkIndex++;
+          } else {
+            if (resultWithoutPk.returnedRows != null &&
+                withoutPkIndex < resultWithoutPk.returnedRows!.length) {
+              combinedRows.add(resultWithoutPk.returnedRows![withoutPkIndex]);
+            }
+            withoutPkIndex++;
+          }
+        }
+
+        return MutationResult(
+          affectedRows: resultWithPk.affectedRows + resultWithoutPk.affectedRows,
+          returnedRows: plan.returning ? combinedRows : null,
+        );
+      }
+
+      // Only one type of rows
+      if (rowsWithPk.isNotEmpty) {
+        final newPlan = MutationPlan.upsert(
+          definition: plan.definition,
+          rows: rowsWithPk,
+          driverName: plan.driverName,
+          returning: plan.returning,
+          uniqueBy: plan.upsertUniqueColumns,
+          updateColumns: plan.upsertUpdateColumns,
+        );
+        if (_usesPrimaryKeyUpsert(newPlan)) {
+          return _executeMutation(_buildUpsertShape(newPlan));
+        }
+        return _runManualUpsert(newPlan);
+      } else {
+        final newPlan = MutationPlan.upsert(
+          definition: plan.definition,
+          rows: rowsWithoutPk,
+          driverName: plan.driverName,
+          returning: plan.returning,
+          uniqueBy: plan.upsertUniqueColumns,
+          updateColumns: plan.upsertUpdateColumns,
+        );
+        if (_usesPrimaryKeyUpsert(newPlan)) {
+          return _executeMutation(_buildUpsertShape(newPlan));
+        }
+        return _runManualUpsert(newPlan);
+      }
+    }
+
+    // Non-auto-increment PK or no PK - use standard path
     if (_usesPrimaryKeyUpsert(plan)) {
       final shape = _buildUpsertShape(plan);
       return _executeMutation(shape);
@@ -1313,15 +1567,24 @@ class MySqlDriverAdapter
         // If returning is requested, fetch the updated row
         if (plan.returning) {
           final pkValue = _extractPrimaryKeyFromRow(plan.definition, row);
+          Map<String, Object?>? fetchedRow;
           if (pkValue != null) {
-            final fetchedRow = await _fetchRowByPrimaryKey(
+            fetchedRow = await _fetchRowByPrimaryKey(
               plan.definition,
               pkValue,
               connection,
             );
-            if (fetchedRow != null) {
-              returnedRows.add(fetchedRow);
-            }
+          } else {
+            // Fall back to fetching by unique columns
+            fetchedRow = await _fetchRowByUniqueColumns(
+              plan.definition,
+              uniqueColumns,
+              selectors,
+              connection,
+            );
+          }
+          if (fetchedRow != null) {
+            returnedRows.add(fetchedRow);
           }
         }
         continue;
@@ -1332,20 +1595,29 @@ class MySqlDriverAdapter
       final result = await _executeStatement(insertSql, values);
       affected += result.affectedRows.toInt();
 
-      // If returning is requested and we have a PK, fetch the inserted row
+      // If returning is requested, fetch the inserted row
       if (plan.returning) {
         final pkValue = result.lastInsertID.toInt() > 0
             ? result.lastInsertID.toInt()
             : _extractPrimaryKeyFromRow(plan.definition, row);
+        Map<String, Object?>? fetchedRow;
         if (pkValue != null) {
-          final fetchedRow = await _fetchRowByPrimaryKey(
+          fetchedRow = await _fetchRowByPrimaryKey(
             plan.definition,
             pkValue,
             connection,
           );
-          if (fetchedRow != null) {
-            returnedRows.add(fetchedRow);
-          }
+        } else {
+          // Fall back to fetching by unique columns
+          fetchedRow = await _fetchRowByUniqueColumns(
+            plan.definition,
+            uniqueColumns,
+            selectors,
+            connection,
+          );
+        }
+        if (fetchedRow != null) {
+          returnedRows.add(fetchedRow);
         }
       }
     }
@@ -1359,12 +1631,66 @@ class MySqlDriverAdapter
 
   /// Extracts primary key value from a mutation row
   Object? _extractPrimaryKeyFromRow(
-    ModelDefinition<dynamic> definition,
+    ModelDefinition<OrmEntity> definition,
     MutationRow row,
   ) {
     try {
       final pkField = definition.fields.firstWhere((f) => f.isPrimaryKey);
       return row.values[pkField.columnName];
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Fetches a single row by unique columns
+  Future<Map<String, Object?>?> _fetchRowByUniqueColumns(
+    ModelDefinition<OrmEntity> definition,
+    List<String> uniqueColumns,
+    List<Object?> values,
+    MySQLConnection connection,
+  ) async {
+    try {
+      final table = _tableIdentifier(definition);
+      final whereClause = uniqueColumns
+          .map((c) => '${_quote(c)} = ?')
+          .join(' AND ');
+
+      final sql = 'SELECT * FROM $table WHERE $whereClause LIMIT 1';
+      final statement = _prepareStatement(sql, values);
+
+      final result = await connection.execute(
+        statement.sql,
+        statement.parameters.isEmpty ? null : statement.parameters,
+      );
+
+      if (result.rows.isEmpty) return null;
+
+      final row = result.rows.first;
+      final map = <String, Object?>{};
+
+      final colsList = result.cols.toList();
+      for (var i = 0; i < colsList.length; i++) {
+        final col = colsList[i];
+        final columnName = col.name;
+        final rawValue = row.colAt(i);
+
+        if (rawValue != null && rawValue is String && rawValue.isNotEmpty) {
+          final intValue = int.tryParse(rawValue);
+          if (intValue != null) {
+            map[columnName] = intValue;
+            continue;
+          }
+          final doubleValue = double.tryParse(rawValue);
+          if (doubleValue != null) {
+            map[columnName] = doubleValue;
+            continue;
+          }
+        }
+
+        map[columnName] = rawValue;
+      }
+
+      return map;
     } catch (_) {
       return null;
     }
@@ -1453,8 +1779,19 @@ class MySqlDriverAdapter
       }
       return normalized;
     }
+
     final uniques = uniqueColumns.toSet();
-    return insertColumns.where((c) => !uniques.contains(c)).toList();
+
+    // Also exclude the primary key from UPDATE columns when:
+    // 1. We're not conflicting on the PK (uniqueBy is on different columns)
+    // 2. This prevents overwriting an existing auto-increment ID with null/0
+    final pkColumn = plan.definition.primaryKeyField?.columnName;
+    final excludeFromUpdate = <String>{...uniques};
+    if (pkColumn != null && !uniques.contains(pkColumn)) {
+      excludeFromUpdate.add(pkColumn);
+    }
+
+    return insertColumns.where((c) => !excludeFromUpdate.contains(c)).toList();
   }
 
   /// Extracts the primary key value for an upserted row
@@ -1493,7 +1830,7 @@ class MySqlDriverAdapter
 
   /// Fetches a single row by primary key
   Future<Map<String, Object?>?> _fetchRowByPrimaryKey(
-    ModelDefinition<dynamic> definition,
+    ModelDefinition<OrmEntity> definition,
     Object pkValue,
     MySQLConnection connection,
   ) async {
@@ -1620,7 +1957,7 @@ class MySqlDriverAdapter
     );
   }
 
-  String _tableIdentifier(ModelDefinition<dynamic> definition) {
+  String _tableIdentifier(ModelDefinition<OrmEntity> definition) {
     final table = _quote(definition.tableName);
     final schema = definition.schema;
     if (schema == null || schema.isEmpty) {
@@ -1804,7 +2141,7 @@ class _MySqlMutationShape {
   final List<List<Object?>> parameterSets;
   final bool isInsert;
   final bool isUpsert;
-  final ModelDefinition<dynamic>? definition;
+  final ModelDefinition<OrmEntity>? definition;
   final bool returning;
   final MutationPlan? plan;
 

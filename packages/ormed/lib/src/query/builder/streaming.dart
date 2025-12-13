@@ -1,6 +1,6 @@
 part of '../query_builder.dart';
 
-extension StreamingExtension<T> on Query<T> {
+extension StreamingExtension<T extends OrmEntity> on Query<T> {
   /// Returns an async stream of query results.
   ///
   /// This method efficiently streams large result sets without loading

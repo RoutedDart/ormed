@@ -1,5 +1,5 @@
 import '../annotations.dart';
-import '../model.dart';
+import '../contracts.dart';
 import '../model_definition.dart';
 import '../model_mixins/model_relations.dart';
 import '../model_registry.dart';
@@ -34,8 +34,8 @@ class RelationLoader {
   /// final user = userRows.first.model;
   /// final posts = userRows.first.relationList<Post>('posts');
   /// ```
-  Future<void> attach<T>(
-    ModelDefinition<T> parentDefinition,
+  Future<void> attach<T extends OrmEntity>(
+    ModelDefinition<T > parentDefinition,
     List<QueryRow<T>> parents,
     List<RelationLoad> relations, {
     Map<String, RelationJoin> joinMap = const {},
@@ -78,7 +78,7 @@ class RelationLoader {
   }
 
   /// Syncs a loaded relation from QueryRow to the model's relation cache.
-  void _syncRelationsToModels<T>(List<QueryRow<T>> rows, String relationName) {
+  void _syncRelationsToModels<T extends OrmEntity>(List<QueryRow<T>> rows, String relationName) {
     for (final row in rows) {
       if (row.model is ModelRelations) {
         final model = row.model as ModelRelations;
@@ -89,7 +89,7 @@ class RelationLoader {
   }
 
   /// Loads a `has-one` or `has-many` relation.
-  Future<void> _loadHasMany<T>(
+  Future<void> _loadHasMany<T extends OrmEntity>(
     ModelDefinition<T> parentDefinition,
     List<QueryRow<T>> parents,
     RelationLoad load,
@@ -145,8 +145,8 @@ class RelationLoader {
   }
 
   /// Loads a `belongs-to` relation.
-  Future<void> _loadBelongsTo<T>(
-    ModelDefinition<T> parentDefinition,
+  Future<void> _loadBelongsTo<T extends OrmEntity>(
+    ModelDefinition<T > parentDefinition,
     List<QueryRow<T>> parents,
     RelationLoad load,
     RelationSegment segment,
@@ -194,7 +194,7 @@ class RelationLoader {
   }
 
   /// Loads a `many-to-many` relation.
-  Future<void> _loadManyToMany<T>(
+  Future<void> _loadManyToMany<T extends OrmEntity>(
     ModelDefinition<T> parentDefinition,
     List<QueryRow<T>> parents,
     RelationLoad load,
@@ -293,7 +293,7 @@ class RelationLoader {
   }
 
   /// Loads a `morph-one` or `morph-many` relation.
-  Future<void> _loadMorphMany<T>(
+  Future<void> _loadMorphMany<T extends OrmEntity>(
     ModelDefinition<T> parentDefinition,
     List<QueryRow<T>> parents,
     RelationLoad load, {
@@ -362,7 +362,7 @@ class RelationLoader {
     }
   }
 
-  RelationSegment _segmentForRelation<T>(
+  RelationSegment _segmentForRelation<T extends OrmEntity>(
     ModelDefinition<T> parentDefinition,
     RelationLoad load,
     Map<String, RelationJoin> joinMap,
@@ -374,7 +374,7 @@ class RelationLoader {
     return _fallbackSegment(parentDefinition, load.relation);
   }
 
-  RelationSegment _fallbackSegment<T>(
+  RelationSegment _fallbackSegment<T extends OrmEntity>(
     ModelDefinition<T> parent,
     RelationDefinition relation,
   ) {
@@ -383,6 +383,7 @@ class RelationLoader {
     if (parentKey == null) {
       throw StateError('Relation ${relation.name} requires a parent key.');
     }
+    final parentDef = parent as ModelDefinition<OrmEntity>;
     switch (relation.kind) {
       case RelationKind.hasOne:
       case RelationKind.hasMany:
@@ -390,7 +391,7 @@ class RelationLoader {
         return RelationSegment(
           name: relation.name,
           relation: relation,
-          parentDefinition: parent,
+          parentDefinition: parentDef,
           targetDefinition: target,
           parentKey: parentKey,
           childKey: childKey,
@@ -406,7 +407,7 @@ class RelationLoader {
         return RelationSegment(
           name: relation.name,
           relation: relation,
-          parentDefinition: parent,
+          parentDefinition: parentDef,
           targetDefinition: target,
           parentKey: foreignKey,
           childKey: ownerKey,
@@ -428,7 +429,7 @@ class RelationLoader {
         return RelationSegment(
           name: relation.name,
           relation: relation,
-          parentDefinition: parent,
+          parentDefinition: parentDef,
           targetDefinition: target,
           parentKey: parentKey,
           childKey: targetKey,
@@ -456,7 +457,7 @@ class RelationLoader {
         return RelationSegment(
           name: relation.name,
           relation: relation,
-          parentDefinition: parent,
+          parentDefinition: parentDef,
           targetDefinition: target,
           parentKey: parentKey,
           childKey: childKey,
@@ -467,11 +468,11 @@ class RelationLoader {
     }
   }
 
-  ModelDefinition<Map<String, Object?>> _pivotDefinition(
+  ModelDefinition<AdHocRow> _pivotDefinition(
     String table,
     String parentColumn,
     String targetColumn,
-  ) => ModelDefinition<Map<String, Object?>>(
+  ) => ModelDefinition<AdHocRow>(
     modelName: '_Pivot_$table',
     tableName: table,
     fields: [
@@ -497,18 +498,18 @@ class RelationLoader {
   );
 }
 
-class _PivotCodec extends ModelCodec<Map<String, Object?>> {
+class _PivotCodec extends ModelCodec<AdHocRow> {
   const _PivotCodec();
 
   @override
   Map<String, Object?> encode(
-    Map<String, Object?> model,
+    AdHocRow model,
     ValueCodecRegistry registry,
-  ) => model;
+  ) => Map<String, Object?>.from(model);
 
   @override
-  Map<String, Object?> decode(
+  AdHocRow decode(
     Map<String, Object?> data,
     ValueCodecRegistry registry,
-  ) => data;
+  ) => AdHocRow(data);
 }

@@ -34,45 +34,47 @@ void runUpsertOperationsTests() {
     });
 
     test('upsert() updates existing record by primary key', () async {
-      // Insert initial record
-      await dataSource.query<User>().create({
-        'id': 10001,
+      // Insert initial record and capture the actual ID
+      final created = await dataSource.query<User>().create({
         'email': 'original@example.com',
         'active': true,
       });
+      final createdId = created.id;
 
       // Upsert with same ID should update
       final updated = await dataSource.query<User>().upsert({
-        'id': 10001,
+        'id': createdId,
         'email': 'updated@example.com',
         'active': false,
       });
 
-      expect(updated.id, 10001);
+      expect(updated.id, createdId);
       expect(updated.email, 'updated@example.com');
       expect(updated.active, isFalse);
 
-      // Verify only one record exists
-      final all = await dataSource.query<User>().whereEquals('id', 10001).get();
+      // Verify only one record exists with this ID
+      final all =
+          await dataSource.query<User>().whereEquals('id', createdId).get();
       expect(all.length, 1);
     });
 
     test('upsert() with custom uniqueBy column', () async {
-      // Insert with specific email
-      await dataSource.query<User>().create({
-        'id': 10002,
+      // Insert with specific email and capture the ID
+      final created = await dataSource.query<User>().create({
         'email': 'unique@example.com',
         'active': false,
       });
 
-      // Upsert with same email should update (even with different ID)
+      // Upsert with same email should update (using email as uniqueBy)
       final updated = await dataSource.query<User>().upsert(
-        {'id': 10003, 'email': 'unique@example.com', 'active': true},
+        {'email': 'unique@example.com', 'active': true},
         uniqueBy: ['email'],
       );
 
       expect(updated.email, 'unique@example.com');
       expect(updated.active, isTrue);
+      // The ID should match the original record since we updated by email
+      expect(updated.id, created.id);
 
       // Verify only one record with this email exists
       final all = await dataSource
@@ -83,16 +85,16 @@ void runUpsertOperationsTests() {
     });
 
     test('upsert() with updateColumns restricts what is updated', () async {
-      // Insert initial record
-      await dataSource.query<User>().create({
-        'id': 10004,
+      // Insert initial record and capture the ID
+      final created = await dataSource.query<User>().create({
         'email': 'selective@example.com',
         'active': true,
       });
+      final createdId = created.id;
 
       // Upsert with selective update (only email)
       final updated = await dataSource.query<User>().upsert(
-        {'id': 10004, 'email': 'newemail@example.com', 'active': false},
+        {'id': createdId, 'email': 'newemail@example.com', 'active': false},
         updateColumns: ['email'],
       );
 
@@ -103,9 +105,9 @@ void runUpsertOperationsTests() {
 
     test('upsertMany() inserts multiple new records', () async {
       final users = await dataSource.query<User>().upsertMany([
-        {'id': 10010, 'email': 'batch1@example.com', 'active': true},
-        {'id': 10011, 'email': 'batch2@example.com', 'active': true},
-        {'id': 10012, 'email': 'batch3@example.com', 'active': false},
+        {'email': 'batch1@example.com', 'active': true},
+        {'email': 'batch2@example.com', 'active': true},
+        {'email': 'batch3@example.com', 'active': false},
       ]);
 
       expect(users.length, 3);
@@ -113,26 +115,26 @@ void runUpsertOperationsTests() {
       expect(users[1].email, 'batch2@example.com');
       expect(users[2].email, 'batch3@example.com');
 
-      // Verify all were inserted
-      final all = await dataSource.query<User>().whereIn('id', [
-        10010,
-        10011,
-        10012,
-      ]).get();
+      // Verify all were inserted using the returned IDs
+      final insertedIds = users.map((u) => u.id).toList();
+      final all =
+          await dataSource.query<User>().whereIn('id', insertedIds).get();
       expect(all.length, 3);
     });
 
     test('upsertMany() updates existing records', () async {
-      // Insert initial records
-      await dataSource.query<User>().createMany([
-        {'id': 10020, 'email': 'update1@example.com', 'active': true},
-        {'id': 10021, 'email': 'update2@example.com', 'active': true},
+      // Insert initial records and capture IDs
+      final created = await dataSource.query<User>().createMany([
+        {'email': 'update1@example.com', 'active': true},
+        {'email': 'update2@example.com', 'active': true},
       ]);
+      final id1 = created[0].id;
+      final id2 = created[1].id;
 
-      // Upsert with updates
+      // Upsert with updates using captured IDs
       final updated = await dataSource.query<User>().upsertMany([
-        {'id': 10020, 'email': 'updated1@example.com', 'active': false},
-        {'id': 10021, 'email': 'updated2@example.com', 'active': false},
+        {'id': id1, 'email': 'updated1@example.com', 'active': false},
+        {'id': id2, 'email': 'updated2@example.com', 'active': false},
       ]);
 
       expect(updated.length, 2);
@@ -143,9 +145,8 @@ void runUpsertOperationsTests() {
     });
 
     test('upsertMany() handles mix of inserts and updates', () async {
-      // Insert one record
-      await dataSource.query<User>().create({
-        'id': 10030,
+      // Insert one record and capture its ID
+      final existing = await dataSource.query<User>().create({
         'email': 'existing@example.com',
         'active': true,
       });
@@ -153,12 +154,12 @@ void runUpsertOperationsTests() {
       // Upsert with one update and two inserts
       final results = await dataSource.query<User>().upsertMany([
         {
-          'id': 10030,
+          'id': existing.id,
           'email': 'updated@example.com',
           'active': false,
         }, // Update
-        {'id': 10031, 'email': 'new1@example.com', 'active': true}, // Insert
-        {'id': 10032, 'email': 'new2@example.com', 'active': true}, // Insert
+        {'email': 'new1@example.com', 'active': true}, // Insert
+        {'email': 'new2@example.com', 'active': true}, // Insert
       ]);
 
       expect(results.length, 3);
@@ -168,22 +169,20 @@ void runUpsertOperationsTests() {
     });
 
     test('upsertMany() with custom uniqueBy', () async {
-      // Insert initial records
-      await dataSource.query<User>().createMany([
-        {'id': 10040, 'email': 'email1@example.com', 'active': true},
-        {'id': 10041, 'email': 'email2@example.com', 'active': true},
+      // Insert initial records and capture IDs
+      final created = await dataSource.query<User>().createMany([
+        {'email': 'email1@example.com', 'active': true},
+        {'email': 'email2@example.com', 'active': true},
       ]);
 
       // Upsert using email as unique key
       final results = await dataSource.query<User>().upsertMany(
         [
           {
-            'id': 10099,
             'email': 'email1@example.com',
             'active': false,
-          }, // Should update 10040
+          }, // Should update existing
           {
-            'id': 10098,
             'email': 'email3@example.com',
             'active': true,
           }, // Should insert new
@@ -199,6 +198,7 @@ void runUpsertOperationsTests() {
           .whereEquals('email', 'email1@example.com')
           .first();
       expect(user1?.active, isFalse);
+      expect(user1?.id, created[0].id); // Same ID as originally created
 
       // Verify email3 was inserted
       final user3 = await dataSource
@@ -209,17 +209,19 @@ void runUpsertOperationsTests() {
     });
 
     test('upsertMany() with updateColumns', () async {
-      // Insert initial records
-      await dataSource.query<User>().createMany([
-        {'id': 10050, 'email': 'col1@example.com', 'active': true},
-        {'id': 10051, 'email': 'col2@example.com', 'active': true},
+      // Insert initial records and capture IDs
+      final created = await dataSource.query<User>().createMany([
+        {'email': 'col1@example.com', 'active': true},
+        {'email': 'col2@example.com', 'active': true},
       ]);
+      final id1 = created[0].id;
+      final id2 = created[1].id;
 
       // Upsert with selective updates (only active)
       final results = await dataSource.query<User>().upsertMany(
         [
-          {'id': 10050, 'email': 'newemail1@example.com', 'active': false},
-          {'id': 10051, 'email': 'newemail2@example.com', 'active': false},
+          {'id': id1, 'email': 'newemail1@example.com', 'active': false},
+          {'id': id2, 'email': 'newemail2@example.com', 'active': false},
         ],
         updateColumns: ['active'],
       );
@@ -241,47 +243,48 @@ void runUpsertOperationsTests() {
     });
 
     test('upsert() throws on failure', () async {
-      // This should fail for models without primary key
-      // But User has primary key, so we test validation
-      expect(() => dataSource.query<User>().upsert({}), throwsA(isA<Error>()));
+      // This should fail when upserting with no data
+      // Expect either an Error or Exception depending on how the driver handles it
+      expect(
+        () => dataSource.query<User>().upsert({}),
+        throwsA(anyOf(isA<Error>(), isA<Exception>())),
+      );
     });
 
     test('upsert() works with Posts model', () async {
       // First create an author
       final author = await dataSource.query<Author>().create({
-        'id': 20000,
         'name': 'Test Author',
         'active': true,
       });
 
-      // Test upsert with Posts
+      // Test upsert with Posts - create new
       final post = await dataSource.query<Post>().upsert({
-        'id': 30000,
         'title': 'Test Post',
         'content': 'Content',
         'authorId': author.id,
         'publishedAt': DateTime.now(),
       });
 
-      expect(post.id, 30000);
       expect(post.title, 'Test Post');
+      final postId = post.id;
 
-      // Update the post
+      // Update the post using the returned ID
       final updated = await dataSource.query<Post>().upsert({
-        'id': 30000,
+        'id': postId,
         'title': 'Updated Post',
         'content': 'Updated Content',
         'authorId': author.id,
         'publishedAt': DateTime.now(),
       });
 
+      expect(updated.id, postId);
       expect(updated.title, 'Updated Post');
       expect(updated.content, 'Updated Content');
     });
 
     test('upsert() handles datetime fields correctly', () async {
       final author = await dataSource.query<Author>().create({
-        'id': 20001,
         'name': 'Author with DateTime',
         'active': true,
       });
@@ -289,7 +292,6 @@ void runUpsertOperationsTests() {
       // Posts have publishedAt
       final now = DateTime.now();
       final post = await dataSource.query<Post>().upsert({
-        'id': 30001,
         'title': 'Timestamped Post',
         'content': 'Content',
         'authorId': author.id,
@@ -302,16 +304,14 @@ void runUpsertOperationsTests() {
     test('upsertMany() handles large batches', () async {
       // Create author for posts
       final author = await dataSource.query<Author>().create({
-        'id': 20002,
         'name': 'Batch Author',
         'active': true,
       });
 
-      // Generate large batch
+      // Generate large batch without hardcoded IDs
       final batch = List.generate(
         50,
         (i) => {
-          'id': 30100 + i,
           'title': 'Post $i',
           'content': 'Content $i',
           'authorId': author.id,
@@ -322,12 +322,10 @@ void runUpsertOperationsTests() {
       final results = await dataSource.query<Post>().upsertMany(batch);
       expect(results.length, 50);
 
-      // Verify all were inserted
-      final all = await dataSource
-          .query<Post>()
-          .where('id', 30100, PredicateOperator.greaterThanOrEqual)
-          .where('id', 30150, PredicateOperator.lessThan)
-          .get();
+      // Verify all were inserted using returned IDs
+      final insertedIds = results.map((p) => p.id).toList();
+      final all =
+          await dataSource.query<Post>().whereIn('id', insertedIds).get();
       expect(all.length, 50);
     });
 
@@ -335,7 +333,7 @@ void runUpsertOperationsTests() {
       // Should throw when specifying non-existent column
       expect(
         () => dataSource.query<User>().upsert(
-          {'id': 10060, 'email': 'test@example.com', 'active': true},
+          {'email': 'test@example.com', 'active': true},
           uniqueBy: ['nonexistent_column'],
         ),
         throwsA(isA<Error>()),
@@ -345,25 +343,24 @@ void runUpsertOperationsTests() {
     test(
       'upsert() maintains data integrity across multiple operations',
       () async {
-        final userId = 10070;
-
         // Initial insert
         final user1 = await dataSource.query<User>().upsert({
-          'id': userId,
           'email': 'integrity@example.com',
           'active': true,
         });
         expect(user1.active, isTrue);
+        final userId = user1.id;
 
-        // First update
+        // First update by ID
         final user2 = await dataSource.query<User>().upsert({
           'id': userId,
           'email': 'integrity@example.com',
           'active': false,
         });
         expect(user2.active, isFalse);
+        expect(user2.id, userId);
 
-        // Second update
+        // Second update by ID
         final user3 = await dataSource.query<User>().upsert({
           'id': userId,
           'email': 'integrity-updated@example.com',
@@ -371,37 +368,38 @@ void runUpsertOperationsTests() {
         });
         expect(user3.email, 'integrity-updated@example.com');
         expect(user3.active, isTrue);
+        expect(user3.id, userId);
 
         // Verify only one record exists
-        final all = await dataSource
-            .query<User>()
-            .whereEquals('id', userId)
-            .get();
+        final all = await dataSource.query<User>().whereEquals('id', userId).get();
         expect(all.length, 1);
         expect(all.first.email, 'integrity-updated@example.com');
       },
     );
 
     test('upsertMany() is atomic for batch operations', () async {
-      // Create initial state
-      await dataSource.query<User>().createMany([
-        {'id': 10080, 'email': 'atomic1@example.com', 'active': true},
-        {'id': 10081, 'email': 'atomic2@example.com', 'active': true},
+      // Create initial state and capture IDs
+      final created = await dataSource.query<User>().createMany([
+        {'email': 'atomic1@example.com', 'active': true},
+        {'email': 'atomic2@example.com', 'active': true},
       ]);
+      final id1 = created[0].id;
+      final id2 = created[1].id;
 
-      // Batch upsert
+      // Batch upsert - update existing and add new
       final results = await dataSource.query<User>().upsertMany([
-        {'id': 10080, 'email': 'atomic1@example.com', 'active': false},
-        {'id': 10081, 'email': 'atomic2@example.com', 'active': false},
-        {'id': 10082, 'email': 'atomic3@example.com', 'active': true},
+        {'id': id1, 'email': 'atomic1@example.com', 'active': false},
+        {'id': id2, 'email': 'atomic2@example.com', 'active': false},
+        {'email': 'atomic3@example.com', 'active': true}, // New record
       ]);
 
       expect(results.length, 3);
+      final newId = results[2].id;
 
       // Verify final state
       final all = await dataSource
           .query<User>()
-          .whereIn('id', [10080, 10081, 10082])
+          .whereIn('id', [id1, id2, newId])
           .orderBy('id')
           .get();
 
@@ -415,17 +413,19 @@ void runUpsertOperationsTests() {
       // This test just verifies upsert executes successfully
       // The driver handles native vs emulated internally
       final user = await dataSource.query<User>().upsert({
-        'id': 10090,
         'email': 'capabilities@example.com',
         'active': true,
       });
 
-      expect(user.id, 10090);
+      expect(user.id, isNotNull);
       expect(user.email, 'capabilities@example.com');
 
       // Verify driver metadata if available
       print('Driver: ${dataSource.options.driver.metadata.name}');
-      print('Supports returning: ${dataSource.options.driver.metadata.supportsReturning}');
+      print(
+        'Supports returning: '
+        '${dataSource.options.driver.metadata.supportsReturning}',
+      );
     });
   });
 }

@@ -81,7 +81,7 @@ String renderRegistryContent(List<ModelSummary> models) {
   buffer
     ..writeln('')
     ..writeln(
-      'final List<ModelDefinition<dynamic>> _\$ormModelDefinitions = [',
+      'final List<ModelDefinition<OrmEntity>> _\$ormModelDefinitions = [',
     );
   for (final summary in summaries) {
     buffer.writeln('  ${summary.definition},');
@@ -106,7 +106,7 @@ String renderRegistryContent(List<ModelSummary> models) {
     ..writeln(';')
     ..writeln('')
     ..writeln(
-      'List<ModelDefinition<dynamic>> get generatedOrmModelDefinitions =>',
+      'List<ModelDefinition<OrmEntity>> get generatedOrmModelDefinitions =>',
     )
     ..writeln('    List.unmodifiable(_\$ormModelDefinitions);')
     ..writeln('')

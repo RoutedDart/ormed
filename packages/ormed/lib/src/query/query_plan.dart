@@ -1,6 +1,7 @@
 import 'package:ormed/src/query/plan/join_definition.dart';
 
 import '../model_definition.dart';
+import '../contracts.dart';
 import 'json_path.dart';
 
 /// Immutable description of a query that `QueryExecutor` implementations
@@ -69,7 +70,7 @@ class QueryPlan {
        distinctOn = List.unmodifiable(distinctOn ?? const <DistinctOnClause>[]),
        unions = List.unmodifiable(unions ?? const <QueryUnion>[]);
 
-  final ModelDefinition<dynamic> definition;
+  final ModelDefinition<OrmEntity> definition;
   final String? driverName;
   final List<FilterClause> filters;
   final List<OrderClause> orders;
@@ -576,8 +577,8 @@ class RelationSegment {
 
   final String name;
   final RelationDefinition relation;
-  final ModelDefinition<dynamic> parentDefinition;
-  final ModelDefinition<dynamic> targetDefinition;
+  final ModelDefinition<OrmEntity> parentDefinition;
+  final ModelDefinition<OrmEntity> targetDefinition;
   final String parentKey;
   final String childKey;
   final bool foreignKeyOnParent;

@@ -1,7 +1,7 @@
 part of '../query_builder.dart';
 
 /// Extension providing index hint methods for query optimization.
-extension IndexExtension<T> on Query<T> {
+extension IndexExtension<T extends OrmEntity> on Query<T> {
   /// Applies a USE INDEX hint (MySQL/MariaDB only).
   ///
   /// This hint suggests to the database optimizer to use a specific index for the query.

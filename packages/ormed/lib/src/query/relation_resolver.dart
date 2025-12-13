@@ -4,6 +4,7 @@ import 'package:ormed/src/annotations.dart';
 import 'package:ormed/src/query/query.dart';
 import 'package:ormed/src/query/query_plan.dart';
 
+import '../contracts.dart';
 import '../model_definition.dart';
 
 /// Utility class for resolving and building relation metadata.
@@ -67,7 +68,7 @@ class RelationResolver {
   ///
   /// Throws [ArgumentError] if any part of the relation path is invalid.
   RelationPath resolvePath(
-    ModelDefinition<dynamic> startDefinition,
+    ModelDefinition<OrmEntity> startDefinition,
     String relation,
   ) {
     // Check cache first (only for cached resolvers)
@@ -89,12 +90,12 @@ class RelationResolver {
 
   /// Internal method that performs the actual path resolution without caching.
   RelationPath _resolvePathUncached(
-    ModelDefinition<dynamic> startDefinition,
+    ModelDefinition<OrmEntity> startDefinition,
     String relation,
   ) {
     final names = relation.split('.');
     final segments = <RelationSegment>[];
-    ModelDefinition<dynamic> current = startDefinition;
+    ModelDefinition<OrmEntity> current = startDefinition;
 
     for (final name in names) {
       final relationDef = current.relations
@@ -129,7 +130,7 @@ class RelationResolver {
   /// // Returns: RelationSegment with childKey, parentKey, etc.
   /// ```
   RelationSegment segmentFor(
-    ModelDefinition<dynamic> parent,
+    ModelDefinition<OrmEntity> parent,
     RelationDefinition relation,
   ) {
     final target = context.registry.expectByName(relation.targetModel);
@@ -243,12 +244,12 @@ class RelationResolver {
   /// Returns `null` if no constraint is provided.
   QueryPredicate? predicateFor(
     RelationDefinition relation,
-    PredicateCallback<dynamic>? constraint,
+    PredicateCallback<OrmEntity>? constraint,
   ) {
     if (constraint == null) return null;
 
     final target = context.registry.expectByName(relation.targetModel);
-    final builder = PredicateBuilder<dynamic>(target);
+    final builder = PredicateBuilder<OrmEntity>(target);
     constraint(builder);
     return builder.build();
   }
@@ -271,11 +272,11 @@ class RelationResolver {
   /// Returns `null` if no constraint is provided.
   QueryPredicate? predicateForPath(
     RelationPath path,
-    PredicateCallback<dynamic>? constraint,
+    PredicateCallback<OrmEntity>? constraint,
   ) {
     if (constraint == null) return null;
 
-    final builder = PredicateBuilder<dynamic>(path.leaf.targetDefinition);
+    final builder = PredicateBuilder<OrmEntity>(path.leaf.targetDefinition);
     constraint(builder);
     return builder.build();
   }

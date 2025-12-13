@@ -266,6 +266,100 @@ class _$AttributeUserCodec extends ModelCodec<$AttributeUser> {
   }
 }
 
+/// Insert DTO for [AttributeUser].
+///
+/// Auto-increment/DB-generated fields are omitted by default.
+class AttributeUserInsertDto implements InsertDto<$AttributeUser> {
+  const AttributeUserInsertDto({
+    this.id,
+    this.email,
+    this.secret,
+    this.role,
+    this.profile,
+  });
+  final int? id;
+  final String? email;
+  final String? secret;
+  final String? role;
+  final Map<String, Object?>? profile;
+
+  @override
+  Map<String, Object?> toMap() {
+    return <String, Object?>{
+      if (id != null) 'id': id,
+      if (email != null) 'email': email,
+      if (secret != null) 'secret': secret,
+      if (role != null) 'role': role,
+      if (profile != null) 'profile': profile,
+    };
+  }
+}
+
+/// Update DTO for [AttributeUser].
+///
+/// All fields are optional; only provided entries are used in SET clauses.
+class AttributeUserUpdateDto implements UpdateDto<$AttributeUser> {
+  const AttributeUserUpdateDto({
+    this.id,
+    this.email,
+    this.secret,
+    this.role,
+    this.profile,
+  });
+  final int? id;
+  final String? email;
+  final String? secret;
+  final String? role;
+  final Map<String, Object?>? profile;
+
+  @override
+  Map<String, Object?> toMap() {
+    return <String, Object?>{
+      if (id != null) 'id': id,
+      if (email != null) 'email': email,
+      if (secret != null) 'secret': secret,
+      if (role != null) 'role': role,
+      if (profile != null) 'profile': profile,
+    };
+  }
+}
+
+/// Partial projection for [AttributeUser].
+///
+/// All fields are nullable; intended for subset SELECTs.
+class AttributeUserPartial implements PartialEntity<$AttributeUser> {
+  const AttributeUserPartial({
+    this.id,
+    this.email,
+    this.secret,
+    this.role,
+    this.profile,
+  });
+  final int? id;
+  final String? email;
+  final String? secret;
+  final String? role;
+  final Map<String, Object?>? profile;
+
+  @override
+  $AttributeUser toEntity() {
+    // Basic required-field check: non-nullable fields must be present.
+    final int? idValue = id;
+    if (idValue == null) throw StateError('Missing required field: id');
+    final String? emailValue = email;
+    if (emailValue == null) throw StateError('Missing required field: email');
+    final String? secretValue = secret;
+    if (secretValue == null) throw StateError('Missing required field: secret');
+    return $AttributeUser(
+      id: idValue,
+      email: emailValue,
+      secret: secretValue,
+      role: role,
+      profile: profile,
+    );
+  }
+}
+
 /// Generated tracked model class for [AttributeUser].
 ///
 /// This class extends the user-defined [AttributeUser] model and adds
@@ -274,7 +368,9 @@ class _$AttributeUserCodec extends ModelCodec<$AttributeUser> {
 ///
 /// **Do not instantiate this class directly.** Use queries, repositories,
 /// or model factories to create tracked model instances.
-class $AttributeUser extends AttributeUser with ModelAttributes {
+class $AttributeUser extends AttributeUser
+    with ModelAttributes
+    implements OrmEntity {
   $AttributeUser({
     required int id,
     required String email,

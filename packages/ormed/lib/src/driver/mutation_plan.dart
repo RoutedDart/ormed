@@ -1,6 +1,7 @@
 import 'package:ormed/src/driver/json_update_clause.dart';
 import 'package:ormed/src/driver/mutation_operation.dart';
 import 'package:ormed/src/driver/mutation_row.dart';
+import 'package:ormed/src/contracts.dart';
 import 'package:ormed/src/model_definition.dart';
 import 'package:ormed/src/query/query_plan.dart';
 
@@ -35,7 +36,7 @@ class MutationPlan {
        insertColumns = List.unmodifiable(insertColumns ?? const []);
 
   factory MutationPlan.insert({
-    required ModelDefinition<dynamic> definition,
+    required ModelDefinition<OrmEntity> definition,
     required List<Map<String, Object?>> rows,
     String? driverName,
     bool returning = false,
@@ -52,7 +53,7 @@ class MutationPlan {
   );
 
   factory MutationPlan.insertUsing({
-    required ModelDefinition<dynamic> definition,
+    required ModelDefinition<OrmEntity> definition,
     required List<String> columns,
     required QueryPlan selectPlan,
     String? driverName,
@@ -68,7 +69,7 @@ class MutationPlan {
   );
 
   factory MutationPlan.update({
-    required ModelDefinition<dynamic> definition,
+    required ModelDefinition<OrmEntity> definition,
     required List<MutationRow> rows,
     String? driverName,
     bool returning = false,
@@ -81,7 +82,7 @@ class MutationPlan {
   );
 
   factory MutationPlan.delete({
-    required ModelDefinition<dynamic> definition,
+    required ModelDefinition<OrmEntity> definition,
     required List<MutationRow> rows,
     String? driverName,
   }) => MutationPlan._(
@@ -92,7 +93,7 @@ class MutationPlan {
   );
 
   factory MutationPlan.queryDelete({
-    required ModelDefinition<dynamic> definition,
+    required ModelDefinition<OrmEntity> definition,
     required QueryPlan plan,
     required String primaryKey,
     String? driverName,
@@ -106,7 +107,7 @@ class MutationPlan {
   );
 
   factory MutationPlan.queryUpdate({
-    required ModelDefinition<dynamic> definition,
+    required ModelDefinition<OrmEntity> definition,
     required QueryPlan plan,
     required Map<String, Object?> values,
     List<JsonUpdateClause>? jsonUpdates,
@@ -126,7 +127,7 @@ class MutationPlan {
   );
 
   factory MutationPlan.upsert({
-    required ModelDefinition<dynamic> definition,
+    required ModelDefinition<OrmEntity> definition,
     required List<MutationRow> rows,
     String? driverName,
     bool returning = false,
@@ -143,7 +144,7 @@ class MutationPlan {
   );
 
   final MutationOperation operation;
-  final ModelDefinition<dynamic> definition;
+  final ModelDefinition<OrmEntity> definition;
   final List<MutationRow> rows;
   final String? driverName;
   final bool returning;

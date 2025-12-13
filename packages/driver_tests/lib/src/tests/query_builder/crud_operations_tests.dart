@@ -229,78 +229,83 @@ void runCrudOperationsTests() {
 
     group('Upsert Operations', () {
       test('upsert() - inserts new records', () async {
-        await dataSource.query<Author>().upsertMany(
+        final results = await dataSource.query<Author>().upsertMany(
           [
-            {'id': 5001, 'name': 'John Doe', 'active': true},
-            {'id': 5002, 'name': 'Jane Smith', 'active': true},
+            {'name': 'John Doe', 'active': true},
+            {'name': 'Jane Smith', 'active': true},
           ],
-          uniqueBy: ['id'],
         );
 
+        expect(results.length, equals(2));
         expect(
           await dataSource.query<Author>().count(),
           greaterThanOrEqualTo(2),
         );
-        final john = await dataSource.query<Author>().where('id', 5001).first();
+        // Verify using returned IDs
+        final john = await dataSource
+            .query<Author>()
+            .where('id', results[0].id)
+            .first();
         expect(john?.name, equals('John Doe'));
       });
 
       test('upsert() - updates existing records', () async {
-        await dataSource.query<Author>().create({
-          'id': 5003,
+        final created = await dataSource.query<Author>().create({
           'name': 'John Original',
           'active': true,
         });
 
         await dataSource.query<Author>().upsertMany(
           [
-            {'id': 5003, 'name': 'John Updated', 'active': false},
+            {'id': created.id, 'name': 'John Updated', 'active': false},
           ],
-          uniqueBy: ['id'],
         );
 
-        final john = await dataSource.query<Author>().where('id', 5003).first();
+        final john =
+            await dataSource.query<Author>().where('id', created.id).first();
         expect(john?.name, equals('John Updated'));
         expect(john?.active, equals(false));
       });
 
       test('upsert() - mixed insert and update', () async {
-        await dataSource.query<Author>().create({
-          'id': 5004,
+        final existing = await dataSource.query<Author>().create({
           'name': 'John Original',
           'active': true,
         });
 
-        await dataSource.query<Author>().upsertMany(
+        final results = await dataSource.query<Author>().upsertMany(
           [
-            {'id': 5004, 'name': 'John Updated', 'active': true},
-            {'id': 5005, 'name': 'Jane New', 'active': true},
+            {'id': existing.id, 'name': 'John Updated', 'active': true},
+            {'name': 'Jane New', 'active': true},
           ],
-          uniqueBy: ['id'],
         );
 
-        final john = await dataSource.query<Author>().where('id', 5004).first();
+        final john = await dataSource
+            .query<Author>()
+            .where('id', existing.id)
+            .first();
         expect(john?.name, equals('John Updated'));
-        final jane = await dataSource.query<Author>().where('id', 5005).first();
+        final jane = await dataSource
+            .query<Author>()
+            .where('id', results[1].id)
+            .first();
         expect(jane?.name, equals('Jane New'));
       });
 
       test('Model.upsert() - static method works', () async {
         final author = await Model.upsert<Author>(
-          {'id': 5006, 'name': 'Static Upsert', 'active': true},
-          uniqueBy: ['id'],
+          {'name': 'Static Upsert', 'active': true},
         );
         expect(author.name, equals('Static Upsert'));
-        expect(author.id, equals(5006));
+        expect(author.id, isNotNull);
       });
 
       test('Model.upsertMany() - static method works', () async {
         final authors = await Model.upsertMany<Author>(
           [
-            {'id': 5007, 'name': 'Bulk Static 1', 'active': true},
-            {'id': 5008, 'name': 'Bulk Static 2', 'active': false},
+            {'name': 'Bulk Static 1', 'active': true},
+            {'name': 'Bulk Static 2', 'active': false},
           ],
-          uniqueBy: ['id'],
         );
         expect(authors.length, equals(2));
         expect(authors[0].name, equals('Bulk Static 1'));

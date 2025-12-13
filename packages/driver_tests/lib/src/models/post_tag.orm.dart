@@ -169,6 +169,59 @@ class _$PostTagCodec extends ModelCodec<$PostTag> {
   }
 }
 
+/// Insert DTO for [PostTag].
+///
+/// Auto-increment/DB-generated fields are omitted by default.
+class PostTagInsertDto implements InsertDto<$PostTag> {
+  const PostTagInsertDto({this.postId, this.tagId});
+  final int? postId;
+  final int? tagId;
+
+  @override
+  Map<String, Object?> toMap() {
+    return <String, Object?>{
+      if (postId != null) 'post_id': postId,
+      if (tagId != null) 'tag_id': tagId,
+    };
+  }
+}
+
+/// Update DTO for [PostTag].
+///
+/// All fields are optional; only provided entries are used in SET clauses.
+class PostTagUpdateDto implements UpdateDto<$PostTag> {
+  const PostTagUpdateDto({this.postId, this.tagId});
+  final int? postId;
+  final int? tagId;
+
+  @override
+  Map<String, Object?> toMap() {
+    return <String, Object?>{
+      if (postId != null) 'post_id': postId,
+      if (tagId != null) 'tag_id': tagId,
+    };
+  }
+}
+
+/// Partial projection for [PostTag].
+///
+/// All fields are nullable; intended for subset SELECTs.
+class PostTagPartial implements PartialEntity<$PostTag> {
+  const PostTagPartial({this.postId, this.tagId});
+  final int? postId;
+  final int? tagId;
+
+  @override
+  $PostTag toEntity() {
+    // Basic required-field check: non-nullable fields must be present.
+    final int? postIdValue = postId;
+    if (postIdValue == null) throw StateError('Missing required field: postId');
+    final int? tagIdValue = tagId;
+    if (tagIdValue == null) throw StateError('Missing required field: tagId');
+    return $PostTag(postId: postIdValue, tagId: tagIdValue);
+  }
+}
+
 /// Generated tracked model class for [PostTag].
 ///
 /// This class extends the user-defined [PostTag] model and adds
@@ -177,7 +230,7 @@ class _$PostTagCodec extends ModelCodec<$PostTag> {
 ///
 /// **Do not instantiate this class directly.** Use queries, repositories,
 /// or model factories to create tracked model instances.
-class $PostTag extends PostTag with ModelAttributes {
+class $PostTag extends PostTag with ModelAttributes implements OrmEntity {
   $PostTag({required int postId, required int tagId})
     : super.new(postId: postId, tagId: tagId) {
     _attachOrmRuntimeMetadata({'post_id': postId, 'tag_id': tagId});

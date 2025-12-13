@@ -11,20 +11,19 @@ import 'schema_state.dart';
 /// PostgreSQL implementation of the routed ORM driver adapter.
 class PostgresDriverAdapter
     implements DriverAdapter, SchemaDriver, SchemaStateProvider {
-  
   /// Registers PostgreSQL-specific codecs and type mapper with the global registries.
   /// Call this once during application initialization before using PostgreSQL.
   static void registerCodecs() {
     final mapper = PostgresTypeMapper();
     TypeMapperRegistry.register('postgres', mapper);
-    
+
     // Register codecs from TypeMapper to eliminate duplication
     final codecs = <String, ValueCodec<dynamic>>{};
     for (final mapping in mapper.typeMappings) {
       if (mapping.codec != null) {
         final typeKey = mapping.dartType.toString();
         codecs[typeKey] = mapping.codec!;
-        codecs['$typeKey?'] = mapping.codec!;  // Nullable variant
+        codecs['$typeKey?'] = mapping.codec!; // Nullable variant
       }
     }
     ValueCodecRegistry.instance.registerDriver('postgres', codecs);
@@ -76,7 +75,7 @@ class PostgresDriverAdapter
        _codecs = ValueCodecRegistry.instance.forDriver('postgres') {
     // Auto-register PostgreSQL codecs on first instantiation
     registerPostgresCodecs();
-    
+
     _planCompiler = ClosurePlanCompiler(
       compileSelect: _compileSelectPreview,
       compileMutation: _compileMutationPreview,
@@ -465,7 +464,10 @@ class PostgresDriverAdapter
       throw UnsupportedError('PostgreSQL should support column listing');
     }
 
-    final rows = await queryRaw(sql, schema == null ? [table] : [table, schema]);
+    final rows = await queryRaw(
+      sql,
+      schema == null ? [table] : [table, schema],
+    );
     final pkColumns = await _primaryKeyColumns(table, schema: schema);
     return rows
         .map(
@@ -495,7 +497,10 @@ class PostgresDriverAdapter
       throw UnsupportedError('PostgreSQL should support index listing');
     }
 
-    final rows = await queryRaw(sql, schema == null ? [table] : [table, schema]);
+    final rows = await queryRaw(
+      sql,
+      schema == null ? [table] : [table, schema],
+    );
     return rows
         .map(
           (row) => SchemaIndex(
@@ -517,12 +522,18 @@ class PostgresDriverAdapter
     String table, {
     String? schema,
   }) async {
-    final sql = _schemaCompiler.dialect.compileForeignKeys(table, schema: schema);
+    final sql = _schemaCompiler.dialect.compileForeignKeys(
+      table,
+      schema: schema,
+    );
     if (sql == null) {
       throw UnsupportedError('PostgreSQL should support foreign key listing');
     }
 
-    final rows = await queryRaw(sql, schema == null ? [table] : [table, schema]);
+    final rows = await queryRaw(
+      sql,
+      schema == null ? [table] : [table, schema],
+    );
     final byConstraint = <String, List<Map<String, Object?>>>{};
     for (final row in rows) {
       final key = row['constraint_name'] as String;
@@ -800,38 +811,154 @@ class PostgresDriverAdapter
   }
 
   @override
-  Future<bool> hasColumns(String table, List<String> columns, {String? schema}) async {
+  Future<bool> hasColumns(
+    String table,
+    List<String> columns, {
+    String? schema,
+  }) async {
     final tableColumns = await listColumns(table, schema: schema);
-    final lowerCaseColumns = tableColumns.map((c) => c.name.toLowerCase()).toSet();
-    
+    final lowerCaseColumns = tableColumns
+        .map((c) => c.name.toLowerCase())
+        .toSet();
+
     for (final column in columns) {
       if (!lowerCaseColumns.contains(column.toLowerCase())) {
         return false;
       }
     }
-    
+
     return true;
   }
 
   @override
-  Future<bool> hasIndex(String table, String index, {String? schema, String? type}) async {
+  Future<bool> hasIndex(
+    String table,
+    String index, {
+    String? schema,
+    String? type,
+  }) async {
     final indexes = await listIndexes(table, schema: schema);
-    
+
     for (final idx in indexes) {
-      final typeMatches = type == null ||
+      final typeMatches =
+          type == null ||
           (type == 'primary' && idx.primary) ||
           (type == 'unique' && idx.unique) ||
           type.toLowerCase() == idx.type?.toLowerCase();
-      
+
       if (idx.name.toLowerCase() == index.toLowerCase() && typeMatches) {
         return true;
       }
     }
-    
+
     return false;
   }
 
   Future<MutationResult> _runInsert(MutationPlan plan) async {
+    if (plan.rows.isEmpty) {
+      return const MutationResult(affectedRows: 0);
+    }
+
+    final pkField = plan.definition.primaryKeyField;
+    final pkColumn = pkField?.columnName;
+
+    // Check if we have mixed rows (some with PK, some without) for auto-increment PKs
+    if (pkColumn != null && pkField!.autoIncrement) {
+      final rowsWithPk = <MutationRow>[];
+      final rowsWithoutPk = <MutationRow>[];
+
+      for (final row in plan.rows) {
+        final pkValue = row.values[pkColumn];
+        if (pkValue != null && pkValue != 0) {
+          rowsWithPk.add(row);
+        } else {
+          // Remove the PK from values for rows without it
+          final newValues = Map<String, Object?>.from(row.values);
+          newValues.remove(pkColumn);
+          rowsWithoutPk.add(MutationRow(
+            values: newValues,
+            keys: row.keys,
+            jsonUpdates: row.jsonUpdates,
+          ));
+        }
+      }
+
+      // If we have both types, execute separately and combine results
+      if (rowsWithPk.isNotEmpty && rowsWithoutPk.isNotEmpty) {
+        // Execute rows with PK
+        final planWithPk = MutationPlan.insert(
+          definition: plan.definition,
+          rows: rowsWithPk.map((r) => r.values).toList(),
+          driverName: plan.driverName,
+          returning: plan.returning,
+          ignoreConflicts: plan.ignoreConflicts,
+        );
+        final shapeWithPk = _buildInsertShape(planWithPk);
+        final resultWithPk = await _executeMutation(shapeWithPk);
+
+        // Execute rows without PK
+        final planWithoutPk = MutationPlan.insert(
+          definition: plan.definition,
+          rows: rowsWithoutPk.map((r) => r.values).toList(),
+          driverName: plan.driverName,
+          returning: plan.returning,
+          ignoreConflicts: plan.ignoreConflicts,
+        );
+        final shapeWithoutPk = _buildInsertShape(planWithoutPk);
+        final resultWithoutPk = await _executeMutation(shapeWithoutPk);
+
+        // Combine results in original order
+        final combinedRows = <Map<String, Object?>>[];
+        int withPkIndex = 0;
+        int withoutPkIndex = 0;
+        for (final row in plan.rows) {
+          final pkValue = row.values[pkColumn];
+          if (pkValue != null && pkValue != 0) {
+            if (resultWithPk.returnedRows != null &&
+                withPkIndex < resultWithPk.returnedRows!.length) {
+              combinedRows.add(resultWithPk.returnedRows![withPkIndex]);
+            }
+            withPkIndex++;
+          } else {
+            if (resultWithoutPk.returnedRows != null &&
+                withoutPkIndex < resultWithoutPk.returnedRows!.length) {
+              combinedRows.add(resultWithoutPk.returnedRows![withoutPkIndex]);
+            }
+            withoutPkIndex++;
+          }
+        }
+
+        return MutationResult(
+          affectedRows: resultWithPk.affectedRows + resultWithoutPk.affectedRows,
+          returnedRows: plan.returning ? combinedRows : null,
+        );
+      }
+
+      // Only one type of rows
+      if (rowsWithPk.isNotEmpty) {
+        final newPlan = MutationPlan.insert(
+          definition: plan.definition,
+          rows: rowsWithPk.map((r) => r.values).toList(),
+          driverName: plan.driverName,
+          returning: plan.returning,
+          ignoreConflicts: plan.ignoreConflicts,
+        );
+        final shape = _buildInsertShape(newPlan);
+        return _executeMutation(shape);
+      } else {
+        final newPlan = MutationPlan.insert(
+          definition: plan.definition,
+          rows: rowsWithoutPk.map((r) => r.values).toList(),
+          driverName: plan.driverName,
+          returning: plan.returning,
+          ignoreConflicts: plan.ignoreConflicts,
+        );
+        final shape = _buildInsertShape(newPlan);
+        return _executeMutation(shape);
+      }
+    }
+
+    // Non-auto-increment PK or no PK - use standard shape
     final shape = _buildInsertShape(plan);
     return _executeMutation(shape);
   }
@@ -852,7 +979,99 @@ class PostgresDriverAdapter
   }
 
   Future<MutationResult> _runUpsert(MutationPlan plan) async {
-    final shape = _buildUpsertShape(plan);
+    if (plan.rows.isEmpty) {
+      return const MutationResult(affectedRows: 0);
+    }
+
+    final pkField = plan.definition.primaryKeyField;
+    final pkColumn = pkField?.columnName;
+
+    // Check if we have mixed rows (some with PK, some without) for auto-increment PKs
+    if (pkColumn != null && pkField!.autoIncrement) {
+      final rowsWithPk = <MutationRow>[];
+      final rowsWithoutPk = <MutationRow>[];
+
+      for (final row in plan.rows) {
+        final pkValue = row.values[pkColumn];
+        if (pkValue != null && pkValue != 0) {
+          rowsWithPk.add(row);
+        } else {
+          // Remove the PK from values for rows without it
+          final newValues = Map<String, Object?>.from(row.values);
+          newValues.remove(pkColumn);
+          rowsWithoutPk.add(MutationRow(
+            values: newValues,
+            keys: row.keys,
+            jsonUpdates: row.jsonUpdates,
+          ));
+        }
+      }
+
+      // If we have both types, execute separately and combine results
+      if (rowsWithPk.isNotEmpty && rowsWithoutPk.isNotEmpty) {
+        // Execute rows with PK first
+        final planWithPk = MutationPlan.upsert(
+          definition: plan.definition,
+          rows: rowsWithPk,
+          driverName: plan.driverName,
+          returning: plan.returning,
+          uniqueBy: plan.upsertUniqueColumns,
+          updateColumns: plan.upsertUpdateColumns,
+        );
+        final shapeWithPk = _buildUpsertShapeForRows(planWithPk, rowsWithPk, pkColumn, true);
+        final resultWithPk = await _executeMutation(shapeWithPk);
+
+        // Execute rows without PK
+        final planWithoutPk = MutationPlan.upsert(
+          definition: plan.definition,
+          rows: rowsWithoutPk,
+          driverName: plan.driverName,
+          returning: plan.returning,
+          uniqueBy: plan.upsertUniqueColumns,
+          updateColumns: plan.upsertUpdateColumns,
+        );
+        final shapeWithoutPk = _buildUpsertShapeForRows(planWithoutPk, rowsWithoutPk, pkColumn, false);
+        final resultWithoutPk = await _executeMutation(shapeWithoutPk);
+
+        // Combine results in original order
+        final combinedRows = <Map<String, Object?>>[];
+        int withPkIndex = 0;
+        int withoutPkIndex = 0;
+        for (final row in plan.rows) {
+          final pkValue = row.values[pkColumn];
+          if (pkValue != null && pkValue != 0) {
+            if (resultWithPk.returnedRows != null &&
+                withPkIndex < resultWithPk.returnedRows!.length) {
+              combinedRows.add(resultWithPk.returnedRows![withPkIndex]);
+            }
+            withPkIndex++;
+          } else {
+            if (resultWithoutPk.returnedRows != null &&
+                withoutPkIndex < resultWithoutPk.returnedRows!.length) {
+              combinedRows.add(resultWithoutPk.returnedRows![withoutPkIndex]);
+            }
+            withoutPkIndex++;
+          }
+        }
+
+        return MutationResult(
+          affectedRows: resultWithPk.affectedRows + resultWithoutPk.affectedRows,
+          returnedRows: plan.returning ? combinedRows : null,
+        );
+      }
+
+      // Only one type of rows, build shape accordingly
+      if (rowsWithPk.isNotEmpty) {
+        final shape = _buildUpsertShapeForRows(plan, rowsWithPk, pkColumn, true);
+        return _executeMutation(shape);
+      } else {
+        final shape = _buildUpsertShapeForRows(plan, rowsWithoutPk, pkColumn, false);
+        return _executeMutation(shape);
+      }
+    }
+
+    // Non-auto-increment PK or no PK - use standard shape
+    final shape = _buildUpsertShapeForRows(plan, plan.rows.toList(), pkColumn, true);
     return _executeMutation(shape);
   }
 
@@ -1203,9 +1422,39 @@ class PostgresDriverAdapter
 
   _PostgresMutationShape _buildUpsertShape(MutationPlan plan) {
     if (plan.rows.isEmpty) return _PostgresMutationShape.empty();
+
+    final pkField = plan.definition.primaryKeyField;
+    final pkColumn = pkField?.columnName;
+
+    // For auto-increment PKs, check if we should include the PK column
+    if (pkColumn != null && pkField!.autoIncrement) {
+      final allRowsHaveNullPk = plan.rows.every((row) {
+        final val = row.values[pkColumn];
+        return val == null || val == 0;
+      });
+      return _buildUpsertShapeForRows(plan, plan.rows.toList(), pkColumn, !allRowsHaveNullPk);
+    }
+
+    return _buildUpsertShapeForRows(plan, plan.rows.toList(), pkColumn, true);
+  }
+
+  _PostgresMutationShape _buildUpsertShapeForRows(
+    MutationPlan plan,
+    List<MutationRow> rows,
+    String? pkColumn,
+    bool includePk,
+  ) {
+    if (rows.isEmpty) return _PostgresMutationShape.empty();
+
     final table = _tableIdentifier(plan.definition);
-    final firstRow = plan.rows.first;
-    final columns = firstRow.values.keys.toList();
+    final firstRow = rows.first;
+    var columns = firstRow.values.keys.toList();
+
+    // Exclude PK if not including it
+    if (!includePk && pkColumn != null) {
+      columns = columns.where((c) => c != pkColumn).toList();
+    }
+
     final columnSql = columns.map(_quote).join(', ');
     final placeholders = List.filled(columns.length, '?').join(', ');
     final uniqueColumns = _resolveUpsertUniqueColumns(plan);
@@ -1229,7 +1478,7 @@ class PostgresDriverAdapter
       sql.write('DO UPDATE SET $updateClause');
     }
     sql.write(returning);
-    final parameterSets = plan.rows
+    final parameterSets = rows
         .map((row) => columns.map((column) => row.values[column]).toList())
         .toList(growable: false);
     return _PostgresMutationShape(
@@ -1360,7 +1609,17 @@ class PostgresDriverAdapter
     }
 
     final conflicts = uniqueColumns.toSet();
-    return insertColumns.where((c) => !conflicts.contains(c)).toList();
+
+    // Also exclude the primary key from UPDATE columns when:
+    // 1. We're not conflicting on the PK (uniqueBy is on different columns)
+    // 2. This prevents overwriting an existing auto-increment ID with null/0
+    final pkColumn = plan.definition.primaryKeyField?.columnName;
+    final excludeFromUpdate = <String>{...conflicts};
+    if (pkColumn != null && !conflicts.contains(pkColumn)) {
+      excludeFromUpdate.add(pkColumn);
+    }
+
+    return insertColumns.where((c) => !excludeFromUpdate.contains(c)).toList();
   }
 
   bool _shouldUseDefaultForInsert(
@@ -1378,7 +1637,7 @@ class PostgresDriverAdapter
     return true;
   }
 
-  String _returningColumns(ModelDefinition<dynamic> definition) {
+  String _returningColumns(ModelDefinition<OrmEntity> definition) {
     if (definition.fields.isEmpty) {
       return '*';
     }
@@ -1489,7 +1748,7 @@ class PostgresDriverAdapter
     return buffer.toString();
   }
 
-  String _tableIdentifier(ModelDefinition<dynamic> definition) {
+  String _tableIdentifier(ModelDefinition<OrmEntity> definition) {
     final table = _quote(definition.tableName);
     final schema = definition.schema;
     if (schema == null || schema.isEmpty) {

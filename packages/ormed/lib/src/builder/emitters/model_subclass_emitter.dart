@@ -19,11 +19,19 @@ class ModelSubclassEmitter {
     // Generate documentation for the tracked model class
     buffer.writeln('/// Generated tracked model class for [$className].');
     buffer.writeln('///');
-    buffer.writeln('/// This class extends the user-defined [$className] model and adds');
-    buffer.writeln('/// attribute tracking, change detection, and relationship management.');
-    buffer.writeln('/// Instances of this class are returned by queries and repositories.');
+    buffer.writeln(
+      '/// This class extends the user-defined [$className] model and adds',
+    );
+    buffer.writeln(
+      '/// attribute tracking, change detection, and relationship management.',
+    );
+    buffer.writeln(
+      '/// Instances of this class are returned by queries and repositories.',
+    );
     buffer.writeln('///');
-    buffer.writeln('/// **Do not instantiate this class directly.** Use queries, repositories,');
+    buffer.writeln(
+      '/// **Do not instantiate this class directly.** Use queries, repositories,',
+    );
     buffer.writeln('/// or model factories to create tracked model instances.');
 
     // The generated tracked model class needs ModelAttributes mixin
@@ -43,7 +51,7 @@ class ModelSubclassEmitter {
       } else if (context.mixinTimestampsTZ) {
         mixins.add('TimestampsTZImpl');
       }
-      
+
       // Add soft delete implementation mixin
       if (context.mixinSoftDeletesTZ) {
         mixins.add('SoftDeletesTZImpl');
@@ -60,14 +68,14 @@ class ModelSubclassEmitter {
         mixins.add('ModelConnection');
       }
       mixins.add('ModelRelations');
-      
+
       // Add timestamp implementation mixins
       if (context.mixinTimestamps) {
         mixins.add('TimestampsImpl');
       } else if (context.mixinTimestampsTZ) {
         mixins.add('TimestampsTZImpl');
       }
-      
+
       // Add soft delete implementation mixin
       if (context.mixinSoftDeletesTZ) {
         mixins.add('SoftDeletesTZImpl');
@@ -78,7 +86,9 @@ class ModelSubclassEmitter {
     }
 
     final mixinSuffix = mixins.isEmpty ? '' : ' with ${mixins.join(', ')}';
-    buffer.writeln('class $modelSubclassName extends $className$mixinSuffix {');
+    buffer.writeln(
+      'class $modelSubclassName extends $className$mixinSuffix implements OrmEntity {',
+    );
     buffer.writeln(
       '  $modelSubclassName${_constructorParameters(context.constructor, context.fields)}',
     );
@@ -91,8 +101,12 @@ class ModelSubclassEmitter {
     buffer.writeln('  }\n');
 
     // Add factory constructor to convert from user model
-    buffer.writeln('  /// Creates a tracked model instance from a user-defined model instance.');
-    buffer.writeln('  factory $modelSubclassName.fromModel($className model) {');
+    buffer.writeln(
+      '  /// Creates a tracked model instance from a user-defined model instance.',
+    );
+    buffer.writeln(
+      '  factory $modelSubclassName.fromModel($className model) {',
+    );
     buffer.writeln('    return $modelSubclassName(');
     for (final field in context.fields.where((f) => !f.isVirtual)) {
       buffer.writeln('      ${field.name}: model.${field.name},');
@@ -211,12 +225,18 @@ class ModelSubclassEmitter {
     final extensionName = '${className}OrmExtension';
     buffer.writeln('extension $extensionName on $className {');
     buffer.writeln('  /// The Type of the generated ORM-managed model class.');
-    buffer.writeln('  /// Use this when you need to specify the tracked model type explicitly,');
+    buffer.writeln(
+      '  /// Use this when you need to specify the tracked model type explicitly,',
+    );
     buffer.writeln('  /// for example in generic type parameters.');
     buffer.writeln('  static Type get trackedType => $modelSubclassName;');
     buffer.writeln();
-    buffer.writeln('  /// Converts this immutable model to a tracked ORM-managed model.');
-    buffer.writeln('  /// The tracked model supports attribute tracking, change detection,');
+    buffer.writeln(
+      '  /// Converts this immutable model to a tracked ORM-managed model.',
+    );
+    buffer.writeln(
+      '  /// The tracked model supports attribute tracking, change detection,',
+    );
     buffer.writeln('  /// and persistence operations like save() and touch().');
     buffer.writeln('  $modelSubclassName toTracked() {');
     buffer.writeln('    return $modelSubclassName.fromModel(this);');
@@ -248,7 +268,8 @@ class ModelSubclassEmitter {
         if (field == null) continue;
 
         // Check if this field has a default value (e.g., auto-increment sentinel)
-        final hasDefaultValue = field.defaultDartValue != null ||
+        final hasDefaultValue =
+            field.defaultDartValue != null ||
             (field.autoIncrement && !field.isNullable);
 
         if (!hasDefaultValue && (parameter.isRequired || !field.isNullable)) {
@@ -258,8 +279,8 @@ class ModelSubclassEmitter {
 
         // Add default value for auto-increment fields
         if (hasDefaultValue) {
-          final defaultVal = field.defaultDartValue ??
-              (field.autoIncrement ? 0 : null);
+          final defaultVal =
+              field.defaultDartValue ?? (field.autoIncrement ? 0 : null);
           if (defaultVal != null) {
             buffer.write(' = ${_literalValue(defaultVal)}');
           }
@@ -277,7 +298,8 @@ class ModelSubclassEmitter {
         if (field == null) continue;
 
         // Check if this field has a default value
-        final hasDefaultValue = field.defaultDartValue != null ||
+        final hasDefaultValue =
+            field.defaultDartValue != null ||
             (field.autoIncrement && !field.isNullable);
 
         if (!hasDefaultValue && (parameter.isRequired || !field.isNullable)) {
@@ -287,8 +309,8 @@ class ModelSubclassEmitter {
 
         // Add default value for auto-increment fields
         if (hasDefaultValue) {
-          final defaultVal = field.defaultDartValue ??
-              (field.autoIncrement ? 0 : null);
+          final defaultVal =
+              field.defaultDartValue ?? (field.autoIncrement ? 0 : null);
           if (defaultVal != null) {
             buffer.write(' = ${_literalValue(defaultVal)}');
           }

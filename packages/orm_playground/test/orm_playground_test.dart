@@ -60,7 +60,7 @@ void main() {
 
       // Verify table() returns an ad-hoc query
       final tableQuery = ds.table('users');
-      expect(tableQuery, isA<Query<Map<String, Object?>>>());
+      expect(tableQuery, isA<Query<AdHocRow>>());
     } finally {
       await database.dispose();
     }

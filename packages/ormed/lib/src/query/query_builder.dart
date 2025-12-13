@@ -17,6 +17,7 @@ import '../model_definition.dart';
 import '../model_mixins/model_attributes.dart';
 import '../model_mixins/model_connection.dart';
 import '../repository/repository.dart';
+import '../contracts.dart';
 import 'json_path.dart' as json_path;
 import 'query.dart';
 
@@ -70,7 +71,7 @@ part 'builder/where.dart';
 ///   .where('author.isActive', true)
 ///   .get();
 /// ```
-class Query<T> {
+class Query<T extends OrmEntity> {
   Query({
     required this.definition,
     required this.context,
@@ -153,7 +154,7 @@ class Query<T> {
     OrmConfig.ensureInitialized();
   }
 
-  final ModelDefinition<T> definition;
+  final ModelDefinition<T > definition;
   final QueryContext context;
   final List<FilterClause> _filters;
   final List<OrderClause> _orders;
@@ -289,9 +290,9 @@ class Query<T> {
     return null;
   }
 
-  Future<void> _applyRelationHookBatch<R>(
+  Future<void> _applyRelationHookBatch<R extends OrmEntity>(
     QueryPlan plan,
-    List<QueryRow<R>> batch,
+    List<QueryRow<R >> batch,
   ) async {
     if (batch.isEmpty || (_relations.isEmpty && _relationAggregates.isEmpty)) {
       return;
@@ -341,14 +342,14 @@ class Query<T> {
     if (plan.relationAggregates.isNotEmpty && model is ModelAttributes) {
       for (final aggregate in plan.relationAggregates) {
         if (row.containsKey(aggregate.alias)) {
-          model.setAttribute(aggregate.alias, row[aggregate.alias]);
+          (model as ModelAttributes).setAttribute(aggregate.alias, row[aggregate.alias]);
         }
       }
     }
 
     // Sync original state for change tracking
     if (model is ModelAttributes) {
-      model.syncOriginal();
+      (model as ModelAttributes).syncOriginal();
     }
 
     return QueryRow<T>(model: model, row: _projectionRow(row, plan));
@@ -582,7 +583,7 @@ class Query<T> {
     return definitions;
   }
 
-  String _qualifiedRelationTableName(ModelDefinition<dynamic> definition) {
+  String _qualifiedRelationTableName(ModelDefinition<OrmEntity> definition) {
     final schema = definition.schema;
     if (schema == null || schema.isEmpty) {
       return definition.tableName;
@@ -1492,7 +1493,7 @@ class Query<T> {
     String relation,
     RelationAggregateType type,
     String? alias,
-    PredicateCallback<dynamic>? constraint, {
+    PredicateCallback<OrmEntity>? constraint, {
     bool distinct = false,
     String? column,
   }) {
@@ -1519,7 +1520,7 @@ class Query<T> {
   }
 
   RelationSegment _buildRelationSegment(
-    ModelDefinition<dynamic> parent,
+    ModelDefinition<OrmEntity> parent,
     RelationDefinition relation,
   ) {
     return _resolver.segmentFor(parent, relation);
@@ -1527,14 +1528,14 @@ class Query<T> {
 
   QueryPredicate? _buildRelationPredicateConstraint(
     RelationPath path,
-    PredicateCallback<dynamic>? constraint,
+    PredicateCallback<OrmEntity>? constraint,
   ) {
     return _resolver.predicateForPath(path, constraint);
   }
 
   QueryPredicate? _buildRelationLoadPredicate(
     RelationDefinition relation,
-    PredicateCallback<dynamic>? constraint,
+    PredicateCallback<OrmEntity>? constraint,
   ) {
     return _resolver.predicateFor(relation, constraint);
   }

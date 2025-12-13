@@ -7,7 +7,7 @@ import 'package:ormed_sqlite/ormed_sqlite.dart';
 part 'ormed_sqlite_example.orm.dart';
 
 @OrmModel(table: 'users')
-class ExampleUser {
+class ExampleUser extends Model<ExampleUser> {
   const ExampleUser({required this.id, required this.email});
 
   @OrmField(isPrimaryKey: true)
@@ -28,15 +28,15 @@ void main() async {
 
   StructuredQueryLogger.printing(pretty: true).attach(context);
 
-  final repository = context.repository<ExampleUser>();
-  const user = ExampleUser(id: 1, email: 'example@example.com');
+  final repository = context.repository<$ExampleUser>();
+  final user = $ExampleUser(id: 1, email: 'example@example.com');
 
   final insertPreview = repository.previewInsert(user);
   print('Insert preview => ${insertPreview.sql} ${insertPreview.parameters}');
 
   await repository.insert(user);
 
-  final query = context.query<ExampleUser>().whereEquals('email', user.email);
+  final query = context.query<$ExampleUser>().whereEquals('email', user.email);
   final queryPreview = query.toSql();
   print('Query preview => ${queryPreview.sql} ${queryPreview.parameters}');
 

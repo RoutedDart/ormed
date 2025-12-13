@@ -177,10 +177,7 @@ extension ModelAttributeExtensions<T extends Model<T>> on Model<T> {
   ///
   /// Returns false for directly instantiated models.
   bool relationLoaded(String relation) {
-    if (this is ModelRelations) {
-      return (this as ModelRelations).relationLoaded(relation);
-    }
-    return false;
+    return (this as ModelRelations).relationLoaded(relation);
   }
 
   /// Get a loaded relation value.
@@ -188,10 +185,7 @@ extension ModelAttributeExtensions<T extends Model<T>> on Model<T> {
   /// Returns null for directly instantiated models or if the relation
   /// hasn't been loaded.
   TRelation? getRelation<TRelation>(String relation) {
-    if (this is ModelRelations) {
-      return (this as ModelRelations).getRelation<TRelation>(relation);
-    }
-    return null;
+    return (this as ModelRelations).getRelation<TRelation>(relation);
   }
 
   /// Get a loaded relation list.
@@ -199,96 +193,71 @@ extension ModelAttributeExtensions<T extends Model<T>> on Model<T> {
   /// Returns an empty list for directly instantiated models or if the
   /// relation hasn't been loaded.
   List<TRelation> getRelationList<TRelation>(String relation) {
-    if (this is ModelRelations) {
-      return (this as ModelRelations).getRelationList<TRelation>(relation);
-    }
-    return [];
+    return (this as ModelRelations).getRelationList<TRelation>(relation);
   }
 
   /// Set a relation value.
   ///
   /// Only works if this is a tracked model instance.
   void setRelation(String relation, dynamic value) {
-    if (this is ModelRelations) {
-      (this as ModelRelations).setRelation(relation, value);
+    (this as ModelRelations).setRelation(relation, value);
     }
-  }
 
   /// Unload a relation.
   ///
   /// Only works if this is a tracked model instance.
   void unsetRelation(String relation) {
-    if (this is ModelRelations) {
-      (this as ModelRelations).unsetRelation(relation);
+    (this as ModelRelations).unsetRelation(relation);
     }
-  }
 
   /// Get all loaded relations as a map.
   ///
   /// Returns an empty map for directly instantiated models.
   Map<String, dynamic> getLoadedRelations() {
-    if (this is ModelRelations) {
-      return (this as ModelRelations).loadedRelations;
-    }
-    return {};
+    return (this as ModelRelations).loadedRelations;
   }
 
   /// Get all loaded relations as a map (shorthand for getLoadedRelations).
   ///
   /// Returns an empty map for directly instantiated models.
   Map<String, dynamic> get relations {
-    if (this is ModelRelations) {
-      return (this as ModelRelations).loadedRelations;
-    }
-    return {};
+    return (this as ModelRelations).loadedRelations;
   }
 
   /// Get names of all loaded relations.
   ///
   /// Returns an empty set for directly instantiated models.
   Set<String> get loadedRelationNames {
-    if (this is ModelRelations) {
-      return (this as ModelRelations).loadedRelationNames;
-    }
-    return {};
+    return (this as ModelRelations).loadedRelationNames;
   }
 
   /// Get all loaded relations as a map (property alias).
   ///
   /// Returns an empty map for directly instantiated models.
   Map<String, dynamic> get loadedRelations {
-    if (this is ModelRelations) {
-      return (this as ModelRelations).loadedRelations;
-    }
-    return {};
+    return (this as ModelRelations).loadedRelations;
   }
 
   /// Set multiple relations at once.
   ///
   /// Only works if this is a tracked model instance.
   void setRelations(Map<String, dynamic> relations) {
-    if (this is ModelRelations) {
-      (this as ModelRelations).setRelations(relations);
+    (this as ModelRelations).setRelations(relations);
     }
-  }
 
   /// Clear all loaded relations.
   ///
   /// Only works if this is a tracked model instance.
   void clearRelations() {
-    if (this is ModelRelations) {
-      (this as ModelRelations).clearRelations();
+    (this as ModelRelations).clearRelations();
     }
-  }
 
   /// Sync relations from a query row map.
   ///
   /// Only works if this is a tracked model instance.
   void syncRelationsFromQueryRow(Map<String, dynamic> row) {
-    if (this is ModelRelations) {
-      (this as ModelRelations).syncRelationsFromQueryRow(row);
+    (this as ModelRelations).syncRelationsFromQueryRow(row);
     }
-  }
 }
 
 /// Extensions for timestamp functionality on models.
@@ -382,13 +351,6 @@ extension ModelTimestampExtensions<T extends Model<T>> on Model<T> {
   ///
   /// Throws [StateError] if the model doesn't have a connection resolver attached.
   Future<void> save() async {
-    if (this is! ModelConnection) {
-      throw StateError(
-        'Cannot save: $runtimeType does not have ModelConnection mixin. '
-        'Ensure the model was hydrated via a QueryContext or Repository.',
-      );
-    }
-
     final conn = this as ModelConnection;
     if (!conn.hasConnection) {
       throw StateError(

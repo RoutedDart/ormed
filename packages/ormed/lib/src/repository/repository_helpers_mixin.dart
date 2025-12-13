@@ -1,7 +1,7 @@
 part of 'repository.dart';
 
 /// Mixin that provides internal helper methods for repository operations.
-mixin RepositoryHelpersMixin<T> on RepositoryBase<T> {
+mixin RepositoryHelpersMixin<T extends OrmEntity> on RepositoryBase<T> {
   MutationRow mutationRowFromModel(
     T model, {
     JsonUpdateBuilder<T>? jsonUpdates,
@@ -35,38 +35,88 @@ mixin RepositoryHelpersMixin<T> on RepositoryBase<T> {
   }
 
   List<T> mapResult(List<T> original, MutationResult result, bool returning) {
-    // If driver returned data (e.g., lastInsertID), merge it even if returning wasn't explicitly requested
-    if (result.returnedRows == null || result.returnedRows!.isEmpty) {
+    // Delegate to the new method with empty inputMaps for backward compatibility
+    return mapResultWithInputs(original, const [], result, returning);
+  }
+
+  /// Maps mutation results back to model instances.
+  ///
+  /// This method handles merging returned data (e.g., auto-generated PKs) with
+  /// the original input data. It supports:
+  /// - Tracked models in [original] list
+  /// - Input maps from DTOs/Maps in [inputMaps] list
+  ///
+  /// The merge priority is: returned data > original model data > input map data
+  ///
+  /// [canCreateFromInputs] indicates whether [inputMaps] contain complete data
+  /// that can be used to create model instances when no returned data is available.
+  /// This should be `true` for inserts/upserts (complete row data) and `false`
+  /// for updates (partial data).
+  List<T> mapResultWithInputs(
+    List<T> original,
+    List<Map<String, Object?>> inputMaps,
+    MutationResult result,
+    bool returning, {
+    bool canCreateFromInputs = true,
+  }) {
+    // If driver returned data (e.g., lastInsertID), merge it with inputs
+    if (result.returnedRows != null && result.returnedRows!.isNotEmpty) {
+      // Merge returned data with original models
+      // Some drivers (like MySQL) only return PKs via lastInsertID, not full rows
+      final returned = <T>[];
+      for (int i = 0; i < result.returnedRows!.length; i++) {
+        final returnedRow = result.returnedRows![i];
+        final originalModel = i < original.length ? original[i] : null;
+        final inputMap = i < inputMaps.length ? inputMaps[i] : null;
+
+        final Map<String, Object?> mergedData;
+        if (originalModel != null) {
+          // Merge returned data (e.g., auto-generated PK) with original model data
+          final originalData = definition.toMap(originalModel, registry: codecs);
+          mergedData = {...originalData, ...returnedRow};
+        } else if (inputMap != null) {
+          // For DTOs/Maps, merge returned data with the input map
+          // This ensures required fields from the input are preserved
+          mergedData = {...inputMap, ...returnedRow};
+        } else {
+          mergedData = returnedRow;
+        }
+
+        final model = definition.fromMap(mergedData, registry: codecs);
+        attachRuntimeMetadata(model);
+
+        // Sync original state for change tracking
+        if (model is ModelAttributes) {
+          final attrs = model as ModelAttributes;
+          attrs.syncOriginal();
+        }
+
+        returned.add(model);
+      }
+      return returned;
+    }
+
+    // No returned rows from driver
+    // If we have original models, return those
+    if (original.isNotEmpty) {
       return original;
     }
 
-    // Merge returned data with original models
-    // Some drivers (like MySQL) only return PKs via lastInsertID, not full rows
-    final returned = <T>[];
-    for (int i = 0; i < result.returnedRows!.length; i++) {
-      final returnedRow = result.returnedRows![i];
-      final originalModel = i < original.length ? original[i] : null;
-
-      final Map<String, Object?> mergedData;
-      if (originalModel != null) {
-        // Merge returned data (e.g., auto-generated PK) with original model data
-        final originalData = definition.toMap(originalModel, registry: codecs);
-        mergedData = {...originalData, ...returnedRow};
-      } else {
-        mergedData = returnedRow;
-      }
-
-      final model = definition.fromMap(mergedData, registry: codecs);
-      attachRuntimeMetadata(model);
-
-      // Sync original state for change tracking
-      if (model is ModelAttributes) {
-        model.syncOriginal();
-      }
-
-      returned.add(model);
+    // For DTOs/Maps with no returned data, create models from input maps
+    // only if the inputs contain complete data (inserts/upserts)
+    // For updates, inputMaps only have partial data and can't create valid models
+    if (canCreateFromInputs && inputMaps.isNotEmpty) {
+      return inputMaps.map((map) {
+        final model = definition.fromMap(map, registry: codecs);
+        attachRuntimeMetadata(model);
+        if (model is ModelAttributes) {
+          (model as ModelAttributes).syncOriginal();
+        }
+        return model;
+      }).toList();
     }
-    return returned;
+
+    return const [];
   }
 
   MutationPlan buildInsertPlan(
@@ -78,7 +128,7 @@ mixin RepositoryHelpersMixin<T> on RepositoryBase<T> {
         .map((model) {
           // Apply timestamps to tracked models BEFORE serialization
           _applyInsertTimestampsToModel(model);
-          
+
           final map = definition.toMap(model, registry: codecs);
 
           // Filter out non-insertable fields and auto-increment fields with sentinel values
@@ -140,12 +190,12 @@ mixin RepositoryHelpersMixin<T> on RepositoryBase<T> {
         .map((model) {
           // Apply timestamps to tracked models BEFORE serialization
           _applyUpdateTimestampsToModel(model);
-          
+
           final row = mutationRowFromModel(model, jsonUpdates: jsonUpdates);
-          
+
           // For non-tracked models, ensure updated_at in the map
           _ensureTimestampsInMap(row.values, isInsert: false);
-          
+
           return row;
         })
         .toList(growable: false);
@@ -241,7 +291,8 @@ mixin RepositoryHelpersMixin<T> on RepositoryBase<T> {
       }
     }
     if (model is ModelAttributes) {
-      final pending = model.takeJsonAttributeUpdates();
+      final attrs = model as ModelAttributes;
+      final pending = attrs.takeJsonAttributeUpdates();
       for (final update in pending) {
         clauses.add(
           JsonUpdateClause(
@@ -278,19 +329,20 @@ mixin RepositoryHelpersMixin<T> on RepositoryBase<T> {
   /// ONLY manages snake_case timestamps to avoid interfering with user fields.
   void _applyInsertTimestampsToModel(T model) {
     if (model is! ModelAttributes) return;
-    
+    final attrs = model as ModelAttributes;
+
     final now = Carbon.now().toUtc().toDateTime();
-    
+
     // Check if model has created_at field (snake_case only)
     try {
       final createdAtField = definition.fields.firstWhere(
         (f) => f.columnName == 'created_at',
       );
       final columnName = createdAtField.columnName;
-      
+
       // Only set if not already set
-      if (model.getAttribute<dynamic>(columnName) == null) {
-        model.setAttribute(columnName, now);
+      if (attrs.getAttribute<dynamic>(columnName) == null) {
+        attrs.setAttribute(columnName, now);
       }
     } catch (e) {
       // Field doesn't exist - this is expected for models without timestamps
@@ -302,10 +354,10 @@ mixin RepositoryHelpersMixin<T> on RepositoryBase<T> {
         (f) => f.columnName == 'updated_at',
       );
       final columnName = updatedAtField.columnName;
-      
+
       // Only set if not already set
-      if (model.getAttribute<dynamic>(columnName) == null) {
-        model.setAttribute(columnName, now);
+      if (attrs.getAttribute<dynamic>(columnName) == null) {
+        attrs.setAttribute(columnName, now);
       }
     } catch (e) {
       // Field doesn't exist - this is expected for models without timestamps
@@ -317,18 +369,19 @@ mixin RepositoryHelpersMixin<T> on RepositoryBase<T> {
   /// ONLY manages snake_case timestamps to avoid interfering with user fields.
   void _applyUpdateTimestampsToModel(T model) {
     if (model is! ModelAttributes) return;
-    
+    final attrs = model as ModelAttributes;
+
     final now = Carbon.now().toUtc().toDateTime();
-    
+
     // Check if model has updated_at field (snake_case only)
     try {
       final updatedAtField = definition.fields.firstWhere(
         (f) => f.columnName == 'updated_at',
       );
       final columnName = updatedAtField.columnName;
-      
-      // Always update updated_at on updates  
-      model.setAttribute(columnName, now);
+
+      // Always update updated_at on updates
+      attrs.setAttribute(columnName, now);
     } catch (_) {
       // Field doesn't exist
     }
@@ -337,10 +390,13 @@ mixin RepositoryHelpersMixin<T> on RepositoryBase<T> {
   /// Ensures timestamps are present in the values map for models that have timestamp fields.
   /// This handles both tracked models (where timestamps were already set) and const/untracked models.
   /// The values map is already encoded, so we need to encode timestamps the same way.
-  /// 
+  ///
   /// ONLY manages timestamps with snake_case column names (created_at, updated_at) to avoid
   /// interfering with user-defined camelCase fields like createdAt.
-  void _ensureTimestampsInMap(Map<String, Object?> values, {required bool isInsert}) {
+  void _ensureTimestampsInMap(
+    Map<String, Object?> values, {
+    required bool isInsert,
+  }) {
     if (isInsert) {
       // For inserts, set created_at if field exists and value is null
       // ONLY check for snake_case column name to avoid interfering with user fields
@@ -349,8 +405,9 @@ mixin RepositoryHelpersMixin<T> on RepositoryBase<T> {
           (f) => f.columnName == 'created_at',
         );
         final columnName = createdAtField.columnName;
-        
-        if (!values.containsKey(columnName) || _isNullValue(values[columnName])) {
+
+        if (!values.containsKey(columnName) ||
+            _isNullValue(values[columnName])) {
           // Encode using the field's codec with current timestamp
           final now = _createTimestampValue(createdAtField);
           values[columnName] = codecs.encodeField(createdAtField, now);
@@ -359,7 +416,7 @@ mixin RepositoryHelpersMixin<T> on RepositoryBase<T> {
         // Field doesn't exist
       }
     }
-    
+
     // For both inserts and updates, set updated_at if field exists
     // ONLY check for snake_case column name
     try {
@@ -367,10 +424,11 @@ mixin RepositoryHelpersMixin<T> on RepositoryBase<T> {
         (f) => f.columnName == 'updated_at',
       );
       final columnName = updatedAtField.columnName;
-      
+
       if (isInsert) {
         // On insert, only set if not already present
-        if (!values.containsKey(columnName) || _isNullValue(values[columnName])) {
+        if (!values.containsKey(columnName) ||
+            _isNullValue(values[columnName])) {
           // Encode using the field's codec with current timestamp
           final now = _createTimestampValue(updatedAtField);
           values[columnName] = codecs.encodeField(updatedAtField, now);
@@ -389,7 +447,7 @@ mixin RepositoryHelpersMixin<T> on RepositoryBase<T> {
   /// Checks if a value is logically null, including driver-specific null wrappers.
   bool _isNullValue(Object? value) {
     if (value == null) return true;
-    
+
     // Handle Postgres TypedValue with null
     if (value.runtimeType.toString().contains('TypedValue')) {
       // TypedValue has isSqlNull property or wraps null
@@ -403,7 +461,7 @@ mixin RepositoryHelpersMixin<T> on RepositoryBase<T> {
         // Fallback: couldn't access properties
       }
     }
-    
+
     return false;
   }
 

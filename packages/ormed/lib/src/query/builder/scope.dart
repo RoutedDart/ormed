@@ -1,6 +1,6 @@
 part of '../query_builder.dart';
 
-extension ScopeExtension<T> on Query<T> {
+extension ScopeExtension<T extends OrmEntity> on Query<T> {
   /// Applies a registered local scope to the query.
   ///
   /// Local scopes allow you to define reusable query constraints that can be

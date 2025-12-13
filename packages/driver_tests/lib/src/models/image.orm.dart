@@ -177,6 +177,55 @@ class _$ImageCodec extends ModelCodec<$Image> {
   }
 }
 
+/// Insert DTO for [Image].
+///
+/// Auto-increment/DB-generated fields are omitted by default.
+class ImageInsertDto implements InsertDto<$Image> {
+  const ImageInsertDto({this.label});
+  final String? label;
+
+  @override
+  Map<String, Object?> toMap() {
+    return <String, Object?>{if (label != null) 'label': label};
+  }
+}
+
+/// Update DTO for [Image].
+///
+/// All fields are optional; only provided entries are used in SET clauses.
+class ImageUpdateDto implements UpdateDto<$Image> {
+  const ImageUpdateDto({this.id, this.label});
+  final int? id;
+  final String? label;
+
+  @override
+  Map<String, Object?> toMap() {
+    return <String, Object?>{
+      if (id != null) 'id': id,
+      if (label != null) 'label': label,
+    };
+  }
+}
+
+/// Partial projection for [Image].
+///
+/// All fields are nullable; intended for subset SELECTs.
+class ImagePartial implements PartialEntity<$Image> {
+  const ImagePartial({this.id, this.label});
+  final int? id;
+  final String? label;
+
+  @override
+  $Image toEntity() {
+    // Basic required-field check: non-nullable fields must be present.
+    final int? idValue = id;
+    if (idValue == null) throw StateError('Missing required field: id');
+    final String? labelValue = label;
+    if (labelValue == null) throw StateError('Missing required field: label');
+    return $Image(id: idValue, label: labelValue);
+  }
+}
+
 /// Generated tracked model class for [Image].
 ///
 /// This class extends the user-defined [Image] model and adds
@@ -185,7 +234,7 @@ class _$ImageCodec extends ModelCodec<$Image> {
 ///
 /// **Do not instantiate this class directly.** Use queries, repositories,
 /// or model factories to create tracked model instances.
-class $Image extends Image with ModelAttributes {
+class $Image extends Image with ModelAttributes implements OrmEntity {
   $Image({int id = 0, required String label})
     : super.new(id: id, label: label) {
     _attachOrmRuntimeMetadata({'id': id, 'label': label});

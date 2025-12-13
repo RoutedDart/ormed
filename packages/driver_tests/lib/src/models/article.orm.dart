@@ -323,6 +323,147 @@ class _$ArticleCodec extends ModelCodec<$Article> {
   }
 }
 
+/// Insert DTO for [Article].
+///
+/// Auto-increment/DB-generated fields are omitted by default.
+class ArticleInsertDto implements InsertDto<$Article> {
+  const ArticleInsertDto({
+    this.title,
+    this.body,
+    this.status,
+    this.rating,
+    this.priority,
+    this.publishedAt,
+    this.reviewedAt,
+    this.categoryId,
+  });
+  final String? title;
+  final String? body;
+  final String? status;
+  final double? rating;
+  final int? priority;
+  final DateTime? publishedAt;
+  final DateTime? reviewedAt;
+  final int? categoryId;
+
+  @override
+  Map<String, Object?> toMap() {
+    return <String, Object?>{
+      if (title != null) 'title': title,
+      if (body != null) 'body': body,
+      if (status != null) 'status': status,
+      if (rating != null) 'rating': rating,
+      if (priority != null) 'priority': priority,
+      if (publishedAt != null) 'published_at': publishedAt,
+      if (reviewedAt != null) 'reviewed_at': reviewedAt,
+      if (categoryId != null) 'category_id': categoryId,
+    };
+  }
+}
+
+/// Update DTO for [Article].
+///
+/// All fields are optional; only provided entries are used in SET clauses.
+class ArticleUpdateDto implements UpdateDto<$Article> {
+  const ArticleUpdateDto({
+    this.id,
+    this.title,
+    this.body,
+    this.status,
+    this.rating,
+    this.priority,
+    this.publishedAt,
+    this.reviewedAt,
+    this.categoryId,
+  });
+  final int? id;
+  final String? title;
+  final String? body;
+  final String? status;
+  final double? rating;
+  final int? priority;
+  final DateTime? publishedAt;
+  final DateTime? reviewedAt;
+  final int? categoryId;
+
+  @override
+  Map<String, Object?> toMap() {
+    return <String, Object?>{
+      if (id != null) 'id': id,
+      if (title != null) 'title': title,
+      if (body != null) 'body': body,
+      if (status != null) 'status': status,
+      if (rating != null) 'rating': rating,
+      if (priority != null) 'priority': priority,
+      if (publishedAt != null) 'published_at': publishedAt,
+      if (reviewedAt != null) 'reviewed_at': reviewedAt,
+      if (categoryId != null) 'category_id': categoryId,
+    };
+  }
+}
+
+/// Partial projection for [Article].
+///
+/// All fields are nullable; intended for subset SELECTs.
+class ArticlePartial implements PartialEntity<$Article> {
+  const ArticlePartial({
+    this.id,
+    this.title,
+    this.body,
+    this.status,
+    this.rating,
+    this.priority,
+    this.publishedAt,
+    this.reviewedAt,
+    this.categoryId,
+  });
+  final int? id;
+  final String? title;
+  final String? body;
+  final String? status;
+  final double? rating;
+  final int? priority;
+  final DateTime? publishedAt;
+  final DateTime? reviewedAt;
+  final int? categoryId;
+
+  @override
+  $Article toEntity() {
+    // Basic required-field check: non-nullable fields must be present.
+    final int? idValue = id;
+    if (idValue == null) throw StateError('Missing required field: id');
+    final String? titleValue = title;
+    if (titleValue == null) throw StateError('Missing required field: title');
+    final String? statusValue = status;
+    if (statusValue == null) throw StateError('Missing required field: status');
+    final double? ratingValue = rating;
+    if (ratingValue == null) throw StateError('Missing required field: rating');
+    final int? priorityValue = priority;
+    if (priorityValue == null) {
+      throw StateError('Missing required field: priority');
+    }
+    final DateTime? publishedAtValue = publishedAt;
+    if (publishedAtValue == null) {
+      throw StateError('Missing required field: publishedAt');
+    }
+    final int? categoryIdValue = categoryId;
+    if (categoryIdValue == null) {
+      throw StateError('Missing required field: categoryId');
+    }
+    return $Article(
+      id: idValue,
+      title: titleValue,
+      body: body,
+      status: statusValue,
+      rating: ratingValue,
+      priority: priorityValue,
+      publishedAt: publishedAtValue,
+      reviewedAt: reviewedAt,
+      categoryId: categoryIdValue,
+    );
+  }
+}
+
 /// Generated tracked model class for [Article].
 ///
 /// This class extends the user-defined [Article] model and adds
@@ -331,7 +472,7 @@ class _$ArticleCodec extends ModelCodec<$Article> {
 ///
 /// **Do not instantiate this class directly.** Use queries, repositories,
 /// or model factories to create tracked model instances.
-class $Article extends Article with ModelAttributes {
+class $Article extends Article with ModelAttributes implements OrmEntity {
   $Article({
     int id = 0,
     required String title,

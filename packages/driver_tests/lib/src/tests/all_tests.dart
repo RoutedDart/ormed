@@ -14,7 +14,9 @@ void runAllDriverTests() {
   runDriverJoinTests();
   runDriverAdvancedQueryTests();
   runDriverMutationTests();
+  runDriverOverrideTests();
   runDriverTransactionTests();
+  runDriverJoinTests();
   runDriverOverrideTests();
   runDriverQueryBuilderTests();
   runDriverRepositoryTests();

@@ -31,7 +31,7 @@ const FieldDefinition _$ExampleUserEmailField = FieldDefinition(
   autoIncrement: false,
 );
 
-final ModelDefinition<ExampleUser> _$ExampleUserModelDefinition =
+final ModelDefinition<$ExampleUser> _$ExampleUserModelDefinition =
     ModelDefinition(
       modelName: 'ExampleUser',
       tableName: 'users',
@@ -51,18 +51,18 @@ final ModelDefinition<ExampleUser> _$ExampleUserModelDefinition =
     );
 
 extension ExampleUserOrmDefinition on ExampleUser {
-  static ModelDefinition<ExampleUser> get definition =>
+  static ModelDefinition<$ExampleUser> get definition =>
       _$ExampleUserModelDefinition;
 
-  static Query<ExampleUser> query({String? connection}) =>
-      Model.query<ExampleUser>(connection: connection);
+  static Query<$ExampleUser> query({String? connection}) =>
+      Model.query<$ExampleUser>(connection: connection);
 }
 
-class _$ExampleUserModelCodec extends ModelCodec<ExampleUser> {
+class _$ExampleUserModelCodec extends ModelCodec<$ExampleUser> {
   const _$ExampleUserModelCodec();
 
   @override
-  Map<String, Object?> encode(ExampleUser model, ValueCodecRegistry registry) {
+  Map<String, Object?> encode($ExampleUser model, ValueCodecRegistry registry) {
     return <String, Object?>{
       'id': registry.encodeField(_$ExampleUserIdField, model.id),
       'email': registry.encodeField(_$ExampleUserEmailField, model.email),
@@ -70,14 +70,14 @@ class _$ExampleUserModelCodec extends ModelCodec<ExampleUser> {
   }
 
   @override
-  ExampleUser decode(Map<String, Object?> data, ValueCodecRegistry registry) {
+  $ExampleUser decode(Map<String, Object?> data, ValueCodecRegistry registry) {
     final int exampleUserIdValue =
         registry.decodeField<int>(_$ExampleUserIdField, data['id']) ??
         (throw StateError('Field id on ExampleUser cannot be null.'));
     final String exampleUserEmailValue =
         registry.decodeField<String>(_$ExampleUserEmailField, data['email']) ??
         (throw StateError('Field email on ExampleUser cannot be null.'));
-    final model = _$ExampleUserModel(
+    final model = $ExampleUser(
       id: exampleUserIdValue,
       email: exampleUserEmailValue,
     );
@@ -89,10 +89,11 @@ class _$ExampleUserModelCodec extends ModelCodec<ExampleUser> {
   }
 }
 
-class _$ExampleUserModel extends ExampleUser
-    with ModelAttributes, ModelConnection, ModelRelations {
-  _$ExampleUserModel({required int id, required String email})
-    : super.new(id: id, email: email) {
+class $ExampleUser extends ExampleUser
+    with ModelAttributes
+    implements OrmEntity {
+  $ExampleUser({required int id, required String email})
+    : super(id: id, email: email) {
     _attachOrmRuntimeMetadata({'id': id, 'email': email});
   }
 

@@ -238,6 +238,65 @@ class _$NamedConstructorModelCodec extends ModelCodec<$NamedConstructorModel> {
   }
 }
 
+/// Insert DTO for [NamedConstructorModel].
+///
+/// Auto-increment/DB-generated fields are omitted by default.
+class NamedConstructorModelInsertDto
+    implements InsertDto<$NamedConstructorModel> {
+  const NamedConstructorModelInsertDto({this.name, this.value});
+  final String? name;
+  final int? value;
+
+  @override
+  Map<String, Object?> toMap() {
+    return <String, Object?>{
+      if (name != null) 'name': name,
+      if (value != null) 'value': value,
+    };
+  }
+}
+
+/// Update DTO for [NamedConstructorModel].
+///
+/// All fields are optional; only provided entries are used in SET clauses.
+class NamedConstructorModelUpdateDto
+    implements UpdateDto<$NamedConstructorModel> {
+  const NamedConstructorModelUpdateDto({this.id, this.name, this.value});
+  final int? id;
+  final String? name;
+  final int? value;
+
+  @override
+  Map<String, Object?> toMap() {
+    return <String, Object?>{
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (value != null) 'value': value,
+    };
+  }
+}
+
+/// Partial projection for [NamedConstructorModel].
+///
+/// All fields are nullable; intended for subset SELECTs.
+class NamedConstructorModelPartial
+    implements PartialEntity<$NamedConstructorModel> {
+  const NamedConstructorModelPartial({this.id, this.name, this.value});
+  final int? id;
+  final String? name;
+  final int? value;
+
+  @override
+  $NamedConstructorModel toEntity() {
+    // Basic required-field check: non-nullable fields must be present.
+    final String? nameValue = name;
+    if (nameValue == null) throw StateError('Missing required field: name');
+    final int? valueValue = value;
+    if (valueValue == null) throw StateError('Missing required field: value');
+    return $NamedConstructorModel(id: id, name: nameValue, value: valueValue);
+  }
+}
+
 /// Generated tracked model class for [NamedConstructorModel].
 ///
 /// This class extends the user-defined [NamedConstructorModel] model and adds
@@ -247,7 +306,8 @@ class _$NamedConstructorModelCodec extends ModelCodec<$NamedConstructorModel> {
 /// **Do not instantiate this class directly.** Use queries, repositories,
 /// or model factories to create tracked model instances.
 class $NamedConstructorModel extends NamedConstructorModel
-    with ModelAttributes {
+    with ModelAttributes
+    implements OrmEntity {
   $NamedConstructorModel({
     int? id = 0,
     required String name,

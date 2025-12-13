@@ -12,7 +12,9 @@ import 'descriptors.dart';
 import 'helpers.dart';
 
 final _modelChecker = TypeChecker.fromUrl('package:ormed/src/model.dart#Model');
-final _hasFactoryChecker = TypeChecker.fromUrl('package:ormed/src/annotations.dart#HasFactory');
+final _hasFactoryChecker = TypeChecker.fromUrl(
+  'package:ormed/src/annotations.dart#HasFactory',
+);
 
 /// Checks if the class has the @HasFactory() annotation.
 bool _hasFactoryAnnotation(ClassElement element) {
@@ -140,7 +142,7 @@ class ModelContext {
 
   /// Returns the generated tracked model class name.
   /// Always just adds $ prefix to the class name.
-  String get trackedModelClassName => '\$' + className;
+  String get trackedModelClassName => '\$$className';
 
   ConstructorElement _resolveConstructor() {
     final constructorName = constructorOverride;
@@ -208,7 +210,8 @@ class ModelContext {
 
     collectFrom(element);
 
-    final requiresSoftDeletes = mixinSoftDeletes || mixinSoftDeletesTZ || annotationSoftDeletesFlag;
+    final requiresSoftDeletes =
+        mixinSoftDeletes || mixinSoftDeletesTZ || annotationSoftDeletesFlag;
     if (requiresSoftDeletes &&
         !descriptors.any((descriptor) => descriptor.isSoftDelete)) {
       descriptors.add(
@@ -332,8 +335,8 @@ class ModelContext {
     // Priority: 1) codec Type parameter, 2) cast field parameter, 3) model-level casts map
     final castString = reader?.peek('cast')?.stringValue;
     final modelLevelCast = castsAnnotation[fieldName];
-    final effectiveCodecType = codecType != null 
-        ? maybeTypeName(codecType) 
+    final effectiveCodecType = codecType != null
+        ? maybeTypeName(codecType)
         : (castString ?? modelLevelCast);
 
     // Read insertable/updatable behavior controls
@@ -348,7 +351,9 @@ class ModelContext {
     final bool? updatable = updatableValue?.isNull ?? true
         ? null
         : updatableValue?.boolValue;
-    final Object? defaultDartValue = _extractDefaultDartValue(defaultDartValueObj);
+    final Object? defaultDartValue = _extractDefaultDartValue(
+      defaultDartValueObj,
+    );
 
     // Check if this is an auto-increment field
     final isAutoIncrement = reader?.peek('autoIncrement')?.boolValue ?? false;
@@ -357,7 +362,8 @@ class ModelContext {
     final effectiveInsertable = insertable ?? (isAutoIncrement ? false : null);
 
     // Infer default dart value for auto-increment int fields
-    final effectiveDefaultDartValue = defaultDartValue ??
+    final effectiveDefaultDartValue =
+        defaultDartValue ??
         (isAutoIncrement && (type == 'int' || type == 'int?') ? 0 : null);
 
     return FieldDescriptor(

@@ -18,20 +18,19 @@ import 'sqlite_type_mapper.dart';
 /// Adapter that executes [QueryPlan] objects against SQLite databases.
 class SqliteDriverAdapter
     implements DriverAdapter, SchemaDriver, SchemaStateProvider {
-  
   /// Registers SQLite-specific codecs and type mapper with the global registries.
   /// Call this once during application initialization before using SQLite.
   static void registerCodecs() {
     final mapper = SqliteTypeMapper();
     TypeMapperRegistry.register('sqlite', mapper);
-    
+
     // Register codecs from TypeMapper to eliminate duplication
     final codecs = <String, ValueCodec<dynamic>>{};
     for (final mapping in mapper.typeMappings) {
       if (mapping.codec != null) {
         final typeKey = mapping.dartType.toString();
         codecs[typeKey] = mapping.codec!;
-        codecs['$typeKey?'] = mapping.codec!;  // Nullable variant
+        codecs['$typeKey?'] = mapping.codec!; // Nullable variant
       }
     }
     ValueCodecRegistry.instance.registerDriver('sqlite', codecs);
@@ -99,7 +98,7 @@ class SqliteDriverAdapter
        _codecs = ValueCodecRegistry.instance.forDriver('sqlite') {
     // Auto-register SQLite codecs on first instantiation
     registerSqliteCodecs();
-    
+
     _planCompiler = ClosurePlanCompiler(
       compileSelect: _compileSelectPreview,
       compileMutation: _compileMutationPreview,
@@ -432,23 +431,21 @@ class SqliteDriverAdapter
 
     final result = await queryRaw(sql);
     return result
-        .map(
-          (row) {
-            final name = row['name'] as String;
-            final owner = (row['file'] ?? row['path']) as String?;
-            final defaultFlag = row['default'];
-            final isDefault = switch (defaultFlag) {
-              num value => value != 0,
-              bool value => value,
-              _ => name.toLowerCase() == 'main',
-            };
-            return SchemaNamespace(
-              name: name,
-              owner: owner,
-              isDefault: isDefault,
-            );
-          },
-        )
+        .map((row) {
+          final name = row['name'] as String;
+          final owner = (row['file'] ?? row['path']) as String?;
+          final defaultFlag = row['default'];
+          final isDefault = switch (defaultFlag) {
+            num value => value != 0,
+            bool value => value,
+            _ => name.toLowerCase() == 'main',
+          };
+          return SchemaNamespace(
+            name: name,
+            owner: owner,
+            isDefault: isDefault,
+          );
+        })
         .toList(growable: false);
   }
 
@@ -516,8 +513,9 @@ class SqliteDriverAdapter
       throw UnsupportedError('SQLite should support column listing');
     }
 
-    final rows = (await queryRaw(sql))
-        .where((row) => (row['cid'] as int? ?? 0) >= 0);
+    final rows = (await queryRaw(
+      sql,
+    )).where((row) => (row['cid'] as int? ?? 0) >= 0);
     return rows
         .map((row) {
           final nullableFlag = row['nullable'];
@@ -526,8 +524,9 @@ class SqliteDriverAdapter
             bool value => value,
             _ => (row['notnull'] as int? ?? 0) == 0,
           };
-          final defaultValue =
-              row.containsKey('default') ? row['default'] : row['dflt_value'];
+          final defaultValue = row.containsKey('default')
+              ? row['default']
+              : row['dflt_value'];
           final primaryFlag = row['primary'];
           final primary = switch (primaryFlag) {
             num value => value != 0,
@@ -613,30 +612,35 @@ class SqliteDriverAdapter
     String table, {
     String? schema,
   }) async {
-    final sql = _schemaCompiler.dialect.compileForeignKeys(table, schema: schema);
+    final sql = _schemaCompiler.dialect.compileForeignKeys(
+      table,
+      schema: schema,
+    );
     if (sql == null) {
       throw UnsupportedError('SQLite should support foreign key listing');
     }
 
     final rows = await queryRaw(sql);
     var counter = 0;
-    return rows.map((row) {
-      counter += 1;
-      final columns = _splitColumns(row['columns']);
-      final foreignColumns = _splitColumns(row['foreign_columns']);
-      final foreignSchema = row['foreign_schema'] as String?;
-      return SchemaForeignKey(
-        name: 'fk_${table}_$counter',
-        columns: columns,
-        tableName: table,
-        referencedTable: row['foreign_table'] as String,
-        referencedColumns: foreignColumns,
-        schema: _exposedSchema(_schemaOrDefault(schema)),
-        referencedSchema: _exposedSchema(foreignSchema),
-        onUpdate: row['on_update'] as String?,
-        onDelete: row['on_delete'] as String?,
-      );
-    }).toList(growable: false);
+    return rows
+        .map((row) {
+          counter += 1;
+          final columns = _splitColumns(row['columns']);
+          final foreignColumns = _splitColumns(row['foreign_columns']);
+          final foreignSchema = row['foreign_schema'] as String?;
+          return SchemaForeignKey(
+            name: 'fk_${table}_$counter',
+            columns: columns,
+            tableName: table,
+            referencedTable: row['foreign_table'] as String,
+            referencedColumns: foreignColumns,
+            schema: _exposedSchema(_schemaOrDefault(schema)),
+            referencedSchema: _exposedSchema(foreignSchema),
+            onUpdate: row['on_update'] as String?,
+            onDelete: row['on_delete'] as String?,
+          );
+        })
+        .toList(growable: false);
   }
 
   // ========== Database Management ==========
@@ -822,34 +826,46 @@ class SqliteDriverAdapter
   }
 
   @override
-  Future<bool> hasColumns(String table, List<String> columns, {String? schema}) async {
+  Future<bool> hasColumns(
+    String table,
+    List<String> columns, {
+    String? schema,
+  }) async {
     final tableColumns = await listColumns(table, schema: schema);
-    final lowerCaseColumns = tableColumns.map((c) => c.name.toLowerCase()).toSet();
-    
+    final lowerCaseColumns = tableColumns
+        .map((c) => c.name.toLowerCase())
+        .toSet();
+
     for (final column in columns) {
       if (!lowerCaseColumns.contains(column.toLowerCase())) {
         return false;
       }
     }
-    
+
     return true;
   }
 
   @override
-  Future<bool> hasIndex(String table, String index, {String? schema, String? type}) async {
+  Future<bool> hasIndex(
+    String table,
+    String index, {
+    String? schema,
+    String? type,
+  }) async {
     final indexes = await listIndexes(table, schema: schema);
-    
+
     for (final idx in indexes) {
-      final typeMatches = type == null ||
+      final typeMatches =
+          type == null ||
           (type == 'primary' && idx.primary) ||
           (type == 'unique' && idx.unique) ||
           type.toLowerCase() == idx.type?.toLowerCase();
-      
+
       if (idx.name.toLowerCase() == index.toLowerCase() && typeMatches) {
         return true;
       }
     }
-    
+
     return false;
   }
 
@@ -938,11 +954,26 @@ class SqliteDriverAdapter
     final stmt = _prepareStatement(database, shape.sql);
     try {
       var affected = 0;
+      final returnedRows = <Map<String, dynamic>>[];
+
       for (final parameters in shape.parameterSets) {
-        stmt.execute(normalizeSqliteParameters(parameters));
-        affected += database.updatedRows;
+        if (plan.returning) {
+          // When RETURNING is requested, use select to get the returned rows
+          final resultSet = stmt.select(normalizeSqliteParameters(parameters));
+          for (final row in resultSet) {
+            returnedRows.add(Map<String, dynamic>.from(row));
+          }
+          affected += database.updatedRows;
+        } else {
+          stmt.execute(normalizeSqliteParameters(parameters));
+          affected += database.updatedRows;
+        }
       }
-      return MutationResult(affectedRows: affected);
+
+      return MutationResult(
+        affectedRows: affected,
+        returnedRows: plan.returning ? returnedRows : null,
+      );
     } finally {
       stmt.dispose();
     }
@@ -1070,7 +1101,21 @@ class SqliteDriverAdapter
       updateStmt = _prepareStatement(database, updateSql);
     }
 
+    // Prepare a select statement to fetch the upserted row when RETURNING is requested
+    dynamic fetchStmt;
+    List<String>? allColumnNames;
+    if (plan.returning) {
+      allColumnNames = plan.definition.fields
+          .map((f) => f.columnName)
+          .toList(growable: false);
+      final allColumnsSql = allColumnNames.map(_quote).join(', ');
+      final fetchSql = 'SELECT $allColumnsSql FROM $table WHERE $whereClause LIMIT 1';
+      fetchStmt = _prepareStatement(database, fetchSql);
+    }
+
     var affected = 0;
+    final returnedRows = <Map<String, Object?>>[];
+
     for (final row in plan.rows) {
       final insertValues = columns.map((c) => row.values[c]).toList();
       final uniqueValues = uniqueColumns.map((c) => row.values[c]).toList();
@@ -1097,17 +1142,37 @@ class SqliteDriverAdapter
       }
 
       if (updated) {
+        // Row was updated, fetch it if RETURNING is requested
+        if (fetchStmt != null && allColumnNames != null) {
+          final result = fetchStmt.select(normalizedUnique);
+          if (result.isNotEmpty) {
+            returnedRows.add(rowToMap(result.first, allColumnNames));
+          }
+        }
         continue;
       }
 
       insertStmt.execute(normalizedInsert);
       affected += database.updatedRows;
+
+      // Row was inserted, fetch it if RETURNING is requested
+      if (fetchStmt != null && allColumnNames != null) {
+        final result = fetchStmt.select(normalizedUnique);
+        if (result.isNotEmpty) {
+          returnedRows.add(rowToMap(result.first, allColumnNames));
+        }
+      }
     }
 
     insertStmt.dispose();
     selectStmt.dispose();
     updateStmt?.dispose();
-    return MutationResult(affectedRows: affected);
+    fetchStmt?.dispose();
+
+    return MutationResult(
+      affectedRows: affected,
+      returnedRows: plan.returning ? returnedRows : null,
+    );
   }
 
   Future<MutationResult> _runQueryUpdate(MutationPlan plan) async {
@@ -1246,8 +1311,18 @@ class SqliteDriverAdapter
     assignments.addAll(jsonTemplates.map((template) => template.sql));
     final whereColumns = firstRow.keys.keys.toList();
     final whereClause = _whereClause(firstRow.keys);
-    final sql =
-        'UPDATE $table SET ${assignments.join(', ')} WHERE $whereClause';
+    final sqlBuf =
+        StringBuffer('UPDATE $table SET ${assignments.join(', ')} WHERE $whereClause');
+
+    // Add RETURNING clause if requested
+    if (plan.returning) {
+      final allColumns = plan.definition.fields
+          .map((f) => f.columnName)
+          .map(_quote)
+          .join(', ');
+      sqlBuf.write(' RETURNING $allColumns');
+    }
+
     final parameters = plan.rows
         .map((row) {
           final values = <Object?>[
@@ -1278,7 +1353,7 @@ class SqliteDriverAdapter
           return values;
         })
         .toList(growable: false);
-    return _SqliteMutationShape(sql: sql, parameterSets: parameters);
+    return _SqliteMutationShape(sql: sqlBuf.toString(), parameterSets: parameters);
   }
 
   _SqliteMutationShape _buildDeleteShape(MutationPlan plan) {
@@ -1576,8 +1651,19 @@ class SqliteDriverAdapter
       }
       return normalized;
     }
+
     final conflicts = uniqueColumns.toSet();
-    return insertColumns.where((c) => !conflicts.contains(c)).toList();
+
+    // Also exclude the primary key from UPDATE columns when:
+    // 1. We're not conflicting on the PK (uniqueBy is on different columns)
+    // 2. This prevents overwriting an existing auto-increment ID with 0
+    final pkColumn = plan.definition.primaryKeyField?.columnName;
+    final excludeFromUpdate = <String>{...conflicts};
+    if (pkColumn != null && !conflicts.contains(pkColumn)) {
+      excludeFromUpdate.add(pkColumn);
+    }
+
+    return insertColumns.where((c) => !excludeFromUpdate.contains(c)).toList();
   }
 
   static const _SqliteMutationShape _emptyShape = _SqliteMutationShape(
@@ -1585,7 +1671,7 @@ class SqliteDriverAdapter
     parameterSets: [],
   );
 
-  String _tableIdentifier(ModelDefinition<dynamic> definition) {
+  String _tableIdentifier(ModelDefinition<OrmEntity> definition) {
     final table = _quote(definition.tableName);
     final schema = definition.schema;
     if (schema == null || schema.isEmpty) {
@@ -1723,7 +1809,7 @@ class SqliteDriverAdapter
   }
 
   Object? _encodeValueForColumn({
-    required ModelDefinition<dynamic> definition,
+    required ModelDefinition<OrmEntity> definition,
     required String column,
     required Object? value,
   }) {
@@ -1752,7 +1838,7 @@ class SqliteDriverAdapter
   }
 
   Map<String, Object?> _decodeRowValues(
-    ModelDefinition<dynamic> definition,
+    ModelDefinition<OrmEntity> definition,
     Map<String, Object?> row,
   ) => row.map(
     (column, value) => MapEntry(
@@ -1766,7 +1852,7 @@ class SqliteDriverAdapter
   );
 
   Object? _decodeValueForColumn({
-    required ModelDefinition<dynamic> definition,
+    required ModelDefinition<OrmEntity> definition,
     required String column,
     required Object? value,
   }) {

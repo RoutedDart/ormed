@@ -1,7 +1,7 @@
 part of '../query_builder.dart';
 
 /// Extension providing UNION operations and insert-from-select functionality.
-extension UnionExtension<T> on Query<T> {
+extension UnionExtension<T extends OrmEntity> on Query<T> {
   /// Adds a `UNION` clause combining the current query with [query].
   ///
   /// The `UNION` operator combines the result sets of two or more `SELECT` statements

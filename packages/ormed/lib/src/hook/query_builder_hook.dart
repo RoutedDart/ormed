@@ -1,5 +1,6 @@
 import '../blueprint/schema_driver.dart';
 import '../blueprint/schema_plan.dart';
+import '../contracts.dart';
 import '../model_definition.dart';
 import '../query/query.dart';
 import '../repository/repository.dart';
@@ -8,13 +9,13 @@ import '../repository/repository.dart';
 /// schema handling for ORM models.
 abstract class QueryBuilderHook {
   /// Returns `true` when this hook can customize the provided [definition].
-  bool handles(ModelDefinition<dynamic> definition);
+  bool handles(ModelDefinition<OrmEntity> definition);
 
   /// Returns a query that the adapter will execute for [definition].
   ///
   /// Implementations may wrap [defaultQuery] to add filters, joins, or
   /// diagnostics before returning the final [Query].
-  Query<T> build<T>(
+  Query<T> build<T extends OrmEntity>(
     ModelDefinition<T> definition,
     QueryContext context,
     Query<T> defaultQuery,
@@ -24,13 +25,13 @@ abstract class QueryBuilderHook {
 /// Extension point for replacing the default repository implementation.
 abstract class RepositoryHook {
   /// Returns `true` when this hook should build a repository for [definition].
-  bool handles(ModelDefinition<dynamic> definition);
+  bool handles(ModelDefinition<OrmEntity> definition);
 
   /// Returns the repository instance that should back the given [definition].
   ///
   /// Hooks typically wrap or replace [defaultRepository] to inject driver-
   /// specific logic or metrics.
-  Repository<T> build<T>(
+  Repository<T> build<T extends OrmEntity>(
     ModelDefinition<T> definition,
     QueryContext context,
     Repository<T> defaultRepository,

@@ -6,6 +6,7 @@ import '../connection/connection_resolver.dart';
 import '../driver/driver.dart';
 import '../hook/query_builder_hook.dart';
 import '../model.dart';
+import '../contracts.dart';
 import '../model_definition.dart';
 import '../model_registry.dart';
 import '../model_mixins/model_attributes.dart';

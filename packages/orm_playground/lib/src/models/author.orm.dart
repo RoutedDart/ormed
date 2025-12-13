@@ -55,7 +55,7 @@ const FieldDefinition _$AuthorUpdatedAtField = FieldDefinition(
   autoIncrement: false,
 );
 
-final ModelDefinition<Author> _$AuthorModelDefinition = ModelDefinition(
+final ModelDefinition<$Author> _$AuthorDefinition = ModelDefinition(
   modelName: 'Author',
   tableName: 'authors',
   fields: const [
@@ -75,67 +75,70 @@ final ModelDefinition<Author> _$AuthorModelDefinition = ModelDefinition(
     softDeletes: false,
     softDeleteColumn: 'deleted_at',
   ),
-  codec: _$AuthorModelCodec(),
+  codec: _$AuthorCodec(),
 );
 
 extension AuthorOrmDefinition on Author {
-  static ModelDefinition<Author> get definition => _$AuthorModelDefinition;
+  static ModelDefinition<$Author> get definition => _$AuthorDefinition;
 }
 
 class Authors {
   const Authors._();
 
-  static Query<Author> query([String? connection]) =>
-      Model.query<Author>(connection: connection);
+  static Query<$Author> query([String? connection]) =>
+      Model.query<$Author>(connection: connection);
 
-  static Future<Author?> find(Object id, {String? connection}) =>
-      Model.find<Author>(id, connection: connection);
+  static Future<$Author?> find(Object id, {String? connection}) =>
+      Model.find<$Author>(id, connection: connection);
 
-  static Future<Author> findOrFail(Object id, {String? connection}) =>
-      Model.findOrFail<Author>(id, connection: connection);
+  static Future<$Author> findOrFail(Object id, {String? connection}) =>
+      Model.findOrFail<$Author>(id, connection: connection);
 
-  static Future<List<Author>> all({String? connection}) =>
-      Model.all<Author>(connection: connection);
+  static Future<List<$Author>> all({String? connection}) =>
+      Model.all<$Author>(connection: connection);
 
   static Future<int> count({String? connection}) =>
-      Model.count<Author>(connection: connection);
+      Model.count<$Author>(connection: connection);
 
   static Future<bool> anyExist({String? connection}) =>
-      Model.anyExist<Author>(connection: connection);
+      Model.anyExist<$Author>(connection: connection);
 
-  static Query<Author> where(
+  static Query<$Author> where(
     String column,
     String operator,
     dynamic value, {
     String? connection,
-  }) => Model.where<Author>(column, operator, value, connection: connection);
+  }) => Model.where<$Author>(column, operator, value, connection: connection);
 
-  static Query<Author> whereIn(
+  static Query<$Author> whereIn(
     String column,
     List<dynamic> values, {
     String? connection,
-  }) => Model.whereIn<Author>(column, values, connection: connection);
+  }) => Model.whereIn<$Author>(column, values, connection: connection);
 
-  static Query<Author> orderBy(
+  static Query<$Author> orderBy(
     String column, {
     String direction = "asc",
     String? connection,
-  }) => Model.orderBy<Author>(
+  }) => Model.orderBy<$Author>(
     column,
     direction: direction,
     connection: connection,
   );
 
-  static Query<Author> limit(int count, {String? connection}) =>
-      Model.limit<Author>(count, connection: connection);
+  static Query<$Author> limit(int count, {String? connection}) =>
+      Model.limit<$Author>(count, connection: connection);
+
+  static Repository<$Author> repo([String? connection]) =>
+      Model.repository<$Author>(connection: connection);
 }
 
 class AuthorModelFactory {
   const AuthorModelFactory._();
 
-  static ModelDefinition<Author> get definition => _$AuthorModelDefinition;
+  static ModelDefinition<$Author> get definition => _$AuthorDefinition;
 
-  static ModelCodec<Author> get codec => definition.codec;
+  static ModelCodec<$Author> get codec => definition.codec;
 
   static Author fromMap(
     Map<String, Object?> data, {
@@ -145,7 +148,7 @@ class AuthorModelFactory {
   static Map<String, Object?> toMap(
     Author model, {
     ValueCodecRegistry? registry,
-  }) => definition.toMap(model, registry: registry);
+  }) => definition.toMap(model.toTracked(), registry: registry);
 
   static void registerWith(ModelRegistry registry) =>
       registry.register(definition);
@@ -161,11 +164,10 @@ class AuthorModelFactory {
   );
 }
 
-class _$AuthorModelCodec extends ModelCodec<Author> {
-  const _$AuthorModelCodec();
-
+class _$AuthorCodec extends ModelCodec<$Author> {
+  const _$AuthorCodec();
   @override
-  Map<String, Object?> encode(Author model, ValueCodecRegistry registry) {
+  Map<String, Object?> encode($Author model, ValueCodecRegistry registry) {
     return <String, Object?>{
       'id': registry.encodeField(_$AuthorIdField, model.id),
       'name': registry.encodeField(_$AuthorNameField, model.name),
@@ -181,7 +183,7 @@ class _$AuthorModelCodec extends ModelCodec<Author> {
   }
 
   @override
-  Author decode(Map<String, Object?> data, ValueCodecRegistry registry) {
+  $Author decode(Map<String, Object?> data, ValueCodecRegistry registry) {
     final int? authorIdValue = registry.decodeField<int?>(
       _$AuthorIdField,
       data['id'],
@@ -197,7 +199,7 @@ class _$AuthorModelCodec extends ModelCodec<Author> {
       _$AuthorUpdatedAtField,
       data['updated_at'],
     );
-    final model = _$AuthorModel(
+    final model = $Author(
       id: authorIdValue,
       name: authorNameValue,
       createdAt: authorCreatedAtValue,
@@ -213,8 +215,82 @@ class _$AuthorModelCodec extends ModelCodec<Author> {
   }
 }
 
-class _$AuthorModel extends Author {
-  _$AuthorModel({
+/// Insert DTO for [Author].
+///
+/// Auto-increment/DB-generated fields are omitted by default.
+class AuthorInsertDto implements InsertDto<$Author> {
+  const AuthorInsertDto({this.id, this.name, this.createdAt, this.updatedAt});
+  final int? id;
+  final String? name;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+
+  @override
+  Map<String, Object?> toMap() {
+    return <String, Object?>{
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+    };
+  }
+}
+
+/// Update DTO for [Author].
+///
+/// All fields are optional; only provided entries are used in SET clauses.
+class AuthorUpdateDto implements UpdateDto<$Author> {
+  const AuthorUpdateDto({this.id, this.name, this.createdAt, this.updatedAt});
+  final int? id;
+  final String? name;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+
+  @override
+  Map<String, Object?> toMap() {
+    return <String, Object?>{
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+    };
+  }
+}
+
+/// Partial projection for [Author].
+///
+/// All fields are nullable; intended for subset SELECTs.
+class AuthorPartial implements PartialEntity<$Author> {
+  const AuthorPartial({this.id, this.name, this.createdAt, this.updatedAt});
+  final int? id;
+  final String? name;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+
+  @override
+  $Author toEntity() {
+    // Basic required-field check: non-nullable fields must be present.
+    final String? nameValue = name;
+    if (nameValue == null) throw StateError('Missing required field: name');
+    return $Author(
+      id: id,
+      name: nameValue,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
+    );
+  }
+}
+
+/// Generated tracked model class for [Author].
+///
+/// This class extends the user-defined [Author] model and adds
+/// attribute tracking, change detection, and relationship management.
+/// Instances of this class are returned by queries and repositories.
+///
+/// **Do not instantiate this class directly.** Use queries, repositories,
+/// or model factories to create tracked model instances.
+class $Author extends Author with ModelAttributes implements OrmEntity {
+  $Author({
     int? id,
     required String name,
     DateTime? createdAt,
@@ -231,6 +307,16 @@ class _$AuthorModel extends Author {
       'created_at': createdAt,
       'updated_at': updatedAt,
     });
+  }
+
+  /// Creates a tracked model instance from a user-defined model instance.
+  factory $Author.fromModel(Author model) {
+    return $Author(
+      id: model.id,
+      name: model.name,
+      createdAt: model.createdAt,
+      updatedAt: model.updatedAt,
+    );
   }
 
   @override
@@ -257,6 +343,20 @@ class _$AuthorModel extends Author {
 
   void _attachOrmRuntimeMetadata(Map<String, Object?> values) {
     replaceAttributes(values);
-    attachModelDefinition(_$AuthorModelDefinition);
+    attachModelDefinition(_$AuthorDefinition);
+  }
+}
+
+extension AuthorOrmExtension on Author {
+  /// The Type of the generated ORM-managed model class.
+  /// Use this when you need to specify the tracked model type explicitly,
+  /// for example in generic type parameters.
+  static Type get trackedType => $Author;
+
+  /// Converts this immutable model to a tracked ORM-managed model.
+  /// The tracked model supports attribute tracking, change detection,
+  /// and persistence operations like save() and touch().
+  $Author toTracked() {
+    return $Author.fromModel(this);
   }
 }

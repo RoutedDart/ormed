@@ -201,15 +201,11 @@ class _$AuthorCodec extends ModelCodec<$Author> {
       'active': registry.encodeField(_$AuthorActiveField, model.active),
       'created_at': registry.encodeField(
         _$AuthorCreatedAtField,
-        (model is ModelAttributes
-            ? model.getAttribute<DateTime?>('created_at')
-            : null),
+        (model.getAttribute<DateTime?>('created_at')),
       ),
       'updated_at': registry.encodeField(
         _$AuthorUpdatedAtField,
-        (model is ModelAttributes
-            ? model.getAttribute<DateTime?>('updated_at')
-            : null),
+        (model.getAttribute<DateTime?>('updated_at')),
       ),
     };
   }
@@ -248,6 +244,64 @@ class _$AuthorCodec extends ModelCodec<$Author> {
   }
 }
 
+/// Insert DTO for [Author].
+///
+/// Auto-increment/DB-generated fields are omitted by default.
+class AuthorInsertDto implements InsertDto<$Author> {
+  const AuthorInsertDto({this.name, this.active});
+  final String? name;
+  final bool? active;
+
+  @override
+  Map<String, Object?> toMap() {
+    return <String, Object?>{
+      if (name != null) 'name': name,
+      if (active != null) 'active': active,
+    };
+  }
+}
+
+/// Update DTO for [Author].
+///
+/// All fields are optional; only provided entries are used in SET clauses.
+class AuthorUpdateDto implements UpdateDto<$Author> {
+  const AuthorUpdateDto({this.id, this.name, this.active});
+  final int? id;
+  final String? name;
+  final bool? active;
+
+  @override
+  Map<String, Object?> toMap() {
+    return <String, Object?>{
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (active != null) 'active': active,
+    };
+  }
+}
+
+/// Partial projection for [Author].
+///
+/// All fields are nullable; intended for subset SELECTs.
+class AuthorPartial implements PartialEntity<$Author> {
+  const AuthorPartial({this.id, this.name, this.active});
+  final int? id;
+  final String? name;
+  final bool? active;
+
+  @override
+  $Author toEntity() {
+    // Basic required-field check: non-nullable fields must be present.
+    final int? idValue = id;
+    if (idValue == null) throw StateError('Missing required field: id');
+    final String? nameValue = name;
+    if (nameValue == null) throw StateError('Missing required field: name');
+    final bool? activeValue = active;
+    if (activeValue == null) throw StateError('Missing required field: active');
+    return $Author(id: idValue, name: nameValue, active: activeValue);
+  }
+}
+
 /// Generated tracked model class for [Author].
 ///
 /// This class extends the user-defined [Author] model and adds
@@ -256,7 +310,9 @@ class _$AuthorCodec extends ModelCodec<$Author> {
 ///
 /// **Do not instantiate this class directly.** Use queries, repositories,
 /// or model factories to create tracked model instances.
-class $Author extends Author with ModelAttributes, TimestampsImpl {
+class $Author extends Author
+    with ModelAttributes, TimestampsImpl
+    implements OrmEntity {
   $Author({int id = 0, required String name, required bool active})
     : super.new(id: id, name: name, active: active) {
     _attachOrmRuntimeMetadata({'id': id, 'name': name, 'active': active});
