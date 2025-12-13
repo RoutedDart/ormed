@@ -3,16 +3,26 @@ import 'package:test/test.dart';
 
 import '../../models/models.dart';
 
-void runJsonQueryTests(DataSource dataSource) {
-  group('JSON Query Operations', () {
+void runJsonQueryTests() {
+  ormedGroup('JSON Query Operations', (dataSource) {
     test('whereJsonContains - simple value in array', () async {
       await dataSource.repo<User>().insertMany([
-        User(id: 1, email: 'user1@test.com', active: true, metadata: {
-          'skills': ['Dart', 'Flutter']
-        }),
-        User(id: 2, email: 'user2@test.com', active: true, metadata: {
-          'skills': ['Python', 'Django']
-        }),
+        User(
+          id: 1,
+          email: 'user1@test.com',
+          active: true,
+          metadata: {
+            'skills': ['Dart', 'Flutter'],
+          },
+        ),
+        User(
+          id: 2,
+          email: 'user2@test.com',
+          active: true,
+          metadata: {
+            'skills': ['Python', 'Django'],
+          },
+        ),
       ]);
 
       final users = await dataSource.context
@@ -26,12 +36,22 @@ void runJsonQueryTests(DataSource dataSource) {
 
     test('whereJsonLength - array length exact match', () async {
       await dataSource.repo<User>().insertMany([
-        User(id: 1, email: 'user1@test.com', active: true, metadata: {
-          'tags': ['a', 'b', 'c']
-        }),
-        User(id: 2, email: 'user2@test.com', active: true, metadata: {
-          'tags': ['x']
-        }),
+        User(
+          id: 1,
+          email: 'user1@test.com',
+          active: true,
+          metadata: {
+            'tags': ['a', 'b', 'c'],
+          },
+        ),
+        User(
+          id: 2,
+          email: 'user2@test.com',
+          active: true,
+          metadata: {
+            'tags': ['x'],
+          },
+        ),
       ]);
 
       final users = await dataSource.context
@@ -44,12 +64,20 @@ void runJsonQueryTests(DataSource dataSource) {
 
     test('whereJsonContainsKey - key existence', () async {
       await dataSource.repo<User>().insertMany([
-        User(id: 1, email: 'user1@test.com', active: true, metadata: {
-          'address': {'city': 'NYC'}
-        }),
-        User(id: 2, email: 'user2@test.com', active: true, metadata: {
-          'name': 'John'
-        }),
+        User(
+          id: 1,
+          email: 'user1@test.com',
+          active: true,
+          metadata: {
+            'address': {'city': 'NYC'},
+          },
+        ),
+        User(
+          id: 2,
+          email: 'user2@test.com',
+          active: true,
+          metadata: {'name': 'John'},
+        ),
       ]);
 
       final users = await dataSource.context
@@ -62,18 +90,28 @@ void runJsonQueryTests(DataSource dataSource) {
 
     test('whereJsonOverlaps - array intersection', () async {
       await dataSource.repo<User>().insertMany([
-        User(id: 1, email: 'user1@test.com', active: true, metadata: {
-          'skills': ['Dart', 'Flutter', 'Go']
-        }),
-        User(id: 2, email: 'user2@test.com', active: true, metadata: {
-          'skills': ['Python', 'Django']
-        }),
+        User(
+          id: 1,
+          email: 'user1@test.com',
+          active: true,
+          metadata: {
+            'skills': ['Dart', 'Flutter', 'Go'],
+          },
+        ),
+        User(
+          id: 2,
+          email: 'user2@test.com',
+          active: true,
+          metadata: {
+            'skills': ['Python', 'Django'],
+          },
+        ),
       ]);
 
-      final users = await dataSource.context
-          .query<User>()
-          .whereJsonOverlaps('metadata->skills', ['Dart', 'Python'])
-          .get();
+      final users = await dataSource.context.query<User>().whereJsonOverlaps(
+        'metadata->skills',
+        ['Dart', 'Python'],
+      ).get();
 
       expect(users.length, greaterThanOrEqualTo(2));
     });
@@ -94,4 +132,3 @@ void runJsonQueryTests(DataSource dataSource) {
     });
   });
 }
-

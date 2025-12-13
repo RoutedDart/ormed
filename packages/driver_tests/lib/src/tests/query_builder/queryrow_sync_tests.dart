@@ -2,10 +2,9 @@ import 'package:driver_tests/models.dart';
 import 'package:ormed/ormed.dart';
 import 'package:test/test.dart';
 
-void runQueryRowSyncTests(DataSource dataSource) {
-  group(
-    '${dataSource.connection.driver.metadata.name} QueryRow relations sync',
-    () {
+void runQueryRowSyncTests() {
+  ormedGroup(
+    ' QueryRow relations sync', (dataSource) {
       setUp(() async {
         // Seed test data
         await dataSource.repo<Author>().insertMany([
@@ -35,7 +34,7 @@ void runQueryRowSyncTests(DataSource dataSource) {
 
       tearDown(() async {});
 
-      test('eager loaded hasMany relations are synced to model', () async {
+      test('syncs belongsTo relation from QueryRow to model', () async {
         final queryRows = await dataSource.context
             .query<Author>()
             .withRelation('posts')
@@ -63,7 +62,7 @@ void runQueryRowSyncTests(DataSource dataSource) {
         );
       });
 
-      test('eager loaded belongsTo relations are synced to model', () async {
+      test('syncs multiple relations on QueryRow', () async {
         final queryRows = await dataSource.context
             .query<Post>()
             .withRelation('author')
@@ -88,7 +87,7 @@ void runQueryRowSyncTests(DataSource dataSource) {
         );
       });
 
-      test('multiple eager loaded relations are all synced', () async {
+      test('leaves relations unloaded when not requested', () async {
         final queryRows = await dataSource.context
             .query<Post>()
             .withRelation('author')
@@ -110,7 +109,7 @@ void runQueryRowSyncTests(DataSource dataSource) {
         expect(post.tags, hasLength(1));
       });
 
-      test('non-eager loaded relations are not marked as loaded', () async {
+      test('shared relation lists keep identical instances', () async {
         final queryRows = await dataSource.context
             .query<Author>()
             .where('id', 1)
@@ -127,7 +126,7 @@ void runQueryRowSyncTests(DataSource dataSource) {
         expect(author.posts, isEmpty);
       });
 
-      test('QueryRow.relations and model relations stay in sync', () async {
+      test('shared relation lists stay identical between QueryRow and model', () async {
         final queryRows = await dataSource.context
             .query<Author>()
             .withRelation('posts')

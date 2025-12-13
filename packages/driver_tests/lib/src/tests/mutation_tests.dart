@@ -5,20 +5,17 @@ import 'package:test/test.dart';
 
 import '../../models.dart';
 import '../seed_data.dart';
-import '../support/driver_schema.dart';
 
-void runDriverMutationTests({required DataSource dataSource}) {
-  final metadata = dataSource.connection.driver.metadata;
+void runDriverMutationTests() {
   // Skip entire group for drivers that don't support raw SQL,
   // as these tests use executeRaw, queryRaw, and SQL-specific features
-  if (!metadata.supportsCapability(DriverCapability.rawSQL)) {
-    return;
-  }
-
-  group('${metadata.name} mutations', () {
+  ormedGroup('mutations', (dataSource) {
+    final metadata = dataSource.options.driver.metadata;
+    if (!metadata.supportsCapability(DriverCapability.rawSQL)) {
+      return;
+    }
     String wrap(String value) =>
         '${metadata.identifierQuote}$value${metadata.identifierQuote}';
-    late TestDatabaseManager manager;
 
     void expectPreviewMetadata(StatementPreview preview) {
       final normalized = preview.normalized;
@@ -28,31 +25,8 @@ void runDriverMutationTests({required DataSource dataSource}) {
       expect(normalized.parameters, isNotNull);
     }
 
-    setUpAll(() async {
-      await dataSource.init();
-      manager = TestDatabaseManager(
-        baseDataSource: dataSource,
-        migrationDescriptors: driverTestMigrationEntries
-            .map(
-              (e) => MigrationDescriptor.fromMigration(
-                id: e.id,
-                migration: e.migration,
-              ),
-            )
-            .toList(),
-        strategy: DatabaseIsolationStrategy.truncate,
-      );
-      await manager.initialize();
-    });
-
     setUp(() async {
-      await manager.beginTest('mutation_tests', dataSource);
-    });
-
-    tearDown(() async => manager.endTest('mutation_tests', dataSource));
-
-    tearDownAll(() async {
-      // Schema cleanup is handled by outer test file
+      // Clean per-test state is handled by ormedGroup isolation; seed happens within tests below.
     });
 
     test('insert + update + delete round trip', () async {
@@ -278,7 +252,7 @@ void runDriverMutationTests({required DataSource dataSource}) {
             {'label': 'first'},
             {'label': 'second'},
           ],
-          driverName: dataSource.connection.driver.metadata.name,
+          driverName: dataSource.options.driver.metadata.name,
           returning: metadata.supportsCapability(DriverCapability.returning),
         );
 

@@ -4,25 +4,17 @@ import 'package:test/test.dart';
 import '../../models/models.dart';
 
 /// Tests for model convenience methods (fill, forceFill, setAttributes, etc.)
-void runConvenienceMethodsTests(DataSource dataSource) {
-  group('Convenience Methods', () {
+void runConvenienceMethodsTests() {
+  ormedGroup('Convenience Methods', (dataSource) {
     group('exists property', () {
       test('returns false for new model', () {
-        final user = User(
-          id: 1,
-          email: 'test@example.com',
-          active: true,
-        );
+        final user = User(id: 1, email: 'test@example.com', active: true);
 
         expect(user.exists, false);
       });
 
       test('returns true for fetched model', () async {
-        final user = User(
-          id: 1,
-          email: 'test@example.com',
-          active: true,
-        );
+        final user = User(id: 1, email: 'test@example.com', active: true);
         await dataSource.repo<User>().insert(user);
 
         final fetched = await dataSource.context
@@ -38,11 +30,9 @@ void runConvenienceMethodsTests(DataSource dataSource) {
     group('fill()', () {
       test('sets attributes respecting fillable rules', () async {
         // Insert a user first so we get a tracked instance
-        await dataSource.repo<User>().insert(User(
-          id: 1,
-          email: 'original@example.com',
-          active: true,
-        ));
+        await dataSource.repo<User>().insert(
+          User(id: 1, email: 'original@example.com', active: true),
+        );
 
         // Fetch to get a tracked instance
         final user = await dataSource.context
@@ -64,11 +54,9 @@ void runConvenienceMethodsTests(DataSource dataSource) {
       });
 
       test('is a convenience wrapper for fillAttributes', () async {
-        await dataSource.repo<User>().insert(User(
-          id: 1,
-          email: 'test@example.com',
-          active: true,
-        ));
+        await dataSource.repo<User>().insert(
+          User(id: 1, email: 'test@example.com', active: true),
+        );
 
         final user = await dataSource.context
             .query<User>()
@@ -89,11 +77,9 @@ void runConvenienceMethodsTests(DataSource dataSource) {
 
     group('forceFill()', () {
       test('bypasses fillable/guarded protection', () async {
-        await dataSource.repo<User>().insert(User(
-          id: 1,
-          email: 'test@example.com',
-          active: true,
-        ));
+        await dataSource.repo<User>().insert(
+          User(id: 1, email: 'test@example.com', active: true),
+        );
 
         final user = await dataSource.context
             .query<User>()
@@ -103,21 +89,16 @@ void runConvenienceMethodsTests(DataSource dataSource) {
         expect(user, isNotNull);
 
         // forceFill should work even for guarded attributes
-        user!.forceFill({
-          'name': 'Forced Name',
-          'email': 'forced@example.com',
-        });
+        user!.forceFill({'name': 'Forced Name', 'email': 'forced@example.com'});
 
         expect(user.getAttribute('name'), 'Forced Name');
         expect(user.getAttribute('email'), 'forced@example.com');
       });
 
       test('uses unguarded mode internally', () async {
-        await dataSource.repo<User>().insert(User(
-          id: 1,
-          email: 'test@example.com',
-          active: true,
-        ));
+        await dataSource.repo<User>().insert(
+          User(id: 1, email: 'test@example.com', active: true),
+        );
 
         final user = await dataSource.context
             .query<User>()
@@ -128,10 +109,7 @@ void runConvenienceMethodsTests(DataSource dataSource) {
 
         // Should not throw even if attributes are guarded
         expect(
-          () => user!.forceFill({
-            'name': 'Test',
-            'email': 'test@example.com',
-          }),
+          () => user!.forceFill({'name': 'Test', 'email': 'test@example.com'}),
           returnsNormally,
         );
       });
@@ -139,11 +117,9 @@ void runConvenienceMethodsTests(DataSource dataSource) {
 
     group('setAttributes()', () {
       test('sets multiple attributes at once', () async {
-        await dataSource.repo<User>().insert(User(
-          id: 1,
-          email: 'original@example.com',
-          active: true,
-        ));
+        await dataSource.repo<User>().insert(
+          User(id: 1, email: 'original@example.com', active: true),
+        );
 
         final user = await dataSource.context
             .query<User>()
@@ -164,11 +140,9 @@ void runConvenienceMethodsTests(DataSource dataSource) {
       });
 
       test('bypasses fillable/guarded checks', () async {
-        await dataSource.repo<User>().insert(User(
-          id: 1,
-          email: 'test@example.com',
-          active: true,
-        ));
+        await dataSource.repo<User>().insert(
+          User(id: 1, email: 'test@example.com', active: true),
+        );
 
         final user = await dataSource.context
             .query<User>()
@@ -188,11 +162,9 @@ void runConvenienceMethodsTests(DataSource dataSource) {
       });
 
       test('can set empty map', () async {
-        await dataSource.repo<User>().insert(User(
-          id: 1,
-          email: 'test@example.com',
-          active: true,
-        ));
+        await dataSource.repo<User>().insert(
+          User(id: 1, email: 'test@example.com', active: true),
+        );
 
         final user = await dataSource.context
             .query<User>()
@@ -206,12 +178,14 @@ void runConvenienceMethodsTests(DataSource dataSource) {
 
     group('hasAttribute()', () {
       test('returns true for existing attributes', () async {
-        await dataSource.repo<User>().insert(User(
-          id: 1,
-          email: 'test@example.com',
-          name: 'Test User',
-          active: true,
-        ));
+        await dataSource.repo<User>().insert(
+          User(
+            id: 1,
+            email: 'test@example.com',
+            name: 'Test User',
+            active: true,
+          ),
+        );
 
         final fetched = await dataSource.context
             .query<User>()
@@ -225,11 +199,7 @@ void runConvenienceMethodsTests(DataSource dataSource) {
       });
 
       test('returns false for non-existent attributes', () async {
-        final user = User(
-          id: 1,
-          email: 'test@example.com',
-          active: true,
-        );
+        final user = User(id: 1, email: 'test@example.com', active: true);
         await dataSource.repo<User>().insert(user);
 
         final fetched = await dataSource.context
@@ -246,13 +216,9 @@ void runConvenienceMethodsTests(DataSource dataSource) {
         expect(fetched.hasAttribute('random_field'), false);
       });
 
-      test('works with new models after setting attributes', () async {
+      test('hasAttribute reflects tracked and custom fields', () async {
         // Create and save to get a tracked model
-        final user = User(
-          id: 1,
-          email: 'test@example.com',
-          active: true,
-        );
+        final user = User(id: 1, email: 'test@example.com', active: true);
         await dataSource.repo<User>().insert(user);
 
         // Fetch tracked model from database
@@ -297,11 +263,7 @@ void runConvenienceMethodsTests(DataSource dataSource) {
       });
 
       test('is consistent with attributes getter', () async {
-        final user = User(
-          id: 1,
-          email: 'test@example.com',
-          active: true,
-        );
+        final user = User(id: 1, email: 'test@example.com', active: true);
         await dataSource.repo<User>().insert(user);
 
         final fetched = await dataSource.context
@@ -358,4 +320,3 @@ void runConvenienceMethodsTests(DataSource dataSource) {
     });
   });
 }
-

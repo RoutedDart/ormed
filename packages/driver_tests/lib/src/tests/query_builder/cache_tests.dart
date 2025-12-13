@@ -3,10 +3,9 @@ import 'package:test/test.dart';
 
 import '../../models/models.dart';
 
-void runCacheTests(DataSource dataSource) {
-  group('Query Caching', () {
+void runCacheTests() {
+  ormedGroup('Query Caching', (dataSource) {
     setUp(() {
-      // Clear cache before each test
       dataSource.context.flushQueryCache();
     });
 
@@ -37,7 +36,7 @@ void runCacheTests(DataSource dataSource) {
         expect(result2.first.email, 'test@example.com');
       });
 
-      test('different queries produce different cache entries', () async {
+      test('separates cache keys for distinct predicates', () async {
         await dataSource.repo<User>().insertMany([
           User(id: 1, email: 'user1@example.com', active: true),
           User(id: 2, email: 'user2@example.com', active: false),
@@ -329,7 +328,7 @@ void runCacheTests(DataSource dataSource) {
         expect(result3?.email, 'updated@example.com');
       });
 
-      test('manual cache flush enables fresh data retrieval', () async {
+      test('rebuilds cache after manual flush', () async {
         final user = User(id: 1, email: 'test@example.com', active: true);
         await dataSource.repo<User>().insert(user);
 

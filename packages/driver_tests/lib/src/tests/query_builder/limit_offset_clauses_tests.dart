@@ -3,9 +3,8 @@ import 'package:test/test.dart';
 
 import '../../models/models.dart';
 
-
-void runLimitOffsetClausesTests(DataSource dataSource) {
-  group('Limit/Offset Clauses tests', () {
+void runLimitOffsetClausesTests() {
+  ormedGroup('Limit/Offset Clauses tests', (dataSource) {
     setUp(() async {});
 
     test('limit', () async {

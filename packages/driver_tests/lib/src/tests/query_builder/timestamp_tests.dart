@@ -8,16 +8,16 @@ import '../../models/models.dart';
 /// Note: TimeMachine (named timezone support) should be configured via
 /// DataSourceOptions.enableNamedTimezones = true, or the timezone conversion
 /// tests will fail.
-void runTimestampTests(DataSource dataSource) {
-  group('Timestamps', () {
+void runTimestampTests() {
+  ormedGroup('Timestamps', (dataSource) {
     group('Non-TZ Timestamps (Author)', () {
       test('createdAt is set automatically on insert', () async {
         final author = const Author(id: 1000, name: 'Test Author');
-        await Authors.repo(dataSource.connection.name).insert(author.toTracked());
+        await Authors.repo(dataSource.options.name).insert(author.toTracked());
 
-        final fetched = await Authors.query(dataSource.connection.name)
-            .where('id', 1000)
-            .first();
+        final fetched = await Authors.query(
+          dataSource.options.name,
+        ).where('id', 1000).first();
 
         expect(fetched, isNotNull);
         expect(fetched!.createdAt, isNotNull);
@@ -26,11 +26,11 @@ void runTimestampTests(DataSource dataSource) {
 
       test('updatedAt is set automatically on insert', () async {
         final author = const Author(id: 1001, name: 'Test Author 2');
-        await Authors.repo(dataSource.connection.name).insert(author.toTracked());
+        await Authors.repo(dataSource.options.name).insert(author.toTracked());
 
-        final fetched = await Authors.query(dataSource.connection.name)
-            .where('id', 1001)
-            .first();
+        final fetched = await Authors.query(
+          dataSource.options.name,
+        ).where('id', 1001).first();
 
         expect(fetched, isNotNull);
         expect(fetched!.updatedAt, isNotNull);
@@ -39,11 +39,11 @@ void runTimestampTests(DataSource dataSource) {
 
       test('updatedAt changes on update', () async {
         final author = const Author(id: 1002, name: 'Original Name');
-        await Authors.repo(dataSource.connection.name).insert(author.toTracked());
+        await Authors.repo(dataSource.options.name).insert(author.toTracked());
 
-        final fetched = await Authors.query(dataSource.connection.name)
-            .where('id', 1002)
-            .first();
+        final fetched = await Authors.query(
+          dataSource.options.name,
+        ).where('id', 1002).first();
 
         final originalUpdatedAt = fetched!.updatedAt;
 
@@ -51,13 +51,13 @@ void runTimestampTests(DataSource dataSource) {
         await Future.delayed(const Duration(milliseconds: 500));
 
         // Update the author
-        await Authors.query(dataSource.connection.name).where('id', 1002).update({
-          'name': 'Updated Name',
-        });
+        await Authors.query(
+          dataSource.options.name,
+        ).where('id', 1002).update({'name': 'Updated Name'});
 
-        final refetched = await Authors.query(dataSource.connection.name)
-            .where('id', 1002)
-            .first();
+        final refetched = await Authors.query(
+          dataSource.options.name,
+        ).where('id', 1002).first();
 
         expect(refetched!.updatedAt, isNotNull);
         expect(
@@ -68,11 +68,11 @@ void runTimestampTests(DataSource dataSource) {
 
       test('touch() updates updatedAt', () async {
         final author = const Author(id: 1003, name: 'Touch Test');
-        await Authors.repo(dataSource.connection.name).insert(author.toTracked());
+        await Authors.repo(dataSource.options.name).insert(author.toTracked());
 
-        final fetchedTracked = await Authors.query(dataSource.connection.name)
-            .where('id', 1003)
-            .first();
+        final fetchedTracked = await Authors.query(
+          dataSource.options.name,
+        ).where('id', 1003).first();
 
         final originalUpdatedAt = fetchedTracked!.updatedAt;
 
@@ -83,9 +83,9 @@ void runTimestampTests(DataSource dataSource) {
         fetchedTracked.touch();
         await fetchedTracked.save();
 
-        final refetched = await Authors.query(dataSource.connection.name)
-            .where('id', 1003)
-            .first();
+        final refetched = await Authors.query(
+          dataSource.options.name,
+        ).where('id', 1003).first();
 
         expect(refetched!.updatedAt, isNotNull);
         expect(
@@ -96,11 +96,11 @@ void runTimestampTests(DataSource dataSource) {
 
       test('Carbon methods work on createdAt', () async {
         final author = const Author(id: 1004, name: 'Carbon Test');
-        await Authors.repo(dataSource.connection.name).insert(author.toTracked());
+        await Authors.repo(dataSource.options.name).insert(author.toTracked());
 
-        final fetched = await Authors.query(dataSource.connection.name)
-            .where('id', 1004)
-            .first();
+        final fetched = await Authors.query(
+          dataSource.options.name,
+        ).where('id', 1004).first();
 
         expect(fetched, isNotNull);
         expect(fetched!.createdAt, isNotNull);
@@ -204,7 +204,6 @@ void runTimestampTests(DataSource dataSource) {
       });
 
       test('touch() updates updatedAt (UTC)', () async {
-
         final post = Post(
           id: 2003,
           authorId: 1,

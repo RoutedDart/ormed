@@ -4,15 +4,11 @@ import 'package:test/test.dart';
 import '../../models/models.dart';
 
 /// Tests for model change tracking methods (isDirty, getOriginal, etc.)
-void runChangeTrackingTests(DataSource dataSource) {
-  group('Change Tracking', () {
+void runChangeTrackingTests() {
+  ormedGroup('Change Tracking', (dataSource) {
     group('syncOriginal()', () {
       test('marks current state as original', () async {
-        final user = User(
-          id: 1,
-          email: 'test@example.com',
-          active: true,
-        );
+        final user = User(id: 1, email: 'test@example.com', active: true);
         await dataSource.repo<User>().insert(user);
 
         // Fetch from database (should auto-sync original)
@@ -35,11 +31,7 @@ void runChangeTrackingTests(DataSource dataSource) {
 
       test('works with new unsaved models', () async {
         // Create and save a user to get a tracked model
-        final user = User(
-          id: 1,
-          email: 'test@example.com',
-          active: true,
-        );
+        final user = User(id: 1, email: 'test@example.com', active: true);
         await dataSource.repo<User>().insert(user);
 
         // Fetch to get tracked model instance
@@ -54,7 +46,7 @@ void runChangeTrackingTests(DataSource dataSource) {
         // Modify and sync
         tracked.setAttribute('name', 'Changed');
         expect(tracked.isDirty(), true);
-        
+
         tracked.syncOriginal();
         expect(tracked.isDirty(), false);
       });
@@ -83,7 +75,7 @@ void runChangeTrackingTests(DataSource dataSource) {
         expect(fetched.getAttribute('name'), 'Changed Name');
       });
 
-      test('returns all original attributes when no field specified', () async {
+      test('returns full original map when no key provided', () async {
         final user = User(
           id: 1,
           email: 'original@example.com',
@@ -104,13 +96,9 @@ void runChangeTrackingTests(DataSource dataSource) {
         expect(original['email'], 'original@example.com');
       });
 
-      test('returns null for attributes not tracked when no original', () async {
+      test('syncOriginal refreshes baseline for new attributes', () async {
         // Create and save to get tracked model
-        final user = User(
-          id: 1,
-          email: 'test@example.com',
-          active: true,
-        );
+        final user = User(id: 1, email: 'test@example.com', active: true);
         await dataSource.repo<User>().insert(user);
 
         final tracked = await dataSource.context
@@ -134,11 +122,7 @@ void runChangeTrackingTests(DataSource dataSource) {
 
     group('isDirty()', () {
       test('returns false for freshly fetched models', () async {
-        final user = User(
-          id: 1,
-          email: 'test@example.com',
-          active: true,
-        );
+        final user = User(id: 1, email: 'test@example.com', active: true);
         await dataSource.repo<User>().insert(user);
 
         final fetched = await dataSource.context
@@ -197,11 +181,7 @@ void runChangeTrackingTests(DataSource dataSource) {
       });
 
       test('returns false for new models with no original', () async {
-        final user = User(
-          id: 1,
-          email: 'test@example.com',
-          active: true,
-        );
+        final user = User(id: 1, email: 'test@example.com', active: true);
 
         expect(user.isDirty(), false);
         expect(user.isDirty('email'), false);
@@ -210,11 +190,7 @@ void runChangeTrackingTests(DataSource dataSource) {
 
     group('getDirty() / getChanges()', () {
       test('returns empty map when no changes', () async {
-        final user = User(
-          id: 1,
-          email: 'test@example.com',
-          active: true,
-        );
+        final user = User(id: 1, email: 'test@example.com', active: true);
         await dataSource.repo<User>().insert(user);
 
         final fetched = await dataSource.context
@@ -276,11 +252,7 @@ void runChangeTrackingTests(DataSource dataSource) {
       });
 
       test('returns empty map for new models', () async {
-        final user = User(
-          id: 1,
-          email: 'test@example.com',
-          active: true,
-        );
+        final user = User(id: 1, email: 'test@example.com', active: true);
 
         expect(user.getDirty(), isEmpty);
         expect(user.getChanges(), isEmpty);
@@ -353,4 +325,3 @@ void runChangeTrackingTests(DataSource dataSource) {
     });
   });
 }
-

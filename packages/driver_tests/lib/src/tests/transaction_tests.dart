@@ -2,44 +2,13 @@ import 'package:ormed/ormed.dart';
 import 'package:test/test.dart';
 
 import '../../models.dart';
-import '../support/driver_schema.dart';
 
-void runDriverTransactionTests({required DataSource dataSource}) {
-  final metadata = dataSource.connection.driver.metadata;
-  if (!metadata.supportsCapability(DriverCapability.transactions)) {
-    return;
-  }
-
-  group('${metadata.name} transactions', () {
-    late TestDatabaseManager manager;
-
-    setUpAll(() async {
-      await dataSource.init();
-      manager = TestDatabaseManager(
-        baseDataSource: dataSource,
-        migrationDescriptors: driverTestMigrationEntries
-            .map(
-              (e) => MigrationDescriptor.fromMigration(
-                id: e.id,
-                migration: e.migration,
-              ),
-            )
-            .toList(),
-        strategy: DatabaseIsolationStrategy.truncate,
-      );
-      await manager.initialize();
-    });
-
-    setUp(() async {
-      await manager.beginTest('transaction_tests', dataSource);
-    });
-
-    tearDown(() async => manager.endTest('transaction_tests', dataSource));
-
-    tearDownAll(() async {
-      // Schema cleanup is handled by outer test file
-    });
-
+void runDriverTransactionTests() {
+  ormedGroup('transactions', (dataSource) {
+    final metadata = dataSource.options.driver.metadata;
+    if (!metadata.supportsCapability(DriverCapability.transactions)) {
+      return;
+    }
     test('rolls back when transaction throws', () async {
       final repo = dataSource.context.repository<User>();
       await expectLater(
@@ -57,6 +26,9 @@ void runDriverTransactionTests({required DataSource dataSource}) {
     });
 
     test('commits when transaction completes', () async {
+      dataSource.connection.onQueryLogged((l) {
+        print(l.preview.sqlWithBindings);
+      });
       final repo = dataSource.context.repository<User>();
       await dataSource.connection.driver.transaction(() async {
         await repo.insert(

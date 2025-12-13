@@ -4,10 +4,9 @@ import '../../../driver_tests.dart';
 
 /// Tests for relation aggregate loading methods like loadSum, loadAvg, loadMax, loadMin
 /// Note: MongoDB supports these via client-side aggregation, while SQL drivers use database-level aggregation.
-void runRelationAggregateTests(DataSource dataSource) {
-  group(
-    '${dataSource.connection.driver.metadata.name} relation aggregates',
-    () {
+void runRelationAggregateTests() {
+  ormedGroup(
+    'relation aggregates', (dataSource) {
       setUp(() async {
         // Bind connection resolver for Model.load() to work
         Model.bindConnectionResolver(
@@ -70,7 +69,7 @@ void runRelationAggregateTests(DataSource dataSource) {
           final totalViews = author.getAttribute<num>('total_views');
           expect(totalViews, equals(500)); // 100 + 250 + 150
         },
-        skip: !dataSource.connection.driver.metadata.supportsCapability(
+        skip: !dataSource.options.driver.metadata.supportsCapability(
           DriverCapability.relationAggregates,
         ),
       );
@@ -93,7 +92,7 @@ void runRelationAggregateTests(DataSource dataSource) {
           final totalViews = author.getAttribute<num>('total_views');
           expect(totalViews, equals(0));
         },
-        skip: !dataSource.connection.driver.metadata.supportsCapability(
+        skip: !dataSource.options.driver.metadata.supportsCapability(
           DriverCapability.relationAggregates,
         ),
       );
@@ -111,7 +110,7 @@ void runRelationAggregateTests(DataSource dataSource) {
           expect(authors[0].getAttribute<num>('total_views'), equals(500));
           expect(authors[1].getAttribute<num>('total_views'), equals(500));
         },
-        skip: !dataSource.connection.driver.metadata.supportsCapability(
+        skip: !dataSource.options.driver.metadata.supportsCapability(
           DriverCapability.relationAggregates,
         ),
       );
@@ -129,7 +128,7 @@ void runRelationAggregateTests(DataSource dataSource) {
           // Default alias should be: posts_sum_views
           expect(author.getAttribute<num>('posts_sum_views'), equals(500));
         },
-        skip: !dataSource.connection.driver.metadata.supportsCapability(
+        skip: !dataSource.options.driver.metadata.supportsCapability(
           DriverCapability.relationAggregates,
         ),
       );
@@ -164,13 +163,11 @@ void runRelationAggregateTests(DataSource dataSource) {
           // Should only sum posts with views > 50 (100 + 250 + 150 = 500, excluding 10)
           expect(author.getAttribute<num>('high_views'), equals(500));
         },
-        skip: !dataSource.connection.driver.metadata.supportsCapability(
+        skip: !dataSource.options.driver.metadata.supportsCapability(
           DriverCapability.relationAggregates,
         ),
       );
     },
-    skip: !dataSource.connection.driver.metadata.supportsCapability(
-      DriverCapability.relationAggregates,
-    ),
+    
   );
 }

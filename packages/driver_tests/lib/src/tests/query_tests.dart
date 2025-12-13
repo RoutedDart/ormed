@@ -3,12 +3,10 @@ import 'package:test/test.dart';
 
 import '../../models.dart';
 import '../seed_data.dart';
-import '../support/driver_schema.dart';
 
-void runDriverQueryTests({required DataSource dataSource}) {
-  final metadata = dataSource.connection.driver.metadata;
-  group('${metadata.name} queries', () {
-    late TestDatabaseManager manager;
+void runDriverQueryTests() {
+  ormedGroup('queries', (dataSource) {
+    final metadata = dataSource.options.driver.metadata;
     late List<User> seededUsers;
 
     void expectPreviewMetadata(StatementPreview preview) {
@@ -19,25 +17,7 @@ void runDriverQueryTests({required DataSource dataSource}) {
       expect(normalized.parameters, isNotNull);
     }
 
-    setUpAll(() async {
-      await dataSource.init();
-      manager = TestDatabaseManager(
-        baseDataSource: dataSource,
-        migrationDescriptors: driverTestMigrationEntries
-            .map(
-              (e) => MigrationDescriptor.fromMigration(
-                id: e.id,
-                migration: e.migration,
-              ),
-            )
-            .toList(),
-        strategy: DatabaseIsolationStrategy.truncate,
-      );
-      await manager.initialize();
-    });
-
     setUp(() async {
-      await manager.beginTest('query_tests', dataSource);
       seededUsers = buildDefaultUsers(suffix: 'fixed');
       // Seed data directly via repository
       await dataSource.repo<User>().insertMany(seededUsers);
@@ -48,12 +28,6 @@ void runDriverQueryTests({required DataSource dataSource}) {
       await dataSource.repo<Image>().insertMany(defaultImages.toList());
       await dataSource.repo<Photo>().insertMany(defaultPhotos.toList());
       await dataSource.context.query<Comment>().createMany(defaultComments);
-    });
-
-    tearDown(() async => manager.endTest('query_tests', dataSource));
-
-    tearDownAll(() async {
-      // Schema cleanup is handled by outer test file
     });
 
     test('supports filtering, ordering, and pagination', () async {

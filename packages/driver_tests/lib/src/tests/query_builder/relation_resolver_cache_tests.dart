@@ -3,10 +3,9 @@ import 'package:test/test.dart';
 
 import '../../../driver_tests.dart';
 
-void runRelationResolverCacheTests(DataSource dataSource) {
-  group(
-    '${dataSource.connection.driver.metadata.name} RelationResolver caching',
-    () {
+void runRelationResolverCacheTests() {
+  ormedGroup(
+    'RelationResolver caching', (dataSource) {
       setUp(() async {
         // Bind connection resolver for Model methods to work
         Model.bindConnectionResolver(
@@ -236,7 +235,7 @@ void runRelationResolverCacheTests(DataSource dataSource) {
       });
 
       group('integration with query operations', () {
-        test('caching works across multiple query operations', () async {
+        test('withRelation reuses resolver cache across queries', () async {
           // Multiple queries using withRelation should benefit from caching
           // (internally the query builder uses a cached resolver)
           final authors1 = await dataSource.context

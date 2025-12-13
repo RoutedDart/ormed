@@ -3,19 +3,43 @@ import 'package:test/test.dart';
 
 import '../../models/models.dart';
 
-void runDateTimeQueryTests(DataSource dataSource) {
-  group('Date/Time Query Operations', () {
+void runDateTimeQueryTests() {
+  ormedGroup('Date/Time Query Operations', (dataSource) {
     test('date range query - between dates', () async {
       await dataSource.repo<Post>().insertMany([
-        Post(id: 1, authorId: 1, title: 'Post 1', publishedAt: DateTime(2024, 1, 10)),
-        Post(id: 2, authorId: 1, title: 'Post 2', publishedAt: DateTime(2024, 1, 15)),
-        Post(id: 3, authorId: 1, title: 'Post 3', publishedAt: DateTime(2024, 1, 20)),
-        Post(id: 4, authorId: 1, title: 'Post 4', publishedAt: DateTime(2024, 1, 25)),
+        Post(
+          id: 1,
+          authorId: 1,
+          title: 'Post 1',
+          publishedAt: DateTime(2024, 1, 10),
+        ),
+        Post(
+          id: 2,
+          authorId: 1,
+          title: 'Post 2',
+          publishedAt: DateTime(2024, 1, 15),
+        ),
+        Post(
+          id: 3,
+          authorId: 1,
+          title: 'Post 3',
+          publishedAt: DateTime(2024, 1, 20),
+        ),
+        Post(
+          id: 4,
+          authorId: 1,
+          title: 'Post 4',
+          publishedAt: DateTime(2024, 1, 25),
+        ),
       ]);
 
       final posts = await dataSource.context
           .query<Post>()
-          .whereBetween('publishedAt', DateTime(2024, 1, 12), DateTime(2024, 1, 22))
+          .whereBetween(
+            'publishedAt',
+            DateTime(2024, 1, 12),
+            DateTime(2024, 1, 22),
+          )
           .get();
 
       expect(posts, hasLength(2));
@@ -62,9 +86,24 @@ void runDateTimeQueryTests(DataSource dataSource) {
 
     test('order by date', () async {
       await dataSource.repo<Post>().insertMany([
-        Post(id: 1, authorId: 1, title: 'Post 1', publishedAt: DateTime(2024, 1, 20)),
-        Post(id: 2, authorId: 1, title: 'Post 2', publishedAt: DateTime(2024, 1, 10)),
-        Post(id: 3, authorId: 1, title: 'Post 3', publishedAt: DateTime(2024, 1, 15)),
+        Post(
+          id: 1,
+          authorId: 1,
+          title: 'Post 1',
+          publishedAt: DateTime(2024, 1, 20),
+        ),
+        Post(
+          id: 2,
+          authorId: 1,
+          title: 'Post 2',
+          publishedAt: DateTime(2024, 1, 10),
+        ),
+        Post(
+          id: 3,
+          authorId: 1,
+          title: 'Post 3',
+          publishedAt: DateTime(2024, 1, 15),
+        ),
       ]);
 
       final posts = await dataSource.context
@@ -80,9 +119,24 @@ void runDateTimeQueryTests(DataSource dataSource) {
 
     test('order by date descending', () async {
       await dataSource.repo<Post>().insertMany([
-        Post(id: 1, authorId: 1, title: 'Post 1', publishedAt: DateTime(2024, 1, 10)),
-        Post(id: 2, authorId: 1, title: 'Post 2', publishedAt: DateTime(2024, 1, 20)),
-        Post(id: 3, authorId: 1, title: 'Post 3', publishedAt: DateTime(2024, 1, 15)),
+        Post(
+          id: 1,
+          authorId: 1,
+          title: 'Post 1',
+          publishedAt: DateTime(2024, 1, 10),
+        ),
+        Post(
+          id: 2,
+          authorId: 1,
+          title: 'Post 2',
+          publishedAt: DateTime(2024, 1, 20),
+        ),
+        Post(
+          id: 3,
+          authorId: 1,
+          title: 'Post 3',
+          publishedAt: DateTime(2024, 1, 15),
+        ),
       ]);
 
       final posts = await dataSource.context
@@ -100,10 +154,30 @@ void runDateTimeQueryTests(DataSource dataSource) {
       final cutoff = DateTime(2024, 1, 15);
 
       await dataSource.repo<Post>().insertMany([
-        Post(id: 1, authorId: 1, title: 'Post 1', publishedAt: DateTime(2024, 1, 10)),
-        Post(id: 2, authorId: 1, title: 'Post 2', publishedAt: DateTime(2024, 1, 20)),
-        Post(id: 3, authorId: 1, title: 'Post 3', publishedAt: DateTime(2024, 1, 18)),
-        Post(id: 4, authorId: 1, title: 'Post 4', publishedAt: DateTime(2024, 1, 5)),
+        Post(
+          id: 1,
+          authorId: 1,
+          title: 'Post 1',
+          publishedAt: DateTime(2024, 1, 10),
+        ),
+        Post(
+          id: 2,
+          authorId: 1,
+          title: 'Post 2',
+          publishedAt: DateTime(2024, 1, 20),
+        ),
+        Post(
+          id: 3,
+          authorId: 1,
+          title: 'Post 3',
+          publishedAt: DateTime(2024, 1, 18),
+        ),
+        Post(
+          id: 4,
+          authorId: 1,
+          title: 'Post 4',
+          publishedAt: DateTime(2024, 1, 5),
+        ),
       ]);
 
       final posts = await dataSource.context
@@ -136,9 +210,24 @@ void runDateTimeQueryTests(DataSource dataSource) {
       final end = DateTime(2024, 12, 31);
 
       await dataSource.repo<Post>().insertMany([
-        Post(id: 1, authorId: 1, title: 'In 2024', publishedAt: DateTime(2024, 6, 15)),
-        Post(id: 2, authorId: 1, title: 'In 2023', publishedAt: DateTime(2023, 6, 15)),
-        Post(id: 3, authorId: 1, title: 'In 2025', publishedAt: DateTime(2025, 1, 1)),
+        Post(
+          id: 1,
+          authorId: 1,
+          title: 'In 2024',
+          publishedAt: DateTime(2024, 6, 15),
+        ),
+        Post(
+          id: 2,
+          authorId: 1,
+          title: 'In 2023',
+          publishedAt: DateTime(2023, 6, 15),
+        ),
+        Post(
+          id: 3,
+          authorId: 1,
+          title: 'In 2025',
+          publishedAt: DateTime(2025, 1, 1),
+        ),
       ]);
 
       final posts = await dataSource.context

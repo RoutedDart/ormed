@@ -3,8 +3,8 @@ import 'package:test/test.dart';
 
 import '../../models/models.dart';
 
-void runConditionalTests(DataSource dataSource) {
-  group('Conditional Query Operations', () {
+void runConditionalTests() {
+  ormedGroup('Conditional Query Operations', (dataSource) {
     test('when - applies callback when condition is true', () async {
       await dataSource.repo<User>().insertMany([
         User(id: 1, email: 'alice@example.com', active: true),
@@ -58,7 +58,7 @@ void runConditionalTests(DataSource dataSource) {
       expect(users.map((u) => u.id), containsAll([1, 3]));
     });
 
-    test('unless - applies callback when condition is false', () async {
+    test('unless applies callback when condition is false', () async {
       await dataSource.repo<User>().insertMany([
         User(id: 1, email: 'alice@example.com', active: true),
         User(id: 2, email: 'bob@example.com', active: false),
@@ -93,7 +93,7 @@ void runConditionalTests(DataSource dataSource) {
       expect(users, hasLength(3));
     });
 
-    test('tap - executes side effect without modifying query', () async {
+    test('tap invokes callback with built SQL', () async {
       await dataSource.repo<User>().insertMany([
         User(id: 1, email: 'alice@example.com', active: true),
         User(id: 2, email: 'bob@example.com', active: false),
@@ -138,10 +138,15 @@ void runConditionalTests(DataSource dataSource) {
       expect(tapMessages, ['Before where', 'After where', 'After orderBy']);
     });
 
-    test('combined when, unless, tap - complex conditional query', () async {
+    test('combines when/unless flags in complex query', () async {
       await dataSource.repo<Post>().insertMany([
         Post(id: 1, authorId: 1, title: 'Post 1', publishedAt: DateTime.now()),
-        Post(id: 2, authorId: 1, title: 'Post 2', publishedAt: DateTime(2000, 1, 1)),
+        Post(
+          id: 2,
+          authorId: 1,
+          title: 'Post 2',
+          publishedAt: DateTime(2000, 1, 1),
+        ),
         Post(id: 3, authorId: 2, title: 'Post 3', publishedAt: DateTime.now()),
         Post(id: 4, authorId: 2, title: 'Post 4', publishedAt: DateTime.now()),
       ]);
@@ -176,7 +181,10 @@ void runConditionalTests(DataSource dataSource) {
 
       final users = await dataSource.context
           .query<User>()
-          .when(searchTerm != null, (q) => q.whereLike('email', '%$searchTerm%'))
+          .when(
+            searchTerm != null,
+            (q) => q.whereLike('email', '%$searchTerm%'),
+          )
           .get();
 
       // Should return all users since searchTerm is null
@@ -186,14 +194,17 @@ void runConditionalTests(DataSource dataSource) {
       searchTerm = 'alice';
       final filteredUsers = await dataSource.context
           .query<User>()
-          .when(searchTerm != null, (q) => q.whereLike('email', '%$searchTerm%'))
+          .when(
+            searchTerm != null,
+            (q) => q.whereLike('email', '%$searchTerm%'),
+          )
           .get();
 
       expect(filteredUsers, hasLength(1));
       expect(filteredUsers.first.email, contains('alice'));
     });
 
-    test('when - accepts function callback for lazy evaluation', () async {
+    test('when accepts lazy condition function', () async {
       await dataSource.repo<User>().insertMany([
         User(id: 1, email: 'alice@example.com', active: true),
         User(id: 2, email: 'bob@example.com', active: false),
@@ -215,23 +226,23 @@ void runConditionalTests(DataSource dataSource) {
       expect(conditionEvaluated, isTrue);
     });
 
-    test('when - function callback not evaluated until query builds', () async {
+    test('when executes function predicate once', () async {
       await dataSource.repo<User>().insertMany([
         User(id: 1, email: 'alice@example.com', active: true),
       ]);
 
       var functionCalled = 0;
 
-      final users = await dataSource.context
-          .query<User>()
-          .when(() { functionCalled++; return false; }, (q) => q.where('active', false))
-          .get();
+      final users = await dataSource.context.query<User>().when(() {
+        functionCalled++;
+        return false;
+      }, (q) => q.where('active', false)).get();
 
       expect(users, hasLength(1));
       expect(functionCalled, 1);
     });
 
-    test('unless - accepts function callback for lazy evaluation', () async {
+    test('unless evaluates function predicate', () async {
       await dataSource.repo<User>().insertMany([
         User(id: 1, email: 'alice@example.com', active: true),
         User(id: 2, email: 'bob@example.com', active: false),
@@ -254,7 +265,7 @@ void runConditionalTests(DataSource dataSource) {
       expect(conditionEvaluated, isTrue);
     });
 
-    test('unless - function callback returns true skips modification', () async {
+    test('unless skips callback when boolean condition is true', () async {
       await dataSource.repo<User>().insertMany([
         User(id: 1, email: 'alice@example.com', active: true),
         User(id: 2, email: 'bob@example.com', active: false),
@@ -282,7 +293,10 @@ void runConditionalTests(DataSource dataSource) {
       final users = await dataSource.context
           .query<User>()
           .when(filterActive, (q) => q.where('active', true))
-          .when(() => isDevelopmentMode(), (q) => q.whereLike('email', '%@test.com'))
+          .when(
+            () => isDevelopmentMode(),
+            (q) => q.whereLike('email', '%@test.com'),
+          )
           .get();
 
       expect(users, hasLength(2));
@@ -290,4 +304,3 @@ void runConditionalTests(DataSource dataSource) {
     });
   });
 }
-

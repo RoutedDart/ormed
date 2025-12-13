@@ -3,10 +3,9 @@ import 'package:test/test.dart';
 
 import '../../../driver_tests.dart';
 
-void runRelationsAccessorTests(DataSource dataSource) {
-  group(
-    '${dataSource.connection.driver.metadata.name} relations getter (shorthand accessor)',
-    () {
+void runRelationsAccessorTests() {
+  ormedGroup(
+    'relations getter (shorthand accessor)', (dataSource) {
       setUp(() async {
         // Bind connection resolver for Model methods to work
         Model.bindConnectionResolver(
@@ -79,59 +78,50 @@ void runRelationsAccessorTests(DataSource dataSource) {
           expect(author.relations.keys, contains('posts'));
         });
 
-        test(
-          'relations getter contains eager loaded hasMany relation',
-          () async {
-            final rows = await dataSource.context
-                .query<Author>()
-                .withRelation('posts')
-                .where('id', 1)
-                .get();
-            final author = rows.first;
+        test('relations map available after eager loading list', () async {
+          final rows = await dataSource.context
+              .query<Author>()
+              .withRelation('posts')
+              .where('id', 1)
+              .get();
+          final author = rows.first;
 
-            expect(author.relations, isNotEmpty);
-            expect(author.relations.containsKey('posts'), isTrue);
-            expect(author.relations['posts'], isA<List>());
-            expect((author.relations['posts'] as List), hasLength(2));
-          },
-        );
+          expect(author.relations, isNotEmpty);
+          expect(author.relations.containsKey('posts'), isTrue);
+          expect(author.relations['posts'], isA<List>());
+          expect((author.relations['posts'] as List), hasLength(2));
+        });
 
-        test(
-          'relations getter contains eager loaded belongsTo relation',
-          () async {
-            final rows = await dataSource.context
-                .query<Post>()
-                .withRelation('author')
-                .where('id', 1)
-                .get();
-            final post = rows.first;
+        test('relations map available after eager loading single model', () async {
+          final rows = await dataSource.context
+              .query<Post>()
+              .withRelation('author')
+              .where('id', 1)
+              .get();
+          final post = rows.first;
 
-            expect(post.relations, isNotEmpty);
-            expect(post.relations.containsKey('author'), isTrue);
-            expect(post.relations['author'], isA<Author>());
-          },
-        );
+          expect(post.relations, isNotEmpty);
+          expect(post.relations.containsKey('author'), isTrue);
+          expect(post.relations['author'], isA<Author>());
+        });
 
-        test(
-          'relations getter contains multiple eager loaded relations',
-          () async {
-            final rows = await dataSource.context
-                .query<Post>()
-                .withRelation('author')
-                .withRelation('tags')
-                .where('id', 1)
-                .get();
-            final post = rows.first;
+        test('relations map handles multiple eager relations', () async {
+          final rows = await dataSource.context
+              .query<Post>()
+              .withRelation('author')
+              .withRelation('tags')
+              .where('id', 1)
+              .get();
+          final post = rows.first;
 
-            expect(post.relations, hasLength(2));
-            expect(post.relations.containsKey('author'), isTrue);
-            expect(post.relations.containsKey('tags'), isTrue);
-          },
-        );
+          expect(post.relations, hasLength(2));
+          expect(post.relations.containsKey('author'), isTrue);
+          expect(post.relations.containsKey('tags'), isTrue);
+        });
       });
 
       group('with lazy loading', () {
-        test('relations getter reflects lazy loaded relations', () async {
+        test('relations map populated after lazy load', () async {
           final rows = await dataSource.context
               .query<Author>()
               .where('id', 1)
@@ -267,7 +257,7 @@ void runRelationsAccessorTests(DataSource dataSource) {
           expect(snapshot1.containsKey('posts'), isTrue);
         });
 
-        test('relations getter reflects state at call time', () async {
+        test('relations snapshot updates after lazy load', () async {
           final rows = await dataSource.context
               .query<Author>()
               .where('id', 1)
@@ -308,7 +298,7 @@ void runRelationsAccessorTests(DataSource dataSource) {
           expect(author2.relations, isEmpty);
         });
 
-        test('loading relation on one model does not affect others', () async {
+        test('relations are isolated between model instances', () async {
           final author1Rows = await dataSource.context
               .query<Author>()
               .where('id', 1)
@@ -344,7 +334,7 @@ void runRelationsAccessorTests(DataSource dataSource) {
           expect(relationKeys, equals(loadedNames));
         });
 
-        test('relations and loadedRelationNames stay in sync', () async {
+        test('loadedRelationNames stay in sync after changes', () async {
           final rows = await dataSource.context
               .query<Post>()
               .where('id', 1)

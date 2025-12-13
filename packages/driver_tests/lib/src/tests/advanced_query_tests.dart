@@ -3,42 +3,15 @@ import 'package:test/test.dart';
 
 import '../../models.dart';
 import '../seed_data.dart';
-import '../support/driver_schema.dart';
 
-void runDriverAdvancedQueryTests({required DataSource dataSource}) {
-  final metadata = dataSource.connection.driver.metadata;
-  if (!metadata.supportsCapability(DriverCapability.advancedQueryBuilders)) {
-    return;
-  }
-  group('${metadata.name} advanced builders', () {
-    late TestDatabaseManager manager;
-
-    setUpAll(() async {
-      await dataSource.init();
-      manager = TestDatabaseManager(
-        baseDataSource: dataSource,
-        migrationDescriptors: driverTestMigrationEntries
-            .map(
-              (e) => MigrationDescriptor.fromMigration(
-                id: e.id,
-                migration: e.migration,
-              ),
-            )
-            .toList(),
-        strategy: DatabaseIsolationStrategy.truncate,
-      );
-      await manager.initialize();
-    });
-
+void runDriverAdvancedQueryTests() {
+  ormedGroup('advanced builders', (dataSource) {
+    final metadata = dataSource.options.driver.metadata;
+    if (!metadata.supportsCapability(DriverCapability.advancedQueryBuilders)) {
+      return;
+    }
     setUp(() async {
-      await manager.beginTest('advanced_query_tests', dataSource);
       await dataSource.repo<Article>().insertMany(sampleArticles);
-    });
-
-    tearDown(() async => manager.endTest('advanced_query_tests', dataSource));
-
-    tearDownAll(() async {
-      // Schema cleanup is handled by outer test file
     });
 
     group('filter predicates', () {

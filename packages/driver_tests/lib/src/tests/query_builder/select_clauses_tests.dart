@@ -3,9 +3,8 @@ import 'package:test/test.dart';
 
 import '../../models/models.dart';
 
-
-void runSelectClausesTests(DataSource dataSource) {
-  group('Select Clauses tests', () {
+void runSelectClausesTests() {
+  ormedGroup('Select Clauses tests', (dataSource) {
     setUp(() async {});
 
     test('select', () async {
@@ -38,26 +37,20 @@ void runSelectClausesTests(DataSource dataSource) {
       expect(users.first.email, 'a@example.com');
     });
 
-    test(
-      'selectRaw',
-      () async {
-        await dataSource.repo<User>().insertMany([
-          User(id: 1, email: 'a@example.com', active: true),
-        ]);
+    test('selectRaw', () async {
+      await dataSource.repo<User>().insertMany([
+        User(id: 1, email: 'a@example.com', active: true),
+      ]);
 
-        final results = await dataSource.context
-            .query<User>()
-            .selectRaw('id, email as user_email, active')
-            .rows();
+      final results = await dataSource.context
+          .query<User>()
+          .selectRaw('id, email as user_email, active')
+          .rows();
 
-        expect(results, hasLength(1));
-        expect(results.first.row.containsKey('user_email'), isTrue);
-        expect(results.first.row['user_email'], 'a@example.com');
-      },
-      skip: !dataSource.connection.driver.metadata.supportsCapability(
-        DriverCapability.rawSQL,
-      ),
-    );
+      expect(results, hasLength(1));
+      expect(results.first.row.containsKey('user_email'), isTrue);
+      expect(results.first.row['user_email'], 'a@example.com');
+    });
 
     test('distinct', () async {
       await dataSource.repo<Article>().insertMany([
@@ -94,7 +87,7 @@ void runSelectClausesTests(DataSource dataSource) {
         'status',
       ]).get();
 
-      if (dataSource.connection.driver.metadata.supportsCapability(
+      if (dataSource.options.driver.metadata.supportsCapability(
         DriverCapability.distinctOn,
       )) {
         expect(articles, hasLength(2));
@@ -142,7 +135,7 @@ void runSelectClausesTests(DataSource dataSource) {
         'priority',
       ]).get();
 
-      if (dataSource.connection.driver.metadata.supportsCapability(
+      if (dataSource.options.driver.metadata.supportsCapability(
         DriverCapability.distinctOn,
       )) {
         expect(articles, hasLength(2));
@@ -182,7 +175,7 @@ void runSelectClausesTests(DataSource dataSource) {
           .orderBy('id')
           .get();
 
-      if (dataSource.connection.driver.metadata.supportsCapability(
+      if (dataSource.options.driver.metadata.supportsCapability(
         DriverCapability.distinctOn,
       )) {
         expect(articles, hasLength(1));

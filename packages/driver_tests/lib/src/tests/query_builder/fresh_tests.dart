@@ -3,14 +3,10 @@ import 'package:test/test.dart';
 
 import '../../../driver_tests.dart';
 
-void runFreshTests(DataSource dataSource) {
-  final metadata = dataSource.connection.driver.metadata;
-  group('${metadata.name} Model.fresh()', () {
+void runFreshTests() {
+  ormedGroup('Model.fresh()', (dataSource) {
     setUp(() async {
       // Bind connection resolver for Model methods to work
-      Model.bindConnectionResolver(
-        resolveConnection: (name) => dataSource.context,
-      );
 
       // Seed test data
       await dataSource.repo<Author>().insertMany([
@@ -31,10 +27,6 @@ void runFreshTests(DataSource dataSource) {
       await dataSource.repo<PostTag>().insertMany([
         const PostTag(postId: 1, tagId: 1),
       ]);
-    });
-
-    tearDown(() async {
-      Model.unbindConnectionResolver();
     });
 
     group('basic functionality', () {
@@ -69,7 +61,7 @@ void runFreshTests(DataSource dataSource) {
             rows: [
               MutationRow(values: {'name': 'Updated Name'}, keys: {'id': 1}),
             ],
-            driverName: dataSource.connection.driver.metadata.name,
+            driverName: dataSource.options.driver.metadata.name,
           ),
         );
 
@@ -100,7 +92,7 @@ void runFreshTests(DataSource dataSource) {
             rows: [
               MutationRow(values: {'name': 'Changed'}, keys: {'id': 1}),
             ],
-            driverName: dataSource.connection.driver.metadata.name,
+            driverName: dataSource.options.driver.metadata.name,
           ),
         );
 
@@ -113,7 +105,7 @@ void runFreshTests(DataSource dataSource) {
     });
 
     group('with relations', () {
-      test('fresh returns instance with specified relations loaded', () async {
+      test('fresh loads specified relations', () async {
         final rows = await dataSource.context
             .query<Author>()
             .where('id', 1)
@@ -151,7 +143,7 @@ void runFreshTests(DataSource dataSource) {
         expect(freshPost.tags, hasLength(1));
       });
 
-      test('fresh preserves existing relations on original', () async {
+      test('fresh without relations leaves cached relations untouched', () async {
         final rows = await dataSource.context
             .query<Author>()
             .withRelation('posts')
@@ -218,7 +210,7 @@ void runFreshTests(DataSource dataSource) {
                   keys: {'id': 1},
                 ),
               ],
-              driverName: metadata.name,
+              driverName: dataSource.options.driver.metadata.name,
             ),
           );
 
@@ -286,16 +278,10 @@ void runFreshTests(DataSource dataSource) {
             .first();
 
         // Now delete from database to simulate non-existent record
-        await dataSource.context
-            .query<Author>()
-            .where('id', 999999)
-            .delete();
+        await dataSource.context.query<Author>().where('id', 999999).delete();
 
         // This should throw because the model no longer exists in database
-        expect(
-          () => tracked!.fresh(),
-          throwsA(isA<ModelNotFoundException>()),
-        );
+        expect(() => tracked!.fresh(), throwsA(isA<ModelNotFoundException>()));
       });
 
       test('multiple fresh() calls return independent instances', () async {
@@ -343,7 +329,7 @@ void runFreshTests(DataSource dataSource) {
             rows: [
               MutationRow(values: {'name': 'New Name'}, keys: {'id': 1}),
             ],
-            driverName: dataSource.connection.driver.metadata.name,
+            driverName: dataSource.options.driver.metadata.name,
           ),
         );
 

@@ -3,8 +3,8 @@ import 'package:test/test.dart';
 
 import '../../models/models.dart';
 
-void runScopeTests(DataSource dataSource) {
-  group('Query Scope Operations', () {
+void runScopeTests() {
+  ormedGroup('Query Scope Operations', (dataSource) {
     test('withoutGlobalScope - removes specific scope', () async {
       final registry = dataSource.context.scopeRegistry;
 
@@ -15,13 +15,16 @@ void runScopeTests(DataSource dataSource) {
 
       await dataSource.repo<Post>().insertMany([
         Post(id: 1, authorId: 1, title: 'Active', publishedAt: DateTime.now()),
-        Post(id: 2, authorId: 1, title: 'Draft', publishedAt: DateTime.now().subtract(const Duration(days: 365))),
+        Post(
+          id: 2,
+          authorId: 1,
+          title: 'Draft',
+          publishedAt: DateTime.now().subtract(const Duration(days: 365)),
+        ),
       ]);
 
       // First query with scope applied
-      final withScope = await dataSource.context
-          .query<Post>()
-          .get();
+      final withScope = await dataSource.context.query<Post>().get();
 
       // Query with scope removed
       final withoutScope = await dataSource.context
@@ -52,10 +55,10 @@ void runScopeTests(DataSource dataSource) {
         Post(id: 3, authorId: 1, title: 'Post 3', publishedAt: DateTime.now()),
       ]);
 
-      final author1Posts = await dataSource.context
-          .query<Post>()
-          .scope('byAuthor', [1])
-          .get();
+      final author1Posts = await dataSource.context.query<Post>().scope(
+        'byAuthor',
+        [1],
+      ).get();
 
       expect(author1Posts, hasLength(2));
       expect(author1Posts.every((p) => p.authorId == 1), isTrue);
@@ -68,20 +71,28 @@ void runScopeTests(DataSource dataSource) {
       registry.addMacro('recentDays', (query, args) {
         final days = args.isNotEmpty ? args[0] as int : 7;
         final cutoff = DateTime.now().subtract(Duration(days: days));
-        return query.where('publishedAt', cutoff, PredicateOperator.greaterThan);
+        return query.where(
+          'publishedAt',
+          cutoff,
+          PredicateOperator.greaterThan,
+        );
       });
 
       final now = DateTime.now();
       await dataSource.repo<Post>().insertMany([
         Post(id: 1, authorId: 1, title: 'Recent', publishedAt: now),
-        Post(id: 2, authorId: 1, title: 'Old',
-             publishedAt: now.subtract(const Duration(days: 10))),
+        Post(
+          id: 2,
+          authorId: 1,
+          title: 'Old',
+          publishedAt: now.subtract(const Duration(days: 10)),
+        ),
       ]);
 
-      final recent = await dataSource.context
-          .query<Post>()
-          .macro('recentDays', [7])
-          .get();
+      final recent = await dataSource.context.query<Post>().macro(
+        'recentDays',
+        [7],
+      ).get();
 
       expect(recent.length, greaterThanOrEqualTo(1));
     });
@@ -94,10 +105,9 @@ void runScopeTests(DataSource dataSource) {
       ]);
 
       // Soft delete one comment
-      await dataSource.context
-          .query<Comment>()
-          .whereEquals('id', 2)
-          .update({'deleted_at': DateTime.now()});
+      await dataSource.context.query<Comment>().whereEquals('id', 2).update({
+        'deleted_at': DateTime.now(),
+      });
 
       // Normal query shouldn't find deleted (soft delete scope active)
       final active = await dataSource.context.query<Comment>().get();
@@ -141,4 +151,3 @@ void runScopeTests(DataSource dataSource) {
     });
   });
 }
-

@@ -3,8 +3,8 @@ import 'package:test/test.dart';
 
 import '../../models/models.dart';
 
-void runModelReplicationTests(DataSource dataSource) {
-  group('Model Replication & Comparison (Laravel-inspired)', () {
+void runModelReplicationTests() {
+  ormedGroup('Model Replication & Comparison (Laravel-inspired)', (dataSource) {
     group('replicate()', () {
       test('clones model without primary key', () async {
         // Create and save original
@@ -257,4 +257,3 @@ void runModelReplicationTests(DataSource dataSource) {
     });
   });
 }
-

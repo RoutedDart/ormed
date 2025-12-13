@@ -3,14 +3,8 @@ import 'package:test/test.dart';
 
 import '../../models/models.dart';
 
-void runJoinClausesTests(DataSource dataSource) {
-  if (!dataSource.connection.driver.metadata.supportsCapability(
-    DriverCapability.joins,
-  )) {
-    return;
-  }
-
-  group('Join Clauses tests', () {
+void runJoinClausesTests() {
+  ormedGroup('Join Clauses tests', (dataSource) {
     setUp(() async {});
 
     test('join', () async {
@@ -47,7 +41,7 @@ void runJoinClausesTests(DataSource dataSource) {
     });
 
     test('rightJoin', () async {
-      if (!dataSource.connection.driver.metadata.supportsCapability(
+      if (!dataSource.options.driver.metadata.supportsCapability(
         DriverCapability.rightJoin,
       )) {
         return;

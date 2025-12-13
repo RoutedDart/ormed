@@ -3,11 +3,8 @@ import 'package:test/test.dart';
 
 import '../../models/models.dart';
 
-
-void runWhereClausesTests(DataSource dataSource) {
-  final metadata = dataSource.connection.driver.metadata;
-
-  group('Where Clauses tests', () {
+void runWhereClausesTests() {
+  ormedGroup('Where Clauses tests', (dataSource) {
     test('whereEquals', () async {
       await dataSource.repo<User>().insertMany([
         User(id: 1, email: 'test1@example.com', active: true),
@@ -346,6 +343,11 @@ void runWhereClausesTests(DataSource dataSource) {
     });
 
     test('whereRaw', () async {
+      final metadata = dataSource.options.driver.metadata;
+      if (!metadata.supportsCapability(DriverCapability.rawSQL)) {
+        return; // Skip test if raw SQL not supported
+      }
+
       await dataSource.repo<User>().insertMany([
         User(id: 1, email: 'test1@example.com', active: true),
         User(id: 2, email: 'test2@example.com', active: false),
@@ -357,7 +359,7 @@ void runWhereClausesTests(DataSource dataSource) {
       ).get();
       expect(users, hasLength(1));
       expect(users.first.id, 1);
-    }, skip: !metadata.supportsCapability(DriverCapability.rawSQL));
+    });
 
     test('whereColumn - column comparison', () async {
       await dataSource.repo<Article>().insertMany([
@@ -441,12 +443,15 @@ void runWhereClausesTests(DataSource dataSource) {
 
       final articles = await dataSource.context
           .query<Article>()
-          .where((builder) => builder
-              .where('status', 'published')
-              .where('rating', 4.0, PredicateOperator.greaterThan))
-          .orWhere((builder) => builder
-              .where('status', 'draft')
-              .where('categoryId', 1))
+          .where(
+            (builder) => builder
+                .where('status', 'published')
+                .where('rating', 4.0, PredicateOperator.greaterThan),
+          )
+          .orWhere(
+            (builder) =>
+                builder.where('status', 'draft').where('categoryId', 1),
+          )
           .get();
 
       expect(articles, hasLength(2));

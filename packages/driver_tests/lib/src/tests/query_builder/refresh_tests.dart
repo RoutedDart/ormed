@@ -3,10 +3,9 @@ import 'package:test/test.dart';
 
 import '../../../driver_tests.dart';
 
-void runRefreshTests(DataSource dataSource) {
-  group(
-    '${dataSource.connection.driver.metadata.name} Model.refresh() with relations',
-    () {
+void runRefreshTests() {
+  ormedGroup(
+    ' Model.refresh() with relations', (dataSource) {
       setUp(() async {
         // Bind connection resolver for Model methods to work
         Model.bindConnectionResolver(
@@ -80,7 +79,7 @@ void runRefreshTests(DataSource dataSource) {
             rows: [
               MutationRow(values: {'name': 'Updated Name'}, keys: {'id': 1}),
             ],
-            driverName: dataSource.connection.driver.metadata.name,
+            driverName: dataSource.options.driver.metadata.name,
           ),
         );
 
@@ -140,7 +139,7 @@ void runRefreshTests(DataSource dataSource) {
             rows: [
               MutationRow(values: {'name': 'New Name'}, keys: {'id': 1}),
             ],
-            driverName: dataSource.connection.driver.metadata.name,
+            driverName: dataSource.options.driver.metadata.name,
           ),
         );
 

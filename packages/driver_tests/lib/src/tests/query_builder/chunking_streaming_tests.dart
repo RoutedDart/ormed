@@ -3,8 +3,8 @@ import 'package:test/test.dart';
 
 import '../../models/models.dart';
 
-void runChunkingStreamingTests(DataSource dataSource) {
-  group('Chunking & Streaming Operations', () {
+void runChunkingStreamingTests() {
+  ormedGroup('Chunking & Streaming Operations', (dataSource) {
     test('chunk - processes records in batches', () async {
       // Insert 250 users
       final users = List.generate(
@@ -57,13 +57,13 @@ void runChunkingStreamingTests(DataSource dataSource) {
 
       var processedCount = 0;
 
-      await dataSource.context
-          .query<User>()
-          .whereEquals('active', true)
-          .chunk(50, (chunk) async {
-        processedCount += chunk.length;
-        return true;
-      });
+      await dataSource.context.query<User>().whereEquals('active', true).chunk(
+        50,
+        (chunk) async {
+          processedCount += chunk.length;
+          return true;
+        },
+      );
 
       expect(processedCount, 75); // Half of 150
     });
@@ -96,10 +96,11 @@ void runChunkingStreamingTests(DataSource dataSource) {
       await dataSource.repo<User>().insertMany(users);
 
       var count = 0;
-      await for (final user in dataSource.context
-          .query<User>()
-          .whereEquals('active', true)
-          .stream()) {
+      await for (final user
+          in dataSource.context
+              .query<User>()
+              .whereEquals('active', true)
+              .stream()) {
         count++;
         expect(user.active, isTrue);
       }
@@ -157,16 +158,16 @@ void runChunkingStreamingTests(DataSource dataSource) {
       await dataSource.repo<Post>().insertMany(posts);
 
       var chunkCount = 0;
-      await dataSource.context
-          .query<Post>()
-          .whereEquals('authorId', 1)
-          .chunk(25, (chunk) async {
-        chunkCount++;
-        for (final row in chunk) {
-          expect(row.model.authorId, 1);
-        }
-        return true;
-      });
+      await dataSource.context.query<Post>().whereEquals('authorId', 1).chunk(
+        25,
+        (chunk) async {
+          chunkCount++;
+          for (final row in chunk) {
+            expect(row.model.authorId, 1);
+          }
+          return true;
+        },
+      );
 
       expect(chunkCount, 2); // 50 posts for author 1 in chunks of 25
     });
@@ -178,9 +179,9 @@ void runChunkingStreamingTests(DataSource dataSource) {
           .query<User>()
           .whereEquals('id', 99999) // Non-existent
           .chunk(100, (chunk) async {
-        chunkCount++;
-        return true;
-      });
+            chunkCount++;
+            return true;
+          });
 
       expect(chunkCount, 0);
     });
@@ -188,10 +189,11 @@ void runChunkingStreamingTests(DataSource dataSource) {
     test('stream with empty result set', () async {
       var count = 0;
 
-      await for (final _ in dataSource.context
-          .query<User>()
-          .whereEquals('id', 99999)
-          .stream()) {
+      await for (final _
+          in dataSource.context
+              .query<User>()
+              .whereEquals('id', 99999)
+              .stream()) {
         count++;
       }
 
@@ -199,4 +201,3 @@ void runChunkingStreamingTests(DataSource dataSource) {
     });
   });
 }
-

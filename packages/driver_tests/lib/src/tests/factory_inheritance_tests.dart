@@ -2,42 +2,9 @@ import 'package:ormed/ormed.dart';
 import 'package:test/test.dart';
 
 import 'package:driver_tests/src/models/derived_for_factory.dart';
-import '../support/driver_schema.dart';
 
-void runDriverFactoryInheritanceTests({required DataSource dataSource}) {
-  final metadata = dataSource.connection.driver.metadata;
-  group('${metadata.name} factory inheritance', () {
-    late TestDatabaseManager manager;
-
-    setUpAll(() async {
-      await dataSource.init();
-      manager = TestDatabaseManager(
-        baseDataSource: dataSource,
-        migrationDescriptors: driverTestMigrationEntries
-            .map(
-              (e) => MigrationDescriptor.fromMigration(
-                id: e.id,
-                migration: e.migration,
-              ),
-            )
-            .toList(),
-        strategy: DatabaseIsolationStrategy.truncate,
-      );
-      await manager.initialize();
-    });
-
-    setUp(() async {
-      await manager.beginTest('factory_inheritance_tests', dataSource);
-    });
-
-    tearDown(
-      () async => manager.endTest('factory_inheritance_tests', dataSource),
-    );
-
-    tearDownAll(() async {
-      // Schema cleanup is handled by outer test file
-    });
-
+void runDriverFactoryInheritanceTests() {
+  ormedGroup('factory inheritance', (dataSource) {
     test('multi-level derived factory includes ancestor fields', () {
       final builder = Model.factory<DerivedForFactory>().withOverrides({
         'baseName': 'root',
@@ -51,11 +18,13 @@ void runDriverFactoryInheritanceTests({required DataSource dataSource}) {
     });
 
     test('derived models persist with inherited metadata', () async {
-      final derived = Model.factory<DerivedForFactory>().withOverrides({
-        'baseName': 'root',
-        'layerOneNotes': {'notes': true},
-        'layerTwoFlag': true,
-      }).make(registry: dataSource.context.codecRegistry);
+      final derived = Model.factory<DerivedForFactory>()
+          .withOverrides({
+            'baseName': 'root',
+            'layerOneNotes': {'notes': true},
+            'layerTwoFlag': true,
+          })
+          .make(registry: dataSource.context.codecRegistry);
 
       await dataSource.context.repository<DerivedForFactory>().insert(derived);
 

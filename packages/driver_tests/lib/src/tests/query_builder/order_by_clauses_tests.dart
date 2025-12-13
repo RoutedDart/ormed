@@ -3,11 +3,8 @@ import 'package:test/test.dart';
 
 import '../../models/models.dart';
 
-
-void runOrderByClausesTests(DataSource dataSource) {
-  group('OrderBy Clauses tests', () {
-    setUp(() async {});
-
+void runOrderByClausesTests() {
+  ormedGroup('OrderBy Clauses tests', (dataSource) {
     test('orderBy', () async {
       await dataSource.repo<User>().insertMany([
         User(id: 1, email: 'b@example.com', active: true),

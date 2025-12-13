@@ -2,8 +2,6 @@ import 'package:driver_tests/models.dart';
 import 'package:ormed/ormed.dart';
 import 'package:test/test.dart';
 
-import '../support/driver_schema.dart';
-
 /// Runs comprehensive repository tests against the provided [dataSource].
 ///
 /// These tests verify all repository operations including:
@@ -12,37 +10,15 @@ import '../support/driver_schema.dart';
 /// - Upsert operations (with conflict resolution)
 /// - Delete operations (by keys)
 /// - Preview operations (for all mutation types)
-void runDriverRepositoryTests({required DataSource dataSource}) {
-  final metadata = dataSource.connection.driver.metadata;
-  group('${metadata.name} Repository Operations', () {
+void runDriverRepositoryTests() {
+  ormedGroup('Repository Operations', (dataSource) {
     late Repository<User> userRepo;
     late Repository<Author> authorRepo;
-    late TestDatabaseManager manager;
-
-    setUpAll(() async {
-      await dataSource.init();
-      manager = TestDatabaseManager(
-        baseDataSource: dataSource,
-        migrationDescriptors: driverTestMigrationEntries
-            .map(
-              (e) => MigrationDescriptor.fromMigration(
-                id: e.id,
-                migration: e.migration,
-              ),
-            )
-            .toList(),
-        strategy: DatabaseIsolationStrategy.truncate,
-      );
-      await manager.initialize();
-    });
 
     setUp(() async {
-      await manager.beginTest('repository_tests', dataSource);
       userRepo = dataSource.context.repository<User>();
       authorRepo = dataSource.context.repository<Author>();
     });
-
-    tearDown(() async => manager.endTest('repository_tests', dataSource));
 
     group('Insert Operations', () {
       test('insert() single model', () async {
@@ -429,9 +405,8 @@ void runDriverRepositoryTests({required DataSource dataSource}) {
     });
 
     group('Preview Operations', () {
-      final supportsSqlPreviews = metadata.supportsCapability(
-        DriverCapability.sqlPreviews,
-      );
+    final supportsSqlPreviews = dataSource.options.driver.metadata
+        .supportsCapability(DriverCapability.sqlPreviews);
 
       test('previewInsert() returns statement', () async {
         const user = User(id: 6000, email: 'preview@example.com', active: true);

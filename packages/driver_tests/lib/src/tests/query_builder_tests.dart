@@ -1,23 +1,20 @@
-import 'package:driver_tests/src/tests/query_builder/raw_query_helpers_tests.dart';
-import 'package:ormed/ormed.dart';
 import 'package:driver_tests/src/tests/query_builder/crud_operations_tests.dart';
-import 'package:test/test.dart';
+import 'package:driver_tests/src/tests/query_builder/raw_query_helpers_tests.dart';
 
-import '../../driver_tests.dart';
 import 'query_builder/aggregation_tests.dart';
 import 'query_builder/batch_operations_tests.dart';
 import 'query_builder/cache_tests.dart';
 import 'query_builder/change_tracking_tests.dart';
 import 'query_builder/chunking_streaming_tests.dart';
-import 'query_builder/convenience_methods_tests.dart';
 import 'query_builder/conditional_tests.dart';
-import 'query_builder/model_replication_tests.dart';
+import 'query_builder/convenience_methods_tests.dart';
 import 'query_builder/date_time_tests.dart';
 import 'query_builder/fresh_tests.dart';
 import 'query_builder/join_clauses_tests.dart';
 import 'query_builder/json_query_tests.dart';
 import 'query_builder/lazy_loading_tests.dart';
 import 'query_builder/limit_offset_clauses_tests.dart';
+import 'query_builder/model_replication_tests.dart';
 import 'query_builder/order_by_clauses_tests.dart';
 import 'query_builder/queryrow_sync_tests.dart';
 import 'query_builder/refresh_tests.dart';
@@ -32,63 +29,36 @@ import 'query_builder/timestamp_tests.dart';
 import 'query_builder/upsert_operations_tests.dart';
 import 'query_builder/where_clauses_tests.dart';
 
-void runDriverQueryBuilderTests({required DataSource dataSource}) {
-  final metadata = dataSource.connection.driver.metadata;
-  group('${metadata.name} query builder', () {
-    late TestDatabaseManager manager;
+void runDriverQueryBuilderTests() {
+  runWhereClausesTests();
+  runOrderByClausesTests();
+  runLimitOffsetClausesTests();
+  runSelectClausesTests();
+  runAggregationTests();
+  runJoinClausesTests();
+  runLazyLoadingTests();
+  runRelationAggregateTests();
+  runRelationMutationTests();
+  runRefreshTests();
+  runFreshTests();
+  runQueryRowSyncTests();
+  runRelationsAccessorTests();
+  runRelationResolverCacheTests();
+  runCrudOperationsTests();
+  runUpsertOperationsTests();
 
-    setUpAll(() async {
-      await dataSource.init();
-      manager = TestDatabaseManager(
-        baseDataSource: dataSource,
-        migrationDescriptors: driverTestMigrationEntries
-            .map(
-              (e) => MigrationDescriptor.fromMigration(
-                id: e.id,
-                migration: e.migration,
-              ),
-            )
-            .toList(),
-        strategy: DatabaseIsolationStrategy.truncate,
-      );
-      await manager.initialize();
-    });
-
-    setUp(() async {
-      await manager.beginTest('query_builder_tests', dataSource);
-    });
-
-    tearDown(() async => manager.endTest('query_builder_tests', dataSource));
-    runWhereClausesTests(dataSource);
-    runOrderByClausesTests(dataSource);
-    runLimitOffsetClausesTests(dataSource);
-    runSelectClausesTests(dataSource);
-    runAggregationTests(dataSource);
-    runJoinClausesTests(dataSource);
-    runLazyLoadingTests(dataSource);
-    runRelationAggregateTests(dataSource);
-    runRelationMutationTests(dataSource);
-    runRefreshTests(dataSource);
-    runFreshTests(dataSource);
-    runQueryRowSyncTests(dataSource);
-    runRelationsAccessorTests(dataSource);
-    runRelationResolverCacheTests(dataSource);
-    runCrudOperationsTests(dataSource);
-    runUpsertOperationsTests(dataSource);
-
-    // New tests for missing coverage
-    runJsonQueryTests(dataSource);
-    runDateTimeQueryTests(dataSource);
-    runChunkingStreamingTests(dataSource);
-    runScopeTests(dataSource);
-    runConditionalTests(dataSource);
-    runSubqueryTests(dataSource);
-    runRawQueryHelperTests(dataSource);
-    runBatchOperationsTests(dataSource);
-    runCacheTests(dataSource);
-    runModelReplicationTests(dataSource);
-    runChangeTrackingTests(dataSource);
-    runConvenienceMethodsTests(dataSource);
-    runTimestampTests(dataSource);
-  });
+  // New tests for missing coverage
+  runJsonQueryTests();
+  runDateTimeQueryTests();
+  runChunkingStreamingTests();
+  runScopeTests();
+  runConditionalTests();
+  runSubqueryTests();
+  runRawQueryHelperTests();
+  runBatchOperationsTests();
+  runCacheTests();
+  runModelReplicationTests();
+  runChangeTrackingTests();
+  runConvenienceMethodsTests();
+  runTimestampTests();
 }

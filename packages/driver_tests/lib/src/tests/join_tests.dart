@@ -3,36 +3,14 @@ import 'package:test/test.dart';
 
 import '../../models.dart';
 import '../seed_data.dart';
-import '../support/driver_schema.dart';
 
-void runDriverJoinTests({required DataSource dataSource}) {
-  final metadata = dataSource.connection.driver.metadata;
-  if (!metadata.supportsCapability(DriverCapability.joins)) {
-    return;
-  }
-
-  group('${metadata.name} manual joins', () {
-    late TestDatabaseManager manager;
-
-    setUpAll(() async {
-      await dataSource.init();
-      manager = TestDatabaseManager(
-        baseDataSource: dataSource,
-        migrationDescriptors: driverTestMigrationEntries
-            .map(
-              (e) => MigrationDescriptor.fromMigration(
-                id: e.id,
-                migration: e.migration,
-              ),
-            )
-            .toList(),
-        strategy: DatabaseIsolationStrategy.truncate,
-      );
-      await manager.initialize();
-    });
-
+void runDriverJoinTests() {
+  ormedGroup('manual joins', (dataSource) {
+    final metadata = dataSource.options.driver.metadata;
+    if (!metadata.supportsCapability(DriverCapability.joins)) {
+      return;
+    }
     setUp(() async {
-      await manager.beginTest('join_tests', dataSource);
       // Seed data directly via repository
       await dataSource.repo<User>().insertMany(buildDefaultUsers());
       await dataSource.repo<Author>().insertMany(defaultAuthors.toList());
@@ -42,12 +20,6 @@ void runDriverJoinTests({required DataSource dataSource}) {
       await dataSource.repo<Image>().insertMany(defaultImages.toList());
       await dataSource.repo<Photo>().insertMany(defaultPhotos.toList());
       await dataSource.context.query<Comment>().createMany(defaultComments);
-    });
-
-    tearDown(() async => manager.endTest('join_tests', dataSource));
-
-    tearDownAll(() async {
-      // Schema cleanup is handled by outer test file
     });
 
     test('inner join hydrates related rows', () async {

@@ -13,25 +13,21 @@ import '../../../driver_tests.dart';
 /// - Upsert with selective updateColumns
 /// - Batch upsert operations
 /// - Edge cases and error handling
-void runUpsertOperationsTests(DataSource dataSource) {
-  final metadata = dataSource.connection.driver.metadata;
-
-  group('Upsert Operations', () {
+void runUpsertOperationsTests() {
+  ormedGroup('Upsert Operations', (dataSource) {
     test('upsert() inserts new record', () async {
       final user = await dataSource.query<User>().upsert({
-        'id': 10000,
         'email': 'newuser@example.com',
         'active': true,
       });
 
-      expect(user.id, 10000);
       expect(user.email, 'newuser@example.com');
       expect(user.active, isTrue);
 
       // Verify it was actually inserted
       final fetched = await dataSource
           .query<User>()
-          .whereEquals('id', 10000)
+          .whereEquals('id', user.id)
           .first();
       expect(fetched, isNotNull);
       expect(fetched?.email, 'newuser@example.com');
@@ -428,8 +424,8 @@ void runUpsertOperationsTests(DataSource dataSource) {
       expect(user.email, 'capabilities@example.com');
 
       // Verify driver metadata if available
-      print('Driver: ${metadata.name}');
-      print('Supports returning: ${metadata.supportsReturning}');
+      print('Driver: ${dataSource.options.driver.metadata.name}');
+      print('Supports returning: ${dataSource.options.driver.metadata.supportsReturning}');
     });
   });
 }

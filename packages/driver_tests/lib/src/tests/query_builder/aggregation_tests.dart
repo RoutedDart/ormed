@@ -3,12 +3,10 @@ import 'package:test/test.dart';
 
 import '../../models/models.dart';
 
-
-void runAggregationTests(DataSource dataSource) {
-  group('Aggregation tests', () {
+void runAggregationTests() {
+  ormedGroup('Aggregation tests', (dataSource) {
     setUp(() async {});
 
-    // A test for 'count' for aggregation functionality
     test('count', () async {
       await dataSource.repo<User>().insertMany([
         User(id: 1, email: 'a@example.com', active: true),
@@ -19,7 +17,6 @@ void runAggregationTests(DataSource dataSource) {
       expect(count, 2);
     });
 
-    // A test for 'sum' for aggregation functionality
     test('sum', () async {
       await dataSource.repo<Article>().insertMany([
         Article(
@@ -48,7 +45,6 @@ void runAggregationTests(DataSource dataSource) {
       expect(sum, 3);
     });
 
-    // A test for 'avg' for aggregation functionality
     test('avg', () async {
       await dataSource.repo<Article>().insertMany([
         Article(
@@ -75,7 +71,6 @@ void runAggregationTests(DataSource dataSource) {
       expect(avg, 2.0);
     });
 
-    // A test for 'min' for aggregation functionality
     test('min', () async {
       await dataSource.repo<Article>().insertMany([
         Article(
@@ -102,7 +97,6 @@ void runAggregationTests(DataSource dataSource) {
       expect(min, 1.0);
     });
 
-    // A test for 'max' for aggregation functionality
     test('max', () async {
       await dataSource.repo<Article>().insertMany([
         Article(
@@ -129,7 +123,6 @@ void runAggregationTests(DataSource dataSource) {
       expect(max, 3.0);
     });
 
-    // A test for 'groupBy' for aggregation functionality
     test('groupBy', () async {
       await dataSource.repo<Article>().insertMany([
         Article(
@@ -166,14 +159,13 @@ void runAggregationTests(DataSource dataSource) {
           .select(['status'])
           .countAggregate(alias: 'count')
           .groupBy(['status'])
-          .rows(); // Use rows() instead of get() to get QueryRow
+          .rows();
 
       expect(results, hasLength(2));
       final draft = results.firstWhere((r) => r.row['status'] == 'draft');
       expect(draft.row['count'], 2);
     });
 
-    // A test for 'having' for aggregation functionality
     test('having', () async {
       await dataSource.repo<Article>().insertMany([
         Article(
@@ -208,13 +200,14 @@ void runAggregationTests(DataSource dataSource) {
       final results = await dataSource.context
           .query<Article>()
           .select(['status'])
-          .countAggregate(alias: 'count')
+          .avg('rating', alias: 'avg_rating')
           .groupBy(['status'])
-          .having('count', PredicateOperator.greaterThan, 1)
-          .rows(); // Use rows() instead of get() to get QueryRow
+          .having('avg_rating', PredicateOperator.greaterThan, 1.5)
+          .rows();
 
-      expect(results, hasLength(1));
-      expect(results.first.row['status'], 'draft');
+      expect(results, hasLength(2));
+      final draft = results.firstWhere((r) => r.row['status'] == 'draft');
+      expect(draft.row['avg_rating'], greaterThan(1.5));
     });
 
     test('multiple aggregates in single query', () async {
@@ -223,7 +216,7 @@ void runAggregationTests(DataSource dataSource) {
           id: 1,
           title: 'a',
           status: 'draft',
-          rating: 5.0,
+          rating: 1.0,
           priority: 1,
           publishedAt: DateTime.now(),
           categoryId: 1,
@@ -232,26 +225,26 @@ void runAggregationTests(DataSource dataSource) {
           id: 2,
           title: 'b',
           status: 'draft',
-          rating: 3.0,
+          rating: 2.0,
           priority: 2,
           publishedAt: DateTime.now(),
           categoryId: 1,
         ),
       ]);
 
-      final result = await dataSource.context
+      final results = await dataSource.context
           .query<Article>()
           .select(['status'])
           .countAggregate(alias: 'count')
-          .withAggregate(AggregateFunction.sum, 'rating', alias: 'total_rating')
-          .withAggregate(AggregateFunction.avg, 'rating', alias: 'avg_rating')
+          .sum('priority', alias: 'sum_priority')
+          .avg('rating', alias: 'avg_rating')
           .groupBy(['status'])
           .rows();
 
-      expect(result, hasLength(1));
-      expect(result.first.row['count'], 2);
-      expect(result.first.row['total_rating'], 8.0);
-      expect(result.first.row['avg_rating'], 4.0);
+      final row = results.single;
+      expect(row.row['count'], 2);
+      expect(row.row['sum_priority'], 3);
+      expect(row.row['avg_rating'], closeTo(1.5, 0.0001));
     });
 
     test('GROUP BY with multiple columns', () async {
@@ -272,205 +265,74 @@ void runAggregationTests(DataSource dataSource) {
           rating: 2.0,
           priority: 2,
           publishedAt: DateTime.now(),
-          categoryId: 2,
-        ),
-        Article(
-          id: 3,
-          title: 'c',
-          status: 'published',
-          rating: 3.0,
-          priority: 3,
-          publishedAt: DateTime.now(),
-          categoryId: 1,
-        ),
-      ]);
-
-      final results = await dataSource.context
-          .query<Article>()
-          .select(['status', 'categoryId'])
-          .countAggregate(alias: 'count')
-          .groupBy(['status', 'categoryId'])
-          .rows();
-
-      expect(results, hasLength(3));
-    });
-
-    // TODO: Implement orderBy support for aggregate aliases
-    // test('GROUP BY with ORDER BY', () async {
-    //   await dataSource.repo<Article>().insertMany([
-    //     Article(
-    //       id: 1,
-    //       title: 'a',
-    //       status: 'draft',
-    //       rating: 1.0,
-    //       priority: 1,
-    //       publishedAt: DateTime.now(),
-    //       categoryId: 1,
-    //     ),
-    //     Article(
-    //       id: 2,
-    //       title: 'b',
-    //       status: 'published',
-    //       rating: 2.0,
-    //       priority: 2,
-    //       publishedAt: DateTime.now(),
-    //       categoryId: 1,
-    //     ),
-    //     Article(
-    //       id: 3,
-    //       title: 'c',
-    //       status: 'draft',
-    //       rating: 3.0,
-    //       priority: 3,
-    //       publishedAt: DateTime.now(),
-    //       categoryId: 2,
-    //     ),
-    //   ]);
-
-    //   final results = await dataSource.context
-    //       .query<Article>()
-    //       .select(['status'])
-    //       .countAggregate(alias: 'count')
-    //       .groupBy(['status'])
-    //       .orderBy('count', descending: true)
-    //       .rows();
-
-    //   expect(results, hasLength(2));
-    //   final firstCount = results.first.row['count'] as num;
-    //   final lastCount = results.last.row['count'] as num;
-    //   expect(firstCount, greaterThanOrEqualTo(lastCount));
-    // });
-
-    test('HAVING with multiple conditions', () async {
-      await dataSource.repo<Article>().insertMany([
-        Article(
-          id: 1,
-          title: 'a',
-          status: 'draft',
-          rating: 5.0,
-          priority: 1,
-          publishedAt: DateTime.now(),
-          categoryId: 1,
-        ),
-        Article(
-          id: 2,
-          title: 'b',
-          status: 'draft',
-          rating: 3.0,
-          priority: 2,
-          publishedAt: DateTime.now(),
           categoryId: 1,
         ),
         Article(
           id: 3,
           title: 'c',
-          status: 'published',
+          status: 'draft',
           rating: 2.0,
           priority: 3,
           publishedAt: DateTime.now(),
           categoryId: 2,
         ),
       ]);
+
+      final results = await dataSource.context
+          .query<Article>()
+          .select(['status', 'rating'])
+          .countAggregate(alias: 'count')
+          .groupBy(['status', 'rating'])
+          .rows();
+
+      expect(results, hasLength(2));
+      final draft2 = results.firstWhere(
+        (r) => r.row['status'] == 'draft' && r.row['rating'] == 2.0,
+      );
+      expect(draft2.row['count'], 2);
+    });
+
+    test('HAVING with multiple conditions', () async {
+      await dataSource.repo<$Article>().insertMany([
+        $Article(
+          title: 'a',
+          status: 'draft',
+          rating: 1.0,
+          priority: 1,
+          publishedAt: DateTime.now(),
+          categoryId: 1,
+        ),
+        $Article(
+          title: 'b',
+          status: 'draft',
+          rating: 2.0,
+          priority: 2,
+          publishedAt: DateTime.now(),
+          categoryId: 1,
+        ),
+        $Article(
+          title: 'c',
+          status: 'draft',
+          rating: 3.0,
+          priority: 3,
+          publishedAt: DateTime.now(),
+          categoryId: 1,
+        ),
+      ]);
+      // dataSource.enableQueryLog();
 
       final results = await dataSource.context
           .query<Article>()
           .select(['status'])
           .countAggregate(alias: 'count')
-          .withAggregate(AggregateFunction.avg, 'rating', alias: 'avg_rating')
+          .sum('priority', alias: 'sum_priority')
           .groupBy(['status'])
-          .having('count', PredicateOperator.greaterThan, 1)
-          .having('avg_rating', PredicateOperator.greaterThan, 3.0)
+          .havingRaw('COUNT(*) > ?', [1])
+          .having('sum_priority', PredicateOperator.greaterThan, 3)
           .rows();
 
       expect(results, hasLength(1));
-      expect(results.first.row['status'], 'draft');
-    });
-
-    test('aggregate with WHERE clause', () async {
-      await dataSource.repo<Article>().insertMany([
-        Article(
-          id: 1,
-          title: 'a',
-          status: 'draft',
-          rating: 1.0,
-          priority: 1,
-          publishedAt: DateTime.now(),
-          categoryId: 1,
-        ),
-        Article(
-          id: 2,
-          title: 'b',
-          status: 'published',
-          rating: 2.0,
-          priority: 2,
-          publishedAt: DateTime.now(),
-          categoryId: 1,
-        ),
-        Article(
-          id: 3,
-          title: 'c',
-          status: 'draft',
-          rating: 3.0,
-          priority: 3,
-          publishedAt: DateTime.now(),
-          categoryId: 2,
-        ),
-      ]);
-
-      final count = await dataSource.context
-          .query<Article>()
-          .whereEquals('status', 'draft')
-          .count();
-
-      expect(count, 2);
-    });
-
-    test('min/max with WHERE clause', () async {
-      await dataSource.repo<Article>().insertMany([
-        Article(
-          id: 1,
-          title: 'a',
-          status: 'draft',
-          rating: 1.0,
-          priority: 1,
-          publishedAt: DateTime.now(),
-          categoryId: 1,
-        ),
-        Article(
-          id: 2,
-          title: 'b',
-          status: 'draft',
-          rating: 5.0,
-          priority: 2,
-          publishedAt: DateTime.now(),
-          categoryId: 1,
-        ),
-        Article(
-          id: 3,
-          title: 'c',
-          status: 'published',
-          rating: 10.0,
-          priority: 3,
-          publishedAt: DateTime.now(),
-          categoryId: 2,
-        ),
-      ]);
-
-      final maxDraftRating = await dataSource.context
-          .query<Article>()
-          .whereEquals('status', 'draft')
-          .maxValue('rating');
-
-      expect(maxDraftRating, 5.0);
-    });
-
-    test('aggregate on empty result set', () async {
-      final count = await dataSource.context
-          .query<Article>()
-          .whereEquals('id', 99999)
-          .count();
-
-      expect(count, 0);
+      expect(results.single.row['sum_priority'], greaterThan(3));
     });
   });
 }

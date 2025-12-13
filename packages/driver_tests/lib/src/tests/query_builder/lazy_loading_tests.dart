@@ -2,8 +2,10 @@ import 'package:driver_tests/models.dart';
 import 'package:ormed/ormed.dart';
 import 'package:test/test.dart';
 
-void runLazyLoadingTests(DataSource dataSource) {
-  group('${dataSource.connection.driver.metadata.name} lazy loading', () {
+void runLazyLoadingTests() {
+  ormedGroup('lazy loading', (
+    dataSource,
+  ) {
     setUp(() async {
       // Bind connection resolver for Model.load() to work
       Model.bindConnectionResolver(
@@ -227,7 +229,7 @@ void runLazyLoadingTests(DataSource dataSource) {
         );
       });
 
-      test('throws ArgumentError for invalid relation name', () async {
+      test('load throws on unknown relation name', () async {
         final rows = await dataSource.context
             .query<Author>()
             .where('id', 1)
@@ -246,7 +248,7 @@ void runLazyLoadingTests(DataSource dataSource) {
         );
       });
 
-      test('throws LazyLoadingViolationException when prevented', () async {
+      test('respects preventsLazyLoading flag', () async {
         ModelRelations.preventsLazyLoading = true;
 
         final rows = await dataSource.context
@@ -261,7 +263,7 @@ void runLazyLoadingTests(DataSource dataSource) {
         );
       });
 
-      test('generated getter delegates to cache when loaded', () async {
+      test('load caches relation values for generated getters', () async {
         final rows = await dataSource.context
             .query<Author>()
             .where('id', 1)
@@ -666,7 +668,7 @@ void runLazyLoadingTests(DataSource dataSource) {
         expect(post.relationLoaded('tags'), isTrue);
       });
 
-      test('lazy load count works with eager loaded relations', () async {
+      test('loadCount populates count attribute', () async {
         final rows = await dataSource.context
             .query<Author>()
             .where('id', 1)
@@ -699,7 +701,7 @@ void runLazyLoadingTests(DataSource dataSource) {
         }
       });
 
-      test('throws ArgumentError for invalid relation in loadCount', () async {
+      test('loadCount throws for invalid relation', () async {
         final rows = await dataSource.context
             .query<Author>()
             .where('id', 1)
@@ -709,7 +711,7 @@ void runLazyLoadingTests(DataSource dataSource) {
         expect(() => author.loadCount('invalid_relation'), throwsArgumentError);
       });
 
-      test('throws ArgumentError for invalid relation in loadExists', () async {
+      test('loadExists throws for invalid relation', () async {
         final rows = await dataSource.context
             .query<Author>()
             .where('id', 1)
@@ -829,7 +831,7 @@ void runLazyLoadingTests(DataSource dataSource) {
     });
 
     group('Nested relation paths', () {
-      test('loads nested hasMany -> belongsTo relation path', () async {
+      test('nested load with constrained child relation', () async {
         final rows = await dataSource.context
             .query<Author>()
             .where('id', 1)
@@ -859,7 +861,7 @@ void runLazyLoadingTests(DataSource dataSource) {
         }
       });
 
-      test('loads nested hasMany -> manyToMany relation path', () async {
+      test('nested load handles empty parent collections', () async {
         final rows = await dataSource.context
             .query<Author>()
             .where('id', 1)
@@ -880,7 +882,7 @@ void runLazyLoadingTests(DataSource dataSource) {
         }
       });
 
-      test('nested path constraint applies to final segment only', () async {
+      test('nested load with constrained child relation', () async {
         final rows = await dataSource.context
             .query<Author>()
             .where('id', 1)
@@ -904,7 +906,7 @@ void runLazyLoadingTests(DataSource dataSource) {
         }
       });
 
-      test('nested path with empty intermediate result does not error', () async {
+      test('nested load handles empty parent result sets', () async {
         // Get author with no posts (if exists) or use one that will have empty filtered result
         final rows = await dataSource.context
             .query<Author>()
@@ -944,7 +946,7 @@ void runLazyLoadingTests(DataSource dataSource) {
     });
 
     group('Static batch loading - Model.loadRelations()', () {
-      test('loads relation on multiple models with single batch', () async {
+      test('batch loadRelations hydrates collection', () async {
         final authors = await dataSource.context.query<Author>().get();
 
         expect(authors.length, greaterThanOrEqualTo(2));
@@ -1084,7 +1086,7 @@ void runLazyLoadingTests(DataSource dataSource) {
         }
       });
 
-      test('handles mix of loaded and unloaded across models', () async {
+      test('loadRelationsMissing hydrates mixed eager states', () async {
         // Get post with author eager loaded
         final postWithAuthor =
             (await dataSource.context

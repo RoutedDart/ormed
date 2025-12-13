@@ -3,8 +3,8 @@ import 'package:test/test.dart';
 
 import '../../../driver_tests.dart';
 
-void runBatchOperationsTests(DataSource dataSource) {
-  group('Batch Operations', () {
+void runBatchOperationsTests() {
+  ormedGroup('Batch Operations', (dataSource) {
     group('insertGetIds', () {
       test('inserts multiple records sequentially', () async {
         final users = [
@@ -24,7 +24,12 @@ void runBatchOperationsTests(DataSource dataSource) {
         final users = [
           User(id: 10, email: 'alice@example.com', name: 'Alice', active: true),
           User(id: 11, email: 'bob@example.com', name: 'Bob', active: true),
-          User(id: 12, email: 'charlie@example.com', name: 'Charlie', active: true),
+          User(
+            id: 12,
+            email: 'charlie@example.com',
+            name: 'Charlie',
+            active: true,
+          ),
         ];
 
         await dataSource.repo<User>().insertMany(users);
@@ -39,7 +44,7 @@ void runBatchOperationsTests(DataSource dataSource) {
     });
 
     group('updateBatch', () {
-      test('updates multiple records with different values', () async {
+      test('updates multiple rows in one batch', () async {
         // Insert test users
         final users = [
           User(id: 100, email: 'user100@example.com', active: true),
@@ -49,11 +54,14 @@ void runBatchOperationsTests(DataSource dataSource) {
         await dataSource.repo<User>().insertMany(users);
 
         // Update using updateBatch
-        final updatedCount = await dataSource.context.query<User>().updateBatch([
-          {'id': 100, 'active': false, 'name': 'Updated 1'},
-          {'id': 101, 'active': false, 'name': 'Updated 2'},
-          {'id': 102, 'active': true, 'name': 'Updated 3'},
-        ], uniqueBy: 'id');
+        final updatedCount = await dataSource.context.query<User>().updateBatch(
+          [
+            {'id': 100, 'active': false, 'name': 'Updated 1'},
+            {'id': 101, 'active': false, 'name': 'Updated 2'},
+            {'id': 102, 'active': true, 'name': 'Updated 3'},
+          ],
+          uniqueBy: 'id',
+        );
 
         expect(updatedCount, greaterThanOrEqualTo(3));
 
@@ -67,9 +75,10 @@ void runBatchOperationsTests(DataSource dataSource) {
       });
 
       test('updateBatch with empty updates returns 0', () async {
-        final updatedCount = await dataSource.context
-            .query<User>()
-            .updateBatch([], uniqueBy: 'id');
+        final updatedCount = await dataSource.context.query<User>().updateBatch(
+          [],
+          uniqueBy: 'id',
+        );
 
         expect(updatedCount, 0);
       });
@@ -99,12 +108,27 @@ void runBatchOperationsTests(DataSource dataSource) {
         expect(updated?.email, 'user200@example.com'); // Should not change
       });
 
-      test('updateBatch with multiple rows of different updates', () async {
+      test('updates different columns per row', () async {
         // Insert posts
         final posts = [
-          Post(id: 300, authorId: 1, title: 'Post 300', publishedAt: DateTime.now()),
-          Post(id: 301, authorId: 1, title: 'Post 301', publishedAt: DateTime.now()),
-          Post(id: 302, authorId: 2, title: 'Post 302', publishedAt: DateTime.now()),
+          Post(
+            id: 300,
+            authorId: 1,
+            title: 'Post 300',
+            publishedAt: DateTime.now(),
+          ),
+          Post(
+            id: 301,
+            authorId: 1,
+            title: 'Post 301',
+            publishedAt: DateTime.now(),
+          ),
+          Post(
+            id: 302,
+            authorId: 2,
+            title: 'Post 302',
+            publishedAt: DateTime.now(),
+          ),
         ];
         await dataSource.repo<Post>().insertMany(posts);
 
@@ -160,8 +184,18 @@ void runBatchOperationsTests(DataSource dataSource) {
       test('insert then update batch', () async {
         // Insert users
         final users = [
-          User(id: 500, email: 'batch1@example.com', name: 'Batch 1', active: true),
-          User(id: 501, email: 'batch2@example.com', name: 'Batch 2', active: true),
+          User(
+            id: 500,
+            email: 'batch1@example.com',
+            name: 'Batch 1',
+            active: true,
+          ),
+          User(
+            id: 501,
+            email: 'batch2@example.com',
+            name: 'Batch 2',
+            active: true,
+          ),
         ];
         await dataSource.repo<User>().insertMany(users);
 
@@ -193,10 +227,30 @@ void runBatchOperationsTests(DataSource dataSource) {
 
         // Insert posts
         final posts = [
-          Post(id: 600, authorId: 600, title: 'A1', publishedAt: DateTime.now()),
-          Post(id: 601, authorId: 600, title: 'A2', publishedAt: DateTime.now()),
-          Post(id: 602, authorId: 601, title: 'B1', publishedAt: DateTime.now()),
-          Post(id: 603, authorId: 602, title: 'C1', publishedAt: DateTime.now()),
+          Post(
+            id: 600,
+            authorId: 600,
+            title: 'A1',
+            publishedAt: DateTime.now(),
+          ),
+          Post(
+            id: 601,
+            authorId: 600,
+            title: 'A2',
+            publishedAt: DateTime.now(),
+          ),
+          Post(
+            id: 602,
+            authorId: 601,
+            title: 'B1',
+            publishedAt: DateTime.now(),
+          ),
+          Post(
+            id: 603,
+            authorId: 602,
+            title: 'C1',
+            publishedAt: DateTime.now(),
+          ),
         ];
         await dataSource.repo<Post>().insertMany(posts);
 
@@ -215,4 +269,3 @@ void runBatchOperationsTests(DataSource dataSource) {
     });
   });
 }
-

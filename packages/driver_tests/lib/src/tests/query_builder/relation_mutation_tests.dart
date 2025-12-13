@@ -3,8 +3,9 @@ import 'package:test/test.dart';
 
 import '../../../driver_tests.dart';
 
-void runRelationMutationTests(DataSource dataSource) {
-  group('${dataSource.connection.driver.metadata.name} relation mutations', () {
+void runRelationMutationTests() {
+  ormedGroup('relation mutations', (scopedDataSource) {
+    final dataSource = scopedDataSource;
     setUp(() async {
       // Bind connection resolver for Model methods
       Model.bindConnectionResolver(
@@ -17,7 +18,7 @@ void runRelationMutationTests(DataSource dataSource) {
     });
 
     group('setRelation / unsetRelation / clearRelations', () {
-      test('setRelation caches a relation and marks it loaded', () async {
+      test('setRelation caches relation and marks loaded', () async {
         await dataSource.repo<Author>().insertMany([
           const Author(id: 1, name: 'Alice'),
         ]);
@@ -43,7 +44,7 @@ void runRelationMutationTests(DataSource dataSource) {
         expect(post.getRelation<Author>('author'), equals(author));
       });
 
-      test('unsetRelation removes from cache and marks unloaded', () async {
+      test('unsetRelation removes cached relation', () async {
         await dataSource.repo<Author>().insertMany([
           const Author(id: 1, name: 'Alice'),
         ]);
@@ -139,7 +140,7 @@ void runRelationMutationTests(DataSource dataSource) {
         expect(post.getRelation<Author>('author'), equals(author));
       });
 
-      test('throws ArgumentError for invalid relation name', () async {
+      test('associate throws for unknown relation', () async {
         await dataSource.repo<Post>().insertMany([
           Post(
             id: 1,
@@ -161,7 +162,7 @@ void runRelationMutationTests(DataSource dataSource) {
         );
       });
 
-      test('throws ArgumentError for non-belongsTo relation', () async {
+      test('associate rejects non-belongsTo relation', () async {
         await dataSource.repo<Author>().insertMany([
           const Author(id: 1, name: 'Alice'),
         ]);
@@ -256,7 +257,7 @@ void runRelationMutationTests(DataSource dataSource) {
         expect(post.getRelation<Author>('author'), isNull);
       });
 
-      test('throws ArgumentError for invalid relation name', () async {
+      test('dissociate throws for invalid relation', () async {
         await dataSource.repo<Post>().insertMany([
           Post(
             id: 1,
@@ -275,7 +276,7 @@ void runRelationMutationTests(DataSource dataSource) {
         expect(() => post.dissociate('invalid'), throwsArgumentError);
       });
 
-      test('throws ArgumentError for non-belongsTo relation', () async {
+      test('dissociate rejects non-belongsTo relation', () async {
         await dataSource.repo<Author>().insertMany([
           const Author(id: 1, name: 'Alice'),
         ]);
@@ -321,7 +322,7 @@ void runRelationMutationTests(DataSource dataSource) {
     });
 
     group('attach() - manyToMany', () {
-      test('attaches related models and creates pivot records', () async {
+      test('attach creates pivot rows for many-to-many', () async {
         await dataSource.repo<Post>().insertMany([
           Post(
             id: 1,
@@ -382,7 +383,7 @@ void runRelationMutationTests(DataSource dataSource) {
         expect(pivotRecords, isEmpty);
       });
 
-      test('throws ArgumentError for invalid relation name', () async {
+      test('attach throws for invalid relation name', () async {
         await dataSource.repo<Post>().insertMany([
           Post(
             id: 1,
@@ -401,7 +402,7 @@ void runRelationMutationTests(DataSource dataSource) {
         expect(() => post.attach('invalid', [1, 2]), throwsArgumentError);
       });
 
-      test('throws ArgumentError for non-manyToMany relation', () async {
+      test('attach rejects non many-to-many relations', () async {
         await dataSource.repo<Post>().insertMany([
           Post(
             id: 1,
@@ -493,7 +494,7 @@ void runRelationMutationTests(DataSource dataSource) {
         expect(pivotRecords.first.tagId, equals(3));
       });
 
-      test('detaches all related models when no IDs provided', () async {
+      test('detach removes all relations when ids omitted', () async {
         await dataSource.repo<Post>().insertMany([
           Post(
             id: 1,
@@ -559,7 +560,7 @@ void runRelationMutationTests(DataSource dataSource) {
         expect(pivotRecords, isEmpty);
       });
 
-      test('throws ArgumentError for invalid relation name', () async {
+      test('detach throws for invalid relation', () async {
         await dataSource.repo<Post>().insertMany([
           Post(
             id: 1,
@@ -578,7 +579,7 @@ void runRelationMutationTests(DataSource dataSource) {
         expect(() => post.detach('invalid'), throwsArgumentError);
       });
 
-      test('throws ArgumentError for non-manyToMany relation', () async {
+      test('detach rejects non many-to-many relations', () async {
         await dataSource.repo<Post>().insertMany([
           Post(
             id: 1,

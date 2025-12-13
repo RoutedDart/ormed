@@ -1,10 +1,10 @@
 import 'package:ormed/ormed.dart';
-import 'package:test/test.dart' ;
+import 'package:test/test.dart';
 
 import '../../models/models.dart';
 
-void runRawQueryHelperTests(DataSource dataSource) {
-  group('Raw Query Helpers', () {
+void runRawQueryHelperTests() {
+  ormedGroup('Raw Query Helpers', (dataSource) {
     group('havingRaw', () {
       test('adds raw HAVING clause with aggregates', () async {
         await dataSource.repo<Author>().insertMany([
@@ -135,7 +135,12 @@ void runRawQueryHelperTests(DataSource dataSource) {
               publishedAt: DateTime.now(),
             ),
           ),
-          Post(id: 50, authorId: 3, title: 'Post 50', publishedAt: DateTime.now()),
+          Post(
+            id: 50,
+            authorId: 3,
+            title: 'Post 50',
+            publishedAt: DateTime.now(),
+          ),
         ];
         await dataSource.repo<Post>().insertMany(posts);
 
@@ -194,4 +199,3 @@ void runRawQueryHelperTests(DataSource dataSource) {
     });
   });
 }
-

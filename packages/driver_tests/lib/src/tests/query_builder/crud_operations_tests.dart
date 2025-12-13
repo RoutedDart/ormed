@@ -2,8 +2,8 @@ import 'package:driver_tests/driver_tests.dart';
 import 'package:ormed/ormed.dart';
 import 'package:test/test.dart';
 
-void runCrudOperationsTests(DataSource dataSource) {
-  group('CRUD Operations', () {
+void runCrudOperationsTests() {
+  ormedGroup('CRUD Operations', (dataSource) {
     setUp(() async {
       // Thoroughly clean all test data before each test
       try {
@@ -108,7 +108,7 @@ void runCrudOperationsTests(DataSource dataSource) {
     });
 
     group('Update Operations', () {
-      test('update() - updates matching records', () async {
+      test('update() - updates multiple records', () async {
         await Model.query<User>().createMany([
           {'name': 'John Doe', 'email': 'john@example.com'},
           {'name': 'Jane Smith', 'email': 'jane@example.com'},
@@ -237,15 +237,20 @@ void runCrudOperationsTests(DataSource dataSource) {
           uniqueBy: ['id'],
         );
 
-        expect(await dataSource.query<Author>().count(), greaterThanOrEqualTo(2));
-        final john =
-            await dataSource.query<Author>().where('id', 5001).first();
+        expect(
+          await dataSource.query<Author>().count(),
+          greaterThanOrEqualTo(2),
+        );
+        final john = await dataSource.query<Author>().where('id', 5001).first();
         expect(john?.name, equals('John Doe'));
       });
 
       test('upsert() - updates existing records', () async {
-        await dataSource.query<Author>()
-            .create({'id': 5003, 'name': 'John Original', 'active': true});
+        await dataSource.query<Author>().create({
+          'id': 5003,
+          'name': 'John Original',
+          'active': true,
+        });
 
         await dataSource.query<Author>().upsertMany(
           [
@@ -254,15 +259,17 @@ void runCrudOperationsTests(DataSource dataSource) {
           uniqueBy: ['id'],
         );
 
-        final john =
-            await dataSource.query<Author>().where('id', 5003).first();
+        final john = await dataSource.query<Author>().where('id', 5003).first();
         expect(john?.name, equals('John Updated'));
         expect(john?.active, equals(false));
       });
 
       test('upsert() - mixed insert and update', () async {
-        await dataSource.query<Author>()
-            .create({'id': 5004, 'name': 'John Original', 'active': true});
+        await dataSource.query<Author>().create({
+          'id': 5004,
+          'name': 'John Original',
+          'active': true,
+        });
 
         await dataSource.query<Author>().upsertMany(
           [
@@ -272,11 +279,9 @@ void runCrudOperationsTests(DataSource dataSource) {
           uniqueBy: ['id'],
         );
 
-        final john =
-            await dataSource.query<Author>().where('id', 5004).first();
+        final john = await dataSource.query<Author>().where('id', 5004).first();
         expect(john?.name, equals('John Updated'));
-        final jane =
-            await dataSource.query<Author>().where('id', 5005).first();
+        final jane = await dataSource.query<Author>().where('id', 5005).first();
         expect(jane?.name, equals('Jane New'));
       });
 
