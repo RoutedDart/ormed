@@ -308,6 +308,15 @@ class NamedConstructorModelPartial
     if (valueValue == null) throw StateError('Missing required field: value');
     return $NamedConstructorModel(id: id, name: nameValue, value: valueValue);
   }
+
+  @override
+  Map<String, Object?> toMap() {
+    return {
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (value != null) 'value': value,
+    };
+  }
 }
 
 /// Generated tracked model class for [NamedConstructorModel].

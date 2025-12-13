@@ -226,6 +226,19 @@ class CliUserUpdateDto implements UpdateDto<$CliUser> {
 /// All fields are nullable; intended for subset SELECTs.
 class CliUserPartial implements PartialEntity<$CliUser> {
   const CliUserPartial({this.id, this.email, this.active});
+
+  /// Creates a partial from a database row map.
+  ///
+  /// The [row] keys should be column names (snake_case).
+  /// Missing columns will result in null field values.
+  factory CliUserPartial.fromRow(Map<String, Object?> row) {
+    return CliUserPartial(
+      id: row['id'] as int?,
+      email: row['email'] as String?,
+      active: row['active'] as bool?,
+    );
+  }
+
   final int? id;
   final String? email;
   final bool? active;
@@ -240,6 +253,15 @@ class CliUserPartial implements PartialEntity<$CliUser> {
     final bool? activeValue = active;
     if (activeValue == null) throw StateError('Missing required field: active');
     return $CliUser(id: idValue, email: emailValue, active: activeValue);
+  }
+
+  @override
+  Map<String, Object?> toMap() {
+    return {
+      if (id != null) 'id': id,
+      if (email != null) 'email': email,
+      if (active != null) 'active': active,
+    };
   }
 }
 

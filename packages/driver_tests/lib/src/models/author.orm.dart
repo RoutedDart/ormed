@@ -317,6 +317,15 @@ class AuthorPartial implements PartialEntity<$Author> {
     if (activeValue == null) throw StateError('Missing required field: active');
     return $Author(id: idValue, name: nameValue, active: activeValue);
   }
+
+  @override
+  Map<String, Object?> toMap() {
+    return {
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (active != null) 'active': active,
+    };
+  }
 }
 
 /// Generated tracked model class for [Author].

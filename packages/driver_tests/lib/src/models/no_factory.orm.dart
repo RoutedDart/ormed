@@ -223,6 +223,11 @@ class NoFactoryPartial implements PartialEntity<$NoFactory> {
     // Basic required-field check: non-nullable fields must be present.
     return $NoFactory(id: id);
   }
+
+  @override
+  Map<String, Object?> toMap() {
+    return {if (id != null) 'id': id};
+  }
 }
 
 /// Generated tracked model class for [NoFactory].

@@ -409,6 +409,24 @@ class PostPartial implements PartialEntity<$Post> {
     this.createdAt,
     this.updatedAt,
   });
+
+  /// Creates a partial from a database row map.
+  ///
+  /// The [row] keys should be column names (snake_case).
+  /// Missing columns will result in null field values.
+  factory PostPartial.fromRow(Map<String, Object?> row) {
+    return PostPartial(
+      id: row['id'] as int?,
+      userId: row['user_id'] as int?,
+      title: row['title'] as String?,
+      body: row['body'] as String?,
+      published: row['published'] as bool?,
+      publishedAt: row['published_at'] as DateTime?,
+      createdAt: row['created_at'] as DateTime?,
+      updatedAt: row['updated_at'] as DateTime?,
+    );
+  }
+
   final int? id;
   final int? userId;
   final String? title;
@@ -438,6 +456,20 @@ class PostPartial implements PartialEntity<$Post> {
       createdAt: createdAt,
       updatedAt: updatedAt,
     );
+  }
+
+  @override
+  Map<String, Object?> toMap() {
+    return {
+      if (id != null) 'id': id,
+      if (userId != null) 'user_id': userId,
+      if (title != null) 'title': title,
+      if (body != null) 'body': body,
+      if (published != null) 'published': published,
+      if (publishedAt != null) 'published_at': publishedAt,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+    };
   }
 }
 

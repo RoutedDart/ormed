@@ -259,6 +259,47 @@ mixin RepositoryInputHandlerMixin<T extends OrmEntity> on RepositoryBase<T> {
     );
   }
 
+  /// Converts a "where" input to a map suitable for WHERE clauses.
+  ///
+  /// Supports the following input types:
+  /// - `T` (tracked model like `$User`) - Extracts all column values
+  /// - `PartialEntity<T>` (like `$UserPartial`) - Uses the partial's `toMap()`
+  /// - `InsertDto<T>` (like `$UserInsertDto`) - Uses the DTO's `toMap()`
+  /// - `UpdateDto<T>` (like `$UserUpdateDto`) - Uses the DTO's `toMap()`
+  /// - `Map<String, Object?>` - Uses as-is with column name normalization
+  /// - `null` - Returns null (no where clause)
+  ///
+  /// Example:
+  /// ```dart
+  /// // All of these work for where clauses:
+  /// final map1 = whereInputToMap({'id': 1});
+  /// final map2 = whereInputToMap($UserPartial(id: 1));
+  /// final map3 = whereInputToMap($UserUpdateDto(id: 1));
+  /// final map4 = whereInputToMap(existingUser);
+  /// ```
+  Map<String, Object?>? whereInputToMap(Object? input) {
+    if (input == null) return null;
+
+    return switch (input) {
+      // Tracked model ($User) - extract all column values
+      T model => definition.toMap(model, registry: codecs),
+      // PartialEntity ($UserPartial) - use toMap()
+      PartialEntity<T> partial => _normalizeColumnNames(partial.toMap()),
+      // InsertDto ($UserInsertDto) - use toMap()
+      InsertDto<T> dto => _normalizeColumnNames(dto.toMap()),
+      // UpdateDto ($UserUpdateDto) - use toMap()
+      UpdateDto<T> dto => _normalizeColumnNames(dto.toMap()),
+      // Raw Map - use as-is with column name normalization
+      Map<String, Object?> m => _normalizeColumnNames(m),
+      // Fallback - throw for unsupported types
+      _ => throw ArgumentError.value(
+        input,
+        'where',
+        'Expected $T, PartialEntity<$T>, InsertDto<$T>, UpdateDto<$T>, or Map<String, Object?>, got ${input.runtimeType}',
+      ),
+    };
+  }
+
   /// Checks if the input is a tracked model (has ModelAttributes).
   bool isTrackedModel(Object input) => input is ModelAttributes;
 }

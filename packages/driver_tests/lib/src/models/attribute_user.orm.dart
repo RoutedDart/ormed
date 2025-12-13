@@ -373,6 +373,17 @@ class AttributeUserPartial implements PartialEntity<$AttributeUser> {
       profile: profile,
     );
   }
+
+  @override
+  Map<String, Object?> toMap() {
+    return {
+      if (id != null) 'id': id,
+      if (email != null) 'email': email,
+      if (secret != null) 'secret': secret,
+      if (role != null) 'role': role,
+      if (profile != null) 'profile': profile,
+    };
+  }
 }
 
 /// Generated tracked model class for [AttributeUser].

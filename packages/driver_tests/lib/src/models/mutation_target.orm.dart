@@ -322,6 +322,16 @@ class MutationTargetPartial implements PartialEntity<$MutationTarget> {
       category: category,
     );
   }
+
+  @override
+  Map<String, Object?> toMap() {
+    return {
+      if (id != null) '_id': id,
+      if (name != null) 'name': name,
+      if (active != null) 'active': active,
+      if (category != null) 'category': category,
+    };
+  }
 }
 
 /// Generated tracked model class for [MutationTarget].

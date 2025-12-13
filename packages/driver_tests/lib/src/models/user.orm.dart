@@ -432,6 +432,20 @@ class UserPartial implements PartialEntity<$User> {
       metadata: metadata,
     );
   }
+
+  @override
+  Map<String, Object?> toMap() {
+    return {
+      if (id != null) 'id': id,
+      if (email != null) 'email': email,
+      if (active != null) 'active': active,
+      if (name != null) 'name': name,
+      if (age != null) 'age': age,
+      if (createdAt != null) 'createdAt': createdAt,
+      if (profile != null) 'profile': profile,
+      if (metadata != null) 'metadata': metadata,
+    };
+  }
 }
 
 /// Generated tracked model class for [User].

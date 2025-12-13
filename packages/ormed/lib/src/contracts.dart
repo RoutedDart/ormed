@@ -181,4 +181,18 @@ abstract class PartialEntity<T extends OrmEntity> {
   /// }
   /// ```
   T toEntity();
+
+  /// Converts this partial to a map with column names as keys.
+  ///
+  /// Only non-null fields are included in the returned map.
+  /// This is useful for building WHERE clauses from partial instances.
+  ///
+  /// ## Example
+  ///
+  /// ```dart
+  /// final partial = $UserPartial(id: 1, email: 'alice@example.com');
+  /// final map = partial.toMap();
+  /// // {'id': 1, 'email': 'alice@example.com'}
+  /// ```
+  Map<String, Object?> toMap();
 }

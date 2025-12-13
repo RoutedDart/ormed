@@ -323,6 +323,22 @@ class UserPartial implements PartialEntity<$User> {
     this.createdAt,
     this.updatedAt,
   });
+
+  /// Creates a partial from a database row map.
+  ///
+  /// The [row] keys should be column names (snake_case).
+  /// Missing columns will result in null field values.
+  factory UserPartial.fromRow(Map<String, Object?> row) {
+    return UserPartial(
+      id: row['id'] as int?,
+      email: row['email'] as String?,
+      name: row['name'] as String?,
+      active: row['active'] as bool?,
+      createdAt: row['created_at'] as DateTime?,
+      updatedAt: row['updated_at'] as DateTime?,
+    );
+  }
+
   final int? id;
   final String? email;
   final String? name;
@@ -347,6 +363,18 @@ class UserPartial implements PartialEntity<$User> {
       createdAt: createdAt,
       updatedAt: updatedAt,
     );
+  }
+
+  @override
+  Map<String, Object?> toMap() {
+    return {
+      if (id != null) 'id': id,
+      if (email != null) 'email': email,
+      if (name != null) 'name': name,
+      if (active != null) 'active': active,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+    };
   }
 }
 

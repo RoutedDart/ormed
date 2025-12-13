@@ -232,6 +232,11 @@ class SettingPartial implements PartialEntity<$Setting> {
       throw StateError('Missing required field: payload');
     return $Setting(id: idValue, payload: payloadValue);
   }
+
+  @override
+  Map<String, Object?> toMap() {
+    return {if (id != null) 'id': id, if (payload != null) 'payload': payload};
+  }
 }
 
 /// Generated tracked model class for [Setting].

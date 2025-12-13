@@ -233,6 +233,11 @@ class ImagePartial implements PartialEntity<$Image> {
     if (labelValue == null) throw StateError('Missing required field: label');
     return $Image(id: idValue, label: labelValue);
   }
+
+  @override
+  Map<String, Object?> toMap() {
+    return {if (id != null) 'id': id, if (label != null) 'label': label};
+  }
 }
 
 /// Generated tracked model class for [Image].

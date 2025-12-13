@@ -286,6 +286,11 @@ class CustomSoftDeletePartial implements PartialEntity<$CustomSoftDelete> {
     if (titleValue == null) throw StateError('Missing required field: title');
     return $CustomSoftDelete(id: idValue, title: titleValue);
   }
+
+  @override
+  Map<String, Object?> toMap() {
+    return {if (id != null) 'id': id, if (title != null) 'title': title};
+  }
 }
 
 /// Generated tracked model class for [CustomSoftDelete].

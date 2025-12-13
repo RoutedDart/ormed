@@ -76,7 +76,26 @@ class ModelPartialEmitter {
     }
     buffer.writeln('    );');
     buffer.writeln('  }');
+
+    // Generate toMap() method
+    _writeToMapMethod(buffer, visible.toList());
+
     buffer.writeln('}');
+  }
+
+  void _writeToMapMethod(
+    StringBuffer buffer,
+    List<FieldDescriptor> fields,
+  ) {
+    buffer.writeln();
+    buffer.writeln('  @override');
+    buffer.writeln('  Map<String, Object?> toMap() {');
+    buffer.writeln('    return {');
+    for (final field in fields) {
+      buffer.writeln("      if (${field.name} != null) '${field.columnName}': ${field.name},");
+    }
+    buffer.writeln('    };');
+    buffer.writeln('  }');
   }
 
   void _writeFromRowFactory(
@@ -94,21 +113,12 @@ class ModelPartialEmitter {
     );
     buffer.writeln('    return ${className}Partial(');
     for (final field in fields) {
-      final columnName = field.columnName ?? _toSnakeCase(field.name);
       buffer.writeln(
-        "      ${field.name}: row['$columnName'] as ${field.dartType}?,",
+        "      ${field.name}: row['${field.columnName}'] as ${field.dartType}?,",
       );
     }
     buffer.writeln('    );');
     buffer.writeln('  }');
     buffer.writeln();
-  }
-
-  /// Converts a camelCase string to snake_case.
-  static String _toSnakeCase(String input) {
-    return input.replaceAllMapped(
-      RegExp(r'[A-Z]'),
-      (match) => '_${match.group(0)!.toLowerCase()}',
-    );
   }
 }

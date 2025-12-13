@@ -454,6 +454,18 @@ class PostPartial implements PartialEntity<$Post> {
       publishedAt: publishedAtValue,
     );
   }
+
+  @override
+  Map<String, Object?> toMap() {
+    return {
+      if (id != null) 'id': id,
+      if (authorId != null) 'author_id': authorId,
+      if (title != null) 'title': title,
+      if (content != null) 'content': content,
+      if (views != null) 'views': views,
+      if (publishedAt != null) 'published_at': publishedAt,
+    };
+  }
 }
 
 /// Generated tracked model class for [Post].

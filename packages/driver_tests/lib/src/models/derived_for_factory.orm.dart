@@ -346,6 +346,16 @@ class DerivedForFactoryPartial implements PartialEntity<$DerivedForFactory> {
       baseName: baseName,
     );
   }
+
+  @override
+  Map<String, Object?> toMap() {
+    return {
+      if (layerTwoFlag != null) 'layerTwoFlag': layerTwoFlag,
+      if (layerOneNotes != null) 'layerOneNotes': layerOneNotes,
+      if (id != null) 'id': id,
+      if (baseName != null) 'baseName': baseName,
+    };
+  }
 }
 
 /// Generated tracked model class for [DerivedForFactory].

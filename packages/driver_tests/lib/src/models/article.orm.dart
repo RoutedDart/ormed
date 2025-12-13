@@ -478,6 +478,21 @@ class ArticlePartial implements PartialEntity<$Article> {
       categoryId: categoryIdValue,
     );
   }
+
+  @override
+  Map<String, Object?> toMap() {
+    return {
+      if (id != null) 'id': id,
+      if (title != null) 'title': title,
+      if (body != null) 'body': body,
+      if (status != null) 'status': status,
+      if (rating != null) 'rating': rating,
+      if (priority != null) 'priority': priority,
+      if (publishedAt != null) 'published_at': publishedAt,
+      if (reviewedAt != null) 'reviewed_at': reviewedAt,
+      if (categoryId != null) 'category_id': categoryId,
+    };
+  }
 }
 
 /// Generated tracked model class for [Article].

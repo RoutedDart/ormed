@@ -232,6 +232,14 @@ class PostTagPartial implements PartialEntity<$PostTag> {
     if (tagIdValue == null) throw StateError('Missing required field: tagId');
     return $PostTag(postId: postIdValue, tagId: tagIdValue);
   }
+
+  @override
+  Map<String, Object?> toMap() {
+    return {
+      if (postId != null) 'post_id': postId,
+      if (tagId != null) 'tag_id': tagId,
+    };
+  }
 }
 
 /// Generated tracked model class for [PostTag].

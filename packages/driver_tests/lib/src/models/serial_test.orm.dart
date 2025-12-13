@@ -234,6 +234,11 @@ class SerialTestPartial implements PartialEntity<$SerialTest> {
     if (labelValue == null) throw StateError('Missing required field: label');
     return $SerialTest(id: idValue, label: labelValue);
   }
+
+  @override
+  Map<String, Object?> toMap() {
+    return {if (id != null) 'id': id, if (label != null) 'label': label};
+  }
 }
 
 /// Generated tracked model class for [SerialTest].

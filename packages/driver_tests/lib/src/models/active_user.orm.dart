@@ -330,6 +330,16 @@ class ActiveUserPartial implements PartialEntity<$ActiveUser> {
       settings: settingsValue,
     );
   }
+
+  @override
+  Map<String, Object?> toMap() {
+    return {
+      if (id != null) 'id': id,
+      if (email != null) 'email': email,
+      if (name != null) 'name': name,
+      if (settings != null) 'settings': settings,
+    };
+  }
 }
 
 /// Generated tracked model class for [ActiveUser].

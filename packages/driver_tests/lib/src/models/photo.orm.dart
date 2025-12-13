@@ -318,6 +318,16 @@ class PhotoPartial implements PartialEntity<$Photo> {
       path: pathValue,
     );
   }
+
+  @override
+  Map<String, Object?> toMap() {
+    return {
+      if (id != null) 'id': id,
+      if (imageableId != null) 'imageable_id': imageableId,
+      if (imageableType != null) 'imageable_type': imageableType,
+      if (path != null) 'path': path,
+    };
+  }
 }
 
 /// Generated tracked model class for [Photo].

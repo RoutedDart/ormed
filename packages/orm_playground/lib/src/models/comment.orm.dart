@@ -338,6 +338,22 @@ class CommentPartial implements PartialEntity<$Comment> {
     this.createdAt,
     this.updatedAt,
   });
+
+  /// Creates a partial from a database row map.
+  ///
+  /// The [row] keys should be column names (snake_case).
+  /// Missing columns will result in null field values.
+  factory CommentPartial.fromRow(Map<String, Object?> row) {
+    return CommentPartial(
+      id: row['id'] as int?,
+      postId: row['post_id'] as int?,
+      userId: row['user_id'] as int?,
+      body: row['body'] as String?,
+      createdAt: row['created_at'] as DateTime?,
+      updatedAt: row['updated_at'] as DateTime?,
+    );
+  }
+
   final int? id;
   final int? postId;
   final int? userId;
@@ -360,6 +376,18 @@ class CommentPartial implements PartialEntity<$Comment> {
       createdAt: createdAt,
       updatedAt: updatedAt,
     );
+  }
+
+  @override
+  Map<String, Object?> toMap() {
+    return {
+      if (id != null) 'id': id,
+      if (postId != null) 'post_id': postId,
+      if (userId != null) 'user_id': userId,
+      if (body != null) 'body': body,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+    };
   }
 }
 

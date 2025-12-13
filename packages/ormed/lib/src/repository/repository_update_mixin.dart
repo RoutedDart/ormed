@@ -16,6 +16,12 @@ mixin RepositoryUpdateMixin<T extends OrmEntity>
   /// which row(s) to update. When using a tracked model, the primary key is
   /// extracted automatically.
   ///
+  /// The [where] parameter accepts:
+  /// - `Map<String, Object?>` - Raw column/value pairs
+  /// - `$ModelPartial` - Partial entity with the fields to match
+  /// - `$ModelUpdateDto` or `$ModelInsertDto` - DTO with fields to match
+  /// - Tracked model (`$Model`) - Uses all column values for matching
+  ///
   /// Example with tracked model:
   /// ```dart
   /// final user = await repository.find(1);
@@ -29,6 +35,12 @@ mixin RepositoryUpdateMixin<T extends OrmEntity>
   /// final updated = await repository.update(dto, where: {'id': 1});
   /// ```
   ///
+  /// Example with partial as where clause:
+  /// ```dart
+  /// final dto = $UserUpdateDto(name: 'John Smith');
+  /// final updated = await repository.update(dto, where: $UserPartial(id: 1));
+  /// ```
+  ///
   /// Example with raw map:
   /// ```dart
   /// final data = {'name': 'John Smith'};
@@ -36,7 +48,7 @@ mixin RepositoryUpdateMixin<T extends OrmEntity>
   /// ```
   Future<T> update(
     Object model, {
-    Map<String, Object?>? where,
+    Object? where,
     JsonUpdateBuilder<T>? jsonUpdates,
   }) async {
     final updated = await updateMany(
@@ -55,6 +67,8 @@ mixin RepositoryUpdateMixin<T extends OrmEntity>
   /// which row(s) to update. When using tracked models, the primary key is
   /// extracted automatically from each model.
   ///
+  /// The [where] parameter accepts various input types (see [update] for details).
+  ///
   /// An optional [jsonUpdates] builder can be provided to update JSON fields.
   ///
   /// Example:
@@ -67,7 +81,7 @@ mixin RepositoryUpdateMixin<T extends OrmEntity>
   /// ```
   Future<List<T>> updateMany(
     List<Object> inputs, {
-    Map<String, Object?>? where,
+    Object? where,
     JsonUpdateBuilder<T>? jsonUpdates,
   }) async {
     if (inputs.isEmpty) return const [];
@@ -99,7 +113,7 @@ mixin RepositoryUpdateMixin<T extends OrmEntity>
   /// Use this when you only need the affected row count, not the updated data.
   Future<MutationResult> updateManyRaw(
     List<Object> inputs, {
-    Map<String, Object?>? where,
+    Object? where,
     JsonUpdateBuilder<T>? jsonUpdates,
   }) async {
     if (inputs.isEmpty) return const MutationResult(affectedRows: 0);
@@ -113,11 +127,20 @@ mixin RepositoryUpdateMixin<T extends OrmEntity>
   }
 
   /// Builds an update plan from various input types.
+  ///
+  /// The [where] parameter accepts:
+  /// - `Map<String, Object?>` - Raw column/value pairs
+  /// - `$ModelPartial` - Partial entity with the fields to match
+  /// - `$ModelUpdateDto` or `$ModelInsertDto` - DTO with fields to match
+  /// - Tracked model (`$Model`) - Uses all column values for matching
   MutationPlan buildUpdatePlanFromInputs(
     List<Object> inputs, {
-    Map<String, Object?>? where,
+    Object? where,
     JsonUpdateBuilder<T>? jsonUpdates,
   }) {
+    // Convert the where input to a map once
+    final whereMap = whereInputToMap(where);
+
     final rows = inputs.map((input) {
       // Apply timestamps to tracked models before serialization
       if (input is T) {
@@ -147,9 +170,9 @@ mixin RepositoryUpdateMixin<T extends OrmEntity>
           throw StateError('Primary key cannot be null for update.');
         }
         keys = {pkField.columnName: pkValue};
-      } else if (where != null) {
-        // For DTOs/maps, use the provided where clause
-        keys = _normalizeColumnNames(where);
+      } else if (whereMap != null) {
+        // For DTOs/maps, use the provided where clause (already normalized)
+        keys = whereMap;
       } else {
         // Try to extract PK from the input
         final pk = extractPrimaryKey(input);

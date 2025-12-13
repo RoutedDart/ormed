@@ -246,6 +246,11 @@ class CommentPartial implements PartialEntity<$Comment> {
     if (bodyValue == null) throw StateError('Missing required field: body');
     return $Comment(id: idValue, body: bodyValue);
   }
+
+  @override
+  Map<String, Object?> toMap() {
+    return {if (id != null) 'id': id, if (body != null) 'body': body};
+  }
 }
 
 /// Generated tracked model class for [Comment].

@@ -266,6 +266,15 @@ class UniqueUserPartial implements PartialEntity<$UniqueUser> {
     if (activeValue == null) throw StateError('Missing required field: active');
     return $UniqueUser(id: idValue, email: emailValue, active: activeValue);
   }
+
+  @override
+  Map<String, Object?> toMap() {
+    return {
+      if (id != null) 'id': id,
+      if (email != null) 'email': email,
+      if (active != null) 'active': active,
+    };
+  }
 }
 
 /// Generated tracked model class for [UniqueUser].

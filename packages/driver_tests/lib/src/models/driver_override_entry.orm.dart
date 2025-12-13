@@ -288,6 +288,11 @@ class DriverOverrideEntryPartial
       throw StateError('Missing required field: payload');
     return $DriverOverrideEntry(id: idValue, payload: payloadValue);
   }
+
+  @override
+  Map<String, Object?> toMap() {
+    return {if (id != null) 'id': id, if (payload != null) 'payload': payload};
+  }
 }
 
 /// Generated tracked model class for [DriverOverrideEntry].
