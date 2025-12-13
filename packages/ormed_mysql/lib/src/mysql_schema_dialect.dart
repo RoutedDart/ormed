@@ -27,6 +27,21 @@ class MySqlSchemaDialect extends SchemaDialect {
         return [
           SchemaStatement(mutation.sql!, parameters: mutation.parameters),
         ];
+      case SchemaMutationOperation.createDatabase:
+        final name = mutation.documentPayload!['name'] as String;
+        final options =
+            mutation.documentPayload!['options'] as Map<String, Object?>?;
+        final sql = compileCreateDatabase(name, options);
+        return sql != null ? [SchemaStatement(sql)] : [];
+      case SchemaMutationOperation.dropDatabase:
+        final name = mutation.documentPayload!['name'] as String;
+        final ifExists =
+            mutation.documentPayload!['ifExists'] as bool? ?? false;
+        final sql =
+            ifExists
+                ? compileDropDatabaseIfExists(name)
+                : 'DROP DATABASE ${_quote(name)}';
+        return sql != null ? [SchemaStatement(sql)] : [];
       default:
         throw UnimplementedError(
           'Schema mutation operation ${mutation.operation} is not supported by MySqlSchemaDialect.',
@@ -195,6 +210,7 @@ class MySqlSchemaDialect extends SchemaDialect {
     return 'RENAME TABLE ${_tableName(options.from)} TO ${_tableName(options.to)}';
   }
 
+  // ignore: unused_element
   String _createIndexSql(String table, IndexDefinition definition) {
     final keyword = switch (definition.type) {
       IndexType.unique => 'UNIQUE ',
@@ -466,7 +482,83 @@ class MySqlSchemaDialect extends SchemaDialect {
 
   @override
   String? compileListDatabases() {
-    return 'SHOW DATABASES';
+    // Align with Laravel: filter out system schemas and expose a stable, non-reserved alias
+    return 'SELECT SCHEMA_NAME AS db_name '
+      'FROM information_schema.SCHEMATA '
+      "WHERE SCHEMA_NAME NOT IN ('information_schema', 'performance_schema', 'mysql', 'sys') "
+      'ORDER BY SCHEMA_NAME';
+  }
+
+  // ========== Schema Introspection ========== 
+
+  @override
+  String? compileSchemas({String? schema}) {
+    return 'SELECT schema_name AS name, schema_name = DATABASE() AS is_default '
+        'FROM information_schema.schemata '
+        "WHERE schema_name NOT IN ('information_schema','mysql','performance_schema','sys','ndbinfo') "
+        'ORDER BY schema_name';
+  }
+
+  @override
+  String? compileTables({String? schema}) {
+    final filter = schema == null
+        ? "table_schema NOT IN ('information_schema','mysql','performance_schema','sys','ndbinfo')"
+        : 'table_schema = ?';
+    return 'SELECT table_schema, table_name, table_type, table_comment, engine, '
+        'COALESCE(data_length, 0) + COALESCE(index_length, 0) AS size_bytes '
+        'FROM information_schema.tables '
+        "WHERE table_type IN ('BASE TABLE','SYSTEM VERSIONED') AND $filter "
+        'ORDER BY table_schema, table_name';
+  }
+
+  @override
+  String? compileViews({String? schema}) {
+    final filter = schema == null
+        ? "table_schema NOT IN ('information_schema','mysql','performance_schema','sys','ndbinfo')"
+        : 'table_schema = ?';
+    return 'SELECT table_schema, table_name, view_definition '
+        'FROM information_schema.views '
+        'WHERE $filter '
+        'ORDER BY table_schema, table_name';
+  }
+
+  @override
+  String? compileColumns(String table, {String? schema}) {
+    return 'SELECT table_schema, column_name, column_type, data_type, column_default, '
+        'is_nullable, column_comment, character_maximum_length, numeric_precision, '
+        'numeric_scale, extra '
+        'FROM information_schema.columns '
+        'WHERE table_name = ? AND table_schema = ? '
+        'ORDER BY ordinal_position';
+  }
+
+  @override
+  String? compileIndexes(String table, {String? schema}) {
+    return 'SELECT index_name AS name, GROUP_CONCAT(column_name ORDER BY seq_in_index) AS columns, '
+        'index_type AS type, NOT non_unique AS `unique`, index_name = '"'"'PRIMARY'"'"' AS is_primary '
+        'FROM information_schema.statistics '
+        'WHERE table_schema = ? AND table_name = ? '
+        'GROUP BY index_name, index_type, non_unique';
+  }
+
+  @override
+  String? compileForeignKeys(String table, {String? schema}) {
+    final clause = schema == null
+        ? 'kc.table_schema = DATABASE()'
+        : 'kc.table_schema = ?';
+    return 'SELECT kc.constraint_name, '
+        'GROUP_CONCAT(kc.column_name ORDER BY kc.ordinal_position) AS columns, '
+        'kc.referenced_table_schema, kc.referenced_table_name, '
+        'GROUP_CONCAT(kc.referenced_column_name ORDER BY kc.ordinal_position) AS referenced_columns, '
+        'rc.update_rule, rc.delete_rule '
+        'FROM information_schema.key_column_usage kc '
+        'JOIN information_schema.referential_constraints rc '
+        '  ON kc.constraint_schema = rc.constraint_schema '
+        ' AND kc.constraint_name = rc.constraint_name '
+        'WHERE kc.table_name = ? AND $clause '
+        'AND kc.referenced_table_name IS NOT NULL '
+        'GROUP BY kc.constraint_name, kc.referenced_table_schema, kc.referenced_table_name, rc.update_rule, rc.delete_rule '
+        'ORDER BY kc.constraint_name';
   }
 
   // ========== Foreign Key Constraint Management ==========

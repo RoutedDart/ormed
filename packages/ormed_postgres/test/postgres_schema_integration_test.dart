@@ -30,7 +30,7 @@ void main() {
       ));
 
       await dataSource.init();
-      registerDriverTestFactories();
+      registerOrmFactories();
 
       // Create a unique schema for this test run
       testSchema = 'test_schema_${DateTime.now().millisecondsSinceEpoch}';

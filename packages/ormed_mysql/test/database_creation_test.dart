@@ -9,7 +9,7 @@ void main() {
           'mysql://root:secret@localhost:6605/orm_test';
       
       // Parse URL to connect without database specified
-      final uri = Uri.parse(url.replaceFirst('mysql://', ''));
+      final uri = Uri.parse(url);
       final userInfo = uri.userInfo.split(':');
       final user = userInfo[0];
       final password = userInfo.length > 1 ? userInfo[1] : '';
@@ -17,7 +17,7 @@ void main() {
       final port = uri.port;
       
       // Connect to MySQL without specifying a database
-      final systemUrl = 'mysql://$user:$password@$host:$port/mysql';
+      final systemUrl = 'mysql://$user:$password@$host:$port/mysql?secure=true';
       final adapter = MySqlDriverAdapter.fromUrl(systemUrl);
       
       try {
@@ -33,7 +33,8 @@ void main() {
         );
         
         expect(result, isNotEmpty, reason: 'Database should be created');
-        expect(result.first['SCHEMA_NAME'], equals(testDbName));
+        final schemaName = result.first['SCHEMA_NAME'] ?? result.first['schema_name'];
+        expect(schemaName, equals(testDbName));
         
         // Clean up - drop the test database
         await adapter.executeRaw('DROP DATABASE `$testDbName`');
@@ -48,7 +49,7 @@ void main() {
           'mysql://root:secret@localhost:6604/orm_test';
       
       // Parse URL to connect without database specified
-      final uri = Uri.parse(url.replaceFirst('mysql://', ''));
+      final uri = Uri.parse(url);
       final userInfo = uri.userInfo.split(':');
       final user = userInfo[0];
       final password = userInfo.length > 1 ? userInfo[1] : '';
@@ -56,12 +57,11 @@ void main() {
       final port = uri.port;
       
       // Connect to MariaDB without specifying a database
-      final systemUrl = 'mysql://$user:$password@$host:$port/mysql';
+      final systemUrl = 'mysql://$user:$password@$host:$port/mysql?secure=true';
       final adapter = MySqlDriverAdapter.fromUrl(systemUrl);
       
       try {
         final testDbName = 'orm_test_create_${DateTime.now().millisecondsSinceEpoch}';
-        
         // Try to create a new database
         await adapter.executeRaw('CREATE DATABASE `$testDbName`');
         
@@ -72,7 +72,8 @@ void main() {
         );
         
         expect(result, isNotEmpty, reason: 'Database should be created');
-        expect(result.first['SCHEMA_NAME'], equals(testDbName));
+        final schemaName = result.first['SCHEMA_NAME'] ?? result.first['schema_name'];
+        expect(schemaName, equals(testDbName));
         
         // Clean up - drop the test database
         await adapter.executeRaw('DROP DATABASE `$testDbName`');
@@ -87,21 +88,21 @@ void main() {
           'mysql://root:secret@localhost:6605/orm_test';
       
       // Parse URL to connect without database specified
-      final uri = Uri.parse(url.replaceFirst('mysql://', ''));
+      final uri = Uri.parse(url);
       final userInfo = uri.userInfo.split(':');
       final user = userInfo[0];
       final password = userInfo.length > 1 ? userInfo[1] : '';
       final host = uri.host;
       final port = uri.port;
       
-      final systemUrl = 'mysql://$user:$password@$host:$port/mysql';
+      final systemUrl = 'mysql://$user:$password@$host:$port/mysql?secure=true';
       final adapter = MySqlDriverAdapter.fromUrl(systemUrl);
       
       try {
         final testDbName = 'orm_test_switch_${DateTime.now().millisecondsSinceEpoch}';
         
         // Create database
-        await adapter.executeRaw('CREATE DATABASE `$testDbName`');
+        await adapter.createDatabase(testDbName);
         
         // Switch to new database
         await adapter.executeRaw('USE `$testDbName`');
@@ -122,10 +123,11 @@ void main() {
         ''', [testDbName, 'test_users']);
         
         expect(result, isNotEmpty);
-        expect(result.first['TABLE_NAME'], equals('test_users'));
+        final tableName = result.first['TABLE_NAME'] ?? result.first['table_name'];
+        expect(tableName, equals('test_users'));
         
         // Clean up
-        await adapter.executeRaw('DROP DATABASE `$testDbName`');
+        await adapter.dropDatabase(testDbName);
         
       } finally {
         await adapter.close();

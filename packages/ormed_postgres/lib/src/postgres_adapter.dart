@@ -306,7 +306,15 @@ class PostgresDriverAdapter
       }
     }
 
-    if (metadata.supportsTransactions) {
+    // PostgreSQL does not allow CREATE DATABASE or DROP DATABASE inside a transaction block.
+    // We check if the plan contains any such operations.
+    final hasDatabaseOps = plan.mutations.any(
+      (m) =>
+          m.operation == SchemaMutationOperation.createDatabase ||
+          m.operation == SchemaMutationOperation.dropDatabase,
+    );
+
+    if (metadata.supportsTransactions && !hasDatabaseOps) {
       await transaction(() async {
         await runner();
       });
@@ -321,6 +329,8 @@ class PostgresDriverAdapter
     if (_transactionDepth == 0) {
       await connection.execute('BEGIN');
       _transactionDepth++;
+      // Set active session so nested transactions can use it
+      _activeSession = connection;
     } else {
       // Use savepoint for nested transactions
       final savepoint = 'sp_${_transactionDepth + 1}';
@@ -339,6 +349,7 @@ class PostgresDriverAdapter
     if (_transactionDepth == 1) {
       await connection.execute('COMMIT');
       _transactionDepth--;
+      _activeSession = null; // Clear session when top-level transaction ends
     } else {
       // Release savepoint for nested transactions
       final savepoint = 'sp_$_transactionDepth';
@@ -357,6 +368,7 @@ class PostgresDriverAdapter
     if (_transactionDepth == 1) {
       await connection.execute('ROLLBACK');
       _transactionDepth--;
+      _activeSession = null; // Clear session when top-level transaction ends
     } else {
       // Rollback to savepoint for nested transactions
       final savepoint = 'sp_$_transactionDepth';
@@ -391,13 +403,12 @@ class PostgresDriverAdapter
 
   @override
   Future<List<SchemaNamespace>> listSchemas() async {
-    final rows = await queryRaw(
-      'SELECT nspname AS name, pg_get_userbyid(nspowner) AS owner, '
-      'nspname = current_schema() AS is_default '
-      'FROM pg_namespace '
-      "WHERE nspname NOT LIKE 'pg_%' AND nspname <> 'information_schema' "
-      'ORDER BY nspname',
-    );
+    final sql = _schemaCompiler.dialect.compileSchemas();
+    if (sql == null) {
+      throw UnsupportedError('PostgreSQL should support schema listing');
+    }
+
+    final rows = await queryRaw(sql);
     return rows
         .map(
           (row) => SchemaNamespace(
@@ -411,16 +422,12 @@ class PostgresDriverAdapter
 
   @override
   Future<List<SchemaTable>> listTables({String? schema}) async {
-    final filter = schema == null ? '' : ' AND table_schema = ?';
-    final rows = await queryRaw(
-      'SELECT table_schema, table_name, table_type '
-      'FROM information_schema.tables '
-      "WHERE table_type = 'BASE TABLE' "
-      "AND table_schema NOT IN ('pg_catalog', 'information_schema')"
-      '$filter '
-      'ORDER BY table_schema, table_name',
-      schema == null ? const [] : [schema],
-    );
+    final sql = _schemaCompiler.dialect.compileTables(schema: schema);
+    if (sql == null) {
+      throw UnsupportedError('PostgreSQL should support table listing');
+    }
+
+    final rows = await queryRaw(sql, schema == null ? const [] : [schema]);
     return rows
         .map(
           (row) => SchemaTable(
@@ -434,15 +441,12 @@ class PostgresDriverAdapter
 
   @override
   Future<List<SchemaView>> listViews({String? schema}) async {
-    final filter = schema == null ? '' : ' AND table_schema = ?';
-    final rows = await queryRaw(
-      'SELECT table_schema, table_name, view_definition '
-      'FROM information_schema.views '
-      "WHERE table_schema NOT IN ('pg_catalog', 'information_schema')"
-      '$filter '
-      'ORDER BY table_schema, table_name',
-      schema == null ? const [] : [schema],
-    );
+    final sql = _schemaCompiler.dialect.compileViews(schema: schema);
+    if (sql == null) {
+      throw UnsupportedError('PostgreSQL should support view listing');
+    }
+
+    final rows = await queryRaw(sql, schema == null ? const [] : [schema]);
     return rows
         .map(
           (row) => SchemaView(
@@ -456,27 +460,12 @@ class PostgresDriverAdapter
 
   @override
   Future<List<SchemaColumn>> listColumns(String table, {String? schema}) async {
-    final filter = schema == null ? '' : ' AND c.table_schema = ?';
-    final rows = await queryRaw(
-      'SELECT c.table_schema, c.table_name, c.column_name, c.data_type, '
-      'c.character_maximum_length, c.numeric_precision, c.numeric_scale, '
-      'c.is_nullable, c.column_default, c.is_identity, '
-      'c.is_generated, c.generation_expression, '
-      'pgd.description AS comment '
-      'FROM information_schema.columns c '
-      'LEFT JOIN pg_catalog.pg_class cls '
-      '  ON cls.relname = c.table_name '
-      'LEFT JOIN pg_catalog.pg_namespace ns '
-      '  ON ns.nspname = c.table_schema AND ns.oid = cls.relnamespace '
-      'LEFT JOIN pg_catalog.pg_attribute attr '
-      '  ON attr.attrelid = cls.oid AND attr.attname = c.column_name '
-      'LEFT JOIN pg_catalog.pg_description pgd '
-      '  ON pgd.objoid = attr.attrelid AND pgd.objsubid = attr.attnum '
-      'WHERE c.table_name = ?'
-      '$filter '
-      'ORDER BY c.ordinal_position',
-      schema == null ? [table] : [table, schema],
-    );
+    final sql = _schemaCompiler.dialect.compileColumns(table, schema: schema);
+    if (sql == null) {
+      throw UnsupportedError('PostgreSQL should support column listing');
+    }
+
+    final rows = await queryRaw(sql, schema == null ? [table] : [table, schema]);
     final pkColumns = await _primaryKeyColumns(table, schema: schema);
     return rows
         .map(
@@ -501,30 +490,12 @@ class PostgresDriverAdapter
 
   @override
   Future<List<SchemaIndex>> listIndexes(String table, {String? schema}) async {
-    final filter = schema == null ? '' : ' AND ns.nspname = ?';
-    final rows = await queryRaw(
-      'SELECT ns.nspname AS schema, tbl.relname AS table_name, '
-      'idx.relname AS index_name, i.indisunique AS unique, '
-      'i.indisprimary AS primary, am.amname AS method, '
-      'pg_get_expr(i.indpred, i.indrelid) AS where_clause, '
-      'array_remove(array_agg(att.attname ORDER BY cols.ordinality), NULL) '
-      '  AS columns '
-      'FROM pg_index i '
-      'JOIN pg_class idx ON idx.oid = i.indexrelid '
-      'JOIN pg_class tbl ON tbl.oid = i.indrelid '
-      'JOIN pg_namespace ns ON ns.oid = tbl.relnamespace '
-      'JOIN pg_am am ON am.oid = idx.relam '
-      'LEFT JOIN LATERAL unnest(i.indkey) WITH ORDINALITY AS cols(attnum, ordinality) '
-      '  ON true '
-      'LEFT JOIN pg_attribute att '
-      '  ON att.attrelid = tbl.oid AND att.attnum = cols.attnum '
-      'WHERE tbl.relname = ?'
-      '$filter '
-      'GROUP BY ns.nspname, tbl.relname, idx.relname, i.indisunique, '
-      'i.indisprimary, am.amname, pg_get_expr(i.indpred, i.indrelid) '
-      'ORDER BY idx.relname',
-      schema == null ? [table] : [table, schema],
-    );
+    final sql = _schemaCompiler.dialect.compileIndexes(table, schema: schema);
+    if (sql == null) {
+      throw UnsupportedError('PostgreSQL should support index listing');
+    }
+
+    final rows = await queryRaw(sql, schema == null ? [table] : [table, schema]);
     return rows
         .map(
           (row) => SchemaIndex(
@@ -546,29 +517,12 @@ class PostgresDriverAdapter
     String table, {
     String? schema,
   }) async {
-    final filter = schema == null ? '' : ' AND tc.table_schema = ?';
-    final rows = await queryRaw(
-      'SELECT tc.constraint_name, tc.table_schema, '
-      'kcu.column_name, ccu.table_schema AS referenced_schema, '
-      'ccu.table_name AS referenced_table, '
-      'ccu.column_name AS referenced_column, '
-      'rc.update_rule, rc.delete_rule, kcu.ordinal_position '
-      'FROM information_schema.table_constraints tc '
-      'JOIN information_schema.key_column_usage kcu '
-      '  ON kcu.constraint_name = tc.constraint_name '
-      ' AND kcu.constraint_schema = tc.constraint_schema '
-      'JOIN information_schema.constraint_column_usage ccu '
-      '  ON ccu.constraint_name = tc.constraint_name '
-      ' AND ccu.constraint_schema = tc.constraint_schema '
-      'JOIN information_schema.referential_constraints rc '
-      '  ON rc.constraint_name = tc.constraint_name '
-      ' AND rc.constraint_schema = tc.constraint_schema '
-      'WHERE tc.constraint_type = \'FOREIGN KEY\' '
-      '  AND tc.table_name = ?'
-      '$filter '
-      'ORDER BY tc.constraint_name, kcu.ordinal_position',
-      schema == null ? [table] : [table, schema],
-    );
+    final sql = _schemaCompiler.dialect.compileForeignKeys(table, schema: schema);
+    if (sql == null) {
+      throw UnsupportedError('PostgreSQL should support foreign key listing');
+    }
+
+    final rows = await queryRaw(sql, schema == null ? [table] : [table, schema]);
     final byConstraint = <String, List<Map<String, Object?>>>{};
     for (final row in rows) {
       final key = row['constraint_name'] as String;
@@ -674,19 +628,76 @@ class PostgresDriverAdapter
     return results.map((row) => row['datname'] as String).toList();
   }
 
+  // ========== Schema (Namespace) Management ==========
+
+  @override
+  Future<bool> createSchema(String name) async {
+    try {
+      await executeRaw('CREATE SCHEMA ${_quote(name)}');
+      return true;
+    } on Exception catch (e) {
+      // Check if error is "schema exists" (error code 42P06)
+      final errorMsg = e.toString();
+      if (errorMsg.contains('42P06') ||
+          errorMsg.toLowerCase().contains('already exists')) {
+        return false;
+      }
+      rethrow;
+    }
+  }
+
+  @override
+  Future<bool> dropSchemaIfExists(String name) async {
+    try {
+      await executeRaw('DROP SCHEMA IF EXISTS ${_quote(name)} CASCADE');
+      return true;
+    } catch (e) {
+      // Return false if schema didn't exist (shouldn't happen with IF EXISTS)
+      return false;
+    }
+  }
+
+  @override
+  Future<void> setCurrentSchema(String name) async {
+    await executeRaw('SET search_path TO ${_quote(name)}, public');
+  }
+
+  @override
+  Future<String> getCurrentSchema() async {
+    final result = await queryRaw('SHOW search_path');
+    if (result.isEmpty) {
+      return 'public';
+    }
+    final searchPath = result.first['search_path'] as String? ?? 'public';
+    // Return the first schema in the search_path
+    return searchPath.split(',').first.trim().replaceAll('"', '');
+  }
+
   // ========== Foreign Key Constraint Management ==========
 
   @override
   Future<bool> enableForeignKeyConstraints() async {
     // PostgreSQL doesn't have session-level FK disable
     // Must use ALTER TABLE ... ENABLE TRIGGER ALL on each table
+    // List tables from the current search_path (no schema filter = uses search_path)
     final tables = await listTables();
 
     for (final table in tables) {
+      // Use the schema from the table if available, otherwise just the table name
       final tableName = table.schema != null
           ? '${_quote(table.schema!)}.${_quote(table.name)}'
           : _quote(table.name);
-      await executeRaw('ALTER TABLE $tableName ENABLE TRIGGER ALL');
+      try {
+        await executeRaw('ALTER TABLE $tableName ENABLE TRIGGER ALL');
+      } catch (e) {
+        // Ignore errors if table doesn't exist - it may have been dropped
+        // or may be in a different schema than expected
+        final errorMsg = e.toString().toLowerCase();
+        if (!errorMsg.contains('does not exist') &&
+            !errorMsg.contains('42p01')) {
+          rethrow;
+        }
+      }
     }
 
     return true;
@@ -694,13 +705,25 @@ class PostgresDriverAdapter
 
   @override
   Future<bool> disableForeignKeyConstraints() async {
+    // List tables from the current search_path (no schema filter = uses search_path)
     final tables = await listTables();
 
     for (final table in tables) {
+      // Use the schema from the table if available, otherwise just the table name
       final tableName = table.schema != null
           ? '${_quote(table.schema!)}.${_quote(table.name)}'
           : _quote(table.name);
-      await executeRaw('ALTER TABLE $tableName DISABLE TRIGGER ALL');
+      try {
+        await executeRaw('ALTER TABLE $tableName DISABLE TRIGGER ALL');
+      } catch (e) {
+        // Ignore errors if table doesn't exist - it may have been dropped
+        // or may be in a different schema than expected
+        final errorMsg = e.toString().toLowerCase();
+        if (!errorMsg.contains('does not exist') &&
+            !errorMsg.contains('42p01')) {
+          rethrow;
+        }
+      }
     }
 
     return true;
@@ -722,15 +745,37 @@ class PostgresDriverAdapter
 
   @override
   Future<void> dropAllTables({String? schema}) async {
-    final schemaName = schema ?? 'public';
+    final schemaName = schema ?? await getCurrentSchema();
     final tables = await listTables(schema: schemaName);
 
     if (tables.isEmpty) return;
 
-    // PostgreSQL can drop with CASCADE to handle FKs
-    for (final table in tables) {
-      final tableName = '${_quote(schemaName)}.${_quote(table.name)}';
-      await executeRaw('DROP TABLE IF EXISTS $tableName CASCADE');
+    // Disable constraints to mirror Laravel behavior, then drop with CASCADE
+    // Note: We don't re-enable constraints after dropping since there are no tables left
+    try {
+      // Disable triggers on all tables first
+      for (final table in tables) {
+        final tableName = '${_quote(schemaName)}.${_quote(table.name)}';
+        try {
+          await executeRaw('ALTER TABLE $tableName DISABLE TRIGGER ALL');
+        } catch (_) {
+          // Ignore - table may already be dropped
+        }
+      }
+
+      // Drop all tables with CASCADE
+      for (final table in tables) {
+        final tableName = '${_quote(schemaName)}.${_quote(table.name)}';
+        await executeRaw('DROP TABLE IF EXISTS $tableName CASCADE');
+      }
+    } catch (e) {
+      // Try to re-enable constraints on any remaining tables
+      try {
+        await enableForeignKeyConstraints();
+      } catch (_) {
+        // Ignore - tables may not exist
+      }
+      rethrow;
     }
   }
 

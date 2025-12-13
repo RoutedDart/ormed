@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:carbonized/carbonized.dart';
 import 'package:ormed/ormed.dart';
 
 import 'sqlite_codecs.dart';

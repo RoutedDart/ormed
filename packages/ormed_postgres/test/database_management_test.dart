@@ -1,8 +1,12 @@
 import 'dart:io';
+import 'dart:math';
 
 import 'package:ormed/ormed.dart';
 import 'package:ormed_postgres/ormed_postgres.dart';
 import 'package:test/test.dart';
+
+// Generate unique identifiers for this test run to prevent concurrency conflicts
+final _testRunId = Random().nextInt(1000000);
 
 PostgresDriverAdapter _createAdapterFromEnv({String? database}) {
   final defaultUrl =
@@ -39,7 +43,7 @@ void main() {
     });
 
     test('creates and drops database', () async {
-      const testDb = 'ormed_test_db_create';
+      final testDb = 'ormed_test_db_${_testRunId}_create';
 
       // Clean up if exists
       await adapter.dropDatabaseIfExists(testDb);
@@ -66,7 +70,7 @@ void main() {
     });
 
     test('creates database with encoding option', () async {
-      const testDb = 'ormed_test_db_encoding';
+      final testDb = 'ormed_test_db_${_testRunId}_encoding';
 
       await adapter.dropDatabaseIfExists(testDb);
 
@@ -89,7 +93,7 @@ void main() {
     });
 
     test('creates database with multiple options', () async {
-      const testDb = 'ormed_test_db_full_options';
+      final testDb = 'ormed_test_db_${_testRunId}_full_options';
 
       await adapter.dropDatabaseIfExists(testDb);
 
@@ -134,7 +138,8 @@ void main() {
       final databases = await adapter.listDatabases();
 
       expect(databases, isNotEmpty);
-      expect(databases, contains('postgres'));
+      // Should omit system databases/templates
+      expect(databases, isNot(contains('postgres')));
     });
 
     test('cannot create database within transaction', () async {
@@ -453,7 +458,7 @@ void main() {
     });
 
     test('database names with underscores', () async {
-      const testDb = 'ormed_test_db_with_underscores';
+      final testDb = 'ormed_test_db_${_testRunId}_with_underscores';
 
       await adapter.dropDatabaseIfExists(testDb);
       await adapter.createDatabase(testDb);

@@ -425,38 +425,53 @@ class SqliteDriverAdapter
 
   @override
   Future<List<SchemaNamespace>> listSchemas() async {
-    final database = await _database();
-    final result = database.select('PRAGMA database_list;');
+    final sql = _schemaCompiler.dialect.compileSchemas();
+    if (sql == null) {
+      throw UnsupportedError('SQLite should support schema listing');
+    }
+
+    final result = await queryRaw(sql);
     return result
         .map(
-          (row) => SchemaNamespace(
-            name: row['name'] as String,
-            owner: row['file'] as String?,
-            isDefault: (row['name'] as String).toLowerCase() == 'main',
-          ),
+          (row) {
+            final name = row['name'] as String;
+            final owner = (row['file'] ?? row['path']) as String?;
+            final defaultFlag = row['default'];
+            final isDefault = switch (defaultFlag) {
+              num value => value != 0,
+              bool value => value,
+              _ => name.toLowerCase() == 'main',
+            };
+            return SchemaNamespace(
+              name: name,
+              owner: owner,
+              isDefault: isDefault,
+            );
+          },
         )
         .toList(growable: false);
   }
 
   @override
   Future<List<SchemaTable>> listTables({String? schema}) async {
-    final database = await _database();
-    final schemas = _schemasToInspect(database, schema);
+    final schemas = schema != null
+        ? <String>[schema]
+        : (await listSchemas()).map((s) => s.name).toList(growable: false);
     final tables = <SchemaTable>[];
     for (final namespace in schemas) {
-      final master = _sqliteSchemaTable(namespace);
-      final rows = database.select(
-        'SELECT name, type, tbl_name, sql '
-        'FROM $master WHERE type = ? AND name NOT LIKE ? '
-        'ORDER BY name',
-        ['table', 'sqlite_%'],
-      );
+      final sql = _schemaCompiler.dialect.compileTables(schema: namespace);
+      if (sql == null) {
+        throw UnsupportedError('SQLite should support table listing');
+      }
+
+      final rows = await queryRaw(sql);
       for (final row in rows) {
         final tableName = row['name'] as String;
+        final resolvedSchema = row['schema'] as String? ?? namespace;
         tables.add(
           SchemaTable(
             name: tableName,
-            schema: _exposedSchema(namespace),
+            schema: _exposedSchema(_schemaOrDefault(resolvedSchema)),
             type: row['type'] as String?,
             comment: null,
             engine: null,
@@ -469,22 +484,24 @@ class SqliteDriverAdapter
 
   @override
   Future<List<SchemaView>> listViews({String? schema}) async {
-    final database = await _database();
-    final schemas = _schemasToInspect(database, schema);
+    final schemas = schema != null
+        ? <String>[schema]
+        : (await listSchemas()).map((s) => s.name).toList(growable: false);
     final views = <SchemaView>[];
     for (final namespace in schemas) {
-      final master = _sqliteSchemaTable(namespace);
-      final rows = database.select(
-        'SELECT name, sql FROM $master '
-        'WHERE type = ? AND name NOT LIKE ? ORDER BY name',
-        ['view', 'sqlite_%'],
-      );
+      final sql = _schemaCompiler.dialect.compileViews(schema: namespace);
+      if (sql == null) {
+        throw UnsupportedError('SQLite should support view listing');
+      }
+
+      final rows = await queryRaw(sql);
       for (final row in rows) {
+        final resolvedSchema = row['schema'] as String? ?? namespace;
         views.add(
           SchemaView(
             name: row['name'] as String,
-            schema: _exposedSchema(namespace),
-            definition: row['sql'] as String?,
+            schema: _exposedSchema(_schemaOrDefault(resolvedSchema)),
+            definition: (row['definition'] as String?) ?? row['sql'] as String?,
           ),
         );
       }
@@ -494,14 +511,30 @@ class SqliteDriverAdapter
 
   @override
   Future<List<SchemaColumn>> listColumns(String table, {String? schema}) async {
-    final database = await _database();
-    final pragma = _pragmaFor('table_xinfo', table, schema: schema);
-    final rows = database
-        .select(pragma)
+    final sql = _schemaCompiler.dialect.compileColumns(table, schema: schema);
+    if (sql == null) {
+      throw UnsupportedError('SQLite should support column listing');
+    }
+
+    final rows = (await queryRaw(sql))
         .where((row) => (row['cid'] as int? ?? 0) >= 0);
     return rows
-        .map(
-          (row) => SchemaColumn(
+        .map((row) {
+          final nullableFlag = row['nullable'];
+          final nullable = switch (nullableFlag) {
+            num value => value != 0,
+            bool value => value,
+            _ => (row['notnull'] as int? ?? 0) == 0,
+          };
+          final defaultValue =
+              row.containsKey('default') ? row['default'] : row['dflt_value'];
+          final primaryFlag = row['primary'];
+          final primary = switch (primaryFlag) {
+            num value => value != 0,
+            bool value => value,
+            _ => (row['pk'] as int? ?? 0) > 0,
+          };
+          return SchemaColumn(
             name: row['name'] as String,
             dataType: (row['type'] as String?) ?? 'TEXT',
             schema: _exposedSchema(_schemaOrDefault(schema)),
@@ -509,40 +542,64 @@ class SqliteDriverAdapter
             length: null,
             numericPrecision: null,
             numericScale: null,
-            nullable: (row['notnull'] as int? ?? 0) == 0,
-            defaultValue: _normalizeDefault(row['dflt_value']),
+            nullable: nullable,
+            defaultValue: _normalizeDefault(defaultValue),
             autoIncrement: false,
-            primaryKey: (row['pk'] as int? ?? 0) > 0,
+            primaryKey: primary,
             comment: null,
             generatedExpression: null,
-          ),
-        )
+          );
+        })
         .toList(growable: false);
   }
 
   @override
   Future<List<SchemaIndex>> listIndexes(String table, {String? schema}) async {
     final database = await _database();
-    final pragma = _pragmaFor('index_list', table, schema: schema);
-    final rows = database.select(pragma);
+    final sql = _schemaCompiler.dialect.compileIndexes(table, schema: schema);
+    if (sql == null) {
+      throw UnsupportedError('SQLite should support index listing');
+    }
+
+    final rows = await queryRaw(sql);
     final indexes = <SchemaIndex>[];
     for (final row in rows) {
       final name = row['name'] as String;
       if (name.startsWith('sqlite_')) {
         continue;
       }
-      final columns = _indexColumns(database, name, schema: schema);
-      final whereClause = (row['partial'] as int? ?? 0) == 1
+      final columns = _splitColumns(row['columns']).isNotEmpty
+          ? _splitColumns(row['columns'])
+          : _indexColumns(database, name, schema: schema);
+      final partialFlag = row['partial'];
+      final partial = switch (partialFlag) {
+        num value => value != 0,
+        bool value => value,
+        _ => false,
+      };
+      final whereClause = partial
           ? _indexWhereClause(database, name, schema: schema)
           : null;
+      final uniqueFlag = row['unique'];
+      final unique = switch (uniqueFlag) {
+        num value => value != 0,
+        bool value => value,
+        _ => false,
+      };
+      final primaryFlag = row['primary'];
+      final primary = switch (primaryFlag) {
+        num value => value != 0,
+        bool value => value,
+        _ => false,
+      };
       indexes.add(
         SchemaIndex(
           name: name,
           columns: columns,
           schema: _exposedSchema(_schemaOrDefault(schema)),
           tableName: table,
-          unique: (row['unique'] as int? ?? 0) == 1,
-          primary: (row['origin'] as String?) == 'pk',
+          unique: unique,
+          primary: primary,
           method: null,
           whereClause: whereClause,
         ),
@@ -556,42 +613,30 @@ class SqliteDriverAdapter
     String table, {
     String? schema,
   }) async {
-    final database = await _database();
-    final pragma = _pragmaFor('foreign_key_list', table, schema: schema);
-    final rows = database.select(pragma);
-    final grouped = <int, List<Map<String, Object?>>>{};
-    for (final row in rows) {
-      final id = row['id'] as int;
-      grouped.putIfAbsent(id, () => []).add({
-        'seq': row['seq'],
-        'from': row['from'],
-        'to': row['to'],
-        'table': row['table'],
-        'on_update': row['on_update'],
-        'on_delete': row['on_delete'],
-      });
+    final sql = _schemaCompiler.dialect.compileForeignKeys(table, schema: schema);
+    if (sql == null) {
+      throw UnsupportedError('SQLite should support foreign key listing');
     }
-    final foreignKeys = <SchemaForeignKey>[];
-    grouped.forEach((id, entries) {
-      entries.sort((a, b) => (a['seq'] as int).compareTo(b['seq'] as int));
-      final first = entries.first;
-      foreignKeys.add(
-        SchemaForeignKey(
-          name: 'fk_${table}_$id',
-          columns: entries.map((entry) => entry['from'] as String).toList(),
-          tableName: table,
-          referencedTable: first['table'] as String,
-          referencedColumns: entries
-              .map((entry) => entry['to'] as String)
-              .toList(),
-          schema: _exposedSchema(_schemaOrDefault(schema)),
-          referencedSchema: null,
-          onUpdate: first['on_update'] as String?,
-          onDelete: first['on_delete'] as String?,
-        ),
+
+    final rows = await queryRaw(sql);
+    var counter = 0;
+    return rows.map((row) {
+      counter += 1;
+      final columns = _splitColumns(row['columns']);
+      final foreignColumns = _splitColumns(row['foreign_columns']);
+      final foreignSchema = row['foreign_schema'] as String?;
+      return SchemaForeignKey(
+        name: 'fk_${table}_$counter',
+        columns: columns,
+        tableName: table,
+        referencedTable: row['foreign_table'] as String,
+        referencedColumns: foreignColumns,
+        schema: _exposedSchema(_schemaOrDefault(schema)),
+        referencedSchema: _exposedSchema(foreignSchema),
+        onUpdate: row['on_update'] as String?,
+        onDelete: row['on_delete'] as String?,
       );
-    });
-    return foreignKeys;
+    }).toList(growable: false);
   }
 
   // ========== Database Management ==========
@@ -617,7 +662,7 @@ class SqliteDriverAdapter
     // Create empty database file by opening connection
     // sqlite3.dart will create the file automatically
     final tempDb = sqlite.sqlite3.open(name);
-    tempDb.dispose();
+    tempDb.close();
 
     return true;
   }
@@ -651,6 +696,56 @@ class SqliteDriverAdapter
     // SQLite doesn't have a catalog concept
     // Could list *.db files in a directory, but that's application-specific
     throw UnsupportedError('SQLite does not support listing databases');
+  }
+
+  // ========== Schema (Namespace) Management ==========
+
+  // SQLite doesn't have schemas like PostgreSQL. For test isolation:
+  // - In-memory databases: Each adapter instance IS its own isolated database
+  // - File-based databases: Each file IS its own isolated database
+  //
+  // These methods provide compatibility with the SchemaDriver interface
+  // so that TestDatabaseManager can use the same API for all databases.
+
+  /// Tracks the "virtual" schema name for this adapter (for API compatibility)
+  String _currentSchema = 'main';
+
+  @override
+  Future<bool> createSchema(String name) async {
+    // SQLite doesn't support multiple schemas within a database.
+    // For in-memory databases, each adapter is already isolated.
+    // For file-based databases, each file is already isolated.
+    //
+    // We return true to indicate the "schema" is ready (the database itself).
+    // The caller should have created a new adapter for true isolation.
+    _currentSchema = name;
+    return true;
+  }
+
+  @override
+  Future<bool> dropSchemaIfExists(String name) async {
+    // For SQLite, "dropping a schema" means:
+    // - In-memory: Just close the connection (handled by dispose)
+    // - File-based: Delete the file (use dropDatabaseIfExists instead)
+    //
+    // Since the TestDatabaseManager creates new adapters per test group,
+    // we just reset our internal state here.
+    if (_currentSchema == name) {
+      _currentSchema = 'main';
+    }
+    return true;
+  }
+
+  @override
+  Future<void> setCurrentSchema(String name) async {
+    // SQLite only has 'main' schema internally, but we track the name
+    // for API compatibility with multi-schema databases.
+    _currentSchema = name;
+  }
+
+  @override
+  Future<String> getCurrentSchema() async {
+    return _currentSchema;
   }
 
   // ========== Foreign Key Constraint Management ==========
@@ -1535,21 +1630,6 @@ class SqliteDriverAdapter
     return keys.keys.map((c) => '${_quote(c)} = ?').join(' AND ');
   }
 
-  Iterable<String> _schemasToInspect(
-    sqlite.Database database,
-    String? schema,
-  ) sync* {
-    if (schema != null && schema.isNotEmpty) {
-      yield schema;
-      return;
-    }
-    final rows = database.select('PRAGMA database_list;');
-    for (final row in rows) {
-      final name = row['name'] as String;
-      yield name;
-    }
-  }
-
   String? _exposedSchema(String? schema) {
     if (schema == null || schema.isEmpty || schema == 'main') {
       return null;
@@ -1559,12 +1639,6 @@ class SqliteDriverAdapter
 
   String _schemaOrDefault(String? schema) =>
       schema == null || schema.isEmpty ? 'main' : schema;
-
-  String _sqliteSchemaTable(String schema) {
-    if (schema == 'main') return 'sqlite_schema';
-    if (schema == 'temp') return 'sqlite_temp_master';
-    return '${_quote(schema)}.sqlite_schema';
-  }
 
   String _sqliteMasterTable(String schema) {
     if (schema == 'main') return 'sqlite_master';
@@ -1595,6 +1669,16 @@ class SqliteDriverAdapter
   String _stringLiteral(String value) {
     final escaped = value.replaceAll("'", "''");
     return "'$escaped'";
+  }
+
+  List<String> _splitColumns(Object? value) {
+    if (value == null) return const [];
+    return value
+        .toString()
+        .split(',')
+        .map((c) => c.trim())
+        .where((c) => c.isNotEmpty)
+        .toList(growable: false);
   }
 
   String? _normalizeDefault(Object? value) => value?.toString();

@@ -1,76 +1,57 @@
+import 'package:driver_tests/driver_tests.dart';
 import 'package:ormed/ormed.dart';
 import 'package:test/test.dart';
-import 'package:driver_tests/driver_tests.dart';
-import 'package:ormed_sqlite/ormed_sqlite.dart';
 
-void main() {
-  test('insertMany should insert all records', () async {
-    registerDriverTestFactories();
-    
-    // Build and register models with type aliases
-    final registry = buildOrmRegistry();
+import 'support/sqlite_test_harness.dart';
 
-    // Register SQLite codecs
-    SqliteDriverAdapter.registerCodecs();
+Future<void> main() async {
+  final harness = await createSqliteTestHarness();
 
-    // Register custom test codecs
-    ValueCodecRegistry.instance.registerCodec(
-      key: 'PostgresPayloadCodec',
-      codec: const PostgresPayloadCodec(),
-    );
-    ValueCodecRegistry.instance.registerCodec(
-      key: 'SqlitePayloadCodec',
-      codec: const SqlitePayloadCodec(),
-    );
-    ValueCodecRegistry.instance.registerCodec(
-      key: 'JsonMapCodec',
-      codec: const JsonMapCodec(),
-    );
+  tearDownAll(() async {
+    await harness.dispose();
+  });
 
-    final customCodecs = <String, ValueCodec<dynamic>>{
-      'PostgresPayloadCodec': const PostgresPayloadCodec(),
-      'SqlitePayloadCodec': const SqlitePayloadCodec(),
-      'JsonMapCodec': const JsonMapCodec(),
-    };
+  ormedTest('insertMany with typed repo - requires id', (dataSource) async {
+    // Using typed repo - id is required but defaults to 0 for auto-increment
+    await dataSource.repo<$Author>().insertMany([
+      $Author(name: 'Alice', active: true),  // id defaults to 0, skipped on insert
+      $Author(name: 'Bob', active: true),
+      $Author(name: 'Charlie', active: true),
+    ]);
 
-    // Create adapter
-    final driverAdapter = SqliteDriverAdapter.inMemory();
+    final authors = await dataSource.context.query<$Author>().get();
 
-    final dataSource = DataSource(
-      DataSourceOptions(
-        name: 'default',
-        driver: driverAdapter,
-        entities: registry.allDefinitions,
-        registry: registry,
-        codecs: customCodecs,
-      ),
-    );
-
-    await dataSource.init();
-
-    // Setup test schema
-    await resetDriverTestSchema(driverAdapter, schema: null);
-    
-    try {
-      // Try to insert 3 authors
-      await dataSource.repo<Author>().insertMany([
-        const Author(id: 1, name: 'Alice'),
-        const Author(id: 2, name: 'Bob'),
-        const Author(id: 3, name: 'Charlie'),
-      ]);
-      
-      // Query to verify all were inserted
-      final authors = await dataSource.context.query<Author>().get();
-      
-      print('Inserted ${authors.length} authors');
-      for (final author in authors) {
-        print('  - ${author.id}: ${author.name}');
-      }
-      
-      expect(authors.length, equals(3));
-      expect(authors.map((a) => a.name).toList(), containsAll(['Alice', 'Bob', 'Charlie']));
-    } finally {
-      await dataSource.dispose();
+    print('Inserted ${authors.length} authors via typed repo');
+    for (final author in authors) {
+      print('  - ${author.id}: ${author.name}');
     }
+
+    expect(authors.length, equals(3));
+    expect(
+      authors.map((a) => a.name).toList(),
+      containsAll(['Alice', 'Bob', 'Charlie']),
+    );
+  });
+
+  ormedTest('createMany with table() - untyped but flexible', (dataSource) async {
+    // Using table() - no typing but doesn't require model fields
+    await dataSource.table("authors").createMany([
+      {"name": "Alice", "active": true},
+      {"name": "Bob", "active": true},
+      {"name": "Charlie", "active": true},
+    ]);
+
+    final authors = await dataSource.context.query<$Author>().get();
+
+    print('Inserted ${authors.length} authors via table()');
+    for (final author in authors) {
+      print('  - ${author.id}: ${author.name}');
+    }
+
+    expect(authors.length, equals(3));
+    expect(
+      authors.map((a) => a.name).toList(),
+      containsAll(['Alice', 'Bob', 'Charlie']),
+    );
   });
 }

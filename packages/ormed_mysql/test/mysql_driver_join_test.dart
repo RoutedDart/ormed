@@ -5,42 +5,54 @@ import 'package:ormed/ormed.dart';
 import 'package:ormed_mysql/ormed_mysql.dart';
 import 'package:test/test.dart';
 
-void main() {
+/// Creates a simple MySQL harness for SQL-only tests that don't need ormedTest.
+/// This avoids the setUpOrmed() call which conflicts with tests that have their own setUpAll.
+Future<(MySqlDriverAdapter, DataSource)> _createSimpleHarness() async {
+  registerOrmFactories();
+  MySqlDriverAdapter.registerCodecs();
+
+  final url = Platform.environment['MYSQL_URL'] ??
+      'mysql://root:secret@localhost:6605/orm_test';
+
+  final adapter = MySqlDriverAdapter.custom(
+    config: DatabaseConfig(
+      driver: 'mysql',
+      options: {'url': url, 'ssl': true, 'secure': true},
+    ),
+  );
+
+  final registry = buildOrmRegistry();
+
+  final dataSource = DataSource(
+    DataSourceOptions(
+      name: 'mysql_join_test',
+      driver: adapter,
+      entities: registry.allDefinitions,
+      registry: registry,
+      logging: false,
+    ),
+  );
+
+  await dataSource.init();
+  return (adapter, dataSource);
+}
+
+Future<void> main() async {
+  late MySqlDriverAdapter adapter;
+  late DataSource dataSource;
+
+  setUpAll(() async {
+    final result = await _createSimpleHarness();
+    adapter = result.$1;
+    dataSource = result.$2;
+  });
+
+  tearDownAll(() async {
+    await dataSource.dispose();
+    await adapter.close();
+  });
+
   group('MySQL-specific joins', () {
-    late DataSource dataSource;
-    late MySqlDriverAdapter driverAdapter;
-
-    setUpAll(() async {
-      final url =
-          Platform.environment['MYSQL_URL'] ??
-          'mysql://root:secret@localhost:6605/orm_test';
-
-      driverAdapter = MySqlDriverAdapter.custom(
-        config: DatabaseConfig(
-          driver: 'mysql',
-          options: {'url': url, 'ssl': true},
-        ),
-      );
-
-      dataSource = DataSource(DataSourceOptions(
-        driver: driverAdapter,
-        entities: generatedOrmModelDefinitions,
-      ));
-
-      registerDriverTestFactories();
-      
-      // Use schema lock to prevent concurrent schema modifications
-      // await withSchemaLock(() async {
-      //   await resetDriverTestSchema(driverAdapter, schema: null);
-      //   await dataSource.init();
-      // });
-    });
-
-    tearDownAll(() async {
-      await dropDriverTestSchema(driverAdapter, schema: null);
-      await dataSource.dispose();
-    });
-
     test('emits STRAIGHT_JOIN keyword', () async {
       final plan = dataSource.context
           .query<Post>()

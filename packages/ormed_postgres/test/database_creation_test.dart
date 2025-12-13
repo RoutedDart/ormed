@@ -28,7 +28,7 @@ void main() {
         
         // Verify it was created
         final result = await adapter.queryRaw(
-          'SELECT datname FROM pg_database WHERE datname = \$1',
+          'SELECT datname FROM pg_database WHERE datname = ?',
           [testDbName],
         );
         
@@ -80,7 +80,7 @@ void main() {
           final result = await testAdapter.queryRaw('''
             SELECT table_name 
             FROM information_schema.tables 
-            WHERE table_schema = 'public' AND table_name = \$1
+            WHERE table_schema = 'public' AND table_name = ?
           ''', ['test_users']);
           
           expect(result, isNotEmpty);
@@ -126,7 +126,7 @@ void main() {
         // Verify all databases were created
         for (final dbName in testDbs) {
           final result = await adapter.queryRaw(
-            'SELECT datname FROM pg_database WHERE datname = \$1',
+            'SELECT datname FROM pg_database WHERE datname = ?',
             [dbName],
           );
           expect(result, isNotEmpty, reason: 'Database $dbName should exist');

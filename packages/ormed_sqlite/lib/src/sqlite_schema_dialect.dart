@@ -22,6 +22,11 @@ class SqliteSchemaDialect extends SchemaDialect {
         return [
           SchemaStatement(mutation.sql!, parameters: mutation.parameters),
         ];
+      case SchemaMutationOperation.createDatabase:
+      case SchemaMutationOperation.dropDatabase:
+        // SQLite uses file operations, not SQL, for database management.
+        // These mutations are no-ops in the dialect and handled by the driver directly if needed.
+        return [];
       default:
         throw UnsupportedError(
           'Unsupported schema mutation operation: ${mutation.operation}',
@@ -524,6 +529,84 @@ class SqliteSchemaDialect extends SchemaDialect {
   String _tableNameFromBlueprint(TableBlueprint blueprint) {
     // Ignore blueprint.schema for SQLite - it doesn't support schemas
     return _tableName(blueprint.table);
+  }
+
+  String _schemaOrDefault(String? schema) =>
+      schema?.isNotEmpty == true ? schema! : 'main';
+
+    String _schemaLiteral(String? schema) =>
+      "'${_escapeString(_schemaOrDefault(schema))}'";
+
+    String _tableLiteral(String table) => "'${_escapeString(table)}'";
+
+  // ========== Schema Introspection ==========
+
+  @override
+  String? compileSchemas({String? schema}) {
+    return "select name, file as path, name = 'main' as \"default\", file "
+        'from pragma_database_list order by name';
+  }
+
+  @override
+  String? compileTables({String? schema}) {
+    final filter =
+        schema != null && schema.isNotEmpty
+            ? ' tl.schema = ${_schemaLiteral(schema)} and'
+            : '';
+    return 'select tl.name as name, tl.schema as schema, tl.type as type '
+        'from pragma_table_list as tl where'
+        '$filter tl.type in (\'table\', \'virtual\') '
+        "and tl.name not like 'sqlite\\_%' escape '\\' "
+        'order by tl.schema, tl.name';
+  }
+
+  @override
+  String? compileViews({String? schema}) {
+    final targetSchema = _schemaOrDefault(schema);
+    final master = '${_quote(targetSchema)}.sqlite_master';
+    return 'select name, ${_schemaLiteral(schema)} as schema, '
+        'sql as definition, sql from $master '
+        "where type = 'view' order by name";
+  }
+
+  @override
+  String? compileColumns(String table, {String? schema}) {
+    final targetSchema = _schemaLiteral(schema);
+    final targetTable = _tableLiteral(table);
+    return 'select name, type, cid, "notnull", dflt_value, pk, hidden, '
+        'not "notnull" as "nullable", dflt_value as "default", '
+        'pk as "primary", hidden as "extra" '
+        'from pragma_table_xinfo($targetTable, $targetSchema) '
+        'order by cid asc';
+  }
+
+  @override
+  String? compileIndexes(String table, {String? schema}) {
+    final targetTable = _tableLiteral(table);
+    final targetSchema = _schemaLiteral(schema);
+    return "select 'primary' as name, group_concat(col) as columns, 1 as \"unique\", "
+        '1 as "primary", 0 as partial '
+        'from (select name as col from pragma_table_xinfo('
+        '$targetTable, $targetSchema) where pk > 0 order by pk, cid) '
+        'group by name '
+        'union select name, group_concat(col) as columns, "unique", '
+        "origin = 'pk' as \"primary\", max(partial) as partial "
+        'from (select il.*, ii.name as col from pragma_index_list('
+        '$targetTable, $targetSchema) il, pragma_index_info(il.name, '
+        '$targetSchema) ii order by il.seq, ii.seqno) '
+        'group by name, "unique", "primary"';
+  }
+
+  @override
+  String? compileForeignKeys(String table, {String? schema}) {
+    final targetSchema = _schemaLiteral(schema);
+    final targetTable = _tableLiteral(table);
+    return 'select group_concat("from") as columns, '
+        '$targetSchema as foreign_schema, "table" as foreign_table, '
+        'group_concat("to") as foreign_columns, on_update, on_delete '
+        'from (select * from pragma_foreign_key_list('
+        '$targetTable, $targetSchema) order by id desc, seq) '
+        'group by id, "table", on_update, on_delete';
   }
 
   // ========== Database Management ==========

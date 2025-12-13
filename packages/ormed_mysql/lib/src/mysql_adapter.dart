@@ -14,21 +14,20 @@ import 'schema_state.dart';
 /// Shared MySQL/MariaDB implementation of the routed ORM driver adapter.
 class MySqlDriverAdapter
     implements DriverAdapter, SchemaDriver, SchemaStateProvider {
-  
   /// Registers MySQL/MariaDB-specific codecs and type mapper with the global registries.
   /// Call this once during application initialization before using MySQL.
   static void registerCodecs() {
     final mapper = MysqlTypeMapper();
     TypeMapperRegistry.register('mysql', mapper);
     TypeMapperRegistry.register('mariadb', mapper);
-    
+
     // Register codecs from TypeMapper to eliminate duplication
     final codecs = <String, ValueCodec<dynamic>>{};
     for (final mapping in mapper.typeMappings) {
       if (mapping.codec != null) {
         final typeKey = mapping.dartType.toString();
         codecs[typeKey] = mapping.codec!;
-        codecs['$typeKey?'] = mapping.codec!;  // Nullable variant
+        codecs['$typeKey?'] = mapping.codec!; // Nullable variant
       }
     }
     ValueCodecRegistry.instance.registerDriver('mysql', codecs);
@@ -83,7 +82,7 @@ class MySqlDriverAdapter
        _codecs = ValueCodecRegistry.instance.forDriver(driverName) {
     // Auto-register MySQL codecs on first instantiation
     registerMySqlCodecs();
-    
+
     _planCompiler = ClosurePlanCompiler(
       compileSelect: _compileSelectPreview,
       compileMutation: _compileMutationPreview,
@@ -161,7 +160,10 @@ class MySqlDriverAdapter
     // Track USE database commands to maintain current database context
     final trimmedSql = sql.trim();
     if (trimmedSql.toUpperCase().startsWith('USE ')) {
-      final dbName = trimmedSql.substring(4).trim().replaceAll(RegExp(r'[`;]'), '');
+      final dbName = trimmedSql
+          .substring(4)
+          .trim()
+          .replaceAll(RegExp(r'[`;]'), '');
       _currentDatabase = dbName;
     }
     await _executeStatement(sql, parameters);
@@ -208,7 +210,7 @@ class MySqlDriverAdapter
     // For INSERT operations, we simulate it by returning the lastInsertID
     // For other operations (UPDATE, DELETE, UPSERT), returning is silently ignored
     // since we can't efficiently implement it without re-querying
-    
+
     switch (plan.operation) {
       case MutationOperation.insert:
         return _runInsert(plan);
@@ -282,7 +284,7 @@ class MySqlDriverAdapter
         return null;
       }
       final row = rows.first;
-      final value = row['value'];
+      final value = row['value'] ?? row['Value'] ?? row['VALUE'];
       if (value is num) {
         return value.toInt();
       }
@@ -421,12 +423,12 @@ class MySqlDriverAdapter
 
   @override
   Future<List<SchemaNamespace>> listSchemas() async {
-    final rows = await queryRaw(
-      'SELECT schema_name AS name, schema_name = DATABASE() AS is_default '
-      'FROM information_schema.schemata '
-      "WHERE schema_name NOT IN ('information_schema','mysql','performance_schema','sys','ndbinfo') "
-      'ORDER BY schema_name',
-    );
+    final sql = _schemaCompiler.dialect.compileSchemas();
+    if (sql == null) {
+      throw UnsupportedError('MySQL should support schema listing');
+    }
+
+    final rows = await queryRaw(sql);
     return rows
         .map(
           (row) => SchemaNamespace(
@@ -439,16 +441,15 @@ class MySqlDriverAdapter
 
   @override
   Future<List<SchemaTable>> listTables({String? schema}) async {
-    final filter = schema == null
-        ? "table_schema NOT IN ('information_schema','mysql','performance_schema','sys','ndbinfo')"
-        : 'table_schema = ?';
+    final effectiveSchema = schema ?? _getCurrentDatabase();
+    final sql = _schemaCompiler.dialect.compileTables(schema: effectiveSchema);
+    if (sql == null) {
+      throw UnsupportedError('MySQL should support table listing');
+    }
+
     final rows = await queryRaw(
-      'SELECT table_schema, table_name, table_type, table_comment, engine, '
-      'COALESCE(data_length, 0) + COALESCE(index_length, 0) AS size_bytes '
-      'FROM information_schema.tables '
-      "WHERE table_type IN ('BASE TABLE','SYSTEM VERSIONED') AND $filter "
-      'ORDER BY table_schema, table_name',
-      schema == null ? const [] : [schema],
+      sql,
+      effectiveSchema == null ? const [] : [effectiveSchema],
     );
     return rows
         .map(
@@ -466,16 +467,12 @@ class MySqlDriverAdapter
 
   @override
   Future<List<SchemaView>> listViews({String? schema}) async {
-    final filter = schema == null
-        ? "table_schema NOT IN ('information_schema','mysql','performance_schema','sys','ndbinfo')"
-        : 'table_schema = ?';
-    final rows = await queryRaw(
-      'SELECT table_schema, table_name, view_definition '
-      'FROM information_schema.views '
-      'WHERE $filter '
-      'ORDER BY table_schema, table_name',
-      schema == null ? const [] : [schema],
-    );
+    final sql = _schemaCompiler.dialect.compileViews(schema: schema);
+    if (sql == null) {
+      throw UnsupportedError('MySQL should support view listing');
+    }
+
+    final rows = await queryRaw(sql, schema == null ? const [] : [schema]);
     return rows
         .map(
           (row) => SchemaView(
@@ -490,64 +487,87 @@ class MySqlDriverAdapter
   @override
   Future<List<SchemaColumn>> listColumns(String table, {String? schema}) async {
     final effectiveSchema = schema ?? _getCurrentDatabase() ?? 'test';
-    final rows = await queryRaw(
-      'SELECT table_schema, column_name, column_type, data_type, column_default, '
-      'is_nullable, column_comment, character_maximum_length, numeric_precision, '
-      'numeric_scale, extra '
-      'FROM information_schema.columns '
-      'WHERE table_name = ? AND table_schema = ? '
-      'ORDER BY ordinal_position',
-      [table, effectiveSchema],
+    final sql = _schemaCompiler.dialect.compileColumns(
+      table,
+      schema: effectiveSchema,
     );
+    if (sql == null) {
+      throw UnsupportedError('MySQL should support column listing');
+    }
+
+    final rows = await queryRaw(sql, [table, effectiveSchema]);
     final pkColumns = await _primaryKeyColumns(table, schema: schema);
+    String? _field(Map<String, Object?> row, String key) {
+      final value =
+          row[key] ??
+          row[key.toLowerCase()] ??
+          row[key.toUpperCase()] ??
+          row.entries
+              .firstWhere(
+                (e) => e.key.toString().toLowerCase() == key.toLowerCase(),
+                orElse: () => const MapEntry('', null),
+              )
+              .value;
+      return value?.toString();
+    }
+
     return rows
-        .where((row) => row['column_name'] != null)
-        .map(
-          (row) => SchemaColumn(
-            name: row['column_name'] as String,
-            dataType:
-                (row['column_type'] as String?) ?? row['data_type'] as String,
-            schema: row['table_schema'] as String?,
+        .map((row) {
+          final columnName = _field(row, 'column_name');
+          if (columnName == null) return null;
+          final tableSchema = _field(row, 'table_schema');
+          final columnType = _field(row, 'column_type');
+          final dataType = _field(row, 'data_type');
+          final defaultValue = _field(row, 'column_default');
+          final extra = _field(row, 'extra');
+          final nullable = _field(row, 'is_nullable');
+          final comment = _field(row, 'column_comment');
+
+          return SchemaColumn(
+            name: columnName,
+            dataType: columnType ?? dataType ?? '',
+            schema: tableSchema,
             tableName: table,
             length: _asInt(row['character_maximum_length']),
             numericPrecision: _asInt(row['numeric_precision']),
             numericScale: _asInt(row['numeric_scale']),
-            nullable: (row['is_nullable'] as String?) != 'NO',
-            defaultValue: row['column_default'] as String?,
-            autoIncrement: _containsText(row['extra'], 'auto_increment'),
-            primaryKey: pkColumns.contains(row['column_name'] as String),
-            comment: row['column_comment'] as String?,
-          ),
-        )
+            nullable: (nullable ?? '').toUpperCase() != 'NO',
+            defaultValue: defaultValue,
+            autoIncrement: _containsText(extra, 'auto_increment'),
+            primaryKey: pkColumns.contains(columnName),
+            comment: comment,
+          );
+        })
+        .whereType<SchemaColumn>()
         .toList(growable: false);
   }
 
   @override
   Future<List<SchemaIndex>> listIndexes(String table, {String? schema}) async {
     final effectiveSchema = schema ?? _getCurrentDatabase() ?? 'test';
-    final rows = await queryRaw(
-      'SELECT index_name, non_unique, index_type, '
-      'GROUP_CONCAT(column_name ORDER BY seq_in_index) AS columns '
-      'FROM information_schema.statistics '
-      'WHERE table_name = ? AND table_schema = ? '
-      'GROUP BY index_name, non_unique, index_type '
-      'ORDER BY index_name',
-      [table, effectiveSchema],
+    final sql = _schemaCompiler.dialect.compileIndexes(
+      table,
+      schema: effectiveSchema,
     );
+    if (sql == null) {
+      throw UnsupportedError('MySQL should support index listing');
+    }
+
+    final rows = await queryRaw(sql, [effectiveSchema, table]);
     return rows
-        .where((row) => row['index_name'] != null && row['columns'] != null)
+        .where((row) => row['name'] != null && row['columns'] != null)
         .map((row) {
-          final name = row['index_name'] as String;
+          final name = row['name'] as String;
           final columns = _splitColumns(row['columns'] as String?);
-          final isPrimary = name.toUpperCase() == 'PRIMARY';
+          final isPrimary = _asBool(row['is_primary']);
           return SchemaIndex(
             name: name,
             columns: columns,
             schema: schema,
             tableName: table,
-            unique: !isPrimary && _asBool(row['non_unique']) == false,
+            unique: !isPrimary && _asBool(row['unique']) == true,
             primary: isPrimary,
-            method: row['index_type'] as String?,
+            method: row['type'] as String?,
           );
         })
         .toList(growable: false);
@@ -558,23 +578,16 @@ class MySqlDriverAdapter
     String table, {
     String? schema,
   }) async {
-    final clause = schema == null
-        ? 'kc.table_schema = DATABASE()'
-        : 'kc.table_schema = ?';
+    final sql = _schemaCompiler.dialect.compileForeignKeys(
+      table,
+      schema: schema,
+    );
+    if (sql == null) {
+      throw UnsupportedError('MySQL should support foreign key listing');
+    }
+
     final rows = await queryRaw(
-      'SELECT kc.constraint_name, '
-      'GROUP_CONCAT(kc.column_name ORDER BY kc.ordinal_position) AS columns, '
-      'kc.referenced_table_schema, kc.referenced_table_name, '
-      'GROUP_CONCAT(kc.referenced_column_name ORDER BY kc.ordinal_position) AS referenced_columns, '
-      'rc.update_rule, rc.delete_rule '
-      'FROM information_schema.key_column_usage kc '
-      'JOIN information_schema.referential_constraints rc '
-      '  ON kc.constraint_schema = rc.constraint_schema '
-      ' AND kc.constraint_name = rc.constraint_name '
-      'WHERE kc.table_name = ? AND $clause '
-      'AND kc.referenced_table_name IS NOT NULL '
-      'GROUP BY kc.constraint_name, kc.referenced_table_schema, kc.referenced_table_name, rc.update_rule, rc.delete_rule '
-      'ORDER BY kc.constraint_name',
+      sql,
       schema == null ? [table] : [table, schema],
     );
     return rows
@@ -631,9 +644,9 @@ class MySqlDriverAdapter
 
   @override
   Future<bool> dropDatabaseIfExists(String name) async {
-    // Check if database exists first
-    final databases = await listDatabases();
-    if (!databases.contains(name)) {
+    // Quick existence check to return false without relying on error codes
+    final existing = await listDatabases();
+    if (!existing.contains(name)) {
       return false;
     }
 
@@ -642,8 +655,17 @@ class MySqlDriverAdapter
       throw UnsupportedError('MySQL should support database dropping');
     }
 
-    await executeRaw(sql);
-    return true;
+    try {
+      await executeRaw(sql);
+      return true;
+    } on Exception catch (e) {
+      final message = e.toString().toLowerCase();
+      if (message.contains('unknown database') ||
+          message.contains('does not exist')) {
+        return false;
+      }
+      rethrow;
+    }
   }
 
   @override
@@ -655,7 +677,40 @@ class MySqlDriverAdapter
     }
 
     final results = await queryRaw(sql);
-    return results.map((row) => row['database'] as String).toList();
+
+    // Defensive: support both `db_name` (our alias), `database` (previous alias) and `Database` (SHOW DATABASES)
+    final names = results.map((row) {
+      final database = row['db_name'] ?? row['database'] ?? row['Database'];
+      return database?.toString();
+    }).whereType<String>();
+
+    return names.toList(growable: false);
+  }
+
+  // ========== Schema (Namespace) Management ==========
+
+  @override
+  Future<bool> createSchema(String name) async {
+    // MySQL schemas are databases - delegate to createDatabase
+    return createDatabase(name);
+  }
+
+  @override
+  Future<bool> dropSchemaIfExists(String name) async {
+    // MySQL schemas are databases - delegate to dropDatabaseIfExists
+    return dropDatabaseIfExists(name);
+  }
+
+  @override
+  Future<void> setCurrentSchema(String name) async {
+    // MySQL uses USE command to switch databases/schemas
+    await executeRaw('USE `$name`');
+    _currentDatabase = name;
+  }
+
+  @override
+  Future<String> getCurrentSchema() async {
+    return _getCurrentDatabase() ?? 'mysql';
   }
 
   /// Get the current database name from the connection configuration.
@@ -762,34 +817,46 @@ class MySqlDriverAdapter
   }
 
   @override
-  Future<bool> hasColumns(String table, List<String> columns, {String? schema}) async {
+  Future<bool> hasColumns(
+    String table,
+    List<String> columns, {
+    String? schema,
+  }) async {
     final tableColumns = await listColumns(table, schema: schema);
-    final lowerCaseColumns = tableColumns.map((c) => c.name.toLowerCase()).toSet();
-    
+    final lowerCaseColumns = tableColumns
+        .map((c) => c.name.toLowerCase())
+        .toSet();
+
     for (final column in columns) {
       if (!lowerCaseColumns.contains(column.toLowerCase())) {
         return false;
       }
     }
-    
+
     return true;
   }
 
   @override
-  Future<bool> hasIndex(String table, String index, {String? schema, String? type}) async {
+  Future<bool> hasIndex(
+    String table,
+    String index, {
+    String? schema,
+    String? type,
+  }) async {
     final indexes = await listIndexes(table, schema: schema);
-    
+
     for (final idx in indexes) {
-      final typeMatches = type == null ||
+      final typeMatches =
+          type == null ||
           (type == 'primary' && idx.primary) ||
           (type == 'unique' && idx.unique) ||
           type.toLowerCase() == idx.type?.toLowerCase();
-      
+
       if (idx.name.toLowerCase() == index.toLowerCase() && typeMatches) {
         return true;
       }
     }
-    
+
     return false;
   }
 
@@ -892,7 +959,9 @@ class MySqlDriverAdapter
 
     return MutationResult(
       affectedRows: affected,
-      returnedRows: shape.returning && returnedRows.isNotEmpty ? returnedRows : null,
+      returnedRows: shape.returning && returnedRows.isNotEmpty
+          ? returnedRows
+          : null,
     );
   }
 
@@ -1240,7 +1309,7 @@ class MySqlDriverAdapter
           final result = await _executeStatement(updateSql, updateParams);
           affected += result.affectedRows.toInt();
         }
-        
+
         // If returning is requested, fetch the updated row
         if (plan.returning) {
           final pkValue = _extractPrimaryKeyFromRow(plan.definition, row);
@@ -1262,7 +1331,7 @@ class MySqlDriverAdapter
           .toList(growable: false);
       final result = await _executeStatement(insertSql, values);
       affected += result.affectedRows.toInt();
-      
+
       // If returning is requested and we have a PK, fetch the inserted row
       if (plan.returning) {
         final pkValue = result.lastInsertID.toInt() > 0
@@ -1282,7 +1351,9 @@ class MySqlDriverAdapter
     }
     return MutationResult(
       affectedRows: affected,
-      returnedRows: plan.returning && returnedRows.isNotEmpty ? returnedRows : null,
+      returnedRows: plan.returning && returnedRows.isNotEmpty
+          ? returnedRows
+          : null,
     );
   }
 
@@ -1430,10 +1501,10 @@ class MySqlDriverAdapter
       final pkField = definition.fields.firstWhere((f) => f.isPrimaryKey);
       final table = _tableIdentifier(definition);
       final pkColumn = _quote(pkField.columnName);
-      
+
       final sql = 'SELECT * FROM $table WHERE $pkColumn = ? LIMIT 1';
       final statement = _prepareStatement(sql, [pkValue]);
-      
+
       final result = await connection.execute(
         statement.sql,
         statement.parameters.isEmpty ? null : statement.parameters,
@@ -1443,14 +1514,14 @@ class MySqlDriverAdapter
 
       final row = result.rows.first;
       final map = <String, Object?>{};
-      
+
       // MySQL returns values that need proper type conversion
       final colsList = result.cols.toList();
       for (var i = 0; i < colsList.length; i++) {
         final col = colsList[i];
         final columnName = col.name;
         final rawValue = row.colAt(i);
-        
+
         // Debug: check what type we're getting
         if (rawValue != null && rawValue is String && rawValue.isNotEmpty) {
           // Try to parse numeric strings
@@ -1465,7 +1536,7 @@ class MySqlDriverAdapter
             continue;
           }
         }
-        
+
         map[columnName] = rawValue;
       }
 
@@ -1473,15 +1544,6 @@ class MySqlDriverAdapter
     } catch (_) {
       return null;
     }
-  }
-
-  /// Converts MySQL raw values to proper Dart types
-  Object? _convertMySqlValue(Object? value, dynamic column) {
-    if (value == null) return null;
-    
-    // MySQL client returns properly typed values for most types,
-    // but we need to handle any edge cases
-    return value;
   }
 
   Future<MySQLConnection> _connection() async {
@@ -1552,9 +1614,10 @@ class MySqlDriverAdapter
 
   Map<String, Object?> _decodeRow(dynamic row) {
     final typed = Map<String, Object?>.from(row.typedAssoc());
-    // Normalize keys to lowercase for consistency
-    return typed.map((key, value) => 
-      MapEntry(key.toString().toLowerCase(), _decodeResultValue(value)));
+    // Preserve column casing from the driver so fields map correctly
+    return typed.map(
+      (key, value) => MapEntry(key.toString(), _decodeResultValue(value)),
+    );
   }
 
   String _tableIdentifier(ModelDefinition<dynamic> definition) {
@@ -1684,10 +1747,8 @@ class _JsonUpdateTemplate {
 
 /// Adapter wrapper that mirrors Laravel's `MariaDbConnection`.
 class MariaDbDriverAdapter extends MySqlDriverAdapter {
-  MariaDbDriverAdapter.custom({
-    required super.config,
-    super.connections,
-  }) : super.custom(driverName: 'mariadb', isMariaDb: true);
+  MariaDbDriverAdapter.custom({required super.config, super.connections})
+    : super.custom(driverName: 'mariadb', isMariaDb: true);
 
   factory MariaDbDriverAdapter.fromUrl(
     String url, {

@@ -64,8 +64,36 @@ class MySqlDateTimeCodec extends ValueCodec<DateTime> {
   @override
   DateTime? decode(Object? value) {
     if (value == null) return null;
-    if (value is DateTime) return value;
-    return DateTime.parse(value.toString());
+    if (value is DateTime) {
+      if (value.isUtc) return value;
+      return DateTime.utc(
+        value.year,
+        value.month,
+        value.day,
+        value.hour,
+        value.minute,
+        value.second,
+        value.millisecond,
+        value.microsecond,
+      );
+    }
+    final raw = value.toString().trim();
+    final parsed = DateTime.parse(
+      RegExp(r'(Z|[+-]\d{2}:?\d{2})$').hasMatch(raw)
+          ? raw
+          : '${raw}Z',
+    );
+    if (parsed.isUtc) return parsed;
+    return DateTime.utc(
+      parsed.year,
+      parsed.month,
+      parsed.day,
+      parsed.hour,
+      parsed.minute,
+      parsed.second,
+      parsed.millisecond,
+      parsed.microsecond,
+    );
   }
 }
 
@@ -183,13 +211,43 @@ class MySqlCarbonCodec extends ValueCodec<Carbon> {
       // MySQL stores DATETIME with microsecond precision (6 digits)
       // The mysql1 package preserves this when returning DateTime
       // IMPORTANT: Do NOT shift timezone for DATETIME columns - they store local time as-is
-      return Carbon.fromDateTime(value) as Carbon;
+      final utcValue = value.isUtc
+          ? value
+          : DateTime.utc(
+              value.year,
+              value.month,
+              value.day,
+              value.hour,
+              value.minute,
+              value.second,
+              value.millisecond,
+              value.microsecond,
+            );
+      return Carbon.fromDateTime(utcValue);
     }
     
     // Handle string parsing as fallback
     if (value is String && value.isNotEmpty) {
       // Parse using Carbon.parse WITHOUT timezone conversion for DATETIME
-      return Carbon.parse(value) as Carbon;
+      final raw = value.trim();
+      final parsed = DateTime.parse(
+        RegExp(r'(Z|[+-]\d{2}:?\d{2})$').hasMatch(raw)
+            ? raw
+            : '${raw}Z',
+      );
+      final utcValue = parsed.isUtc
+          ? parsed
+          : DateTime.utc(
+              parsed.year,
+              parsed.month,
+              parsed.day,
+              parsed.hour,
+              parsed.minute,
+              parsed.second,
+              parsed.millisecond,
+              parsed.microsecond,
+            );
+      return Carbon.fromDateTime(utcValue);
     }
     
     throw StateError('Unsupported Carbon value "$value" of type ${value.runtimeType}.');
@@ -216,17 +274,32 @@ class MySqlCarbonInterfaceCodec extends ValueCodec<CarbonInterface> {
     // MySQL client might truncate DateTime milliseconds
     if (value is String && value.isNotEmpty) {
       // Parse the datetime string directly to preserve fractional seconds
-      final dateTime = DateTime.parse(value);
-      // MySQL DATETIME is stored in local time (not UTC)
-      // IMPORTANT: Do NOT shift timezone for DATETIME columns - they store local time as-is
-      return Carbon.fromDateTime(dateTime);
+      final raw = value.trim();
+      final dateTime = DateTime.parse(
+        RegExp(r'(Z|[+-]\d{2}:?\d{2})$').hasMatch(raw)
+            ? raw
+            : '${raw}Z',
+      );
+      final utcValue = dateTime.isUtc
+          ? dateTime
+          : DateTime.utc(
+              dateTime.year,
+              dateTime.month,
+              dateTime.day,
+              dateTime.hour,
+              dateTime.minute,
+              dateTime.second,
+              dateTime.millisecond,
+              dateTime.microsecond,
+            );
+      return Carbon.fromDateTime(utcValue);
     }
     
     // Handle DateTime from mysql package (fallback)
     if (value is DateTime) {
       // Note: DateTime from mysql package might have truncated fractional seconds
-      // IMPORTANT: Do NOT shift timezone for DATETIME columns
-      return Carbon.fromDateTime(value);
+      final utcValue = value.isUtc ? value : value.toUtc();
+      return Carbon.fromDateTime(utcValue);
     }
     
     throw StateError('Unsupported CarbonInterface value "$value".');

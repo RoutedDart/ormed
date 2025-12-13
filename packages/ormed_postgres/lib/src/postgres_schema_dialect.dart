@@ -22,6 +22,21 @@ class PostgresSchemaDialect extends SchemaDialect {
         return [
           SchemaStatement(mutation.sql!, parameters: mutation.parameters),
         ];
+      case SchemaMutationOperation.createDatabase:
+        final name = mutation.documentPayload!['name'] as String;
+        final options =
+            mutation.documentPayload!['options'] as Map<String, Object?>?;
+        final sql = compileCreateDatabase(name, options);
+        return sql != null ? [SchemaStatement(sql)] : [];
+      case SchemaMutationOperation.dropDatabase:
+        final name = mutation.documentPayload!['name'] as String;
+        final ifExists =
+            mutation.documentPayload!['ifExists'] as bool? ?? false;
+        final sql =
+            ifExists
+                ? compileDropDatabaseIfExists(name)
+                : 'DROP DATABASE ${_quote(name)}';
+        return sql != null ? [SchemaStatement(sql)] : [];
       default:
         throw UnimplementedError(
           'Schema mutation operation '
@@ -185,6 +200,7 @@ class PostgresSchemaDialect extends SchemaDialect {
     return 'ALTER TABLE ${_quote(options.from)} RENAME TO ${_quote(options.to)}';
   }
 
+  // ignore: unused_element
   String _createIndexSql(String table, IndexDefinition definition) {
     switch (definition.type) {
       case IndexType.unique:
@@ -503,7 +519,112 @@ class PostgresSchemaDialect extends SchemaDialect {
 
   @override
   String? compileListDatabases() {
-    return 'SELECT datname FROM pg_database WHERE datistemplate = false';
+    // Mirror Laravel behavior: ignore templates and the default postgres database
+    return "SELECT datname FROM pg_database WHERE datistemplate = false AND datname <> 'postgres' ORDER BY datname";
+  }
+
+  // ========== Schema Introspection ==========
+
+  @override
+  String? compileSchemas({String? schema}) {
+    final filter = "nspname NOT LIKE 'pg_%' AND nspname <> 'information_schema'";
+    final clause = schema == null ? '' : ' AND nspname = ?';
+    return 'SELECT nspname AS name, pg_get_userbyid(nspowner) AS owner, '
+        'nspname = current_schema() AS is_default '
+        'FROM pg_namespace '
+        'WHERE $filter$clause '
+        'ORDER BY nspname';
+  }
+
+  @override
+  String? compileTables({String? schema}) {
+    final filter = schema == null ? '' : ' AND table_schema = ?';
+    return 'SELECT table_schema, table_name, table_type '
+        'FROM information_schema.tables '
+        "WHERE table_type = 'BASE TABLE' "
+        "AND table_schema NOT IN ('pg_catalog', 'information_schema')"
+        '$filter '
+        'ORDER BY table_schema, table_name';
+  }
+
+  @override
+  String? compileViews({String? schema}) {
+    final filter = schema == null ? '' : ' AND table_schema = ?';
+    return 'SELECT table_schema, table_name, view_definition '
+        'FROM information_schema.views '
+        "WHERE table_schema NOT IN ('pg_catalog', 'information_schema')"
+        '$filter '
+        'ORDER BY table_schema, table_name';
+  }
+
+  @override
+  String? compileColumns(String table, {String? schema}) {
+    final filter = schema == null ? '' : ' AND c.table_schema = ?';
+    return 'SELECT c.table_schema, c.table_name, c.column_name, c.data_type, '
+        'c.character_maximum_length, c.numeric_precision, c.numeric_scale, '
+        'c.is_nullable, c.column_default, c.is_identity, '
+        'c.is_generated, c.generation_expression, '
+        'pgd.description AS comment '
+        'FROM information_schema.columns c '
+        'LEFT JOIN pg_catalog.pg_class cls '
+        '  ON cls.relname = c.table_name '
+        'LEFT JOIN pg_catalog.pg_namespace ns '
+        '  ON ns.nspname = c.table_schema AND ns.oid = cls.relnamespace '
+        'LEFT JOIN pg_catalog.pg_attribute attr '
+        '  ON attr.attrelid = cls.oid AND attr.attname = c.column_name '
+        'LEFT JOIN pg_catalog.pg_description pgd '
+        '  ON pgd.objoid = attr.attrelid AND pgd.objsubid = attr.attnum '
+        'WHERE c.table_name = ?'
+        '$filter '
+        'ORDER BY c.ordinal_position';
+  }
+
+  @override
+  String? compileIndexes(String table, {String? schema}) {
+    final filter = schema == null ? '' : ' AND ns.nspname = ?';
+    return 'SELECT ns.nspname AS schema, tbl.relname AS table_name, '
+        'idx.relname AS index_name, i.indisunique AS unique, '
+        'i.indisprimary AS primary, am.amname AS method, '
+        'pg_get_expr(i.indpred, i.indrelid) AS where_clause, '
+        'array_remove(array_agg(att.attname ORDER BY cols.ordinality), NULL) AS columns '
+        'FROM pg_index i '
+        'JOIN pg_class idx ON idx.oid = i.indexrelid '
+        'JOIN pg_class tbl ON tbl.oid = i.indrelid '
+        'JOIN pg_namespace ns ON ns.oid = tbl.relnamespace '
+        'JOIN pg_am am ON am.oid = idx.relam '
+        'LEFT JOIN LATERAL unnest(i.indkey) WITH ORDINALITY AS cols(attnum, ordinality) '
+        '  ON true '
+        'LEFT JOIN pg_attribute att '
+        '  ON att.attrelid = tbl.oid AND att.attnum = cols.attnum '
+        'WHERE tbl.relname = ?'
+        '$filter '
+        'GROUP BY ns.nspname, tbl.relname, idx.relname, i.indisunique, '
+        'i.indisprimary, am.amname, pg_get_expr(i.indpred, i.indrelid) '
+        'ORDER BY idx.relname';
+  }
+
+  @override
+  String? compileForeignKeys(String table, {String? schema}) {
+    final filter = schema == null ? '' : ' AND tc.table_schema = ?';
+    return 'SELECT tc.constraint_name, tc.table_schema, '
+        'kcu.column_name, ccu.table_schema AS referenced_schema, '
+        'ccu.table_name AS referenced_table, '
+        'ccu.column_name AS referenced_column, '
+        'rc.update_rule, rc.delete_rule, kcu.ordinal_position '
+        'FROM information_schema.table_constraints tc '
+        'JOIN information_schema.key_column_usage kcu '
+        '  ON kcu.constraint_name = tc.constraint_name '
+        ' AND kcu.constraint_schema = tc.constraint_schema '
+        'JOIN information_schema.constraint_column_usage ccu '
+        '  ON ccu.constraint_name = tc.constraint_name '
+        ' AND ccu.constraint_schema = tc.constraint_schema '
+        'JOIN information_schema.referential_constraints rc '
+        '  ON rc.constraint_name = tc.constraint_name '
+        ' AND rc.constraint_schema = tc.constraint_schema '
+        "WHERE tc.constraint_type = 'FOREIGN KEY' "
+        '  AND tc.table_name = ?'
+        '$filter '
+        'ORDER BY tc.constraint_name, kcu.ordinal_position';
   }
 
   // ========== Foreign Key Constraint Management ==========

@@ -1,8 +1,12 @@
 import 'dart:io';
+import 'dart:math';
 
 import 'package:ormed/ormed.dart';
 import 'package:ormed_mysql/ormed_mysql.dart';
 import 'package:test/test.dart';
+
+// Generate unique identifiers for this test run to prevent concurrency conflicts
+final _testRunId = Random().nextInt(1000000);
 
 MySqlDriverAdapter _createAdapterFromEnv() {
   final url =
@@ -18,8 +22,19 @@ String _foreignKeyStatus(Map<String, Object?> row) {
   return (row['value'] ?? row['Value'] ?? '').toString().toLowerCase();
 }
 
+String? _lookup(Map<String, Object?> row, String key) {
+  final target = key.toLowerCase();
+  for (final entry in row.entries) {
+    if (entry.key.toString().toLowerCase() == target) {
+      final value = entry.value;
+      return value?.toString();
+    }
+  }
+  return null;
+}
+
 /// Comprehensive test suite for Phase 1: Database Management features
-/// 
+///
 /// Tests cover:
 /// - Database creation/dropping with various options
 /// - Foreign key constraint management
@@ -38,7 +53,7 @@ void main() {
     });
 
     test('creates and drops database', () async {
-      const testDb = 'ormed_test_db_create';
+      final testDb = 'ormed_test_db_create_$_testRunId';
 
       // Clean up if exists
       await adapter.dropDatabaseIfExists(testDb);
@@ -65,15 +80,15 @@ void main() {
     });
 
     test('creates database with custom options', () async {
-      const testDb = 'ormed_test_db_charset';
+      final testDb = 'ormed_test_db_charset_$_testRunId';
 
       await adapter.dropDatabaseIfExists(testDb);
 
       // Create with specific charset and collation
-      await adapter.createDatabase(testDb, options: {
-        'charset': 'utf8mb3',
-        'collation': 'utf8mb3_general_ci',
-      });
+      await adapter.createDatabase(
+        testDb,
+        options: {'charset': 'utf8mb3', 'collation': 'utf8mb3_general_ci'},
+      );
 
       // Verify charset (requires querying information_schema)
       final result = await adapter.queryRaw(
@@ -84,9 +99,12 @@ void main() {
       );
 
       expect(result, isNotEmpty);
-      expect(result.first['default_character_set_name'], equals('utf8mb3'));
       expect(
-        result.first['default_collation_name'],
+        _lookup(result.first, 'default_character_set_name'),
+        equals('utf8mb3'),
+      );
+      expect(
+        _lookup(result.first, 'default_collation_name'),
         equals('utf8mb3_general_ci'),
       );
 
@@ -94,20 +112,17 @@ void main() {
     });
 
     test('dropDatabase on non-existent database throws', () async {
-      const testDb = 'ormed_nonexistent_db';
+      final testDb = 'ormed_nonexistent_db_$_testRunId';
 
       // Ensure it doesn't exist
       await adapter.dropDatabaseIfExists(testDb);
 
       // Dropping non-existent database should throw
-      expect(
-        () => adapter.dropDatabase(testDb),
-        throwsA(isA<Exception>()),
-      );
+      expect(() => adapter.dropDatabase(testDb), throwsA(isA<Exception>()));
     });
 
     test('dropDatabaseIfExists returns false for non-existent', () async {
-      const testDb = 'ormed_never_created_db';
+      final testDb = 'ormed_never_created_db_$_testRunId';
 
       // Ensure it doesn't exist
       await adapter.dropDatabaseIfExists(testDb);
@@ -120,14 +135,16 @@ void main() {
     test('listDatabases returns all accessible databases', () async {
       final databases = await adapter.listDatabases();
 
-      // Should at least contain default databases
       expect(databases, isNotEmpty);
-      expect(databases, contains('mysql'));
-      expect(databases, contains('information_schema'));
+      // System schemas should be filtered out
+      expect(databases, isNot(contains('mysql')));
+      expect(databases, isNot(contains('information_schema')));
+      expect(databases, isNot(contains('performance_schema')));
+      expect(databases, isNot(contains('sys')));
     });
 
     test('supports default charset utf8mb4', () async {
-      const testDb = 'ormed_test_default_charset';
+      final testDb = 'ormed_test_default_charset_$_testRunId';
 
       await adapter.dropDatabaseIfExists(testDb);
       await adapter.createDatabase(testDb); // No options = defaults
@@ -139,9 +156,12 @@ void main() {
         [testDb],
       );
 
-      expect(result.first['default_character_set_name'], equals('utf8mb4'));
       expect(
-        result.first['default_collation_name'],
+        _lookup(result.first, 'default_character_set_name'),
+        equals('utf8mb4'),
+      );
+      expect(
+        _lookup(result.first, 'default_collation_name'),
         equals('utf8mb4_unicode_ci'),
       );
 
@@ -386,7 +406,7 @@ void main() {
     });
 
     test('database names with special characters', () async {
-      const testDb = 'ormed_test_db_123';
+      final testDb = 'ormed_test_db_123_$_testRunId';
 
       await adapter.dropDatabaseIfExists(testDb);
       await adapter.createDatabase(testDb);
@@ -455,7 +475,9 @@ void main() {
 
     test('metadata reports databaseManagement capability', () {
       expect(
-        adapter.metadata.supportsCapability(DriverCapability.databaseManagement),
+        adapter.metadata.supportsCapability(
+          DriverCapability.databaseManagement,
+        ),
         isTrue,
       );
     });
@@ -472,10 +494,11 @@ void main() {
 
   group('MySQL Has* Helper Methods', () {
     late MySqlDriverAdapter adapter;
-    const testDb = 'ormed_has_test_db';
+    late String testDb;
 
     setUp(() async {
       adapter = _createAdapterFromEnv();
+      testDb = 'ormed_has_test_db_$_testRunId';
 
       // Create test database and schema
       await adapter.dropDatabaseIfExists(testDb);
@@ -539,24 +562,30 @@ void main() {
     });
 
     test('hasColumn returns true for existing column', () async {
-      expect(await adapter.hasColumn('users', 'id'), isTrue);
-      expect(await adapter.hasColumn('users', 'name'), isTrue);
-      expect(await adapter.hasColumn('users', 'email'), isTrue);
-      expect(await adapter.hasColumn('posts', 'title'), isTrue);
+      expect(await adapter.hasColumn('users', 'id', schema: testDb), isTrue);
+      expect(await adapter.hasColumn('users', 'name', schema: testDb), isTrue);
+      expect(await adapter.hasColumn('users', 'email', schema: testDb), isTrue);
+      expect(await adapter.hasColumn('posts', 'title', schema: testDb), isTrue);
     });
 
     test('hasColumn returns false for non-existent column', () async {
-      expect(await adapter.hasColumn('users', 'age'), isFalse);
-      expect(await adapter.hasColumn('posts', 'content'), isFalse);
+      expect(await adapter.hasColumn('users', 'age', schema: testDb), isFalse);
+      expect(
+        await adapter.hasColumn('posts', 'content', schema: testDb),
+        isFalse,
+      );
     });
 
     test('hasColumn is case-insensitive', () async {
-      expect(await adapter.hasColumn('users', 'NAME'), isTrue);
-      expect(await adapter.hasColumn('users', 'Email'), isTrue);
+      expect(await adapter.hasColumn('users', 'NAME', schema: testDb), isTrue);
+      expect(await adapter.hasColumn('users', 'Email', schema: testDb), isTrue);
     });
 
     test('hasColumns returns true when all columns exist', () async {
-      expect(await adapter.hasColumns('users', ['id', 'name', 'email']), isTrue);
+      expect(
+        await adapter.hasColumns('users', ['id', 'name', 'email']),
+        isTrue,
+      );
       expect(await adapter.hasColumns('posts', ['id', 'title']), isTrue);
     });
 
@@ -578,7 +607,10 @@ void main() {
     });
 
     test('hasIndex filters by type: primary', () async {
-      expect(await adapter.hasIndex('users', 'PRIMARY', type: 'primary'), isTrue);
+      expect(
+        await adapter.hasIndex('users', 'PRIMARY', type: 'primary'),
+        isTrue,
+      );
     });
 
     test('hasIndex filters by type: unique', () async {

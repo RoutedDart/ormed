@@ -37,7 +37,7 @@ void main() {
         config: DatabaseConfig(driver: 'postgres', options: {'url': url}),
       );
 
-      registerDriverTestFactories();
+      registerOrmFactories();
 
       dataSource = DataSource(
 

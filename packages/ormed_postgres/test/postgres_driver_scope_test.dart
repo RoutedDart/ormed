@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math';
 
 import 'package:driver_tests/driver_tests.dart';
 import 'package:ormed/ormed.dart';
@@ -6,6 +7,9 @@ import 'package:ormed_postgres/ormed_postgres.dart';
 import 'package:test/test.dart';
 
 void main() {
+  // Generate unique schema name for concurrency safety
+  final uniqueSchema = 'test_scope_${Random().nextInt(1000000)}';
+
   group('Postgres query scopes and macros', () {
     late DataSource dataSource;
     late PostgresDriverAdapter driverAdapter;
@@ -24,16 +28,14 @@ void main() {
       };
 
       // Create codec registry for the adapter
-  PostgresDriverAdapter.registerCodecs();
+      PostgresDriverAdapter.registerCodecs();
 
-      
       for (final entry in customCodecs.entries) {
         ValueCodecRegistry.instance.registerCodec(key: entry.key, codec: entry.value);
       }
 
       driverAdapter = PostgresDriverAdapter.custom(
         config: DatabaseConfig(driver: 'postgres', options: {'url': url}),
-        
       );
 
       final registry = buildOrmRegistry();
@@ -42,11 +44,18 @@ void main() {
         entities: registry.allDefinitions,
         registry: registry,
         codecs: customCodecs,
+        defaultSchema: uniqueSchema,
       ));
 
       await dataSource.init();
-      registerDriverTestFactories();
-      await resetDriverTestSchema(driverAdapter, schema: null);
+      registerOrmFactories();
+
+      // Create schema for isolation
+      await driverAdapter.executeRaw('CREATE SCHEMA IF NOT EXISTS "$uniqueSchema"');
+      await driverAdapter.executeRaw('SET search_path TO "$uniqueSchema"');
+
+      await dropDriverTestSchema(driverAdapter, schema: uniqueSchema);
+      await resetDriverTestSchema(driverAdapter, schema: uniqueSchema);
     });
 
     setUp(() async {
@@ -74,11 +83,13 @@ void main() {
 
     tearDown(() async {
       // Truncate table for isolation
-      await driverAdapter.executeRaw('TRUNCATE TABLE users CASCADE');
+      await driverAdapter.executeRaw('TRUNCATE TABLE "$uniqueSchema".users CASCADE');
     });
 
     tearDownAll(() async {
-      await dropDriverTestSchema(driverAdapter, schema: null);
+      await dropDriverTestSchema(driverAdapter, schema: uniqueSchema);
+      // Drop the schema after tests
+      await driverAdapter.executeRaw('DROP SCHEMA IF EXISTS "$uniqueSchema" CASCADE');
       await dataSource.dispose();
     });
 

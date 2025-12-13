@@ -192,7 +192,9 @@ class InMemoryQueryExecutor implements DriverAdapter {
             (candidate) => _matches(candidate, selector),
           );
           if (index == -1) {
-            final values = Map<String, Object?>.from(row.values);
+            // Include keys in values for new records (allows user-assigned PKs)
+            final values = Map<String, Object?>.from(row.keys)
+              ..addAll(row.values);
             _generatePrimaryKey(plan.definition, values);
             table.add(values);
             if (plan.returning) {

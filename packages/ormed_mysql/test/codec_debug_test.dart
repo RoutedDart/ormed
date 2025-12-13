@@ -27,10 +27,14 @@ void main() {
     });
 
     test('DateTime codec decode from DateTime', () {
-      final now = DateTime(2025, 12, 9, 14, 30, 45, 123, 456);
+      final now = DateTime.utc(2025, 12, 9, 14, 30, 45, 123, 456);
       final decoded = codec.decode(now);
       print('DateTime decoded: $decoded');
-      expect(decoded, equals(now));
+      expect(
+        decoded?.isAtSameMomentAs(now) ?? false,
+        isTrue,
+        reason: 'Decoded value should represent the same instant (UTC-safe)',
+      );
     });
 
     test('Carbon codec decode from String', () {
@@ -41,14 +45,17 @@ void main() {
     });
 
     test('Carbon codec decode from DateTime', () {
-      final now = DateTime(2025, 12, 9, 14, 30, 45, 123, 456);
+      final now = DateTime.utc(2025, 12, 9, 14, 30, 45, 123, 456);
       final decoded = carbonCodec.decode(now);
-      final totalMicros = (decoded!.millisecond * 1000) + decoded.microsecond;
-      print('DateTime decoded to Carbon: $decoded ($totalMicros total μs)');
+      print(
+        'DateTime decoded to Carbon: $decoded (${decoded?.microsecond} μs)',
+      );
       expect(decoded, isA<Carbon>());
-      // Check total microseconds match
-      final nowTotalMicros = (now.millisecond * 1000) + now.microsecond;
-      expect(totalMicros, equals(nowTotalMicros));
+      expect(
+        decoded?.dateTime.toUtc().microsecondsSinceEpoch,
+        equals(now.microsecondsSinceEpoch),
+        reason: 'Carbon decode should preserve the exact instant',
+      );
     });
 
     test('Round-trip DateTime codec', () {
@@ -62,16 +69,18 @@ void main() {
     });
 
     test('Round-trip Carbon codec via DateTime', () {
-      final dt = DateTime(2025, 12, 9, 14, 30, 45, 123, 456);
+      final dt = DateTime.utc(2025, 12, 9, 14, 30, 45, 123, 456);
       final asCarbon = Carbon.createFromDateTime(dt);
       final encoded = carbonCodec.encode(asCarbon as Carbon);
       final decoded = carbonCodec.decode(encoded);
-      final dtTotalMicros = (dt.millisecond * 1000) + dt.microsecond;
-      final decodedTotalMicros = (decoded!.millisecond * 1000) + decoded.microsecond;
-      print('Original DateTime: $dt ($dtTotalMicros total μs)');
+      print('Original DateTime: $dt (${dt.microsecond} μs)');
       print('Encoded: $encoded');
-      print('Decoded Carbon: $decoded ($decodedTotalMicros total μs)');
-      expect(decodedTotalMicros, equals(dtTotalMicros));
+      print('Decoded Carbon: $decoded (${decoded?.microsecond} μs)');
+      expect(
+        decoded?.dateTime.toUtc().microsecondsSinceEpoch,
+        equals(dt.microsecondsSinceEpoch),
+        reason: 'Round-trip should preserve microsecond precision and instant',
+      );
     });
   });
 }
