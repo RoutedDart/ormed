@@ -118,22 +118,23 @@ class ScopeRegistry {
   }
 
   Query<T> _applyAdHocScopes<T>(Query<T> query) {
-    if (query.definition is! AdHocModelDefinition) {
+    // Apply ad-hoc scopes to both AdHocModelDefinition and TableQueryDefinition
+    if (query.definition is! AdHocModelDefinition &&
+        query.definition is! TableQueryDefinition) {
       return query;
     }
-    final adHoc = query as Query<Map<String, Object?>>;
-    final definition = adHoc.definition as AdHocModelDefinition;
     if (query.adHocScopes.isEmpty) {
       return query;
     }
-    var builder = adHoc as Query<dynamic>;
+    final tableName = query.definition.tableName;
+    var builder = query as Query<dynamic>;
     for (final scopeName in query.adHocScopes) {
       final registrations = _adHocScopes[scopeName];
       if (registrations == null || registrations.isEmpty) {
         continue;
       }
       for (final registration in registrations) {
-        if (_matches(registration.pattern, definition.tableName)) {
+        if (_matches(registration.pattern, tableName)) {
           builder = registration.scope(builder);
         }
       }
