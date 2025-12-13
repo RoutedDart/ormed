@@ -4,6 +4,7 @@ import 'package:test/test.dart';
 import 'package:driver_tests/driver_tests.dart';
 
 void main() {
+  ModelRegistry registry = buildOrmRegistry();
   group('DataSource setDefaultDataSource', () {
     late InMemoryQueryExecutor driver;
     late DataSource dataSource;
@@ -32,7 +33,7 @@ void main() {
         DataSourceOptions(
           name: 'default',
           driver: driver,
-          entities: [ActiveUserOrmDefinition.definition],
+          registry: registry,
         ),
       );
       await dataSource.init();
@@ -49,7 +50,7 @@ void main() {
         DataSourceOptions(
           name: 'other',
           driver: driver,
-          entities: [ActiveUserOrmDefinition.definition],
+          registry: registry,
         ),
       );
       await dataSource.init();
@@ -66,7 +67,7 @@ void main() {
         DataSourceOptions(
           name: 'analytics',
           driver: driver,
-          entities: [ActiveUserOrmDefinition.definition],
+          registry: registry,
         ),
       );
       // init() auto-registers and sets as default (first DataSource)

@@ -3,6 +3,7 @@ import 'package:ormed/ormed.dart';
 import 'package:test/test.dart';
 
 void main() {
+  ModelRegistry registry = buildOrmRegistry();
   group('DataSource', () {
     late InMemoryQueryExecutor driver;
     late DataSource dataSource;
@@ -20,7 +21,7 @@ void main() {
     test('creates with DataSourceOptions', () {
       final options = DataSourceOptions(
         driver: driver,
-        entities: [ActiveUserOrmDefinition.definition],
+        registry: registry,
         name: 'test',
       );
 
@@ -32,10 +33,7 @@ void main() {
 
     test('init registers entities and creates connection', () async {
       dataSource = DataSource(
-        DataSourceOptions(
-          driver: driver,
-          entities: [ActiveUserOrmDefinition.definition],
-        ),
+        DataSourceOptions(driver: driver, registry: registry),
       );
 
       await dataSource.init();
@@ -46,10 +44,7 @@ void main() {
 
     test('init is idempotent', () async {
       dataSource = DataSource(
-        DataSourceOptions(
-          driver: driver,
-          entities: [ActiveUserOrmDefinition.definition],
-        ),
+        DataSourceOptions(driver: driver, registry: registry),
       );
 
       await dataSource.init();
@@ -60,10 +55,7 @@ void main() {
 
     test('query throws when not initialized', () {
       dataSource = DataSource(
-        DataSourceOptions(
-          driver: driver,
-          entities: [ActiveUserOrmDefinition.definition],
-        ),
+        DataSourceOptions(driver: driver, registry: registry),
       );
 
       expect(() => dataSource.query<ActiveUser>(), throwsA(isA<StateError>()));
@@ -71,10 +63,7 @@ void main() {
 
     test('repo throws when not initialized', () {
       dataSource = DataSource(
-        DataSourceOptions(
-          driver: driver,
-          entities: [ActiveUserOrmDefinition.definition],
-        ),
+        DataSourceOptions(driver: driver, registry: registry),
       );
 
       expect(() => dataSource.repo<ActiveUser>(), throwsA(isA<StateError>()));
@@ -82,10 +71,7 @@ void main() {
 
     test('transaction throws when not initialized', () {
       dataSource = DataSource(
-        DataSourceOptions(
-          driver: driver,
-          entities: [ActiveUserOrmDefinition.definition],
-        ),
+        DataSourceOptions(driver: driver, registry: registry),
       );
 
       expect(
@@ -96,10 +82,7 @@ void main() {
 
     test('query returns typed query builder', () async {
       dataSource = DataSource(
-        DataSourceOptions(
-          driver: driver,
-          entities: [ActiveUserOrmDefinition.definition],
-        ),
+        DataSourceOptions(driver: driver, registry: registry),
       );
       await dataSource.init();
 
@@ -110,10 +93,7 @@ void main() {
 
     test('repo returns typed repository', () async {
       dataSource = DataSource(
-        DataSourceOptions(
-          driver: driver,
-          entities: [ActiveUserOrmDefinition.definition],
-        ),
+        DataSourceOptions(driver: driver, registry: registry),
       );
       await dataSource.init();
 
@@ -124,10 +104,7 @@ void main() {
 
     test('can insert and query models', () async {
       dataSource = DataSource(
-        DataSourceOptions(
-          driver: driver,
-          entities: [ActiveUserOrmDefinition.definition],
-        ),
+        DataSourceOptions(driver: driver, registry: registry),
       );
       await dataSource.init();
 
@@ -144,10 +121,7 @@ void main() {
 
     test('table returns ad-hoc query builder', () async {
       dataSource = DataSource(
-        DataSourceOptions(
-          driver: driver,
-          entities: [ActiveUserOrmDefinition.definition],
-        ),
+        DataSourceOptions(driver: driver, registry: registry),
       );
       await dataSource.init();
 
@@ -158,10 +132,7 @@ void main() {
 
     test('dispose closes the connection', () async {
       dataSource = DataSource(
-        DataSourceOptions(
-          driver: driver,
-          entities: [ActiveUserOrmDefinition.definition],
-        ),
+        DataSourceOptions(driver: driver, registry: registry),
       );
       await dataSource.init();
       expect(dataSource.isInitialized, isTrue);
@@ -173,10 +144,7 @@ void main() {
 
     test('dispose is idempotent', () async {
       dataSource = DataSource(
-        DataSourceOptions(
-          driver: driver,
-          entities: [ActiveUserOrmDefinition.definition],
-        ),
+        DataSourceOptions(driver: driver, registry: registry),
       );
       await dataSource.init();
 
@@ -188,10 +156,7 @@ void main() {
 
     test('can reinitialize after dispose', () async {
       dataSource = DataSource(
-        DataSourceOptions(
-          driver: driver,
-          entities: [ActiveUserOrmDefinition.definition],
-        ),
+        DataSourceOptions(driver: driver, registry: registry),
       );
       await dataSource.init();
       await dataSource.dispose();
@@ -199,10 +164,7 @@ void main() {
       // Create new driver since old one was closed
       driver = InMemoryQueryExecutor();
       dataSource = DataSource(
-        DataSourceOptions(
-          driver: driver,
-          entities: [ActiveUserOrmDefinition.definition],
-        ),
+        DataSourceOptions(driver: driver, registry: registry),
       );
       await dataSource.init();
 
@@ -211,11 +173,7 @@ void main() {
 
     test('logging option enables query log', () async {
       dataSource = DataSource(
-        DataSourceOptions(
-          driver: driver,
-          entities: [ActiveUserOrmDefinition.definition],
-          logging: true,
-        ),
+        DataSourceOptions(driver: driver, registry: registry, logging: true),
       );
       await dataSource.init();
 
@@ -228,7 +186,7 @@ void main() {
       dataSource = DataSource(
         DataSourceOptions(
           driver: driver,
-          entities: [ActiveUserOrmDefinition.definition],
+          registry: registry,
           codecs: {'CustomType': customCodec},
         ),
       );
@@ -245,7 +203,7 @@ void main() {
       dataSource = DataSource(
         DataSourceOptions(
           driver: driver,
-          entities: [ActiveUserOrmDefinition.definition],
+          registry: registry,
           name: 'my-connection',
           database: 'my-database',
           tablePrefix: 'prefix_',
@@ -262,10 +220,7 @@ void main() {
 
     test('context exposes underlying QueryContext', () async {
       dataSource = DataSource(
-        DataSourceOptions(
-          driver: driver,
-          entities: [ActiveUserOrmDefinition.definition],
-        ),
+        DataSourceOptions(driver: driver, registry: registry),
       );
       await dataSource.init();
 
@@ -277,10 +232,7 @@ void main() {
 
     test('pretend captures SQL without executing', () async {
       dataSource = DataSource(
-        DataSourceOptions(
-          driver: driver,
-          entities: [ActiveUserOrmDefinition.definition],
-        ),
+        DataSourceOptions(driver: driver, registry: registry),
       );
       await dataSource.init();
 
@@ -298,10 +250,7 @@ void main() {
 
     test('beforeExecuting registers callback', () async {
       dataSource = DataSource(
-        DataSourceOptions(
-          driver: driver,
-          entities: [ActiveUserOrmDefinition.definition],
-        ),
+        DataSourceOptions(driver: driver, registry: registry),
       );
       await dataSource.init();
 
@@ -319,10 +268,7 @@ void main() {
 
     test('enableQueryLog and clearQueryLog work correctly', () async {
       dataSource = DataSource(
-        DataSourceOptions(
-          driver: driver,
-          entities: [ActiveUserOrmDefinition.definition],
-        ),
+        DataSourceOptions(driver: driver, registry: registry),
       );
       await dataSource.init();
 
@@ -339,11 +285,7 @@ void main() {
 
     test('disableQueryLog stops logging', () async {
       dataSource = DataSource(
-        DataSourceOptions(
-          driver: driver,
-          entities: [ActiveUserOrmDefinition.definition],
-          logging: true,
-        ),
+        DataSourceOptions(driver: driver, registry: registry, logging: true),
       );
       await dataSource.init();
 
@@ -358,7 +300,7 @@ void main() {
   group('DataSourceOptions', () {
     test('has sensible defaults', () {
       final driver = InMemoryQueryExecutor();
-      final options = DataSourceOptions(driver: driver, entities: []);
+      final options = DataSourceOptions(driver: driver, registry: registry);
 
       expect(options.name, 'default');
       expect(options.database, isNull);
@@ -373,7 +315,7 @@ void main() {
       final driver = InMemoryQueryExecutor();
       final original = DataSourceOptions(
         driver: driver,
-        entities: [ActiveUserOrmDefinition.definition],
+        registry: registry,
         name: 'original',
         database: 'db',
         tablePrefix: 'pre_',
@@ -394,13 +336,13 @@ void main() {
       final driver2 = InMemoryQueryExecutor();
       final original = DataSourceOptions(
         driver: driver1,
-        entities: [],
+        registry: registry,
         name: 'original',
       );
 
       final copied = original.copyWith(
         driver: driver2,
-        entities: [ActiveUserOrmDefinition.definition],
+        registry: registry,
         name: 'new-name',
         database: 'new-db',
         tablePrefix: 'new_',
@@ -410,7 +352,7 @@ void main() {
       );
 
       expect(copied.driver, same(driver2));
-      expect(copied.entities, hasLength(1));
+      expect(copied.entities, isEmpty);
       expect(copied.name, 'new-name');
       expect(copied.database, 'new-db');
       expect(copied.tablePrefix, 'new_');
@@ -426,19 +368,11 @@ void main() {
       final driver2 = InMemoryQueryExecutor();
 
       final ds1 = DataSource(
-        DataSourceOptions(
-          driver: driver1,
-          entities: [ActiveUserOrmDefinition.definition],
-          name: 'ds1',
-        ),
+        DataSourceOptions(driver: driver1, registry: registry, name: 'ds1'),
       );
 
       final ds2 = DataSource(
-        DataSourceOptions(
-          driver: driver2,
-          entities: [ActiveUserOrmDefinition.definition],
-          name: 'ds2',
-        ),
+        DataSourceOptions(driver: driver2, registry: registry, name: 'ds2'),
       );
 
       await ds1.init();

@@ -11,7 +11,7 @@ void main() {
 
     setUp(() {
       driver = InMemoryQueryExecutor();
-      registry = ModelRegistry()..register(ActiveUserOrmDefinition.definition);
+      registry = ModelRegistry()..registerGeneratedModels();
       context = QueryContext(registry: registry, driver: driver);
       requestedConnections.clear();
       Model.bindConnectionResolver(
@@ -28,12 +28,14 @@ void main() {
       driver.clear();
     });
 
-    test('expectDefinition attaches metadata lazily', () {
+    test('expectDefinition retrieves definition from registry', () {
       final user = ActiveUser(email: 'one@example.com');
+      // Untracked models cannot store definitions, so hasDefinition is always false
       expect(user.hasDefinition, isFalse);
       final definition = user.expectDefinition();
       expect(definition, ActiveUserOrmDefinition.definition);
-      expect(user.hasDefinition, isTrue);
+      // Still false for untracked models - they don't have ModelAttributes mixin
+      expect(user.hasDefinition, isFalse);
     });
 
     test('save inserts new model instances via the model helpers', () async {

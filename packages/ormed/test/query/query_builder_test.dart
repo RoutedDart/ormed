@@ -5,15 +5,12 @@ import 'package:driver_tests/driver_tests.dart';
 import 'package:ormed/ormed.dart';
 import 'package:test/test.dart';
 
-
 void main() {
-  late ModelRegistry registry;
+  ModelRegistry registry = buildOrmRegistry();
   late InMemoryQueryExecutor executor;
   late QueryContext context;
 
   setUp(() {
-    registry = ModelRegistry()
-      ..registerAll(generatedOrmModelDefinitions);
     executor = InMemoryQueryExecutor();
 
     executor.register(AuthorOrmDefinition.definition, const [
@@ -513,8 +510,11 @@ void main() {
   });
 
   test('whereBitwise stores predicate metadata on the plan', () {
-    final plan =
-        context.query<Post>().withTrashed().whereBitwise('id', '&', 2).debugPlan();
+    final plan = context
+        .query<Post>()
+        .withTrashed()
+        .whereBitwise('id', '&', 2)
+        .debugPlan();
 
     expect(plan.predicate, isA<BitwisePredicate>());
     final predicate = plan.predicate as BitwisePredicate;

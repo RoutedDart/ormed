@@ -4,16 +4,15 @@ import 'package:test/test.dart';
 import 'package:driver_tests/driver_tests.dart';
 
 void main() {
+  ModelRegistry registry = buildOrmRegistry();
   group('Soft deletes', () {
-    late ModelRegistry registry;
     late InMemoryQueryExecutor executor;
     late QueryContext context;
 
     setUp(() {
-      registry = ModelRegistry()..register(CommentOrmDefinition.definition);
       executor = InMemoryQueryExecutor();
-      final visible = Comment(id: 1, body: 'Visible');
-      final trashed = Comment(id: 2, body: 'Trashed')
+      final visible = $Comment(id: 1, body: 'Visible');
+      final trashed = $Comment(id: 2, body: 'Trashed')
         ..deletedAt = DateTime.utc(2024, 1, 15);
       executor.register(CommentOrmDefinition.definition, [visible, trashed]);
       context = QueryContext(registry: registry, driver: executor);

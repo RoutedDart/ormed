@@ -5,19 +5,13 @@ import 'package:driver_tests/driver_tests.dart';
 import 'package:ormed/ormed.dart';
 import 'package:test/test.dart';
 
-
 void main() {
+  ModelRegistry registry = buildOrmRegistry();
   group('QueryContext observability', () {
-    late ModelRegistry registry;
     late InMemoryQueryExecutor driver;
     late QueryContext context;
 
     setUp(() {
-      registry = ModelRegistry()
-        ..registerAll([
-          AuthorOrmDefinition.definition,
-          PostOrmDefinition.definition,
-        ]);
       driver = InMemoryQueryExecutor();
       context = QueryContext(registry: registry, driver: driver);
 

@@ -14,12 +14,7 @@ void groupHasMany() {
     late QueryContext context;
 
     setUp(() {
-      final registry = ModelRegistry()
-        ..registerAll([
-          AuthorOrmDefinition.definition,
-          PostOrmDefinition.definition,
-          PhotoOrmDefinition.definition,
-        ]);
+       ModelRegistry registry = buildOrmRegistry();
       final executor = InMemoryQueryExecutor()
         ..register(AuthorOrmDefinition.definition, const [
           Author(id: 1, name: 'Alice', active: true),
@@ -126,11 +121,7 @@ void groupBelongsTo() {
     late QueryContext context;
 
     setUp(() {
-      final registry = ModelRegistry()
-        ..registerAll([
-          AuthorOrmDefinition.definition,
-          PostOrmDefinition.definition,
-        ]);
+      ModelRegistry registry = buildOrmRegistry();
       final executor = InMemoryQueryExecutor()
         ..register(AuthorOrmDefinition.definition, const [
           Author(id: 1, name: 'Alice', active: true),
@@ -182,11 +173,7 @@ void groupManyToMany() {
     late QueryContext context;
 
     setUp(() {
-      final registry = ModelRegistry()
-        ..registerAll([
-          PostOrmDefinition.definition,
-          TagOrmDefinition.definition,
-        ]);
+      ModelRegistry registry = buildOrmRegistry();
       final executor = InMemoryQueryExecutor()
         ..register(PostOrmDefinition.definition, [
           Post(
@@ -229,13 +216,7 @@ void groupMorphRelations() {
     late QueryContext context;
 
     setUp(() {
-      final registry = ModelRegistry()
-        ..registerAll([
-          AuthorOrmDefinition.definition,
-          PostOrmDefinition.definition,
-          PhotoOrmDefinition.definition,
-          ImageOrmDefinition.definition,
-        ]);
+      ModelRegistry registry = buildOrmRegistry();
       final executor = InMemoryQueryExecutor()
         ..register(AuthorOrmDefinition.definition, const [
           Author(id: 1, name: 'Alice', active: true),

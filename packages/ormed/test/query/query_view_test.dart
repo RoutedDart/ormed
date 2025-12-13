@@ -4,13 +4,12 @@ import 'package:test/test.dart';
 import 'package:driver_tests/driver_tests.dart';
 
 void main() {
+  ModelRegistry registry = buildOrmRegistry();
   group('queryFromDefinition', () {
-    late ModelRegistry registry;
     late InMemoryQueryExecutor driver;
     late QueryContext context;
 
     setUp(() {
-      registry = ModelRegistry()..registerAll([AuthorOrmDefinition.definition]);
       driver = InMemoryQueryExecutor()
         ..register(AuthorOrmDefinition.definition, const [
           Author(id: 1, name: 'Alice', active: true),

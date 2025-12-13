@@ -7,7 +7,7 @@ void main() {
     late QueryContext context;
 
     setUp(() {
-      final registry = ModelRegistry();
+      final registry = ModelRegistry()..registerGeneratedModels();
       final driver = InMemoryQueryExecutor();
       context = QueryContext(registry: registry, driver: driver);
 

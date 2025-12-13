@@ -4,6 +4,7 @@ import 'package:test/test.dart';
 import 'package:driver_tests/driver_tests.dart';
 
 void main() {
+  ModelRegistry registry = buildOrmRegistry();
   group('DataSource Multi-Connection', () {
     late DataSource primary;
     late DataSource secondary;
@@ -25,6 +26,7 @@ void main() {
           name: 'analytics',
           driver: primaryDriver,
           entities: [ActiveUserOrmDefinition.definition],
+          registry: registry,
         ),
       );
 
@@ -32,7 +34,7 @@ void main() {
         DataSourceOptions(
           name: 'secondary',
           driver: secondaryDriver,
-          entities: [ActiveUserOrmDefinition.definition],
+          registry: registry,
         ),
       );
 

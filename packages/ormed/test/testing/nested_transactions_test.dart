@@ -9,7 +9,7 @@ void main() {
     DataSourceOptions(
       name: 'nested_transactions_test',
       driver: SqliteDriverAdapter.inMemory(),
-      entities: [ActiveUserOrmDefinition.definition],
+      registry: buildOrmRegistry()
     ),
   );
 

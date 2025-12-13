@@ -7,7 +7,7 @@ void main() {
       final definition = UserOrmDefinition.definition;
 
       expect(definition.tableName, 'users');
-      expect(definition.fields, hasLength(7));
+      expect(definition.fields, hasLength(8));
 
       final idField = definition.fieldByName('id');
       expect(idField?.isPrimaryKey, isTrue);

@@ -1,15 +1,13 @@
+import 'package:driver_tests/orm_registry.g.dart';
 import 'package:ormed/ormed.dart';
 import 'package:test/test.dart';
 import 'package:driver_tests/driver_tests.dart';
 
 void main() {
+  ModelRegistry registry = buildOrmRegistry();
+
+  registerOrmFactories();
   group('ConnectionManager', () {
-    late ModelRegistry registry;
-
-    setUp(() {
-      registry = ModelRegistry()..registerAll([AuthorOrmDefinition.definition]);
-    });
-
     test('registers and resolves default connection', () {
       final manager = ConnectionManager();
       manager.register(

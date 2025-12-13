@@ -3,12 +3,11 @@ import 'package:test/test.dart';
 
 import 'package:driver_tests/driver_tests.dart';
 void main() {
+  ModelRegistry registry = buildOrmRegistry();
   group('Query scopes and macros', () {
-    late ModelRegistry registry;
     late QueryContext context;
 
     setUp(() {
-      registry = ModelRegistry()..register(AuthorOrmDefinition.definition);
       context = QueryContext(
         registry: registry,
         driver: InMemoryQueryExecutor()

@@ -14,7 +14,7 @@ void main() {
         DataSourceOptions(
           name: 'test_seeder',
           driver: InMemoryQueryExecutor(),
-          entities: [],
+          registry: buildOrmRegistry()
         ),
       );
       await dataSource.init();
@@ -39,7 +39,7 @@ void main() {
         DataSourceOptions(
           name: 'test_auto_increment',
           driver: InMemoryQueryExecutor(),
-          entities: [],
+          registry: buildOrmRegistry()
         ),
       );
       await dataSource.init();
@@ -58,7 +58,7 @@ void main() {
         DataSourceOptions(
           name: 'test_db_1',
           driver: InMemoryQueryExecutor(),
-          entities: [],
+          registry: buildOrmRegistry(),
         ),
       );
       await ds1.init();
@@ -67,7 +67,7 @@ void main() {
         DataSourceOptions(
           name: 'test_db_2',
           driver: InMemoryQueryExecutor(),
-          entities: [],
+          registry: buildOrmRegistry(),
         ),
       );
       await ds2.init();
@@ -86,7 +86,7 @@ void main() {
         DataSourceOptions(
           name: 'my_test_db',
           driver: InMemoryQueryExecutor(),
-          entities: [],
+          registry: buildOrmRegistry(),
         ),
       );
       await dataSource.init();

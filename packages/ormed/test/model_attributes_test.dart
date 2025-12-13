@@ -37,7 +37,7 @@ void main() {
       model.attachModelDefinition(_definitionWith(metadata));
 
       expect(
-        () => model.fill({'password': 'secret'}),
+        () => model.fill({'password': 'secret'}, strict: true),
         throwsA(isA<MassAssignmentException>()),
       );
     });
@@ -109,7 +109,7 @@ void main() {
   });
 }
 
-class _SimpleModel extends Model<_SimpleModel> {
+class _SimpleModel extends Model<_SimpleModel> with ModelAttributes {
   _SimpleModel();
 }
 

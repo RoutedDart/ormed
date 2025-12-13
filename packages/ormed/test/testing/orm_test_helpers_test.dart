@@ -4,32 +4,30 @@ import 'package:ormed_sqlite/ormed_sqlite.dart';
 import 'package:test/test.dart';
 
 /// Test demonstrating ormedGroup usage
-void main() {
+Future<void> main() async {
   final dataSource = DataSource(
     DataSourceOptions(
       name: 'test_orm_helpers',
       driver: SqliteDriverAdapter.inMemory(),
-      entities: generatedOrmModelDefinitions,
+      registry: buildOrmRegistry(),
     ),
   );
 
-  setUpAll(() async {
-    await dataSource.init();
-    DataSource.setDefault(dataSource);
-  });
+  await dataSource.init();
 
-  tearDownAll(() async {
-    await dataSource.dispose();
-  });
+  setUpOrmed(
+    dataSource: dataSource,
+    adapterFactory: (dbName) => SqliteDriverAdapter.file(dbName),
+    migrations: [CreateUsersTable()],
+  );
+  await dataSource.init();
+
 
   ormedGroup(
     'User CRUD operations with migrate',
-    dataSource: dataSource,
-    migrations: [CreateUsersTable()],
-    refreshStrategy: DatabaseRefreshStrategy.migrate,
-    () {
+    (ds) {
       test('can create and retrieve users', () async {
-        final user = await dataSource.repo<ActiveUser>().insert(
+        final user = await ds.repo<ActiveUser>().insert(
           ActiveUser(name: 'Alice', email: 'alice@test.com'),
           returning: true,
         );
@@ -37,12 +35,12 @@ void main() {
         expect(user.id, isNotNull);
         expect(user.name, equals('Alice'));
 
-        final count = await dataSource.query<ActiveUser>().count();
+        final count = await ds.query<ActiveUser>().count();
         expect(count, equals(1));
       });
 
       test('can update users', () async {
-        final user = await dataSource.repo<ActiveUser>().insert(
+        final user = await ds.repo<ActiveUser>().insert(
           ActiveUser(name: 'Bob', email: 'bob@test.com'),
           returning: true,
         );
@@ -54,7 +52,7 @@ void main() {
           name: 'Bob Updated',
           email: user.email,
         );
-        await dataSource.repo<ActiveUser>().updateMany([updated]);
+        await ds.repo<ActiveUser>().updateMany([updated]);
 
         final count = await dataSource
             .query<ActiveUser>()
@@ -64,13 +62,13 @@ void main() {
       });
 
       test('can delete users', () async {
-        final user = await dataSource.repo<ActiveUser>().insert(
+        final user = await ds.repo<ActiveUser>().insert(
           ActiveUser(name: 'Charlie', email: 'charlie@test.com'),
           returning: true,
         );
         final userId = user.id!;
 
-        await dataSource.repo<ActiveUser>().deleteByKeys([
+        await ds.repo<ActiveUser>().deleteByKeys([
           {'id': userId},
         ]);
 
@@ -85,25 +83,22 @@ void main() {
 
   ormedGroup(
     'Database refresh strategies',
-    dataSource: dataSource,
-    migrations: [CreateUsersTable()],
-    refreshStrategy: DatabaseRefreshStrategy.truncate,
-    () {
+    (ds) {
       test('changes persist within test', () async {
-        final user = await dataSource.repo<ActiveUser>().insert(
+        final user = await ds.repo<ActiveUser>().insert(
           ActiveUser(name: 'Temporary', email: 'temp@test.com'),
           returning: true,
         );
 
         expect(user.id, isNotNull);
 
-        final count = await dataSource.query<ActiveUser>().count();
+        final count = await ds.query<ActiveUser>().count();
         expect(count, equals(1));
       });
 
       test('database is clean in next test', () async {
         // With truncate strategy, previous test's data is cleared
-        final count = await dataSource.query<ActiveUser>().count();
+        final count = await ds.query<ActiveUser>().count();
         expect(count, equals(0));
       });
     },

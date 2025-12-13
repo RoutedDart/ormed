@@ -3,13 +3,12 @@ import 'package:test/test.dart';
 import 'package:driver_tests/driver_tests.dart';
 
 void main() {
+  ModelRegistry registry = buildOrmRegistry();
   group('QueryContext.table', () {
-    late ModelRegistry registry;
     late InMemoryQueryExecutor driver;
     late QueryContext context;
 
     setUp(() {
-      registry = ModelRegistry()..registerAll([AuthorOrmDefinition.definition]);
       driver = InMemoryQueryExecutor()
         ..register(AuthorOrmDefinition.definition, const [
           Author(id: 1, name: 'Alice', active: true),
@@ -55,7 +54,7 @@ void main() {
 
     test('streamRows delegates to driver stream implementation', () async {
       final streamingRegistry = ModelRegistry()
-        ..registerAll([AuthorOrmDefinition.definition]);
+        ..registerAll([AuthorOrmDefinition.definition])..registerGeneratedModels();
       final streamingDriver = _StreamingQueryDriver()
         ..register(AuthorOrmDefinition.definition, const [
           Author(id: 1, name: 'Alice', active: true),
@@ -79,11 +78,7 @@ void main() {
     });
 
     test('streamRows eager loads relations in batches', () async {
-      final streamingRegistry = ModelRegistry()
-        ..registerAll([
-          AuthorOrmDefinition.definition,
-          PostOrmDefinition.definition,
-        ]);
+
       final streamingDriver = _StreamingQueryDriver()
         ..register(AuthorOrmDefinition.definition, const [
           Author(id: 1, name: 'Alice', active: true),
@@ -105,7 +100,7 @@ void main() {
         ]);
 
       final streamingContext = QueryContext(
-        registry: streamingRegistry,
+        registry: registry,
         driver: streamingDriver,
       );
 

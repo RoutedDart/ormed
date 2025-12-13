@@ -28,7 +28,7 @@ void main() {
     });
 
     test('applies soft delete scope to late-registered models', () async {
-      final registry = ModelRegistry();
+      final registry = ModelRegistry()..registerGeneratedModels();
       final driver = InMemoryQueryExecutor();
       final context = QueryContext(registry: registry, driver: driver);
 
@@ -37,8 +37,8 @@ void main() {
 
       // Add test data with deleted and non-deleted records
       driver.register(CustomSoftDeleteOrmDefinition.definition, [
-        CustomSoftDelete(id: 1, title: 'Active'),
-        CustomSoftDelete(id: 2, title: 'Deleted')
+        $CustomSoftDelete(id: 1, title: 'Active'),
+        $CustomSoftDelete(id: 2, title: 'Deleted')
           ..setAttribute('removed_on', DateTime.utc(2024)),
       ]);
 

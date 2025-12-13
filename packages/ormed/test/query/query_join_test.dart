@@ -5,7 +5,6 @@ import 'package:ormed_postgres/ormed_postgres.dart' show PostgresQueryGrammar;
 import 'package:ormed_sqlite/src/sqlite_grammar.dart' show SqliteQueryGrammar;
 import 'package:test/test.dart';
 
-
 class PreviewDriver extends InMemoryQueryExecutor {
   PreviewDriver(this._name);
 
@@ -23,17 +22,7 @@ class PreviewDriver extends InMemoryQueryExecutor {
 }
 
 void main() {
-  late ModelRegistry registry;
-
-  setUp(() {
-    registry = ModelRegistry()
-      ..registerAll([
-        AuthorOrmDefinition.definition,
-        PostOrmDefinition.definition,
-        TagOrmDefinition.definition,
-        PostTagOrmDefinition.definition,
-      ]);
-  });
+  ModelRegistry registry = buildOrmRegistry();
 
   QueryContext context0(String driver) =>
       QueryContext(registry: registry, driver: PreviewDriver(driver));

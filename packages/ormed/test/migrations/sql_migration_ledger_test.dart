@@ -262,6 +262,18 @@ class _SchemaAwareFakeDriver extends _FakeDriverAdapter
   Future<List<String>> listDatabases() async => const [];
 
   @override
+  Future<bool> createSchema(String name) async => true;
+
+  @override
+  Future<bool> dropSchemaIfExists(String name) async => true;
+
+  @override
+  Future<void> setCurrentSchema(String name) async {}
+
+  @override
+  Future<String> getCurrentSchema() async => 'public';
+
+  @override
   Future<bool> enableForeignKeyConstraints() async => true;
 
   @override

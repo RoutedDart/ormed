@@ -2,16 +2,13 @@ import 'package:driver_tests/driver_tests.dart';
 import 'package:ormed/ormed.dart';
 import 'package:test/test.dart';
 
-
-
 void main() {
+  ModelRegistry registry = buildOrmRegistry();
   group('OrmConnection', () {
-    late ModelRegistry registry;
     late InMemoryQueryExecutor driver;
     late OrmConnection connection;
 
     setUp(() {
-      registry = ModelRegistry()..registerAll([AuthorOrmDefinition.definition]);
       driver = InMemoryQueryExecutor()
         ..register(AuthorOrmDefinition.definition, const [
           Author(id: 1, name: 'Alice', active: true),

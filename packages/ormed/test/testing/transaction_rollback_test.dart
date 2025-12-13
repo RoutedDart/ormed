@@ -1,33 +1,35 @@
+import 'package:driver_tests/driver_tests.dart';
 import 'package:ormed/ormed.dart';
 import 'package:ormed_sqlite/ormed_sqlite.dart';
 import 'package:test/test.dart';
-import 'package:driver_tests/src/models/active_user.dart';
 
 /// Test demonstrating transaction-based test isolation
-void main() {
-  final dataSource = DataSource(
-    DataSourceOptions(
-      name: 'transaction_test',
-      driver: SqliteDriverAdapter.inMemory(),
-      entities: [ActiveUserOrmDefinition.definition],
-    ),
-  );
-
-  setUpAll(() async {
-    await dataSource.init();
-
-    // Run migrations
-    final migration = CreateUsersTable();
-    final plan = migration.plan(MigrationDirection.up);
-    final schemaDriver = dataSource.connection.driver as SchemaDriver;
-    await schemaDriver.applySchemaPlan(plan);
-  });
-
-  tearDownAll(() async {
-    await dataSource.dispose();
-  });
-
+Future<void> main() async {
   group('Transaction rollback for test isolation', () {
+    late DataSource dataSource;
+
+    setUpAll(() async {
+      dataSource = DataSource(
+        DataSourceOptions(
+          name: 'transaction_test',
+          driver: SqliteDriverAdapter.inMemory(),
+          entities: [ActiveUserOrmDefinition.definition],
+          registry: buildOrmRegistry(),
+        ),
+      );
+      await dataSource.init();
+
+      // Run migrations
+      final migration = CreateUsersTable();
+      final plan = migration.plan(MigrationDirection.up);
+      final schemaDriver = dataSource.connection.driver as SchemaDriver;
+      await schemaDriver.applySchemaPlan(plan);
+    });
+
+    tearDownAll(() async {
+      await dataSource.dispose();
+    });
+
     setUp(() async {
       // Begin transaction before each test
       await dataSource.beginTransaction();
@@ -70,34 +72,64 @@ void main() {
   });
 
   group('Using ormedGroup with transaction strategy', () {
-    ormedGroup(
-      'Transaction isolation via ormedGroup',
-      dataSource: dataSource,
-      migrations: [], // Already migrated
-      refreshStrategy: DatabaseRefreshStrategy.migrateWithTransactions,
-      () {
-        test('test 1: inserts data', () async {
-          final user = await dataSource.repo<ActiveUser>().insert(
-            ActiveUser(name: 'Group1', email: 'group1@example.com'),
-            returning: true,
-          );
-
-          expect(user.id, isNotNull);
-
-          final count = await dataSource.query<ActiveUser>().count();
-          expect(count, 1);
-        });
-
-        test('test 2: database is clean (automatic rollback)', () async {
-          // ormedGroup with migrateWithTransactions should rollback
-          final count = await dataSource.query<ActiveUser>().count();
-          expect(count, 0);
-        });
-      },
+    late DataSource dataSource = DataSource(
+      DataSourceOptions(
+        name: 'transaction_test',
+        driver: SqliteDriverAdapter.inMemory(),
+        entities: [ActiveUserOrmDefinition.definition],
+        registry: buildOrmRegistry(),
+      ),
     );
+    ;
+
+    setUpOrmed(dataSource: dataSource, migrations: [CreateUsersTable()]);
+
+    setUpAll(() async {
+      await dataSource.init();
+    });
+
+    ormedGroup('Transaction isolation via ormedGroup', (ds) {
+      test('test 1: inserts data', () async {
+        final user = await ds.repo<ActiveUser>().insert(
+          ActiveUser(name: 'Group1', email: 'group1@example.com'),
+          returning: true,
+        );
+
+        expect(user.id, isNotNull);
+
+        final count = await ds.query<ActiveUser>().count();
+        expect(count, 1);
+      });
+
+      test('test 2: database is clean (automatic rollback)', () async {
+        // ormedGroup with migrateWithTransactions should rollback
+        final count = await ds.query<ActiveUser>().count();
+        expect(count, 0);
+      });
+    });
   });
 
   group('Manual transaction control', () {
+    late DataSource dataSource;
+
+    setUpAll(() async {
+      dataSource = DataSource(
+        DataSourceOptions(
+          name: 'transaction_test',
+          driver: SqliteDriverAdapter.inMemory(),
+          entities: [ActiveUserOrmDefinition.definition],
+          registry: buildOrmRegistry(),
+        ),
+      );
+      await dataSource.init();
+
+      // Run migrations
+      final migration = CreateUsersTable();
+      final plan = migration.plan(MigrationDirection.up);
+      final schemaDriver = dataSource.connection.driver as SchemaDriver;
+      await schemaDriver.applySchemaPlan(plan);
+    });
+
     test('can manually control transactions', () async {
       await dataSource.beginTransaction();
 

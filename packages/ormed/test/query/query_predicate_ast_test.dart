@@ -2,16 +2,12 @@ import 'package:driver_tests/driver_tests.dart';
 import 'package:ormed/ormed.dart';
 import 'package:test/test.dart';
 
-
-
 void main() {
+  ModelRegistry registry = buildOrmRegistry();
   group('Query predicate AST', () {
-    late ModelRegistry registry;
     late QueryContext context;
 
     setUp(() {
-      registry = ModelRegistry()
-        ..registerAll(generatedOrmModelDefinitions);
       context = QueryContext(
         registry: registry,
         driver: InMemoryQueryExecutor(),

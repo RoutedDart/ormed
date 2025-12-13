@@ -1,12 +1,14 @@
+import 'package:driver_tests/driver_tests.dart';
+import 'package:driver_tests/orm_registry.g.dart';
 import 'package:ormed/ormed.dart';
 import 'package:test/test.dart';
 
-import 'package:driver_tests/src/models/attribute_user.dart';
-import 'package:driver_tests/src/models/active_user.dart';
-import 'package:driver_tests/src/models/derived_for_factory.dart';
 
 void main() {
+
   group('ModelFactoryBuilder', () {
+
+    registerOrmFactories();
     setUpAll(() {
       ModelFactoryRegistry.register(AttributeUserOrmDefinition.definition);
       ModelFactoryRegistry.register(DerivedForFactoryOrmDefinition.definition);
@@ -57,7 +59,7 @@ void main() {
     });
 
     test('non-opt-in models cannot resolve factories', () {
-      expect(() => Model.factory<ActiveUser>().values(), throwsStateError);
+      expect(() => Model.factory<NoFactory>().values(), throwsStateError);
     });
 
     test('derived model inherits factory via mixin base', () {

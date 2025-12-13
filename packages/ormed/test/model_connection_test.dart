@@ -10,7 +10,7 @@ void main() {
     late QueryContext context;
 
     setUp(() {
-      registry = ModelRegistry()..register(CommentOrmDefinition.definition);
+      registry = ModelRegistry()..registerGeneratedModels();
       executor = InMemoryQueryExecutor();
       executor.register(CommentOrmDefinition.definition, [
         Comment(id: 1, body: 'Hydrated')..deletedAt = null,

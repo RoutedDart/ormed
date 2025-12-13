@@ -77,7 +77,7 @@ void main() {
       expect(user.email, 'updated@x.dev');
     });
     test('ModelFactory helper exposes definition and codecs', () {
-      final registry = ModelRegistry();
+      final registry = ModelRegistry()..registerGeneratedModels();
       AttributeUserModelFactory.registerWith(registry);
       expect(registry.contains<AttributeUser>(), isTrue);
 
@@ -107,7 +107,7 @@ void main() {
     test(
       'ModelFactory.withConnection binds queries and repositories',
       () async {
-        final registry = ModelRegistry()
+        final registry = ModelRegistry()..registerGeneratedModels()
           ..register(AttributeUserModelFactory.definition);
         final context = QueryContext(
           registry: registry,
