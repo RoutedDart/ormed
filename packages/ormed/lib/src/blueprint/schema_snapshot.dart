@@ -176,6 +176,26 @@ class SnapshotSchemaDriver implements SchemaDriver {
   }
 
   @override
+  Future<bool> createSchema(String name) async {
+    throw UnsupportedError('SnapshotSchemaDriver does not support schema management.');
+  }
+
+  @override
+  Future<bool> dropSchemaIfExists(String name) async {
+    throw UnsupportedError('SnapshotSchemaDriver does not support schema management.');
+  }
+
+  @override
+  Future<void> setCurrentSchema(String name) async {
+    throw UnsupportedError('SnapshotSchemaDriver does not support schema management.');
+  }
+
+  @override
+  Future<String> getCurrentSchema() async {
+    throw UnsupportedError('SnapshotSchemaDriver does not support schema management.');
+  }
+
+  @override
   Future<bool> enableForeignKeyConstraints() async {
     throw UnsupportedError('SnapshotSchemaDriver does not support FK constraint control.');
   }

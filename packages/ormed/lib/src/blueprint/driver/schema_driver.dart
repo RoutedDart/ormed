@@ -92,6 +92,38 @@ abstract class SchemaDriver {
   /// Lists all databases/catalogs accessible to the current connection.
   Future<List<String>> listDatabases();
 
+  // ========== Schema (Namespace) Management ==========
+
+  /// Creates a new schema/namespace within the current database.
+  ///
+  /// This is distinct from creating a database:
+  /// - PostgreSQL: Creates a schema within the current database
+  /// - MySQL: Equivalent to creating a database (schemas = databases)
+  /// - SQLite: Not applicable (single schema per file)
+  ///
+  /// Returns true if created, false if already exists.
+  Future<bool> createSchema(String name);
+
+  /// Drops a schema/namespace if it exists.
+  ///
+  /// For PostgreSQL, this drops the schema and all objects within it (CASCADE).
+  /// Returns true if dropped, false if didn't exist.
+  Future<bool> dropSchemaIfExists(String name);
+
+  /// Sets the current schema/namespace for operations.
+  ///
+  /// For PostgreSQL: Sets the search_path to the specified schema.
+  /// For MySQL: Equivalent to USE database.
+  /// For SQLite: No-op (single schema per file).
+  Future<void> setCurrentSchema(String name);
+
+  /// Gets the current schema/namespace being used.
+  ///
+  /// For PostgreSQL: Returns the first schema in search_path.
+  /// For MySQL: Returns the current database.
+  /// For SQLite: Returns 'main'.
+  Future<String> getCurrentSchema();
+
   // ========== Foreign Key Constraint Management ==========
 
   /// Enables foreign key constraint checking.
