@@ -26,16 +26,17 @@ class ModelSubclassEmitter {
     buffer.writeln('/// **Do not instantiate this class directly.** Use queries, repositories,');
     buffer.writeln('/// or model factories to create tracked model instances.');
 
-    // The generated tracked model class needs ModelAttributes and ModelRelations mixins
-    // to enable attribute tracking, change detection, and relationship management.
-    // The base Model class only has ModelConnection (which doesn't require mixins).
+    // The generated tracked model class needs ModelAttributes mixin
+    // to enable attribute tracking and change detection.
+    // Note: The base Model class already includes ModelConnection and ModelRelations,
+    // so we only need to add ModelAttributes when extending Model.
     final mixins = <String>[];
 
     if (context.extendsModel) {
-      // User model extends Model, so we need to add the tracking mixins
+      // User model extends Model, so we only need to add ModelAttributes
+      // (Model already includes ModelConnection and ModelRelations)
       mixins.add('ModelAttributes');
-      mixins.add('ModelRelations');
-      
+
       // Add timestamp implementation mixins
       if (context.mixinTimestamps) {
         mixins.add('TimestampsImpl');

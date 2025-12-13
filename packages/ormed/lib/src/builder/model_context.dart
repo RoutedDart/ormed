@@ -12,6 +12,12 @@ import 'descriptors.dart';
 import 'helpers.dart';
 
 final _modelChecker = TypeChecker.fromUrl('package:ormed/src/model.dart#Model');
+final _hasFactoryChecker = TypeChecker.fromUrl('package:ormed/src/annotations.dart#HasFactory');
+
+/// Checks if the class has the @HasFactory() annotation.
+bool _hasFactoryAnnotation(ClassElement element) {
+  return _hasFactoryChecker.hasAnnotationOf(element);
+}
 
 class ModelContext {
   ModelContext(this.element, this.annotation)
@@ -32,6 +38,7 @@ class ModelContext {
         isModelConnectionMixin,
       ),
       mixinModelFactory = classOrSuperHasMixin(element, isModelFactoryMixin),
+      annotationHasFactory = _hasFactoryAnnotation(element),
       extendsModel = _modelChecker.isAssignableFromType(element.thisType),
       annotationSoftDeletesFlag =
           annotation.peek('softDeletes')?.boolValue ?? false,
@@ -107,6 +114,7 @@ class ModelContext {
   final bool mixinModelAttributes;
   final bool mixinModelConnection;
   final bool mixinModelFactory;
+  final bool annotationHasFactory;
   final bool extendsModel;
   final bool annotationSoftDeletesFlag;
   final String? annotationSoftDeleteColumnOverride;
@@ -126,6 +134,9 @@ class ModelContext {
   late final String? softDeleteColumn;
   late final bool effectiveSoftDeletes;
   late final ConstructorElement constructor;
+
+  /// Whether this model has factory support enabled via mixin or annotation.
+  bool get hasFactory => mixinModelFactory || annotationHasFactory;
 
   /// Returns the generated tracked model class name.
   /// Always just adds $ prefix to the class name.

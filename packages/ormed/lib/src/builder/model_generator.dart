@@ -52,18 +52,19 @@ class OrmModelGenerator extends GeneratorForAnnotation<OrmModel> {
     buffer.writeln(ModelCodecEmitter(context).emit());
     buffer.writeln(ModelSubclassEmitter(context).emit());
 
-    await _writeModelSummary(buildStep, context.className);
+    await _writeModelSummary(buildStep, context);
     return buffer.toString();
   }
 
-  Future<void> _writeModelSummary(BuildStep buildStep, String className) async {
+  Future<void> _writeModelSummary(BuildStep buildStep, ModelContext context) async {
     final inputId = buildStep.inputId;
     if (!inputId.path.startsWith('lib/')) return;
     final relativeImport = inputId.path.substring('lib/'.length);
     final summary = jsonEncode({
-      'className': className,
+      'className': context.className,
       'import': relativeImport.replaceAll(r'\', '/'),
-      'definition': '${className}OrmDefinition.definition',
+      'definition': '${context.className}OrmDefinition.definition',
+      'hasFactory': context.hasFactory,
     });
     final outputId = inputId.changeExtension('.orm_model.json');
     await buildStep.writeAsString(outputId, summary);

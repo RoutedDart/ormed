@@ -37,6 +37,7 @@ class _OrmRegistryBuilder implements Builder {
       final importPath = data['import'] as String?;
       final className = data['className'] as String?;
       final definition = data['definition'] as String?;
+      final hasFactory = data['hasFactory'] as bool? ?? false;
       if (importPath == null ||
           className == null ||
           definition == null ||
@@ -48,6 +49,7 @@ class _OrmRegistryBuilder implements Builder {
           className: className,
           importPath: importPath,
           definition: definition,
+          hasFactory: hasFactory,
         ),
       );
     }
@@ -123,7 +125,30 @@ String renderRegistryContent(List<ModelSummary> models) {
   buffer
     ..writeln('    return this;')
     ..writeln('  }')
+    ..writeln('}')
+    ..writeln('');
+
+  // Generate registerOrmFactories() for models with factory support
+  final factoryModels = summaries.where((s) => s.hasFactory).toList();
+  buffer.writeln('/// Registers factory definitions for all models that have factory support.');
+  buffer.writeln('/// Call this before using Model.factory<T>() to ensure definitions are available.');
+  buffer.writeln('void registerOrmFactories() {');
+  for (final summary in factoryModels) {
+    final userClassName = summary.className.startsWith('\$')
+        ? summary.className.substring(1)
+        : summary.className;
+    buffer.writeln('  ModelFactoryRegistry.registerIfAbsent<$userClassName>(${summary.definition});');
+  }
+  buffer
+    ..writeln('}')
+    ..writeln('')
+    ..writeln('/// Combined setup: registers both model registry and factories.')
+    ..writeln('/// Returns a ModelRegistry with all generated models registered.')
+    ..writeln('ModelRegistry buildOrmRegistryWithFactories() {')
+    ..writeln('  registerOrmFactories();')
+    ..writeln('  return buildOrmRegistry();')
     ..writeln('}');
+
   return buffer.toString();
 }
 
@@ -132,9 +157,11 @@ class ModelSummary {
     required this.className,
     required this.importPath,
     required this.definition,
+    required this.hasFactory,
   });
 
   final String className;
   final String importPath;
   final String definition;
+  final bool hasFactory;
 }
