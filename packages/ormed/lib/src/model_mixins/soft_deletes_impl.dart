@@ -1,3 +1,5 @@
+import 'package:carbonized/carbonized.dart';
+
 import 'model_attributes.dart';
 import 'model_connection.dart';
 import 'soft_deletes.dart';
@@ -14,7 +16,14 @@ mixin SoftDeletesImpl on ModelAttributes, ModelConnection {
   String get _column => getSoftDeleteColumn() ?? SoftDeletes.defaultColumn;
 
   /// Timestamp describing when the row was soft deleted.
-  DateTime? get deletedAt => getAttribute<DateTime?>(_column);
+  /// Handles both DateTime and Carbon types that may be stored.
+  DateTime? get deletedAt {
+    final value = getAttribute<Object?>(_column);
+    if (value == null) return null;
+    if (value is DateTime) return value;
+    if (value is Carbon) return value.toDateTime();
+    return null;
+  }
 
   set deletedAt(DateTime? value) => setAttribute(_column, value);
 

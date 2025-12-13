@@ -249,6 +249,15 @@ class ModelFactoryRegistry {
     return definition;
   }
 
+  /// Registers a definition only if one is not already registered for the type.
+  /// Returns the existing or newly registered definition.
+  static ModelDefinition<TModel> registerIfAbsent<TModel>(
+    ModelDefinition<TModel> definition,
+  ) {
+    return _definitions.putIfAbsent(TModel, () => definition)
+        as ModelDefinition<TModel>;
+  }
+
   static ModelDefinition<TModel> definitionFor<TModel extends Model<TModel>>() {
     final definition = _definitions[TModel];
     if (definition == null) {

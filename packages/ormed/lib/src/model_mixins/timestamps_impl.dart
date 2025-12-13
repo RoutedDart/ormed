@@ -46,9 +46,7 @@ mixin TimestampsImpl on ModelAttributes {
     final now = Carbon.now().toDateTime();
     updatedAt = now;
     // Also update the attribute store so save() picks up the change
-    if (this is ModelAttributes) {
-      (this as ModelAttributes).setAttribute('updated_at', now);
-    }
+    setAttribute('updated_at', now);
   }
 }
 
@@ -116,9 +114,7 @@ mixin TimestampsTZImpl on ModelAttributes {
     final now = Carbon.now().toUtc().toDateTime();
     updatedAt = now;
     // Also update the attribute store so save() picks up the change
-    if (this is ModelAttributes) {
-      (this as ModelAttributes).setAttribute('updated_at', now);
-    }
+    setAttribute('updated_at', now);
   }
 }
 

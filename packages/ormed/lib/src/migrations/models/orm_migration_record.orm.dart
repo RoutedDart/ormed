@@ -260,8 +260,7 @@ class _$OrmMigrationRecordCodec extends ModelCodec<$OrmMigrationRecord> {
 ///
 /// **Do not instantiate this class directly.** Use queries, repositories,
 /// or model factories to create tracked model instances.
-class $OrmMigrationRecord extends OrmMigrationRecord
-    with ModelAttributes, ModelRelations {
+class $OrmMigrationRecord extends OrmMigrationRecord with ModelAttributes {
   $OrmMigrationRecord({
     required String id,
     required String checksum,

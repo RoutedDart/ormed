@@ -191,7 +191,7 @@ class _$TodoCodec extends ModelCodec<$Todo> {
 ///
 /// **Do not instantiate this class directly.** Use queries, repositories,
 /// or model factories to create tracked model instances.
-class $Todo extends Todo with ModelAttributes, ModelRelations {
+class $Todo extends Todo with ModelAttributes {
   $Todo({required int id, required String title, required bool completed})
     : super.new(id: id, title: title, completed: completed) {
     _attachOrmRuntimeMetadata({

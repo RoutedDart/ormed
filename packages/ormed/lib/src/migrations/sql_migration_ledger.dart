@@ -57,7 +57,15 @@ class SqlMigrationLedger implements MigrationLedger {
 
     final migration = _LedgerTableMigration(tableName);
     final plan = migration.plan(MigrationDirection.up);
-    await schemaDriver.applySchemaPlan(plan);
+    try {
+      await schemaDriver.applySchemaPlan(plan);
+    } catch (e) {
+      final message = e.toString().toLowerCase();
+      if (!message.contains('already exists')) {
+        rethrow;
+      }
+      // Ignore duplicate table creation races when parallel setups share the driver.
+    }
   }
 
   Future<void> _ensureWithRawSql(DriverAdapter driver) {

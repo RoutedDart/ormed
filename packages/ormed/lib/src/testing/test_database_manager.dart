@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:ormed/src/migrations/seeder.dart';
 
@@ -7,6 +6,7 @@ import '../../migrations.dart';
 import '../connection/orm_connection.dart';
 import '../data_source.dart';
 import '../query/query.dart';
+import '../driver/driver_adapter.dart';
 import 'test_schema_manager.dart';
 
 /// Strategy for database isolation in tests
@@ -25,41 +25,23 @@ enum DatabaseIsolationStrategy {
 }
 
 /// Manages test database lifecycle and isolation
-///
-/// Supports two modes:
-/// - **Sequential mode** (parallel=false): All tests share the base DataSource
-/// - **Parallel mode** (parallel=true): Each test gets its own database instance
-///
-/// Example:
-/// ```dart
-/// final manager = TestDatabaseManager(
-///   baseDataSource: dataSource,
-///   migrations: [CreateUsersTable()],
-///   strategy: DatabaseIsolationStrategy.migrateWithTransactions,
-///   parallel: false, // Use shared database
-/// );
-/// ```
 class TestDatabaseManager {
   final DataSource _baseDataSource;
   final Future<void> Function(DataSource)? _runMigrations;
   final List<Migration>? _migrations;
   final List<MigrationDescriptor>? _migrationDescriptors;
   final DatabaseIsolationStrategy _strategy;
-
-  /// Whether to use parallel mode (separate database per test)
-  final bool _parallel;
-
-  /// Optional seeders to run after migrations
   final List<DatabaseSeeder Function(OrmConnection)>? _seeders;
+  final DriverAdapter Function(String testDbName)? _adapterFactory;
 
-  /// Track created test databases for cleanup (parallel mode)
-  final Map<String, DataSource> _testDataSources = {};
+  /// Resolved migration descriptors
+  List<MigrationDescriptor>? _resolvedMigrationDescriptors;
 
-  /// Track active transactions per test ID (parallel mode)
-  final Map<String, DataSource> _activeTransactions = {};
+  /// Track all created databases for cleanup
+  final Set<String> _createdDatabases = {};
 
-  /// Optional TestSchemaManager for enhanced capabilities
-  TestSchemaManager? _schemaManager;
+  /// Track all created DataSources for cleanup
+  final List<DataSource> _createdDataSources = [];
 
   TestDatabaseManager({
     required DataSource baseDataSource,
@@ -69,6 +51,8 @@ class TestDatabaseManager {
     List<DatabaseSeeder Function(OrmConnection)>? seeders,
     DatabaseIsolationStrategy strategy =
         DatabaseIsolationStrategy.migrateWithTransactions,
+    DriverAdapter Function(String testDbName)? adapterFactory,
+    // Deprecated/Removed parameters
     bool parallel = false,
   }) : _baseDataSource = baseDataSource,
        _runMigrations = runMigrations,
@@ -76,343 +60,296 @@ class TestDatabaseManager {
        _migrationDescriptors = migrationDescriptors,
        _seeders = seeders,
        _strategy = strategy,
-       _parallel = parallel;
+       _adapterFactory = adapterFactory;
+
+  DatabaseIsolationStrategy get strategy => _strategy;
+  DataSource get baseDataSource => _baseDataSource;
+  List<Migration>? get migrations => _migrations;
+  List<MigrationDescriptor>? get migrationDescriptors => _migrationDescriptors;
+  List<DatabaseSeeder Function(OrmConnection)>? get seeders => _seeders;
+  DriverAdapter Function(String testDbName)? get adapterFactory => _adapterFactory;
+  Future<void> Function(DataSource)? get runMigrations => _runMigrations;
 
   /// Initialize the test database manager
-  ///
-  /// If migration descriptors are provided, this will create a TestSchemaManager
-  /// for enhanced migration and seeding capabilities.
   Future<void> initialize() async {
-    if (!_parallel) {
-      await _baseDataSource.init();
-
-      // Convert List<Migration> to List<MigrationDescriptor> if needed
-      List<MigrationDescriptor>? descriptors = _migrationDescriptors;
-      if (descriptors == null && _migrations != null && _migrations.isNotEmpty) {
-        descriptors = [];
-        final defaultSchema = _baseDataSource.options.defaultSchema;
-        for (var i = 0; i < _migrations.length; i++) {
-          final migration = _migrations[i];
-          descriptors.add(
-            MigrationDescriptor.fromMigration(
-              id: MigrationId(
-                DateTime.utc(2023, 1, 1, 0, 0, i + 1),
-                migration.runtimeType.toString(),
-              ),
-              migration: migration,
-              defaultSchema: defaultSchema,
-            ),
-          );
-        }
-      }
-
-      // Use TestSchemaManager if migrations are provided
-      if (descriptors != null && descriptors.isNotEmpty) {
-        final driver = _baseDataSource.connection.driver;
-        if (driver is SchemaDriver) {
-          _schemaManager = TestSchemaManager(
-            schemaDriver: driver as SchemaDriver,
-            migrations: descriptors,
-          );
-          // TestSchemaManager handles all migration logic via MigrationRunner
-          await _schemaManager!.setup();
-
-          // Run seeders if provided
-          if (_seeders != null && _seeders.isNotEmpty) {
-            await _schemaManager!.seed(_baseDataSource.connection, _seeders);
-          }
-        } else {
-          throw StateError(
-            'Driver ${driver.runtimeType} does not support schema operations. '
-            'TestSchemaManager requires a SchemaDriver implementation.',
-          );
-        }
-      }
-    }
+    _resolvedMigrationDescriptors = _resolveMigrationDescriptors();
+    await _baseDataSource.init();
   }
 
-  /// Get or create a database for the current test
-  Future<DataSource> getDatabaseForTest(String testId) async {
-    if (!_parallel) {
-      return _baseDataSource;
-    }
-
-    final existing = _testDataSources[testId];
-    if (existing != null) {
-      return existing;
-    }
-
-    final testDataSource = await _createTestDatabase(testId);
-    _testDataSources[testId] = testDataSource;
-
-    return testDataSource;
-  }
-
-  /// Begin a test - sets up isolation
-  ///
-  /// [testId] identifies the test for parallel execution (when parallel=true).
-  /// In parallel mode, each test gets its own database instance.
-  Future<void> beginTest(String testId, DataSource dataSource) async {
-    switch (_strategy) {
-      case DatabaseIsolationStrategy.migrate:
-        // Migrations already run in initialize
-        break;
-      case DatabaseIsolationStrategy.migrateWithTransactions:
-        // Begin a transaction before each test
-        await dataSource.beginTransaction();
-        // Track the transaction for this test in parallel mode
-        if (_parallel) {
-          _activeTransactions[testId] = dataSource;
-        }
-        break;
-      case DatabaseIsolationStrategy.truncate:
-      case DatabaseIsolationStrategy.recreate:
-        break;
-    }
-  }
-
-  /// End a test - cleans up isolation
-  ///
-  /// [testId] identifies the test for parallel execution (when parallel=true).
-  Future<void> endTest(String testId, DataSource dataSource) async {
-    switch (_strategy) {
-      case DatabaseIsolationStrategy.migrate:
-        // No cleanup needed
-        break;
-      case DatabaseIsolationStrategy.migrateWithTransactions:
-        // Rollback transaction after each test for isolation
-        await dataSource.rollback();
-        // Remove transaction tracking
-        if (_parallel) {
-          _activeTransactions.remove(testId);
-        }
-        break;
-      case DatabaseIsolationStrategy.truncate:
-        await _truncateTables(dataSource);
-        break;
-      case DatabaseIsolationStrategy.recreate:
-        await _recreateSchema(dataSource);
-        break;
-    }
-  }
-
-  /// Cleanup all test databases
-  ///
-  /// Rolls back any active transactions and disposes all test databases.
-  /// In parallel mode, also cleans up test database files.
-  Future<void> cleanup() async {
-    // Rollback any active transactions
-    for (final entry in _activeTransactions.entries) {
-      try {
-        await entry.value.rollback();
-      } catch (_) {
-        // Ignore errors during cleanup
-      }
-    }
-    _activeTransactions.clear();
-
-    // Tear down schema manager if used
-    // TestSchemaManager handles rollback via MigrationRunner
-    if (_schemaManager != null) {
-      try {
-        await _schemaManager!.teardown();
-      } catch (_) {
-        // Ignore errors during cleanup
-      }
-    }
-
-    // Dispose all test datasources
-    for (final ds in _testDataSources.values) {
-      try {
-        await ds.dispose();
-      } catch (_) {
-        // Ignore errors during cleanup
-      }
-    }
-    _testDataSources.clear();
-
-    // Clean up test database files in parallel mode
-    if (_parallel) {
-      await _cleanupTestDatabases();
-    }
-  }
-
-  Future<DataSource> _createTestDatabase(String testId) async {
+  /// Create a DataSource object synchronously without provisioning the DB
+  DataSource createDataSource(String id) {
     final options = _baseDataSource.options;
     final driver = _baseDataSource.connection.driver;
     
-    // Use schema-based isolation for drivers that support it (PostgreSQL, MySQL)
-    // Use database-based isolation for SQLite
-    final supportsSchemas = driver.metadata.name == 'postgresql' || 
-                            driver.metadata.name == 'mysql' ||
-                            driver.metadata.name == 'mariadb';
+    final testDbName = 'test_${id.replaceAll(RegExp(r'[^a-zA-Z0-9_]'), '_')}';
     
-    final DataSourceOptions testOptions;
-    if (supportsSchemas) {
-      // Create unique schema for this test
-      // The schema will be created automatically when migrations run
-      final testSchema = 'test_${testId.replaceAll('-', '_')}';
-      testOptions = options.copyWith(defaultSchema: testSchema);
-      
-      final testDataSource = DataSource(testOptions);
-      await testDataSource.init();
-      return testDataSource;
-    } else {
-      // Fall back to database-based isolation (SQLite)
-      final testDbName = '${options.name}_test_$testId';
-      testOptions = options.copyWith(name: testDbName);
-      
-      final testDataSource = DataSource(testOptions);
-      await testDataSource.init();
-      return testDataSource;
+    // Get fresh adapter
+    final testDriver = _adapterFactory != null 
+      ? _adapterFactory(testDbName)
+      : driver; 
+    
+    // Create DataSource
+    final testOptions = options.copyWith(
+      name: testDbName,
+      defaultSchema: testDbName,
+      driver: testDriver,
+    );
+    
+    return DataSource(testOptions);
+  }
+
+  /// Provision the database/schema on the server and initialize the DataSource
+  ///
+  /// For PostgreSQL: Creates a schema within the current database and sets search_path.
+  /// For MySQL: Creates a database and switches to it.
+  /// For SQLite: Uses the test database file.
+  Future<void> provisionDatabase(DataSource dataSource) async {
+    final driver = _baseDataSource.connection.driver;
+    
+    // Verify driver supports schema operations
+    if (driver is! SchemaDriver) {
+      throw StateError(
+        'TestDatabaseManager requires a SchemaDriver implementation. '
+        'Driver ${driver.runtimeType} does not support schema/database operations.',
+      );
+    }
+    
+    final schemaDriver = driver as SchemaDriver;
+    final dbName = dataSource.options.defaultSchema;
+    
+    if (dbName != null) {
+      // Try to create as schema first (for PostgreSQL)
+      // If that fails or isn't supported, fall back to database creation
+      final schemaCreated = await schemaDriver.createSchema(dbName);
+
+      if (schemaCreated) {
+        // Schema was created - set it as current schema for this adapter
+        await schemaDriver.setCurrentSchema(dbName);
+      } else {
+        // Schema creation not supported or schema already exists
+        // Try database creation (for MySQL) or just proceed (for SQLite)
+        try {
+          await schemaDriver.createDatabase(dbName);
+        } catch (e) {
+          // Ignore errors - database might already exist or not be supported
+        }
+      }
+
+      // Track the created schema/database for cleanup
+      _createdDatabases.add(dbName);
+    }
+
+    // Track the DataSource for cleanup
+    _createdDataSources.add(dataSource);
+
+    await dataSource.init();
+
+    // Set the schema again on the datasource's driver if it's different from base
+    final dsDriver = dataSource.connection.driver;
+    if (dsDriver is SchemaDriver && dbName != null) {
+      try {
+        await (dsDriver as SchemaDriver).setCurrentSchema(dbName);
+      } catch (_) {
+        // Ignore if not supported
+      }
+    }
+
+    await _prepareDatabase(dataSource);
+  }
+
+  /// Create a new isolated database for a test group or standalone test
+  Future<DataSource> createDatabase(String id) async {
+    final dataSource = createDataSource(id);
+    await provisionDatabase(dataSource);
+    return dataSource;
+  }
+
+  /// Drop a created database/schema
+  Future<void> dropDatabase(DataSource dataSource) async {
+    final driver = _baseDataSource.connection.driver;
+    final dbName = dataSource.options.defaultSchema;
+
+    if (driver is SchemaDriver && dbName != null) {
+      try {
+        // Try dropping as schema first (for PostgreSQL)
+        final schemaDropped = await (driver as SchemaDriver).dropSchemaIfExists(dbName);
+
+        if (!schemaDropped) {
+          // Schema drop not supported - try database drop
+          await (driver as SchemaDriver).dropDatabaseIfExists(dbName);
+        }
+      } catch (e) {
+        // Log but don't fail - database might already be dropped
+        print('[TestDatabaseManager] Warning: Failed to drop database/schema $dbName: $e');
+      }
+      _createdDatabases.remove(dbName);
+    }
+
+    _createdDataSources.remove(dataSource);
+
+    try {
+      await dataSource.dispose();
+    } catch (e) {
+      // Log but don't fail - datasource might already be disposed
+      print('[TestDatabaseManager] Warning: Failed to dispose datasource: $e');
     }
   }
 
-  /// Tear down migrations (run down migrations)
-  ///
-  /// This is kept for backward compatibility with legacy migration approach.
-  /// When using TestSchemaManager, teardown is handled automatically.
-  Future<void> tearDownMigrations(DataSource dataSource) async {
-    if (_schemaManager != null) {
-      // TestSchemaManager handles teardown via MigrationRunner
-      await _schemaManager!.teardown();
+  /// Run migrations on a specific datasource
+  Future<void> migrate(DataSource dataSource) async {
+    await _prepareDatabase(dataSource);
+  }
+
+  /// Run seeders on a specific datasource
+  Future<void> seed(List<DatabaseSeeder Function(OrmConnection)> seeders, DataSource dataSource) async {
+    for (final factory in seeders) {
+      final seeder = factory(dataSource.connection);
+      await seeder.run();
+    }
+  }
+
+  /// Preview seeders
+  Future<List<QueryLogEntry>> seedWithPretend(
+      List<DatabaseSeeder Function(OrmConnection)> seeders, 
+      DataSource dataSource, 
+      {bool pretend = true}) async {
+      return [];
+  }
+  
+  /// Get migration status
+  Future<List<MigrationStatus>> migrationStatus(DataSource dataSource) async {
+      final driver = dataSource.connection.driver;
+      if (driver is SchemaDriver) {
+         final descriptors = _resolvedMigrationDescriptors ?? _resolveMigrationDescriptors();
+         if (descriptors == null) return [];
+         final manager = TestSchemaManager(schemaDriver: driver as SchemaDriver, migrations: descriptors);
+         return await manager.status();
+      }
+      return [];
+  }
+
+  Future<void> _prepareDatabase(DataSource dataSource) async {
+    if (_runMigrations != null) {
+      await _runMigrations(dataSource);
+      if (_seeders != null && _seeders.isNotEmpty) {
+        await _runSeeders(dataSource);
+      }
       return;
     }
-  }
 
-  Future<void> _truncateTables(DataSource dataSource) async {
-    List<String> tables;
-
-    // Try to use SchemaInspector if the driver supports it
-    if (dataSource.connection.driver is SchemaDriver) {
-      final schemaDriver = dataSource.connection.driver as SchemaDriver;
-      final inspector = SchemaInspector(schemaDriver);
-      tables = await inspector.tableListing(schemaQualified: false);
-    } else {
-      // Fall back to entity definitions
-      tables = dataSource.options.entities.map((e) => e.tableName).toList();
+    final descriptors = _resolvedMigrationDescriptors ?? _resolveMigrationDescriptors();
+    if (descriptors == null || descriptors.isEmpty) {
+      return;
     }
 
-    // Skip migration ledger table to preserve migration state
-    const ledgerTables = {'orm_migrations', 'migrations'};
-    
-    for (final table in tables) {
-      if (!ledgerTables.contains(table)) {
-        await dataSource.context.driver.truncateTable(table);
+    final driver = dataSource.connection.driver;
+    if (driver is SchemaDriver) {
+       final schemaManager = TestSchemaManager(
+        schemaDriver: driver as SchemaDriver,
+        migrations: descriptors,
+      );
+      await schemaManager.setup();
+
+      if (_seeders != null && _seeders.isNotEmpty) {
+        await schemaManager.seed(dataSource.connection, _seeders);
       }
     }
   }
 
-  Future<void> _recreateSchema(DataSource dataSource) async {
-    if (_schemaManager != null) {
-      await _schemaManager!.reset();
+  Future<void> _runSeeders(DataSource dataSource) async {
+    final seeders = _seeders;
+    if (seeders == null || seeders.isEmpty) {
+      return;
+    }
+
+    for (final factory in seeders) {
+      final seeder = factory(dataSource.connection);
+      await seeder.run();
     }
   }
 
-  Future<void> _cleanupTestDatabases() async {
-    final testDbDir = Directory('test_databases');
-    if (testDbDir.existsSync()) {
-      await testDbDir.delete(recursive: true);
+  List<MigrationDescriptor>? _resolveMigrationDescriptors() {
+    final descriptors = _migrationDescriptors;
+    if (descriptors != null && descriptors.isNotEmpty) {
+      return descriptors;
+    }
+
+    if (_migrations == null || _migrations.isEmpty) {
+      return null;
+    }
+
+    final resolved = <MigrationDescriptor>[];
+    final migrations = _migrations;
+    final defaultSchema = _baseDataSource.options.defaultSchema;
+    for (var i = 0; i < migrations.length; i++) {
+      final migration = migrations[i];
+      resolved.add(
+        MigrationDescriptor.fromMigration(
+          id: MigrationId(
+            DateTime.utc(2023, 1, 1, 0, 0, i + 1),
+            migration.runtimeType.toString(),
+          ),
+          migration: migration,
+          defaultSchema: defaultSchema,
+        ),
+      );
+    }
+
+    return resolved;
+  }
+  
+  /// Cleanup all created test databases
+  ///
+  /// This method should be called in tearDownAll to ensure all test databases
+  /// are properly dropped after tests complete.
+  Future<void> cleanup() async {
+    // Only try to drop databases if the base datasource was initialized
+    if (_baseDataSource.isInitialized) {
+      final driver = _baseDataSource.connection.driver;
+
+      // Drop all tracked databases
+      if (driver is SchemaDriver) {
+        final schemaDriver = driver as SchemaDriver;
+        final databasesToClean = Set<String>.from(_createdDatabases);
+
+        for (final dbName in databasesToClean) {
+          try {
+            await schemaDriver.dropDatabaseIfExists(dbName);
+            _createdDatabases.remove(dbName);
+          } catch (e) {
+            print('[TestDatabaseManager] Warning: Failed to drop database $dbName during cleanup: $e');
+          }
+        }
+      }
+    }
+
+    // Dispose all tracked DataSources
+    final dataSourcesToDispose = List<DataSource>.from(_createdDataSources);
+    for (final ds in dataSourcesToDispose) {
+      try {
+        await ds.dispose();
+      } catch (e) {
+        // Ignore - might already be disposed
+      }
+    }
+    _createdDataSources.clear();
+
+    // Dispose the base datasource
+    try {
+      await _baseDataSource.dispose();
+    } catch (e) {
+      // Ignore - might already be disposed
     }
   }
-
-  /// Get the underlying TestSchemaManager if available
-  ///
-  /// This is useful for advanced scenarios like pretend mode or status inspection.
-  ///
-  /// Example:
-  /// ```dart
-  /// final schemaManager = testDatabaseManager.schemaManager;
-  /// if (schemaManager != null) {
-  ///   final status = await schemaManager.status();
-  ///   print('Migration status: $status');
-  /// }
-  /// ```
-  TestSchemaManager? get schemaManager => _schemaManager;
-
-  /// Run seeders manually
-  ///
-  /// This can be called after initialization to seed additional data or
-  /// re-seed data between tests.
-  ///
-  /// Delegates to TestSchemaManager which handles seeding via DatabaseSeeder classes.
-  ///
-  /// Example:
-  /// ```dart
-  /// await testDatabaseManager.seed([
-  ///   UserSeeder.new,
-  ///   PostSeeder.new,
-  /// ]);
-  /// ```
-  Future<void> seed(
-    List<DatabaseSeeder Function(OrmConnection)> seeders,
-  ) async {
-    if (_schemaManager != null) {
-      // TestSchemaManager handles all seeding logic
-      await _schemaManager!.seed(_baseDataSource.connection, seeders);
-    } else {
-      throw StateError(
-        'Seeding is only available when using migrationDescriptors. '
-        'Provide migrationDescriptors in the constructor to enable seeding.',
-      );
-    }
-  }
-
-  /// Run seeders in pretend mode to see what queries would be executed
-  ///
-  /// This is useful for debugging seeders without actually modifying the database.
-  /// Delegates to TestSchemaManager which uses OrmConnection.pretend().
-  ///
-  /// Example:
-  /// ```dart
-  /// final statements = await testDatabaseManager.seedWithPretend(
-  ///   [UserSeeder.new],
-  ///   pretend: true,
-  /// );
-  /// for (final entry in statements) {
-  ///   print('Query: ${entry.preview.normalized.command}');
-  /// }
-  /// ```
-  Future<List<QueryLogEntry>> seedWithPretend(
-    List<DatabaseSeeder Function(OrmConnection)> seeders, {
-    bool pretend = false,
-  }) async {
-    if (_schemaManager != null) {
-      // TestSchemaManager handles pretend mode via OrmConnection
-      return await _schemaManager!.seedWithPretend(
-        _baseDataSource.connection,
-        seeders,
-        pretend: pretend,
-      );
-    } else {
-      throw StateError(
-        'Pretend mode is only available when using migrationDescriptors. '
-        'Provide migrationDescriptors in the constructor to enable pretend mode.',
-      );
-    }
-  }
-
-  /// Get migration status
-  ///
-  /// Shows which migrations have been applied and when.
-  /// Delegates to TestSchemaManager which queries the MigrationRunner.
-  ///
-  /// Example:
-  /// ```dart
-  /// final status = await testDatabaseManager.migrationStatus();
-  /// for (final migration in status) {
-  ///   print('${migration.descriptor.id.slug}: ${migration.applied}');
-  /// }
-  /// ```
-  Future<List<MigrationStatus>> migrationStatus() async {
-    if (_schemaManager != null) {
-      // TestSchemaManager delegates to MigrationRunner for status
-      return await _schemaManager!.status();
-    } else {
-      throw StateError(
-        'Migration status is only available when using migrationDescriptors. '
-        'Provide migrationDescriptors in the constructor to enable status inspection.',
-      );
-    }
+  
+  // Helper to get a schema manager for a specific datasource
+  TestSchemaManager? getSchemaManager(DataSource dataSource) {
+     final driver = dataSource.connection.driver;
+     if (driver is SchemaDriver) {
+        final descriptors = _resolvedMigrationDescriptors ?? _resolveMigrationDescriptors();
+        if (descriptors == null) return null;
+        return TestSchemaManager(schemaDriver: driver as SchemaDriver, migrations: descriptors);
+     }
+     return null;
   }
 }

@@ -1,1 +1,1 @@
-{"className":"OrmMigrationRecord","import":"src/migrations/models/orm_migration_record.dart","definition":"OrmMigrationRecordOrmDefinition.definition"}
+{"className":"OrmMigrationRecord","import":"src/migrations/models/orm_migration_record.dart","definition":"OrmMigrationRecordOrmDefinition.definition","hasFactory":false}

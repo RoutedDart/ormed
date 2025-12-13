@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:carbonized/carbonized.dart';
+
 import 'exceptions.dart';
 import 'model_definition.dart';
 
@@ -64,6 +66,25 @@ class JsonArrayCodec extends ValueCodec<List<Object?>> {
       return jsonDecode(value) as List<Object?>;
     }
     throw FormatException('Cannot decode $value to List<Object?>');
+  }
+}
+
+/// Codec for DateTime fields that handles Carbon type conversion.
+/// This ensures that Carbon values stored during operations like soft delete
+/// can be properly decoded back to DateTime.
+class DateTimeCodec extends ValueCodec<DateTime> {
+  const DateTimeCodec();
+
+  @override
+  Object? encode(DateTime? value) => value;
+
+  @override
+  DateTime? decode(Object? value) {
+    if (value == null) return null;
+    if (value is DateTime) return value;
+    if (value is Carbon) return value.toDateTime();
+    if (value is String) return DateTime.parse(value);
+    return null;
   }
 }
 
@@ -246,8 +267,8 @@ Map<String, ValueCodec<dynamic>> get _defaultCodecs => const {
   'double': IdentityCodec<double>(),
   'num': IdentityCodec<num>(),
   'bool': IdentityCodec<bool>(),
-  'DateTime': IdentityCodec<DateTime>(),
-  'datetime': IdentityCodec<DateTime>(), // Lowercase alias
+  'DateTime': DateTimeCodec(),
+  'datetime': DateTimeCodec(), // Lowercase alias
   'Map<String, Object?>': IdentityCodec<Map<String, Object?>>(),
   'Map<String, dynamic>': IdentityCodec<Map<String, dynamic>>(),
   'List<Object?>': IdentityCodec<List<Object?>>(),

@@ -92,6 +92,7 @@ class DataSourceOptions {
   DataSourceOptions copyWith({
     DriverAdapter? driver,
     List<ModelDefinition<dynamic>>? entities,
+    ModelRegistry? registry,
     String? name,
     String? database,
     String? tablePrefix,
@@ -105,6 +106,7 @@ class DataSourceOptions {
   }) => DataSourceOptions(
     driver: driver ?? this.driver,
     entities: entities ?? this.entities,
+    registry: registry ?? this.registry,
     name: name ?? this.name,
     database: database ?? this.database,
     tablePrefix: tablePrefix ?? this.tablePrefix,

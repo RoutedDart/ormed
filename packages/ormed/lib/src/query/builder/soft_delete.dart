@@ -35,7 +35,7 @@ extension SoftDeleteExtension<T> on Query<T> {
     if (field == null) {
       return this;
     }
-    return withTrashed().whereNotNull(field.name);
+    return withTrashed().whereNotNull(field.columnName);
   }
 
   /// Restores soft-deleted models that match the current query constraints.

@@ -84,6 +84,9 @@ class OrmField {
     this.hidden,
     this.visible,
     this.cast,
+    this.insertable,
+    this.updatable,
+    this.defaultDartValue,
   });
 
   /// Explicit column name override.
@@ -124,6 +127,30 @@ class OrmField {
   final bool? hidden;
   final bool? visible;
   final String? cast;
+
+  /// Whether this field should be included in INSERT statements.
+  ///
+  /// Defaults to `true`. When `null`, the generator will infer:
+  /// - `false` for auto-increment fields
+  /// - `false` for database-generated columns
+  /// - `true` otherwise
+  final bool? insertable;
+
+  /// Whether this field should be included in UPDATE statements.
+  ///
+  /// Defaults to `true`. When `null`, the generator will infer:
+  /// - `false` for primary key fields (typically shouldn't change)
+  /// - `false` for database-generated columns
+  /// - `true` otherwise
+  final bool? updatable;
+
+  /// Default Dart value used when creating new model instances.
+  ///
+  /// For auto-increment int fields, this typically defaults to a sentinel
+  /// value (e.g., -1 or 0) to indicate "not yet assigned".
+  ///
+  /// Example: `@OrmField(autoIncrement: true, defaultDartValue: -1)`
+  final Object? defaultDartValue;
 }
 
 /// Describes driver-specific overrides for a model field.
@@ -197,3 +224,17 @@ class DriverModel {
 
   final String driverName;
 }
+
+/// Marker annotation that enables factory support for a model.
+///
+/// Apply `@HasFactory()` to your model when you want the generator to emit
+/// the factory helper class and register the definition with the factory
+/// registry. This is an alternative to using the `ModelFactoryCapable` mixin.
+@immutable
+class HasFactory {
+  const HasFactory();
+}
+
+/// Convenience constant for `@HasFactory()`.
+const hasFactory = HasFactory();
+

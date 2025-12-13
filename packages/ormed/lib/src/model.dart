@@ -53,7 +53,8 @@ typedef ConnectionResolverFactory =
 /// queries or repositories, which are of the generated tracked model type.
 /// Attempting to call these methods on manually instantiated model objects will
 /// result in runtime errors.
-abstract class Model<TModel extends Model<TModel>> with ModelConnection {
+abstract class Model<TModel extends Model<TModel>>
+    with ModelConnection, ModelRelations {
   const Model();
 
   static ConnectionResolverFactory? _resolverFactory;
@@ -103,9 +104,22 @@ abstract class Model<TModel extends Model<TModel>> with ModelConnection {
   // These are only available on tracked model instances (generated classes)
   // ============================================================================
 
+  /// Whether this model instance is tracked (has ModelAttributes mixin).
+  bool get _isTracked => this is ModelAttributes;
+
   /// Access to ModelAttributes mixin functionality.
   /// Only works on tracked instances (those with the mixin).
-  ModelAttributes get _asAttributes => this as ModelAttributes;
+  /// Throws a descriptive error for untracked models.
+  ModelAttributes get _asAttributes {
+    if (this is ModelAttributes) {
+      return this as ModelAttributes;
+    }
+    throw StateError(
+      'Cannot access attribute tracking on untracked model instance. '
+      'Use toTracked() to convert to a tracked model, or use repository methods '
+      'like repository.insert() instead of model.save().',
+    );
+  }
 
   /// Access to ModelRelations mixin functionality.
   /// Only works on tracked instances (those with the mixin).
@@ -404,12 +418,9 @@ abstract class Model<TModel extends Model<TModel>> with ModelConnection {
     List<String>? uniqueBy,
     List<String>? updateColumns,
     String? connection,
-  }) =>
-      query<TModel>(connection: connection).upsert(
-        attributes,
-        uniqueBy: uniqueBy,
-        updateColumns: updateColumns,
-      );
+  }) => query<TModel>(
+    connection: connection,
+  ).upsert(attributes, uniqueBy: uniqueBy, updateColumns: updateColumns);
 
   /// Upserts multiple records (insert or update on conflict).
   ///
@@ -432,19 +443,27 @@ abstract class Model<TModel extends Model<TModel>> with ModelConnection {
     List<String>? uniqueBy,
     List<String>? updateColumns,
     String? connection,
-  }) =>
-      query<TModel>(connection: connection).upsertMany(
-        records,
-        uniqueBy: uniqueBy,
-        updateColumns: updateColumns,
-      );
+  }) => query<TModel>(
+    connection: connection,
+  ).upsertMany(records, uniqueBy: uniqueBy, updateColumns: updateColumns);
 
   /// Typed accessor to the attached [ModelDefinition], when available.
-  ModelDefinition<TModel>? get definition =>
-      _asAttributes.modelDefinition as ModelDefinition<TModel>?;
+  /// Returns null for untracked models (they don't have attached definitions).
+  ModelDefinition<TModel>? get definition {
+    if (!_isTracked) {
+      return null;
+    }
+    return _asAttributes.modelDefinition as ModelDefinition<TModel>?;
+  }
 
   /// Whether a [ModelDefinition] has been attached to this instance.
-  bool get hasDefinition => definition != null;
+  /// Always false for untracked models.
+  bool get hasDefinition {
+    if (!_isTracked) {
+      return false;
+    }
+    return definition != null;
+  }
 
   /// Ensures the definition metadata is available, throwing when missing.
   ModelDefinition<TModel> expectDefinition() {
@@ -807,7 +826,8 @@ abstract class Model<TModel extends Model<TModel>> with ModelConnection {
     // Copy current attributes and null out excluded fields
     final newAttributes = Map<String, Object?>.from(currentAttributes);
     for (final field in def.fields) {
-      if (excluded.contains(field.name) || excluded.contains(field.columnName)) {
+      if (excluded.contains(field.name) ||
+          excluded.contains(field.columnName)) {
         // Excluded fields are set to null (codec will handle validation/defaults)
         newAttributes[field.name] = null;
       }
@@ -1024,10 +1044,14 @@ abstract class Model<TModel extends Model<TModel>> with ModelConnection {
     if (field == null) {
       return null;
     }
-    final keyed = _asAttributes.getAttribute<Object?>(field.columnName);
-    if (keyed != null) {
-      return keyed;
+    // For tracked models, try to get from attributes first
+    if (_isTracked) {
+      final keyed = _asAttributes.getAttribute<Object?>(field.columnName);
+      if (keyed != null) {
+        return keyed;
+      }
     }
+    // Fall back to extracting from the model via codec
     final codecs =
         connectionResolver?.codecRegistry ?? ValueCodecRegistry.instance;
     final values = definition.toMap(_self(), registry: codecs);
@@ -1040,17 +1064,32 @@ abstract class Model<TModel extends Model<TModel>> with ModelConnection {
     ConnectionResolver resolver,
   ) {
     attachConnectionResolver(resolver);
+    // Only sync attributes if both source and this are tracked
+    if (!_isTracked) {
+      return;
+    }
+    final sourceModel = source as Model<TModel>;
+    if (!sourceModel._isTracked) {
+      // Just attach the definition if source isn't tracked
+      _attachDefinition(definition);
+      return;
+    }
     _attachDefinition(definition);
-    final sourceAsAttributes = (source as Model<TModel>)._asAttributes;
+    final sourceAsAttributes = sourceModel._asAttributes;
     final values = Map<String, Object?>.from(sourceAsAttributes.attributes);
     _asAttributes.replaceAttributes(values);
     _exists = true;
   }
 
   void _attachDefinition(ModelDefinition<TModel> definition) {
+    if (!_isTracked) {
+      return;
+    }
     _asAttributes.attachModelDefinition(definition);
     if (definition.usesSoftDeletes) {
-      _asAttributes.attachSoftDeleteColumn(definition.metadata.softDeleteColumn);
+      _asAttributes.attachSoftDeleteColumn(
+        definition.metadata.softDeleteColumn,
+      );
     }
   }
 
