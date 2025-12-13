@@ -180,7 +180,7 @@ class _$SettingCodec extends ModelCodec<$Setting> {
 ///
 /// **Do not instantiate this class directly.** Use queries, repositories,
 /// or model factories to create tracked model instances.
-class $Setting extends Setting with ModelAttributes, ModelRelations {
+class $Setting extends Setting with ModelAttributes {
   $Setting({int id = 0, required Map<String, dynamic> payload})
     : super.new(id: id, payload: payload) {
     _attachOrmRuntimeMetadata({'id': id, 'payload': payload});

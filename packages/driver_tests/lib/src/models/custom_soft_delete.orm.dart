@@ -232,7 +232,7 @@ class _$CustomSoftDeleteCodec extends ModelCodec<$CustomSoftDelete> {
 /// **Do not instantiate this class directly.** Use queries, repositories,
 /// or model factories to create tracked model instances.
 class $CustomSoftDelete extends CustomSoftDelete
-    with ModelAttributes, ModelRelations, SoftDeletesImpl {
+    with ModelAttributes, SoftDeletesImpl {
   $CustomSoftDelete({required int id, required String title})
     : super.new(id: id, title: title) {
     _attachOrmRuntimeMetadata({'id': id, 'title': title});

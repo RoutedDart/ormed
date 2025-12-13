@@ -259,8 +259,7 @@ class _$ActiveUserCodec extends ModelCodec<$ActiveUser> {
 ///
 /// **Do not instantiate this class directly.** Use queries, repositories,
 /// or model factories to create tracked model instances.
-class $ActiveUser extends ActiveUser
-    with ModelAttributes, ModelRelations, SoftDeletesImpl {
+class $ActiveUser extends ActiveUser with ModelAttributes, SoftDeletesImpl {
   $ActiveUser({
     int? id = 0,
     required String email,

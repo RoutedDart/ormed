@@ -331,7 +331,7 @@ class _$ArticleCodec extends ModelCodec<$Article> {
 ///
 /// **Do not instantiate this class directly.** Use queries, repositories,
 /// or model factories to create tracked model instances.
-class $Article extends Article with ModelAttributes, ModelRelations {
+class $Article extends Article with ModelAttributes {
   $Article({
     int id = 0,
     required String title,

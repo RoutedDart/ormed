@@ -125,7 +125,10 @@ TestSchemaManager createDriverTestSchemaManager(
 /// ```dart
 /// await resetDriverTestSchema(driver);
 /// ```
-Future<void> resetDriverTestSchema(SchemaDriver driver, {String? schema}) async {
+Future<void> resetDriverTestSchema(
+  SchemaDriver driver, {
+  String? schema,
+}) async {
   final manager = createDriverTestSchemaManager(driver, schema: schema);
   await manager.teardown();
   await manager.setup();
@@ -146,19 +149,3 @@ Future<void> dropDriverTestSchema(SchemaDriver driver, {String? schema}) async {
   await manager.purge();
 }
 
-/// Register model factories used in driver tests
-///
-/// Call this before running tests that use model factories.
-///
-/// Example:
-/// ```dart
-/// void main() {
-///   registerDriverTestFactories();
-///   // ... your tests
-/// }
-/// ```
-void registerDriverTestFactories() {
-  ModelFactoryRegistry.register<DerivedForFactory>(
-    DerivedForFactoryOrmDefinition.definition,
-  );
-}

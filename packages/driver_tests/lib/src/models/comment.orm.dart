@@ -198,8 +198,7 @@ class _$CommentCodec extends ModelCodec<$Comment> {
 ///
 /// **Do not instantiate this class directly.** Use queries, repositories,
 /// or model factories to create tracked model instances.
-class $Comment extends Comment
-    with ModelAttributes, ModelRelations, SoftDeletesImpl {
+class $Comment extends Comment with ModelAttributes, SoftDeletesImpl {
   $Comment({int id = 0, required String body}) : super.new(id: id, body: body) {
     _attachOrmRuntimeMetadata({'id': id, 'body': body});
   }

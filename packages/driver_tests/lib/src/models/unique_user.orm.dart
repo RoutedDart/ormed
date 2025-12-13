@@ -205,7 +205,7 @@ class _$UniqueUserCodec extends ModelCodec<$UniqueUser> {
 ///
 /// **Do not instantiate this class directly.** Use queries, repositories,
 /// or model factories to create tracked model instances.
-class $UniqueUser extends UniqueUser with ModelAttributes, ModelRelations {
+class $UniqueUser extends UniqueUser with ModelAttributes {
   $UniqueUser({int id = 0, required String email, required bool active})
     : super.new(id: id, email: email, active: active) {
     _attachOrmRuntimeMetadata({'id': id, 'email': email, 'active': active});

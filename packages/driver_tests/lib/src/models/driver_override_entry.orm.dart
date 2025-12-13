@@ -235,8 +235,7 @@ class _$DriverOverrideEntryCodec extends ModelCodec<$DriverOverrideEntry> {
 ///
 /// **Do not instantiate this class directly.** Use queries, repositories,
 /// or model factories to create tracked model instances.
-class $DriverOverrideEntry extends DriverOverrideEntry
-    with ModelAttributes, ModelRelations {
+class $DriverOverrideEntry extends DriverOverrideEntry with ModelAttributes {
   $DriverOverrideEntry({int id = 0, required Map<String, Object?> payload})
     : super.new(id: id, payload: payload) {
     _attachOrmRuntimeMetadata({'id': id, 'payload': payload});

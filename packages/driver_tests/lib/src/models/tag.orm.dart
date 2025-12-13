@@ -179,7 +179,7 @@ class _$TagCodec extends ModelCodec<$Tag> {
 ///
 /// **Do not instantiate this class directly.** Use queries, repositories,
 /// or model factories to create tracked model instances.
-class $Tag extends Tag with ModelAttributes, ModelRelations {
+class $Tag extends Tag with ModelAttributes {
   $Tag({int id = 0, required String label}) : super.new(id: id, label: label) {
     _attachOrmRuntimeMetadata({'id': id, 'label': label});
   }

@@ -10,6 +10,7 @@ export 'derived_for_factory.dart';
 export 'image.dart';
 export 'mutation_target.dart';
 export 'named_constructor_model.dart';
+export 'no_factory.dart';
 export 'photo.dart';
 export 'post.dart';
 export 'serial_test.dart';

@@ -177,7 +177,7 @@ class _$PostTagCodec extends ModelCodec<$PostTag> {
 ///
 /// **Do not instantiate this class directly.** Use queries, repositories,
 /// or model factories to create tracked model instances.
-class $PostTag extends PostTag with ModelAttributes, ModelRelations {
+class $PostTag extends PostTag with ModelAttributes {
   $PostTag({required int postId, required int tagId})
     : super.new(postId: postId, tagId: tagId) {
     _attachOrmRuntimeMetadata({'post_id': postId, 'tag_id': tagId});

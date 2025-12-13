@@ -247,7 +247,7 @@ class _$NamedConstructorModelCodec extends ModelCodec<$NamedConstructorModel> {
 /// **Do not instantiate this class directly.** Use queries, repositories,
 /// or model factories to create tracked model instances.
 class $NamedConstructorModel extends NamedConstructorModel
-    with ModelAttributes, ModelRelations {
+    with ModelAttributes {
   $NamedConstructorModel({
     int? id = 0,
     required String name,

@@ -1,4 +1,3 @@
-
 import 'package:ormed/ormed.dart';
 import 'package:ormed/ormed.dart' as json_path show jsonPathSegments;
 

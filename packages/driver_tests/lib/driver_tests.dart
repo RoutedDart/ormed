@@ -1,5 +1,4 @@
-export 'package:driver_tests/orm_registry.g.dart'
-    show generatedOrmModelDefinitions, buildOrmRegistry;
+export 'package:driver_tests/orm_registry.g.dart';
 
 export 'models.dart';
 export 'src/config.dart';
@@ -8,7 +7,6 @@ export 'src/seed_data.dart' show seedGraph;
 export 'src/support/driver_schema.dart'
     show
         driverTestMigrationEntries,
-        registerDriverTestFactories,
         resetDriverTestSchema,
         createDriverTestSchemaManager,
         dropDriverTestSchema;

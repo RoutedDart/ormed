@@ -242,8 +242,7 @@ class _$MutationTargetCodec extends ModelCodec<$MutationTarget> {
 ///
 /// **Do not instantiate this class directly.** Use queries, repositories,
 /// or model factories to create tracked model instances.
-class $MutationTarget extends MutationTarget
-    with ModelAttributes, ModelRelations {
+class $MutationTarget extends MutationTarget with ModelAttributes {
   $MutationTarget({
     required String id,
     String? name,

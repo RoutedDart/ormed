@@ -232,7 +232,7 @@ class _$PhotoCodec extends ModelCodec<$Photo> {
 ///
 /// **Do not instantiate this class directly.** Use queries, repositories,
 /// or model factories to create tracked model instances.
-class $Photo extends Photo with ModelAttributes, ModelRelations {
+class $Photo extends Photo with ModelAttributes {
   $Photo({
     int id = 0,
     required int imageableId,

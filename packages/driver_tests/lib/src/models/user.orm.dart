@@ -306,7 +306,7 @@ class _$UserCodec extends ModelCodec<$User> {
 ///
 /// **Do not instantiate this class directly.** Use queries, repositories,
 /// or model factories to create tracked model instances.
-class $User extends User with ModelAttributes, ModelRelations {
+class $User extends User with ModelAttributes {
   $User({
     int id = 0,
     required String email,

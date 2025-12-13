@@ -264,8 +264,7 @@ class _$DerivedForFactoryCodec extends ModelCodec<$DerivedForFactory> {
 ///
 /// **Do not instantiate this class directly.** Use queries, repositories,
 /// or model factories to create tracked model instances.
-class $DerivedForFactory extends DerivedForFactory
-    with ModelAttributes, ModelRelations {
+class $DerivedForFactory extends DerivedForFactory with ModelAttributes {
   $DerivedForFactory({
     int id = 0,
     String? baseName,

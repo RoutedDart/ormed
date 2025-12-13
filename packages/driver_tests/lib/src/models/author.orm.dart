@@ -256,8 +256,7 @@ class _$AuthorCodec extends ModelCodec<$Author> {
 ///
 /// **Do not instantiate this class directly.** Use queries, repositories,
 /// or model factories to create tracked model instances.
-class $Author extends Author
-    with ModelAttributes, ModelRelations, TimestampsImpl {
+class $Author extends Author with ModelAttributes, TimestampsImpl {
   $Author({int id = 0, required String name, required bool active})
     : super.new(id: id, name: name, active: active) {
     _attachOrmRuntimeMetadata({'id': id, 'name': name, 'active': active});

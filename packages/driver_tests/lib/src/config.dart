@@ -82,7 +82,9 @@ class DriverTestConfig {
       case DriverCapability.databaseManagement:
         return _capabilities.contains(DriverCapability.databaseManagement);
       case DriverCapability.foreignKeyConstraintControl:
-        return _capabilities.contains(DriverCapability.foreignKeyConstraintControl);
+        return _capabilities.contains(
+          DriverCapability.foreignKeyConstraintControl,
+        );
     }
   }
 }

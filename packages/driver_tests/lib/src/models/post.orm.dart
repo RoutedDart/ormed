@@ -344,8 +344,7 @@ class _$PostCodec extends ModelCodec<$Post> {
 ///
 /// **Do not instantiate this class directly.** Use queries, repositories,
 /// or model factories to create tracked model instances.
-class $Post extends Post
-    with ModelAttributes, ModelRelations, TimestampsTZImpl {
+class $Post extends Post with ModelAttributes, TimestampsTZImpl {
   $Post({
     int id = 0,
     required int authorId,

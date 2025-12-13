@@ -185,7 +185,7 @@ class _$ImageCodec extends ModelCodec<$Image> {
 ///
 /// **Do not instantiate this class directly.** Use queries, repositories,
 /// or model factories to create tracked model instances.
-class $Image extends Image with ModelAttributes, ModelRelations {
+class $Image extends Image with ModelAttributes {
   $Image({int id = 0, required String label})
     : super.new(id: id, label: label) {
     _attachOrmRuntimeMetadata({'id': id, 'label': label});
