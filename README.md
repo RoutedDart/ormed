@@ -187,20 +187,20 @@ dart run ormed_cli:orm init
 # Create a new migration
 dart run ormed_cli:orm make --name create_users_table
 
-# Apply pending migrations
-dart run ormed_cli:orm apply
+# Run pending migrations
+dart run ormed_cli:orm migrate
 
 # Apply to a specific connection (multi-tenant)
-dart run ormed_cli:orm apply --connection analytics
+dart run ormed_cli:orm migrate --connection analytics
 
 # Preview migrations without executing
-dart run ormed_cli:orm apply --pretend
+dart run ormed_cli:orm migrate --pretend
 
 # Rollback migrations
-dart run ormed_cli:orm rollback --steps 1
+dart run ormed_cli:orm migrate:rollback --steps 1
 
 # Check migration status
-dart run ormed_cli:orm status
+dart run ormed_cli:orm migrate:status
 
 # Describe current schema
 dart run ormed_cli:orm schema:describe

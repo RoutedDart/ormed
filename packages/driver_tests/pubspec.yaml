@@ -1,7 +1,7 @@
 name: driver_tests
 description: Shared ORM driver integration test suites reused by ORM drivers.
 publish_to: none
-version: 0.1.0
+version: 0.1.0-dev
 resolution: workspace
 
 environment:
@@ -9,7 +9,7 @@ environment:
 
 dependencies:
   json_annotation: ^4.9.0
-  ormed:
+  ormed: 0.1.0-dev
   test: ^1.28.0
 
 dev_dependencies:

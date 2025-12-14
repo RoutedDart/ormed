@@ -54,16 +54,16 @@ From the `orm_playground` directory, run the CLI commands:
 
 ```bash
 # Apply migrations to default connection
-dart run ormed_cli:orm apply
+dart run ormed_cli:orm migrate
 
 # Apply migrations to a specific connection
-dart run ormed_cli:orm apply --connection analytics
+dart run ormed_cli:orm migrate --connection analytics
 
 # Check migration status
-dart run ormed_cli:orm status
+dart run ormed_cli:orm migrate:status
 
 # Rollback the last migration batch
-dart run ormed_cli:orm rollback
+dart run ormed_cli:orm migrate:rollback
 
 # Describe current schema (updates schema.sql dump)
 dart run ormed_cli:orm schema:describe
@@ -76,7 +76,7 @@ dart run ormed_cli:orm seed --connection analytics
 Alternatively, from the workspace root, use `--config` to point at this package:
 
 ```bash
-dart run packages/ormed_cli/bin/orm.dart apply --config packages/orm_playground/orm.yaml
+dart run packages/ormed_cli/bin/orm.dart migrate --config packages/orm_playground/orm.yaml
 ```
 
 ## Exploring the Data
@@ -148,16 +148,16 @@ await database.dispose();
 
 ### Running the Demo
 
-First, apply migrations to each connection:
+First, run migrations to each connection:
 
 ```bash
 cd packages/orm_playground
 
 # Apply to default connection
-dart run ormed_cli:orm apply
+dart run ormed_cli:orm migrate
 
 # Apply to analytics connection
-dart run ormed_cli:orm apply --connection analytics
+dart run ormed_cli:orm migrate --connection analytics
 
 # Optionally seed both connections
 dart run ormed_cli:orm seed
