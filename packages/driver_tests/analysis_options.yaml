@@ -1,2 +1,5 @@
 # Shared analysis options for orm_driver_tests.
 include: package:lints/recommended.yaml
+analyzer:
+  errors:
+    invalid_use_of_visible_for_testing_member: ignore

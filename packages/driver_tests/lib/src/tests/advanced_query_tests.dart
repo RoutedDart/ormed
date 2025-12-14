@@ -140,6 +140,7 @@ void runDriverAdvancedQueryTests() {
 
         // ignore: invalid_use_of_visible_for_testing_member
         final rows = await dataSource.connection.driver.execute(
+          // ignore: invalid_use_of_visible_for_testing_member
           query.debugPlan(),
         );
         expect(rows, hasLength(2));

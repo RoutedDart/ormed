@@ -1,15 +1,14 @@
 name: ormed_mysql
 description: MySQL / MariaDB adapter for the routed ORM driver interface.
 version: 0.1.0-dev
-publish_to: none
-repository: https://github.com/routedart/routed
+repository: https://github.com/RoutedDart/ormed
 resolution: workspace
 
 environment:
   sdk: ">=3.10.0 <4.0.0"
 
 dependencies:
-  ormed:
+  ormed: 0.1.0-dev
   mysql_client_plus: ^0.1.2
   carbonized: ^0.1.0
   meta: ^1.17.0
