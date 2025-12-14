@@ -8,8 +8,9 @@ void main() {
   group('ModelFactoryBuilder', () {
     group('Basic Generation', () {
       test('generates values and respects overrides', () {
-        final builder =
-            Model.factory<AttributeUser>().withOverrides({'id': 42});
+        final builder = Model.factory<AttributeUser>().withOverrides({
+          'id': 42,
+        });
         final values = builder.values();
         expect(values['id'], 42);
         expect(values['email'], isNotNull);
@@ -53,13 +54,11 @@ void main() {
 
     group('Field Overrides', () {
       test('withOverrides sets multiple field values', () {
-        final values = Model.factory<AttributeUser>()
-            .withOverrides({
-              'id': 999,
-              'email': 'override@example.com',
-              'role': 'superadmin',
-            })
-            .values();
+        final values = Model.factory<AttributeUser>().withOverrides({
+          'id': 999,
+          'email': 'override@example.com',
+          'role': 'superadmin',
+        }).values();
         expect(values['id'], 999);
         expect(values['email'], 'override@example.com');
         expect(values['role'], 'superadmin');
@@ -123,19 +122,19 @@ void main() {
           },
         );
         final values = builder.values();
-        expect(values['email'], matches(RegExp(r'user_\d+@test\.example\.com')));
+        expect(
+          values['email'],
+          matches(RegExp(r'user_\d+@test\.example\.com')),
+        );
       });
 
       test('context provides access to model definition', () {
         ModelDefinition? capturedDefinition;
 
-        Model.factory<AttributeUser>().withGenerator(
-          'email',
-          (field, context) {
-            capturedDefinition = context.definition;
-            return 'test@test.com';
-          },
-        ).values();
+        Model.factory<AttributeUser>().withGenerator('email', (field, context) {
+          capturedDefinition = context.definition;
+          return 'test@test.com';
+        }).values();
 
         expect(capturedDefinition, isNotNull);
         expect(capturedDefinition!.modelName, 'AttributeUser');
@@ -147,13 +146,11 @@ void main() {
 
         Model.factory<AttributeUser>()
             .withOverrides({'id': 999, 'role': 'admin'})
-            .withGenerator(
-          'email',
-          (field, context) {
-            capturedOverrides = context.overrides;
-            return 'test@test.com';
-          },
-        ).values();
+            .withGenerator('email', (field, context) {
+              capturedOverrides = context.overrides;
+              return 'test@test.com';
+            })
+            .values();
 
         expect(capturedOverrides, isNotNull);
         expect(capturedOverrides!['id'], 999);
@@ -225,8 +222,16 @@ void main() {
         }).where((v) => v == null).length;
         // Expect at least some nulls and some non-nulls
         // This is a probabilistic test, but 20 samples should give variation
-        expect(nullCount, greaterThan(0), reason: 'Expected some null values for nullable field');
-        expect(nullCount, lessThan(20), reason: 'Expected some non-null values for nullable field');
+        expect(
+          nullCount,
+          greaterThan(0),
+          reason: 'Expected some null values for nullable field',
+        );
+        expect(
+          nullCount,
+          lessThan(20),
+          reason: 'Expected some non-null values for nullable field',
+        );
       });
 
       test('generates DateTime values within expected range', () {
@@ -346,24 +351,23 @@ void main() {
 
       test('Carbon generation is deterministic with seed', () {
         Carbon generateCarbon(int seed) {
-          final factory = Model.factory<AttributeUser>().seed(seed).withGenerator(
-            'email',
-            (field, context) {
-              final provider = const DefaultFieldGeneratorProvider();
-              const carbonField = FieldDefinition(
-                name: 'timestamp',
-                columnName: 'timestamp',
-                dartType: 'Carbon',
-                resolvedType: 'Carbon',
-                isPrimaryKey: false,
-                isNullable: false,
-                isUnique: false,
-                isIndexed: false,
-                autoIncrement: false,
-              );
-              return provider.generate(carbonField, context);
-            },
-          );
+          final factory = Model.factory<AttributeUser>()
+              .seed(seed)
+              .withGenerator('email', (field, context) {
+                final provider = const DefaultFieldGeneratorProvider();
+                const carbonField = FieldDefinition(
+                  name: 'timestamp',
+                  columnName: 'timestamp',
+                  dartType: 'Carbon',
+                  resolvedType: 'Carbon',
+                  isPrimaryKey: false,
+                  isNullable: false,
+                  isUnique: false,
+                  isIndexed: false,
+                  autoIncrement: false,
+                );
+                return provider.generate(carbonField, context);
+              });
           return factory.values()['email'] as Carbon;
         }
 
@@ -378,41 +382,48 @@ void main() {
 
         // Different seed should typically produce different values
         // (Note: small chance of collision, but unlikely)
-        expect(third.second != first.second || third.minute != first.minute,
-            isTrue);
+        expect(
+          third.second != first.second || third.minute != first.minute,
+          isTrue,
+        );
       });
 
       test('nullable Carbon has chance of null', () {
         int nullCount = 0;
         for (int i = 0; i < 20; i++) {
-          final factory = Model.factory<AttributeUser>().seed(i * 100).withGenerator(
-            'email',
-            (field, context) {
-              final provider = const DefaultFieldGeneratorProvider();
-              const carbonField = FieldDefinition(
-                name: 'timestamp',
-                columnName: 'timestamp',
-                dartType: 'Carbon',
-                resolvedType: 'Carbon?',
-                isPrimaryKey: false,
-                isNullable: true,
-                isUnique: false,
-                isIndexed: false,
-                autoIncrement: false,
-              );
-              return provider.generate(carbonField, context);
-            },
-          );
+          final factory = Model.factory<AttributeUser>()
+              .seed(i * 100)
+              .withGenerator('email', (field, context) {
+                final provider = const DefaultFieldGeneratorProvider();
+                const carbonField = FieldDefinition(
+                  name: 'timestamp',
+                  columnName: 'timestamp',
+                  dartType: 'Carbon',
+                  resolvedType: 'Carbon?',
+                  isPrimaryKey: false,
+                  isNullable: true,
+                  isUnique: false,
+                  isIndexed: false,
+                  autoIncrement: false,
+                );
+                return provider.generate(carbonField, context);
+              });
           if (factory.values()['email'] == null) {
             nullCount++;
           }
         }
 
         // Expect at least some nulls and some non-nulls
-        expect(nullCount, greaterThan(0),
-            reason: 'Expected some null values for nullable Carbon field');
-        expect(nullCount, lessThan(20),
-            reason: 'Expected some non-null values for nullable Carbon field');
+        expect(
+          nullCount,
+          greaterThan(0),
+          reason: 'Expected some null values for nullable Carbon field',
+        );
+        expect(
+          nullCount,
+          lessThan(20),
+          reason: 'Expected some non-null values for nullable Carbon field',
+        );
       });
     });
 
@@ -425,7 +436,9 @@ void main() {
       });
 
       test('includes auto-increment fields when explicitly overridden', () {
-        final values = Model.factory<User>().withOverrides({'id': 999}).values();
+        final values = Model.factory<User>().withOverrides({
+          'id': 999,
+        }).values();
         expect(values['id'], 999);
       });
 
@@ -436,8 +449,9 @@ void main() {
       });
 
       test('includes defaultValueSql fields when explicitly overridden', () {
-        final values =
-            Model.factory<User>().withOverrides({'active': false}).values();
+        final values = Model.factory<User>().withOverrides({
+          'active': false,
+        }).values();
         expect(values['active'], false);
       });
 
@@ -450,9 +464,9 @@ void main() {
 
       test('includes codecType fields when explicitly overridden', () {
         final profileData = {'key': 'value'};
-        final values = Model.factory<User>()
-            .withOverrides({'profile': profileData})
-            .values();
+        final values = Model.factory<User>().withOverrides({
+          'profile': profileData,
+        }).values();
         expect(values['profile'], profileData);
       });
     });
@@ -469,10 +483,13 @@ void main() {
       });
 
       test('consistent foreign key generation', () {
-        final userId = Model.factory<User>().seed(1).withOverrides({'id': 42}).value('id') as int;
-        final postValues = Model.factory<Post>()
-            .withOverrides({'user_id': userId, 'title': 'Test Post'})
-            .values();
+        final userId =
+            Model.factory<User>().seed(1).withOverrides({'id': 42}).value('id')
+                as int;
+        final postValues = Model.factory<Post>().withOverrides({
+          'user_id': userId,
+          'title': 'Test Post',
+        }).values();
         expect(postValues['user_id'], 42);
         expect(postValues['title'], 'Test Post');
       });
@@ -505,18 +522,21 @@ void main() {
         expect(overrides['layerTwoFlag']?.guarded, isTrue);
       });
 
-      test('base class with ModelFactoryCapable enables factory for derived classes', () {
-        // DerivedForFactory extends LevelOneForFactory extends BaseForFactory
-        // Only BaseForFactory has ModelFactoryCapable
-        final factory = Model.factory<DerivedForFactory>();
-        expect(factory, isNotNull);
+      test(
+        'base class with ModelFactoryCapable enables factory for derived classes',
+        () {
+          // DerivedForFactory extends LevelOneForFactory extends BaseForFactory
+          // Only BaseForFactory has ModelFactoryCapable
+          final factory = Model.factory<DerivedForFactory>();
+          expect(factory, isNotNull);
 
-        final model = factory.withOverrides({
-          'id': 1,
-          'baseName': 'inherited',
-        }).make();
-        expect(model.baseName, 'inherited');
-      });
+          final model = factory.withOverrides({
+            'id': 1,
+            'baseName': 'inherited',
+          }).make();
+          expect(model.baseName, 'inherited');
+        },
+      );
     });
 
     group('Custom GeneratorProvider', () {
@@ -609,10 +629,9 @@ void main() {
       });
 
       test('makeMany() without count defaults to 1', () {
-        final models = Model.factory<AttributeUser>()
-            .seed(42)
-            .withOverrides({'secret': 'test'})
-            .makeMany();
+        final models = Model.factory<AttributeUser>().seed(42).withOverrides({
+          'secret': 'test',
+        }).makeMany();
         expect(models.length, 1);
       });
 
@@ -650,10 +669,10 @@ void main() {
 
     group('State Transformations', () {
       test('state() applies attribute overrides', () {
-        final model = Model.factory<AttributeUser>()
-            .seed(42)
-            .state({'role': 'admin', 'secret': 'admin_secret'})
-            .make();
+        final model = Model.factory<AttributeUser>().seed(42).state({
+          'role': 'admin',
+          'secret': 'admin_secret',
+        }).make();
         expect(model.role, 'admin');
         expect(model.secret, 'admin_secret');
       });
@@ -671,9 +690,11 @@ void main() {
       test('stateUsing() applies closure-based transformation', () {
         final model = Model.factory<AttributeUser>()
             .seed(42)
-            .stateUsing((attrs) => {
-                  'secret': 'computed_${attrs['email'].toString().split('_')[0]}',
-                })
+            .stateUsing(
+              (attrs) => {
+                'secret': 'computed_${attrs['email'].toString().split('_')[0]}',
+              },
+            )
             .make();
         expect(model.secret, contains('computed_'));
       });
@@ -789,10 +810,7 @@ void main() {
     group('Trashed (Soft Delete)', () {
       test('trashed() sets soft delete column', () {
         // ActiveUser has soft deletes
-        final values = Model.factory<ActiveUser>()
-            .seed(42)
-            .trashed()
-            .values();
+        final values = Model.factory<ActiveUser>().seed(42).trashed().values();
         expect(values['deleted_at'], isA<DateTime>());
       });
 
@@ -806,10 +824,7 @@ void main() {
       });
 
       test('trashed() model can be made', () {
-        final model = Model.factory<ActiveUser>()
-            .seed(42)
-            .trashed()
-            .make();
+        final model = Model.factory<ActiveUser>().seed(42).trashed().make();
         expect(model, isA<ActiveUser>());
       });
     });

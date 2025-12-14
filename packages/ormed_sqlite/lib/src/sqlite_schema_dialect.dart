@@ -494,8 +494,6 @@ class SqliteSchemaDialect extends SchemaDialect {
     return _mapType(override?.type ?? definition.type);
   }
 
-
-
   String _defaultExpression(ColumnDefault value) {
     if (value.useCurrentTimestamp) return 'CURRENT_TIMESTAMP';
     if (value.expression != null) return value.expression!;
@@ -525,7 +523,7 @@ class SqliteSchemaDialect extends SchemaDialect {
     }
     return _quote(table);
   }
-  
+
   String _tableNameFromBlueprint(TableBlueprint blueprint) {
     // Ignore blueprint.schema for SQLite - it doesn't support schemas
     return _tableName(blueprint.table);
@@ -534,10 +532,10 @@ class SqliteSchemaDialect extends SchemaDialect {
   String _schemaOrDefault(String? schema) =>
       schema?.isNotEmpty == true ? schema! : 'main';
 
-    String _schemaLiteral(String? schema) =>
+  String _schemaLiteral(String? schema) =>
       "'${_escapeString(_schemaOrDefault(schema))}'";
 
-    String _tableLiteral(String table) => "'${_escapeString(table)}'";
+  String _tableLiteral(String table) => "'${_escapeString(table)}'";
 
   // ========== Schema Introspection ==========
 
@@ -549,10 +547,9 @@ class SqliteSchemaDialect extends SchemaDialect {
 
   @override
   String? compileTables({String? schema}) {
-    final filter =
-        schema != null && schema.isNotEmpty
-            ? ' tl.schema = ${_schemaLiteral(schema)} and'
-            : '';
+    final filter = schema != null && schema.isNotEmpty
+        ? ' tl.schema = ${_schemaLiteral(schema)} and'
+        : '';
     return 'select tl.name as name, tl.schema as schema, tl.type as type '
         'from pragma_table_list as tl where'
         '$filter tl.type in (\'table\', \'virtual\') '

@@ -31,7 +31,9 @@ class ModelDefinitionEmitter {
     _writeRelations(buffer, relations);
 
     final generatedClassName = context.trackedModelClassName;
-    final modelVar = '_$generatedClassName' 'Definition';
+    final modelVar =
+        '_$generatedClassName'
+        'Definition';
     buffer.writeln(
       'final ModelDefinition<$generatedClassName> $modelVar = ModelDefinition(',
     );
@@ -164,7 +166,9 @@ class ModelDefinitionEmitter {
         buffer.writeln('  updatable: ${field.updatable},');
       }
       if (field.defaultDartValue != null) {
-        buffer.writeln('  defaultDartValue: ${_literalValue(field.defaultDartValue)},');
+        buffer.writeln(
+          '  defaultDartValue: ${_literalValue(field.defaultDartValue)},',
+        );
       }
       if (field.driverOverrides.isNotEmpty) {
         buffer.writeln('  driverOverrides: {');

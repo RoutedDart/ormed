@@ -147,7 +147,9 @@ void main() {
         'String': const _UpperCaseCodec(),
       });
 
-      final driverRegistry = ValueCodecRegistry.instance.forDriver('testdriver');
+      final driverRegistry = ValueCodecRegistry.instance.forDriver(
+        'testdriver',
+      );
       final field = _field(dartType: 'String', resolvedType: 'String');
 
       final encoded = driverRegistry.encodeField(field, 'hello');
@@ -161,7 +163,9 @@ void main() {
 
       ValueCodecRegistry.instance.unregisterDriver('testdriver');
 
-      final driverRegistry = ValueCodecRegistry.instance.forDriver('testdriver');
+      final driverRegistry = ValueCodecRegistry.instance.forDriver(
+        'testdriver',
+      );
       final field = _field(dartType: 'String', resolvedType: 'String');
 
       // Should use default IdentityCodec, not UpperCaseCodec
@@ -184,7 +188,9 @@ void main() {
       final encoded = ValueCodecRegistry.instance.encodeField(field, 'hello');
       expect(encoded, 'hello'); // IdentityCodec
 
-      final driverRegistry = ValueCodecRegistry.instance.forDriver('testdriver');
+      final driverRegistry = ValueCodecRegistry.instance.forDriver(
+        'testdriver',
+      );
       final encodedDriver = driverRegistry.encodeField(field, 'hello');
       expect(encodedDriver, 'hello'); // No driver codecs left
     });
@@ -195,7 +201,9 @@ void main() {
         'bool': const _SuffixCodec('_bool'),
       });
 
-      final driverRegistry = ValueCodecRegistry.instance.forDriver('multicodec');
+      final driverRegistry = ValueCodecRegistry.instance.forDriver(
+        'multicodec',
+      );
 
       final stringField = _field(dartType: 'String', resolvedType: 'String');
       expect(driverRegistry.encodeField(stringField, 'test'), 'TEST');

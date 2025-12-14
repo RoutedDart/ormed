@@ -17,98 +17,93 @@ class SqliteTypeMapper extends DriverTypeMapper {
 
   @override
   List<TypeMapping> get typeMappings => [
-        // INTEGER affinity
-        TypeMapping(
-          dartType: int,
-          defaultSqlType: 'INTEGER',
-          acceptedSqlTypes: [
-            'INT',
-            'TINYINT',
-            'SMALLINT',
-            'MEDIUMINT',
-            'BIGINT',
-            'INT2',
-            'INT8',
-          ],
-          codec: _IntCodec(),
-        ),
+    // INTEGER affinity
+    TypeMapping(
+      dartType: int,
+      defaultSqlType: 'INTEGER',
+      acceptedSqlTypes: [
+        'INT',
+        'TINYINT',
+        'SMALLINT',
+        'MEDIUMINT',
+        'BIGINT',
+        'INT2',
+        'INT8',
+      ],
+      codec: _IntCodec(),
+    ),
 
-        // BOOLEAN (stored as INTEGER in SQLite: 0 or 1)
-        TypeMapping(
-          dartType: bool,
-          defaultSqlType: 'INTEGER',
-          acceptedSqlTypes: ['BOOLEAN', 'BOOL'],
-          codec: _BoolCodec(),
-        ),
+    // BOOLEAN (stored as INTEGER in SQLite: 0 or 1)
+    TypeMapping(
+      dartType: bool,
+      defaultSqlType: 'INTEGER',
+      acceptedSqlTypes: ['BOOLEAN', 'BOOL'],
+      codec: _BoolCodec(),
+    ),
 
-        // REAL affinity
-        TypeMapping(
-          dartType: double,
-          defaultSqlType: 'REAL',
-          acceptedSqlTypes: [
-            'DOUBLE',
-            'FLOAT',
-            'NUMERIC',
-            'DECIMAL',
-          ],
-          codec: _DoubleCodec(),
-        ),
+    // REAL affinity
+    TypeMapping(
+      dartType: double,
+      defaultSqlType: 'REAL',
+      acceptedSqlTypes: ['DOUBLE', 'FLOAT', 'NUMERIC', 'DECIMAL'],
+      codec: _DoubleCodec(),
+    ),
 
-        // TEXT affinity
-        TypeMapping(
-          dartType: String,
-          defaultSqlType: 'TEXT',
-          acceptedSqlTypes: [
-            'VARCHAR',
-            'CHAR',
-            'CLOB',
-            'CHARACTER',
-            'VARYING CHARACTER',
-            'NCHAR',
-            'NATIVE CHARACTER',
-            'NVARCHAR',
-          ],
-        ),
+    // TEXT affinity
+    TypeMapping(
+      dartType: String,
+      defaultSqlType: 'TEXT',
+      acceptedSqlTypes: [
+        'VARCHAR',
+        'CHAR',
+        'CLOB',
+        'CHARACTER',
+        'VARYING CHARACTER',
+        'NCHAR',
+        'NATIVE CHARACTER',
+        'NVARCHAR',
+      ],
+    ),
 
-        // DATETIME (stored as TEXT in ISO8601 format)
-        TypeMapping(
-          dartType: DateTime,
-          defaultSqlType: 'TEXT',
-          acceptedSqlTypes: ['DATETIME', 'TIMESTAMP', 'DATE', 'TIME'],
-          codec: _DateTimeCodec(),
-        ),
+    // DATETIME (stored as TEXT in ISO8601 format)
+    TypeMapping(
+      dartType: DateTime,
+      defaultSqlType: 'TEXT',
+      acceptedSqlTypes: ['DATETIME', 'TIMESTAMP', 'DATE', 'TIME'],
+      codec: _DateTimeCodec(),
+    ),
 
-        // Carbon (stored as TEXT in ISO8601 format)
-        TypeMapping(
-          dartType: Carbon,
-          defaultSqlType: 'TEXT',
-          acceptedSqlTypes: ['DATETIME', 'TIMESTAMP', 'DATE', 'TIME'],
-          codec: SqliteCarbonCodec(),
-        ),
+    // Carbon (stored as TEXT in ISO8601 format)
+    TypeMapping(
+      dartType: Carbon,
+      defaultSqlType: 'TEXT',
+      acceptedSqlTypes: ['DATETIME', 'TIMESTAMP', 'DATE', 'TIME'],
+      codec: SqliteCarbonCodec(),
+    ),
 
-        // CarbonInterface (stored as TEXT in ISO8601 format)
-        TypeMapping(
-          dartType: CarbonInterface,
-          defaultSqlType: 'TEXT',
-          acceptedSqlTypes: ['DATETIME', 'TIMESTAMP', 'DATE', 'TIME'],
-          codec: SqliteCarbonInterfaceCodec(),
-        ),
+    // CarbonInterface (stored as TEXT in ISO8601 format)
+    TypeMapping(
+      dartType: CarbonInterface,
+      defaultSqlType: 'TEXT',
+      acceptedSqlTypes: ['DATETIME', 'TIMESTAMP', 'DATE', 'TIME'],
+      codec: SqliteCarbonInterfaceCodec(),
+    ),
 
-        // BLOB affinity
-        TypeMapping(
-          dartType: List<int>,
-          defaultSqlType: 'BLOB',
-          acceptedSqlTypes: ['BYTEA'],
-        ),
+    // BLOB affinity
+    TypeMapping(
+      dartType: List<int>,
+      defaultSqlType: 'BLOB',
+      acceptedSqlTypes: ['BYTEA'],
+    ),
 
-        // JSON (stored as TEXT)
-        TypeMapping(
-          dartType: Map,
-          defaultSqlType: 'TEXT',
-          acceptedSqlTypes: ['JSON', 'JSONB'],
-          codec: _JsonCodec(),
-        ),
-      ];
+    // JSON (stored as TEXT)
+    TypeMapping(
+      dartType: Map,
+      defaultSqlType: 'TEXT',
+      acceptedSqlTypes: ['JSON', 'JSONB'],
+      codec: _JsonCodec(),
+    ),
+  ];
 
   @override
   String normalizeSqlType(String sqlType) {
@@ -123,7 +118,9 @@ class SqliteTypeMapper extends DriverTypeMapper {
     if (_realTypes.contains(baseType)) return 'REAL';
     if (_textTypes.contains(baseType)) return 'TEXT';
     if (_blobTypes.contains(baseType)) return 'BLOB';
-    if (_dateTimeTypes.contains(baseType)) return 'TEXT'; // DATETIME stored as TEXT
+    if (_dateTimeTypes.contains(baseType)) {
+      return 'TEXT'; // DATETIME stored as TEXT
+    }
     if (_jsonTypes.contains(baseType)) return 'TEXT'; // JSON stored as TEXT
 
     return baseType;
@@ -142,13 +139,7 @@ class SqliteTypeMapper extends DriverTypeMapper {
     'BOOL',
   };
 
-  static const _realTypes = {
-    'REAL',
-    'DOUBLE',
-    'FLOAT',
-    'NUMERIC',
-    'DECIMAL',
-  };
+  static const _realTypes = {'REAL', 'DOUBLE', 'FLOAT', 'NUMERIC', 'DECIMAL'};
 
   static const _textTypes = {
     'TEXT',
@@ -160,22 +151,11 @@ class SqliteTypeMapper extends DriverTypeMapper {
     'NVARCHAR',
   };
 
-  static const _blobTypes = {
-    'BLOB',
-    'BYTEA',
-  };
+  static const _blobTypes = {'BLOB', 'BYTEA'};
 
-  static const _dateTimeTypes = {
-    'DATETIME',
-    'TIMESTAMP',
-    'DATE',
-    'TIME',
-  };
+  static const _dateTimeTypes = {'DATETIME', 'TIMESTAMP', 'DATE', 'TIME'};
 
-  static const _jsonTypes = {
-    'JSON',
-    'JSONB',
-  };
+  static const _jsonTypes = {'JSON', 'JSONB'};
 
   @override
   bool supportsUnsigned(String sqlType) => false; // SQLite doesn't have UNSIGNED

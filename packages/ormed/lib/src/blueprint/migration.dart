@@ -23,7 +23,10 @@ abstract class Migration {
     SchemaSnapshot? snapshot,
     String? defaultSchema,
   }) {
-    final builder = SchemaBuilder(snapshot: snapshot, defaultSchema: defaultSchema);
+    final builder = SchemaBuilder(
+      snapshot: snapshot,
+      defaultSchema: defaultSchema,
+    );
     switch (direction) {
       case MigrationDirection.up:
         up(builder);
@@ -143,8 +146,14 @@ class MigrationDescriptor {
     required Migration migration,
     String? defaultSchema,
   }) {
-    final upPlan = migration.plan(MigrationDirection.up, defaultSchema: defaultSchema);
-    final downPlan = migration.plan(MigrationDirection.down, defaultSchema: defaultSchema);
+    final upPlan = migration.plan(
+      MigrationDirection.up,
+      defaultSchema: defaultSchema,
+    );
+    final downPlan = migration.plan(
+      MigrationDirection.down,
+      defaultSchema: defaultSchema,
+    );
     final checksum = _checksumForPlans(upPlan, downPlan);
     return MigrationDescriptor(
       id: id,

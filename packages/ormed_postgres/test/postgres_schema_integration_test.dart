@@ -24,22 +24,30 @@ void main() {
         ..registerCodecFor(PostgresPayloadCodec, const PostgresPayloadCodec())
         ..registerCodecFor(SqlitePayloadCodec, const SqlitePayloadCodec());
 
-      dataSource = DataSource(DataSourceOptions(
-        driver: driverAdapter,
-        entities: generatedOrmModelDefinitions,
-      ));
+      dataSource = DataSource(
+        DataSourceOptions(
+          driver: driverAdapter,
+          entities: generatedOrmModelDefinitions,
+        ),
+      );
 
       await dataSource.init();
       registerOrmFactories();
 
       // Create a unique schema for this test run
       testSchema = 'test_schema_${DateTime.now().millisecondsSinceEpoch}';
-      await driverAdapter.executeRaw('CREATE SCHEMA IF NOT EXISTS "$testSchema"');
-      await driverAdapter.executeRaw('SET search_path TO "$testSchema", public');
+      await driverAdapter.executeRaw(
+        'CREATE SCHEMA IF NOT EXISTS "$testSchema"',
+      );
+      await driverAdapter.executeRaw(
+        'SET search_path TO "$testSchema", public',
+      );
     });
 
     tearDownAll(() async {
-      await driverAdapter.executeRaw('DROP SCHEMA IF EXISTS "$testSchema" CASCADE');
+      await driverAdapter.executeRaw(
+        'DROP SCHEMA IF EXISTS "$testSchema" CASCADE',
+      );
       await dataSource.dispose();
     });
 
@@ -298,16 +306,9 @@ void main() {
       );
 
       final inspector = SchemaInspector(schemaDriver);
+      expect(await inspector.hasTable('libraries', schema: testSchema), isTrue);
       expect(
-        await inspector.hasTable('libraries', schema: testSchema),
-        isTrue,
-      );
-      expect(
-        await inspector.hasColumn(
-          'books',
-          'library_id',
-          schema: testSchema,
-        ),
+        await inspector.hasColumn('books', 'library_id', schema: testSchema),
         isTrue,
       );
       expect(

@@ -5,9 +5,9 @@ import 'table_blueprint.dart';
 
 /// Fluent builder that collects schema commands for a migration direction.
 class SchemaBuilder {
-  SchemaBuilder({SchemaSnapshot? snapshot, String? defaultSchema}) 
-      : _snapshot = snapshot,
-        _defaultSchema = defaultSchema;
+  SchemaBuilder({SchemaSnapshot? snapshot, String? defaultSchema})
+    : _snapshot = snapshot,
+      _defaultSchema = defaultSchema;
 
   final SchemaSnapshot? _snapshot;
   final String? _defaultSchema;
@@ -81,9 +81,7 @@ class SchemaBuilder {
 
   /// Drops a database if it exists.
   void dropDatabaseIfExists(String name) {
-    _mutations.add(
-      SchemaMutation.dropDatabase(name: name, ifExists: true),
-    );
+    _mutations.add(SchemaMutation.dropDatabase(name: name, ifExists: true));
   }
 
   /// Registers Mongo-style create collection command.

@@ -229,12 +229,10 @@ void runCrudOperationsTests() {
 
     group('Upsert Operations', () {
       test('upsert() - inserts new records', () async {
-        final results = await dataSource.query<Author>().upsertMany(
-          [
-            {'name': 'John Doe', 'active': true},
-            {'name': 'Jane Smith', 'active': true},
-          ],
-        );
+        final results = await dataSource.query<Author>().upsertMany([
+          {'name': 'John Doe', 'active': true},
+          {'name': 'Jane Smith', 'active': true},
+        ]);
 
         expect(results.length, equals(2));
         expect(
@@ -255,14 +253,14 @@ void runCrudOperationsTests() {
           'active': true,
         });
 
-        await dataSource.query<Author>().upsertMany(
-          [
-            {'id': created.id, 'name': 'John Updated', 'active': false},
-          ],
-        );
+        await dataSource.query<Author>().upsertMany([
+          {'id': created.id, 'name': 'John Updated', 'active': false},
+        ]);
 
-        final john =
-            await dataSource.query<Author>().where('id', created.id).first();
+        final john = await dataSource
+            .query<Author>()
+            .where('id', created.id)
+            .first();
         expect(john?.name, equals('John Updated'));
         expect(john?.active, equals(false));
       });
@@ -273,12 +271,10 @@ void runCrudOperationsTests() {
           'active': true,
         });
 
-        final results = await dataSource.query<Author>().upsertMany(
-          [
-            {'id': existing.id, 'name': 'John Updated', 'active': true},
-            {'name': 'Jane New', 'active': true},
-          ],
-        );
+        final results = await dataSource.query<Author>().upsertMany([
+          {'id': existing.id, 'name': 'John Updated', 'active': true},
+          {'name': 'Jane New', 'active': true},
+        ]);
 
         final john = await dataSource
             .query<Author>()
@@ -293,20 +289,19 @@ void runCrudOperationsTests() {
       });
 
       test('Model.upsert() - static method works', () async {
-        final author = await Model.upsert<Author>(
-          {'name': 'Static Upsert', 'active': true},
-        );
+        final author = await Model.upsert<Author>({
+          'name': 'Static Upsert',
+          'active': true,
+        });
         expect(author.name, equals('Static Upsert'));
         expect(author.id, isNotNull);
       });
 
       test('Model.upsertMany() - static method works', () async {
-        final authors = await Model.upsertMany<Author>(
-          [
-            {'name': 'Bulk Static 1', 'active': true},
-            {'name': 'Bulk Static 2', 'active': false},
-          ],
-        );
+        final authors = await Model.upsertMany<Author>([
+          {'name': 'Bulk Static 1', 'active': true},
+          {'name': 'Bulk Static 2', 'active': false},
+        ]);
         expect(authors.length, equals(2));
         expect(authors[0].name, equals('Bulk Static 1'));
         expect(authors[1].name, equals('Bulk Static 2'));

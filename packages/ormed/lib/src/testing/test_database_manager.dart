@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:ormed/src/migrations/seeder.dart';
 
 import '../../migrations.dart';
 import '../connection/orm_connection.dart';
@@ -67,7 +66,8 @@ class TestDatabaseManager {
   List<Migration>? get migrations => _migrations;
   List<MigrationDescriptor>? get migrationDescriptors => _migrationDescriptors;
   List<DatabaseSeeder Function(OrmConnection)>? get seeders => _seeders;
-  DriverAdapter Function(String testDbName)? get adapterFactory => _adapterFactory;
+  DriverAdapter Function(String testDbName)? get adapterFactory =>
+      _adapterFactory;
   Future<void> Function(DataSource)? get runMigrations => _runMigrations;
 
   /// Initialize the test database manager
@@ -80,21 +80,21 @@ class TestDatabaseManager {
   DataSource createDataSource(String id) {
     final options = _baseDataSource.options;
     final driver = _baseDataSource.connection.driver;
-    
+
     final testDbName = 'test_${id.replaceAll(RegExp(r'[^a-zA-Z0-9_]'), '_')}';
-    
+
     // Get fresh adapter
-    final testDriver = _adapterFactory != null 
-      ? _adapterFactory(testDbName)
-      : driver; 
-    
+    final testDriver = _adapterFactory != null
+        ? _adapterFactory(testDbName)
+        : driver;
+
     // Create DataSource
     final testOptions = options.copyWith(
       name: testDbName,
       defaultSchema: testDbName,
       driver: testDriver,
     );
-    
+
     return DataSource(testOptions);
   }
 
@@ -105,7 +105,7 @@ class TestDatabaseManager {
   /// For SQLite: Uses the test database file.
   Future<void> provisionDatabase(DataSource dataSource) async {
     final driver = _baseDataSource.connection.driver;
-    
+
     // Verify driver supports schema operations
     if (driver is! SchemaDriver) {
       throw StateError(
@@ -113,10 +113,10 @@ class TestDatabaseManager {
         'Driver ${driver.runtimeType} does not support schema/database operations.',
       );
     }
-    
+
     final schemaDriver = driver as SchemaDriver;
     final dbName = dataSource.options.defaultSchema;
-    
+
     if (dbName != null) {
       // Try to create as schema first (for PostgreSQL)
       // If that fails or isn't supported, fall back to database creation
@@ -172,7 +172,9 @@ class TestDatabaseManager {
     if (driver is SchemaDriver && dbName != null) {
       try {
         // Try dropping as schema first (for PostgreSQL)
-        final schemaDropped = await (driver as SchemaDriver).dropSchemaIfExists(dbName);
+        final schemaDropped = await (driver as SchemaDriver).dropSchemaIfExists(
+          dbName,
+        );
 
         if (!schemaDropped) {
           // Schema drop not supported - try database drop
@@ -180,7 +182,9 @@ class TestDatabaseManager {
         }
       } catch (e) {
         // Log but don't fail - database might already be dropped
-        print('[TestDatabaseManager] Warning: Failed to drop database/schema $dbName: $e');
+        print(
+          '[TestDatabaseManager] Warning: Failed to drop database/schema $dbName: $e',
+        );
       }
       _createdDatabases.remove(dbName);
     }
@@ -201,7 +205,10 @@ class TestDatabaseManager {
   }
 
   /// Run seeders on a specific datasource
-  Future<void> seed(List<DatabaseSeeder Function(OrmConnection)> seeders, DataSource dataSource) async {
+  Future<void> seed(
+    List<DatabaseSeeder Function(OrmConnection)> seeders,
+    DataSource dataSource,
+  ) async {
     for (final factory in seeders) {
       final seeder = factory(dataSource.connection);
       await seeder.run();
@@ -210,22 +217,27 @@ class TestDatabaseManager {
 
   /// Preview seeders
   Future<List<QueryLogEntry>> seedWithPretend(
-      List<DatabaseSeeder Function(OrmConnection)> seeders, 
-      DataSource dataSource, 
-      {bool pretend = true}) async {
-      return [];
+    List<DatabaseSeeder Function(OrmConnection)> seeders,
+    DataSource dataSource, {
+    bool pretend = true,
+  }) async {
+    return [];
   }
-  
+
   /// Get migration status
   Future<List<MigrationStatus>> migrationStatus(DataSource dataSource) async {
-      final driver = dataSource.connection.driver;
-      if (driver is SchemaDriver) {
-         final descriptors = _resolvedMigrationDescriptors ?? _resolveMigrationDescriptors();
-         if (descriptors == null) return [];
-         final manager = TestSchemaManager(schemaDriver: driver as SchemaDriver, migrations: descriptors);
-         return await manager.status();
-      }
-      return [];
+    final driver = dataSource.connection.driver;
+    if (driver is SchemaDriver) {
+      final descriptors =
+          _resolvedMigrationDescriptors ?? _resolveMigrationDescriptors();
+      if (descriptors == null) return [];
+      final manager = TestSchemaManager(
+        schemaDriver: driver as SchemaDriver,
+        migrations: descriptors,
+      );
+      return await manager.status();
+    }
+    return [];
   }
 
   Future<void> _prepareDatabase(DataSource dataSource) async {
@@ -237,14 +249,15 @@ class TestDatabaseManager {
       return;
     }
 
-    final descriptors = _resolvedMigrationDescriptors ?? _resolveMigrationDescriptors();
+    final descriptors =
+        _resolvedMigrationDescriptors ?? _resolveMigrationDescriptors();
     if (descriptors == null || descriptors.isEmpty) {
       return;
     }
 
     final driver = dataSource.connection.driver;
     if (driver is SchemaDriver) {
-       final schemaManager = TestSchemaManager(
+      final schemaManager = TestSchemaManager(
         schemaDriver: driver as SchemaDriver,
         migrations: descriptors,
       );
@@ -297,7 +310,7 @@ class TestDatabaseManager {
 
     return resolved;
   }
-  
+
   /// Cleanup all created test databases
   ///
   /// This method should be called in tearDownAll to ensure all test databases
@@ -317,7 +330,9 @@ class TestDatabaseManager {
             await schemaDriver.dropDatabaseIfExists(dbName);
             _createdDatabases.remove(dbName);
           } catch (e) {
-            print('[TestDatabaseManager] Warning: Failed to drop database $dbName during cleanup: $e');
+            print(
+              '[TestDatabaseManager] Warning: Failed to drop database $dbName during cleanup: $e',
+            );
           }
         }
       }
@@ -341,15 +356,19 @@ class TestDatabaseManager {
       // Ignore - might already be disposed
     }
   }
-  
+
   // Helper to get a schema manager for a specific datasource
   TestSchemaManager? getSchemaManager(DataSource dataSource) {
-     final driver = dataSource.connection.driver;
-     if (driver is SchemaDriver) {
-        final descriptors = _resolvedMigrationDescriptors ?? _resolveMigrationDescriptors();
-        if (descriptors == null) return null;
-        return TestSchemaManager(schemaDriver: driver as SchemaDriver, migrations: descriptors);
-     }
-     return null;
+    final driver = dataSource.connection.driver;
+    if (driver is SchemaDriver) {
+      final descriptors =
+          _resolvedMigrationDescriptors ?? _resolveMigrationDescriptors();
+      if (descriptors == null) return null;
+      return TestSchemaManager(
+        schemaDriver: driver as SchemaDriver,
+        migrations: descriptors,
+      );
+    }
+    return null;
   }
 }

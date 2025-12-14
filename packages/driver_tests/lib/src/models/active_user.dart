@@ -5,7 +5,8 @@ import 'package:ormed/ormed.dart';
 part 'active_user.orm.dart';
 
 @OrmModel(table: 'active_users', softDeletes: true, connection: 'analytics')
-class ActiveUser extends Model<ActiveUser> with ModelFactoryCapable, SoftDeletes {
+class ActiveUser extends Model<ActiveUser>
+    with ModelFactoryCapable, SoftDeletes {
   const ActiveUser({
     this.id,
     required this.email,

@@ -38,7 +38,11 @@ class ColumnType {
   const ColumnType.doubleType() : this(ColumnTypeName.doublePrecision);
 
   const ColumnType.timestamp({bool timezoneAware = false, int? precision})
-    : this(ColumnTypeName.dateTime, timezoneAware: timezoneAware, precision: precision);
+    : this(
+        ColumnTypeName.dateTime,
+        timezoneAware: timezoneAware,
+        precision: precision,
+      );
 
   const ColumnType.date({bool timezoneAware = false})
     : this(ColumnTypeName.date, timezoneAware: timezoneAware);

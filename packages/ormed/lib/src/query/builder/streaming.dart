@@ -56,4 +56,3 @@ extension StreamingExtension<T extends OrmEntity> on Query<T> {
     }
   }
 }
-

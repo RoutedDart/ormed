@@ -53,8 +53,10 @@ void runUpsertOperationsTests() {
       expect(updated.active, isFalse);
 
       // Verify only one record exists with this ID
-      final all =
-          await dataSource.query<User>().whereEquals('id', createdId).get();
+      final all = await dataSource
+          .query<User>()
+          .whereEquals('id', createdId)
+          .get();
       expect(all.length, 1);
     });
 
@@ -117,8 +119,10 @@ void runUpsertOperationsTests() {
 
       // Verify all were inserted using the returned IDs
       final insertedIds = users.map((u) => u.id).toList();
-      final all =
-          await dataSource.query<User>().whereIn('id', insertedIds).get();
+      final all = await dataSource
+          .query<User>()
+          .whereIn('id', insertedIds)
+          .get();
       expect(all.length, 3);
     });
 
@@ -182,10 +186,7 @@ void runUpsertOperationsTests() {
             'email': 'email1@example.com',
             'active': false,
           }, // Should update existing
-          {
-            'email': 'email3@example.com',
-            'active': true,
-          }, // Should insert new
+          {'email': 'email3@example.com', 'active': true}, // Should insert new
         ],
         uniqueBy: ['email'],
       );
@@ -324,8 +325,10 @@ void runUpsertOperationsTests() {
 
       // Verify all were inserted using returned IDs
       final insertedIds = results.map((p) => p.id).toList();
-      final all =
-          await dataSource.query<Post>().whereIn('id', insertedIds).get();
+      final all = await dataSource
+          .query<Post>()
+          .whereIn('id', insertedIds)
+          .get();
       expect(all.length, 50);
     });
 
@@ -371,7 +374,10 @@ void runUpsertOperationsTests() {
         expect(user3.id, userId);
 
         // Verify only one record exists
-        final all = await dataSource.query<User>().whereEquals('id', userId).get();
+        final all = await dataSource
+            .query<User>()
+            .whereEquals('id', userId)
+            .get();
         expect(all.length, 1);
         expect(all.first.email, 'integrity-updated@example.com');
       },

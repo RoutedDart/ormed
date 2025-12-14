@@ -11,8 +11,8 @@ class ModelFactoryEmitter {
     final buffer = StringBuffer();
 
     // Use base class name without doubling "Model" suffix for factory name
-    final factoryName = className.endsWith('Model') 
-        ? '${className}Factory' 
+    final factoryName = className.endsWith('Model')
+        ? '${className}Factory'
         : '${className}ModelFactory';
     buffer.writeln('class $factoryName {');
     buffer.writeln('  const $factoryName._();');
@@ -37,7 +37,9 @@ class ModelFactoryEmitter {
     buffer.writeln('  static Map<String, Object?> toMap(');
     buffer.writeln('    $className model, {');
     buffer.writeln('    ValueCodecRegistry? registry,');
-    buffer.writeln('  }) => definition.toMap(model.toTracked(), registry: registry);');
+    buffer.writeln(
+      '  }) => definition.toMap(model.toTracked(), registry: registry);',
+    );
     buffer.writeln();
 
     // registerWith method

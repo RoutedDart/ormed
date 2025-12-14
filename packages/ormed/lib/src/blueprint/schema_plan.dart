@@ -43,10 +43,7 @@ class SchemaMutation {
     Map<String, Object?>? options,
   }) => SchemaMutation._(
     operation: SchemaMutationOperation.createDatabase,
-    documentPayload: {
-      'name': name,
-      if (options != null) 'options': options,
-    },
+    documentPayload: {'name': name, if (options != null) 'options': options},
   );
 
   factory SchemaMutation.dropDatabase({

@@ -82,7 +82,9 @@ mixin TimestampsTZImpl on ModelAttributes {
     } else if (value is DateTime) {
       setAttribute(_createdAtColumn, value.isUtc ? value : value.toUtc());
     } else {
-      throw ArgumentError('createdAt must be DateTime or CarbonInterface, got ${value.runtimeType}');
+      throw ArgumentError(
+        'createdAt must be DateTime or CarbonInterface, got ${value.runtimeType}',
+      );
     }
   }
 
@@ -105,7 +107,9 @@ mixin TimestampsTZImpl on ModelAttributes {
     } else if (value is DateTime) {
       setAttribute(_updatedAtColumn, value.isUtc ? value : value.toUtc());
     } else {
-      throw ArgumentError('updatedAt must be DateTime or CarbonInterface, got ${value.runtimeType}');
+      throw ArgumentError(
+        'updatedAt must be DateTime or CarbonInterface, got ${value.runtimeType}',
+      );
     }
   }
 
@@ -139,9 +143,10 @@ mixin SoftDeletesTZImpl on ModelAttributes {
   }
 
   set deletedAt(DateTime? value) {
-    setAttribute(_column, value != null 
-        ? Carbon.fromDateTime(value).toUtc().toDateTime() 
-        : null);
+    setAttribute(
+      _column,
+      value != null ? Carbon.fromDateTime(value).toUtc().toDateTime() : null,
+    );
   }
 
   /// Whether the model currently has a deletion timestamp.

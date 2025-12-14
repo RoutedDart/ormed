@@ -2,7 +2,6 @@ library;
 
 import 'package:driver_tests/orm_registry.g.dart';
 import 'package:ormed/ormed.dart';
-import 'package:ormed/testing.dart';
 
 import '../migrations/migrations.dart';
 

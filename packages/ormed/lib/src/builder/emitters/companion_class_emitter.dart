@@ -17,14 +17,20 @@ class CompanionClassEmitter {
     buffer.writeln('  const $companionName._();');
     buffer.writeln();
 
-    buffer.writeln('  static Query<$generatedClassName> query([String? connection]) =>');
-    buffer.writeln('      Model.query<$generatedClassName>(connection: connection);');
+    buffer.writeln(
+      '  static Query<$generatedClassName> query([String? connection]) =>',
+    );
+    buffer.writeln(
+      '      Model.query<$generatedClassName>(connection: connection);',
+    );
     buffer.writeln();
 
     buffer.writeln(
       '  static Future<$generatedClassName?> find(Object id, {String? connection}) =>',
     );
-    buffer.writeln('      Model.find<$generatedClassName>(id, connection: connection);');
+    buffer.writeln(
+      '      Model.find<$generatedClassName>(id, connection: connection);',
+    );
     buffer.writeln();
 
     buffer.writeln(
@@ -38,15 +44,21 @@ class CompanionClassEmitter {
     buffer.writeln(
       '  static Future<List<$generatedClassName>> all({String? connection}) =>',
     );
-    buffer.writeln('      Model.all<$generatedClassName>(connection: connection);');
+    buffer.writeln(
+      '      Model.all<$generatedClassName>(connection: connection);',
+    );
     buffer.writeln();
 
     buffer.writeln('  static Future<int> count({String? connection}) =>');
-    buffer.writeln('      Model.count<$generatedClassName>(connection: connection);');
+    buffer.writeln(
+      '      Model.count<$generatedClassName>(connection: connection);',
+    );
     buffer.writeln();
 
     buffer.writeln('  static Future<bool> anyExist({String? connection}) =>');
-    buffer.writeln('      Model.anyExist<$generatedClassName>(connection: connection);');
+    buffer.writeln(
+      '      Model.anyExist<$generatedClassName>(connection: connection);',
+    );
     buffer.writeln();
 
     buffer.writeln('  static Query<$generatedClassName> where(');

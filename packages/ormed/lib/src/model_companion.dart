@@ -27,31 +27,16 @@ class ModelCompanion<T extends Model<T>> {
     String operator,
     dynamic value, {
     String? connection,
-  }) =>
-      Model.where<T>(
-        column,
-        operator,
-        value,
-        connection: connection,
-      );
+  }) => Model.where<T>(column, operator, value, connection: connection);
 
-  Query<T> whereIn(
-    String column,
-    List<dynamic> values, {
-    String? connection,
-  }) =>
+  Query<T> whereIn(String column, List<dynamic> values, {String? connection}) =>
       Model.whereIn<T>(column, values, connection: connection);
 
   Query<T> orderBy(
     String column, {
     String direction = "asc",
     String? connection,
-  }) =>
-      Model.orderBy<T>(
-        column,
-        direction: direction,
-        connection: connection,
-      );
+  }) => Model.orderBy<T>(column, direction: direction, connection: connection);
 
   Query<T> limit(int count, {String? connection}) =>
       Model.limit<T>(count, connection: connection);

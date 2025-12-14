@@ -19,7 +19,7 @@ void main() {
     test('bool → INTEGER with IntBoolCodec', () {
       final sqlType = mapper.dartTypeToSql(bool);
       expect(sqlType, 'INTEGER');
-      
+
       final codec = mapper.getCodecForDartType(bool);
       expect(codec!.encode(true), 1);
       expect(codec.decode(1), true);
@@ -28,7 +28,7 @@ void main() {
     test('DateTime → TEXT with codec', () {
       final sqlType = mapper.dartTypeToSql(DateTime);
       expect(sqlType, 'TEXT');
-      
+
       final codec = mapper.getCodecForDartType(DateTime);
       expect(codec, isNotNull);
     });

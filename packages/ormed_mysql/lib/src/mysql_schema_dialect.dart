@@ -37,10 +37,9 @@ class MySqlSchemaDialect extends SchemaDialect {
         final name = mutation.documentPayload!['name'] as String;
         final ifExists =
             mutation.documentPayload!['ifExists'] as bool? ?? false;
-        final sql =
-            ifExists
-                ? compileDropDatabaseIfExists(name)
-                : 'DROP DATABASE ${_quote(name)}';
+        final sql = ifExists
+            ? compileDropDatabaseIfExists(name)
+            : 'DROP DATABASE ${_quote(name)}';
         return sql != null ? [SchemaStatement(sql)] : [];
       default:
         throw UnimplementedError(
@@ -484,12 +483,12 @@ class MySqlSchemaDialect extends SchemaDialect {
   String? compileListDatabases() {
     // Align with Laravel: filter out system schemas and expose a stable, non-reserved alias
     return 'SELECT SCHEMA_NAME AS db_name '
-      'FROM information_schema.SCHEMATA '
-      "WHERE SCHEMA_NAME NOT IN ('information_schema', 'performance_schema', 'mysql', 'sys') "
-      'ORDER BY SCHEMA_NAME';
+        'FROM information_schema.SCHEMATA '
+        "WHERE SCHEMA_NAME NOT IN ('information_schema', 'performance_schema', 'mysql', 'sys') "
+        'ORDER BY SCHEMA_NAME';
   }
 
-  // ========== Schema Introspection ========== 
+  // ========== Schema Introspection ==========
 
   @override
   String? compileSchemas({String? schema}) {
@@ -535,7 +534,11 @@ class MySqlSchemaDialect extends SchemaDialect {
   @override
   String? compileIndexes(String table, {String? schema}) {
     return 'SELECT index_name AS name, GROUP_CONCAT(column_name ORDER BY seq_in_index) AS columns, '
-        'index_type AS type, NOT non_unique AS `unique`, index_name = '"'"'PRIMARY'"'"' AS is_primary '
+        'index_type AS type, NOT non_unique AS `unique`, index_name = '
+        "'"
+        'PRIMARY'
+        "'"
+        ' AS is_primary '
         'FROM information_schema.statistics '
         'WHERE table_schema = ? AND table_name = ? '
         'GROUP BY index_name, index_type, non_unique';

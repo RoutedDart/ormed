@@ -156,63 +156,92 @@ class SnapshotSchemaDriver implements SchemaDriver {
       .toList(growable: false);
 
   @override
-  Future<bool> createDatabase(String name, {Map<String, Object?>? options}) async {
-    throw UnsupportedError('SnapshotSchemaDriver does not support database management.');
+  Future<bool> createDatabase(
+    String name, {
+    Map<String, Object?>? options,
+  }) async {
+    throw UnsupportedError(
+      'SnapshotSchemaDriver does not support database management.',
+    );
   }
 
   @override
   Future<bool> dropDatabase(String name) async {
-    throw UnsupportedError('SnapshotSchemaDriver does not support database management.');
+    throw UnsupportedError(
+      'SnapshotSchemaDriver does not support database management.',
+    );
   }
 
   @override
   Future<bool> dropDatabaseIfExists(String name) async {
-    throw UnsupportedError('SnapshotSchemaDriver does not support database management.');
+    throw UnsupportedError(
+      'SnapshotSchemaDriver does not support database management.',
+    );
   }
 
   @override
   Future<List<String>> listDatabases() async {
-    throw UnsupportedError('SnapshotSchemaDriver does not support database management.');
+    throw UnsupportedError(
+      'SnapshotSchemaDriver does not support database management.',
+    );
   }
 
   @override
   Future<bool> createSchema(String name) async {
-    throw UnsupportedError('SnapshotSchemaDriver does not support schema management.');
+    throw UnsupportedError(
+      'SnapshotSchemaDriver does not support schema management.',
+    );
   }
 
   @override
   Future<bool> dropSchemaIfExists(String name) async {
-    throw UnsupportedError('SnapshotSchemaDriver does not support schema management.');
+    throw UnsupportedError(
+      'SnapshotSchemaDriver does not support schema management.',
+    );
   }
 
   @override
   Future<void> setCurrentSchema(String name) async {
-    throw UnsupportedError('SnapshotSchemaDriver does not support schema management.');
+    throw UnsupportedError(
+      'SnapshotSchemaDriver does not support schema management.',
+    );
   }
 
   @override
   Future<String> getCurrentSchema() async {
-    throw UnsupportedError('SnapshotSchemaDriver does not support schema management.');
+    throw UnsupportedError(
+      'SnapshotSchemaDriver does not support schema management.',
+    );
   }
 
   @override
   Future<bool> enableForeignKeyConstraints() async {
-    throw UnsupportedError('SnapshotSchemaDriver does not support FK constraint control.');
+    throw UnsupportedError(
+      'SnapshotSchemaDriver does not support FK constraint control.',
+    );
   }
 
   @override
   Future<bool> disableForeignKeyConstraints() async {
-    throw UnsupportedError('SnapshotSchemaDriver does not support FK constraint control.');
+    throw UnsupportedError(
+      'SnapshotSchemaDriver does not support FK constraint control.',
+    );
   }
 
   @override
-  Future<T> withoutForeignKeyConstraints<T>(Future<T> Function() callback) async {
-    throw UnsupportedError('SnapshotSchemaDriver does not support FK constraint control.');
+  Future<T> withoutForeignKeyConstraints<T>(
+    Future<T> Function() callback,
+  ) async {
+    throw UnsupportedError(
+      'SnapshotSchemaDriver does not support FK constraint control.',
+    );
   }
 
   @override
   Future<void> dropAllTables({String? schema}) async {
-    throw UnsupportedError('SnapshotSchemaDriver does not support table operations.');
+    throw UnsupportedError(
+      'SnapshotSchemaDriver does not support table operations.',
+    );
   }
 
   @override
@@ -240,7 +269,11 @@ class SnapshotSchemaDriver implements SchemaDriver {
   }
 
   @override
-  Future<bool> hasColumns(String table, List<String> columns, {String? schema}) async {
+  Future<bool> hasColumns(
+    String table,
+    List<String> columns, {
+    String? schema,
+  }) async {
     final tableColumns = snapshot.columns
         .where(
           (c) => _equalsOwner(c.schema, schema) && _equals(c.tableName, table),
@@ -257,9 +290,15 @@ class SnapshotSchemaDriver implements SchemaDriver {
   }
 
   @override
-  Future<bool> hasIndex(String table, String index, {String? schema, String? type}) async {
+  Future<bool> hasIndex(
+    String table,
+    String index, {
+    String? schema,
+    String? type,
+  }) async {
     return snapshot.indexes.any((idx) {
-      final typeMatches = type == null ||
+      final typeMatches =
+          type == null ||
           (type == 'primary' && idx.primary) ||
           (type == 'unique' && idx.unique) ||
           _equals(type, idx.type);

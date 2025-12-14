@@ -5,7 +5,7 @@ import 'package:ormed_sqlite/ormed_sqlite.dart';
 import 'package:test/test.dart';
 
 /// Comprehensive test suite for Phase 1: Database Management features (SQLite)
-/// 
+///
 /// Tests cover:
 /// - File-based database creation/dropping
 /// - Foreign key constraint management via PRAGMA
@@ -13,8 +13,9 @@ import 'package:test/test.dart';
 /// - File cleanup and error handling
 void main() {
   // Use system temp directory for test databases (cross-platform)
-  final testDbPath = '${Directory.systemTemp.path}/ormed_test_${DateTime.now().millisecondsSinceEpoch}.db';
-  
+  final testDbPath =
+      '${Directory.systemTemp.path}/ormed_test_${DateTime.now().millisecondsSinceEpoch}.db';
+
   group('SQLite Database Management', () {
     late SqliteDriverAdapter adapter;
 
@@ -30,7 +31,7 @@ void main() {
 
     tearDown(() async {
       await adapter.close();
-      
+
       // Clean up test file
       final file = File(testDbPath);
       if (file.existsSync()) {
@@ -76,10 +77,7 @@ void main() {
       }
 
       // Dropping non-existent database should throw
-      expect(
-        () => adapter.dropDatabase(testDb),
-        throwsA(isA<StateError>()),
-      );
+      expect(() => adapter.dropDatabase(testDb), throwsA(isA<StateError>()));
     });
 
     test('dropDatabaseIfExists returns false for non-existent', () async {
@@ -98,10 +96,7 @@ void main() {
 
     test('listDatabases throws UnsupportedError', () async {
       // SQLite doesn't have a catalog concept
-      expect(
-        () => adapter.listDatabases(),
-        throwsA(isA<UnsupportedError>()),
-      );
+      expect(() => adapter.listDatabases(), throwsA(isA<UnsupportedError>()));
     });
 
     test('creates database with nested directories', () async {
@@ -143,7 +138,7 @@ void main() {
 
     tearDown(() async {
       await adapter.close();
-      
+
       final file = File(testDbPath);
       if (file.existsSync()) {
         file.deleteSync();
@@ -339,7 +334,7 @@ void main() {
 
     tearDown(() async {
       await adapter.close();
-      
+
       final file = File(testDbPath);
       if (file.existsSync()) {
         file.deleteSync();
@@ -442,7 +437,7 @@ void main() {
 
     tearDown(() async {
       await adapter.close();
-      
+
       final file = File(testDbPath);
       if (file.existsSync()) {
         file.deleteSync();
@@ -524,7 +519,7 @@ void main() {
 
     tearDown(() async {
       await adapter.close();
-      
+
       final file = File(testDbPath);
       if (file.existsSync()) {
         file.deleteSync();
@@ -533,7 +528,9 @@ void main() {
 
     test('metadata reports databaseManagement capability', () {
       expect(
-        adapter.metadata.supportsCapability(DriverCapability.databaseManagement),
+        adapter.metadata.supportsCapability(
+          DriverCapability.databaseManagement,
+        ),
         isTrue,
       );
     });
@@ -553,7 +550,8 @@ void main() {
     late String testDbPath;
 
     setUp(() async {
-      testDbPath = '${Directory.systemTemp.path}/has_methods_test_${DateTime.now().millisecondsSinceEpoch}.db';
+      testDbPath =
+          '${Directory.systemTemp.path}/has_methods_test_${DateTime.now().millisecondsSinceEpoch}.db';
       final file = File(testDbPath);
       if (await file.exists()) {
         await file.delete();
@@ -639,7 +637,10 @@ void main() {
     });
 
     test('hasColumns returns true when all columns exist', () async {
-      expect(await adapter.hasColumns('users', ['id', 'name', 'email']), isTrue);
+      expect(
+        await adapter.hasColumns('users', ['id', 'name', 'email']),
+        isTrue,
+      );
       expect(await adapter.hasColumns('posts', ['id', 'title']), isTrue);
     });
 
@@ -671,10 +672,7 @@ void main() {
       if (indexes.isNotEmpty) {
         // Test with the first index we find
         final firstIndex = indexes.first;
-        expect(
-          await adapter.hasIndex('users', firstIndex.name),
-          isTrue,
-        );
+        expect(await adapter.hasIndex('users', firstIndex.name), isTrue);
       }
     });
 

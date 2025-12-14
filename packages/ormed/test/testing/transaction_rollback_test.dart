@@ -131,7 +131,6 @@ Future<void> main() async {
 
       final user = await dataSource.repo<ActiveUser>().insert(
         ActiveUser(name: 'Manual', email: 'manual@example.com'),
-
       );
 
       expect(user.id, isNotNull);

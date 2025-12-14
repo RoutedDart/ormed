@@ -139,8 +139,10 @@ class OrmField {
   /// insertion behavior through this flag. The DTO approach provides better
   /// type safety and clearer intent. This flag is honored for backward
   /// compatibility but may be removed in a future major version.
-  @Deprecated('Use generated InsertDto types instead. '
-      'See migration guide at docs/dto_migration.md')
+  @Deprecated(
+    'Use generated InsertDto types instead. '
+    'See migration guide at docs/dto_migration.md',
+  )
   final bool? insertable;
 
   /// Whether this field should be included in UPDATE statements.
@@ -154,8 +156,10 @@ class OrmField {
   /// update behavior through this flag. The DTO approach provides better
   /// type safety and clearer intent. This flag is honored for backward
   /// compatibility but may be removed in a future major version.
-  @Deprecated('Use generated UpdateDto types instead. '
-      'See migration guide at docs/dto_migration.md')
+  @Deprecated(
+    'Use generated UpdateDto types instead. '
+    'See migration guide at docs/dto_migration.md',
+  )
   final bool? updatable;
 
   /// Default Dart value used when creating new model instances.
@@ -169,8 +173,10 @@ class OrmField {
   /// values for handling auto-increment fields. The DTO approach eliminates
   /// the need for sentinel values entirely. This flag is honored for backward
   /// compatibility but may be removed in a future major version.
-  @Deprecated('Use generated InsertDto types instead of sentinel values. '
-      'See migration guide at docs/dto_migration.md')
+  @Deprecated(
+    'Use generated InsertDto types instead of sentinel values. '
+    'See migration guide at docs/dto_migration.md',
+  )
   final Object? defaultDartValue;
 }
 
@@ -258,4 +264,3 @@ class HasFactory {
 
 /// Convenience constant for `@HasFactory()`.
 const hasFactory = HasFactory();
-

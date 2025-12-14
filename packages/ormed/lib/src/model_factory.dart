@@ -10,8 +10,8 @@ import 'query/query.dart';
 import 'value_codec.dart';
 
 /// Signature for state transformation closures.
-typedef StateTransformer<TModel extends OrmEntity> = Map<String, Object?>
-    Function(Map<String, Object?> attributes);
+typedef StateTransformer<TModel extends OrmEntity> =
+    Map<String, Object?> Function(Map<String, Object?> attributes);
 
 /// Signature for sequence generators.
 typedef SequenceGenerator = Map<String, Object?> Function(int index);
@@ -25,7 +25,7 @@ class ModelFactoryGenerationContext<TModel extends OrmEntity> {
     this.seed,
   });
 
-  final ModelDefinition<TModel > definition;
+  final ModelDefinition<TModel> definition;
   final Random random;
   final Map<String, Object?> overrides;
   final int? seed;
@@ -181,7 +181,9 @@ class ModelFactoryBuilder<TModel extends OrmEntity> {
   }
 
   /// Registers a callback to run after each model is made (but not persisted).
-  ModelFactoryBuilder<TModel> afterMaking(void Function(TModel model) callback) {
+  ModelFactoryBuilder<TModel> afterMaking(
+    void Function(TModel model) callback,
+  ) {
     _afterMakingCallbacks.add(callback);
     return this;
   }

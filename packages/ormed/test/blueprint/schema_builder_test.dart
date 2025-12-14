@@ -245,14 +245,10 @@ class _FakeCodec extends ModelCodec<AdHocRow> {
   const _FakeCodec();
 
   @override
-  Map<String, Object?> encode(
-    AdHocRow model,
-    ValueCodecRegistry registry,
-  ) => Map<String, Object?>.from(model);
+  Map<String, Object?> encode(AdHocRow model, ValueCodecRegistry registry) =>
+      Map<String, Object?>.from(model);
 
   @override
-  AdHocRow decode(
-    Map<String, Object?> data,
-    ValueCodecRegistry registry,
-  ) => AdHocRow(data);
+  AdHocRow decode(Map<String, Object?> data, ValueCodecRegistry registry) =>
+      AdHocRow(data);
 }

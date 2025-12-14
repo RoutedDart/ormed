@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'carbon_config.dart';
 import 'connection/connection.dart';
-import 'connection/connection_events.dart';
 import 'connection/connection_manager.dart';
 import 'connection/orm_connection.dart';
 import 'driver/driver.dart';

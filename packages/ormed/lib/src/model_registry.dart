@@ -49,15 +49,17 @@ class ModelRegistry {
       }
     }
   }
-  
+
   /// Register a type alias that maps to an existing definition
-  void registerTypeAlias<T extends OrmEntity>(ModelDefinition<OrmEntity> existingDefinition) {
+  void registerTypeAlias<T extends OrmEntity>(
+    ModelDefinition<OrmEntity> existingDefinition,
+  ) {
     if (_definitions.containsKey(T)) {
       return; // Skip already registered types
     }
     _definitions[T] = existingDefinition;
   }
-  
+
   /// Returns all registered model definitions (deduplicated)
   List<ModelDefinition<OrmEntity>> get allDefinitions {
     final seen = <String>{};

@@ -444,8 +444,9 @@ class PostPartial implements PartialEntity<$Post> {
     final String? titleValue = title;
     if (titleValue == null) throw StateError('Missing required field: title');
     final bool? publishedValue = published;
-    if (publishedValue == null)
+    if (publishedValue == null) {
       throw StateError('Missing required field: published');
+    }
     return $Post(
       id: id,
       userId: userIdValue,

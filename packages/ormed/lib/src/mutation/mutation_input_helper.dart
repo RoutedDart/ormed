@@ -157,8 +157,7 @@ class MutationInputHelper<T extends OrmEntity> {
       // Tracked model ($User) - extract all column values
       T model => definition.toMap(model, registry: codecs),
       // PartialEntity ($UserPartial) - use toMap()
-      PartialEntity<dynamic> partial =>
-          _normalizeColumnNames(partial.toMap()),
+      PartialEntity<dynamic> partial => _normalizeColumnNames(partial.toMap()),
       // InsertDto ($UserInsertDto) - use toMap()
       InsertDto<dynamic> dto => _normalizeColumnNames(dto.toMap()),
       // UpdateDto ($UserUpdateDto) - use toMap()

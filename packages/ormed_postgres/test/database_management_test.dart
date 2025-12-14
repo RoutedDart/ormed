@@ -23,7 +23,7 @@ PostgresDriverAdapter _createAdapterFromEnv({String? database}) {
 }
 
 /// Comprehensive test suite for Phase 1: Database Management features (PostgreSQL)
-/// 
+///
 /// Tests cover:
 /// - Database creation/dropping with various options (encoding, owner, template, locale, etc.)
 /// - Transaction depth validation for DDL operations
@@ -75,9 +75,7 @@ void main() {
       await adapter.dropDatabaseIfExists(testDb);
 
       // Create with specific encoding
-      await adapter.createDatabase(testDb, options: {
-        'encoding': 'UTF8',
-      });
+      await adapter.createDatabase(testDb, options: {'encoding': 'UTF8'});
 
       // Verify encoding (requires querying pg_database)
       final result = await adapter.queryRaw(
@@ -98,10 +96,10 @@ void main() {
       await adapter.dropDatabaseIfExists(testDb);
 
       // Create with multiple options
-      await adapter.createDatabase(testDb, options: {
-        'encoding': 'UTF8',
-        'connection_limit': 10,
-      });
+      await adapter.createDatabase(
+        testDb,
+        options: {'encoding': 'UTF8', 'connection_limit': 10},
+      );
 
       final result = await adapter.queryRaw(
         'SELECT datconnlimit FROM pg_database WHERE datname = ?',
@@ -119,10 +117,7 @@ void main() {
 
       await adapter.dropDatabaseIfExists(testDb);
 
-      expect(
-        () => adapter.dropDatabase(testDb),
-        throwsA(isA<Exception>()),
-      );
+      expect(() => adapter.dropDatabase(testDb), throwsA(isA<Exception>()));
     });
 
     test('dropDatabaseIfExists returns false for non-existent', () async {
@@ -181,13 +176,21 @@ void main() {
       adapter = _createAdapterFromEnv();
 
       // Clean up any previous test tables
-      await adapter.executeRaw('DROP TABLE IF EXISTS pg_fk_test_children CASCADE');
-      await adapter.executeRaw('DROP TABLE IF EXISTS pg_fk_test_parents CASCADE');
+      await adapter.executeRaw(
+        'DROP TABLE IF EXISTS pg_fk_test_children CASCADE',
+      );
+      await adapter.executeRaw(
+        'DROP TABLE IF EXISTS pg_fk_test_parents CASCADE',
+      );
     });
 
     tearDown(() async {
-      await adapter.executeRaw('DROP TABLE IF EXISTS pg_fk_test_children CASCADE');
-      await adapter.executeRaw('DROP TABLE IF EXISTS pg_fk_test_parents CASCADE');
+      await adapter.executeRaw(
+        'DROP TABLE IF EXISTS pg_fk_test_children CASCADE',
+      );
+      await adapter.executeRaw(
+        'DROP TABLE IF EXISTS pg_fk_test_parents CASCADE',
+      );
       await adapter.close();
     });
 
@@ -313,7 +316,9 @@ void main() {
       ''');
 
       // Insert data
-      await adapter.executeRaw('INSERT INTO pg_fk_test_parents (id) VALUES (1)');
+      await adapter.executeRaw(
+        'INSERT INTO pg_fk_test_parents (id) VALUES (1)',
+      );
       await adapter.executeRaw(
         'INSERT INTO pg_fk_test_children (parent_id) VALUES (1)',
       );
@@ -389,18 +394,20 @@ void main() {
       await adapter.dropAllTables(schema: 'public');
     });
 
-    test('dropAllTables handles complex FK relationships with CASCADE', () async {
-      await adapter.dropAllTables(schema: 'public');
+    test(
+      'dropAllTables handles complex FK relationships with CASCADE',
+      () async {
+        await adapter.dropAllTables(schema: 'public');
 
-      // Create complex FK relationships: A -> B -> C
-      await adapter.executeRaw('''
+        // Create complex FK relationships: A -> B -> C
+        await adapter.executeRaw('''
         CREATE TABLE pg_table_c (
           id SERIAL PRIMARY KEY,
           name VARCHAR(255)
         )
       ''');
 
-      await adapter.executeRaw('''
+        await adapter.executeRaw('''
         CREATE TABLE pg_table_b (
           id SERIAL PRIMARY KEY,
           c_id INT,
@@ -408,7 +415,7 @@ void main() {
         )
       ''');
 
-      await adapter.executeRaw('''
+        await adapter.executeRaw('''
         CREATE TABLE pg_table_a (
           id SERIAL PRIMARY KEY,
           b_id INT,
@@ -416,17 +423,18 @@ void main() {
         )
       ''');
 
-      // Verify all created
-      final tablesBefore = await adapter.listTables(schema: 'public');
-      expect(tablesBefore.length, greaterThanOrEqualTo(3));
+        // Verify all created
+        final tablesBefore = await adapter.listTables(schema: 'public');
+        expect(tablesBefore.length, greaterThanOrEqualTo(3));
 
-      // Drop all with CASCADE should handle FK dependencies
-      await adapter.dropAllTables(schema: 'public');
+        // Drop all with CASCADE should handle FK dependencies
+        await adapter.dropAllTables(schema: 'public');
 
-      // Verify all gone
-      final tablesAfter = await adapter.listTables(schema: 'public');
-      expect(tablesAfter, isEmpty);
-    });
+        // Verify all gone
+        final tablesAfter = await adapter.listTables(schema: 'public');
+        expect(tablesAfter, isEmpty);
+      },
+    );
 
     test('dropAllTables handles self-referencing FKs', () async {
       await adapter.dropAllTables(schema: 'public');
@@ -531,7 +539,9 @@ void main() {
 
     test('metadata reports databaseManagement capability', () {
       expect(
-        adapter.metadata.supportsCapability(DriverCapability.databaseManagement),
+        adapter.metadata.supportsCapability(
+          DriverCapability.databaseManagement,
+        ),
         isTrue,
       );
     });
@@ -638,7 +648,10 @@ void main() {
     });
 
     test('hasColumns returns true when all columns exist', () async {
-      expect(await adapter.hasColumns('users', ['id', 'name', 'email']), isTrue);
+      expect(
+        await adapter.hasColumns('users', ['id', 'name', 'email']),
+        isTrue,
+      );
       expect(await adapter.hasColumns('posts', ['id', 'title']), isTrue);
     });
 
@@ -660,11 +673,17 @@ void main() {
     });
 
     test('hasIndex filters by type: primary', () async {
-      expect(await adapter.hasIndex('users', 'users_pkey', type: 'primary'), isTrue);
+      expect(
+        await adapter.hasIndex('users', 'users_pkey', type: 'primary'),
+        isTrue,
+      );
     });
 
     test('hasIndex filters by type: unique', () async {
-      expect(await adapter.hasIndex('users', 'users_email_key', type: 'unique'), isTrue);
+      expect(
+        await adapter.hasIndex('users', 'users_email_key', type: 'unique'),
+        isTrue,
+      );
     });
 
     test('hasIndex is case-insensitive', () async {

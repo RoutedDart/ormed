@@ -15,10 +15,7 @@ class SchemaDumpCommand extends Command<void> {
       abbr: 'c',
       help: 'Path to orm.yaml (defaults to project root).',
     );
-    argParser.addOption(
-      'database',
-      help: 'The database connection to use.',
-    );
+    argParser.addOption('database', help: 'The database connection to use.');
     argParser.addOption(
       'path',
       help: 'Custom output path for the schema dump.',
@@ -53,7 +50,7 @@ class SchemaDumpCommand extends Command<void> {
 
     final context = resolveOrmProject(configPath: configArg);
     final config = loadOrmProjectConfig(context.configFile);
-    
+
     if (prune && !confirmToProceed(force: force, action: 'prune migrations')) {
       stdout.writeln('Schema dump cancelled.');
       return;
@@ -68,7 +65,7 @@ class SchemaDumpCommand extends Command<void> {
     try {
       await handle.use((connection) async {
         final driver = connection.driver;
-        
+
         if (driver is! SchemaDriver) {
           throw UsageException(
             'Schema dump is not supported for ${driver.runtimeType}',
@@ -96,18 +93,24 @@ class SchemaDumpCommand extends Command<void> {
         } else {
           // Use connection name for the schema file (like Laravel)
           final connectionName = databaseOverride ?? config.connectionName;
-          final schemaDir = resolvePath(context.root, config.migrations.schemaDump);
+          final schemaDir = resolvePath(
+            context.root,
+            config.migrations.schemaDump,
+          );
           final schemaDirObj = Directory(schemaDir);
           schemaDirObj.createSync(recursive: true);
           outputPath = p.join(schemaDir, '$connectionName-schema.sql');
         }
-        
+
         final schemaFile = File(outputPath);
 
         // Dump the schema
         await state.dump(schemaFile);
-        
-        final relativePath = p.relative(schemaFile.path, from: context.root.path);
+
+        final relativePath = p.relative(
+          schemaFile.path,
+          from: context.root.path,
+        );
         stdout.writeln('Database schema dumped to: $relativePath');
 
         if (prune) {
@@ -123,9 +126,12 @@ class SchemaDumpCommand extends Command<void> {
     OrmProjectContext context,
     OrmProjectConfig config,
   ) async {
-    final migrationsPath = resolvePath(context.root, config.migrations.directory);
+    final migrationsPath = resolvePath(
+      context.root,
+      config.migrations.directory,
+    );
     final migrationsDir = Directory(migrationsPath);
-    
+
     if (!migrationsDir.existsSync()) {
       stdout.writeln('No migrations directory found.');
       return;
@@ -174,7 +180,7 @@ class SchemaDescribeCommand extends Command<void> {
       await handle.use((connection) async {
         final driver = connection.driver;
         final metadata = await schemaMetadata(driver);
-        
+
         if (asJson) {
           final payload = const JsonEncoder.withIndent('  ').convert(metadata);
           stdout.writeln(payload);

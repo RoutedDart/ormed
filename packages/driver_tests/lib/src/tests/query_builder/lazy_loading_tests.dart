@@ -3,9 +3,7 @@ import 'package:ormed/ormed.dart';
 import 'package:test/test.dart';
 
 void runLazyLoadingTests() {
-  ormedGroup('lazy loading', (
-    dataSource,
-  ) {
+  ormedGroup('lazy loading', (dataSource) {
     setUp(() async {
       // Bind connection resolver for Model.load() to work
       Model.bindConnectionResolver(

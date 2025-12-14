@@ -182,7 +182,7 @@ void runConditionalTests() {
       final users = await dataSource.context
           .query<User>()
           .when(
-        ()=>searchTerm != null,
+            () => searchTerm != null,
             (q) => q.whereLike('email', '%$searchTerm%'),
           )
           .get();
@@ -195,7 +195,7 @@ void runConditionalTests() {
       final filteredUsers = await dataSource.context
           .query<User>()
           .when(
-        ()=>searchTerm != null,
+            () => searchTerm != null,
             (q) => q.whereLike('email', '%$searchTerm%'),
           )
           .get();

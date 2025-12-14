@@ -35,7 +35,7 @@ class RelationLoader {
   /// final posts = userRows.first.relationList<Post>('posts');
   /// ```
   Future<void> attach<T extends OrmEntity>(
-    ModelDefinition<T > parentDefinition,
+    ModelDefinition<T> parentDefinition,
     List<QueryRow<T>> parents,
     List<RelationLoad> relations, {
     Map<String, RelationJoin> joinMap = const {},
@@ -78,7 +78,10 @@ class RelationLoader {
   }
 
   /// Syncs a loaded relation from QueryRow to the model's relation cache.
-  void _syncRelationsToModels<T extends OrmEntity>(List<QueryRow<T>> rows, String relationName) {
+  void _syncRelationsToModels<T extends OrmEntity>(
+    List<QueryRow<T>> rows,
+    String relationName,
+  ) {
     for (final row in rows) {
       if (row.model is ModelRelations) {
         final model = row.model as ModelRelations;
@@ -146,7 +149,7 @@ class RelationLoader {
 
   /// Loads a `belongs-to` relation.
   Future<void> _loadBelongsTo<T extends OrmEntity>(
-    ModelDefinition<T > parentDefinition,
+    ModelDefinition<T> parentDefinition,
     List<QueryRow<T>> parents,
     RelationLoad load,
     RelationSegment segment,
@@ -502,14 +505,10 @@ class _PivotCodec extends ModelCodec<AdHocRow> {
   const _PivotCodec();
 
   @override
-  Map<String, Object?> encode(
-    AdHocRow model,
-    ValueCodecRegistry registry,
-  ) => Map<String, Object?>.from(model);
+  Map<String, Object?> encode(AdHocRow model, ValueCodecRegistry registry) =>
+      Map<String, Object?>.from(model);
 
   @override
-  AdHocRow decode(
-    Map<String, Object?> data,
-    ValueCodecRegistry registry,
-  ) => AdHocRow(data);
+  AdHocRow decode(Map<String, Object?> data, ValueCodecRegistry registry) =>
+      AdHocRow(data);
 }

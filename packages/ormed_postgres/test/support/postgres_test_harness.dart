@@ -26,9 +26,17 @@ class PostgresConnectionInfo {
     return PostgresConnectionInfo(
       host: uri.host.isEmpty ? 'localhost' : uri.host,
       port: uri.port == 0 ? 5432 : uri.port,
-      database: uri.pathSegments.isNotEmpty ? uri.pathSegments.first : 'postgres',
-      username: uri.userInfo.contains(':') ? uri.userInfo.split(':').first : uri.userInfo.isEmpty ? null : uri.userInfo,
-      password: uri.userInfo.contains(':') ? uri.userInfo.split(':').last : null,
+      database: uri.pathSegments.isNotEmpty
+          ? uri.pathSegments.first
+          : 'postgres',
+      username: uri.userInfo.contains(':')
+          ? uri.userInfo.split(':').first
+          : uri.userInfo.isEmpty
+          ? null
+          : uri.userInfo,
+      password: uri.userInfo.contains(':')
+          ? uri.userInfo.split(':').last
+          : null,
     );
   }
 
@@ -73,7 +81,10 @@ class PostgresTestHarness {
   /// within the same database connection.
   PostgresDriverAdapter createTestAdapter(String testDbName) {
     return PostgresDriverAdapter.custom(
-      config: DatabaseConfig(driver: 'postgres', options: {'url': connectionUrl}),
+      config: DatabaseConfig(
+        driver: 'postgres',
+        options: {'url': connectionUrl},
+      ),
     );
   }
 
@@ -128,7 +139,8 @@ Future<PostgresTestHarness> createPostgresTestHarness({
     ValueCodecRegistry.instance.registerCodec(key: key, codec: codec);
   });
 
-  final url = connectionUrl ??
+  final url =
+      connectionUrl ??
       Platform.environment['POSTGRES_URL'] ??
       'postgres://postgres:postgres@localhost:6543/orm_test';
 
@@ -194,4 +206,3 @@ Future<PostgresTestHarness> createPostgresTestHarness({
     logging: logging,
   );
 }
-

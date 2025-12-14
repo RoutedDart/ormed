@@ -103,9 +103,7 @@ void main() {
       ]);
       final user = await Model.query<ActiveUser>().firstOrFail();
       final repo = context.repository<ActiveUser>();
-      await repo.updateMany([
-        ActiveUser(id: 5, email: 'updated@example.com'),
-      ]);
+      await repo.updateMany([ActiveUser(id: 5, email: 'updated@example.com')]);
       final refreshed = await user.refresh();
       expect(refreshed.email, 'updated@example.com');
     });

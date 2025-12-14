@@ -1,7 +1,8 @@
 part of 'query.dart';
 
 /// A callback for a global scope.
-typedef GlobalScopeCallback<T extends OrmEntity> = Query<T> Function(Query<T > query);
+typedef GlobalScopeCallback<T extends OrmEntity> =
+    Query<T> Function(Query<T> query);
 
 /// A callback for a local scope.
 typedef LocalScopeCallback<T extends OrmEntity> =
@@ -48,12 +49,14 @@ class ScopeRegistry {
   ///   return query.where('status', '=', 'active');
   /// });
   /// ```
-  void addGlobalScope<T extends OrmEntity>(String identifier, GlobalScopeCallback<T> scope) =>
-      addGlobalScopeForType(
-        T,
-        identifier,
-        (query) => scope(query as Query<T>) as Query<OrmEntity>,
-      );
+  void addGlobalScope<T extends OrmEntity>(
+    String identifier,
+    GlobalScopeCallback<T> scope,
+  ) => addGlobalScopeForType(
+    T,
+    identifier,
+    (query) => scope(query as Query<T>) as Query<OrmEntity>,
+  );
 
   /// Adds a global scope for a model of the given [modelType].
   void addGlobalScopeForType(
@@ -87,7 +90,7 @@ class ScopeRegistry {
   }
 
   /// Applies all registered global scopes to the given [query].
-  Query<T > applyGlobalScopes<T extends OrmEntity>(Query<T> query) {
+  Query<T> applyGlobalScopes<T extends OrmEntity>(Query<T> query) {
     if (query.globalScopesApplied) {
       return query;
     }
@@ -192,7 +195,10 @@ class ScopeRegistry {
   /// // Later, in a query:
   /// final popularUsers = await query.scope('popular', [100]).get();
   /// ```
-  void addLocalScope<T extends OrmEntity>(String name, LocalScopeCallback<T> scope) {
+  void addLocalScope<T extends OrmEntity>(
+    String name,
+    LocalScopeCallback<T> scope,
+  ) {
     final scopes = _localScopes.putIfAbsent(T, () => <String, Object>{});
     scopes[name] = scope;
   }
@@ -253,7 +259,11 @@ class ScopeRegistry {
   }
 
   /// Calls a macro by [name] on the given [query].
-  Query<T> callMacro<T extends OrmEntity>(String name, Query<T> query, List<Object?> args) {
+  Query<T> callMacro<T extends OrmEntity>(
+    String name,
+    Query<T> query,
+    List<Object?> args,
+  ) {
     final macro = _macros[name];
     if (macro == null) {
       throw ArgumentError.value(name, 'name', 'Macro not registered.');

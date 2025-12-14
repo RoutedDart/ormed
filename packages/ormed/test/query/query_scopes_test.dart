@@ -2,6 +2,7 @@ import 'package:ormed/ormed.dart';
 import 'package:test/test.dart';
 
 import 'package:driver_tests/driver_tests.dart';
+
 void main() {
   ModelRegistry registry = buildOrmRegistry();
   group('Query scopes and macros', () {

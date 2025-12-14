@@ -1045,8 +1045,7 @@ class _SelectCompilation {
       case RelationPredicate():
         final parentAlias = tableIdentifier ?? _baseTable;
         return _compileRelationPredicate(predicate, parentAlias);
-
-      }
+    }
   }
 
   String _compileSubqueryPredicate(SubqueryPredicate predicate) {

@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:ormed/src/query/query.dart';
 
 import '../../migrations.dart';
-import '../../testing.dart';
 import '../connection/orm_connection.dart';
 import '../driver/driver.dart';
 import '../model_definition.dart';
@@ -258,8 +257,6 @@ extension SchemaDriverTestExtensions on SchemaDriver {
     );
   }
 }
-
-
 
 /// Seeder registration for managing multiple seeders
 ///

@@ -92,16 +92,18 @@ String renderRegistryContent(List<ModelSummary> models) {
     ..writeln('ModelRegistry buildOrmRegistry() => ModelRegistry()')
     ..writeln('  ..registerAll(_\$ormModelDefinitions)')
     ..write('  ');
-  
+
   // Register user type aliases
   for (final summary in summaries) {
-    final userClassName = summary.className.startsWith('\$') 
-        ? summary.className.substring(1) 
+    final userClassName = summary.className.startsWith('\$')
+        ? summary.className.substring(1)
         : summary.className;
-    buffer.writeln('..registerTypeAlias<$userClassName>(_\$ormModelDefinitions[${summaries.indexOf(summary)}])');
+    buffer.writeln(
+      '..registerTypeAlias<$userClassName>(_\$ormModelDefinitions[${summaries.indexOf(summary)}])',
+    );
     buffer.write('  ');
   }
-  
+
   buffer
     ..writeln(';')
     ..writeln('')
@@ -113,15 +115,17 @@ String renderRegistryContent(List<ModelSummary> models) {
     ..writeln('extension GeneratedOrmModels on ModelRegistry {')
     ..writeln('  ModelRegistry registerGeneratedModels() {')
     ..writeln('    registerAll(_\$ormModelDefinitions);');
-    
+
   // Register user type aliases in extension too
   for (final summary in summaries) {
-    final userClassName = summary.className.startsWith('\$') 
-        ? summary.className.substring(1) 
+    final userClassName = summary.className.startsWith('\$')
+        ? summary.className.substring(1)
         : summary.className;
-    buffer.writeln('    registerTypeAlias<$userClassName>(_\$ormModelDefinitions[${summaries.indexOf(summary)}]);');
+    buffer.writeln(
+      '    registerTypeAlias<$userClassName>(_\$ormModelDefinitions[${summaries.indexOf(summary)}]);',
+    );
   }
-  
+
   buffer
     ..writeln('    return this;')
     ..writeln('  }')
@@ -130,20 +134,30 @@ String renderRegistryContent(List<ModelSummary> models) {
 
   // Generate registerOrmFactories() for models with factory support
   final factoryModels = summaries.where((s) => s.hasFactory).toList();
-  buffer.writeln('/// Registers factory definitions for all models that have factory support.');
-  buffer.writeln('/// Call this before using [Model.factory<T>()] to ensure definitions are available.');
+  buffer.writeln(
+    '/// Registers factory definitions for all models that have factory support.',
+  );
+  buffer.writeln(
+    '/// Call this before using [Model.factory<T>()] to ensure definitions are available.',
+  );
   buffer.writeln('void registerOrmFactories() {');
   for (final summary in factoryModels) {
     final userClassName = summary.className.startsWith('\$')
         ? summary.className.substring(1)
         : summary.className;
-    buffer.writeln('  ModelFactoryRegistry.registerIfAbsent<$userClassName>(${summary.definition});');
+    buffer.writeln(
+      '  ModelFactoryRegistry.registerIfAbsent<$userClassName>(${summary.definition});',
+    );
   }
   buffer
     ..writeln('}')
     ..writeln('')
-    ..writeln('/// Combined setup: registers both model registry and factories.')
-    ..writeln('/// Returns a ModelRegistry with all generated models registered.')
+    ..writeln(
+      '/// Combined setup: registers both model registry and factories.',
+    )
+    ..writeln(
+      '/// Returns a ModelRegistry with all generated models registered.',
+    )
     ..writeln('ModelRegistry buildOrmRegistryWithFactories() {')
     ..writeln('  registerOrmFactories();')
     ..writeln('  return buildOrmRegistry();')

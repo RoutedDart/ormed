@@ -46,7 +46,10 @@ void main() {
       expect(mapper.normalizeSqlType('INTEGER'), equals('INTEGER'));
       expect(mapper.normalizeSqlType('int'), equals('INTEGER'));
       expect(mapper.normalizeSqlType('BIGINT'), equals('INTEGER'));
-      expect(mapper.normalizeSqlType('TIMESTAMP WITH TIME ZONE'), equals('TIMESTAMP'));
+      expect(
+        mapper.normalizeSqlType('TIMESTAMP WITH TIME ZONE'),
+        equals('TIMESTAMP'),
+      );
       expect(mapper.normalizeSqlType('DOUBLE'), equals('DOUBLE'));
       expect(mapper.normalizeSqlType('REAL'), equals('DOUBLE PRECISION'));
     });
@@ -69,12 +72,12 @@ void main() {
     test('Codec for JSON type', () {
       final codec = mapper.getCodecForDartType(Map);
       expect(codec, isNotNull);
-      
+
       final testMap = {'key': 'value'};
       final encoded = codec?.encode(testMap);
       expect(encoded, isA<String>());
       expect(encoded, contains('key'));
-      
+
       final decoded = codec?.decode(encoded);
       expect(decoded, isA<Map>());
       expect((decoded as Map)['key'], equals('value'));

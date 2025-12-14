@@ -71,8 +71,8 @@ class QueryExecuted extends ConnectionEvent {
       final value = binding == null
           ? 'NULL'
           : binding is String
-              ? "'${binding.replaceAll("'", "''")}'"
-              : binding.toString();
+          ? "'${binding.replaceAll("'", "''")}'"
+          : binding.toString();
       rawSql = rawSql.replaceFirst('?', value);
     }
     return rawSql;

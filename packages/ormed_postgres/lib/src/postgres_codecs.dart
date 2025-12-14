@@ -12,7 +12,7 @@ void registerPostgresCodecs() {
   const jsonListCodec = _PostgresJsonListCodec();
   const carbonCodec = PostgresCarbonCodec();
   const carbonInterfaceCodec = PostgresCarbonInterfaceCodec();
-  
+
   ValueCodecRegistry.instance.registerDriver('postgres', {
     'DateTime': timestampCodec,
     'DateTime?': timestampCodec,
@@ -219,19 +219,21 @@ class PostgresCarbonCodec extends ValueCodec<Carbon> {
   @override
   Carbon? decode(Object? value) {
     if (value == null) return null;
-    
+
     // Handle DateTime from postgres package
     if (value is DateTime) {
       final utcDateTime = value.isUtc ? value : value.toUtc();
-      return Carbon.fromDateTime(utcDateTime).tz(CarbonConfig.defaultTimezone) as Carbon;
+      return Carbon.fromDateTime(utcDateTime).tz(CarbonConfig.defaultTimezone)
+          as Carbon;
     }
-    
+
     // Handle string parsing (fallback)
     if (value is String && value.isNotEmpty) {
       final utcDateTime = DateTime.parse(value).toUtc();
-      return Carbon.fromDateTime(utcDateTime).tz(CarbonConfig.defaultTimezone) as Carbon;
+      return Carbon.fromDateTime(utcDateTime).tz(CarbonConfig.defaultTimezone)
+          as Carbon;
     }
-    
+
     throw StateError('Unsupported Carbon value "$value".');
   }
 }
@@ -254,19 +256,19 @@ class PostgresCarbonInterfaceCodec extends ValueCodec<CarbonInterface> {
   @override
   CarbonInterface? decode(Object? value) {
     if (value == null) return null;
-    
+
     // Handle DateTime from postgres package
     if (value is DateTime) {
       final utcDateTime = value.isUtc ? value : value.toUtc();
       return Carbon.fromDateTime(utcDateTime).tz(CarbonConfig.defaultTimezone);
     }
-    
+
     // Handle string parsing (fallback)
     if (value is String && value.isNotEmpty) {
       final utcDateTime = DateTime.parse(value).toUtc();
       return Carbon.fromDateTime(utcDateTime).tz(CarbonConfig.defaultTimezone);
     }
-    
+
     throw StateError('Unsupported CarbonInterface value "$value".');
   }
 }

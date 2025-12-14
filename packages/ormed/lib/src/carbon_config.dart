@@ -55,10 +55,7 @@ class CarbonConfig {
   ///   defaultLocale: 'en_US',
   /// );
   /// ```
-  static void configure({
-    String? defaultTimezone,
-    String? defaultLocale,
-  }) {
+  static void configure({String? defaultTimezone, String? defaultLocale}) {
     if (defaultTimezone != null) {
       _defaultTimezone = defaultTimezone;
     }
@@ -94,10 +91,7 @@ class CarbonConfig {
     _isTimeMachineConfigured = true;
 
     // Set defaults
-    configure(
-      defaultTimezone: defaultTimezone,
-      defaultLocale: defaultLocale,
-    );
+    configure(defaultTimezone: defaultTimezone, defaultLocale: defaultLocale);
   }
 
   /// Resets configuration to defaults.

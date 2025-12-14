@@ -268,10 +268,11 @@ void main() {
     });
 
     test('whenQueryingForLongerThan flows from DataSource', () async {
-      final slowDriver = _DelayingDriver(delay: const Duration(milliseconds: 20))
-        ..register(AuthorOrmDefinition.definition, const [
-          Author(id: 1, name: 'Alice', active: true),
-        ]);
+      final slowDriver =
+          _DelayingDriver(delay: const Duration(milliseconds: 20))..register(
+            AuthorOrmDefinition.definition,
+            const [Author(id: 1, name: 'Alice', active: true)],
+          );
 
       dataSource = DataSource(
         DataSourceOptions(driver: slowDriver, registry: registry),
@@ -342,21 +343,23 @@ void main() {
       await dataSource.dispose();
     });
 
-    test('listeners at DataSource receive events from QueryContext operations',
-        () async {
-      final dsEvents = <QueryExecuted>[];
-      final connEvents = <QueryExecuted>[];
+    test(
+      'listeners at DataSource receive events from QueryContext operations',
+      () async {
+        final dsEvents = <QueryExecuted>[];
+        final connEvents = <QueryExecuted>[];
 
-      dataSource.listen(dsEvents.add);
-      dataSource.connection.listen(connEvents.add);
+        dataSource.listen(dsEvents.add);
+        dataSource.connection.listen(connEvents.add);
 
-      // Execute query via DataSource
-      await dataSource.query<Author>().get();
+        // Execute query via DataSource
+        await dataSource.query<Author>().get();
 
-      // Both should receive the same event
-      expect(dsEvents, hasLength(1));
-      expect(connEvents, hasLength(1));
-    });
+        // Both should receive the same event
+        expect(dsEvents, hasLength(1));
+        expect(connEvents, hasLength(1));
+      },
+    );
 
     test('query log entries contain connection metadata', () async {
       final customDs = DataSource(

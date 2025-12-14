@@ -61,7 +61,9 @@ class IndexDefinition {
     String driverName,
     Map<String, Object?> options,
   ) {
-    final newDriverOptions = Map<String, Map<String, Object?>>.from(driverOptions);
+    final newDriverOptions = Map<String, Map<String, Object?>>.from(
+      driverOptions,
+    );
     newDriverOptions[driverName] = {
       ...?newDriverOptions[driverName],
       ...options,

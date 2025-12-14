@@ -29,7 +29,7 @@
 mixin Timestamps {
   /// Default column name for creation timestamp.
   static const String defaultCreatedAtColumn = 'created_at';
-  
+
   /// Default column name for update timestamp.
   static const String defaultUpdatedAtColumn = 'updated_at';
 }
@@ -65,7 +65,7 @@ mixin Timestamps {
 mixin TimestampsTZ {
   /// Default column name for creation timestamp.
   static const String defaultCreatedAtColumn = 'created_at';
-  
+
   /// Default column name for update timestamp.
   static const String defaultUpdatedAtColumn = 'updated_at';
 }

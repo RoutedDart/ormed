@@ -25,7 +25,7 @@ void registerMySqlCodecs() {
     'List<dynamic>': MySqlJsonListCodec(),
     'List<dynamic>?': MySqlJsonListCodec(),
   };
-  
+
   ValueCodecRegistry.instance.registerDriver('mysql', codecs);
   ValueCodecRegistry.instance.registerDriver('mariadb', codecs);
 }
@@ -79,9 +79,7 @@ class MySqlDateTimeCodec extends ValueCodec<DateTime> {
     }
     final raw = value.toString().trim();
     final parsed = DateTime.parse(
-      RegExp(r'(Z|[+-]\d{2}:?\d{2})$').hasMatch(raw)
-          ? raw
-          : '${raw}Z',
+      RegExp(r'(Z|[+-]\d{2}:?\d{2})$').hasMatch(raw) ? raw : '${raw}Z',
     );
     if (parsed.isUtc) return parsed;
     return DateTime.utc(
@@ -204,7 +202,7 @@ class MySqlCarbonCodec extends ValueCodec<Carbon> {
   @override
   Carbon? decode(Object? value) {
     if (value == null) return null;
-    
+
     // Handle DateTime from mysql package - check this FIRST
     // The mysql1 package returns DateTime objects directly
     if (value is DateTime) {
@@ -225,15 +223,13 @@ class MySqlCarbonCodec extends ValueCodec<Carbon> {
             );
       return Carbon.fromDateTime(utcValue);
     }
-    
+
     // Handle string parsing as fallback
     if (value is String && value.isNotEmpty) {
       // Parse using Carbon.parse WITHOUT timezone conversion for DATETIME
       final raw = value.trim();
       final parsed = DateTime.parse(
-        RegExp(r'(Z|[+-]\d{2}:?\d{2})$').hasMatch(raw)
-            ? raw
-            : '${raw}Z',
+        RegExp(r'(Z|[+-]\d{2}:?\d{2})$').hasMatch(raw) ? raw : '${raw}Z',
       );
       final utcValue = parsed.isUtc
           ? parsed
@@ -249,8 +245,10 @@ class MySqlCarbonCodec extends ValueCodec<Carbon> {
             );
       return Carbon.fromDateTime(utcValue);
     }
-    
-    throw StateError('Unsupported Carbon value "$value" of type ${value.runtimeType}.');
+
+    throw StateError(
+      'Unsupported Carbon value "$value" of type ${value.runtimeType}.',
+    );
   }
 }
 
@@ -269,16 +267,14 @@ class MySqlCarbonInterfaceCodec extends ValueCodec<CarbonInterface> {
   @override
   CarbonInterface? decode(Object? value) {
     if (value == null) return null;
-    
+
     // Handle string parsing FIRST to preserve fractional seconds
     // MySQL client might truncate DateTime milliseconds
     if (value is String && value.isNotEmpty) {
       // Parse the datetime string directly to preserve fractional seconds
       final raw = value.trim();
       final dateTime = DateTime.parse(
-        RegExp(r'(Z|[+-]\d{2}:?\d{2})$').hasMatch(raw)
-            ? raw
-            : '${raw}Z',
+        RegExp(r'(Z|[+-]\d{2}:?\d{2})$').hasMatch(raw) ? raw : '${raw}Z',
       );
       final utcValue = dateTime.isUtc
           ? dateTime
@@ -294,14 +290,14 @@ class MySqlCarbonInterfaceCodec extends ValueCodec<CarbonInterface> {
             );
       return Carbon.fromDateTime(utcValue);
     }
-    
+
     // Handle DateTime from mysql package (fallback)
     if (value is DateTime) {
       // Note: DateTime from mysql package might have truncated fractional seconds
       final utcValue = value.isUtc ? value : value.toUtc();
       return Carbon.fromDateTime(utcValue);
     }
-    
+
     throw StateError('Unsupported CarbonInterface value "$value".');
   }
 }

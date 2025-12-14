@@ -6,7 +6,6 @@ import 'package:meta/meta.dart';
 import 'package:test/test.dart';
 
 import '../../migrations.dart';
-import '../../testing.dart' show DatabaseSeeder;
 import '../connection/orm_connection.dart';
 import '../data_source.dart';
 import '../driver/driver_adapter.dart' show DriverAdapter;
