@@ -1,5 +1,275 @@
-/// Core primitives for building strongly typed ORM layers in the routed
-/// ecosystem.
+/// Ormed - A strongly-typed ORM for Dart.
+///
+/// Ormed provides a complete Object-Relational Mapping solution for Dart applications,
+/// inspired by Eloquent, GORM, SQLAlchemy, and ActiveRecord. It combines compile-time
+/// code generation with runtime flexibility to deliver type-safe database operations.
+///
+/// ## Quick Start
+///
+/// 1. Annotate your model class:
+///
+/// ```dart
+/// import 'package:ormed/ormed.dart';
+///
+/// part 'user.orm.dart';
+///
+/// @OrmModel(table: 'users')
+/// class User extends Model<User> {
+///   const User({required this.id, required this.email, this.name});
+///
+///   @OrmField(isPrimaryKey: true, autoIncrement: true)
+///   final int id;
+///
+///   final String email;
+///   final String? name;
+/// }
+/// ```
+///
+/// 2. Run the code generator:
+///
+/// ```bash
+/// dart run build_runner build
+/// ```
+///
+/// 3. Use the generated code:
+///
+/// ```dart
+/// // Query with fluent API
+/// final users = await dataSource.query<$User>()
+///     .whereEquals('active', true)
+///     .orderBy('createdAt', descending: true)
+///     .limit(10)
+///     .get();
+///
+/// // Repository operations
+/// final repo = dataSource.repo<$User>();
+/// final user = await repo.find(1);
+/// await repo.update(user..name = 'John');
+/// ```
+///
+/// ## Core Components
+///
+/// ### Annotations
+///
+/// - [OrmModel] - Marks a class as a database table/entity
+/// - [OrmField] - Customizes column mapping (primary key, codec, default values)
+/// - [OrmRelation] - Defines relationships (hasOne, hasMany, belongsTo, belongsToMany)
+///
+/// ### Query Builder
+///
+/// The [Query] class provides a fluent, type-safe API for building database queries:
+///
+/// ```dart
+/// final results = await dataSource.query<$User>()
+///     .select(['id', 'email', 'name'])
+///     .whereEquals('active', true)
+///     .whereIn('role', ['admin', 'moderator'])
+///     .orderBy('createdAt', descending: true)
+///     .limit(20)
+///     .offset(40)
+///     .with_(['posts', 'profile'])  // Eager load relations
+///     .get();
+/// ```
+///
+/// ### Repository Pattern
+///
+/// Repositories provide CRUD operations with flexible input handling:
+///
+/// ```dart
+/// final repo = dataSource.repo<$User>();
+///
+/// // Create
+/// final user = await repo.insert($User(email: 'new@example.com', active: true));
+///
+/// // Read
+/// final found = await repo.find(1);
+/// final all = await repo.all();
+///
+/// // Update - accepts tracked models, DTOs, or maps
+/// await repo.update(user..name = 'Updated');
+/// await repo.update(UserUpdateDto(name: 'New Name'), where: {'id': 1});
+/// await repo.update(dto, where: (Query<$User> q) => q.whereEquals('email', 'test@example.com'));
+///
+/// // Delete - accepts various input types including Query callbacks
+/// await repo.delete(user);
+/// await repo.delete((Query<$User> q) => q.whereEquals('role', 'guest'));
+/// await repo.deleteByIds([1, 2, 3]);
+/// ```
+///
+/// ### DataSource
+///
+/// [DataSource] is the primary entry point for database operations:
+///
+/// ```dart
+/// final dataSource = DataSource(
+///   context: QueryContext(driver: myDriver, registry: modelRegistry),
+/// );
+///
+/// // Query API
+/// final users = await dataSource.query<$User>().get();
+///
+/// // Repository API
+/// final userRepo = dataSource.repo<$User>();
+///
+/// // Raw table access (ad-hoc queries)
+/// final rows = await dataSource.table('audit_logs')
+///     .whereEquals('action', 'login')
+///     .get();
+/// ```
+///
+/// ### Value Codecs
+///
+/// [ValueCodec] enables custom type serialization between Dart and database:
+///
+/// ```dart
+/// class UuidCodec extends ValueCodec<UuidValue> {
+///   const UuidCodec();
+///
+///   @override
+///   UuidValue decode(Object? value) => UuidValue.fromString(value as String);
+///
+///   @override
+///   Object? encode(UuidValue value) => value.uuid;
+/// }
+///
+/// // Use in model
+/// @OrmField(codec: UuidCodec)
+/// final UuidValue id;
+/// ```
+///
+/// ### Relations
+///
+/// Define and load relationships between models:
+///
+/// ```dart
+/// @OrmModel(table: 'posts')
+/// class Post extends Model<Post> {
+///   @OrmRelation.belongsTo(User, foreignKey: 'author_id')
+///   User? author;
+///
+///   @OrmRelation.hasMany(Comment)
+///   List<Comment>? comments;
+/// }
+///
+/// // Eager loading
+/// final posts = await dataSource.query<$Post>()
+///     .with_(['author', 'comments'])
+///     .get();
+///
+/// // Lazy loading
+/// await post.load(['author']);
+/// ```
+///
+/// ### Soft Deletes
+///
+/// Enable soft delete functionality using the [SoftDeletes] marker mixin:
+///
+/// ```dart
+/// @OrmModel(table: 'posts')
+/// class Post extends Model<Post> with SoftDeletes {
+///   final int? id;
+///   final String title;
+///   const Post({this.id, required this.title});
+/// }
+/// ```
+///
+/// The code generator detects this mixin and:
+/// - Adds a virtual `deletedAt` field if not explicitly defined
+/// - Applies soft-delete implementation to the generated tracked class
+/// - Enables soft-delete query scopes automatically
+///
+/// ```dart
+/// // Soft delete (sets deleted_at timestamp)
+/// await repo.delete(post);
+///
+/// // Query including soft-deleted records
+/// final allIncludingDeleted = await dataSource.query<$Post>().withTrashed().get();
+///
+/// // Restore a soft-deleted record
+/// await repo.restore(post);
+/// ```
+///
+/// For timezone-aware soft deletes (UTC storage), use [SoftDeletesTZ] instead.
+///
+/// ### Timestamps
+///
+/// Enable automatic timestamp management using the [Timestamps] marker mixin:
+///
+/// ```dart
+/// @OrmModel(table: 'posts')
+/// class Post extends Model<Post> with Timestamps {
+///   final int? id;
+///   final String title;
+///   const Post({this.id, required this.title});
+/// }
+/// ```
+///
+/// The code generator detects this mixin and:
+/// - Adds virtual `createdAt` and `updatedAt` fields if not explicitly defined
+/// - Automatically sets timestamps on insert/update operations
+///
+/// For timezone-aware timestamps (UTC storage), use [TimestampsTZ] instead.
+///
+/// ## Driver Support
+///
+/// Ormed works with any database through driver adapters:
+///
+/// - `ormed_sqlite` - SQLite support (in-memory and file-based)
+/// - `ormed_postgres` - PostgreSQL support (planned)
+/// - `ormed_mysql` - MySQL support (planned)
+///
+/// ## Migrations
+///
+/// Schema migrations with a fluent builder API:
+///
+/// ```dart
+/// class CreateUsersTable extends Migration {
+///   @override
+///   Future<void> up(MigrationBuilder builder) async {
+///     await builder.create('users', (table) {
+///       table.increments('id').primary();
+///       table.string('email').unique();
+///       table.string('name').nullable();
+///       table.boolean('active').defaultValue(true);
+///       table.timestamps();
+///     });
+///   }
+///
+///   @override
+///   Future<void> down(MigrationBuilder builder) async {
+///     await builder.drop('users');
+///   }
+/// }
+/// ```
+///
+/// ## Testing
+///
+/// Built-in testing utilities:
+///
+/// ```dart
+/// // In-memory database for tests
+/// final testDb = await TestDatabaseManager.create();
+///
+/// // Use OrmedTest mixin for common test patterns
+/// class MyTest with OrmedTest { ... }
+/// ```
+///
+/// ## Key Classes
+///
+/// - [DataSource] - Primary entry point for queries and repositories
+/// - [Query] - Fluent query builder with type safety
+/// - [Repository] - CRUD operations with flexible input handling
+/// - [Model] - Base class for ORM entities
+/// - [ModelDefinition] - Generated metadata for models
+/// - [ValueCodec] - Custom type serialization
+/// - [QueryContext] - Runtime context for query execution
+/// - [ConnectionManager] - Database connection management
+///
+/// ## Additional Resources
+///
+/// - See the `/example` directory for complete working examples
+/// - Check individual class documentation for detailed API reference
+/// - Review the `TODO.md` for planned features and known limitations
 library;
 
 export 'package:carbonized/carbonized.dart' show Carbon, CarbonInterface;
@@ -37,7 +307,6 @@ export 'src/driver/schema_state_provider.dart';
 export 'src/driver/type_mapping.dart';
 export 'src/repository/repository.dart';
 export 'migrations.dart';
-export 'src/migrations/seeder.dart' show DatabaseSeeder, Seeder, SeederRegistry;
 export 'src/model_mixins/model_attributes.dart';
 export 'src/model_mixins/model_attribute_extensions.dart';
 export 'src/model_mixins/model_with_tracked.dart';
@@ -77,6 +346,4 @@ export 'src/blueprint/schema_diff.dart'
         SchemaDiffSeverity,
         SchemaDiffer;
 export 'src/data_source.dart';
-export 'src/testing/test_database_manager.dart';
-export 'src/testing/ormed_test.dart';
-export 'src/migrations/seeder.dart';
+export 'testing.dart';
