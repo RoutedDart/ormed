@@ -247,11 +247,17 @@ class CliUserPartial implements PartialEntity<$CliUser> {
   $CliUser toEntity() {
     // Basic required-field check: non-nullable fields must be present.
     final int? idValue = id;
-    if (idValue == null) throw StateError('Missing required field: id');
+    if (idValue == null) {
+      throw StateError('Missing required field: id');
+    }
     final String? emailValue = email;
-    if (emailValue == null) throw StateError('Missing required field: email');
+    if (emailValue == null) {
+      throw StateError('Missing required field: email');
+    }
     final bool? activeValue = active;
-    if (activeValue == null) throw StateError('Missing required field: active');
+    if (activeValue == null) {
+      throw StateError('Missing required field: active');
+    }
     return $CliUser(id: idValue, email: emailValue, active: activeValue);
   }
 

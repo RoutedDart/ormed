@@ -1,12 +1,13 @@
 import 'dart:io';
 
-import 'package:args/command_runner.dart';
+import 'package:args/command_runner.dart' show UsageException;
+import 'package:artisan_args/artisan_args.dart';
 import 'package:path/path.dart' as p;
 
 import '../config.dart';
 import 'shared.dart';
 
-class MakeCommand extends Command<void> {
+class MakeCommand extends ArtisanCommand<void> {
   MakeCommand() {
     argParser
       ..addOption('name', abbr: 'n', help: 'Slug for the migration/seeder.')
@@ -59,7 +60,7 @@ class MakeCommand extends Command<void> {
   Future<void> run() async {
     final slug = (argResults?['name'] as String?)?.trim();
     if (slug == null || slug.isEmpty) {
-      throw UsageException('Missing --name for generator.', usage);
+      usageException('Missing --name for generator.');
     }
     final shouldCreateSeeder = argResults?['seeder'] == true;
     final tableOption = (argResults?['table'] as String?)?.trim();

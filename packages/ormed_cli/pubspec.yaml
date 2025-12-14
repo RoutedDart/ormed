@@ -1,6 +1,6 @@
 name: ormed_cli
 description: Command-line tooling for the routed ORM (migrations generator & runner).
-version: 0.0.1
+version: 0.1.0-dev
 publish_to: none
 resolution: workspace
 
@@ -9,6 +9,7 @@ environment:
 
 dependencies:
   args: ^2.7.0
+  artisan_args:
   file: ^7.0.1
   path: ^1.9.1
   yaml: ^3.1.3

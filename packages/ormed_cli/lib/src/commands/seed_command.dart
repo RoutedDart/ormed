@@ -1,11 +1,11 @@
 import 'dart:io';
 
-import 'package:args/command_runner.dart';
+import 'package:artisan_args/artisan_args.dart';
 
 import '../config.dart';
 import 'shared.dart';
 
-class SeedCommand extends Command<void> {
+class SeedCommand extends ArtisanCommand<void> {
   SeedCommand() {
     argParser
       ..addOption(
@@ -64,9 +64,8 @@ class SeedCommand extends Command<void> {
     final config = loadOrmProjectConfig(project.configFile);
     final seeds = config.seeds;
     if (seeds == null) {
-      throw UsageException(
+      usageException(
         'orm.yaml missing seeds configuration. Run `orm init` to scaffold seeds or add a `seeds` block.',
-        usage,
       );
     }
 

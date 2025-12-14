@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:args/command_runner.dart';
 import 'package:ormed/ormed.dart';
 import 'package:path/path.dart' as p;
 
@@ -51,10 +50,10 @@ class ApplyCommand extends RunnerCommand {
   }
 
   @override
-  String get name => 'apply';
+  String get name => 'migrate';
 
   @override
-  String get description => 'Apply pending migrations.';
+  String get description => 'Run the database migrations.';
 
   @override
   Future<void> handle(
@@ -130,9 +129,8 @@ class ApplyCommand extends RunnerCommand {
 
     if ((argResults?['seed'] == true) || argResults?['seeder'] != null) {
       if (seeds == null) {
-        throw UsageException(
+        usageException(
           'orm.yaml missing seeds configuration. Add a `seeds` block before running --seed.',
-          usage,
         );
       }
       final seederOverride = argResults?['seeder'] as String?;

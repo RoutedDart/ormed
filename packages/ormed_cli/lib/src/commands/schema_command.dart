@@ -1,14 +1,14 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:args/command_runner.dart';
+import 'package:artisan_args/artisan_args.dart';
 import 'package:ormed/ormed.dart';
 import 'package:path/path.dart' as p;
 
 import '../config.dart';
 import 'shared.dart';
 
-class SchemaDumpCommand extends Command<void> {
+class SchemaDumpCommand extends ArtisanCommand<void> {
   SchemaDumpCommand() {
     argParser.addOption(
       'config',
@@ -67,9 +67,8 @@ class SchemaDumpCommand extends Command<void> {
         final driver = connection.driver;
 
         if (driver is! SchemaDriver) {
-          throw UsageException(
+          usageException(
             'Schema dump is not supported for ${driver.runtimeType}',
-            usage,
           );
         }
 
@@ -80,9 +79,8 @@ class SchemaDumpCommand extends Command<void> {
         );
 
         if (state == null || !state.canDump) {
-          throw UsageException(
+          usageException(
             'Schema dump is not supported for this database driver.',
-            usage,
           );
         }
 
@@ -149,7 +147,7 @@ class SchemaDumpCommand extends Command<void> {
   }
 }
 
-class SchemaDescribeCommand extends Command<void> {
+class SchemaDescribeCommand extends ArtisanCommand<void> {
   SchemaDescribeCommand() {
     argParser.addOption(
       'config',

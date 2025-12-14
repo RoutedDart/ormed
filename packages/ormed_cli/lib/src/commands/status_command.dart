@@ -16,10 +16,10 @@ class StatusCommand extends RunnerCommand {
   }
 
   @override
-  String get name => 'status';
+  String get name => 'migrate:status';
 
   @override
-  String get description => 'Show migration status.';
+  String get description => 'Show the status of each migration.';
 
   @override
   Future<void> handle(

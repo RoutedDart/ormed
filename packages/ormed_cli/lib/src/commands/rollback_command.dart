@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:args/command_runner.dart';
 import 'package:ormed/ormed.dart';
 
 import 'runner_command.dart';
@@ -38,10 +37,10 @@ class RollbackCommand extends RunnerCommand {
   }
 
   @override
-  String get name => 'rollback';
+  String get name => 'migrate:rollback';
 
   @override
-  String get description => 'Rollback the most recently applied migrations.';
+  String get description => 'Rollback the last database migration.';
 
   @override
   Future<void> handle(
@@ -67,7 +66,7 @@ class RollbackCommand extends RunnerCommand {
     if (batchArg != null) {
       final batchNumber = int.tryParse(batchArg);
       if (batchNumber == null) {
-        throw UsageException('Invalid --batch value: $batchArg', usage);
+        usageException('Invalid --batch value: $batchArg');
       }
       final highestBatch = appliedRecords.fold<int>(0, (previous, record) {
         return record.batch > previous ? record.batch : previous;
@@ -77,9 +76,8 @@ class RollbackCommand extends RunnerCommand {
         return;
       }
       if (batchNumber != highestBatch) {
-        throw UsageException(
+        usageException(
           'Rollback can only target the most recent batch ($highestBatch).',
-          usage,
         );
       }
       final batchRecords = appliedRecords
