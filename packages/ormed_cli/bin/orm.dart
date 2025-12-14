@@ -1,9 +1,9 @@
-import 'package:args/command_runner.dart';
+import 'package:artisan_args/artisan_args.dart';
 
 import '../lib/src/commands.dart';
 
 Future<void> main(List<String> args) async {
-  final runner = CommandRunner<void>('orm', 'Routed ORM CLI')
+  final runner = ArtisanCommandRunner<void>('orm', 'Routed ORM CLI')
     ..addCommand(InitCommand())
     ..addCommand(MakeCommand())
     ..addCommand(ApplyCommand())

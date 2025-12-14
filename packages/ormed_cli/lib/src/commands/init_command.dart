@@ -1,12 +1,12 @@
 import 'dart:io';
 
-import 'package:args/command_runner.dart';
+import 'package:artisan_args/artisan_args.dart';
 import 'package:path/path.dart' as p;
 
 import '../config.dart';
 import 'shared.dart';
 
-class InitCommand extends Command<void> {
+class InitCommand extends ArtisanCommand<void> {
   InitCommand() {
     argParser
       ..addFlag(

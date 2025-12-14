@@ -7,7 +7,9 @@ workspace:
   - packages/ormed_postgres
   - packages/ormed_mysql
   - packages/ormed_cli
+  - packages/artisan_args
   - packages/orm_playground
+  - .site/examples
 
 funding:
   - https://www.buymeacoffee.com/kingwill101

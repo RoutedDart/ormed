@@ -1,11 +1,11 @@
 import 'dart:io';
 
-import 'package:args/command_runner.dart';
+import 'package:artisan_args/artisan_args.dart';
 import 'package:ormed/ormed.dart';
 
 import 'shared.dart';
 
-abstract class RunnerCommand extends Command<void> {
+abstract class RunnerCommand extends ArtisanCommand<void> {
   RunnerCommand() {
     argParser.addOption(
       'config',
