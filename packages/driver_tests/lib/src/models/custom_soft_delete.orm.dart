@@ -184,9 +184,7 @@ class _$CustomSoftDeleteCodec extends ModelCodec<$CustomSoftDelete> {
       'title': registry.encodeField(_$CustomSoftDeleteTitleField, model.title),
       'removed_on': registry.encodeField(
         _$CustomSoftDeleteDeletedAtField,
-        (model is ModelAttributes
-            ? model.getAttribute<DateTime?>('removed_on')
-            : null),
+        model.getAttribute<DateTime?>('removed_on'),
       ),
     };
   }
@@ -281,9 +279,13 @@ class CustomSoftDeletePartial implements PartialEntity<$CustomSoftDelete> {
   $CustomSoftDelete toEntity() {
     // Basic required-field check: non-nullable fields must be present.
     final int? idValue = id;
-    if (idValue == null) throw StateError('Missing required field: id');
+    if (idValue == null) {
+      throw StateError('Missing required field: id');
+    }
     final String? titleValue = title;
-    if (titleValue == null) throw StateError('Missing required field: title');
+    if (titleValue == null) {
+      throw StateError('Missing required field: title');
+    }
     return $CustomSoftDelete(id: idValue, title: titleValue);
   }
 

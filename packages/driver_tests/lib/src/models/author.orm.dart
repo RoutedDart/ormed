@@ -201,15 +201,11 @@ class _$AuthorCodec extends ModelCodec<$Author> {
       'active': registry.encodeField(_$AuthorActiveField, model.active),
       'created_at': registry.encodeField(
         _$AuthorCreatedAtField,
-        (model is ModelAttributes
-            ? model.getAttribute<DateTime?>('created_at')
-            : null),
+        model.getAttribute<DateTime?>('created_at'),
       ),
       'updated_at': registry.encodeField(
         _$AuthorUpdatedAtField,
-        (model is ModelAttributes
-            ? model.getAttribute<DateTime?>('updated_at')
-            : null),
+        model.getAttribute<DateTime?>('updated_at'),
       ),
     };
   }
@@ -310,11 +306,17 @@ class AuthorPartial implements PartialEntity<$Author> {
   $Author toEntity() {
     // Basic required-field check: non-nullable fields must be present.
     final int? idValue = id;
-    if (idValue == null) throw StateError('Missing required field: id');
+    if (idValue == null) {
+      throw StateError('Missing required field: id');
+    }
     final String? nameValue = name;
-    if (nameValue == null) throw StateError('Missing required field: name');
+    if (nameValue == null) {
+      throw StateError('Missing required field: name');
+    }
     final bool? activeValue = active;
-    if (activeValue == null) throw StateError('Missing required field: active');
+    if (activeValue == null) {
+      throw StateError('Missing required field: active');
+    }
     return $Author(id: idValue, name: nameValue, active: activeValue);
   }
 

@@ -151,9 +151,7 @@ class _$NoFactoryCodec extends ModelCodec<$NoFactory> {
       'id': registry.encodeField(_$NoFactoryIdField, model.id),
       'deleted_at': registry.encodeField(
         _$NoFactoryDeletedAtField,
-        (model is ModelAttributes
-            ? model.getAttribute<DateTime?>('deleted_at')
-            : null),
+        model.getAttribute<DateTime?>('deleted_at'),
       ),
     };
   }

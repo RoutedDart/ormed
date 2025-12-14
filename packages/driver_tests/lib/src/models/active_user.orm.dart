@@ -204,9 +204,7 @@ class _$ActiveUserCodec extends ModelCodec<$ActiveUser> {
       ),
       'deleted_at': registry.encodeField(
         _$ActiveUserDeletedAtField,
-        (model is ModelAttributes
-            ? model.getAttribute<DateTime?>('deleted_at')
-            : null),
+        model.getAttribute<DateTime?>('deleted_at'),
       ),
     };
   }
@@ -319,10 +317,13 @@ class ActiveUserPartial implements PartialEntity<$ActiveUser> {
   $ActiveUser toEntity() {
     // Basic required-field check: non-nullable fields must be present.
     final String? emailValue = email;
-    if (emailValue == null) throw StateError('Missing required field: email');
+    if (emailValue == null) {
+      throw StateError('Missing required field: email');
+    }
     final Map<String, Object?>? settingsValue = settings;
-    if (settingsValue == null)
+    if (settingsValue == null) {
       throw StateError('Missing required field: settings');
+    }
     return $ActiveUser(
       id: id,
       email: emailValue,

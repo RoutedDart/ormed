@@ -314,7 +314,9 @@ class MutationTargetPartial implements PartialEntity<$MutationTarget> {
   $MutationTarget toEntity() {
     // Basic required-field check: non-nullable fields must be present.
     final String? idValue = id;
-    if (idValue == null) throw StateError('Missing required field: id');
+    if (idValue == null) {
+      throw StateError('Missing required field: id');
+    }
     return $MutationTarget(
       id: idValue,
       name: name,

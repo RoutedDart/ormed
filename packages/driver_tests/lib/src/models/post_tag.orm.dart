@@ -227,9 +227,13 @@ class PostTagPartial implements PartialEntity<$PostTag> {
   $PostTag toEntity() {
     // Basic required-field check: non-nullable fields must be present.
     final int? postIdValue = postId;
-    if (postIdValue == null) throw StateError('Missing required field: postId');
+    if (postIdValue == null) {
+      throw StateError('Missing required field: postId');
+    }
     final int? tagIdValue = tagId;
-    if (tagIdValue == null) throw StateError('Missing required field: tagId');
+    if (tagIdValue == null) {
+      throw StateError('Missing required field: tagId');
+    }
     return $PostTag(postId: postIdValue, tagId: tagIdValue);
   }
 

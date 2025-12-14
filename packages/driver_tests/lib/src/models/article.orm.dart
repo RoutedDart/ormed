@@ -450,22 +450,33 @@ class ArticlePartial implements PartialEntity<$Article> {
   $Article toEntity() {
     // Basic required-field check: non-nullable fields must be present.
     final int? idValue = id;
-    if (idValue == null) throw StateError('Missing required field: id');
+    if (idValue == null) {
+      throw StateError('Missing required field: id');
+    }
     final String? titleValue = title;
-    if (titleValue == null) throw StateError('Missing required field: title');
+    if (titleValue == null) {
+      throw StateError('Missing required field: title');
+    }
     final String? statusValue = status;
-    if (statusValue == null) throw StateError('Missing required field: status');
+    if (statusValue == null) {
+      throw StateError('Missing required field: status');
+    }
     final double? ratingValue = rating;
-    if (ratingValue == null) throw StateError('Missing required field: rating');
+    if (ratingValue == null) {
+      throw StateError('Missing required field: rating');
+    }
     final int? priorityValue = priority;
-    if (priorityValue == null)
+    if (priorityValue == null) {
       throw StateError('Missing required field: priority');
+    }
     final DateTime? publishedAtValue = publishedAt;
-    if (publishedAtValue == null)
+    if (publishedAtValue == null) {
       throw StateError('Missing required field: publishedAt');
+    }
     final int? categoryIdValue = categoryId;
-    if (categoryIdValue == null)
+    if (categoryIdValue == null) {
       throw StateError('Missing required field: categoryId');
+    }
     return $Article(
       id: idValue,
       title: titleValue,

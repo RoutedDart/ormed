@@ -82,6 +82,13 @@ final List<MigrationEntry> driverTestMigrationEntries = [
     ),
     migration: const CreateDerivedForFactoriesTable(),
   ),
+  MigrationEntry(
+    id: MigrationId(
+      DateTime.utc(2023, 1, 1, 0, 0, 15),
+      'create_custom_soft_delete_models_table',
+    ),
+    migration: const CreateCustomSoftDeleteModelsTable(),
+  ),
 ];
 
 /// Create a test schema manager for driver tests
@@ -147,4 +154,3 @@ Future<void> dropDriverTestSchema(SchemaDriver driver, {String? schema}) async {
   await manager.teardown();
   await manager.purge();
 }
-

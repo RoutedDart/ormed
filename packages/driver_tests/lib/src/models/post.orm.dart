@@ -269,15 +269,11 @@ class _$PostCodec extends ModelCodec<$Post> {
       ),
       'created_at': registry.encodeField(
         _$PostCreatedAtField,
-        (model is ModelAttributes
-            ? model.getAttribute<DateTime?>('created_at')
-            : null),
+        model.getAttribute<DateTime?>('created_at'),
       ),
       'updated_at': registry.encodeField(
         _$PostUpdatedAtField,
-        (model is ModelAttributes
-            ? model.getAttribute<DateTime?>('updated_at')
-            : null),
+        model.getAttribute<DateTime?>('updated_at'),
       ),
     };
   }
@@ -436,15 +432,21 @@ class PostPartial implements PartialEntity<$Post> {
   $Post toEntity() {
     // Basic required-field check: non-nullable fields must be present.
     final int? idValue = id;
-    if (idValue == null) throw StateError('Missing required field: id');
+    if (idValue == null) {
+      throw StateError('Missing required field: id');
+    }
     final int? authorIdValue = authorId;
-    if (authorIdValue == null)
+    if (authorIdValue == null) {
       throw StateError('Missing required field: authorId');
+    }
     final String? titleValue = title;
-    if (titleValue == null) throw StateError('Missing required field: title');
+    if (titleValue == null) {
+      throw StateError('Missing required field: title');
+    }
     final DateTime? publishedAtValue = publishedAt;
-    if (publishedAtValue == null)
+    if (publishedAtValue == null) {
       throw StateError('Missing required field: publishedAt');
+    }
     return $Post(
       id: idValue,
       authorId: authorIdValue,

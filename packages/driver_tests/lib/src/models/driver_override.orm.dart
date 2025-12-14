@@ -270,10 +270,13 @@ class DriverOverrideModelPartial
   $DriverOverrideModel toEntity() {
     // Basic required-field check: non-nullable fields must be present.
     final int? idValue = id;
-    if (idValue == null) throw StateError('Missing required field: id');
+    if (idValue == null) {
+      throw StateError('Missing required field: id');
+    }
     final Map<String, Object?>? payloadValue = payload;
-    if (payloadValue == null)
+    if (payloadValue == null) {
       throw StateError('Missing required field: payload');
+    }
     return $DriverOverrideModel(id: idValue, payload: payloadValue);
   }
 

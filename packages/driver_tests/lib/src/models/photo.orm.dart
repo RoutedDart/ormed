@@ -302,15 +302,21 @@ class PhotoPartial implements PartialEntity<$Photo> {
   $Photo toEntity() {
     // Basic required-field check: non-nullable fields must be present.
     final int? idValue = id;
-    if (idValue == null) throw StateError('Missing required field: id');
+    if (idValue == null) {
+      throw StateError('Missing required field: id');
+    }
     final int? imageableIdValue = imageableId;
-    if (imageableIdValue == null)
+    if (imageableIdValue == null) {
       throw StateError('Missing required field: imageableId');
+    }
     final String? imageableTypeValue = imageableType;
-    if (imageableTypeValue == null)
+    if (imageableTypeValue == null) {
       throw StateError('Missing required field: imageableType');
+    }
     final String? pathValue = path;
-    if (pathValue == null) throw StateError('Missing required field: path');
+    if (pathValue == null) {
+      throw StateError('Missing required field: path');
+    }
     return $Photo(
       id: idValue,
       imageableId: imageableIdValue,

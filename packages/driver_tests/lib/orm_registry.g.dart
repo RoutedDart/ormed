@@ -104,7 +104,7 @@ extension GeneratedOrmModels on ModelRegistry {
 }
 
 /// Registers factory definitions for all models that have factory support.
-/// Call this before using Model.factory<T>() to ensure definitions are available.
+/// Call this before using [Model.factory<T>()]to ensure definitions are available.
 void registerOrmFactories() {
   ModelFactoryRegistry.registerIfAbsent<ActiveUser>(ActiveUserOrmDefinition.definition);
   ModelFactoryRegistry.registerIfAbsent<Article>(ArticleOrmDefinition.definition);

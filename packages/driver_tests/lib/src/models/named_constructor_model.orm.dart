@@ -303,9 +303,13 @@ class NamedConstructorModelPartial
   $NamedConstructorModel toEntity() {
     // Basic required-field check: non-nullable fields must be present.
     final String? nameValue = name;
-    if (nameValue == null) throw StateError('Missing required field: name');
+    if (nameValue == null) {
+      throw StateError('Missing required field: name');
+    }
     final int? valueValue = value;
-    if (valueValue == null) throw StateError('Missing required field: value');
+    if (valueValue == null) {
+      throw StateError('Missing required field: value');
+    }
     return $NamedConstructorModel(id: id, name: nameValue, value: valueValue);
   }
 

@@ -360,11 +360,17 @@ class AttributeUserPartial implements PartialEntity<$AttributeUser> {
   $AttributeUser toEntity() {
     // Basic required-field check: non-nullable fields must be present.
     final int? idValue = id;
-    if (idValue == null) throw StateError('Missing required field: id');
+    if (idValue == null) {
+      throw StateError('Missing required field: id');
+    }
     final String? emailValue = email;
-    if (emailValue == null) throw StateError('Missing required field: email');
+    if (emailValue == null) {
+      throw StateError('Missing required field: email');
+    }
     final String? secretValue = secret;
-    if (secretValue == null) throw StateError('Missing required field: secret');
+    if (secretValue == null) {
+      throw StateError('Missing required field: secret');
+    }
     return $AttributeUser(
       id: idValue,
       email: emailValue,

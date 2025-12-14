@@ -162,9 +162,7 @@ class _$CommentCodec extends ModelCodec<$Comment> {
       'body': registry.encodeField(_$CommentBodyField, model.body),
       'deleted_at': registry.encodeField(
         _$CommentDeletedAtField,
-        (model is ModelAttributes
-            ? model.getAttribute<DateTime?>('deleted_at')
-            : null),
+        model.getAttribute<DateTime?>('deleted_at'),
       ),
     };
   }
@@ -241,9 +239,13 @@ class CommentPartial implements PartialEntity<$Comment> {
   $Comment toEntity() {
     // Basic required-field check: non-nullable fields must be present.
     final int? idValue = id;
-    if (idValue == null) throw StateError('Missing required field: id');
+    if (idValue == null) {
+      throw StateError('Missing required field: id');
+    }
     final String? bodyValue = body;
-    if (bodyValue == null) throw StateError('Missing required field: body');
+    if (bodyValue == null) {
+      throw StateError('Missing required field: body');
+    }
     return $Comment(id: idValue, body: bodyValue);
   }
 

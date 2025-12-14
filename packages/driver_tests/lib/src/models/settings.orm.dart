@@ -226,10 +226,13 @@ class SettingPartial implements PartialEntity<$Setting> {
   $Setting toEntity() {
     // Basic required-field check: non-nullable fields must be present.
     final int? idValue = id;
-    if (idValue == null) throw StateError('Missing required field: id');
+    if (idValue == null) {
+      throw StateError('Missing required field: id');
+    }
     final Map<String, dynamic>? payloadValue = payload;
-    if (payloadValue == null)
+    if (payloadValue == null) {
       throw StateError('Missing required field: payload');
+    }
     return $Setting(id: idValue, payload: payloadValue);
   }
 

@@ -229,9 +229,13 @@ class SerialTestPartial implements PartialEntity<$SerialTest> {
   $SerialTest toEntity() {
     // Basic required-field check: non-nullable fields must be present.
     final int? idValue = id;
-    if (idValue == null) throw StateError('Missing required field: id');
+    if (idValue == null) {
+      throw StateError('Missing required field: id');
+    }
     final String? labelValue = label;
-    if (labelValue == null) throw StateError('Missing required field: label');
+    if (labelValue == null) {
+      throw StateError('Missing required field: label');
+    }
     return $SerialTest(id: idValue, label: labelValue);
   }
 
