@@ -31,7 +31,10 @@ void main() {
       PostgresDriverAdapter.registerCodecs();
 
       for (final entry in customCodecs.entries) {
-        ValueCodecRegistry.instance.registerCodec(key: entry.key, codec: entry.value);
+        ValueCodecRegistry.instance.registerCodec(
+          key: entry.key,
+          codec: entry.value,
+        );
       }
 
       driverAdapter = PostgresDriverAdapter.custom(
@@ -39,19 +42,23 @@ void main() {
       );
 
       final registry = buildOrmRegistry();
-      dataSource = DataSource(DataSourceOptions(
-        driver: driverAdapter,
-        entities: registry.allDefinitions,
-        registry: registry,
-        codecs: customCodecs,
-        defaultSchema: uniqueSchema,
-      ));
+      dataSource = DataSource(
+        DataSourceOptions(
+          driver: driverAdapter,
+          entities: registry.allDefinitions,
+          registry: registry,
+          codecs: customCodecs,
+          defaultSchema: uniqueSchema,
+        ),
+      );
 
       await dataSource.init();
       registerOrmFactories();
 
       // Create schema for isolation
-      await driverAdapter.executeRaw('CREATE SCHEMA IF NOT EXISTS "$uniqueSchema"');
+      await driverAdapter.executeRaw(
+        'CREATE SCHEMA IF NOT EXISTS "$uniqueSchema"',
+      );
       await driverAdapter.executeRaw('SET search_path TO "$uniqueSchema"');
 
       await dropDriverTestSchema(driverAdapter, schema: uniqueSchema);
@@ -83,20 +90,27 @@ void main() {
 
     tearDown(() async {
       // Truncate table for isolation
-      await driverAdapter.executeRaw('TRUNCATE TABLE "$uniqueSchema".users CASCADE');
+      await driverAdapter.executeRaw(
+        'TRUNCATE TABLE "$uniqueSchema".users CASCADE',
+      );
     });
 
     tearDownAll(() async {
       await dropDriverTestSchema(driverAdapter, schema: uniqueSchema);
       // Drop the schema after tests
-      await driverAdapter.executeRaw('DROP SCHEMA IF EXISTS "$uniqueSchema" CASCADE');
+      await driverAdapter.executeRaw(
+        'DROP SCHEMA IF EXISTS "$uniqueSchema" CASCADE',
+      );
       await dataSource.dispose();
     });
 
     test(
       'global scopes run automatically and can be removed per query',
       () async {
-        final scoped = await dataSource.context.query<User>().orderBy('id').get();
+        final scoped = await dataSource.context
+            .query<User>()
+            .orderBy('id')
+            .get();
         expect(scoped.map((u) => u.id), equals([1, 2]));
 
         final unscoped = await dataSource.context

@@ -1,6 +1,5 @@
 import 'package:ormed/ormed.dart';
 
-
 /// Optional hook drivers can use to customize how eager-loaded relations
 /// materialize after the base query fetches rows.
 abstract class RelationHook {

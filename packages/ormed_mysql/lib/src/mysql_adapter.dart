@@ -881,11 +881,13 @@ class MySqlDriverAdapter
           // Remove the PK from values for rows without it
           final newValues = Map<String, Object?>.from(row.values);
           newValues.remove(pkColumn);
-          rowsWithoutPk.add(MutationRow(
-            values: newValues,
-            keys: row.keys,
-            jsonUpdates: row.jsonUpdates,
-          ));
+          rowsWithoutPk.add(
+            MutationRow(
+              values: newValues,
+              keys: row.keys,
+              jsonUpdates: row.jsonUpdates,
+            ),
+          );
         }
       }
 
@@ -935,7 +937,8 @@ class MySqlDriverAdapter
         }
 
         return MutationResult(
-          affectedRows: resultWithPk.affectedRows + resultWithoutPk.affectedRows,
+          affectedRows:
+              resultWithPk.affectedRows + resultWithoutPk.affectedRows,
           returnedRows: plan.returning ? combinedRows : null,
         );
       }
@@ -988,16 +991,17 @@ class MySqlDriverAdapter
     List<Object?>? preFetchedPkValues;
     if (plan.returning && pkColumn != null) {
       preFetchedPkValues = <Object?>[];
-      
+
       for (final row in plan.rows) {
         // Check if PK is in the keys
         final pkValue = row.keys[pkColumn];
-        
+
         // If there are additional WHERE conditions beyond just the PK,
         // we need to validate a row actually matches ALL conditions
-        final hasAdditionalConditions = row.keys.length > 1 || 
+        final hasAdditionalConditions =
+            row.keys.length > 1 ||
             (row.keys.length == 1 && !row.keys.containsKey(pkColumn));
-        
+
         if (pkValue != null && !hasAdditionalConditions) {
           // Simple case: only PK in WHERE, use it directly
           preFetchedPkValues.add(pkValue);
@@ -1007,7 +1011,8 @@ class MySqlDriverAdapter
           final whereClauses = row.keys.entries
               .map((e) => '${_quote(e.key)} = ?')
               .join(' AND ');
-          final fetchSql = 'SELECT ${_quote(pkColumn)} FROM '
+          final fetchSql =
+              'SELECT ${_quote(pkColumn)} FROM '
               '${_tableIdentifier(plan.definition)} WHERE $whereClauses LIMIT 1';
           final fetchResult = await _executeStatement(
             fetchSql,
@@ -1035,8 +1040,8 @@ class MySqlDriverAdapter
       final returnedRows = <Map<String, Object?>>[];
 
       // Use pre-fetched PK values if available, otherwise fall back to keys
-      final pkValues = preFetchedPkValues ?? 
-          plan.rows.map((r) => r.keys[pkColumn]).toList();
+      final pkValues =
+          preFetchedPkValues ?? plan.rows.map((r) => r.keys[pkColumn]).toList();
 
       for (final pkValue in pkValues) {
         if (pkValue != null) {
@@ -1053,7 +1058,9 @@ class MySqlDriverAdapter
 
       if (returnedRows.isNotEmpty) {
         return MutationResult(
-          affectedRows: result.affectedRows > 0 ? result.affectedRows : returnedRows.length,
+          affectedRows: result.affectedRows > 0
+              ? result.affectedRows
+              : returnedRows.length,
           returnedRows: returnedRows,
         );
       }
@@ -1082,9 +1089,13 @@ class MySqlDriverAdapter
     final result = await _executeMutation(shape);
 
     // If returning is requested and we have pre-selected rows, return them
-    if (plan.returning && preSelectedRows != null && preSelectedRows.isNotEmpty) {
+    if (plan.returning &&
+        preSelectedRows != null &&
+        preSelectedRows.isNotEmpty) {
       return MutationResult(
-        affectedRows: result.affectedRows > 0 ? result.affectedRows : preSelectedRows.length,
+        affectedRows: result.affectedRows > 0
+            ? result.affectedRows
+            : preSelectedRows.length,
         returnedRows: preSelectedRows,
       );
     }
@@ -1113,11 +1124,13 @@ class MySqlDriverAdapter
           // Remove the PK from values for rows without it
           final newValues = Map<String, Object?>.from(row.values);
           newValues.remove(pkColumn);
-          rowsWithoutPk.add(MutationRow(
-            values: newValues,
-            keys: row.keys,
-            jsonUpdates: row.jsonUpdates,
-          ));
+          rowsWithoutPk.add(
+            MutationRow(
+              values: newValues,
+              keys: row.keys,
+              jsonUpdates: row.jsonUpdates,
+            ),
+          );
         }
       }
 
@@ -1171,7 +1184,8 @@ class MySqlDriverAdapter
         }
 
         return MutationResult(
-          affectedRows: resultWithPk.affectedRows + resultWithoutPk.affectedRows,
+          affectedRows:
+              resultWithPk.affectedRows + resultWithoutPk.affectedRows,
           returnedRows: plan.returning ? combinedRows : null,
         );
       }
@@ -1229,7 +1243,9 @@ class MySqlDriverAdapter
     final result = await _executeMutation(shape);
 
     // If returning is requested and we have pre-selected rows, re-fetch them
-    if (plan.returning && preSelectedRows != null && preSelectedRows.isNotEmpty) {
+    if (plan.returning &&
+        preSelectedRows != null &&
+        preSelectedRows.isNotEmpty) {
       final pkField = plan.definition.primaryKeyField;
       if (pkField != null) {
         final pkColumn = pkField.columnName;
@@ -1252,7 +1268,9 @@ class MySqlDriverAdapter
 
         if (returnedRows.isNotEmpty) {
           return MutationResult(
-            affectedRows: result.affectedRows > 0 ? result.affectedRows : returnedRows.length,
+            affectedRows: result.affectedRows > 0
+                ? result.affectedRows
+                : returnedRows.length,
             returnedRows: returnedRows,
           );
         }

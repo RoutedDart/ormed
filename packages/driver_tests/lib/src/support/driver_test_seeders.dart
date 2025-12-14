@@ -1,7 +1,6 @@
 library;
 
 import 'package:ormed/ormed.dart';
-import 'package:ormed/testing.dart';
 
 import '../../models.dart';
 import '../seed_data.dart';

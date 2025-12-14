@@ -22,84 +22,76 @@ Future<void> main() async {
   );
   await dataSource.init();
 
+  ormedGroup('User CRUD operations with migrate', (ds) {
+    test('can create and retrieve users', () async {
+      final user = await ds.repo<ActiveUser>().insert(
+        ActiveUser(name: 'Alice', email: 'alice@test.com'),
+      );
 
-  ormedGroup(
-    'User CRUD operations with migrate',
-    (ds) {
-      test('can create and retrieve users', () async {
-        final user = await ds.repo<ActiveUser>().insert(
-          ActiveUser(name: 'Alice', email: 'alice@test.com'),
+      expect(user.id, isNotNull);
+      expect(user.name, equals('Alice'));
 
-        );
+      final count = await ds.query<ActiveUser>().count();
+      expect(count, equals(1));
+    });
 
-        expect(user.id, isNotNull);
-        expect(user.name, equals('Alice'));
+    test('can update users', () async {
+      final user = await ds.repo<ActiveUser>().insert(
+        ActiveUser(name: 'Bob', email: 'bob@test.com'),
+      );
+      final userId = user.id!;
 
-        final count = await ds.query<ActiveUser>().count();
-        expect(count, equals(1));
-      });
+      // Update via updateMany
+      final updated = ActiveUser(
+        id: userId,
+        name: 'Bob Updated',
+        email: user.email,
+      );
+      await ds.repo<ActiveUser>().updateMany([updated]);
 
-      test('can update users', () async {
-        final user = await ds.repo<ActiveUser>().insert(
-          ActiveUser(name: 'Bob', email: 'bob@test.com'),
-        );
-        final userId = user.id!;
+      final count = await dataSource
+          .query<ActiveUser>()
+          .whereEquals('name', 'Bob Updated')
+          .count();
+      expect(count, equals(1));
+    });
 
-        // Update via updateMany
-        final updated = ActiveUser(
-          id: userId,
-          name: 'Bob Updated',
-          email: user.email,
-        );
-        await ds.repo<ActiveUser>().updateMany([updated]);
+    test('can delete users', () async {
+      final user = await ds.repo<ActiveUser>().insert(
+        ActiveUser(name: 'Charlie', email: 'charlie@test.com'),
+      );
+      final userId = user.id!;
 
-        final count = await dataSource
-            .query<ActiveUser>()
-            .whereEquals('name', 'Bob Updated')
-            .count();
-        expect(count, equals(1));
-      });
+      await ds.repo<ActiveUser>().deleteByKeys([
+        {'id': userId},
+      ]);
 
-      test('can delete users', () async {
-        final user = await ds.repo<ActiveUser>().insert(
-          ActiveUser(name: 'Charlie', email: 'charlie@test.com'),
-        );
-        final userId = user.id!;
+      final count = await dataSource
+          .query<ActiveUser>()
+          .whereEquals('id', userId)
+          .count();
+      expect(count, equals(0));
+    });
+  });
 
-        await ds.repo<ActiveUser>().deleteByKeys([
-          {'id': userId},
-        ]);
+  ormedGroup('Database refresh strategies', (ds) {
+    test('changes persist within test', () async {
+      final user = await ds.repo<ActiveUser>().insert(
+        ActiveUser(name: 'Temporary', email: 'temp@test.com'),
+      );
 
-        final count = await dataSource
-            .query<ActiveUser>()
-            .whereEquals('id', userId)
-            .count();
-        expect(count, equals(0));
-      });
-    },
-  );
+      expect(user.id, isNotNull);
 
-  ormedGroup(
-    'Database refresh strategies',
-    (ds) {
-      test('changes persist within test', () async {
-        final user = await ds.repo<ActiveUser>().insert(
-          ActiveUser(name: 'Temporary', email: 'temp@test.com'),
-        );
+      final count = await ds.query<ActiveUser>().count();
+      expect(count, equals(1));
+    });
 
-        expect(user.id, isNotNull);
-
-        final count = await ds.query<ActiveUser>().count();
-        expect(count, equals(1));
-      });
-
-      test('database is clean in next test', () async {
-        // With truncate strategy, previous test's data is cleared
-        final count = await ds.query<ActiveUser>().count();
-        expect(count, equals(0));
-      });
-    },
-  );
+    test('database is clean in next test', () async {
+      // With truncate strategy, previous test's data is cleared
+      final count = await ds.query<ActiveUser>().count();
+      expect(count, equals(0));
+    });
+  });
 }
 
 // Sample migration

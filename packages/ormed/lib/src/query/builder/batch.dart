@@ -30,7 +30,9 @@ extension BatchOperationsExtension<T extends OrmEntity> on Query<T> {
 
     for (final updateMap in updates) {
       // Extract unique key values
-      final uniqueColumns = uniqueBy is String ? [uniqueBy] : (uniqueBy as List<String>);
+      final uniqueColumns = uniqueBy is String
+          ? [uniqueBy]
+          : (uniqueBy as List<String>);
 
       // Create a fresh query for this update
       var whereQuery = _copyWith();
@@ -97,6 +99,3 @@ extension BatchOperationsExtension<T extends OrmEntity> on Query<T> {
     return [];
   }
 }
-
-
-

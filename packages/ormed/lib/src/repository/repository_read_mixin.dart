@@ -117,12 +117,11 @@ mixin RepositoryReadMixin<T extends OrmEntity>
       applyWhere(_requireQuery('trash'), where, feature: 'trash').delete();
 
   Future<int> restore(Object where) =>
-      applyWhere(_requireQuery('restore'), where, feature: 'restore')
-          .restore();
+      applyWhere(_requireQuery('restore'), where, feature: 'restore').restore();
 
   Future<int> forceDelete(Object where) => applyWhere(
-        _requireQuery('forceDelete'),
-        where,
-        feature: 'forceDelete',
-      ).forceDelete();
+    _requireQuery('forceDelete'),
+    where,
+    feature: 'forceDelete',
+  ).forceDelete();
 }

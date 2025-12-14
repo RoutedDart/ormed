@@ -200,9 +200,7 @@ Future<void> _runModelCrudShowcase(DataSource ds) async {
   final now = DateTime.now().toUtc();
   final demoName = 'playground-demo-${now.microsecondsSinceEpoch}';
 
-  await tagRepo.insert(
-    Tag(name: demoName, createdAt: now, updatedAt: now),
-  );
+  await tagRepo.insert(Tag(name: demoName, createdAt: now, updatedAt: now));
 
   final inserted = await ds
       .query<Tag>()

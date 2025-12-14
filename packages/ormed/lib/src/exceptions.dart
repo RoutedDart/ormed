@@ -39,7 +39,8 @@ class ModelNotRegisteredByTableName implements Exception {
   final String tableName;
 
   @override
-  String toString() => 'ModelNotRegisteredByTableName: no model registered for table "$tableName".';
+  String toString() =>
+      'ModelNotRegisteredByTableName: no model registered for table "$tableName".';
 }
 
 /// Thrown when a query expected at least one row but none were returned.

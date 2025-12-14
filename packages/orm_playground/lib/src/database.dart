@@ -96,7 +96,7 @@ class PlaygroundDatabase {
     );
 
     await ds.init();
-    
+
     ds.enableQueryLog();
     _dataSources[tenant] = ds;
     return ds;

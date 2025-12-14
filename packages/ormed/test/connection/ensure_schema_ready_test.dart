@@ -70,7 +70,10 @@ class FakeSchemaDriver implements SchemaDriver {
   }) async => const [];
 
   @override
-  Future<bool> createDatabase(String name, {Map<String, Object?>? options}) async => true;
+  Future<bool> createDatabase(
+    String name, {
+    Map<String, Object?>? options,
+  }) async => true;
 
   @override
   Future<bool> dropDatabase(String name) async => true;
@@ -100,7 +103,9 @@ class FakeSchemaDriver implements SchemaDriver {
   Future<bool> disableForeignKeyConstraints() async => true;
 
   @override
-  Future<T> withoutForeignKeyConstraints<T>(Future<T> Function() callback) async {
+  Future<T> withoutForeignKeyConstraints<T>(
+    Future<T> Function() callback,
+  ) async {
     return await callback();
   }
 
@@ -114,13 +119,23 @@ class FakeSchemaDriver implements SchemaDriver {
   Future<bool> hasView(String view, {String? schema}) async => false;
 
   @override
-  Future<bool> hasColumn(String table, String column, {String? schema}) async => false;
+  Future<bool> hasColumn(String table, String column, {String? schema}) async =>
+      false;
 
   @override
-  Future<bool> hasColumns(String table, List<String> columns, {String? schema}) async => false;
+  Future<bool> hasColumns(
+    String table,
+    List<String> columns, {
+    String? schema,
+  }) async => false;
 
   @override
-  Future<bool> hasIndex(String table, String index, {String? schema, String? type}) async => false;
+  Future<bool> hasIndex(
+    String table,
+    String index, {
+    String? schema,
+    String? type,
+  }) async => false;
 }
 
 class InMemoryLedger implements MigrationLedger {

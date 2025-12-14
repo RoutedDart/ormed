@@ -25,7 +25,7 @@ OrmConnectionHandle registerMySqlOrmConnection({
 }) {
   // Ensure MySQL codecs are registered
   MySqlDriverAdapter.registerCodecs();
-  
+
   final factory = OrmConnectionFactory(manager: manager);
   final connectionConfig = connection ?? ConnectionConfig(name: name);
   return factory.register(
@@ -33,13 +33,8 @@ OrmConnectionHandle registerMySqlOrmConnection({
     connection: connectionConfig,
     singleton: singleton,
     builder: (_) {
-      final adapter = MySqlDriverAdapter.custom(
-        config: database,
-      );
-      final context = QueryContext(
-        registry: registry,
-        driver: adapter,
-      );
+      final adapter = MySqlDriverAdapter.custom(config: database);
+      final context = QueryContext(registry: registry, driver: adapter);
       return OrmConnection(
         config: connectionConfig,
         driver: adapter,

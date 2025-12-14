@@ -30,4 +30,3 @@ mixin SoftDeletesImpl on ModelAttributes, ModelConnection {
   /// Whether the model currently has a deletion timestamp.
   bool get trashed => deletedAt != null;
 }
-

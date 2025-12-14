@@ -18,7 +18,8 @@ import 'model_mixins/model_relations.dart';
 /// and provide methods for interacting with relationships.
 ///
 /// Generated code creates concrete tracked model classes that extend this base.
-abstract class TrackedModel with ModelAttributes, ModelConnection, ModelRelations {
+abstract class TrackedModel
+    with ModelAttributes, ModelConnection, ModelRelations {
   TrackedModel();
 
   /// Whether this model instance exists in the database.
@@ -31,4 +32,3 @@ abstract class TrackedModel with ModelAttributes, ModelConnection, ModelRelation
 
   bool _exists = false;
 }
-

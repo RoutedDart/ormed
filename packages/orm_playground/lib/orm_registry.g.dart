@@ -24,8 +24,7 @@ ModelRegistry buildOrmRegistry() => ModelRegistry()
   ..registerTypeAlias<Post>(_$ormModelDefinitions[2])
   ..registerTypeAlias<PostTag>(_$ormModelDefinitions[3])
   ..registerTypeAlias<Tag>(_$ormModelDefinitions[4])
-  ..registerTypeAlias<User>(_$ormModelDefinitions[5])
-  ;
+  ..registerTypeAlias<User>(_$ormModelDefinitions[5]);
 
 List<ModelDefinition<OrmEntity>> get generatedOrmModelDefinitions =>
     List.unmodifiable(_$ormModelDefinitions);
@@ -45,8 +44,7 @@ extension GeneratedOrmModels on ModelRegistry {
 
 /// Registers factory definitions for all models that have factory support.
 /// Call this before using [Model.factory<T>()] to ensure definitions are available.
-void registerOrmFactories() {
-}
+void registerOrmFactories() {}
 
 /// Combined setup: registers both model registry and factories.
 /// Returns a ModelRegistry with all generated models registered.

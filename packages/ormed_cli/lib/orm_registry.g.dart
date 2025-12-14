@@ -2,12 +2,10 @@
 // coverage:ignore-file
 import 'package:ormed/ormed.dart';
 
-final List<ModelDefinition<OrmEntity>> _$ormModelDefinitions = [
-];
+final List<ModelDefinition<OrmEntity>> _$ormModelDefinitions = [];
 
-ModelRegistry buildOrmRegistry() => ModelRegistry()
-  ..registerAll(_$ormModelDefinitions)
-  ;
+ModelRegistry buildOrmRegistry() =>
+    ModelRegistry()..registerAll(_$ormModelDefinitions);
 
 List<ModelDefinition<OrmEntity>> get generatedOrmModelDefinitions =>
     List.unmodifiable(_$ormModelDefinitions);
@@ -21,8 +19,7 @@ extension GeneratedOrmModels on ModelRegistry {
 
 /// Registers factory definitions for all models that have factory support.
 /// Call this before using Model.factory<T>() to ensure definitions are available.
-void registerOrmFactories() {
-}
+void registerOrmFactories() {}
 
 /// Combined setup: registers both model registry and factories.
 /// Returns a ModelRegistry with all generated models registered.

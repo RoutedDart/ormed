@@ -20,12 +20,15 @@ void main() {
       expect(TypeMapperRegistry.has('mariadb'), isTrue);
       final mariadbMapper = TypeMapperRegistry.get('mariadb');
       expect(mariadbMapper, isNotNull);
-      expect(mariadbMapper?.driverName, equals('mysql')); // Same mapper instance
+      expect(
+        mariadbMapper?.driverName,
+        equals('mysql'),
+      ); // Same mapper instance
     });
 
     test('bool → TINYINT with codec', () {
       expect(mapper.dartTypeToSql(bool), equals('TINYINT'));
-      
+
       final codec = mapper.getCodecForDartType(bool);
       expect(codec, isNotNull);
       expect(codec?.encode(true), equals(1));
@@ -36,15 +39,15 @@ void main() {
 
     test('DateTime → DATETIME with codec', () {
       expect(mapper.dartTypeToSql(DateTime), equals('DATETIME'));
-      
+
       final codec = mapper.getCodecForDartType(DateTime);
       expect(codec, isNotNull);
-      
+
       // MySQL returns DateTime as String sometimes, codec should handle it
       final testDate = DateTime.utc(2024, 1, 1);
       final encoded = codec?.encode(testDate);
       expect(encoded, isA<String>());
-      
+
       // Decode from string (typical MySQL behavior)
       final decoded = codec?.decode('2024-01-01 00:00:00');
       expect(decoded, isA<DateTime>());
@@ -64,7 +67,10 @@ void main() {
       expect(mapper.sqlTypeToDart('DOUBLE'), equals(double));
       expect(mapper.sqlTypeToDart('VARCHAR'), equals(String));
       expect(mapper.sqlTypeToDart('TEXT'), equals(String));
-      expect(mapper.sqlTypeToDart('TINYINT'), equals(int)); // Without (1), it's int
+      expect(
+        mapper.sqlTypeToDart('TINYINT'),
+        equals(int),
+      ); // Without (1), it's int
       expect(mapper.sqlTypeToDart('DATETIME'), equals(DateTime));
       expect(mapper.sqlTypeToDart('TIMESTAMP'), equals(DateTime));
       expect(mapper.sqlTypeToDart('BLOB'), equals(List<int>));
@@ -76,7 +82,7 @@ void main() {
       expect(mapper.sqlTypeToDart('TINYINT'), equals(int));
       expect(mapper.sqlTypeToDart('TINYINT(1)'), equals(int));
       expect(mapper.sqlTypeToDart('TINYINT(2)'), equals(int));
-      
+
       // The bool codec is associated with bool Dart type
       expect(mapper.dartTypeToSql(bool), equals('TINYINT'));
     });
@@ -85,7 +91,7 @@ void main() {
       expect(mapper.normalizeSqlType('varchar(255)'), equals('VARCHAR'));
       expect(mapper.normalizeSqlType('INT'), equals('INT'));
       expect(mapper.normalizeSqlType('int'), equals('INT'));
-      
+
       // All integer types normalize to INT
       expect(mapper.normalizeSqlType('BIGINT'), equals('INT'));
       expect(mapper.normalizeSqlType('TINYINT'), equals('INT'));
@@ -109,12 +115,15 @@ void main() {
     test('Codec for JSON type', () {
       final codec = mapper.getCodecForDartType(Map);
       expect(codec, isNotNull);
-      
-      final testMap = {'key': 'value', 'nested': {'inner': 'data'}};
+
+      final testMap = {
+        'key': 'value',
+        'nested': {'inner': 'data'},
+      };
       final encoded = codec?.encode(testMap);
       expect(encoded, isA<String>());
       expect(encoded, contains('key'));
-      
+
       final decoded = codec?.decode(encoded);
       expect(decoded, isA<Map>());
       expect((decoded as Map)['key'], equals('value'));
@@ -141,11 +150,11 @@ void main() {
       // MySQL TypeMapper associates bool codec with bool Dart type
       final codec = mapper.getCodecForDartType(bool);
       expect(codec, isNotNull);
-      
+
       // Should encode bool → int
       expect(codec?.encode(true), equals(1));
       expect(codec?.encode(false), equals(0));
-      
+
       // Should decode int → bool
       expect(codec?.decode(1), equals(true));
       expect(codec?.decode(0), equals(false));

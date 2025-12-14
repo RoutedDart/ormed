@@ -110,10 +110,7 @@ extension UtilityExtension<T extends OrmEntity> on Query<T> {
   ///   .when(() => user.hasPermission('viewDrafts'), (q) => q.where('status', 'draft'))
   ///   .get();
   /// ```
-  Query<T> when(
-    Object condition,
-    Query<T> Function(Query<T> query) callback,
-  ) {
+  Query<T> when(Object condition, Query<T> Function(Query<T> query) callback) {
     final bool shouldApply = condition is bool
         ? condition
         : (condition as bool Function())();

@@ -30,7 +30,10 @@ void main() {
       };
 
       for (final entry in customCodecs.entries) {
-        ValueCodecRegistry.instance.registerCodec(key: entry.key, codec: entry.value);
+        ValueCodecRegistry.instance.registerCodec(
+          key: entry.key,
+          codec: entry.value,
+        );
       }
 
       driverAdapter = PostgresDriverAdapter.custom(
@@ -40,12 +43,10 @@ void main() {
       registerOrmFactories();
 
       dataSource = DataSource(
-
         DataSourceOptions(
           driver: driverAdapter,
           entities: [...generatedOrmModelDefinitions, eventRecordDefinition],
           codecs: customCodecs,
-
         ),
       );
 
@@ -93,7 +94,7 @@ void main() {
         occurredAt: DateTime.utc(2024, 5, 5, 12, 30),
       );
 
-      final inserted = await repo.insert(event, );
+      final inserted = await repo.insert(event);
       expect(inserted.metadata['level'], 'info');
       expect(inserted.tags, equals(event.tags));
       // Skip Duration/interval test - Postgres interval type needs special handling
@@ -129,7 +130,9 @@ class EventRecord extends Model<EventRecord> {
 }
 
 /// Tracked model class for EventRecord
-class $EventRecord extends EventRecord with ModelAttributes implements OrmEntity {
+class $EventRecord extends EventRecord
+    with ModelAttributes
+    implements OrmEntity {
   $EventRecord({
     required super.id,
     required super.metadata,

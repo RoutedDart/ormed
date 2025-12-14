@@ -143,27 +143,30 @@ void runFreshTests() {
         expect(freshPost.tags, hasLength(1));
       });
 
-      test('fresh without relations leaves cached relations untouched', () async {
-        final rows = await dataSource.context
-            .query<Author>()
-            .withRelation('posts')
-            .where('id', 1)
-            .get();
-        final author = rows.first;
+      test(
+        'fresh without relations leaves cached relations untouched',
+        () async {
+          final rows = await dataSource.context
+              .query<Author>()
+              .withRelation('posts')
+              .where('id', 1)
+              .get();
+          final author = rows.first;
 
-        expect(author.relationLoaded('posts'), isTrue);
-        final originalPosts = author.posts;
+          expect(author.relationLoaded('posts'), isTrue);
+          final originalPosts = author.posts;
 
-        // Get fresh instance without relations
-        final freshAuthor = await author.fresh();
+          // Get fresh instance without relations
+          final freshAuthor = await author.fresh();
 
-        // Original should still have its loaded relations
-        expect(author.relationLoaded('posts'), isTrue);
-        expect(identical(author.posts, originalPosts), isTrue);
+          // Original should still have its loaded relations
+          expect(author.relationLoaded('posts'), isTrue);
+          expect(identical(author.posts, originalPosts), isTrue);
 
-        // Fresh instance should not have relations loaded
-        expect(freshAuthor.relationLoaded('posts'), isFalse);
-      });
+          // Fresh instance should not have relations loaded
+          expect(freshAuthor.relationLoaded('posts'), isFalse);
+        },
+      );
 
       test('fresh relations reflect database changes', () async {
         final rows = await dataSource.context

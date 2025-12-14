@@ -89,7 +89,7 @@ abstract class DriverTypeMapper {
   String? dartTypeNameToSql(String dartTypeName) {
     // Remove nullable suffix
     final cleanTypeName = dartTypeName.replaceAll('?', '').trim();
-    
+
     // Try to find matching type mapping
     for (final mapping in typeMappings) {
       if (mapping.dartType.toString() == cleanTypeName) {
@@ -100,7 +100,8 @@ abstract class DriverTypeMapper {
   }
 
   /// Suggest a SQL type based on Dart type and constraints
-  String suggestSqlType(Type dartType, {
+  String suggestSqlType(
+    Type dartType, {
     int? maxLength,
     int? precision,
     int? scale,

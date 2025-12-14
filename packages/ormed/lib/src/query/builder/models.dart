@@ -16,8 +16,9 @@ class RelationJoinRequest {
 }
 
 extension MapQueryExtensions on Query<AdHocRow> {
-  MappedAdHocQuery<R> mapRows<R extends OrmEntity>(R Function(AdHocRow row) mapper) =>
-      MappedAdHocQuery<R>(this, mapper);
+  MappedAdHocQuery<R> mapRows<R extends OrmEntity>(
+    R Function(AdHocRow row) mapper,
+  ) => MappedAdHocQuery<R>(this, mapper);
 }
 
 typedef JoinConstraintBuilder = void Function(JoinBuilder join);

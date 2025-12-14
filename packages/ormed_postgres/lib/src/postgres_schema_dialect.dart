@@ -32,10 +32,9 @@ class PostgresSchemaDialect extends SchemaDialect {
         final name = mutation.documentPayload!['name'] as String;
         final ifExists =
             mutation.documentPayload!['ifExists'] as bool? ?? false;
-        final sql =
-            ifExists
-                ? compileDropDatabaseIfExists(name)
-                : 'DROP DATABASE ${_quote(name)}';
+        final sql = ifExists
+            ? compileDropDatabaseIfExists(name)
+            : 'DROP DATABASE ${_quote(name)}';
         return sql != null ? [SchemaStatement(sql)] : [];
       default:
         throw UnimplementedError(
@@ -46,7 +45,9 @@ class PostgresSchemaDialect extends SchemaDialect {
   }
 
   List<SchemaStatement> _compileCreateTable(TableBlueprint blueprint) {
-    final buffer = StringBuffer('CREATE TABLE ${_tableNameFromBlueprint(blueprint)} (');
+    final buffer = StringBuffer(
+      'CREATE TABLE ${_tableNameFromBlueprint(blueprint)} (',
+    );
 
     final indexCommands = blueprint.indexes;
     final primaryDefinitions = <String, IndexDefinition>{};
@@ -127,9 +128,7 @@ class PostgresSchemaDialect extends SchemaDialect {
         case ColumnCommandKind.alter:
           final definition = column.definition;
           if (definition == null) continue;
-          statements.addAll(
-            _alterColumnStatements(tableName, definition),
-          );
+          statements.addAll(_alterColumnStatements(tableName, definition));
         case ColumnCommandKind.drop:
           statements.add(
             SchemaStatement(
@@ -223,7 +222,10 @@ class PostgresSchemaDialect extends SchemaDialect {
     }
   }
 
-  String _createIndexSqlForBlueprint(TableBlueprint blueprint, IndexDefinition definition) {
+  String _createIndexSqlForBlueprint(
+    TableBlueprint blueprint,
+    IndexDefinition definition,
+  ) {
     final tableName = _tableNameFromBlueprint(blueprint);
     switch (definition.type) {
       case IndexType.unique:
@@ -469,7 +471,7 @@ class PostgresSchemaDialect extends SchemaDialect {
     }
     return _quote(table);
   }
-  
+
   String _tableNameFromBlueprint(TableBlueprint blueprint) {
     return _tableName(blueprint.table, schema: blueprint.schema);
   }
@@ -527,7 +529,8 @@ class PostgresSchemaDialect extends SchemaDialect {
 
   @override
   String? compileSchemas({String? schema}) {
-    final filter = "nspname NOT LIKE 'pg_%' AND nspname <> 'information_schema'";
+    final filter =
+        "nspname NOT LIKE 'pg_%' AND nspname <> 'information_schema'";
     final clause = schema == null ? '' : ' AND nspname = ?';
     return 'SELECT nspname AS name, pg_get_userbyid(nspowner) AS owner, '
         'nspname = current_schema() AS is_default '

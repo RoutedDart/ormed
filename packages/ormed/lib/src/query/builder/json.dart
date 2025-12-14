@@ -1,8 +1,6 @@
 part of '../query_builder.dart';
 
 extension JsonExtension<T extends OrmEntity> on Query<T> {
-
-
   /// Adds a JSON containment predicate (dialect-aware).
   ///
   /// This method checks if a JSON column contains a specific value at a given path.
@@ -95,10 +93,10 @@ extension JsonExtension<T extends OrmEntity> on Query<T> {
   ///   .get();
   /// ```
   Query<T> whereJsonLength(
-      String field,
-      Object operatorOrLength, [
-        int? length,
-      ]) {
+    String field,
+    Object operatorOrLength, [
+    int? length,
+  ]) {
     String compare;
     int target;
     if (operatorOrLength is int && length == null) {

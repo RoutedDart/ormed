@@ -11,7 +11,8 @@ Future<(MySqlDriverAdapter, DataSource)> _createSimpleHarness() async {
   registerOrmFactories();
   MySqlDriverAdapter.registerCodecs();
 
-  final url = Platform.environment['MYSQL_URL'] ??
+  final url =
+      Platform.environment['MYSQL_URL'] ??
       'mysql://root:secret@localhost:6605/orm_test';
 
   final adapter = MySqlDriverAdapter.custom(

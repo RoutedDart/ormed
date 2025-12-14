@@ -16,7 +16,10 @@ void main() {
       final create = plan.mutations[0];
       expect(create.operation, SchemaMutationOperation.createDatabase);
       expect(create.documentPayload?['name'], equals('db_one'));
-      expect(create.documentPayload?['options'], equals({'charset': 'utf8mb4'}));
+      expect(
+        create.documentPayload?['options'],
+        equals({'charset': 'utf8mb4'}),
+      );
 
       final drop = plan.mutations[1];
       expect(drop.operation, SchemaMutationOperation.dropDatabase);

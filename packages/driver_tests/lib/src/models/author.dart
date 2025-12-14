@@ -27,5 +27,4 @@ class Author extends Model<Author> with ModelFactoryCapable, Timestamps {
     localKey: 'id',
   )
   final List<Post> posts;
-
 }

@@ -51,7 +51,7 @@ OrmConnectionHandle registerSqliteOrmConnection({
 }) {
   // Ensure SQLite codecs are registered
   SqliteDriverAdapter.registerCodecs();
-  
+
   final factory = OrmConnectionFactory(manager: manager);
   final connectionConfig = connection ?? ConnectionConfig(name: name);
   return factory.register(
@@ -59,13 +59,8 @@ OrmConnectionHandle registerSqliteOrmConnection({
     connection: connectionConfig,
     singleton: singleton,
     builder: (_) {
-      final adapter = SqliteDriverAdapter.custom(
-        config: database,
-      );
-      final context = QueryContext(
-        registry: registry,
-        driver: adapter,
-      );
+      final adapter = SqliteDriverAdapter.custom(config: database);
+      final context = QueryContext(registry: registry, driver: adapter);
       return OrmConnection(
         config: connectionConfig,
         driver: adapter,

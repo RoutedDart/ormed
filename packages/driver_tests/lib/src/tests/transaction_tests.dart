@@ -11,12 +11,11 @@ void runDriverTransactionTests() {
     }
     test('rolls back when transaction throws', () async {
       final repo = dataSource.context.repository<User>();
-      final uniqueEmail = 'dave_${DateTime.now().millisecondsSinceEpoch}@example.com';
+      final uniqueEmail =
+          'dave_${DateTime.now().millisecondsSinceEpoch}@example.com';
       await expectLater(
         () => dataSource.connection.driver.transaction(() async {
-          await repo.insert(
-            User(id: 0, email: uniqueEmail, active: true),
-          );
+          await repo.insert(User(id: 0, email: uniqueEmail, active: true));
           throw StateError('boom');
         }),
         throwsStateError,
@@ -31,11 +30,10 @@ void runDriverTransactionTests() {
         print(event.sql);
       });
       final repo = dataSource.context.repository<User>();
-      final uniqueEmail = 'eve_${DateTime.now().millisecondsSinceEpoch}@example.com';
+      final uniqueEmail =
+          'eve_${DateTime.now().millisecondsSinceEpoch}@example.com';
       await dataSource.connection.driver.transaction(() async {
-        await repo.insert(
-          User(id: 0, email: uniqueEmail, active: true),
-        );
+        await repo.insert(User(id: 0, email: uniqueEmail, active: true));
       });
 
       final users = await dataSource.context.query<User>().get();

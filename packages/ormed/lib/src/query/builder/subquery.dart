@@ -29,10 +29,7 @@ extension SubqueryExtension<T extends OrmEntity> on Query<T> {
   ///   SELECT author_id FROM posts WHERE published = true
   /// )
   /// ```
-  Query<T> whereInSubquery(
-    String field,
-    Query<dynamic> subquery,
-  ) {
+  Query<T> whereInSubquery(String field, Query<dynamic> subquery) {
     return _appendPredicate(
       SubqueryPredicate(
         type: SubqueryType.whereIn,
@@ -60,10 +57,7 @@ extension SubqueryExtension<T extends OrmEntity> on Query<T> {
   ///   )
   ///   .get();
   /// ```
-  Query<T> whereNotInSubquery(
-    String field,
-    Query<dynamic> subquery,
-  ) {
+  Query<T> whereNotInSubquery(String field, Query<dynamic> subquery) {
     return _appendPredicate(
       SubqueryPredicate(
         type: SubqueryType.whereIn,
@@ -204,5 +198,3 @@ extension SubqueryExtension<T extends OrmEntity> on Query<T> {
     );
   }
 }
-
-

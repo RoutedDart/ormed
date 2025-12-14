@@ -201,14 +201,14 @@ extension ModelAttributeExtensions<T extends Model<T>> on Model<T> {
   /// Only works if this is a tracked model instance.
   void setRelation(String relation, dynamic value) {
     (this as ModelRelations).setRelation(relation, value);
-    }
+  }
 
   /// Unload a relation.
   ///
   /// Only works if this is a tracked model instance.
   void unsetRelation(String relation) {
     (this as ModelRelations).unsetRelation(relation);
-    }
+  }
 
   /// Get all loaded relations as a map.
   ///
@@ -243,21 +243,21 @@ extension ModelAttributeExtensions<T extends Model<T>> on Model<T> {
   /// Only works if this is a tracked model instance.
   void setRelations(Map<String, dynamic> relations) {
     (this as ModelRelations).setRelations(relations);
-    }
+  }
 
   /// Clear all loaded relations.
   ///
   /// Only works if this is a tracked model instance.
   void clearRelations() {
     (this as ModelRelations).clearRelations();
-    }
+  }
 
   /// Sync relations from a query row map.
   ///
   /// Only works if this is a tracked model instance.
   void syncRelationsFromQueryRow(Map<String, dynamic> row) {
     (this as ModelRelations).syncRelationsFromQueryRow(row);
-    }
+  }
 }
 
 /// Extensions for timestamp functionality on models.
@@ -288,7 +288,7 @@ extension ModelTimestampExtensions<T extends Model<T>> on Model<T> {
 
   /// Set the creation timestamp.
   ///
-  /// Accepts DateTime or Carbon instance. Only works if this is a tracked 
+  /// Accepts DateTime or Carbon instance. Only works if this is a tracked
   /// model instance with timestamp support.
   set createdAt(DateTime? value) {
     if (this is TimestampsImpl) {
@@ -319,7 +319,7 @@ extension ModelTimestampExtensions<T extends Model<T>> on Model<T> {
 
   /// Set the last update timestamp.
   ///
-  /// Accepts DateTime or Carbon instance. Only works if this is a tracked 
+  /// Accepts DateTime or Carbon instance. Only works if this is a tracked
   /// model instance with timestamp support.
   set updatedAt(DateTime? value) {
     if (this is TimestampsImpl) {
@@ -367,7 +367,7 @@ extension ModelTimestampExtensions<T extends Model<T>> on Model<T> {
 
     final attrs = this as ModelAttributes;
     final dirty = attrs.getDirty();
-    
+
     if (dirty.isEmpty) {
       return; // Nothing to save
     }
@@ -375,7 +375,7 @@ extension ModelTimestampExtensions<T extends Model<T>> on Model<T> {
     // Get the model definition from the registry
     final resolver = conn.connectionResolver!;
     final definition = resolver.registry.expect<T>();
-    
+
     // Get the primary key field
     final pkField = definition.primaryKeyField;
     if (pkField == null) {
@@ -383,29 +383,24 @@ extension ModelTimestampExtensions<T extends Model<T>> on Model<T> {
         'Cannot save: Model $runtimeType does not have a primary key defined.',
       );
     }
-    
+
     // Get the primary key value
     final pkValue = getAttribute(pkField.name);
     if (pkValue == null) {
-      throw StateError(
-        'Cannot save: Model does not have a primary key value.',
-      );
+      throw StateError('Cannot save: Model does not have a primary key value.');
     }
 
     // Build and execute update mutation
     final plan = MutationPlan.update(
       definition: definition,
       rows: [
-        MutationRow(
-          values: dirty,
-          keys: {pkField.columnName: pkValue},
-        ),
+        MutationRow(values: dirty, keys: {pkField.columnName: pkValue}),
       ],
       driverName: resolver.driver.metadata.name,
     );
-    
+
     await conn.runMutation(plan);
-    
+
     // Sync original attributes with current state
     attrs.syncOriginal();
   }
@@ -462,4 +457,3 @@ extension ModelSoftDeleteExtensions<T extends Model<T>> on Model<T> {
     }
   }
 }
-

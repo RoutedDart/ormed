@@ -107,7 +107,8 @@ void main() {
     test(
       'ModelFactory.withConnection binds queries and repositories',
       () async {
-        final registry = ModelRegistry()..registerGeneratedModels()
+        final registry = ModelRegistry()
+          ..registerGeneratedModels()
           ..register(AttributeUserModelFactory.definition);
         final context = QueryContext(
           registry: registry,

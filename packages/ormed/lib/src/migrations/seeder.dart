@@ -102,8 +102,8 @@ abstract class DatabaseSeeder {
   /// ]);
   /// ```
   Future<List<TModel>> seed<TModel extends Model<TModel>>(
-      List<Map<String, dynamic>> records,
-      ) async {
+    List<Map<String, dynamic>> records,
+  ) async {
     final results = <TModel>[];
     for (final record in records) {
       final model = await Model.create<TModel>(
@@ -127,8 +127,8 @@ abstract class DatabaseSeeder {
   /// }
   /// ```
   Future<void> call(
-      List<DatabaseSeeder Function(OrmConnection)> factories,
-      ) async {
+    List<DatabaseSeeder Function(OrmConnection)> factories,
+  ) async {
     for (final factory in factories) {
       final seeder = factory(connection);
       await seeder.run();

@@ -4,7 +4,6 @@ import 'dart:mirrors';
 import 'package:collection/collection.dart';
 import 'package:ormed/ormed.dart';
 
-
 /// Runtime description of a generated ORM model.
 class ModelDefinition<TModel extends OrmEntity> {
   const ModelDefinition({
@@ -252,7 +251,7 @@ class FieldDefinition {
     required this.columnName,
     required this.dartType,
     required this.resolvedType,
-    this.isPrimaryKey =false,
+    this.isPrimaryKey = false,
     required this.isNullable,
     this.isUnique = false,
     this.isIndexed = false,

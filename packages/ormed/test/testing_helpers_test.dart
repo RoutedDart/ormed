@@ -14,7 +14,7 @@ void main() {
         DataSourceOptions(
           name: 'test_seeder',
           driver: InMemoryQueryExecutor(),
-          registry: buildOrmRegistry()
+          registry: buildOrmRegistry(),
         ),
       );
       await dataSource.init();
@@ -39,7 +39,7 @@ void main() {
         DataSourceOptions(
           name: 'test_auto_increment',
           driver: InMemoryQueryExecutor(),
-          registry: buildOrmRegistry()
+          registry: buildOrmRegistry(),
         ),
       );
       await dataSource.init();

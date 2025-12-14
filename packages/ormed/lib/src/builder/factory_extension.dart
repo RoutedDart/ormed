@@ -1,9 +1,7 @@
 String modelFactoryExtension(String className) {
   final buffer = StringBuffer();
   // Use base class name without doubling "Model" suffix for factory name
-  final factoryName = className.endsWith('Model') 
-      ? '${className}Factory' 
-      : '';
+  final factoryName = className.endsWith('Model') ? '${className}Factory' : '';
   buffer.writeln('extension ${className}ModelHelpers on $className {');
   buffer.writeln('  // Factory');
   buffer.writeln(
@@ -49,16 +47,12 @@ String modelFactoryExtension(String className) {
   buffer.writeln(
     '  static Future<$className> create(Map<String, dynamic> attributes, [String? connection]) =>',
   );
-  buffer.writeln(
-    '      $factoryName.create(attributes, connection);',
-  );
+  buffer.writeln('      $factoryName.create(attributes, connection);');
   buffer.writeln();
   buffer.writeln(
     '  static Future<List<$className>> createMany(List<Map<String, dynamic>> records, [String? connection]) =>',
   );
-  buffer.writeln(
-    '      $factoryName.createMany(records, connection);',
-  );
+  buffer.writeln('      $factoryName.createMany(records, connection);');
   buffer.writeln();
   buffer.writeln(
     '  static Future<void> insert(List<Map<String, dynamic>> records, [String? connection]) =>',
@@ -79,16 +73,12 @@ String modelFactoryExtension(String className) {
   buffer.writeln(
     '  static Query<$className> where(String column, dynamic value, [String? connection]) =>',
   );
-  buffer.writeln(
-    '      $factoryName.where(column, value, connection);',
-  );
+  buffer.writeln('      $factoryName.where(column, value, connection);');
   buffer.writeln();
   buffer.writeln(
     '  static Query<$className> whereIn(String column, List<dynamic> values, [String? connection]) =>',
   );
-  buffer.writeln(
-    '      $factoryName.whereIn(column, values, connection);',
-  );
+  buffer.writeln('      $factoryName.whereIn(column, values, connection);');
   buffer.writeln();
   buffer.writeln(
     '  static Query<$className> orderBy(String column, {String direction = "asc", String? connection}) =>',
@@ -123,9 +113,7 @@ String modelFactoryExtension(String className) {
   buffer.writeln('    }');
   buffer.writeln('    final keyMap = <String, Object?>{');
   buffer.writeln('      for (final key in primaryKeys)');
-  buffer.writeln(
-    '        key.columnName: $factoryName.toMap(this)[key.name],',
-  );
+  buffer.writeln('        key.columnName: $factoryName.toMap(this)[key.name],');
   buffer.writeln('    };');
   buffer.writeln('    await repo.deleteByKeys([keyMap]);');
   buffer.writeln('  }');

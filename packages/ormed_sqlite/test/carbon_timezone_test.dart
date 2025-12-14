@@ -3,7 +3,7 @@ import 'package:ormed_sqlite/ormed_sqlite.dart';
 import 'package:test/test.dart';
 
 /// Tests for timezone-aware Carbon codec behavior.
-/// 
+///
 /// These tests verify that:
 /// 1. Carbon instances are decoded with the configured default timezone
 /// 2. Encoding always stores in UTC (database consistency)
@@ -39,7 +39,7 @@ void main() {
       // Decoded Carbon is presented in NY timezone
       expect(decoded!.format('yyyy-MM-dd HH:mm z'), contains('15:30'));
       expect(decoded.hour, 15); // Shows as 15 in NY timezone
-      
+
       // The underlying DateTime is still UTC
       // When we explicitly convert to UTC view, it still shows the same time
       // because Carbon.tz() creates a view, not a conversion
@@ -53,7 +53,7 @@ void main() {
       );
 
       const codec = SqliteCarbonInterfaceCodec();
-      
+
       // Create a Carbon in NY timezone (3:30 PM local)
       final nyCarbon = CarbonConfig.createCarbon(
         dateTime: DateTime(2024, 12, 8, 15, 30),
@@ -65,7 +65,7 @@ void main() {
       expect(encoded, isNotNull);
       expect(encoded, isA<String>());
       expect(encoded.toString(), endsWith('Z')); // UTC indicator
-      
+
       // Parse and verify it's 20:30 UTC (15:30 NY + 5 hours)
       final parsed = DateTime.parse(encoded.toString());
       expect(parsed.hour, 20);
@@ -76,7 +76,7 @@ void main() {
       CarbonConfig.configure(defaultTimezone: 'UTC');
 
       const codec = SqliteCarbonInterfaceCodec();
-      
+
       final original = CarbonConfig.createCarbon(
         dateTime: DateTime.utc(2024, 12, 8, 20, 30),
       );

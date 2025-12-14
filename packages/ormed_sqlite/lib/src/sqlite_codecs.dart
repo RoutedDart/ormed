@@ -13,23 +13,23 @@ void registerSqliteCodecs() {
     'bool': const SqliteBoolCodec(),
     'bool?': const SqliteBoolCodec(),
     'boolean': const SqliteBoolCodec(),
-    
+
     // DateTime codecs
     'DateTime': const SqliteDateTimeCodec(),
     'DateTime?': const SqliteDateTimeCodec(),
     'datetime': const SqliteDateTimeCodec(),
-    
+
     // Carbon codecs
     'Carbon': const SqliteCarbonCodec(),
     'Carbon?': const SqliteCarbonCodec(),
     'CarbonInterface': const SqliteCarbonInterfaceCodec(),
     'CarbonInterface?': const SqliteCarbonInterfaceCodec(),
     'carbon': const SqliteCarbonCodec(),
-    
+
     // Numeric codecs
     'double': const SqliteDoubleCodec(),
     'double?': const SqliteDoubleCodec(),
-    
+
     // JSON codec
     'json': const SqliteJsonCodec(),
   });
@@ -71,7 +71,7 @@ class SqliteDateTimeCodec extends ValueCodec<DateTime> {
 }
 
 /// Codec for Carbon instances that stores as ISO8601 strings in SQLite.
-/// 
+///
 /// This codec handles both encoding Carbon to text and decoding text back to Carbon.
 /// All times are stored in UTC to ensure consistency across timezones.
 /// When decoding, Carbon instances are created with the configured default timezone.
@@ -92,12 +92,16 @@ class SqliteCarbonCodec extends ValueCodec<Carbon> {
     if (value is Carbon) return value;
     // If CarbonInterface but not Carbon, convert to Carbon
     if (value is CarbonInterface) {
-      return Carbon.fromDateTime(value.toDateTime()).tz(CarbonConfig.defaultTimezone) as Carbon;
+      return Carbon.fromDateTime(
+            value.toDateTime(),
+          ).tz(CarbonConfig.defaultTimezone)
+          as Carbon;
     }
     // If DateTime, wrap in Carbon with configured timezone
     if (value is DateTime) {
       final utcDateTime = value.isUtc ? value : value.toUtc();
-      return Carbon.fromDateTime(utcDateTime).tz(CarbonConfig.defaultTimezone) as Carbon;
+      return Carbon.fromDateTime(utcDateTime).tz(CarbonConfig.defaultTimezone)
+          as Carbon;
     }
     // Parse ISO8601 string using CarbonConfig for proper timezone handling
     if (value is String) {
@@ -111,7 +115,7 @@ class SqliteCarbonCodec extends ValueCodec<Carbon> {
 }
 
 /// Codec for CarbonInterface instances that stores as ISO8601 strings in SQLite.
-/// 
+///
 /// This codec handles the CarbonInterface type, which includes both Carbon and
 /// CarbonImmutable implementations. Decodes to Carbon (mutable) by default.
 /// When decoding, Carbon instances are created with the configured default timezone.

@@ -26,22 +26,24 @@ class MySqlConnectionInfo {
   factory MySqlConnectionInfo.fromUrl(String url) {
     final uri = Uri.parse(url);
     // Check for ssl or secure query parameter
-    final hasSecure = uri.queryParameters['ssl'] == 'true' ||
+    final hasSecure =
+        uri.queryParameters['ssl'] == 'true' ||
         uri.queryParameters['secure'] == 'true' ||
         // Default to true for MySQL 8+ which uses caching_sha2_password
-        !uri.queryParameters.containsKey('ssl') && !uri.queryParameters.containsKey('secure');
+        !uri.queryParameters.containsKey('ssl') &&
+            !uri.queryParameters.containsKey('secure');
     return MySqlConnectionInfo(
       host: uri.host.isEmpty ? 'localhost' : uri.host,
       port: uri.port == 0 ? 3306 : uri.port,
-      database:
-          uri.pathSegments.isNotEmpty ? uri.pathSegments.first : 'mysql',
+      database: uri.pathSegments.isNotEmpty ? uri.pathSegments.first : 'mysql',
       username: uri.userInfo.contains(':')
           ? uri.userInfo.split(':').first
           : uri.userInfo.isEmpty
-              ? null
-              : uri.userInfo,
-      password:
-          uri.userInfo.contains(':') ? uri.userInfo.split(':').last : null,
+          ? null
+          : uri.userInfo,
+      password: uri.userInfo.contains(':')
+          ? uri.userInfo.split(':').last
+          : null,
       secure: hasSecure,
     );
   }
@@ -139,7 +141,8 @@ Future<MySqlTestHarness> createMySqlTestHarness({
   registerOrmFactories();
   MySqlDriverAdapter.registerCodecs();
 
-  final resolvedUrl = url ??
+  final resolvedUrl =
+      url ??
       Platform.environment['MYSQL_URL'] ??
       'mysql://root:secret@localhost:6605/orm_test';
 

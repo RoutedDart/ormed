@@ -36,17 +36,13 @@ void main() {
     });
 
     test('mapRows helper maps to custom DTOs', () async {
-      final rows = await context
-          .table('authors')
-          .get();
+      final rows = await context.table('authors').get();
       final names = rows.map((row) => row['name'] as String).toList();
       expect(names, ['Alice']);
     });
 
     test('mapRows stream emits DTOs', () async {
-      final stream = context
-          .table('authors')
-          .streamRows();
+      final stream = context.table('authors').streamRows();
 
       final names = <String>[];
       await for (final row in stream) {
@@ -57,7 +53,8 @@ void main() {
 
     test('streamRows delegates to driver stream implementation', () async {
       final streamingRegistry = ModelRegistry()
-        ..registerAll([AuthorOrmDefinition.definition])..registerGeneratedModels();
+        ..registerAll([AuthorOrmDefinition.definition])
+        ..registerGeneratedModels();
       final streamingDriver = _StreamingQueryDriver()
         ..register(AuthorOrmDefinition.definition, const [
           Author(id: 1, name: 'Alice', active: true),
@@ -81,7 +78,6 @@ void main() {
     });
 
     test('streamRows eager loads relations in batches', () async {
-
       final streamingDriver = _StreamingQueryDriver()
         ..register(AuthorOrmDefinition.definition, const [
           Author(id: 1, name: 'Alice', active: true),

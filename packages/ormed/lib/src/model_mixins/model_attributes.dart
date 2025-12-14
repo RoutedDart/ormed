@@ -54,8 +54,7 @@ mixin ModelAttributes {
   List<JsonAttributeUpdate> _ensureJsonUpdates() =>
       _jsonUpdates[this] ??= <JsonAttributeUpdate>[];
 
-  Map<String, Object?>? _getOriginalAttributes() =>
-      _originalAttributes[this];
+  Map<String, Object?>? _getOriginalAttributes() => _originalAttributes[this];
 
   /// Snapshot of the current attribute map.
   Map<String, Object?> get attributes =>

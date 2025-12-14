@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:meta/meta.dart';
 
 import '../driver/driver.dart';
 import '../contracts.dart';
@@ -255,6 +254,7 @@ class OrmConnection implements ConnectionResolver {
     void listener(ConnectionEvent event) {
       if (event is T) callback(event);
     }
+
     _eventListeners.add(listener);
     return () => _eventListeners.remove(listener);
   }
@@ -380,13 +380,16 @@ class OrmConnection implements ConnectionResolver {
   }
 
   /// Builds a query for [T] using an alternate table/schema/alias.
-  Query<T> queryAs<T extends OrmEntity>({String? table, String? schema, String? alias}) =>
-      queryFromDefinition(
-        registry.expect<T>(),
-        table: table,
-        schema: schema,
-        alias: alias,
-      );
+  Query<T> queryAs<T extends OrmEntity>({
+    String? table,
+    String? schema,
+    String? alias,
+  }) => queryFromDefinition(
+    registry.expect<T>(),
+    table: table,
+    schema: schema,
+    alias: alias,
+  );
 
   @override
   DriverAdapter get driver => _driver;
@@ -467,8 +470,9 @@ class OrmConnection implements ConnectionResolver {
 
     // Query logging
     if (_loggingQueries) {
-      final sanitized =
-          _includeLogParameters ? entry : entry.withoutParameters();
+      final sanitized = _includeLogParameters
+          ? entry
+          : entry.withoutParameters();
       _queryLog.add(sanitized);
     }
   }
@@ -502,10 +506,7 @@ class OrmConnection implements ConnectionResolver {
 
 /// Internal class for tracking query duration handlers.
 class _QueryDurationHandler {
-  _QueryDurationHandler({
-    required this.thresholdMs,
-    required this.handler,
-  });
+  _QueryDurationHandler({required this.thresholdMs, required this.handler});
 
   final double thresholdMs;
   final void Function(OrmConnection, QueryExecuted) handler;

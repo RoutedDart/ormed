@@ -6,7 +6,6 @@ import 'dart:io';
 
 import 'package:meta/meta.dart';
 import 'package:ormed/ormed.dart';
-import 'package:ormed/testing.dart' show SeederRegistration;
 
 import 'src/commands/shared.dart';
 
@@ -19,8 +18,6 @@ export 'src/config.dart'
         MigrationSection,
         SeedSection,
         loadOrmProjectConfig;
-
-
 
 Future<void> runSeedRegistryOnConnection(
   OrmConnection connection,

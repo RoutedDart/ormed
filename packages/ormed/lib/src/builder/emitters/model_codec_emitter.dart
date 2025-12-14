@@ -25,7 +25,9 @@ class ModelCodecEmitter {
     final generatedClassName = context.trackedModelClassName;
     final codecName = '_${generatedClassName}Codec';
     final buffer = StringBuffer();
-    buffer.writeln('class $codecName extends ModelCodec<$generatedClassName> {');
+    buffer.writeln(
+      'class $codecName extends ModelCodec<$generatedClassName> {',
+    );
     buffer.writeln('  const $codecName();');
     buffer.writeln('  @override');
     buffer.writeln(

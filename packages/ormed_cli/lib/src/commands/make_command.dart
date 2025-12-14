@@ -231,12 +231,13 @@ void _createSeeder({
     );
   }
   var content = registry.readAsStringSync();
-  
+
   // Calculate relative import path from registry to seeder file
   final registryDir = p.dirname(registryPath);
-  final relativeImportPath = p.relative(file.path, from: registryDir)
+  final relativeImportPath = p
+      .relative(file.path, from: registryDir)
       .replaceAll(r'\', '/'); // Normalize for Dart imports
-  
+
   final importLine = "import '$relativeImportPath';";
   if (!content.contains(importLine)) {
     content = insertBetweenMarkers(
@@ -313,12 +314,13 @@ void _createMigration({
     throw StateError('Registry file $registryPath not found. Run `orm init`.');
   }
   var content = registry.readAsStringSync();
-  
+
   // Calculate relative import path from registry to migration file
   final registryDir = p.dirname(registryPath);
-  final relativeImportPath = p.relative(file.path, from: registryDir)
+  final relativeImportPath = p
+      .relative(file.path, from: registryDir)
       .replaceAll(r'\', '/'); // Normalize for Dart imports
-  
+
   final importLine = "import '$relativeImportPath';";
   content = insertBetweenMarkers(
     content,

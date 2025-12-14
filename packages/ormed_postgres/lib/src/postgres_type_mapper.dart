@@ -12,87 +12,78 @@ class PostgresTypeMapper extends DriverTypeMapper {
 
   @override
   List<TypeMapping> get typeMappings => [
-        // INTEGER types
-        TypeMapping(
-          dartType: int,
-          defaultSqlType: 'INTEGER',
-          acceptedSqlTypes: [
-            'SMALLINT',
-            'INT',
-            'INT2',
-            'INT4',
-            'BIGINT',
-            'INT8',
-            'SERIAL',
-            'SERIAL4',
-            'BIGSERIAL',
-            'SERIAL8',
-          ],
-        ),
+    // INTEGER types
+    TypeMapping(
+      dartType: int,
+      defaultSqlType: 'INTEGER',
+      acceptedSqlTypes: [
+        'SMALLINT',
+        'INT',
+        'INT2',
+        'INT4',
+        'BIGINT',
+        'INT8',
+        'SERIAL',
+        'SERIAL4',
+        'BIGSERIAL',
+        'SERIAL8',
+      ],
+    ),
 
-        // BOOLEAN (native boolean type)
-        TypeMapping(
-          dartType: bool,
-          defaultSqlType: 'BOOLEAN',
-          acceptedSqlTypes: ['BOOL'],
-        ),
+    // BOOLEAN (native boolean type)
+    TypeMapping(
+      dartType: bool,
+      defaultSqlType: 'BOOLEAN',
+      acceptedSqlTypes: ['BOOL'],
+    ),
 
-        // FLOAT types
-        TypeMapping(
-          dartType: double,
-          defaultSqlType: 'DOUBLE PRECISION',
-          acceptedSqlTypes: [
-            'REAL',
-            'FLOAT4',
-            'FLOAT8',
-            'NUMERIC',
-            'DECIMAL',
-          ],
-        ),
+    // FLOAT types
+    TypeMapping(
+      dartType: double,
+      defaultSqlType: 'DOUBLE PRECISION',
+      acceptedSqlTypes: ['REAL', 'FLOAT4', 'FLOAT8', 'NUMERIC', 'DECIMAL'],
+    ),
 
-        // TEXT types
-        TypeMapping(
-          dartType: String,
-          defaultSqlType: 'TEXT',
-          acceptedSqlTypes: [
-            'VARCHAR',
-            'CHARACTER VARYING',
-            'CHAR',
-            'CHARACTER',
-            'NAME',
-          ],
-        ),
+    // TEXT types
+    TypeMapping(
+      dartType: String,
+      defaultSqlType: 'TEXT',
+      acceptedSqlTypes: [
+        'VARCHAR',
+        'CHARACTER VARYING',
+        'CHAR',
+        'CHARACTER',
+        'NAME',
+      ],
+    ),
 
-        // TIMESTAMP types
-        TypeMapping(
-          dartType: DateTime,
-          defaultSqlType: 'TIMESTAMP',
-          acceptedSqlTypes: [
-            'TIMESTAMPTZ',
-            'TIMESTAMP WITH TIME ZONE',
-            'TIMESTAMP WITHOUT TIME ZONE',
-            'DATE',
-            'TIME',
-            'TIMETZ',
-            'TIME WITH TIME ZONE',
-            'TIME WITHOUT TIME ZONE',
-          ],
-        ),
+    // TIMESTAMP types
+    TypeMapping(
+      dartType: DateTime,
+      defaultSqlType: 'TIMESTAMP',
+      acceptedSqlTypes: [
+        'TIMESTAMPTZ',
+        'TIMESTAMP WITH TIME ZONE',
+        'TIMESTAMP WITHOUT TIME ZONE',
+        'DATE',
+        'TIME',
+        'TIMETZ',
+        'TIME WITH TIME ZONE',
+        'TIME WITHOUT TIME ZONE',
+      ],
+    ),
 
-        // BYTEA (binary data)
-        TypeMapping(
-          dartType: List<int>,
-          defaultSqlType: 'BYTEA',
-        ),
+    // BYTEA (binary data)
+    TypeMapping(dartType: List<int>, defaultSqlType: 'BYTEA'),
 
-        // JSON types
-        TypeMapping(
-          dartType: Map,
-          defaultSqlType: 'JSONB',
-          acceptedSqlTypes: ['JSON'],
-          codec: _JsonCodec(),
-        ),
-      ];
+    // JSON types
+    TypeMapping(
+      dartType: Map,
+      defaultSqlType: 'JSONB',
+      acceptedSqlTypes: ['JSON'],
+      codec: _JsonCodec(),
+    ),
+  ];
 
   @override
   String normalizeSqlType(String sqlType) {
@@ -155,19 +146,11 @@ class PostgresTypeMapper extends DriverTypeMapper {
     'TIME WITHOUT TIME ZONE',
   };
 
-  static const _binaryTypes = {
-    'BYTEA',
-  };
+  static const _binaryTypes = {'BYTEA'};
 
-  static const _jsonTypes = {
-    'JSON',
-    'JSONB',
-  };
+  static const _jsonTypes = {'JSON', 'JSONB'};
 
-  static const _boolTypes = {
-    'BOOLEAN',
-    'BOOL',
-  };
+  static const _boolTypes = {'BOOLEAN', 'BOOL'};
 
   @override
   bool supportsUnsigned(String sqlType) => false; // PostgreSQL doesn't have UNSIGNED

@@ -21,10 +21,7 @@ void runRepositoryInputVariationsTests() {
     group('Insert Operations - Input Variations', () {
       group('insert() accepts:', () {
         test('tracked model (\$User)', () async {
-          final user = $User(
-            email: 'tracked@test.com',
-            active: true,
-          );
+          final user = $User(email: 'tracked@test.com', active: true);
 
           final result = await userRepo.insert(user);
           expect(result, isA<$User>());
@@ -33,10 +30,7 @@ void runRepositoryInputVariationsTests() {
         });
 
         test('InsertDto (UserInsertDto)', () async {
-          const dto = UserInsertDto(
-            email: 'dto-insert@test.com',
-            active: true,
-          );
+          const dto = UserInsertDto(email: 'dto-insert@test.com', active: true);
 
           final result = await userRepo.insert(dto);
           expect(result, isA<$User>());
@@ -198,7 +192,10 @@ void runRepositoryInputVariationsTests() {
           );
 
           final data = <String, Object?>{'email': 'updated-map-map@test.com'};
-          final result = await userRepo.update(data, where: {'id': inserted.id});
+          final result = await userRepo.update(
+            data,
+            where: {'id': inserted.id},
+          );
 
           expect(result.email, 'updated-map-map@test.com');
         });
@@ -295,9 +292,7 @@ void runRepositoryInputVariationsTests() {
             $User(email: 'batch-dto@test.com', active: true),
           );
 
-          const dtos = [
-            UserUpdateDto(email: 'batch-dto-updated@test.com'),
-          ];
+          const dtos = [UserUpdateDto(email: 'batch-dto-updated@test.com')];
 
           final results = await userRepo.updateMany(
             dtos,
@@ -347,10 +342,7 @@ void runRepositoryInputVariationsTests() {
         });
 
         test('tracked model - inserts new', () async {
-          final user = $User(
-            email: 'upsert-new@test.com',
-            active: true,
-          );
+          final user = $User(email: 'upsert-new@test.com', active: true);
 
           final result = await userRepo.upsert(user);
           expect(result.email, 'upsert-new@test.com');
@@ -462,7 +454,10 @@ void runRepositoryInputVariationsTests() {
               email: 'upsert-mixed-tracked@test.com',
               active: false,
             ),
-            const UserInsertDto(email: 'upsert-mixed-dto@test.com', active: true),
+            const UserInsertDto(
+              email: 'upsert-mixed-dto@test.com',
+              active: true,
+            ),
             <String, Object?>{
               'email': 'upsert-mixed-map@test.com',
               'active': true,
@@ -493,7 +488,11 @@ void runRepositoryInputVariationsTests() {
       group('UpdateDto with partial fields:', () {
         test('only updates specified fields', () async {
           final inserted = await userRepo.insert(
-            $User(email: 'partial-update@test.com', active: true, name: 'Original'),
+            $User(
+              email: 'partial-update@test.com',
+              active: true,
+              name: 'Original',
+            ),
           );
 
           const dto = UserUpdateDto(name: 'Updated Name');
@@ -585,4 +584,3 @@ void runRepositoryInputVariationsTests() {
     });
   });
 }
-

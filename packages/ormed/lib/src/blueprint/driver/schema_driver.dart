@@ -60,7 +60,12 @@ abstract class SchemaDriver {
 
   /// Determines if the given table has a specific index.
   /// Optionally check by index type ('primary', 'unique', or specific driver type).
-  Future<bool> hasIndex(String table, String index, {String? schema, String? type});
+  Future<bool> hasIndex(
+    String table,
+    String index, {
+    String? schema,
+    String? type,
+  });
 
   // ========== Database Management ==========
 
@@ -76,10 +81,7 @@ abstract class SchemaDriver {
   ///
   /// Returns true if created, false if already exists.
   /// Throws [DriverException] on error.
-  Future<bool> createDatabase(
-    String name, {
-    Map<String, Object?>? options,
-  });
+  Future<bool> createDatabase(String name, {Map<String, Object?>? options});
 
   /// Drops a database with the given name.
   /// Throws if database doesn't exist.

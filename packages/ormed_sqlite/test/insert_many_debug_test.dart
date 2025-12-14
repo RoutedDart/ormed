@@ -14,7 +14,10 @@ Future<void> main() async {
   ormedTest('insertMany with typed repo - requires id', (dataSource) async {
     // Using typed repo - id is required but defaults to 0 for auto-increment
     await dataSource.repo<$Author>().insertMany([
-      $Author(name: 'Alice', active: true),  // id defaults to 0, skipped on insert
+      $Author(
+        name: 'Alice',
+        active: true,
+      ), // id defaults to 0, skipped on insert
       $Author(name: 'Bob', active: true),
       $Author(name: 'Charlie', active: true),
     ]);
@@ -33,7 +36,9 @@ Future<void> main() async {
     );
   });
 
-  ormedTest('createMany with table() - untyped but flexible', (dataSource) async {
+  ormedTest('createMany with table() - untyped but flexible', (
+    dataSource,
+  ) async {
     // Using table() - no typing but doesn't require model fields
     await dataSource.table("authors").createMany([
       {"name": "Alice", "active": true},

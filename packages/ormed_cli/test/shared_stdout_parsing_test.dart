@@ -4,7 +4,8 @@ import 'package:test/test.dart';
 void main() {
   group('extractJsonPayloadForTest', () {
     test('strips log prefixes before JSON arrays', () {
-      const noisyOutput = 'Running build hooks...\n'
+      const noisyOutput =
+          'Running build hooks...\n'
           'Running build hooks...\n'
           '[{"id":"m_123"}]\n';
       final result = extractJsonPayloadForTest(
@@ -16,7 +17,8 @@ void main() {
     });
 
     test('removes ANSI / OSC noise around JSON objects', () {
-      const noisyOutput = '\u001B[2KBuilding package executable...\n'
+      const noisyOutput =
+          '\u001B[2KBuilding package executable...\n'
           '\u001B]2;dart run\u0007\n'
           '{"plan":"ok"}\n';
       final result = extractJsonPayloadForTest(
@@ -39,4 +41,3 @@ void main() {
     });
   });
 }
-

@@ -895,8 +895,7 @@ extension CrudExtension<T extends OrmEntity> on Query<T> {
       final normalized = _normalizeAttributeKeys(baseMap);
 
       // Decode to model to apply default values, then re-encode for insertion.
-      final model =
-          definition.codec.decode(normalized, context.codecRegistry);
+      final model = definition.codec.decode(normalized, context.codecRegistry);
       final encoded = definition.toMap(model, registry: context.codecRegistry);
 
       // If caller didn't supply the primary key, drop auto/default PK values.
@@ -1008,8 +1007,10 @@ extension CrudExtension<T extends OrmEntity> on Query<T> {
               helper.ensureTimestampsInMap(values, isInsert: true);
             }
           } else {
-            final model =
-                definition.codec.decode(normalized, context.codecRegistry);
+            final model = definition.codec.decode(
+              normalized,
+              context.codecRegistry,
+            );
             values = definition.toMap(model, registry: context.codecRegistry);
 
             final pkField = definition.primaryKeyField;

@@ -1,13 +1,13 @@
 String modelHelperClass(String className) {
   // Don't double "Model" suffix if class name already ends with "Model"
-  final trackedClassName = className.endsWith('Model') 
-      ? '\$$className' 
+  final trackedClassName = className.endsWith('Model')
+      ? '\$$className'
       : '\$${className}Model';
   final codecName = '_${trackedClassName}Codec';
-  final factoryName = className.endsWith('Model') 
-      ? '${className}Factory' 
+  final factoryName = className.endsWith('Model')
+      ? '${className}Factory'
       : '${className}ModelFactory';
-  
+
   final buffer = StringBuffer();
   buffer.writeln('class $factoryName {');
   buffer.writeln('  const $factoryName._();');
@@ -29,7 +29,9 @@ String modelHelperClass(String className) {
   buffer.writeln('    $className model, {');
   buffer.writeln('    ValueCodecRegistry? registry,');
   buffer.writeln('  }) =>');
-  buffer.writeln('      definition.toMap(model.toTracked(), registry: registry);');
+  buffer.writeln(
+    '      definition.toMap(model.toTracked(), registry: registry);',
+  );
   buffer.writeln();
   buffer.writeln('  static void registerWith(ModelRegistry registry) =>');
   buffer.writeln('      registry.register(definition);');
@@ -78,9 +80,7 @@ String modelHelperClass(String className) {
     '    final conn = ConnectionManager.instance.connection(connName ?? ConnectionManager.instance.defaultConnectionName ?? "default");',
   );
   buffer.writeln('    final repo = conn.context.repository<$className>();');
-  buffer.writeln(
-    '    final result = await repo.insertMany([model], );',
-  );
+  buffer.writeln('    final result = await repo.insertMany([model], );');
   buffer.writeln('    return result.first;');
   buffer.writeln('  }');
   buffer.writeln();

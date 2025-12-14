@@ -23,7 +23,7 @@ OrmConnectionHandle registerPostgresOrmConnection({
 }) {
   // Ensure PostgreSQL codecs are registered
   PostgresDriverAdapter.registerCodecs();
-  
+
   final factory = OrmConnectionFactory(manager: manager);
   final connectionConfig = connection ?? ConnectionConfig(name: name);
   return factory.register(
@@ -31,13 +31,8 @@ OrmConnectionHandle registerPostgresOrmConnection({
     connection: connectionConfig,
     singleton: singleton,
     builder: (_) {
-      final adapter = PostgresDriverAdapter.custom(
-        config: database,
-      );
-      final context = QueryContext(
-        registry: registry,
-        driver: adapter,
-      );
+      final adapter = PostgresDriverAdapter.custom(config: database);
+      final context = QueryContext(registry: registry, driver: adapter);
       return OrmConnection(
         config: connectionConfig,
         driver: adapter,

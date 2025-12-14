@@ -41,10 +41,7 @@ void runPartialEntityTests() {
       });
 
       test('toEntity() throws StateError when id is missing', () {
-        const partial = UserPartial(
-          email: 'test@example.com',
-          active: true,
-        );
+        const partial = UserPartial(email: 'test@example.com', active: true);
 
         expect(
           () => partial.toEntity(),
@@ -59,10 +56,7 @@ void runPartialEntityTests() {
       });
 
       test('toEntity() throws StateError when email is missing', () {
-        const partial = UserPartial(
-          id: 1,
-          active: true,
-        );
+        const partial = UserPartial(id: 1, active: true);
 
         expect(
           () => partial.toEntity(),
@@ -77,10 +71,7 @@ void runPartialEntityTests() {
       });
 
       test('toEntity() throws StateError when active is missing', () {
-        const partial = UserPartial(
-          id: 1,
-          email: 'test@example.com',
-        );
+        const partial = UserPartial(id: 1, email: 'test@example.com');
 
         expect(
           () => partial.toEntity(),
@@ -94,17 +85,14 @@ void runPartialEntityTests() {
         );
       });
 
-      test('toEntity() throws StateError when multiple required fields missing',
-          () {
-        const partial = UserPartial(
-          name: 'Test User',
-        );
+      test(
+        'toEntity() throws StateError when multiple required fields missing',
+        () {
+          const partial = UserPartial(name: 'Test User');
 
-        expect(
-          () => partial.toEntity(),
-          throwsStateError,
-        );
-      });
+          expect(() => partial.toEntity(), throwsStateError);
+        },
+      );
 
       test('partial can be created with optional fields only', () {
         const partial = UserPartial(
@@ -148,9 +136,7 @@ void runPartialEntityTests() {
       });
 
       test('fromRow handles missing columns gracefully', () {
-        final row = <String, Object?>{
-          'id': 1,
-        };
+        final row = <String, Object?>{'id': 1};
 
         final partial = UserPartial.fromRow(row);
 
@@ -162,11 +148,7 @@ void runPartialEntityTests() {
 
     group('AuthorPartial', () {
       test('toEntity() succeeds with required fields', () {
-        const partial = AuthorPartial(
-          id: 1,
-          name: 'Test Author',
-          active: true,
-        );
+        const partial = AuthorPartial(id: 1, name: 'Test Author', active: true);
 
         final entity = partial.toEntity();
 
@@ -176,10 +158,7 @@ void runPartialEntityTests() {
       });
 
       test('toEntity() throws when name is missing', () {
-        const partial = AuthorPartial(
-          id: 1,
-          active: true,
-        );
+        const partial = AuthorPartial(id: 1, active: true);
 
         expect(
           () => partial.toEntity(),
@@ -251,11 +230,7 @@ void runPartialEntityTests() {
       });
 
       test('toEntity() throws when publishedAt is missing', () {
-        const partial = PostPartial(
-          id: 1,
-          authorId: 100,
-          title: 'Test Post',
-        );
+        const partial = PostPartial(id: 1, authorId: 100, title: 'Test Post');
 
         expect(
           () => partial.toEntity(),
@@ -394,4 +369,3 @@ void runPartialProjectionIntegrationTests() {
     });
   });
 }
-

@@ -10,7 +10,7 @@ void main() {
 
     test('bool codec is registered and works', () {
       final registry = ValueCodecRegistry.instance.forDriver('sqlite');
-      
+
       final decoded = registry.decodeByKey<bool>('bool', 1);
       expect(decoded, equals(true));
       expect(decoded.runtimeType, equals(bool));
@@ -18,8 +18,11 @@ void main() {
 
     test('DateTime codec is registered and works', () {
       final registry = ValueCodecRegistry.instance.forDriver('sqlite');
-      
-      final decoded = registry.decodeByKey<DateTime>('DateTime', '2024-01-01T00:00:00.000Z');
+
+      final decoded = registry.decodeByKey<DateTime>(
+        'DateTime',
+        '2024-01-01T00:00:00.000Z',
+      );
       expect(decoded, isA<DateTime>());
       expect(decoded?.year, equals(2024));
     });
@@ -32,7 +35,7 @@ void main() {
 
     test('TypeMapper provides correct SQL types', () {
       final mapper = TypeMapperRegistry.get('sqlite')!;
-      
+
       expect(mapper.dartTypeToSql(DateTime), equals('TEXT'));
       expect(mapper.dartTypeToSql(bool), equals('INTEGER'));
       expect(mapper.dartTypeToSql(int), equals('INTEGER'));
@@ -41,12 +44,12 @@ void main() {
 
     test('TypeMapper provides correct codecs', () {
       final mapper = TypeMapperRegistry.get('sqlite')!;
-      
+
       final boolCodec = mapper.getCodecForDartType(bool);
       expect(boolCodec, isNotNull);
       expect(boolCodec?.decode(1), equals(true));
       expect(boolCodec?.encode(true), equals(1));
-      
+
       final dateTimeCodec = mapper.getCodecForDartType(DateTime);
       expect(dateTimeCodec, isNotNull);
       final testDate = DateTime.utc(2024, 1, 1);

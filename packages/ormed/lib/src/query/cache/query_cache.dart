@@ -6,7 +6,7 @@ import '../query.dart';
 /// time-to-live. Emits events for cache hits, misses, and mutations.
 class QueryCache {
   QueryCache({Duration? defaultTtl})
-      : _defaultTtl = defaultTtl ?? const Duration(minutes: 5);
+    : _defaultTtl = defaultTtl ?? const Duration(minutes: 5);
 
   final Duration _defaultTtl;
   final Map<int, _CacheEntry> _entries = {};
@@ -50,12 +50,14 @@ class QueryCache {
 
     // Emit store event
     final rows = value is List ? value.length : 1;
-    _emit(CacheStoreEvent(
-      sql: sql,
-      parameters: bindings,
-      ttl: duration,
-      entryCount: rows,
-    ));
+    _emit(
+      CacheStoreEvent(
+        sql: sql,
+        parameters: bindings,
+        ttl: duration,
+        entryCount: rows,
+      ),
+    );
   }
 
   /// Retrieve a cached result if available and not expired.
@@ -65,11 +67,9 @@ class QueryCache {
 
     if (entry == null) {
       // Emit miss event
-      _emit(CacheMissEvent(
-        sql: sql,
-        parameters: bindings,
-        ttl: ttl ?? _defaultTtl,
-      ));
+      _emit(
+        CacheMissEvent(sql: sql, parameters: bindings, ttl: ttl ?? _defaultTtl),
+      );
       return null;
     }
 
@@ -77,20 +77,16 @@ class QueryCache {
     if (entry.isExpired) {
       _entries.remove(key);
       // Emit miss event (expired)
-      _emit(CacheMissEvent(
-        sql: sql,
-        parameters: bindings,
-        ttl: ttl ?? _defaultTtl,
-      ));
+      _emit(
+        CacheMissEvent(sql: sql, parameters: bindings, ttl: ttl ?? _defaultTtl),
+      );
       return null;
     }
 
     // Emit hit event
-    _emit(CacheHitEvent(
-      sql: sql,
-      parameters: bindings,
-      ttl: ttl ?? _defaultTtl,
-    ));
+    _emit(
+      CacheHitEvent(sql: sql, parameters: bindings, ttl: ttl ?? _defaultTtl),
+    );
 
     return entry.value as T?;
   }
@@ -106,10 +102,7 @@ class QueryCache {
     _entries.remove(key);
 
     // Emit forget event
-    _emit(CacheForgetEvent(
-      sql: sql,
-      parameters: bindings,
-    ));
+    _emit(CacheForgetEvent(sql: sql, parameters: bindings));
   }
 
   /// Clear all cache entries.
@@ -129,11 +122,13 @@ class QueryCache {
     final removed = before - after;
 
     // Emit vacuum event
-    _emit(CacheVacuumEvent(
-      entriesRemoved: removed,
-      totalBefore: before,
-      totalAfter: after,
-    ));
+    _emit(
+      CacheVacuumEvent(
+        entriesRemoved: removed,
+        totalBefore: before,
+        totalAfter: after,
+      ),
+    );
   }
 
   /// Get cache statistics.
@@ -154,10 +149,7 @@ class QueryCache {
 
 /// A single cache entry with expiration.
 class _CacheEntry {
-  _CacheEntry({
-    required this.value,
-    required this.expiresAt,
-  });
+  _CacheEntry({required this.value, required this.expiresAt});
 
   final dynamic value;
   final DateTime expiresAt;
@@ -181,4 +173,3 @@ class CacheStats {
   String toString() =>
       'CacheStats(total: $totalEntries, active: $activeEntries, expired: $expiredEntries)';
 }
-

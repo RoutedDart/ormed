@@ -261,7 +261,10 @@ void runDriverRepositoryTests() {
       });
 
       test('findOrFail() throws when missing', () async {
-        expect(() => userRepo.findOrFail(999999), throwsA(isA<ModelNotFoundException>()));
+        expect(
+          () => userRepo.findOrFail(999999),
+          throwsA(isA<ModelNotFoundException>()),
+        );
       });
 
       test('all() returns every row', () async {
@@ -270,30 +273,41 @@ void runDriverRepositoryTests() {
       });
 
       test('first/firstOrFail with where map', () async {
-        final first = await userRepo.first(where: {'email': 'read-2@example.com'});
+        final first = await userRepo.first(
+          where: {'email': 'read-2@example.com'},
+        );
         expect(first, isNotNull);
         expect(first!.id, 5001);
 
-        final required = await userRepo.firstOrFail(where: {'email': 'read-1@example.com'});
+        final required = await userRepo.firstOrFail(
+          where: {'email': 'read-1@example.com'},
+        );
         expect(required.id, 5000);
       });
 
       test('exists/count with where map', () async {
-        final any = await userRepo.exists(where: {'email': 'read-1@example.com'});
+        final any = await userRepo.exists(
+          where: {'email': 'read-1@example.com'},
+        );
         expect(any, isTrue);
         final count = await userRepo.count(where: {'active': false});
         expect(count, 1);
       });
 
       test('save() inserts when PK missing, upserts when PK present', () async {
-        final inserted = await userRepo.save({'email': 'save-insert@example.com', 'active': true});
+        final inserted = await userRepo.save({
+          'email': 'save-insert@example.com',
+          'active': true,
+        });
         expect(inserted.id, isNotNull);
 
-        final updated = await userRepo.save($User(
-          id: inserted.id,
-          email: 'save-updated@example.com',
-          active: true,
-        ));
+        final updated = await userRepo.save(
+          $User(
+            id: inserted.id,
+            email: 'save-updated@example.com',
+            active: true,
+          ),
+        );
         expect(updated.email, 'save-updated@example.com');
       });
 
@@ -311,17 +325,18 @@ void runDriverRepositoryTests() {
       test('refresh reloads attributes', () async {
         var user = await userRepo.findOrFail(5000);
         // mutate in DB
-        await dataSource.context
-            .query<$User>()
-            .whereEquals('id', 5000)
-            .update({'email': 'refreshed@example.com'});
+        await dataSource.context.query<$User>().whereEquals('id', 5000).update({
+          'email': 'refreshed@example.com',
+        });
 
         user = await userRepo.refresh(user);
         expect(user.email, 'refreshed@example.com');
       });
 
       test('first returns null when no match', () async {
-        final result = await userRepo.first(where: {'email': 'missing@example.com'});
+        final result = await userRepo.first(
+          where: {'email': 'missing@example.com'},
+        );
         expect(result, isNull);
       });
 
@@ -329,7 +344,8 @@ void runDriverRepositoryTests() {
         final original = await userRepo.findOrFail(5001);
         final clone = userRepo.replicate(original);
         // Change a unique field to avoid conflicts, then insert
-        final newEmail = 'replica-${DateTime.now().microsecondsSinceEpoch}@example.com';
+        final newEmail =
+            'replica-${DateTime.now().microsecondsSinceEpoch}@example.com';
         clone.email = newEmail;
         final inserted = await userRepo.insert(clone);
         expect(inserted.id, isNot(equals(original.id)));
@@ -566,18 +582,15 @@ void runDriverRepositoryTests() {
       group('with Query where inputs', () {
         test('update() accepts Query callback where', () async {
           await userRepo.insert(
-            $User(
-              id: 2240,
-              email: 'query-where@example.com',
-              active: true,
-            ),
+            $User(id: 2240, email: 'query-where@example.com', active: true),
           );
 
           const dto = UserUpdateDto(name: 'Query Where User');
 
           final updated = await userRepo.update(
             dto,
-            where: (Query<$User> q) => q.whereEquals('email', 'query-where@example.com'),
+            where: (Query<$User> q) =>
+                q.whereEquals('email', 'query-where@example.com'),
           );
 
           expect(updated.name, 'Query Where User');
@@ -598,7 +611,8 @@ void runDriverRepositoryTests() {
           expect(
             () => userRepo.updateMany(
               const [dto1, dto2],
-              where: (Query<$User> q) => q.whereEquals('email', 'query-where-single@example.com'),
+              where: (Query<$User> q) =>
+                  q.whereEquals('email', 'query-where-single@example.com'),
             ),
             throwsArgumentError,
           );
@@ -606,21 +620,17 @@ void runDriverRepositoryTests() {
 
         test('updateManyRaw() supports Query where', () async {
           await userRepo.insert(
-            $User(
-              id: 2242,
-              email: 'query-where-raw@example.com',
-              active: true,
-            ),
+            $User(id: 2242, email: 'query-where-raw@example.com', active: true),
           );
 
           const dto = UserUpdateDto(active: false);
 
           final result = await userRepo.updateManyRaw(
             const [dto],
-            where: dataSource
-                .context
-                .query<$User>()
-                .whereEquals('email', 'query-where-raw@example.com'),
+            where: dataSource.context.query<$User>().whereEquals(
+              'email',
+              'query-where-raw@example.com',
+            ),
           );
 
           expect(result.affectedRows, 1);
@@ -896,7 +906,8 @@ void runDriverRepositoryTests() {
         );
 
         final affected = await userRepo.delete(
-          (Query<$User> q) => q.whereEquals('email', 'delete-query@example.com'),
+          (Query<$User> q) =>
+              q.whereEquals('email', 'delete-query@example.com'),
         );
 
         expect(affected, 1);
@@ -929,7 +940,8 @@ void runDriverRepositoryTests() {
         ]);
 
         final affected = await userRepo.deleteMany([
-          (Query<$User> q) => q.whereEquals('email', 'delete-mix-1@example.com'),
+          (Query<$User> q) =>
+              q.whereEquals('email', 'delete-mix-1@example.com'),
           {'id': users[1].id},
         ]);
 

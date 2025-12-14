@@ -73,9 +73,7 @@ class InitCommand extends Command<void> {
       tracker: tracker,
     );
 
-    final defaultSeeder = File(
-      p.join(seedersDir.path, 'database_seeder.dart'),
-    );
+    final defaultSeeder = File(p.join(seedersDir.path, 'database_seeder.dart'));
     _writeFile(
       file: defaultSeeder,
       content: _defaultSeederTemplate,
@@ -91,7 +89,7 @@ class InitCommand extends Command<void> {
       schemaDumpDir.createSync(recursive: true);
       tracker.paths['schema'] = schemaDumpDir.path;
     }
-    
+
     // Create a .gitkeep to ensure directory is tracked
     final gitkeep = File(p.join(schemaDumpDir.path, '.gitkeep'));
     if (!gitkeep.existsSync()) {
@@ -113,8 +111,6 @@ class InitCommand extends Command<void> {
     }
   }
 }
-
-
 
 const String _defaultSeederTemplate = '''
 import 'package:ormed/ormed.dart';

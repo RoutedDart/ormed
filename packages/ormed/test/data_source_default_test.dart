@@ -30,11 +30,7 @@ void main() {
 
     test('registers data source as default connection', () async {
       dataSource = DataSource(
-        DataSourceOptions(
-          name: 'default',
-          driver: driver,
-          registry: registry,
-        ),
+        DataSourceOptions(name: 'default', driver: driver, registry: registry),
       );
       await dataSource.init();
 
@@ -47,11 +43,7 @@ void main() {
 
     test('throws if DataSource name is not "default"', () async {
       dataSource = DataSource(
-        DataSourceOptions(
-          name: 'other',
-          driver: driver,
-          registry: registry,
-        ),
+        DataSourceOptions(name: 'other', driver: driver, registry: registry),
       );
       await dataSource.init();
 

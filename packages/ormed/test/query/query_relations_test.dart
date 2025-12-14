@@ -2,6 +2,7 @@ import 'package:ormed/ormed.dart';
 import 'package:test/test.dart';
 
 import 'package:driver_tests/driver_tests.dart';
+
 void main() {
   groupHasMany();
   groupBelongsTo();
@@ -14,7 +15,7 @@ void groupHasMany() {
     late QueryContext context;
 
     setUp(() {
-       ModelRegistry registry = buildOrmRegistry();
+      ModelRegistry registry = buildOrmRegistry();
       final executor = InMemoryQueryExecutor()
         ..register(AuthorOrmDefinition.definition, const [
           Author(id: 1, name: 'Alice', active: true),

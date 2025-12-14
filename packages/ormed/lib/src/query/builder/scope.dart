@@ -94,4 +94,3 @@ extension ScopeExtension<T extends OrmEntity> on Query<T> {
     return _copyWith(ignoredScopes: currentIgnored);
   }
 }
-

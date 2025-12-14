@@ -33,7 +33,7 @@ extension RawQueryExtension<T extends OrmEntity> on Query<T> {
     // Integration with SQL grammar still needed
     throw UnimplementedError(
       'orderByRaw() requires integration with QueryPlan and SQL grammar. '
-      'Use whereRaw() or selectRaw() as workarounds for now.'
+      'Use whereRaw() or selectRaw() as workarounds for now.',
     );
   }
 
@@ -57,8 +57,7 @@ extension RawQueryExtension<T extends OrmEntity> on Query<T> {
     // Integration with SQL grammar still needed
     throw UnimplementedError(
       'groupByRaw() requires integration with QueryPlan and SQL grammar. '
-      'Use whereRaw() or selectRaw() as workarounds for now.'
+      'Use whereRaw() or selectRaw() as workarounds for now.',
     );
   }
 }
-

@@ -55,4 +55,3 @@ extension QueryCachingExtension<T extends OrmEntity> on Query<T> {
     return _copyWith(cacheTtl: null, disableCache: true);
   }
 }
-

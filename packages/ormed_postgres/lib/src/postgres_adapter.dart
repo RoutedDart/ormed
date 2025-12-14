@@ -875,11 +875,13 @@ class PostgresDriverAdapter
           // Remove the PK from values for rows without it
           final newValues = Map<String, Object?>.from(row.values);
           newValues.remove(pkColumn);
-          rowsWithoutPk.add(MutationRow(
-            values: newValues,
-            keys: row.keys,
-            jsonUpdates: row.jsonUpdates,
-          ));
+          rowsWithoutPk.add(
+            MutationRow(
+              values: newValues,
+              keys: row.keys,
+              jsonUpdates: row.jsonUpdates,
+            ),
+          );
         }
       }
 
@@ -929,7 +931,8 @@ class PostgresDriverAdapter
         }
 
         return MutationResult(
-          affectedRows: resultWithPk.affectedRows + resultWithoutPk.affectedRows,
+          affectedRows:
+              resultWithPk.affectedRows + resultWithoutPk.affectedRows,
           returnedRows: plan.returning ? combinedRows : null,
         );
       }
@@ -999,11 +1002,13 @@ class PostgresDriverAdapter
           // Remove the PK from values for rows without it
           final newValues = Map<String, Object?>.from(row.values);
           newValues.remove(pkColumn);
-          rowsWithoutPk.add(MutationRow(
-            values: newValues,
-            keys: row.keys,
-            jsonUpdates: row.jsonUpdates,
-          ));
+          rowsWithoutPk.add(
+            MutationRow(
+              values: newValues,
+              keys: row.keys,
+              jsonUpdates: row.jsonUpdates,
+            ),
+          );
         }
       }
 
@@ -1018,7 +1023,12 @@ class PostgresDriverAdapter
           uniqueBy: plan.upsertUniqueColumns,
           updateColumns: plan.upsertUpdateColumns,
         );
-        final shapeWithPk = _buildUpsertShapeForRows(planWithPk, rowsWithPk, pkColumn, true);
+        final shapeWithPk = _buildUpsertShapeForRows(
+          planWithPk,
+          rowsWithPk,
+          pkColumn,
+          true,
+        );
         final resultWithPk = await _executeMutation(shapeWithPk);
 
         // Execute rows without PK
@@ -1030,7 +1040,12 @@ class PostgresDriverAdapter
           uniqueBy: plan.upsertUniqueColumns,
           updateColumns: plan.upsertUpdateColumns,
         );
-        final shapeWithoutPk = _buildUpsertShapeForRows(planWithoutPk, rowsWithoutPk, pkColumn, false);
+        final shapeWithoutPk = _buildUpsertShapeForRows(
+          planWithoutPk,
+          rowsWithoutPk,
+          pkColumn,
+          false,
+        );
         final resultWithoutPk = await _executeMutation(shapeWithoutPk);
 
         // Combine results in original order
@@ -1055,23 +1070,39 @@ class PostgresDriverAdapter
         }
 
         return MutationResult(
-          affectedRows: resultWithPk.affectedRows + resultWithoutPk.affectedRows,
+          affectedRows:
+              resultWithPk.affectedRows + resultWithoutPk.affectedRows,
           returnedRows: plan.returning ? combinedRows : null,
         );
       }
 
       // Only one type of rows, build shape accordingly
       if (rowsWithPk.isNotEmpty) {
-        final shape = _buildUpsertShapeForRows(plan, rowsWithPk, pkColumn, true);
+        final shape = _buildUpsertShapeForRows(
+          plan,
+          rowsWithPk,
+          pkColumn,
+          true,
+        );
         return _executeMutation(shape);
       } else {
-        final shape = _buildUpsertShapeForRows(plan, rowsWithoutPk, pkColumn, false);
+        final shape = _buildUpsertShapeForRows(
+          plan,
+          rowsWithoutPk,
+          pkColumn,
+          false,
+        );
         return _executeMutation(shape);
       }
     }
 
     // Non-auto-increment PK or no PK - use standard shape
-    final shape = _buildUpsertShapeForRows(plan, plan.rows.toList(), pkColumn, true);
+    final shape = _buildUpsertShapeForRows(
+      plan,
+      plan.rows.toList(),
+      pkColumn,
+      true,
+    );
     return _executeMutation(shape);
   }
 
@@ -1441,7 +1472,12 @@ class PostgresDriverAdapter
         final val = row.values[pkColumn];
         return val == null || val == 0;
       });
-      return _buildUpsertShapeForRows(plan, plan.rows.toList(), pkColumn, !allRowsHaveNullPk);
+      return _buildUpsertShapeForRows(
+        plan,
+        plan.rows.toList(),
+        pkColumn,
+        !allRowsHaveNullPk,
+      );
     }
 
     return _buildUpsertShapeForRows(plan, plan.rows.toList(), pkColumn, true);

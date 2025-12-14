@@ -66,10 +66,7 @@ class CacheStoreEvent extends CacheEvent {
 
 /// Emitted when a cache entry is manually removed.
 class CacheForgetEvent extends CacheEvent {
-  const CacheForgetEvent({
-    required this.sql,
-    required this.parameters,
-  });
+  const CacheForgetEvent({required this.sql, required this.parameters});
 
   final String sql;
   final List<Object?> parameters;
@@ -110,6 +107,6 @@ class CacheVacuumEvent extends CacheEvent {
   String get eventName => 'cache.vacuum';
 
   @override
-  String toString() => 'CacheVacuum(removed: $entriesRemoved, before: $totalBefore, after: $totalAfter)';
+  String toString() =>
+      'CacheVacuum(removed: $entriesRemoved, before: $totalBefore, after: $totalAfter)';
 }
-

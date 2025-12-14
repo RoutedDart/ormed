@@ -404,7 +404,9 @@ void printMigrationPlanPreview({
 bool confirmToProceed({bool force = false, String action = 'proceed'}) {
   if (force) return true;
   if (!_isProductionEnvironment()) return true;
-  stdout.write('Application is running in production. Continue to $action? (y/N) ');
+  stdout.write(
+    'Application is running in production. Continue to $action? (y/N) ',
+  );
   final response = stdin.readLineSync();
   return response != null && response.toLowerCase().startsWith('y');
 }
@@ -481,11 +483,7 @@ String extractJsonPayloadForTest(
   required String context,
   required bool expectArray,
 }) =>
-    _extractJsonPayload(
-      stdoutText,
-      context: context,
-      expectArray: expectArray,
-    );
+    _extractJsonPayload(stdoutText, context: context, expectArray: expectArray);
 
 String _cleanProcessStdout(String stdoutText) {
   if (stdoutText.isEmpty) {
@@ -496,7 +494,5 @@ String _cleanProcessStdout(String stdoutText) {
   return withoutAnsi.replaceAll('\r', '\n');
 }
 
-final RegExp _ansiEscapePattern =
-    RegExp('\x1B\\[[0-9;?]*[ -/]*[@-~]');
-final RegExp _oscControlPattern =
-    RegExp('\x1B\\][^\x07]*\x07');
+final RegExp _ansiEscapePattern = RegExp('\x1B\\[[0-9;?]*[ -/]*[@-~]');
+final RegExp _oscControlPattern = RegExp('\x1B\\][^\x07]*\x07');
