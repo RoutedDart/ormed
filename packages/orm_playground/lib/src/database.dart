@@ -89,9 +89,10 @@ class PlaygroundDatabase {
     final ds = DataSource(
       DataSourceOptions(
         driver: SqliteDriverAdapter.file(dbPath),
-        entities: generatedOrmModelDefinitions,
         name: tenant,
         database: dbPath,
+        registry:     buildOrmRegistryWithFactories()
+
       ),
     );
 

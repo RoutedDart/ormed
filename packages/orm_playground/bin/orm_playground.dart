@@ -10,6 +10,8 @@ final io = ArtisanIO(
   style: ArtisanStyle(ansi: stdout.supportsAnsiEscapes),
   out: stdout.writeln,
   err: stderr.writeln,
+  stdout: stdout,
+  stdin: stdin,
 );
 
 Future<void> main(List<String> arguments) async {
@@ -17,18 +19,36 @@ Future<void> main(List<String> arguments) async {
       arguments.contains('--sql') ||
       Platform.environment['PLAYGROUND_LOG_SQL'] == 'true';
   final seedOverrides = _extractSeedArguments(arguments);
+  final animate = !arguments.contains('--no-animate');
 
   io.title('ORM Playground');
+  io.newLine();
 
   // Create the playground database helper
   final database = PlaygroundDatabase();
-
   // Get the DataSource for the default tenant
-  final ds = await database.dataSource();
+  DataSource? ds;
+
+  await io.task(
+    'Connecting to database',
+    run: () async {
+      ds = await database.dataSource();
+      if (animate) await Future.delayed(Duration(milliseconds: 200));
+      return ArtisanTaskResult.success;
+    },
+  );
 
   try {
     // Check if schema is ready
-    if (!await _schemaReady(ds)) {
+    final schemaReady = await io.components.spin(
+      'Checking schema',
+      run: () async {
+        if (animate) await Future.delayed(Duration(milliseconds: 300));
+        return await _schemaReady(ds!);
+      },
+    );
+
+    if (!schemaReady) {
       io.error('Schema not ready!');
       io.note(
         'Run the ORM CLI to apply migrations:\n'
@@ -38,37 +58,104 @@ Future<void> main(List<String> arguments) async {
       return;
     }
 
-    // Seed the database
-    io.info('Seeding database...');
-    await playground_seeders.seedPlayground(
-      ds.connection,
-      names: seedOverrides.isEmpty ? null : seedOverrides,
-    );
-    io.success('Database ready.');
+    // Seed the database with animation
+    io.newLine();
+    io.section('Seeding Database');
+    await _animatedSeed(ds!, seedOverrides, animate: animate);
 
     // Enable SQL logging if requested
     if (logSql) {
-      ds.beforeExecuting((statement) {
+      ds!.beforeExecuting((statement) {
         io.writeln(io.style.muted('[SQL] ${statement.sqlWithBindings}'));
       });
     }
 
-    // Run the showcases
-    await _printPostSummaries(ds);
-    await _runQueryBuilderShowcase(ds);
-    await _runTableHelpers(ds);
-    await _runPretendPreview(ds);
-    await _runModelCrudShowcase(ds);
-    await _runRelationQueryShowcase(ds);
-    await _runPaginationShowcase(ds);
-    await _runChunkingShowcase(ds);
-    await _runTransactionShowcase(ds);
+    // Run the showcases with animation
+    await _printPostSummaries(ds!, animate: animate);
+    await _runQueryBuilderShowcase(ds!, animate: animate);
+    await _runTableHelpers(ds!, animate: animate);
+    await _runPretendPreview(ds!, animate: animate);
+    await _runModelCrudShowcase(ds!, animate: animate);
+    await _runRelationQueryShowcase(ds!, );
+    await _runPaginationShowcase(ds!);
+    await _runChunkingShowcase(ds!);
+    await _runTransactionShowcase(ds!);
 
     io.newLine();
     io.success('All showcases completed successfully!');
   } finally {
     await database.dispose();
   }
+}
+
+/// Animated seeding with step-by-step progress.
+Future<void> _animatedSeed(
+  DataSource ds,
+  List<String> seedOverrides, {
+  bool animate = true,
+}) async {
+  // Check what needs seeding
+  final hasUsers = await ds.query<User>().exists();
+  final hasPosts = await ds.query<Post>().exists();
+  final hasTags = await ds.query<Tag>().exists();
+
+  if (hasUsers && hasPosts && hasTags && seedOverrides.isEmpty) {
+    io.info('Database already seeded.');
+    return;
+  }
+
+  await io.task(
+    'Creating users',
+    run: () async {
+      if (!hasUsers || seedOverrides.contains('users')) {
+        await playground_seeders.seedPlayground(
+          ds.connection,
+          names: ['users'],
+        );
+        if (animate) await Future.delayed(Duration(milliseconds: 150));
+      }
+      return ArtisanTaskResult.success;
+    },
+  );
+
+  await io.task(
+    'Creating tags',
+    run: () async {
+      if (!hasTags || seedOverrides.contains('tags')) {
+        await playground_seeders.seedPlayground(ds.connection, names: ['tags']);
+        if (animate) await Future.delayed(Duration(milliseconds: 100));
+      }
+      return ArtisanTaskResult.success;
+    },
+  );
+
+  await io.task(
+    'Creating posts',
+    run: () async {
+      if (!hasPosts || seedOverrides.contains('posts')) {
+        await playground_seeders.seedPlayground(
+          ds.connection,
+          names: ['posts'],
+        );
+        if (animate) await Future.delayed(Duration(milliseconds: 150));
+      }
+      return ArtisanTaskResult.success;
+    },
+  );
+
+  await io.task(
+    'Creating comments',
+    run: () async {
+      await playground_seeders.seedPlayground(
+        ds.connection,
+        names: ['comments'],
+      );
+      if (animate) await Future.delayed(Duration(milliseconds: 100));
+      return ArtisanTaskResult.success;
+    },
+  );
+
+  io.success('Seeding complete.');
 }
 
 List<String> _extractSeedArguments(List<String> args) {
@@ -101,7 +188,6 @@ List<String> _extractSeedArguments(List<String> args) {
 Future<bool> _schemaReady(DataSource ds) async {
   final driver = ds.connection.driver;
   if (driver is! SchemaDriver) {
-    io.error('Playground driver does not support schema inspection.');
     return false;
   }
   final schemaDriver = driver as SchemaDriver;
@@ -111,18 +197,24 @@ Future<bool> _schemaReady(DataSource ds) async {
   return hasUsers && hasPosts;
 }
 
-Future<void> _printPostSummaries(DataSource ds) async {
-  final query = ds
-      .query<Post>()
-      .withRelation('author')
-      .withRelation('tags')
-      .withRelation('comments')
-      .withCount('comments', alias: 'comments_count')
-      .orderBy('published_at', descending: true);
-  final rows = await query.rows();
-
+Future<void> _printPostSummaries(DataSource ds, {bool animate = true}) async {
   io.newLine();
   io.section('Latest Posts');
+
+  final rows = await io.components.spin(
+    'Fetching posts with relations',
+    run: () async {
+      final query = ds
+          .query<Post>()
+          .withRelation('author')
+          .withRelation('tags')
+          .withRelation('comments')
+          .withCount('comments', alias: 'comments_count')
+          .orderBy('published_at', descending: true);
+      if (animate) await Future.delayed(Duration(milliseconds: 200));
+      return await query.rows();
+    },
+  );
 
   if (rows.isEmpty) {
     io.warning('No posts found. Create one via the ORM CLI to continue.');
@@ -140,51 +232,80 @@ Future<void> _printPostSummaries(DataSource ds) async {
       'by ${post.author?.name ?? 'Unknown'} '
       '${io.style.muted('($commentCount comments, tags: ${tagList.isEmpty ? 'none' : tagList})')}',
     );
+    if (animate) await Future.delayed(Duration(milliseconds: 80));
   }
-
-  final preview = query.toSql();
-  io.twoColumnDetail('Preview SQL', preview.sqlWithBindings);
 }
 
-Future<void> _runQueryBuilderShowcase(DataSource ds) async {
+Future<void> _runQueryBuilderShowcase(
+  DataSource ds, {
+  bool animate = true,
+}) async {
   io.newLine();
   io.section('Query Builder Helpers');
 
   // Using query<T>() from DataSource
-  final rows = await ds
-      .query<Post>()
-      .withCount('comments', alias: 'comments_count')
-      .orderBy('published_at', descending: true)
-      .limit(3)
-      .get();
-  io.twoColumnDetail('Published posts with comment counts', '${rows.length}');
+  await io.task(
+    'Fetching posts with comment counts',
+    run: () async {
+      final rows = await ds
+          .query<Post>()
+          .withCount('comments', alias: 'comments_count')
+          .orderBy('published_at', descending: true)
+          .limit(3)
+          .get();
+      if (animate) await Future.delayed(Duration(milliseconds: 100));
+      io.twoColumnDetail('  Found', '${rows.length} posts');
+      return ArtisanTaskResult.success;
+    },
+  );
 
   // Using table() for ad-hoc queries
-  final activeUserIds = await ds
-      .table('users')
-      .whereEquals('active', true)
-      .pluck<int>('id');
-  io.twoColumnDetail('Active user IDs', activeUserIds.join(', '));
+  await io.task(
+    'Querying active user IDs',
+    run: () async {
+      final activeUserIds = await ds
+          .table('users')
+          .whereEquals('active', true)
+          .pluck<int>('id');
+      if (animate) await Future.delayed(Duration(milliseconds: 100));
+      io.twoColumnDetail('  Active IDs', activeUserIds.join(', '));
+      return ArtisanTaskResult.success;
+    },
+  );
 
-  final latestComment = await ds
-      .query<Comment>()
-      .orderBy('created_at', descending: true)
-      .firstOrNull();
-  io.twoColumnDetail('Most recent comment', latestComment?.body ?? 'none yet');
+  await io.task(
+    'Finding latest comment',
+    run: () async {
+      final latestComment = await ds
+          .query<Comment>()
+          .orderBy('created_at', descending: true)
+          .firstOrNull();
+      if (animate) await Future.delayed(Duration(milliseconds: 100));
+      io.twoColumnDetail('  Latest', latestComment?.body ?? 'none yet');
+      return ArtisanTaskResult.success;
+    },
+  );
 }
 
-Future<void> _runTableHelpers(DataSource ds) async {
+Future<void> _runTableHelpers(DataSource ds, {bool animate = true}) async {
   io.newLine();
   io.section('Ad-hoc Table Demo');
 
   // Using DataSource.table() for joins
-  final pivotPreview = await ds
-      .table('post_tags')
-      .join('tags', 'tags.id', '=', 'post_tags.tag_id')
-      .selectRaw('post_tags.post_id', alias: 'post_id')
-      .selectRaw('tags.name', alias: 'tag_name')
-      .orderBy('post_id')
-      .get();
+  final pivotPreview = await io.components.spin(
+    'Joining post_tags with tags',
+    run: () async {
+      final result = await ds
+          .table('post_tags')
+          .join('tags', 'tags.id', '=', 'post_tags.tag_id')
+          .selectRaw('post_tags.post_id', alias: 'post_id')
+          .selectRaw('tags.name', alias: 'tag_name')
+          .orderBy('post_id')
+          .get();
+      if (animate) await Future.delayed(Duration(milliseconds: 150));
+      return result;
+    },
+  );
 
   if (pivotPreview.isEmpty) {
     io.info('No post-tag associations found.');
@@ -192,34 +313,44 @@ Future<void> _runTableHelpers(DataSource ds) async {
     io.info('Post-tag associations:');
     for (final row in pivotPreview) {
       io.twoColumnDetail('  Post ${row['post_id']}', '${row['tag_name']}');
+      if (animate) await Future.delayed(Duration(milliseconds: 50));
     }
   }
 }
 
-Future<void> _runPretendPreview(DataSource ds) async {
+Future<void> _runPretendPreview(DataSource ds, {bool animate = true}) async {
   io.newLine();
   io.section('Pretend Mode Preview');
 
   // Using DataSource.pretend() to capture SQL without executing
-  final statements = await ds.pretend(() async {
-    await ds.repo<User>().insert(
-      User(
-        email: 'pretend-${DateTime.now().millisecondsSinceEpoch}@example.com',
-        name: 'Preview User',
-        active: false,
-        createdAt: DateTime.now().toUtc(),
-        updatedAt: DateTime.now().toUtc(),
-      ),
-    );
-  });
+  final statements = await io.components.spin(
+    'Capturing SQL (without executing)',
+    run: () async {
+      final result = await ds.pretend(() async {
+        await ds.repo<User>().insert(
+          User(
+            email:
+                'pretend-${DateTime.now().millisecondsSinceEpoch}@example.com',
+            name: 'Preview User',
+            active: false,
+            createdAt: DateTime.now().toUtc(),
+            updatedAt: DateTime.now().toUtc(),
+          ),
+        );
+      });
+      if (animate) await Future.delayed(Duration(milliseconds: 150));
+      return result;
+    },
+  );
 
   io.info('SQL that would be executed:');
   for (final entry in statements) {
     io.writeln(io.style.muted('  ${entry.sql}'));
+    if (animate) await Future.delayed(Duration(milliseconds: 50));
   }
 }
 
-Future<void> _runModelCrudShowcase(DataSource ds) async {
+Future<void> _runModelCrudShowcase(DataSource ds, {bool animate = true}) async {
   io.newLine();
   io.section('Repository Helpers');
 
@@ -228,27 +359,49 @@ Future<void> _runModelCrudShowcase(DataSource ds) async {
   final now = DateTime.now().toUtc();
   final demoName = 'playground-demo-${now.microsecondsSinceEpoch}';
 
-  await tagRepo.insert(Tag(name: demoName, createdAt: now, updatedAt: now));
-
-  final inserted = await ds
-      .query<Tag>()
-      .whereEquals('name', demoName)
-      .firstOrFail();
-  io.writeln('${io.style.success('✓')} Inserted tag #${inserted.id} (${io.style.emphasize(demoName)})');
-
-  final renamed = Tag(
-    id: inserted.id,
-    name: '$demoName-updated',
-    createdAt: inserted.createdAt,
-    updatedAt: DateTime.now().toUtc(),
+  Tag? inserted;
+  await io.task(
+    'Inserting demo tag',
+    run: () async {
+      await tagRepo.insert(Tag(name: demoName, createdAt: now, updatedAt: now));
+      inserted = await ds
+          .query<Tag>()
+          .whereEquals('name', demoName)
+          .firstOrFail();
+      if (animate) await Future.delayed(Duration(milliseconds: 100));
+      return ArtisanTaskResult.success;
+    },
   );
-  await tagRepo.updateMany([renamed]);
-  io.writeln('${io.style.success('✓')} Renamed demo tag to ${io.style.emphasize(renamed.name)}');
+  io.twoColumnDetail('  Tag ID', '${inserted!.id}');
+  io.twoColumnDetail('  Name', demoName);
 
-  await tagRepo.deleteByKeys([
-    {'id': renamed.id},
-  ]);
-  io.writeln('${io.style.success('✓')} Deleted temporary tag record');
+  Tag? renamed;
+  await io.task(
+    'Renaming demo tag',
+    run: () async {
+      renamed = Tag(
+        id: inserted!.id,
+        name: '$demoName-updated',
+        createdAt: inserted!.createdAt,
+        updatedAt: DateTime.now().toUtc(),
+      );
+      await tagRepo.updateMany([renamed!]);
+      if (animate) await Future.delayed(Duration(milliseconds: 100));
+      return ArtisanTaskResult.success;
+    },
+  );
+  io.twoColumnDetail('  New name', renamed!.name);
+
+  await io.task(
+    'Deleting demo tag',
+    run: () async {
+      await tagRepo.deleteByKeys([
+        {'id': renamed!.id},
+      ]);
+      if (animate) await Future.delayed(Duration(milliseconds: 100));
+      return ArtisanTaskResult.success;
+    },
+  );
 }
 
 Future<void> _runRelationQueryShowcase(DataSource ds) async {
@@ -304,19 +457,28 @@ Future<void> _runPaginationShowcase(DataSource ds) async {
       .query<Post>()
       .orderBy('id')
       .paginate(perPage: 2, page: 1);
-  io.twoColumnDetail('paginate()', 'items=${page.items.length}, total=${page.total}, hasMore=${page.hasMorePages}');
+  io.twoColumnDetail(
+    'paginate()',
+    'items=${page.items.length}, total=${page.total}, hasMore=${page.hasMorePages}',
+  );
 
   final simple = await ds
       .query<Post>()
       .orderBy('id')
       .simplePaginate(perPage: 2, page: 1);
-  io.twoColumnDetail('simplePaginate()', 'items=${simple.items.length}, hasMore=${simple.hasMorePages}');
+  io.twoColumnDetail(
+    'simplePaginate()',
+    'items=${simple.items.length}, hasMore=${simple.hasMorePages}',
+  );
 
   final cursor = await ds
       .query<Post>()
       .orderBy('id')
       .cursorPaginate(perPage: 1);
-  io.twoColumnDetail('cursorPaginate()', 'nextCursor=${cursor.nextCursor}, hasMore=${cursor.hasMore}');
+  io.twoColumnDetail(
+    'cursorPaginate()',
+    'nextCursor=${cursor.nextCursor}, hasMore=${cursor.hasMore}',
+  );
 }
 
 Future<void> _runChunkingShowcase(DataSource ds) async {

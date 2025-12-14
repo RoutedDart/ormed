@@ -13,13 +13,17 @@ final io = ArtisanIO(
   style: ArtisanStyle(ansi: stdout.supportsAnsiEscapes),
   out: stdout.writeln,
   err: stderr.writeln,
+  stdout: stdout,
+  stdin: stdin,
 );
 
 Future<void> main(List<String> arguments) async {
   final database = PlaygroundDatabase();
   final logSql = arguments.contains('--sql');
+  final animate = !arguments.contains('--no-animate');
 
   io.title('Multi-Tenant Demo');
+  io.newLine();
 
   // Get available tenants from configuration
   final tenants = database.tenantNames.toList();
@@ -33,9 +37,14 @@ Future<void> main(List<String> arguments) async {
     // Initialize and prepare each tenant
     io.section('Initializing Tenants');
     for (final tenant in tenants) {
-      final ds = await database.dataSource(tenant: tenant);
-      dataSources[tenant] = ds;
-      await _prepareTenant(ds, tenant, logSql: logSql);
+      await io.task('Connecting to "$tenant"', run: () async {
+        final ds = await database.dataSource(tenant: tenant);
+        dataSources[tenant] = ds;
+        if (animate) await Future.delayed(Duration(milliseconds: 150));
+        return ArtisanTaskResult.success;
+      });
+
+      await _prepareTenant(dataSources[tenant]!, tenant, logSql: logSql, animate: animate);
     }
 
     io.newLine();
@@ -44,13 +53,13 @@ Future<void> main(List<String> arguments) async {
     // Summarize each tenant
     for (final tenant in tenants) {
       final ds = dataSources[tenant]!;
-      await _summarizeTenant(tenant, ds);
+      await _summarizeTenant(tenant, ds, animate: animate);
     }
 
     // Demonstrate tenant isolation
     io.newLine();
     io.section('Tenant Isolation Demo');
-    await _demonstrateTenantIsolation(dataSources);
+    await _demonstrateTenantIsolation(dataSources, animate: animate);
 
     io.newLine();
     io.success('Multi-tenant demo completed successfully.');
@@ -64,13 +73,16 @@ Future<void> _prepareTenant(
   DataSource ds,
   String tenant, {
   required bool logSql,
+  bool animate = true,
 }) async {
-  if (!await _hasUsers(ds)) {
-    // Seed using the underlying connection for compatibility
-    await playground_seeders.seedPlayground(ds.connection);
-    io.writeln(
-      '${io.style.success('✓')} Seeded tenant: ${io.style.emphasize(tenant)}',
-    );
+  final hasData = await _hasUsers(ds);
+
+  if (!hasData) {
+    await io.task('Seeding "$tenant"', run: () async {
+      await playground_seeders.seedPlayground(ds.connection);
+      if (animate) await Future.delayed(Duration(milliseconds: 200));
+      return ArtisanTaskResult.success;
+    });
   } else {
     io.writeln(
       '${io.style.muted('○')} Tenant ${io.style.emphasize(tenant)} already has data',
@@ -92,23 +104,27 @@ Future<bool> _hasUsers(DataSource ds) async {
 }
 
 /// Prints per-tenant user counts using the DataSource API.
-Future<void> _summarizeTenant(String tenant, DataSource ds) async {
-  final users = await ds.query<User>().orderBy('id').get();
-  final emails = users.map((user) => user.email).join(', ');
-  final postCount = await ds.query<Post>().count();
+Future<void> _summarizeTenant(String tenant, DataSource ds, {bool animate = true}) async {
+  await io.components.spin('Querying tenant "$tenant"', run: () async {
+    final users = await ds.query<User>().orderBy('id').get();
+    final emails = users.map((user) => user.email).join(', ');
+    final postCount = await ds.query<Post>().count();
 
-  io.writeln(io.style.emphasize('Tenant "$tenant"'));
-  io.twoColumnDetail(
-    '  Users',
-    '${users.length} (${emails.isEmpty ? 'none' : emails})',
-  );
-  io.twoColumnDetail('  Posts', '$postCount');
+    io.writeln(io.style.emphasize('Tenant "$tenant"'));
+    io.twoColumnDetail(
+      '  Users',
+      '${users.length} (${emails.isEmpty ? 'none' : emails})',
+    );
+    io.twoColumnDetail('  Posts', '$postCount');
+    if (animate) await Future.delayed(Duration(milliseconds: 100));
+  });
 }
 
 /// Demonstrates that each DataSource operates independently.
 Future<void> _demonstrateTenantIsolation(
-  Map<String, DataSource> dataSources,
-) async {
+  Map<String, DataSource> dataSources, {
+  bool animate = true,
+}) async {
   final defaultDs = dataSources['default'];
   final analyticsDs = dataSources['analytics'];
 
@@ -118,55 +134,67 @@ Future<void> _demonstrateTenantIsolation(
   }
 
   // Count users in each tenant
-  final defaultUserCount = await defaultDs.query<User>().count();
-  final analyticsUserCount = await analyticsDs.query<User>().count();
+  await io.task('Counting users in each tenant', run: () async {
+    final defaultUserCount = await defaultDs.query<User>().count();
+    final analyticsUserCount = await analyticsDs.query<User>().count();
 
-  io.twoColumnDetail('Default tenant users', '$defaultUserCount');
-  io.twoColumnDetail('Analytics tenant users', '$analyticsUserCount');
+    io.twoColumnDetail('  Default tenant users', '$defaultUserCount');
+    io.twoColumnDetail('  Analytics tenant users', '$analyticsUserCount');
+    if (animate) await Future.delayed(Duration(milliseconds: 100));
+    return ArtisanTaskResult.success;
+  });
 
   // Demonstrate using repo<T>() and query<T>() on different tenants
   io.newLine();
   io.info('Latest user from each tenant:');
 
-  final latestDefault = await defaultDs
-      .query<User>()
-      .orderBy('id', descending: true)
-      .firstOrNull();
-  if (latestDefault != null) {
-    io.twoColumnDetail('  Default', latestDefault.email);
-  }
+  await io.task('Querying latest user (default)', run: () async {
+    final latestDefault = await defaultDs
+        .query<User>()
+        .orderBy('id', descending: true)
+        .firstOrNull();
+    if (latestDefault != null) {
+      io.twoColumnDetail('  Default', latestDefault.email);
+    }
+    if (animate) await Future.delayed(Duration(milliseconds: 100));
+    return ArtisanTaskResult.success;
+  });
 
-  final latestAnalytics = await analyticsDs
-      .query<User>()
-      .orderBy('id', descending: true)
-      .firstOrNull();
-  if (latestAnalytics != null) {
-    io.twoColumnDetail('  Analytics', latestAnalytics.email);
-  }
+  await io.task('Querying latest user (analytics)', run: () async {
+    final latestAnalytics = await analyticsDs
+        .query<User>()
+        .orderBy('id', descending: true)
+        .firstOrNull();
+    if (latestAnalytics != null) {
+      io.twoColumnDetail('  Analytics', latestAnalytics.email);
+    }
+    if (animate) await Future.delayed(Duration(milliseconds: 100));
+    return ArtisanTaskResult.success;
+  });
 
   // Demonstrate transaction on specific tenant
   io.newLine();
-  io.info('Running transaction on default tenant...');
-  final now = DateTime.now().toUtc();
-  final tempTagName = 'multi-tenant-demo-${now.microsecondsSinceEpoch}';
+  await io.task('Running transaction on default tenant', run: () async {
+    final now = DateTime.now().toUtc();
+    final tempTagName = 'multi-tenant-demo-${now.microsecondsSinceEpoch}';
 
-  await defaultDs.transaction(() async {
-    await defaultDs.repo<Tag>().insert(
-      Tag(name: tempTagName, createdAt: now, updatedAt: now),
-    );
+    await defaultDs.transaction(() async {
+      await defaultDs.repo<Tag>().insert(
+        Tag(name: tempTagName, createdAt: now, updatedAt: now),
+      );
 
-    // Verify it doesn't exist in analytics tenant
-    final existsInAnalytics = await analyticsDs
-        .query<Tag>()
-        .whereEquals('name', tempTagName)
-        .exists();
-    io.twoColumnDetail(
-      '  Tag exists in analytics',
-      existsInAnalytics ? 'yes' : 'no',
-    );
+      // Verify it doesn't exist in analytics tenant
+      final existsInAnalytics = await analyticsDs
+          .query<Tag>()
+          .whereEquals('name', tempTagName)
+          .exists();
+      io.twoColumnDetail('  Tag exists in analytics', existsInAnalytics ? 'yes' : 'no');
 
-    // Clean up
-    await defaultDs.query<Tag>().whereEquals('name', tempTagName).forceDelete();
+      // Clean up
+      await defaultDs.query<Tag>().whereEquals('name', tempTagName).forceDelete();
+    });
+    if (animate) await Future.delayed(Duration(milliseconds: 100));
+    return ArtisanTaskResult.success;
   });
 
   io.success('Transaction completed - tenants remain isolated.');
