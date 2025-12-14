@@ -12,13 +12,7 @@ Laravel-inspired convenience methods for working with model instances.
 
 Clone a model without primary key or timestamps:
 
-```dart
-final original = await User.query().find(1);
-
-// Create a replica
-final duplicate = original.replicate();
-duplicate.setAttribute('email', 'new@example.com');
-await duplicate.save();
+```dart file=../../examples/lib/usage/model_methods.dart#model-replicate
 ```
 
 **What gets excluded:**
@@ -28,13 +22,7 @@ await duplicate.save();
 
 ### Excluding Specific Fields
 
-```dart
-final post = await Post.query().find(1);
-final duplicate = post.replicate(except: ['slug', 'viewCount']);
-
-duplicate.setAttribute('slug', 'new-unique-slug');
-duplicate.setAttribute('viewCount', 0);
-await duplicate.save();
+```dart file=../../examples/lib/usage/model_methods.dart#model-replicate-exclude
 ```
 
 :::warning
@@ -43,27 +31,7 @@ Cannot exclude required non-nullable fields. Only exclude nullable fields or fie
 
 ### Use Cases
 
-**Duplicating Records:**
-```dart
-final product = await Product.query().find(productId);
-final duplicate = product.replicate(except: ['sku', 'barcode']);
-
-duplicate.setAttribute('sku', generateUniqueSKU());
-duplicate.setAttribute('name', '${product.name} (Copy)');
-await duplicate.save();
-```
-
-**Test Fixtures:**
-```dart
-final template = User(name: 'Test User', role: 'admin', active: true);
-
-final user1 = template.replicate();
-user1.setAttribute('email', 'user1@test.com');
-
-final user2 = template.replicate();
-user2.setAttribute('email', 'user2@test.com');
-
-await dataSource.repo<$User>().insertMany([user1, user2]);
+```dart file=../../examples/lib/usage/model_methods.dart#model-replicate-usecases
 ```
 
 ## Model Comparison
@@ -72,13 +40,7 @@ await dataSource.repo<$User>().insertMany([user1, user2]);
 
 Check if two models represent the same database record:
 
-```dart
-final user1 = await User.query().find(1);
-final user2 = await User.query().find(1);
-
-if (user1.isSameAs(user2)) {
-  print('These are the same user');
-}
+```dart file=../../examples/lib/usage/model_methods.dart#model-comparison
 ```
 
 **Comparison logic:**
@@ -90,37 +52,21 @@ if (user1.isSameAs(user2)) {
 
 Inverse of `isSameAs()`:
 
-```dart
-final user1 = await User.query().find(1);
-final user2 = await User.query().find(2);
-
-if (user1.isDifferentFrom(user2)) {
-  print('These are different users');
-}
+```dart file=../../examples/lib/usage/model_methods.dart#model-different
 ```
 
 ### Use Cases
 
 **Deduplication:**
-```dart
-final users = await User.query().get();
-final unique = <User>[];
 
-for (final user in users) {
-  if (!unique.any((u) => u.isSameAs(user))) {
-    unique.add(user);
-  }
-}
+```dart file=../../examples/lib/usage/model_methods.dart#model-dedupe-usecase
+
 ```
 
 **Validation:**
-```dart
-void processTransfer(Account from, Account to) {
-  if (from.isSameAs(to)) {
-    throw ArgumentError('Cannot transfer to the same account');
-  }
-  // Process transfer...
-}
+
+```dart file=../../examples/lib/usage/model_methods.dart#model-validation-usecase
+
 ```
 
 ## Refreshing Models
@@ -129,29 +75,14 @@ void processTransfer(Account from, Account to) {
 
 Get a new instance from the database without modifying the current instance:
 
-```dart
-final user = await User.query().find(1);
-user.setAttribute('name', 'Changed locally');
-
-// Get fresh data from database
-final fresh = await user.fresh();
-
-print(user.name); // 'Changed locally' (original unchanged)
-print(fresh.name); // Original value from database
+```dart file=../../examples/lib/usage/model_methods.dart#model-fresh
 ```
 
 ### refresh()
 
 Reload the current instance, discarding local changes:
 
-```dart
-final user = await User.query().find(1);
-user.setAttribute('name', 'Changed locally');
-
-// Discard changes and reload
-await user.refresh();
-
-print(user.name); // Original value (changes lost)
+```dart file=../../examples/lib/usage/model_methods.dart#model-refresh
 ```
 
 ### When to Use Which
@@ -165,49 +96,19 @@ print(user.name); // Original value (changes lost)
 
 ### With Eager Loading
 
-```dart
-// Load relationships when refreshing
-final fresh = await user.fresh(withRelations: ['posts', 'comments']);
-await user.refresh(withRelations: ['posts', 'comments']);
+```dart file=../../examples/lib/usage/model_methods.dart#model-refresh-relations
 ```
 
 ### With Soft Deletes
 
-```dart
-// Include soft-deleted records
-final fresh = await user.fresh(withTrashed: true);
-await user.refresh(withTrashed: true);
+```dart file=../../examples/lib/usage/model_methods.dart#model-soft-delete-refresh
+
 ```
 
 ### Use Cases
 
 **Optimistic Locking:**
-```dart
-final user = await User.query().find(1);
-final originalUpdatedAt = user.updatedAt;
-
-user.setAttribute('name', 'New Name');
-
-// Check for concurrent modifications
-final fresh = await user.fresh();
-if (fresh.updatedAt != originalUpdatedAt) {
-  throw ConcurrentModificationException('Record modified by another user');
-}
-
-await user.save();
-```
-
-**Discarding Failed Edits:**
-```dart
-final user = await User.query().find(1);
-
-try {
-  user.setAttribute('email', newEmail);
-  await user.save();
-} catch (e) {
-  await user.refresh(); // Restore original state
-  logger.error('Save failed, state restored', e);
-}
+```dart file=../../examples/lib/usage/model_methods.dart#model-optimistic-lock
 ```
 
 ## Model State
@@ -216,27 +117,16 @@ try {
 
 Check if a model is persisted in the database:
 
-```dart
-final user = User(email: 'new@example.com', active: true);
-print(user.exists); // false
+```dart file=../../examples/lib/usage/model_methods.dart#model-exists
 
-await user.save();
-print(user.exists); // true
 ```
 
 ### wasRecentlyCreated
 
 Check if a model was just inserted:
 
-```dart
-final user = User(email: 'new@example.com');
-await user.save();
+```dart file=../../examples/lib/usage/model_methods.dart#model-was-recently-created
 
-if (user.wasRecentlyCreated) {
-  await sendWelcomeEmail(user);
-} else {
-  await sendUpdateNotification(user);
-}
 ```
 
 ## save() Upsert Behavior
@@ -246,36 +136,16 @@ The `save()` method uses upsert semantics:
 - **New models** (no primary key or not persisted): performs `INSERT`
 - **Existing models** (primary key present and was hydrated): performs `UPSERT`
 
-```dart
-// Insert a new model
-final user = $User(id: 100, email: 'assigned@example.com');
-await user.save(); // Inserts
+```dart file=../../examples/lib/usage/model_methods.dart#model-save-upsert
 
-// Update an existing model
-user.setAttribute('email', 'updated@example.com');
-await user.save(); // Updates
-
-// If externally deleted, save() will re-insert
-await user.save(); // Falls back to insert if 0 rows affected
 ```
 
 ## Static Helpers
 
 After binding a connection resolver, `Model<T>` provides Laravel-style helpers:
 
-```dart
-final registry = buildOrmRegistry();
-final context = QueryContext(registry: registry, driver: adapter);
+```dart file=../../examples/lib/usage/model_methods.dart#model-static-helpers
 
-Model.bindConnectionResolver(resolveConnection: (_) => context);
-
-// Now use static helpers
-final user = await Model.create<User>($User(id: 0, email: 'hi@example.com'));
-await user.refresh();
-await user.delete();
-await user.restore();
-
-final emails = await Model.query<User>().orderBy('id').get();
 ```
 
 Available methods:

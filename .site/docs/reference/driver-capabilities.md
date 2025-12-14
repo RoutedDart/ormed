@@ -21,50 +21,12 @@ Different databases have varying levels of SQL feature support:
 
 ## Available Capabilities
 
-```dart
-enum DriverCapability {
-  /// Driver supports raw SQL expressions in select, where, orderBy
-  rawExpressions,
-  
-  /// Driver supports UPDATE/DELETE with WHERE clauses on arbitrary tables
-  adHocQueryUpdates,
-  
-  /// Driver supports complex multi-table JOINs
-  complexJoins,
-  
-  /// Driver supports window functions (ROW_NUMBER, RANK, etc.)
-  windowFunctions,
-  
-  /// Driver supports Common Table Expressions (WITH clause)
-  cte,
-  
-  /// Driver supports subqueries in WHERE/HAVING/SELECT
-  subqueries,
-}
+```dart file=../../examples/lib/capabilities/driver_capabilities.dart#capability-enum
 ```
 
 ## Checking Capabilities at Runtime
 
-```dart
-import 'package:ormed/ormed.dart';
-
-void main() async {
-  final adapter = SqliteDriverAdapter.file('app.sqlite');
-  
-  // Check single capability
-  if (adapter.supportsCapability(DriverCapability.rawExpressions)) {
-    print('Can use raw SQL expressions');
-  }
-  
-  // Check multiple capabilities
-  final canDoComplexQuery = 
-      adapter.supportsCapability(DriverCapability.complexJoins) &&
-      adapter.supportsCapability(DriverCapability.subqueries);
-  
-  // Get all supported capabilities
-  final supported = adapter.capabilities;
-  print('Driver supports: ${supported.map((c) => c.name).join(', ')}');
-}
+```dart file=../../examples/lib/capabilities/driver_capabilities.dart#check-capabilities
 ```
 
 ## Driver-Specific Behavior
@@ -117,180 +79,55 @@ void main() async {
 
 ### Strategy 1: Capability Checks
 
-```dart
-Future<List<Post>> getTopPosts(QueryContext context) async {
-  var query = context.query<$Post>();
-  
-  if (context.driver.supportsCapability(DriverCapability.rawExpressions)) {
-    query = query.selectRaw(
-      'posts.*, (SELECT COUNT(*) FROM comments WHERE post_id = posts.id) as comment_count'
-    );
-  } else {
-    query = query.withCount(['comments']);
-  }
-  
-  return query.orderBy('created_at', descending: true).limit(10).get();
-}
+```dart file=../../examples/lib/capabilities/driver_capabilities.dart#capability-checks-strategy
 ```
 
 ### Strategy 2: Prefer Query Builder Over Raw
 
 The query builder API works across all drivers:
 
-```dart
-// ✅ Works everywhere
-final posts = await context.query<$Post>()
-    .whereEquals('status', 'published')
-    .whereGreaterThan('views', 100)
-    .orderBy('created_at', descending: true)
-    .get();
-
-// ⚠️ Only works on SQL databases
-final posts = await context.query<$Post>()
-    .whereRaw('status = ? AND views > ?', ['published', 100])
-    .orderByRaw('created_at DESC')
-    .get();
+```dart file=../../examples/lib/capabilities/driver_capabilities.dart#query-builder-vs-raw
 ```
 
 ### Strategy 3: Feature Detection
 
-```dart
-abstract class SearchStrategy {
-  Future<List<Post>> search(QueryContext context, String term);
-}
-
-class SqlSearchStrategy implements SearchStrategy {
-  @override
-  Future<List<Post>> search(QueryContext context, String term) async {
-    return context.query<$Post>()
-        .whereRaw('title LIKE ?', ['%$term%'])
-        .orWhereRaw('content LIKE ?', ['%$term%'])
-        .get();
-  }
-}
-
-class BasicSearchStrategy implements SearchStrategy {
-  @override
-  Future<List<Post>> search(QueryContext context, String term) async {
-    return context.query<$Post>()
-        .whereContains('title', term)
-        .orWhereContains('content', term)
-        .get();
-  }
-}
-
-SearchStrategy selectStrategy(QueryContext context) {
-  return context.driver.supportsCapability(DriverCapability.rawExpressions)
-      ? SqlSearchStrategy()
-      : BasicSearchStrategy();
-}
+```dart file=../../examples/lib/capabilities/driver_capabilities.dart#feature-detection-strategy
 ```
 
 ## Testing Across Drivers
 
 ### Skipping Incompatible Tests
 
-```dart
-test('raw expression in select', () async {
-  final posts = await context.query<$Post>()
-      .selectRaw('*, (SELECT COUNT(*) FROM comments WHERE post_id = posts.id) as count')
-      .get();
-  
-  expect(posts.first.getAttribute<int>('count'), greaterThan(0));
-}, skip: !adapter.supportsCapability(DriverCapability.rawExpressions));
+```dart file=../../examples/lib/capabilities/driver_capabilities.dart#skip-incompatible-tests
 ```
 
 ## Migration Considerations
 
 ### Conditional Migrations
 
-```dart
-class AddFullTextSearchMigration extends Migration {
-  @override
-  Future<void> up(SchemaBuilder schema) async {
-    if (schema.driver.supportsCapability(DriverCapability.rawExpressions)) {
-      // SQLite FTS5
-      await schema.rawStatement('''
-        CREATE VIRTUAL TABLE posts_fts USING fts5(title, content, content=posts);
-      ''');
-    }
-  }
-  
-  @override
-  Future<void> down(SchemaBuilder schema) async {
-    if (schema.driver.supportsCapability(DriverCapability.rawExpressions)) {
-      await schema.rawStatement('DROP TABLE IF EXISTS posts_fts');
-    }
-  }
-}
+```dart file=../../examples/lib/capabilities/driver_capabilities.dart#conditional-migrations
 ```
 
 ## Best Practices
 
 ### 1. Use Query Builder First
 
-```dart
-// ✅ Cross-database compatible
-context.query<$Post>()
-    .whereEquals('status', 'published')
-    .orderBy('created_at', descending: true);
-
-// ❌ SQL-specific
-context.query<$Post>()
-    .whereRaw('status = ?', ['published'])
-    .orderByRaw('created_at DESC');
+```dart file=../../examples/lib/capabilities/driver_capabilities.dart#best-practice-query-builder
 ```
 
 ### 2. Check Capabilities, Don't Assume
 
-```dart
-// ❌ Bad - assumes raw expressions work
-query.selectRaw('COUNT(*)');
-
-// ✅ Good - checks capability first
-if (adapter.supportsCapability(DriverCapability.rawExpressions)) {
-  query.selectRaw('COUNT(*)');
-} else {
-  query.withCount(['items']);
-}
+```dart file=../../examples/lib/capabilities/driver_capabilities.dart#best-practice-check-capabilities
 ```
 
 ### 3. Document Driver Requirements
 
-```dart
-/// Performs full-text search on posts.
-///
-/// **Requirements:**
-/// - Driver must support [DriverCapability.rawExpressions]
-Future<List<Post>> fullTextSearch(String term) async {
-  if (!adapter.supportsCapability(DriverCapability.rawExpressions)) {
-    throw UnsupportedError('Full-text search requires raw expression support');
-  }
-  // ... implementation
-}
+```dart file=../../examples/lib/capabilities/driver_capabilities.dart#document-driver-requirements
 ```
 
 ### 4. Fallback to Compatible Alternatives
 
-```dart
-Future<List<Post>> getPostsWithStats(QueryContext context) async {
-  if (context.driver.supportsCapability(DriverCapability.windowFunctions)) {
-    return context.query<$Post>()
-        .selectRaw('*, ROW_NUMBER() OVER (ORDER BY views DESC) as rank')
-        .get();
-  } else {
-    // Fallback: compute rank in memory
-    final posts = await context.query<$Post>()
-        .orderBy('views', descending: true)
-        .get();
-    
-    return posts.asMap().entries.map((entry) {
-      final post = entry.value;
-      post.setAttribute('rank', entry.key + 1);
-      return post;
-    }).toList();
-  }
-}
+```dart file=../../examples/lib/capabilities/driver_capabilities.dart#fallback-alternatives
 ```
 
 ## Summary

@@ -8,25 +8,8 @@ Models in Ormed are Dart classes annotated with `@OrmModel` that map to database
 
 ## Basic Model
 
-```dart
-import 'package:ormed/ormed.dart';
+```dart file=../../examples/lib/models/user.dart#basic-model
 
-part 'user.orm.dart';
-
-@OrmModel(table: 'users')
-class User extends Model<User> {
-  const User({
-    required this.id,
-    required this.email,
-    this.name,
-  });
-
-  @OrmField(isPrimaryKey: true, autoIncrement: true)
-  final int id;
-
-  final String email;
-  final String? name;
-}
 ```
 
 After running `dart run build_runner build`, this generates:
@@ -37,79 +20,30 @@ After running `dart run build_runner build`, this generates:
 
 ## Model Annotation Options
 
-```dart
-@OrmModel(
-  table: 'users',           // Required: table name
-  hidden: ['password'],     // Fields hidden from serialization
-  fillable: ['email'],      // Fields that can be mass-assigned
-  guarded: ['id'],          // Fields protected from mass-assignment
-  casts: {                  // Custom column casting
-    'createdAt': 'datetime',
-  },
-)
-class User extends Model<User> { ... }
+```dart file=../../examples/lib/models/admin.dart#model-with-options
+
 ```
 
 ## Field Annotations
 
 ### Primary Key
 
-```dart
-@OrmField(isPrimaryKey: true)
-final int id;
+```dart file=../../examples/lib/models/field_examples.dart#primary-key-examples
 
-// Auto-increment (default for integer PKs)
-@OrmField(isPrimaryKey: true, autoIncrement: true)
-final int id;
-
-// UUID primary key
-@OrmField(isPrimaryKey: true)
-final String id;
 ```
 
 ### Column Options
 
-```dart
-// Custom column name
-@OrmField(column: 'user_email')
-final String email;
+```dart file=../../examples/lib/models/field_examples.dart#column-options
 
-// Default value in SQL
-@OrmField(defaultValueSql: '1')
-final bool active;
-
-// Nullable field
-final String? name;  // Automatically nullable in DB
 ```
 
 ### Custom Codecs
 
 For complex types, use value codecs:
 
-```dart
-@OrmField(codec: JsonMapCodec)
-final Map<String, Object?>? metadata;
+```dart file=../../examples/lib/generated_code_usage.dart#custom-codecs-field
 
-@OrmField(codec: UuidCodec)
-final UuidValue id;
-```
-
-Define your codec:
-
-```dart
-class JsonMapCodec extends ValueCodec<Map<String, Object?>> {
-  const JsonMapCodec();
-
-  @override
-  Map<String, Object?> decode(Object? value) {
-    if (value == null) return {};
-    if (value is String) return jsonDecode(value) as Map<String, Object?>;
-    return value as Map<String, Object?>;
-  }
-
-  @override
-  Object? encode(Map<String, Object?> value) => jsonEncode(value);
-}
 ```
 
 ## Generated Code
@@ -121,57 +55,32 @@ The generated `$User` class is the "tracked" version of your model with:
 - Relationship accessors
 - Model lifecycle methods
 
-```dart
-// The generated class
-final user = $User(id: 1, email: 'john@example.com');
+```dart file=../../examples/lib/generated_code_usage.dart#tracked-model-usage
 
-// Modify and track changes
-user.name = 'John Doe';
-print(user.isDirty);  // true
-print(user.dirtyFields);  // ['name']
 ```
 
 ### Definition (`UserOrmDefinition`)
 
 Provides static helpers and model metadata:
 
-```dart
-// Access the model definition
-final definition = UserOrmDefinition.definition;
-print(definition.tableName);  // 'users'
-print(definition.primaryKey.name);  // 'id'
+```dart file=../../examples/lib/generated_code_usage.dart#definition-usage
 
-// Static query helpers
-final users = await UserOrmDefinition.all();
-final user = await UserOrmDefinition.find(1);
 ```
 
 ### Partial Entity (`$UserPartial`)
 
 For projecting specific columns:
 
-```dart
-final partial = await dataSource.query<$User>()
-    .select(['id', 'email'])
-    .firstPartial();
+```dart file=../../examples/lib/generated_code_usage.dart#partial-entity-usage
 
-print(partial.id);     // Available
-print(partial.email);  // Available
-// partial.name is not available (not selected)
 ```
 
 ### DTOs
 
 Data transfer objects for insert/update operations:
 
-```dart
-// Insert DTO
-final insertDto = UserInsertDto(email: 'new@example.com');
-await repo.insert(insertDto);
+```dart file=../../examples/lib/generated_code_usage.dart#dto-usage
 
-// Update DTO
-final updateDto = UserUpdateDto(name: 'New Name');
-await repo.update(updateDto, where: {'id': 1});
 ```
 
 ## Best Practices

@@ -10,284 +10,136 @@ The Query Builder provides a fluent, type-safe API for building database queries
 
 Access the query builder through a `DataSource`:
 
-```dart
-final users = await dataSource.query<$User>().get();
+```dart file=../../examples/lib/queries.dart#query-getting-started
+
 ```
 
 ## Selecting Data
 
 ### Get All Records
 
-```dart
-final users = await dataSource.query<$User>().get();
+```dart file=../../examples/lib/queries.dart#query-get-all
+
 ```
 
 ### Select Specific Columns
 
-```dart
-final users = await dataSource.query<$User>()
-    .select(['id', 'email', 'name'])
-    .get();
+```dart file=../../examples/lib/queries.dart#query-select
+
 ```
 
 ### First Record
 
-```dart
-// Returns null if not found
-final user = await dataSource.query<$User>().first();
+```dart file=../../examples/lib/queries.dart#query-first
 
-// Throws if not found
-final user = await dataSource.query<$User>().firstOrFail();
 ```
 
 ### Find by Primary Key
 
-```dart
-final user = await dataSource.query<$User>().find(1);
-final user = await dataSource.query<$User>().findOrFail(1);
+```dart file=../../examples/lib/queries.dart#query-find
+
 ```
 
 ## Where Clauses
 
-### Basic Where
+```dart file=../../examples/lib/queries.dart#where-clauses
 
-```dart
-// Equals
-final users = await dataSource.query<$User>()
-    .whereEquals('active', true)
-    .get();
-
-// Not equals
-final users = await dataSource.query<$User>()
-    .whereNotEquals('status', 'banned')
-    .get();
 ```
 
 ### Comparison Operators
 
-```dart
-final users = await dataSource.query<$User>()
-    .where('age', '>', 18)
-    .where('age', '<=', 65)
-    .get();
+```dart file=../../examples/lib/queries.dart#where-comparison
+
 ```
 
 ### In / Not In
 
-```dart
-final users = await dataSource.query<$User>()
-    .whereIn('role', ['admin', 'moderator'])
-    .get();
+```dart file=../../examples/lib/queries.dart#where-in
 
-final users = await dataSource.query<$User>()
-    .whereNotIn('status', ['banned', 'suspended'])
-    .get();
 ```
 
 ### Null Checks
 
-```dart
-final users = await dataSource.query<$User>()
-    .whereNull('deleted_at')
-    .get();
+```dart file=../../examples/lib/queries.dart#where-null
 
-final users = await dataSource.query<$User>()
-    .whereNotNull('verified_at')
-    .get();
 ```
 
 ### Between
 
-```dart
-final users = await dataSource.query<$User>()
-    .whereBetween('age', 18, 65)
-    .get();
+```dart file=../../examples/lib/queries.dart#where-between
+
 ```
 
 ### Like / Contains
 
-```dart
-final users = await dataSource.query<$User>()
-    .whereLike('email', '%@example.com')
-    .get();
+```dart file=../../examples/lib/queries.dart#where-like
+
 ```
 
 ### Or Where
 
-```dart
-final users = await dataSource.query<$User>()
-    .whereEquals('role', 'admin')
-    .orWhere('role', '=', 'moderator')
-    .get();
+```dart file=../../examples/lib/queries.dart#where-or
+
 ```
 
 ### Grouped Conditions
 
-```dart
-final users = await dataSource.query<$User>()
-    .where('active', '=', true)
-    .whereGroup((q) => q
-        .where('role', '=', 'admin')
-        .orWhere('role', '=', 'moderator'))
-    .get();
+```dart file=../../examples/lib/queries.dart#where-grouped
 
-// SQL: WHERE active = 1 AND (role = 'admin' OR role = 'moderator')
 ```
 
 ## Ordering
 
-```dart
-// Ascending (default)
-final users = await dataSource.query<$User>()
-    .orderBy('name')
-    .get();
+```dart file=../../examples/lib/queries.dart#ordering-limiting
 
-// Descending
-final users = await dataSource.query<$User>()
-    .orderBy('created_at', descending: true)
-    .get();
-
-// Multiple columns
-final users = await dataSource.query<$User>()
-    .orderBy('role')
-    .orderBy('name')
-    .get();
-```
-
-## Limiting & Pagination
-
-```dart
-// Limit
-final users = await dataSource.query<$User>()
-    .limit(10)
-    .get();
-
-// Offset
-final users = await dataSource.query<$User>()
-    .limit(10)
-    .offset(20)
-    .get();
-
-// Paginate
-final page = await dataSource.query<$User>()
-    .paginate(page: 2, perPage: 15);
-
-print(page.data);        // List<$User>
-print(page.currentPage); // 2
-print(page.lastPage);    // Total pages
-print(page.total);       // Total records
 ```
 
 ## Aggregates
 
-```dart
-final count = await dataSource.query<$User>().count();
-final sum = await dataSource.query<$User>().sum('balance');
-final avg = await dataSource.query<$User>().avg('age');
-final max = await dataSource.query<$User>().max('score');
-final min = await dataSource.query<$User>().min('score');
+```dart file=../../examples/lib/queries.dart#aggregates
 
-// Exists check
-final hasAdmins = await dataSource.query<$User>()
-    .whereEquals('role', 'admin')
-    .exists();
 ```
 
 ## Distinct
 
-```dart
-final roles = await dataSource.query<$User>()
-    .distinct()
-    .select(['role'])
-    .get();
+```dart file=../../examples/lib/queries.dart#distinct
+
 ```
 
 ## Eager Loading Relations
 
-```dart
-// Load a single relation
-final posts = await dataSource.query<$Post>()
-    .with_(['author'])
-    .get();
+```dart file=../../examples/lib/queries.dart#relations
 
-// Load multiple relations
-final posts = await dataSource.query<$Post>()
-    .with_(['author', 'tags', 'comments'])
-    .get();
-
-// Nested relations
-final posts = await dataSource.query<$Post>()
-    .with_(['author.profile', 'comments.user'])
-    .get();
 ```
 
 ## Raw Expressions
 
 When you need database-specific functionality:
 
-```dart
-final users = await dataSource.query<$User>()
-    .whereRaw("LOWER(email) = ?", ['john@example.com'])
-    .get();
+```dart file=../../examples/lib/queries.dart#raw-expressions
 
-final users = await dataSource.query<$User>()
-    .selectRaw("*, CONCAT(first_name, ' ', last_name) AS full_name")
-    .get();
 ```
 
 ## Partial Projections
 
 Get partial entities with only selected columns:
 
-```dart
-final partial = await dataSource.query<$User>()
-    .select(['id', 'email'])
-    .firstPartial();
+```dart file=../../examples/lib/queries.dart#partial-projections
 
-print(partial?.id);    // Available
-print(partial?.email); // Available
-// partial?.name is not available (not selected)
 ```
 
 ## Soft Delete Scopes
 
 For models with soft deletes:
 
-```dart
-// Default: excludes soft-deleted
-final posts = await dataSource.query<$Post>().get();
+```dart file=../../examples/lib/queries.dart#soft-delete-scopes
 
-// Include soft-deleted
-final allPosts = await dataSource.query<$Post>()
-    .withTrashed()
-    .get();
-
-// Only soft-deleted
-final trashedPosts = await dataSource.query<$Post>()
-    .onlyTrashed()
-    .get();
 ```
 
 ## Query Caching
 
 Cache query results for improved performance:
 
-```dart
-// Cache for 5 minutes
-final users = await dataSource.query<$User>()
-    .remember(Duration(minutes: 5))
-    .get();
+```dart file=../../examples/lib/queries.dart#query-caching
 
-// Cache forever (until manually cleared)
-final settings = await dataSource.query<$Setting>()
-    .rememberForever()
-    .get();
-
-// Disable caching for specific query
-final freshData = await dataSource.query<$User>()
-    .dontRemember()
-    .get();
-
-// Clear query cache
-await dataSource.flushQueryCache();
 ```

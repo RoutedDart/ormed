@@ -172,43 +172,14 @@ dart run orm migrate:apply --connection production
 
 You can also configure Ormed programmatically using the generated registry:
 
-```dart
-import 'package:ormed/ormed.dart';
-import 'package:ormed_sqlite/ormed_sqlite.dart';
-import 'orm_registry.g.dart';  // Generated
-
-void main() async {
-  // Create driver
-  final driver = SqliteDriverAdapter.file('database.sqlite');
-
-  // Use the generated registry helper (includes all models)
-  final registry = buildOrmRegistry();
-
-  // Or with factory support
-  final registryWithFactories = buildOrmRegistryWithFactories();
-
-  // Or manually extend an existing registry
-  final customRegistry = ModelRegistry()
-    ..registerGeneratedModels();  // Extension method
-
-  // Create data source
-  final dataSource = DataSource(
-    context: QueryContext(driver: driver, registry: registry),
-  );
-
-  // Use the data source...
-}
+```dart file=../../examples/lib/setup.dart#programmatic-config
 ```
 
 ### Manual Registration
 
 If you prefer manual control, you can still register models individually:
 
-```dart
-final registry = ModelRegistry()
-  ..register(UserOrmDefinition.definition)
-  ..register(PostOrmDefinition.definition)
-  ..registerTypeAlias<User>(UserOrmDefinition.definition);
+```dart file=../../examples/lib/setup.dart#manual-registration
 ```
 
 ## Next Steps

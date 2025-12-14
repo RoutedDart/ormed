@@ -10,21 +10,7 @@ The ORM exposes structured hooks for every query and mutation so you can ship me
 
 The simplest way to observe queries is via the built-in query log on `OrmConnection` or `DataSource`:
 
-```dart
-// Enable logging
-ds.enableQueryLog();
-
-// Execute some queries
-await ds.query<User>().whereEquals('active', true).get();
-await ds.repo<Post>().insert(post);
-
-// Review the log
-for (final entry in ds.queryLog) {
-  print('${entry.type}: ${entry.sql} (${entry.duration.inMilliseconds}ms)');
-}
-
-// Clear when done
-ds.clearQueryLog();
+```dart file=../../examples/lib/observability/observability.dart#query-logging
 ```
 
 ### API Reference
@@ -57,28 +43,15 @@ ds.clearQueryLog();
 
 Use `onQueryLogged` to receive entries as they are recorded:
 
-```dart
-connection.onQueryLogged((entry) {
-  logger.debug('SQL ${entry.type}', extra: entry.toMap());
-});
+```dart file=../../examples/lib/observability/observability.dart#on-query-logged
+
 ```
 
 ## Query & Mutation Events
 
 Register listeners on the `QueryContext`:
 
-```dart
-final context = QueryContext(registry: registry, driver: adapter);
-
-context.onQuery((event) {
-  print('[query] ${event.preview.sql} took ${event.duration}');
-});
-
-context.onMutation((event) {
-  if (!event.succeeded) {
-    errorReporter.capture(event.error, event.stackTrace);
-  }
-});
+```dart file=../../examples/lib/observability/observability.dart#query-events
 ```
 
 ### QueryEvent Fields
@@ -107,13 +80,7 @@ context.onMutation((event) {
 
 Attach a structured logger for JSON-friendly output:
 
-```dart
-StructuredQueryLogger(
-  onLog: (entry) => observability.log('orm', entry),
-  includeParameters: false, // hide sensitive data
-  includeStackTrace: true,
-  attributes: {'service': 'api', 'env': 'prod'},
-).attach(context);
+```dart file=../../examples/lib/observability/observability.dart#structured-logger
 ```
 
 Each entry contains:
@@ -138,23 +105,14 @@ For failed queries, the logger adds `error_type`, `error_message`, and (optional
 
 For development or when piping logs to stdout:
 
-```dart
-StructuredQueryLogger.printing(pretty: true).attach(context);
+```dart file=../../examples/lib/observability/observability.dart#printing-helper
 ```
 
 ## SQL Preview Without Execution
 
 Use `Query.toSql()` to inspect queries before running them:
 
-```dart
-final preview = context
-    .query<$User>()
-    .whereEquals('active', true)
-    .limit(5)
-    .toSql();
-
-print(preview.sql);       // SELECT "id", ...
-print(preview.parameters); // [1, 5]
+```dart file=../../examples/lib/observability/observability.dart#sql-preview
 ```
 
 Mutation previews are available via repository helpers (`previewInsert`, `previewUpdateMany`, etc.) and `context.describeMutation()`.
@@ -167,68 +125,29 @@ Mutation previews are available via repository helpers (`previewInsert`, `previe
 
 Intercept queries or mutations before they execute:
 
-```dart
-// Before any query
-connection.onBeforeQuery((plan) {
-  print('About to run query on ${plan.definition.tableName}');
-});
-
-// Before any mutation
-connection.onBeforeMutation((plan) {
-  audit.log('mutation', plan.definition.tableName, plan.type);
-});
-
-// Transaction boundaries
-connection.onBeforeTransaction(() {
-  print('Transaction starting');
-});
-
-connection.onAfterTransaction(() {
-  print('Transaction completed');
-});
+```dart file=../../examples/lib/observability/observability.dart#before-hooks
 ```
 
 ### beforeExecuting
 
 Called just before SQL is sent to the driver, with full statement context:
 
-```dart
-final unregister = connection.beforeExecuting((statement) {
-  print('[SQL] ${statement.sqlWithBindings}');
-  print('Type: ${statement.type}'); // query or mutation
-  print('Connection: ${statement.connectionName}');
-});
+```dart file=../../examples/lib/observability/observability.dart#before-executing
 
-// Later, unregister
-unregister();
 ```
 
 ### Slow Query Detection
 
-```dart
-connection.whenQueryingForLongerThan(
-  Duration(milliseconds: 100),
-  (event) {
-    logger.warning('Slow query: ${event.statement.sql}');
-    logger.warning('Duration: ${event.duration.inMilliseconds}ms');
-  },
-);
+```dart file=../../examples/lib/observability/observability.dart#slow-query-detection
+
 ```
 
 ### Pretend Mode
 
 Capture SQL without executing against the database:
 
-```dart
-final captured = await ds.pretend(() async {
-  await ds.repo<User>().insert(user);
-  await ds.repo<Post>().insert(post);
-});
+```dart file=../../examples/lib/observability/observability.dart#pretend-mode
 
-for (final entry in captured) {
-  print('Would execute: ${entry.sql}');
-}
-// No actual database changes made
 ```
 
 During pretend mode, `connection.pretending` returns `true`.
@@ -237,40 +156,16 @@ During pretend mode, `connection.pretending` returns `true`.
 
 Use event hooks to create tracing spans:
 
-```dart
-context.onQuery((event) {
-  final span = tracer.startSpan('db.query')
-    ..setAttribute('db.statement', event.preview.sql)
-    ..setAttribute('db.system', 'sqlite');
-  
-  if (event.succeeded) {
-    span.end();
-  } else {
-    span.recordException(event.error!, event.stackTrace);
-    span.setStatus(SpanStatus.error);
-    span.end();
-  }
-});
+```dart file=../../examples/lib/observability/observability.dart#tracing-integration
+
 ```
 
 ## Metrics Integration
 
 Send query metrics to your monitoring service:
 
-```dart
-context.onQuery((event) {
-  metrics.histogram('db.query.duration', event.duration.inMicroseconds);
-  metrics.increment('db.query.count');
-  
-  if (!event.succeeded) {
-    metrics.increment('db.query.errors');
-  }
-});
+```dart file=../../examples/lib/observability/observability.dart#metrics-integration
 
-context.onMutation((event) {
-  metrics.histogram('db.mutation.duration', event.duration.inMicroseconds);
-  metrics.increment('db.mutation.affected_rows', event.affectedRows);
-});
 ```
 
 ## Best Practices
@@ -283,13 +178,6 @@ context.onMutation((event) {
 
 - **Monitor slow queries** – Register a listener that warns when `event.duration` exceeds your SLO.
 
-```dart
-context.onQuery((event) {
-  if (event.duration > Duration(milliseconds: 100)) {
-    logger.warning('Slow query detected', {
-      'sql': event.preview.sql,
-      'duration_ms': event.duration.inMilliseconds,
-    });
-  }
-});
+```dart file=../../examples/lib/observability/observability.dart#slow-query-monitoring
+
 ```

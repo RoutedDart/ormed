@@ -10,23 +10,8 @@ Soft deletes allow you to "delete" records by setting a timestamp rather than re
 
 Add the `SoftDeletes` marker mixin to your model:
 
-```dart
-import 'package:ormed/ormed.dart';
+```dart file=../../examples/lib/models/soft_delete_model.dart#soft-deletes-model
 
-part 'post.orm.dart';
-
-@OrmModel(table: 'posts')
-class Post extends Model<Post> with SoftDeletes {
-  const Post({
-    required this.id,
-    required this.title,
-  });
-
-  @OrmField(isPrimaryKey: true, autoIncrement: true)
-  final int id;
-
-  final String title;
-}
 ```
 
 The code generator detects this mixin and:
@@ -38,28 +23,16 @@ The code generator detects this mixin and:
 
 For deletion timestamps stored in UTC, use `SoftDeletesTZ`:
 
-```dart
-@OrmModel(table: 'posts')
-class Post extends Model<Post> with SoftDeletesTZ {
-  // ...
-}
+```dart file=../../examples/lib/models/soft_delete_model.dart#soft-deletes-tz
+
 ```
 
 ## Migration Setup
 
 Add the soft delete column in your migration:
 
-```dart
-schema.create('posts', (table) {
-  table.id();
-  table.string('title');
+```dart file=../../examples/lib/migrations/basic.dart#soft-deletes-migration
 
-  // Non-timezone aware
-  table.softDeletes();
-
-  // OR timezone aware (UTC storage)
-  table.softDeletesTz();
-});
 ```
 
 ## Querying Soft Deleted Records
@@ -68,31 +41,24 @@ schema.create('posts', (table) {
 
 By default, soft-deleted records are excluded from queries:
 
-```dart
-// Only returns non-deleted posts
-final posts = await dataSource.query<$Post>().get();
+```dart file=../../examples/lib/soft_deletes.dart#soft-delete-default
+
 ```
 
 ### Include Soft Deleted
 
 Use `withTrashed()` to include soft-deleted records:
 
-```dart
-// Returns all posts including deleted
-final allPosts = await dataSource.query<$Post>()
-    .withTrashed()
-    .get();
+```dart file=../../examples/lib/soft_deletes.dart#soft-delete-with-trashed
+
 ```
 
 ### Only Soft Deleted
 
 Use `onlyTrashed()` to get only soft-deleted records:
 
-```dart
-// Returns only deleted posts
-final trashedPosts = await dataSource.query<$Post>()
-    .onlyTrashed()
-    .get();
+```dart file=../../examples/lib/soft_deletes.dart#soft-delete-only-trashed
+
 ```
 
 ## Soft Delete Operations
@@ -101,75 +67,42 @@ final trashedPosts = await dataSource.query<$Post>()
 
 Standard delete operations soft-delete when the model has `SoftDeletes`:
 
-```dart
-final repo = dataSource.repo<$Post>();
+```dart file=../../examples/lib/soft_deletes.dart#soft-delete-operations
 
-// Soft delete (sets deleted_at)
-await repo.delete(post);
-await repo.delete({'id': postId});
 ```
 
 ### Restoring Records
 
 Restore soft-deleted records:
 
-```dart
-// Restore a single record
-await repo.restore(post);
-await repo.restore({'id': postId});
+```dart file=../../examples/lib/soft_deletes.dart#soft-delete-restore
 
-// Restore using query callback
-await repo.restore(
-  (Query<$Post> q) => q.whereEquals('author_id', userId),
-);
 ```
 
 ### Force Delete
 
 Permanently remove a record (bypass soft delete):
 
-```dart
-// Permanently delete
-await repo.forceDelete(post);
-await repo.forceDelete({'id': postId});
+```dart file=../../examples/lib/soft_deletes.dart#soft-delete-force
+
 ```
 
 ## Checking Soft Delete Status
 
-```dart
-final post = await dataSource.query<$Post>()
-    .withTrashed()
-    .find(postId);
+```dart file=../../examples/lib/soft_deletes.dart#soft-delete-status
 
-if (post.trashed) {
-  print('Post was deleted at: ${post.deletedAt}');
-}
 ```
 
 ## Combining with Timestamps
 
 You can use both `Timestamps` and `SoftDeletes`:
 
-```dart
-@OrmModel(table: 'posts')
-class Post extends Model<Post> with Timestamps, SoftDeletes {
-  // ...
-}
+```dart file=../../examples/lib/soft_deletes.dart#soft-delete-combined-mixins
 
-// Or timezone-aware versions
-@OrmModel(table: 'posts')
-class Post extends Model<Post> with TimestampsTZ, SoftDeletesTZ {
-  // ...
-}
 ```
 
 Migration:
 
-```dart
-schema.create('posts', (table) {
-  table.id();
-  table.string('title');
-  table.timestampsTz();   // created_at, updated_at
-  table.softDeletesTz();  // deleted_at
-});
+```dart file=../../examples/lib/soft_deletes.dart#soft-delete-migration-combined
+
 ```
