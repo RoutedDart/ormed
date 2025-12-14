@@ -123,3 +123,18 @@ export 'exception.dart';
 
 // Link components
 export 'link.dart';
+
+// Search components
+export 'search.dart';
+
+// Anticipate/autocomplete components
+export 'anticipate.dart';
+
+// Password components
+export 'password.dart';
+
+// Textarea components
+export 'textarea.dart';
+
+// Wizard components
+export 'wizard.dart';

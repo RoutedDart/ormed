@@ -295,7 +295,7 @@ class UiSecretCommand extends ArtisanCommand<void> {
     io.text('Characters will not be echoed as you type.');
     io.newLine();
 
-    final password = io.secret(
+    final password = await io.secret(
       'Enter your password',
       fallback: useDefaults ? '***hidden***' : null,
     );
@@ -693,16 +693,17 @@ class UiSearchCommand extends ArtisanCommand<void> {
       'drift',
     ];
 
-    final search = SearchPrompt(
+    final context = ComponentContext(
       style: io.style,
-      stdin: dartio.stdin,
       stdout: dartio.stdout,
+      stdin: dartio.stdin,
+      terminalWidth: io.terminalWidth,
     );
 
-    final selected = await search.run(
+    final selected = await SearchComponent<String>(
       question: 'Select a package',
       choices: packages,
-    );
+    ).interact(context);
 
     io.newLine();
     if (selected != null) {
@@ -736,29 +737,31 @@ class UiPauseCommand extends ArtisanCommand<void> {
 
     io.title('Pause & Countdown');
 
+    final context = ComponentContext(
+      style: io.style,
+      stdout: dartio.stdout,
+      stdin: dartio.stdin,
+      terminalWidth: io.terminalWidth,
+    );
+
     if (showCountdown) {
       io.text('Starting countdown...');
       io.newLine();
 
-      await countdown(
+      await CountdownComponent(
         seconds: 5,
         message: 'Continuing in',
-        stdout: dartio.stdout,
-        style: io.style,
         onComplete: () {
           io.success('Countdown complete!');
         },
-      );
+      ).interact(context);
     } else {
       io.text('Press any key to continue after this message.');
       io.newLine();
 
-      await pause(
+      await PauseComponent(
         message: 'Press any key to continue...',
-        stdout: dartio.stdout,
-        stdin: dartio.stdin,
-        style: io.style,
-      );
+      ).interact(context);
 
       io.success('You pressed a key!');
     }
@@ -1070,20 +1073,19 @@ class UiPasswordCommand extends ArtisanCommand<void> {
     );
     io.newLine();
 
-    final secretInput = SecretInput(
+    final context = ComponentContext(
       style: io.style,
-      write: io.write,
-      writeln: io.writeln,
-      stdin: dartio.stdin,
       stdout: dartio.stdout,
+      stdin: dartio.stdin,
+      terminalWidth: io.terminalWidth,
     );
 
     try {
-      final password = secretInput.readPassword(
-        'Password',
+      final password = await PasswordComponent(
+        prompt: 'Password',
         confirm: confirm,
         confirmPrompt: 'Confirm password',
-      );
+      ).interact(context);
       io.newLine();
       io.success('Password set successfully!');
       io.twoColumnDetail('Length', '${password.length} characters');
@@ -1518,10 +1520,11 @@ class UiAnticipateCommand extends ArtisanCommand<void> {
     io.text('Type to see matching suggestions. Use arrow keys to navigate.');
     io.newLine();
 
-    final anticipate = Anticipate(
+    final context = ComponentContext(
       style: io.style,
-      stdin: dartio.stdin,
       stdout: dartio.stdout,
+      stdin: dartio.stdin,
+      terminalWidth: io.terminalWidth,
     );
 
     // Country selection
@@ -1548,11 +1551,11 @@ class UiAnticipateCommand extends ArtisanCommand<void> {
       'Austria',
     ];
 
-    final country = await anticipate.run(
+    final country = await AnticipateComponent(
       question: 'Select your country',
       suggestions: countries,
       defaultValue: 'United States',
-    );
+    ).interact(context);
 
     io.newLine();
     if (country != null) {
@@ -1582,10 +1585,10 @@ class UiAnticipateCommand extends ArtisanCommand<void> {
       'stream_transform',
     ];
 
-    final package = await anticipate.run(
+    final package = await AnticipateComponent(
       question: 'Select a package',
       suggestions: packages,
-    );
+    ).interact(context);
 
     io.newLine();
     if (package != null) {
@@ -1611,16 +1614,21 @@ class UiTextareaCommand extends ArtisanCommand<void> {
     io.text('Opens your default editor for multi-line input.');
     io.newLine();
 
-    final textarea = Textarea(style: io.style);
+    final context = ComponentContext(
+      style: io.style,
+      stdout: dartio.stdout,
+      stdin: dartio.stdin,
+      terminalWidth: io.terminalWidth,
+    );
 
     io.section('Simple Text Input');
     try {
-      final text = await textarea.edit(
+      final text = await TextareaComponent(
         prompt: 'Enter a description',
         helpText:
             'Enter your description below.\nLines starting with # are ignored.',
         initialContent: 'This is the default content.\nYou can edit it.',
-      );
+      ).interact(context);
 
       if (text != null && text.isNotEmpty) {
         io.success('Received ${text.split('\n').length} line(s):');
@@ -1661,9 +1669,17 @@ class UiWizardCommand extends ArtisanCommand<void> {
 
     io.title('Wizard / Multi-Step Flow');
 
-    final wizard = Wizard(
+    final context = ComponentContext(
+      style: io.style,
+      stdout: dartio.stdout,
+      stdin: dartio.stdin,
+      terminalWidth: io.terminalWidth,
+    );
+
+    final results = await WizardComponent(
       title: 'Create New Project',
       description: 'This wizard will guide you through creating a new project.',
+      noInteraction: nonInteractive,
       steps: [
         WizardStep.ask(
           'name',
@@ -1677,7 +1693,6 @@ class UiWizardCommand extends ArtisanCommand<void> {
             return null;
           },
         ),
-        // Interactive select with arrow keys!
         WizardStep.select(
           'template',
           'Project template',
@@ -1693,7 +1708,6 @@ class UiWizardCommand extends ArtisanCommand<void> {
           WizardStep.ask('git_remote', 'Git remote URL (optional)'),
           condition: (answers) => answers['git'] == true,
         ),
-        // Interactive multi-select with arrow keys and space to toggle!
         WizardStep.multiSelect(
           'features',
           'Select features to include',
@@ -1713,13 +1727,7 @@ class UiWizardCommand extends ArtisanCommand<void> {
           ],
         ),
       ],
-      style: io.style,
-      stdin: dartio.stdin,
-      stdout: dartio.stdout,
-      noInteraction: nonInteractive,
-    );
-
-    final results = await wizard.run();
+    ).interact(context);
 
     io.section('Wizard Results');
     io.components.horizontalTable({

@@ -51,14 +51,7 @@ export 'src/runner/command_runner.dart' show ArtisanCommandRunner;
 // I/O
 export 'src/io/artisan_io.dart' show ArtisanIO, ArtisanTaskResult;
 export 'src/io/components.dart' show ArtisanComponents;
-export 'src/io/prompts.dart'
-    show InteractiveChoice, SecretInput, ChoiceConfig, ChoiceResult;
-export 'src/io/search.dart' show SearchPrompt, SearchConfig, pause, countdown;
 export 'src/io/validators.dart' show Validators;
-export 'src/io/anticipate.dart' show Anticipate, AnticipateConfig;
-export 'src/io/textarea.dart' show Textarea, editText;
-export 'src/io/wizard.dart'
-    show Wizard, WizardStep, WizardStepResult, WizardContext;
 
 // Terminal utilities
 export 'src/output/terminal.dart' show Terminal, RawModeState, KeyCode;
@@ -126,3 +119,25 @@ export 'src/components/exception.dart'
 
 // Component System - Link
 export 'src/components/link.dart' show LinkComponent, LinkGroupComponent;
+
+// Component System - Search & Interactive
+export 'src/components/search.dart'
+    show
+        SearchComponent,
+        SearchComponentConfig,
+        PauseComponent,
+        CountdownComponent;
+
+// Component System - Anticipate/Autocomplete
+export 'src/components/anticipate.dart'
+    show AnticipateComponent, AnticipateComponentConfig;
+
+// Component System - Password
+export 'src/components/password.dart' show PasswordComponent;
+
+// Component System - Textarea
+export 'src/components/textarea.dart' show TextareaComponent;
+
+// Component System - Wizard
+export 'src/components/wizard.dart'
+    show WizardComponent, WizardStep, WizardStepResult;

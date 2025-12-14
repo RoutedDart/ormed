@@ -2,12 +2,13 @@ import 'dart:async';
 import 'dart:io' as io;
 
 import '../components/base.dart';
+import '../components/password.dart';
 import '../components/progress_bar.dart';
+import '../components/select.dart';
 import '../components/table.dart';
 import '../style/artisan_style.dart';
 import '../style/verbosity.dart';
 import 'components.dart';
-import 'prompts.dart';
 
 /// Callback for writing a complete line to output.
 typedef ArtisanWriteLine = void Function(String line);
@@ -380,7 +381,7 @@ class ArtisanIO {
   }
 
   /// Prompts for secret/password input (no echo).
-  String secret(String question, {String? fallback}) {
+  Future<String> secret(String question, {String? fallback}) async {
     if (!interactive) {
       if (fallback != null) return fallback;
       throw StateError('Cannot prompt in non-interactive mode.');
@@ -390,14 +391,10 @@ class ArtisanIO {
       return _secretReader(question, fallback: fallback);
     }
 
-    final secretInput = SecretInput(
-      style: style,
-      write: write,
-      writeln: writeln,
-      stdin: _stdin,
-      stdout: _stdout,
-    );
-    return secretInput.read(question, fallback: fallback);
+    return PasswordComponent(
+      prompt: question,
+      fallback: fallback ?? '',
+    ).interact(_componentContext);
   }
 
   /// Prompts for a choice from a list (basic numbered selection).
@@ -471,34 +468,12 @@ class ArtisanIO {
       throw StateError('Cannot prompt in non-interactive mode.');
     }
 
-    try {
-      final ic = InteractiveChoice(
-        style: style,
-        write: write,
-        writeln: writeln,
-        stdin: _stdin,
-        stdout: _stdout,
-      );
-      return await ic.select(
-        question,
-        choices: choices,
-        defaultIndex: defaultIndex,
-        display: display,
-      );
-    } catch (e) {
-      final displayFn = display ?? (v) => v.toString();
-      final items = choices.map(displayFn).toList();
-      final result =
-          choice(
-                question,
-                choices: items,
-                defaultIndex: defaultIndex,
-                multiSelect: false,
-              )
-              as String;
-      final index = items.indexOf(result);
-      return index >= 0 ? choices[index] : null;
-    }
+    return Select<T>(
+      prompt: question,
+      options: choices,
+      defaultIndex: defaultIndex ?? 0,
+      display: display,
+    ).interact(_componentContext);
   }
 
   /// Interactive multi-select with arrow-key navigation.
@@ -512,41 +487,14 @@ class ArtisanIO {
       return defaultSelected.map((i) => choices[i]).toList();
     }
 
-    try {
-      final ic = InteractiveChoice(
-        style: style,
-        write: write,
-        writeln: writeln,
-        stdin: _stdin,
-        stdout: _stdout,
-      );
-      return await ic.multiSelect(
-        question,
-        choices: choices,
-        defaultSelected: defaultSelected,
-        display: display,
-      );
-    } catch (e) {
-      final displayFn = display ?? (v) => v.toString();
-      final items = choices.map(displayFn).toList();
-      final result =
-          choice(
-                question,
-                choices: items,
-                defaultIndex: defaultSelected.isEmpty
-                    ? null
-                    : defaultSelected.first,
-                multiSelect: true,
-              )
-              as List<String>;
-      return result
-          .map((r) {
-            final index = items.indexOf(r);
-            return index >= 0 ? choices[index] : null;
-          })
-          .whereType<T>()
-          .toList();
-    }
+    final result = await MultiSelect<T>(
+      prompt: question,
+      options: choices,
+      defaultSelected: defaultSelected,
+      display: display,
+    ).interact(_componentContext);
+
+    return result ?? [];
   }
 
   // ─────────────────────────────────────────────────────────────────────────────

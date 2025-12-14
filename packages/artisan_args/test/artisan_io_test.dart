@@ -63,7 +63,7 @@ void main() {
   });
 
   group('secret()', () {
-    test('returns fallback in non-interactive mode', () {
+    test('returns fallback in non-interactive mode', () async {
       final io = ArtisanIO(
         style: ArtisanStyle(ansi: false),
         out: (_) {},
@@ -71,10 +71,10 @@ void main() {
         interactive: false,
       );
 
-      expect(io.secret('Password', fallback: 'default123'), 'default123');
+      expect(await io.secret('Password', fallback: 'default123'), 'default123');
     });
 
-    test('throws in non-interactive mode without fallback', () {
+    test('throws in non-interactive mode without fallback', () async {
       final io = ArtisanIO(
         style: ArtisanStyle(ansi: false),
         out: (_) {},
@@ -85,7 +85,7 @@ void main() {
       expect(() => io.secret('Password'), throwsStateError);
     });
 
-    test('uses injected secretReader when provided', () {
+    test('uses injected secretReader when provided', () async {
       final io = ArtisanIO(
         style: ArtisanStyle(ansi: false),
         out: (_) {},
@@ -94,7 +94,7 @@ void main() {
         secretReader: (prompt, {fallback}) => 'injected-secret',
       );
 
-      expect(io.secret('Password'), 'injected-secret');
+      expect(await io.secret('Password'), 'injected-secret');
     });
   });
 
