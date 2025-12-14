@@ -252,7 +252,7 @@ class FieldDefinition {
     required this.columnName,
     required this.dartType,
     required this.resolvedType,
-    required this.isPrimaryKey,
+    this.isPrimaryKey =false,
     required this.isNullable,
     this.isUnique = false,
     this.isIndexed = false,

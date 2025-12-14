@@ -1,10 +1,20 @@
+import 'dart:async';
 import 'dart:math';
+
+import 'package:carbonized/carbonized.dart';
 
 import 'model.dart';
 import 'model_definition.dart';
 import 'contracts.dart';
 import 'query/query.dart';
 import 'value_codec.dart';
+
+/// Signature for state transformation closures.
+typedef StateTransformer<TModel extends OrmEntity> = Map<String, Object?>
+    Function(Map<String, Object?> attributes);
+
+/// Signature for sequence generators.
+typedef SequenceGenerator = Map<String, Object?> Function(int index);
 
 /// Context passed to generators while building factory output.
 class ModelFactoryGenerationContext<TModel extends OrmEntity> {
@@ -65,6 +75,9 @@ class DefaultFieldGeneratorProvider extends GeneratorProvider {
         Duration(seconds: context.random.nextInt(60 * 60 * 24)),
       );
     }
+    if (type == 'Carbon' || type == 'CarbonInterface') {
+      return Carbon.now().addSeconds(context.random.nextInt(60 * 60 * 24));
+    }
     if (type == 'String') {
       final suffix = context.random.nextInt(10000).toString().padLeft(4, '0');
       return '${context.definition.modelName}_${field.name}_$suffix';
@@ -96,8 +109,16 @@ class ModelFactoryBuilder<TModel extends OrmEntity> {
 
   final Map<String, Object?> _overrides = {};
   final Map<String, FieldValueGenerator<TModel>> _fieldGenerators = {};
+  final List<StateTransformer<TModel>> _stateTransformers = [];
+  final List<void Function(TModel)> _afterMakingCallbacks = [];
+  final List<FutureOr<void> Function(TModel)> _afterCreatingCallbacks = [];
 
   int? _seed;
+  int? _count;
+  List<Map<String, Object?>>? _sequence;
+  SequenceGenerator? _sequenceGenerator;
+  bool _trashed = false;
+  DateTime? _trashedAt;
   Map<String, Object?>? _generatedValues;
   Random? _random;
 
@@ -110,6 +131,74 @@ class ModelFactoryBuilder<TModel extends OrmEntity> {
   /// Sets a deterministic seed for the factory output.
   ModelFactoryBuilder<TModel> seed(int seed) {
     _seed = seed;
+    _invalidate();
+    return this;
+  }
+
+  /// Sets the number of models to create.
+  /// When count > 1, use [makeMany] or [createMany] to get a list.
+  ModelFactoryBuilder<TModel> count(int count) {
+    if (count < 1) {
+      throw ArgumentError.value(count, 'count', 'Must be at least 1');
+    }
+    _count = count;
+    return this;
+  }
+
+  /// Applies a state transformation using a map of attributes.
+  /// Multiple states can be chained and will be applied in order.
+  ModelFactoryBuilder<TModel> state(Map<String, Object?> attributes) {
+    _stateTransformers.add((_) => attributes);
+    _invalidate();
+    return this;
+  }
+
+  /// Applies a state transformation using a closure.
+  /// The closure receives the current attributes and returns modifications.
+  ModelFactoryBuilder<TModel> stateUsing(StateTransformer<TModel> transformer) {
+    _stateTransformers.add(transformer);
+    _invalidate();
+    return this;
+  }
+
+  /// Defines a sequence of attribute sets to cycle through when creating multiple models.
+  /// Each model will use the next set in the sequence (wrapping around).
+  ModelFactoryBuilder<TModel> sequence(List<Map<String, Object?>> states) {
+    if (states.isEmpty) {
+      throw ArgumentError.value(states, 'states', 'Must not be empty');
+    }
+    _sequence = states;
+    _sequenceGenerator = null;
+    return this;
+  }
+
+  /// Defines a sequence using a generator function.
+  /// The function receives the index (0-based) and returns attributes.
+  ModelFactoryBuilder<TModel> sequenceUsing(SequenceGenerator generator) {
+    _sequenceGenerator = generator;
+    _sequence = null;
+    return this;
+  }
+
+  /// Registers a callback to run after each model is made (but not persisted).
+  ModelFactoryBuilder<TModel> afterMaking(void Function(TModel model) callback) {
+    _afterMakingCallbacks.add(callback);
+    return this;
+  }
+
+  /// Registers a callback to run after each model is created and persisted.
+  ModelFactoryBuilder<TModel> afterCreating(
+    FutureOr<void> Function(TModel model) callback,
+  ) {
+    _afterCreatingCallbacks.add(callback);
+    return this;
+  }
+
+  /// Marks the model as soft-deleted.
+  /// Only works for models with soft delete support.
+  ModelFactoryBuilder<TModel> trashed([DateTime? deletedAt]) {
+    _trashed = true;
+    _trashedAt = deletedAt;
     _invalidate();
     return this;
   }
@@ -141,9 +230,10 @@ class ModelFactoryBuilder<TModel extends OrmEntity> {
   }
 
   /// Builds the column map the factory would use for a new model.
+  /// This returns the values for index 0 (first model) including all
+  /// state transformations and trashed status.
   Map<String, Object?> values() {
-    _ensureValues();
-    return Map<String, Object?>.unmodifiable(_generatedValues!);
+    return _valuesForIndex(0);
   }
 
   /// Returns a single column value from the generated map.
@@ -152,13 +242,33 @@ class ModelFactoryBuilder<TModel extends OrmEntity> {
     return values()[column];
   }
 
-  /// Instantiates the model without persisting it.
+  /// Instantiates a single model without persisting it.
+  /// If [count] was set, this returns the first model only.
+  /// Use [makeMany] to get all models when count > 1.
   TModel make({ValueCodecRegistry? registry}) {
     final payload = values();
-    return definition.fromMap(payload, registry: registry);
+    final model = definition.fromMap(payload, registry: registry);
+    _runAfterMakingCallbacks(model);
+    return model;
   }
 
-  /// Persists the generated model through the ORM.
+  /// Instantiates multiple models without persisting them.
+  /// Returns a list with [count] models (defaults to 1 if count not set).
+  List<TModel> makeMany({ValueCodecRegistry? registry}) {
+    final total = _count ?? 1;
+    final models = <TModel>[];
+    for (var i = 0; i < total; i++) {
+      final payload = _valuesForIndex(i);
+      final model = definition.fromMap(payload, registry: registry);
+      _runAfterMakingCallbacks(model);
+      models.add(model);
+    }
+    return models;
+  }
+
+  /// Persists a single generated model through the ORM.
+  /// If [count] was set, this creates and returns only the first model.
+  /// Use [createMany] to persist all models when count > 1.
   Future<TModel> create({
     QueryContext? context,
     bool returning = true,
@@ -169,11 +279,105 @@ class ModelFactoryBuilder<TModel extends OrmEntity> {
       model.attachConnectionResolver(context);
     }
     if (model is Model) {
-      return model.save(returning: returning) as TModel;
+      final saved = await model.save(returning: returning) as TModel;
+      await _runAfterCreatingCallbacks(saved);
+      return saved;
     }
     throw StateError(
       'Cannot persist $TModel because it does not extend Model.',
     );
+  }
+
+  /// Persists multiple generated models through the ORM.
+  /// Returns a list with [count] persisted models (defaults to 1 if count not set).
+  Future<List<TModel>> createMany({
+    QueryContext? context,
+    bool returning = true,
+    ValueCodecRegistry? registry,
+  }) async {
+    final total = _count ?? 1;
+    final models = <TModel>[];
+    for (var i = 0; i < total; i++) {
+      final payload = _valuesForIndex(i);
+      final model = definition.fromMap(payload, registry: registry);
+      _runAfterMakingCallbacks(model);
+
+      if (context != null && model is Model) {
+        model.attachConnectionResolver(context);
+      }
+      if (model is Model) {
+        final saved = await model.save(returning: returning) as TModel;
+        await _runAfterCreatingCallbacks(saved);
+        models.add(saved);
+      } else {
+        throw StateError(
+          'Cannot persist $TModel because it does not extend Model.',
+        );
+      }
+    }
+    return models;
+  }
+
+  void _runAfterMakingCallbacks(TModel model) {
+    for (final callback in _afterMakingCallbacks) {
+      callback(model);
+    }
+  }
+
+  Future<void> _runAfterCreatingCallbacks(TModel model) async {
+    for (final callback in _afterCreatingCallbacks) {
+      await callback(model);
+    }
+  }
+
+  /// Generates values for a specific index (used for sequences and batch creation).
+  /// For index 0, uses cached values. For index > 0, generates fresh values.
+  Map<String, Object?> _valuesForIndex(int index) {
+    // For batch creation (index > 0), we need fresh random values
+    // For index 0, we can use cached values for consistency
+    if (index > 0) {
+      _generatedValues = null;
+      _random = null;
+    }
+
+    // Apply sequence overrides for this index
+    Map<String, Object?>? sequenceOverrides;
+    if (_sequence != null && _sequence!.isNotEmpty) {
+      sequenceOverrides = _sequence![index % _sequence!.length];
+    } else if (_sequenceGenerator != null) {
+      sequenceOverrides = _sequenceGenerator!(index);
+    }
+
+    // Generate base values
+    _ensureValues();
+    var result = Map<String, Object?>.from(_generatedValues!);
+
+    // Apply state transformers
+    for (final transformer in _stateTransformers) {
+      final stateOverrides = transformer(result);
+      for (final entry in stateOverrides.entries) {
+        final column = _canonicalColumn(entry.key);
+        result[column] = entry.value;
+      }
+    }
+
+    // Apply sequence overrides
+    if (sequenceOverrides != null) {
+      for (final entry in sequenceOverrides.entries) {
+        final column = _canonicalColumn(entry.key);
+        result[column] = entry.value;
+      }
+    }
+
+    // Apply trashed state
+    if (_trashed) {
+      final softDeleteColumn = definition.softDeleteColumn;
+      if (softDeleteColumn != null) {
+        result[softDeleteColumn] = _trashedAt ?? DateTime.now().toUtc();
+      }
+    }
+
+    return result;
   }
 
   void _ensureValues() {
