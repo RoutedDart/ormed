@@ -1294,6 +1294,9 @@ class PostgresDriverAdapter
     final targetAlias = _quote('__orm_delete_target');
     final sourceAlias = _quote('__orm_delete_source');
     final pkIdentifier = _quote(primaryKey);
+    final returning = plan.returning
+        ? ' RETURNING ${_returningColumnsWithAlias(plan.definition, targetAlias)}'
+        : '';
     final sql = StringBuffer('DELETE FROM ')
       ..write(table)
       ..write(' AS ')
@@ -1303,10 +1306,12 @@ class PostgresDriverAdapter
       ..write(') AS ')
       ..write(sourceAlias)
       ..write(' WHERE ')
-      ..write('$sourceAlias.$pkIdentifier = $targetAlias.$pkIdentifier');
+      ..write('$sourceAlias.$pkIdentifier = $targetAlias.$pkIdentifier')
+      ..write(returning);
     return _PostgresMutationShape(
       sql: sql.toString(),
       parameterSets: [compilation.bindings.toList(growable: false)],
+      returnsRows: plan.returning,
     );
   }
 
@@ -1390,6 +1395,9 @@ class PostgresDriverAdapter
       return _PostgresMutationShape.empty();
     }
     final target = _tableIdentifier(plan.definition);
+    final returning = plan.returning
+        ? ' RETURNING ${_returningColumnsWithAlias(plan.definition, baseReference)}'
+        : '';
     final sql = StringBuffer('UPDATE $target SET ')
       ..write(assignments.join(', '))
       ..write(' FROM (')
@@ -1398,12 +1406,13 @@ class PostgresDriverAdapter
       ..write(sourceAlias)
       ..write(' WHERE ')
       ..write('$baseReference.$keyAlias = ')
-      ..write('$sourceAlias.$keyAlias');
+      ..write('$sourceAlias.$keyAlias')
+      ..write(returning);
     parameters.addAll(compilation.bindings);
     return _PostgresMutationShape(
       sql: sql.toString(),
       parameterSets: [parameters],
-      returnsRows: false,
+      returnsRows: plan.returning,
     );
   }
 
@@ -1642,6 +1651,18 @@ class PostgresDriverAdapter
       return '*';
     }
     return definition.fields.map((f) => _quote(f.columnName)).join(', ');
+  }
+
+  String _returningColumnsWithAlias(
+    ModelDefinition<OrmEntity> definition,
+    String alias,
+  ) {
+    if (definition.fields.isEmpty) {
+      return '$alias.*';
+    }
+    return definition.fields
+        .map((f) => '$alias.${_quote(f.columnName)}')
+        .join(', ');
   }
 
   Future<Connection> _connection() async {
