@@ -31,6 +31,14 @@ class SqliteDriverAdapter
         final typeKey = mapping.dartType.toString();
         codecs[typeKey] = mapping.codec!;
         codecs['$typeKey?'] = mapping.codec!; // Nullable variant
+
+        // Register common generic variants for Map type
+        if (mapping.dartType == Map) {
+          codecs['Map<String, Object?>'] = mapping.codec!;
+          codecs['Map<String, Object?>?'] = mapping.codec!;
+          codecs['Map<String, dynamic>'] = mapping.codec!;
+          codecs['Map<String, dynamic>?'] = mapping.codec!;
+        }
       }
     }
     ValueCodecRegistry.instance.registerDriver('sqlite', codecs);

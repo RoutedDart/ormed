@@ -21,17 +21,24 @@ void main() {
     test('repository insert uses driver metadata name', () async {
       final definition = DriverOverrideModelOrmDefinition.definition;
       late MutationPlan captured;
-      final repo = Repository<DriverOverrideModel>(
-        definition: definition,
-        driverName: 'postgres',
-        runMutation: (plan) async {
+
+      // Create a mock driver that captures mutation plans
+      final driver = _MockDriver(
+        onMutation: (plan) {
           captured = plan;
-          return const MutationResult(affectedRows: 0);
+          return const MutationResult(
+            affectedRows: 1,
+            returnedRows: [
+              {'id': 1, 'payload': {'theme': 'dark', 'encoded_by': 'postgres'}},
+            ],
+          );
         },
-        describeMutation: (_) =>
-            const StatementPreview(payload: SqlStatementPayload(sql: '')),
-        attachRuntimeMetadata: (_) {},
       );
+
+      final registry = ModelRegistry()..registerGeneratedModels();
+      final context = QueryContext(registry: registry, driver: driver);
+
+      final repo = context.repository<DriverOverrideModel>();
 
       await repo.insert(
         const DriverOverrideModel(id: 1, payload: {'theme': 'dark'}),
@@ -73,4 +80,67 @@ void main() {
       expect(decoded.payload.containsKey('encoded_by'), isFalse);
     });
   });
+}
+
+/// Mock driver that allows capturing mutation plans.
+class _MockDriver implements DriverAdapter {
+  _MockDriver({required this.onMutation});
+
+  final MutationResult Function(MutationPlan plan) onMutation;
+
+  @override
+  DriverMetadata get metadata => const DriverMetadata(
+    name: 'postgres',
+    capabilities: {DriverCapability.advancedQueryBuilders},
+  );
+
+  @override
+  ValueCodecRegistry get codecs => ValueCodecRegistry.instance;
+
+  @override
+  PlanCompiler get planCompiler => fallbackPlanCompiler();
+
+  @override
+  Future<MutationResult> runMutation(MutationPlan plan) async => onMutation(plan);
+
+  @override
+  StatementPreview describeMutation(MutationPlan plan) =>
+      const StatementPreview(payload: SqlStatementPayload(sql: ''));
+
+  @override
+  Future<List<Map<String, Object?>>> execute(QueryPlan plan) async => [];
+
+  @override
+  Stream<Map<String, Object?>> stream(QueryPlan plan) => const Stream.empty();
+
+  @override
+  StatementPreview describeQuery(QueryPlan plan) =>
+      const StatementPreview(payload: SqlStatementPayload(sql: ''));
+
+  @override
+  Future<void> close() async {}
+
+  @override
+  Future<void> executeRaw(String sql, [List<Object?> parameters = const []]) async {}
+
+  @override
+  Future<List<Map<String, Object?>>> queryRaw(String sql, [List<Object?> parameters = const []]) async => [];
+
+  @override
+  Future<R> transaction<R>(Future<R> Function() action) => Future.sync(action);
+
+  @override
+  Future<void> beginTransaction() async {}
+
+  @override
+  Future<void> commitTransaction() async {}
+
+  @override
+  Future<void> rollbackTransaction() async {}
+
+  @override
+  Future<void> truncateTable(String tableName) async {}
+
+  @override
+  Future<int?> threadCount() async => null;
 }

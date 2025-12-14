@@ -1001,10 +1001,27 @@ extension CrudExtension<T extends OrmEntity> on Query<T> {
           final normalized = _normalizeAttributeKeys(baseValues);
 
           Map<String, Object?> values;
+          List<JsonUpdateClause> jsonUpdates = const [];
+
           if (input is T) {
             values = normalized;
             if (input is! ModelAttributes) {
               helper.ensureTimestampsInMap(values, isInsert: true);
+            }
+            // Extract JSON updates from tracked models
+            if (input is ModelAttributes) {
+              final attrs = input as ModelAttributes;
+              final pending = attrs.takeJsonAttributeUpdates();
+              if (pending.isNotEmpty) {
+                jsonUpdates = pending.map((update) {
+                  final column = _resolveColumnName(update.fieldOrColumn);
+                  return JsonUpdateClause(
+                    column: column,
+                    path: update.path,
+                    value: update.value,
+                  );
+                }).toList();
+              }
             }
           } else {
             final model = definition.codec.decode(
@@ -1033,9 +1050,19 @@ extension CrudExtension<T extends OrmEntity> on Query<T> {
           if (input is! ModelAttributes) {
             helper.ensureTimestampsInMap(values, isInsert: true);
           }
-          return MutationRow(values: values, keys: const {});
+          return MutationRow(values: values, keys: const {}, jsonUpdates: jsonUpdates);
         })
         .toList(growable: false);
+  }
+
+  /// Resolves a field name or column name to its column name.
+  String _resolveColumnName(String nameOrColumn) {
+    for (final field in definition.fields) {
+      if (field.name == nameOrColumn || field.columnName == nameOrColumn) {
+        return field.columnName;
+      }
+    }
+    return nameOrColumn;
   }
 
   MutationPlan _buildUpsertPlan(
@@ -1044,12 +1071,24 @@ extension CrudExtension<T extends OrmEntity> on Query<T> {
     List<String>? updateColumns,
     required bool returning,
   }) {
+    // Default to primary key if uniqueBy not specified
+    List<String>? resolvedUniqueBy;
+    if (uniqueBy != null) {
+      resolvedUniqueBy =
+          uniqueBy.map(_ensureField).map((f) => f.columnName).toList();
+    } else {
+      final pk = definition.primaryKeyField;
+      if (pk != null) {
+        resolvedUniqueBy = [pk.columnName];
+      }
+    }
+
     return MutationPlan.upsert(
       definition: definition,
       rows: rows,
       driverName: context.driver.metadata.name,
       returning: returning,
-      uniqueBy: uniqueBy?.map(_ensureField).map((f) => f.columnName).toList(),
+      uniqueBy: resolvedUniqueBy,
       updateColumns: updateColumns
           ?.map(_ensureField)
           .map((f) => f.columnName)

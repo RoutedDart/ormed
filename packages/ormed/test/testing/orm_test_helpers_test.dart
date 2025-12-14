@@ -5,6 +5,9 @@ import 'package:test/test.dart';
 
 /// Test demonstrating ormedGroup usage
 Future<void> main() async {
+  // Register SQLite-specific codecs before using SQLite
+  SqliteDriverAdapter.registerCodecs();
+
   final dataSource = DataSource(
     DataSourceOptions(
       name: 'test_orm_helpers',
