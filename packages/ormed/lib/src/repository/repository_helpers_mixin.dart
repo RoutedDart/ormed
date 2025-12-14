@@ -2,6 +2,17 @@ part of 'repository.dart';
 
 /// Mixin that provides internal helper methods for repository operations.
 mixin RepositoryHelpersMixin<T extends OrmEntity> on RepositoryBase<T> {
+  Query<T>? get _queryOrNull =>
+      queryContext?.queryFromDefinition<T>(definition);
+
+  Query<T> _requireQuery(String method) {
+    final q = _queryOrNull;
+    if (q != null) return q;
+    throw StateError(
+      '$method requires a QueryContext; construct Repository via QueryContext.repository() or Model.repository() with a registered connection.',
+    );
+  }
+
   MutationRow mutationRowFromModel(
     T model, {
     JsonUpdateBuilder<T>? jsonUpdates,
@@ -72,7 +83,10 @@ mixin RepositoryHelpersMixin<T extends OrmEntity> on RepositoryBase<T> {
         final Map<String, Object?> mergedData;
         if (originalModel != null) {
           // Merge returned data (e.g., auto-generated PK) with original model data
-          final originalData = definition.toMap(originalModel, registry: codecs);
+          final originalData = definition.toMap(
+            originalModel,
+            registry: codecs,
+          );
           mergedData = {...originalData, ...returnedRow};
         } else if (inputMap != null) {
           // For DTOs/Maps, merge returned data with the input map
@@ -119,131 +133,6 @@ mixin RepositoryHelpersMixin<T extends OrmEntity> on RepositoryBase<T> {
     return const [];
   }
 
-  /// Builds an insert plan from tracked models only.
-  ///
-  /// This is the legacy method that only accepts tracked models.
-  /// For DTOs and Maps, use `buildInsertPlanFromInputs` from the insert mixin.
-  MutationPlan buildInsertPlan(
-    List<T> models, {
-    required bool returning,
-    bool ignoreConflicts = false,
-  }) {
-    final rows = models
-        .map((model) {
-          // Apply timestamps to tracked models BEFORE serialization
-          _applyInsertTimestampsToModel(model);
-
-          final map = definition.toMap(model, registry: codecs);
-
-          // Filter out non-insertable fields and auto-increment fields with sentinel values
-          final filtered = Map<String, Object?>.from(map);
-          for (final field in definition.fields) {
-            // Skip fields marked as non-insertable
-            if (!field.isInsertable) {
-              final value = map[field.columnName];
-              // Only remove if value is a sentinel (null, -1, 0, empty string)
-              // This allows explicitly set values to pass through
-              if (_isSentinelValue(value, field)) {
-                filtered.remove(field.columnName);
-              }
-            }
-          }
-
-          // For non-tracked models (const instances), add timestamps to the map
-          _ensureTimestampsInMap(filtered, isInsert: true);
-
-          return filtered;
-        })
-        .toList(growable: false);
-
-    return MutationPlan.insert(
-      definition: definition,
-      rows: rows,
-      driverName: driverName,
-      returning: returning,
-      ignoreConflicts: ignoreConflicts,
-    );
-  }
-
-  /// Checks if a value is a sentinel value indicating "not set".
-  ///
-  /// For auto-increment fields, sentinel values include:
-  /// - `null`
-  /// - `-1` (common sentinel for int IDs)
-  /// - `0` (alternative sentinel)
-  /// - Empty string (for non-int PKs)
-  bool _isSentinelValue(Object? value, FieldDefinition field) {
-    if (value == null) return true;
-    if (field.autoIncrement) {
-      if (value == 0 || value == -1) return true;
-    }
-    if (value == '') return true;
-    // Check against configured default dart value
-    if (field.defaultDartValue != null && value == field.defaultDartValue) {
-      return true;
-    }
-    return false;
-  }
-
-  MutationPlan buildUpdatePlan(
-    List<T> models, {
-    required bool returning,
-    JsonUpdateBuilder<T>? jsonUpdates,
-  }) {
-    final rows = models
-        .map((model) {
-          // Apply timestamps to tracked models BEFORE serialization
-          _applyUpdateTimestampsToModel(model);
-
-          final row = mutationRowFromModel(model, jsonUpdates: jsonUpdates);
-
-          // For non-tracked models, ensure updated_at in the map
-          _ensureTimestampsInMap(row.values, isInsert: false);
-
-          return row;
-        })
-        .toList(growable: false);
-    return MutationPlan.update(
-      definition: definition,
-      rows: rows,
-      driverName: driverName,
-      returning: returning,
-    );
-  }
-
-  MutationPlan buildUpsertPlan(
-    List<T> models, {
-    required bool returning,
-    List<String>? uniqueBy,
-    List<String>? updateColumns,
-    JsonUpdateBuilder<T>? jsonUpdates,
-  }) {
-    final rows = models
-        .map((model) => mutationRowFromModel(model, jsonUpdates: jsonUpdates))
-        .toList(growable: false);
-    final uniqueColumns = resolveColumnNames(uniqueBy);
-    final updateColumnNames = resolveColumnNames(updateColumns);
-    return MutationPlan.upsert(
-      definition: definition,
-      rows: rows,
-      driverName: driverName,
-      returning: returning,
-      uniqueBy: uniqueColumns,
-      updateColumns: updateColumnNames,
-    );
-  }
-
-  MutationPlan buildDeletePlan(List<Map<String, Object?>> keys) {
-    final rows = keys
-        .map((conditions) => MutationRow(values: const {}, keys: conditions))
-        .toList(growable: false);
-    return MutationPlan.delete(
-      definition: definition,
-      rows: rows,
-      driverName: driverName,
-    );
-  }
-
   void requireModels(List<T> models, String method) {
     if (models.isEmpty) {
       throw ArgumentError.value(models, 'models', '$method requires models');
@@ -287,37 +176,9 @@ mixin RepositoryHelpersMixin<T extends OrmEntity> on RepositoryBase<T> {
     T model,
     JsonUpdateBuilder<T>? builder,
   ) {
-    final clauses = <JsonUpdateClause>[];
-    if (builder != null) {
-      final definitions = builder(model);
-      for (final candidate in definitions) {
-        clauses.add(toJsonUpdateClause(candidate));
-      }
-    }
-    if (model is ModelAttributes) {
-      final attrs = model as ModelAttributes;
-      final pending = attrs.takeJsonAttributeUpdates();
-      for (final update in pending) {
-        clauses.add(
-          JsonUpdateClause(
-            column: resolveColumnName(update.fieldOrColumn),
-            path: update.path,
-            value: update.value,
-            patch: update.patch,
-          ),
-        );
-      }
-    }
-    return clauses;
+    final support = JsonUpdateSupport<T>(definition);
+    return support.buildJsonUpdates(model, builder);
   }
-
-  JsonUpdateClause toJsonUpdateClause(JsonUpdateDefinition definition) =>
-      JsonUpdateClause(
-        column: resolveColumnName(definition.fieldOrColumn),
-        path: definition.path,
-        value: definition.value,
-        patch: definition.patch,
-      );
 
   String resolveColumnName(String input) {
     for (final field in definition.fields) {

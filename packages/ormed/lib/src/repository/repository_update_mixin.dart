@@ -7,7 +7,10 @@ part of 'repository.dart';
 /// - Update DTOs (`$ModelUpdateDto`)
 /// - Raw maps (`Map<String, Object?>`)
 mixin RepositoryUpdateMixin<T extends OrmEntity>
-    on RepositoryBase<T>, RepositoryHelpersMixin<T>, RepositoryInputHandlerMixin<T> {
+    on
+        RepositoryBase<T>,
+        RepositoryHelpersMixin<T>,
+        RepositoryInputHandlerMixin<T> {
   /// Updates a single [model] in the database and returns the updated record.
   ///
   /// Accepts tracked models, update DTOs, or raw maps.
@@ -86,26 +89,8 @@ mixin RepositoryUpdateMixin<T extends OrmEntity>
   }) async {
     if (inputs.isEmpty) return const [];
 
-    final plan = buildUpdatePlanFromInputs(
-      inputs,
-      where: where,
-      jsonUpdates: jsonUpdates,
-    );
-    final result = await runMutation(plan);
-
-    final originalModels = inputs.whereType<T>().toList();
-
-    // Extract the input maps from the plan for merging with returned data
-    // For updates, include both values and keys to have complete data
-    final inputMaps = plan.rows.map((r) => {...r.values, ...r.keys}).toList();
-
-    return mapResultWithInputs(
-      originalModels,
-      inputMaps,
-      result,
-      true,
-      canCreateFromInputs: false,
-    );
+    final query = _requireQuery('updateMany');
+    return query.updateInputs(inputs, where: where, jsonUpdates: jsonUpdates);
   }
 
   /// Updates multiple items in the database and returns the raw result.
@@ -118,87 +103,11 @@ mixin RepositoryUpdateMixin<T extends OrmEntity>
   }) async {
     if (inputs.isEmpty) return const MutationResult(affectedRows: 0);
 
-    final plan = buildUpdatePlanFromInputs(
+    final query = _requireQuery('updateManyRaw');
+    return query.updateInputsRaw(
       inputs,
       where: where,
       jsonUpdates: jsonUpdates,
-    );
-    return runMutation(plan);
-  }
-
-  /// Builds an update plan from various input types.
-  ///
-  /// The [where] parameter accepts:
-  /// - `Map<String, Object?>` - Raw column/value pairs
-  /// - `$ModelPartial` - Partial entity with the fields to match
-  /// - `$ModelUpdateDto` or `$ModelInsertDto` - DTO with fields to match
-  /// - Tracked model (`$Model`) - Uses all column values for matching
-  MutationPlan buildUpdatePlanFromInputs(
-    List<Object> inputs, {
-    Object? where,
-    JsonUpdateBuilder<T>? jsonUpdates,
-  }) {
-    // Convert the where input to a map once
-    final whereMap = whereInputToMap(where);
-
-    final rows = inputs.map((input) {
-      // Apply timestamps to tracked models before serialization
-      if (input is T) {
-        _applyUpdateTimestampsToModel(input);
-      }
-
-      final values = updateInputToMap(input);
-
-      // For non-tracked models, ensure updated_at in the map
-      if (input is! ModelAttributes) {
-        _ensureTimestampsInMap(values, isInsert: false);
-      }
-
-      // Determine keys for the update
-      final Map<String, Object?> keys;
-      if (input is T) {
-        // For tracked models, extract PK from the model
-        final pkField = definition.primaryKeyField;
-        if (pkField == null) {
-          throw StateError(
-            'Primary key required for updates on ${definition.modelName}.',
-          );
-        }
-        final allValues = definition.toMap(input, registry: codecs);
-        final pkValue = allValues[pkField.columnName];
-        if (pkValue == null) {
-          throw StateError('Primary key cannot be null for update.');
-        }
-        keys = {pkField.columnName: pkValue};
-      } else if (whereMap != null) {
-        // For DTOs/maps, use the provided where clause (already normalized)
-        keys = whereMap;
-      } else {
-        // Try to extract PK from the input
-        final pk = extractPrimaryKey(input);
-        if (pk == null) {
-          throw ArgumentError(
-            'Update with DTO or Map requires a "where" clause or PK in the data.',
-          );
-        }
-        final pkField = definition.primaryKeyField!;
-        keys = {pkField.columnName: pk};
-      }
-
-      final jsonClauses = input is T ? jsonUpdatesFor(input, jsonUpdates) : <JsonUpdateClause>[];
-
-      return MutationRow(
-        values: values,
-        keys: keys,
-        jsonUpdates: jsonClauses,
-      );
-    }).toList(growable: false);
-
-    return MutationPlan.update(
-      definition: definition,
-      rows: rows,
-      driverName: driverName,
-      returning: true,
     );
   }
 }

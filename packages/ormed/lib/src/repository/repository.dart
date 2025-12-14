@@ -7,8 +7,10 @@ import '../driver/driver.dart';
 import '../contracts.dart';
 import '../model_definition.dart';
 import '../model_mixins/model_attributes.dart';
-import '../query/json_path.dart' as json_path;
+import '../mutation/json_update.dart';
+import '../mutation/mutation_input_helper.dart';
 import '../value_codec.dart';
+import '../query/query.dart';
 
 // Part files for repository mixins
 part 'repository_insert_mixin.dart';
@@ -18,8 +20,7 @@ part 'repository_delete_mixin.dart';
 part 'repository_preview_mixin.dart';
 part 'repository_helpers_mixin.dart';
 part 'repository_input_handler.dart';
-
-typedef JsonUpdateBuilder<T extends OrmEntity> = List<JsonUpdateDefinition> Function(T model);
+part 'repository_read_mixin.dart';
 
 /// Base class for repositories.
 ///
@@ -32,6 +33,7 @@ abstract class RepositoryBase<T extends OrmEntity> {
   Future<MutationResult> Function(MutationPlan plan) get runMutation;
   StatementPreview Function(MutationPlan plan) get describeMutation;
   void Function(Object? model) get attachRuntimeMetadata;
+  QueryContext? get queryContext;
 }
 
 /// A repository for a model of type [T].
@@ -54,24 +56,33 @@ class Repository<T extends OrmEntity> extends RepositoryBase<T>
         RepositoryUpdateMixin<T>,
         RepositoryUpsertMixin<T>,
         RepositoryDeleteMixin<T>,
-        RepositoryPreviewMixin<T> {
+        RepositoryPreviewMixin<T>,
+        RepositoryReadMixin<T> {
   Repository({
     required ModelDefinition<T> definition,
     required String driverName,
     required Future<MutationResult> Function(MutationPlan plan) runMutation,
     required StatementPreview Function(MutationPlan plan) describeMutation,
     required void Function(Object? model) attachRuntimeMetadata,
-  }) : _definition = definition,
+    QueryContext? context,
+  }) : assert(
+         context != null,
+         'Repository now delegates entirely to the query builder and requires a QueryContext. '
+         'Construct via QueryContext.repository() or Model.repository(connection: ...).',
+       ),
+       _definition = definition,
        _driverName = driverName,
        _runMutation = runMutation,
        _describeMutation = describeMutation,
-       _attachRuntimeMetadata = attachRuntimeMetadata;
+       _attachRuntimeMetadata = attachRuntimeMetadata,
+       _queryContext = context;
 
   final ModelDefinition<T> _definition;
   final String _driverName;
   final Future<MutationResult> Function(MutationPlan plan) _runMutation;
   final StatementPreview Function(MutationPlan plan) _describeMutation;
   final void Function(Object? model) _attachRuntimeMetadata;
+  final QueryContext? _queryContext;
 
   @override
   ModelDefinition<T> get definition => _definition;
@@ -94,78 +105,7 @@ class Repository<T extends OrmEntity> extends RepositoryBase<T>
   @override
   void Function(Object? model) get attachRuntimeMetadata =>
       _attachRuntimeMetadata;
-}
 
-/// Defines a JSON update operation.
-class JsonUpdateDefinition {
-  /// Creates a new [JsonUpdateDefinition].
-  ///
-  /// The [fieldOrColumn] is the name of the field or column to update.
-  /// The [path] is the JSON path to the value to update.
-  /// The [value] is the new value.
-  /// If [patch] is `true`, the [value] is merged with the existing value.
-  JsonUpdateDefinition({
-    required this.fieldOrColumn,
-    required this.path,
-    required this.value,
-    this.patch = false,
-  });
-
-  /// Creates a new [JsonUpdateDefinition] from a [selector] and [value].
-  ///
-  /// The [selector] is a string that contains the field/column name and the
-  /// JSON path, e.g. `meta.tags`.
-  factory JsonUpdateDefinition.selector(String selector, Object? value) {
-    final parsed = json_path.parseJsonSelectorExpression(selector);
-    if (parsed == null) {
-      return JsonUpdateDefinition(
-        fieldOrColumn: selector,
-        path: r'$',
-        value: value,
-      );
-    }
-    return JsonUpdateDefinition(
-      fieldOrColumn: parsed.column,
-      path: parsed.path,
-      value: value,
-    );
-  }
-
-  /// Creates a new [JsonUpdateDefinition] from a [fieldOrColumn], [path] and
-  /// [value].
-  factory JsonUpdateDefinition.path(
-    String fieldOrColumn,
-    String path,
-    Object? value,
-  ) => JsonUpdateDefinition(
-    fieldOrColumn: fieldOrColumn,
-    path: json_path.normalizeJsonPath(path),
-    value: value,
-  );
-
-  /// Creates a new [JsonUpdateDefinition] for a patch operation.
-  ///
-  /// The [fieldOrColumn] is the name of the field or column to update.
-  /// The [delta] is a map of key-value pairs to merge with the existing value.
-  factory JsonUpdateDefinition.patch(
-    String fieldOrColumn,
-    Map<String, Object?> delta,
-  ) => JsonUpdateDefinition(
-    fieldOrColumn: fieldOrColumn,
-    path: r'$',
-    value: delta,
-    patch: true,
-  );
-
-  /// The name of the field or column to update.
-  final String fieldOrColumn;
-
-  /// The JSON path to the value to update.
-  final String path;
-
-  /// The new value.
-  final Object? value;
-
-  /// Whether to merge the [value] with the existing value.
-  final bool patch;
+  @override
+  QueryContext? get queryContext => _queryContext;
 }

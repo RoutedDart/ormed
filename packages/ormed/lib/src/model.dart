@@ -194,6 +194,7 @@ abstract class Model<TModel extends Model<TModel>>
           model.attachConnectionResolver(resolver);
         }
       },
+      context: _requireQueryContext(resolver),
     );
   }
 
@@ -1037,17 +1038,29 @@ abstract class Model<TModel extends Model<TModel>>
   Repository<TModel> _repositoryFor(
     ModelDefinition<TModel> definition,
     ConnectionResolver resolver,
-  ) => Repository<TModel>(
-    definition: definition,
-    driverName: resolver.driver.metadata.name,
-    runMutation: resolver.runMutation,
-    describeMutation: resolver.describeMutation,
-    attachRuntimeMetadata: (model) {
-      if (model is ModelConnection) {
-        model.attachConnectionResolver(resolver);
-      }
-    },
-  );
+  ) {
+    if (resolver is! QueryContext) {
+      throw StateError(
+        'Repository requires a QueryContext. '
+        'Bind a QueryContext-based ConnectionResolver or call Model.repository() '
+        'with a registered connection.',
+      );
+    }
+
+    return Repository<TModel>(
+      definition: definition,
+      driverName: resolver.driver.metadata.name,
+      runMutation: resolver.runMutation,
+      describeMutation: resolver.describeMutation,
+      attachRuntimeMetadata: (model) {
+        if (model is ModelConnection) {
+          model.attachConnectionResolver(resolver);
+        }
+        resolver.attachRuntimeMetadata(model);
+      },
+      context: resolver,
+    );
+  }
 
   Object? _primaryKeyValue(ModelDefinition<TModel> definition) {
     final field = definition.primaryKeyField;

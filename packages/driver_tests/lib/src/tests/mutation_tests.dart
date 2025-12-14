@@ -56,7 +56,9 @@ void runDriverMutationTests() {
       final repo = dataSource.context.repository<$User>();
 
       // First insert a record
-      await repo.insert($User(id: 5, email: 'upsert@example.com', active: true));
+      await repo.insert(
+        $User(id: 5, email: 'upsert@example.com', active: true),
+      );
 
       var users = await dataSource.context
           .query<$User>()
@@ -69,7 +71,10 @@ void runDriverMutationTests() {
         $User(id: 5, email: 'updated@upsert.com', active: true),
       ]);
 
-      users = await dataSource.context.query<$User>().whereEquals('id', 5).get();
+      users = await dataSource.context
+          .query<$User>()
+          .whereEquals('id', 5)
+          .get();
       expect(users.single.email, 'updated@upsert.com');
     });
 
@@ -361,6 +366,87 @@ void runDriverMutationTests() {
     );
 
     test(
+      'query builder deleteWhere accepts map/partial/model/raw pk',
+      () async {
+        final repo = dataSource.context.repository<$User>();
+        final users = await repo.insertMany([
+          $User(id: 8000, email: 'qb-del-map@example.com', active: true),
+          $User(id: 8001, email: 'qb-del-partial@example.com', active: true),
+          $User(id: 8002, email: 'qb-del-model@example.com', active: true),
+          $User(id: 8003, email: 'qb-del-pk@example.com', active: true),
+        ]);
+
+        final partial = UserPartial(id: 8001);
+
+        final affected = await dataSource.context
+            .query<$User>()
+            .deleteWhereMany([
+              {'id': 8000}, // map
+              partial, // partial
+              users[2], // tracked model
+              8003, // raw pk value
+            ]);
+
+        expect(affected, 4);
+
+        for (final id in [8000, 8001, 8002, 8003]) {
+          final fetched = await dataSource.context
+              .query<$User>()
+              .whereEquals('id', id)
+              .first();
+          expect(fetched, isNull);
+        }
+      },
+    );
+
+    test(
+      'query builder updateReturning hydrates returned rows',
+      () async {
+        final repo = dataSource.context.repository<$User>();
+        await repo.insert(
+          $User(id: 8100, email: 'qb-update-return@example.com', active: true),
+        );
+
+        final updated = await dataSource.context
+            .query<$User>()
+            .whereEquals('id', 8100)
+            .updateReturning({'active': false});
+
+        expect(updated, hasLength(1));
+        expect(updated.single.id, 8100);
+        expect(updated.single.email, 'qb-update-return@example.com');
+        expect(updated.single.active, isFalse);
+      },
+      skip: !metadata.supportsCapability(DriverCapability.returning),
+    );
+
+    test(
+      'query builder deleteReturning returns deleted models',
+      () async {
+        final repo = dataSource.context.repository<$User>();
+        await repo.insert(
+          $User(id: 8101, email: 'qb-delete-return@example.com', active: true),
+        );
+
+        final deleted = await dataSource.context
+            .query<$User>()
+            .whereEquals('id', 8101)
+            .deleteReturning();
+
+        expect(deleted, hasLength(1));
+        expect(deleted.single.id, 8101);
+        expect(deleted.single.email, 'qb-delete-return@example.com');
+
+        final remaining = await dataSource.context
+            .query<$User>()
+            .whereEquals('id', 8101)
+            .first();
+        expect(remaining, isNull);
+      },
+      skip: !metadata.supportsCapability(DriverCapability.returning),
+    );
+
+    test(
       'sqlite query updates encode json bindings for ad-hoc tables',
       () async {
         if (metadata.name != 'sqlite') {
@@ -632,7 +718,7 @@ void runDriverMutationTests() {
 
         final updated = await repo.updateMany([
           const User(id: 20, email: 'updated@returning.com', active: false),
-        ], );
+        ]);
         expect(updated.single.email, 'updated@returning.com');
         expect(updated.single.active, isFalse);
 
@@ -652,12 +738,12 @@ void runDriverMutationTests() {
         final repo = dataSource.context.repository<User>();
         final first = await repo.upsertMany([
           const User(id: 25, email: 'upsert@return.com', active: true),
-        ], );
+        ]);
         expect(first.single.email, 'upsert@return.com');
 
         final second = await repo.upsertMany([
           const User(id: 25, email: 'new@upsert.com', active: true),
-        ], );
+        ]);
         expect(second.single.email, 'new@upsert.com');
       },
       skip: metadata.supportsCapability(DriverCapability.returning)

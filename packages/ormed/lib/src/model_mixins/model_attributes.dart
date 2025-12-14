@@ -371,7 +371,7 @@ mixin ModelAttributes {
   ///
   /// When [attributes] is provided, checks if those specific attributes are dirty.
   /// - If a single String is provided, checks that one attribute
-  /// - If a List<String> is provided, checks if any of those attributes are dirty
+  /// - If a [List<String>] is provided, checks if any of those attributes are dirty
   /// When [attributes] is null, checks if any attribute is dirty.
   ///
   /// Returns false if no original state is tracked (e.g., on new unsaved models).
@@ -432,7 +432,7 @@ mixin ModelAttributes {
   ///
   /// When [attributes] is provided, checks if those specific attributes are clean.
   /// - If a single String is provided, checks that one attribute
-  /// - If a List<String> is provided, checks if all those attributes are clean
+  /// - If a [List<String>] is provided, checks if all those attributes are clean
   /// When [attributes] is null, checks if all attributes are clean.
   ///
   /// Example:

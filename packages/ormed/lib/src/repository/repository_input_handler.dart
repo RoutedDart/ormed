@@ -79,6 +79,9 @@ final class MapUpdateInput<T extends OrmEntity> extends UpdateInput<T> {
 /// This mixin converts various input types (models, DTOs, maps) into
 /// the map format required for mutation plans.
 mixin RepositoryInputHandlerMixin<T extends OrmEntity> on RepositoryBase<T> {
+  MutationInputHelper<T> get _inputHelper =>
+      MutationInputHelper<T>(definition: definition, codecs: codecs);
+
   /// Converts an insert input to a map suitable for insertion.
   ///
   /// For tracked models (`ModelAttributes`), applies legacy sentinel filtering
@@ -93,46 +96,10 @@ mixin RepositoryInputHandlerMixin<T extends OrmEntity> on RepositoryBase<T> {
     Object input, {
     required bool applySentinelFiltering,
   }) {
-    return switch (input) {
-      // Tracked model ($User) - use definition encoding
-      T model => _modelToInsertMap(model, applySentinelFiltering: applySentinelFiltering),
-      // InsertDto (UserInsertDto) - use the DTO's toMap() directly
-      InsertDto<T> dto => _normalizeColumnNames(dto.toMap()),
-      // UpdateDto (UserUpdateDto) - also supported for flexibility
-      UpdateDto<T> dto => _normalizeColumnNames(dto.toMap()),
-      // Raw Map - use as-is with column name normalization
-      Map<String, Object?> m => _normalizeColumnNames(m),
-      // Fallback - throw for unsupported types
-      _ => throw ArgumentError.value(
-        input,
-        'input',
-        'Expected $T, InsertDto<$T>, UpdateDto<$T>, or Map<String, Object?>, got ${input.runtimeType}',
-      ),
-    };
-  }
-
-  /// Converts a model to a map for insertion, with optional sentinel filtering.
-  Map<String, Object?> _modelToInsertMap(
-    T model, {
-    required bool applySentinelFiltering,
-  }) {
-    final map = definition.toMap(model, registry: codecs);
-
-    if (!applySentinelFiltering) {
-      return map;
-    }
-
-    // Legacy sentinel filtering for tracked models
-    final filtered = Map<String, Object?>.from(map);
-    for (final field in definition.fields) {
-      if (!field.isInsertable) {
-        final value = map[field.columnName];
-        if (_isLegacySentinelValue(value, field)) {
-          filtered.remove(field.columnName);
-        }
-      }
-    }
-    return filtered;
+    return _inputHelper.insertInputToMap(
+      input,
+      applySentinelFiltering: applySentinelFiltering,
+    );
   }
 
   /// Converts an update input to a map suitable for updates.
@@ -142,38 +109,8 @@ mixin RepositoryInputHandlerMixin<T extends OrmEntity> on RepositoryBase<T> {
   /// - `UpdateDto<T>` (like `UserUpdateDto`) - Uses the DTO's `toMap()` directly
   /// - `InsertDto<T>` (like `UserInsertDto`) - Uses the DTO's `toMap()` (for flexibility)
   /// - `Map<String, Object?>` - Uses as-is with column name normalization
-  Map<String, Object?> updateInputToMap(Object input) {
-    return switch (input) {
-      // Tracked model ($User) - use definition encoding
-      T model => _modelToUpdateMap(model),
-      // UpdateDto (UserUpdateDto) - use the DTO's toMap() directly
-      UpdateDto<T> dto => _normalizeColumnNames(dto.toMap()),
-      // InsertDto (UserInsertDto) - also supported for flexibility
-      InsertDto<T> dto => _normalizeColumnNames(dto.toMap()),
-      // Raw Map - use as-is with column name normalization
-      Map<String, Object?> m => _normalizeColumnNames(m),
-      // Fallback - throw for unsupported types
-      _ => throw ArgumentError.value(
-        input,
-        'input',
-        'Expected $T, UpdateDto<$T>, InsertDto<$T>, or Map<String, Object?>, got ${input.runtimeType}',
-      ),
-    };
-  }
-
-  /// Converts a model to a map for updates.
-  Map<String, Object?> _modelToUpdateMap(T model) {
-    final allValues = definition.toMap(model, registry: codecs);
-
-    // For updates, filter out non-updatable fields
-    final values = <String, Object?>{};
-    for (final field in definition.fields) {
-      if (field.isUpdatable && allValues.containsKey(field.columnName)) {
-        values[field.columnName] = allValues[field.columnName];
-      }
-    }
-    return values;
-  }
+  Map<String, Object?> updateInputToMap(Object input) =>
+      _inputHelper.updateInputToMap(input);
 
   /// Normalizes field names to column names if needed.
   ///
@@ -206,57 +143,11 @@ mixin RepositoryInputHandlerMixin<T extends OrmEntity> on RepositoryBase<T> {
     return fieldOrColumn;
   }
 
-  /// Legacy sentinel value check for backward compatibility.
-  ///
-  /// For tracked models, sentinel values indicate "not set" for auto-increment
-  /// fields and should be filtered out during inserts.
-  bool _isLegacySentinelValue(Object? value, FieldDefinition field) {
-    if (value == null) return true;
-    if (field.autoIncrement) {
-      if (value == 0 || value == -1) return true;
-    }
-    if (value == '') return true;
-    if (field.defaultDartValue != null && value == field.defaultDartValue) {
-      return true;
-    }
-    return false;
-  }
-
   /// Extracts the primary key value from an input.
   ///
   /// Works with models, DTOs, and maps.
   Object? extractPrimaryKey(Object input) {
-    final pkField = definition.primaryKeyField;
-    if (pkField == null) {
-      throw StateError(
-        'Primary key required for ${definition.modelName}.',
-      );
-    }
-
-    if (input is T) {
-      final map = definition.toMap(input, registry: codecs);
-      return map[pkField.columnName];
-    }
-
-    if (input is InsertDto<T>) {
-      final map = input.toMap();
-      return map[pkField.columnName] ?? map[pkField.name];
-    }
-
-    if (input is UpdateDto<T>) {
-      final map = input.toMap();
-      return map[pkField.columnName] ?? map[pkField.name];
-    }
-
-    if (input is Map<String, Object?>) {
-      return input[pkField.columnName] ?? input[pkField.name];
-    }
-
-    throw ArgumentError.value(
-      input,
-      'input',
-      'Cannot extract primary key from ${input.runtimeType}',
-    );
+    return _inputHelper.extractPrimaryKey(input);
   }
 
   /// Converts a "where" input to a map suitable for WHERE clauses.
@@ -277,30 +168,9 @@ mixin RepositoryInputHandlerMixin<T extends OrmEntity> on RepositoryBase<T> {
   /// final map3 = whereInputToMap($UserUpdateDto(id: 1));
   /// final map4 = whereInputToMap(existingUser);
   /// ```
-  Map<String, Object?>? whereInputToMap(Object? input) {
-    if (input == null) return null;
-
-    return switch (input) {
-      // Tracked model ($User) - extract all column values
-      T model => definition.toMap(model, registry: codecs),
-      // PartialEntity ($UserPartial) - use toMap()
-      PartialEntity<T> partial => _normalizeColumnNames(partial.toMap()),
-      // InsertDto ($UserInsertDto) - use toMap()
-      InsertDto<T> dto => _normalizeColumnNames(dto.toMap()),
-      // UpdateDto ($UserUpdateDto) - use toMap()
-      UpdateDto<T> dto => _normalizeColumnNames(dto.toMap()),
-      // Raw Map - use as-is with column name normalization
-      Map<String, Object?> m => _normalizeColumnNames(m),
-      // Fallback - throw for unsupported types
-      _ => throw ArgumentError.value(
-        input,
-        'where',
-        'Expected $T, PartialEntity<$T>, InsertDto<$T>, UpdateDto<$T>, or Map<String, Object?>, got ${input.runtimeType}',
-      ),
-    };
-  }
+  Map<String, Object?>? whereInputToMap(Object? input) =>
+      _inputHelper.whereInputToMap(input);
 
   /// Checks if the input is a tracked model (has ModelAttributes).
   bool isTrackedModel(Object input) => input is ModelAttributes;
 }
-

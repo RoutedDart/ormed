@@ -85,11 +85,13 @@ class MutationPlan {
     required ModelDefinition<OrmEntity> definition,
     required List<MutationRow> rows,
     String? driverName,
+    bool returning = false,
   }) => MutationPlan._(
     operation: MutationOperation.delete,
     definition: definition,
     rows: rows,
     driverName: driverName,
+    returning: returning,
   );
 
   factory MutationPlan.queryDelete({
@@ -97,6 +99,7 @@ class MutationPlan {
     required QueryPlan plan,
     required String primaryKey,
     String? driverName,
+    bool returning = false,
   }) => MutationPlan._(
     operation: MutationOperation.queryDelete,
     definition: definition,
@@ -104,6 +107,7 @@ class MutationPlan {
     driverName: driverName,
     queryPlan: plan,
     queryPrimaryKey: primaryKey,
+    returning: returning,
   );
 
   factory MutationPlan.queryUpdate({
@@ -114,6 +118,7 @@ class MutationPlan {
     String? driverName,
     String? primaryKey,
     Map<String, num>? queryIncrementValues,
+    bool returning = false,
   }) => MutationPlan._(
     operation: MutationOperation.queryUpdate,
     definition: definition,
@@ -124,6 +129,7 @@ class MutationPlan {
     queryJsonUpdates: jsonUpdates,
     queryPrimaryKey: primaryKey,
     queryIncrementValues: queryIncrementValues,
+    returning: returning,
   );
 
   factory MutationPlan.upsert({

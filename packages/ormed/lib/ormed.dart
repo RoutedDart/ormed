@@ -51,6 +51,7 @@ export 'src/model_factory_connection.dart';
 export 'src/model_factory.dart';
 export 'src/model_mixins/model_factory.dart';
 export 'src/model_companion.dart';
+export 'src/mutation/json_update.dart';
 export 'src/orm_project_config.dart';
 export 'src/orm_project_config_loader.dart';
 export 'src/driver/driver_registry.dart';

@@ -1,5 +1,29 @@
 part of '../query_builder.dart';
 
+final class _UpdateInputBuildResult<T extends OrmEntity> {
+  _UpdateInputBuildResult({
+    required this.rows,
+    required this.originalModels,
+    required this.inputMaps,
+  });
+
+  final List<MutationRow> rows;
+  final List<T> originalModels;
+  final List<Map<String, Object?>> inputMaps;
+}
+
+final class _InsertInputBuildResult<T extends OrmEntity> {
+  _InsertInputBuildResult({
+    required this.rows,
+    required this.originalModels,
+    required this.inputMaps,
+  });
+
+  final List<Map<String, Object?>> rows;
+  final List<T> originalModels;
+  final List<Map<String, Object?>> inputMaps;
+}
+
 extension CrudExtension<T extends OrmEntity> on Query<T> {
   // ========================================================================
   // CRUD Operations
@@ -16,7 +40,7 @@ extension CrudExtension<T extends OrmEntity> on Query<T> {
   /// });
   /// ```
   Future<T> create(Map<String, dynamic> attributes) async {
-    final results = await createMany([attributes]);
+    final results = await insertManyInputs([attributes]);
     if (results.isEmpty) {
       throw StateError('Failed to create record');
     }
@@ -34,25 +58,77 @@ extension CrudExtension<T extends OrmEntity> on Query<T> {
   /// ]);
   /// ```
   Future<List<T>> createMany(List<Map<String, dynamic>> records) async {
-    final models = records.map((attrs) {
-      final normalized = _normalizeAttributeKeys(attrs);
-      return definition.codec.decode(normalized, context.codecRegistry);
-    }).toList();
+    return insertManyInputs(records);
+  }
 
-    final repo = Repository<T>(
-      definition: definition,
-      driverName: context.driver.metadata.name,
-      runMutation: context.runMutation,
-      describeMutation: context.describeMutation,
-      attachRuntimeMetadata: (model) {
-        // Attach connection resolver to model if it supports it
-        if (model is ModelConnection) {
-          model.attachConnectionResolver(context);
-        }
-      },
+  /// Inserts flexible inputs (maps/DTOs/tracked models) and returns hydrated models.
+  Future<List<T>> insertManyInputs(
+    List<Object> inputs, {
+    bool ignoreConflicts = false,
+    bool returning = true,
+    bool fallbackToOriginalWhenNoReturn = true,
+  }) async {
+    final build = _buildInsertRows(inputs);
+    if (build.rows.isEmpty) return const [];
+
+    final mutation = _buildInsertPlanFromInputs(
+      inputs,
+      returning: returning,
+      ignoreConflicts: ignoreConflicts,
     );
 
-    return await repo.insertMany(models);
+    final result = await context.runMutation(mutation);
+    if (ignoreConflicts && result.affectedRows == 0) {
+      return const [];
+    }
+    return _hydrateMutationResults(
+      result,
+      originalModels: build.originalModels,
+      inputMaps: build.inputMaps,
+      canCreateFromInputs: !ignoreConflicts,
+      fallbackToOriginalWhenNoReturn: fallbackToOriginalWhenNoReturn,
+    );
+  }
+
+  /// Inserts flexible inputs and returns the raw [MutationResult].
+  ///
+  /// Use when only affected row counts are needed (e.g., insertOrIgnore).
+  Future<MutationResult> insertManyInputsRaw(
+    List<Object> inputs, {
+    bool ignoreConflicts = false,
+  }) async {
+    final build = _buildInsertRows(inputs);
+    if (build.rows.isEmpty) {
+      return const MutationResult(affectedRows: 0);
+    }
+
+    final mutation = _buildInsertPlanFromInputs(
+      inputs,
+      returning: false,
+      ignoreConflicts: ignoreConflicts,
+    );
+    return context.runMutation(mutation);
+  }
+
+  /// Builds but does not execute an insert plan (useful for previews).
+  MutationPlan previewInsertPlan(
+    List<Object> inputs, {
+    bool ignoreConflicts = false,
+    bool returning = false,
+  }) => _buildInsertPlanFromInputs(
+    inputs,
+    returning: returning,
+    ignoreConflicts: ignoreConflicts,
+  );
+
+  Future<T> insertInput(Object input, {bool ignoreConflicts = false}) async {
+    final results = await insertManyInputs([
+      input,
+    ], ignoreConflicts: ignoreConflicts);
+    if (results.isEmpty) {
+      throw StateError('Failed to create record');
+    }
+    return results.first;
   }
 
   /// Finds the first record matching the attributes, or creates it if not found.
@@ -177,6 +253,18 @@ extension CrudExtension<T extends OrmEntity> on Query<T> {
   /// ```
   Future<List<T>> get() async =>
       (await rows()).map((row) => row.model).toList(growable: false);
+
+  /// Updates matching records using flexible inputs (tracked model, DTO, map).
+  ///
+  /// This overload matches Repository ergonomics.
+  Future<int> updateValues(Object values) async {
+    final helper = MutationInputHelper<T>(
+      definition: definition,
+      codecs: context.codecRegistry,
+    );
+    final normalized = helper.updateInputToMap(values);
+    return update(normalized);
+  }
 
   /// Returns results hydrated into partial entities.
   ///
@@ -423,6 +511,371 @@ extension CrudExtension<T extends OrmEntity> on Query<T> {
     return result.affectedRows;
   }
 
+  /// Updates rows and returns hydrated models using driver RETURNING when available.
+  ///
+  /// Accepts the same flexible inputs as [updateValues] (tracked model, DTO, map).
+  /// Returned models are merged using the same rules as Repository:
+  /// returned data > original model data > input map data.
+  Future<List<T>> updateReturning(Object values) async {
+    final helper = MutationInputHelper<T>(
+      definition: definition,
+      codecs: context.codecRegistry,
+    );
+    final map = helper.updateInputToMap(values);
+    if (map.isEmpty) return const [];
+
+    final withTimestamp = _addUpdateTimestamp(map);
+    final payload = _normalizeUpdateValues(withTimestamp);
+    if (payload.isEmpty) return const [];
+
+    final mutation = _buildQueryUpdateMutation(
+      values: payload.values,
+      jsonUpdates: payload.jsonUpdates,
+      feature: 'updateReturning',
+      returning: true,
+    );
+    final result = await context.runMutation(mutation);
+    return _hydrateMutationResults(result, canCreateFromInputs: false);
+  }
+
+  /// Updates rows using flexible inputs (tracked models, DTOs, or raw maps).
+  ///
+  /// Matches repository semantics: keys are inferred from tracked models,
+  /// explicit `where` input, or primary key values embedded in DTO/map data.
+  /// Returns hydrated models when the driver supports RETURNING.
+  Future<List<T>> updateInputs(
+    List<Object> inputs, {
+    Object? where,
+    JsonUpdateBuilder<T>? jsonUpdates,
+  }) async {
+    final build = _buildUpdateRows(
+      inputs,
+      where: where,
+      jsonUpdates: jsonUpdates,
+    );
+    if (build.rows.isEmpty) return const [];
+
+    final mutation = MutationPlan.update(
+      definition: definition,
+      rows: build.rows,
+      driverName: context.driver.metadata.name,
+      returning: true,
+    );
+    final result = await context.runMutation(mutation);
+    return _hydrateMutationResults(
+      result,
+      originalModels: build.originalModels,
+      inputMaps: build.inputMaps,
+      canCreateFromInputs: false,
+    );
+  }
+
+  /// Updates rows using flexible inputs and returns the raw [MutationResult].
+  ///
+  /// Mirrors [updateInputs] but skips hydration when RETURNING is unsupported
+  /// or unnecessary.
+  Future<MutationResult> updateInputsRaw(
+    List<Object> inputs, {
+    Object? where,
+    JsonUpdateBuilder<T>? jsonUpdates,
+  }) async {
+    final build = _buildUpdateRows(
+      inputs,
+      where: where,
+      jsonUpdates: jsonUpdates,
+    );
+    if (build.rows.isEmpty) {
+      return const MutationResult(affectedRows: 0);
+    }
+
+    final mutation = MutationPlan.update(
+      definition: definition,
+      rows: build.rows,
+      driverName: context.driver.metadata.name,
+    );
+    return context.runMutation(mutation);
+  }
+
+  /// Builds but does not execute an update plan (useful for previews).
+  MutationPlan previewUpdatePlan(
+    List<Object> inputs, {
+    Object? where,
+    JsonUpdateBuilder<T>? jsonUpdates,
+    bool returning = false,
+  }) => _buildUpdatePlanFromInputs(
+    inputs,
+    where: where,
+    jsonUpdates: jsonUpdates,
+    returning: returning,
+  );
+
+  _UpdateInputBuildResult<T> _buildUpdateRows(
+    List<Object> inputs, {
+    Object? where,
+    JsonUpdateBuilder<T>? jsonUpdates,
+  }) {
+    if (inputs.isEmpty) {
+      return _UpdateInputBuildResult(
+        rows: const [],
+        originalModels: const [],
+        inputMaps: const [],
+      );
+    }
+
+    final helper = MutationInputHelper<T>(
+      definition: definition,
+      codecs: context.codecRegistry,
+    );
+    final jsonSupport = JsonUpdateSupport<T>(definition);
+    final whereMap = helper.whereInputToMap(where);
+    final pkField = definition.primaryKeyField;
+
+    final rows = <MutationRow>[];
+    final originalModels = <T>[];
+    final inputMaps = <Map<String, Object?>>[];
+
+    for (final input in inputs) {
+      if (input is T) {
+        helper.applyUpdateTimestampsToModel(input);
+        originalModels.add(input);
+      }
+
+      final values = helper.updateInputToMap(input);
+
+      if (input is! ModelAttributes) {
+        helper.ensureTimestampsInMap(values, isInsert: false);
+      }
+
+      Map<String, Object?> keys;
+      if (input is T) {
+        final pk =
+            pkField ??
+            (throw StateError(
+              'Primary key required for updates on ${definition.modelName}.',
+            ));
+        final allValues = definition.toMap(
+          input,
+          registry: context.codecRegistry,
+        );
+        final pkValue = allValues[pk.columnName];
+        if (pkValue == null) {
+          throw StateError('Primary key cannot be null for update.');
+        }
+        keys = {pk.columnName: pkValue};
+      } else if (whereMap != null) {
+        keys = whereMap;
+      } else {
+        final pk = helper.extractPrimaryKey(input);
+        final pkColumn = pkField?.columnName;
+        if (pk == null || pkColumn == null) {
+          throw ArgumentError(
+            'Update with DTO or Map requires a "where" clause or PK in the data.',
+          );
+        }
+        keys = {pkColumn: pk};
+      }
+
+      final jsonClauses = input is T
+          ? jsonSupport.buildJsonUpdates(input, jsonUpdates)
+          : const <JsonUpdateClause>[];
+
+      rows.add(
+        MutationRow(values: values, keys: keys, jsonUpdates: jsonClauses),
+      );
+      inputMaps.add({...values, ...keys});
+    }
+
+    return _UpdateInputBuildResult(
+      rows: rows,
+      originalModels: originalModels,
+      inputMaps: inputMaps,
+    );
+  }
+
+  MutationPlan _buildUpdatePlanFromInputs(
+    List<Object> inputs, {
+    Object? where,
+    JsonUpdateBuilder<T>? jsonUpdates,
+    bool returning = false,
+  }) {
+    final build = _buildUpdateRows(
+      inputs,
+      where: where,
+      jsonUpdates: jsonUpdates,
+    );
+    return MutationPlan.update(
+      definition: definition,
+      rows: build.rows,
+      driverName: context.driver.metadata.name,
+      returning: returning,
+    );
+  }
+
+  _InsertInputBuildResult<T> _buildInsertRows(List<Object> inputs) {
+    if (inputs.isEmpty) {
+      return _InsertInputBuildResult(
+        rows: const [],
+        originalModels: const [],
+        inputMaps: const [],
+      );
+    }
+
+    final helper = MutationInputHelper<T>(
+      definition: definition,
+      codecs: context.codecRegistry,
+    );
+    final jsonSupport = JsonUpdateSupport<T>(definition);
+
+    final rows = <Map<String, Object?>>[];
+    final originalModels = <T>[];
+    final inputMaps = <Map<String, Object?>>[];
+
+    for (final input in inputs) {
+      if (input is T) {
+        helper.applyInsertTimestampsToModel(input);
+        originalModels.add(input);
+
+        final map = helper.insertInputToMap(
+          input,
+          applySentinelFiltering: true,
+        );
+        if (input is! ModelAttributes) {
+          helper.ensureTimestampsInMap(map, isInsert: true);
+        }
+        final normalized = _normalizeAttributeKeys(map);
+        rows.add(normalized);
+        inputMaps.add(normalized);
+        continue;
+      }
+
+      final baseMap = helper.insertInputToMap(
+        input,
+        applySentinelFiltering: helper.isTrackedModel(input),
+      );
+      final normalized = _normalizeAttributeKeys(baseMap);
+
+      // Decode to model to apply default values, then re-encode for insertion.
+      final model =
+          definition.codec.decode(normalized, context.codecRegistry);
+      final encoded = definition.toMap(model, registry: context.codecRegistry);
+
+      // If caller didn't supply the primary key, drop auto/default PK values.
+      final pkField = definition.primaryKeyField;
+      if (pkField != null &&
+          !baseMap.containsKey(pkField.columnName) &&
+          !baseMap.containsKey(pkField.name)) {
+        encoded.remove(pkField.columnName);
+      }
+
+      // If caller omitted a column and its encoded value is null, let DB defaults apply.
+      for (final field in definition.fields) {
+        final provided =
+            baseMap.containsKey(field.columnName) ||
+            baseMap.containsKey(field.name);
+        if (!provided && encoded[field.columnName] == null) {
+          encoded.remove(field.columnName);
+        }
+      }
+
+      helper.ensureTimestampsInMap(encoded, isInsert: true);
+      rows.add(encoded);
+      inputMaps.add(encoded);
+    }
+
+    return _InsertInputBuildResult(
+      rows: rows,
+      originalModels: originalModels,
+      inputMaps: inputMaps,
+    );
+  }
+
+  MutationPlan _buildInsertPlanFromInputs(
+    List<Object> inputs, {
+    bool returning = true,
+    bool ignoreConflicts = false,
+  }) {
+    final build = _buildInsertRows(inputs);
+    return MutationPlan.insert(
+      definition: definition,
+      rows: build.rows,
+      driverName: context.driver.metadata.name,
+      returning: returning,
+      ignoreConflicts: ignoreConflicts,
+    );
+  }
+
+  List<MutationRow> _buildUpsertRows(List<Object> inputs) {
+    final helper = MutationInputHelper<T>(
+      definition: definition,
+      codecs: context.codecRegistry,
+    );
+
+    return inputs
+        .map((input) {
+          if (input is T) {
+            helper.applyInsertTimestampsToModel(input);
+          }
+          final baseValues = helper.insertInputToMap(
+            input,
+            applySentinelFiltering: helper.isTrackedModel(input),
+          );
+          final normalized = _normalizeAttributeKeys(baseValues);
+
+          Map<String, Object?> values;
+          if (input is T) {
+            values = normalized;
+            if (input is! ModelAttributes) {
+              helper.ensureTimestampsInMap(values, isInsert: true);
+            }
+          } else {
+            final model =
+                definition.codec.decode(normalized, context.codecRegistry);
+            values = definition.toMap(model, registry: context.codecRegistry);
+
+            final pkField = definition.primaryKeyField;
+            if (pkField != null &&
+                !baseValues.containsKey(pkField.columnName) &&
+                !baseValues.containsKey(pkField.name)) {
+              values.remove(pkField.columnName);
+            }
+
+            for (final field in definition.fields) {
+              final provided =
+                  baseValues.containsKey(field.columnName) ||
+                  baseValues.containsKey(field.name);
+              if (!provided && values[field.columnName] == null) {
+                values.remove(field.columnName);
+              }
+            }
+          }
+
+          if (input is! ModelAttributes) {
+            helper.ensureTimestampsInMap(values, isInsert: true);
+          }
+          return MutationRow(values: values, keys: const {});
+        })
+        .toList(growable: false);
+  }
+
+  MutationPlan _buildUpsertPlan(
+    List<MutationRow> rows, {
+    List<String>? uniqueBy,
+    List<String>? updateColumns,
+    required bool returning,
+  }) {
+    return MutationPlan.upsert(
+      definition: definition,
+      rows: rows,
+      driverName: context.driver.metadata.name,
+      returning: returning,
+      uniqueBy: uniqueBy?.map(_ensureField).map((f) => f.columnName).toList(),
+      updateColumns: updateColumns
+          ?.map(_ensureField)
+          .map((f) => f.columnName)
+          .toList(),
+    );
+  }
+
   /// Adds updated_at timestamp to update values if the model has a timestamp field.
   /// Only adds if not already present in values and field exists with snake_case name.
   /// Returns the raw value (DateTime or Carbon) based on field type - not encoded since _normalizeUpdateValues will handle encoding.
@@ -545,6 +998,149 @@ extension CrudExtension<T extends OrmEntity> on Query<T> {
     return result.affectedRows;
   }
 
+  /// Deletes matching rows and returns hydrated models when the driver supports RETURNING.
+  ///
+  /// For soft-delete models, this returns the rows after the soft delete update.
+  Future<List<T>> deleteReturning() async {
+    final softDeleteField = _softDeleteField;
+    if (softDeleteField != null) {
+      final keys = await _collectPrimaryKeyConditions(this);
+      if (keys.isEmpty) return const [];
+
+      final now = Carbon.now();
+      final rows = keys
+          .map(
+            (key) => MutationRow(
+              values: {softDeleteField.columnName: now},
+              keys: key,
+            ),
+          )
+          .toList();
+      final mutation = MutationPlan.update(
+        definition: definition,
+        rows: rows,
+        driverName: context.driver.metadata.name,
+        returning: true,
+      );
+      final result = await context.runMutation(mutation);
+      return _hydrateMutationResults(result);
+    }
+
+    final pkField = definition.primaryKeyField;
+    if (pkField == null) {
+      throw StateError(
+        'delete requires ${definition.modelName} to declare a primary key.',
+      );
+    }
+    final plan = _buildPlan();
+    final mutation = MutationPlan.queryDelete(
+      definition: definition,
+      plan: plan,
+      primaryKey: pkField.columnName,
+      driverName: context.driver.metadata.name,
+      returning: true,
+    );
+    final result = await context.runMutation(mutation);
+    return _hydrateMutationResults(result);
+  }
+
+  /// Deletes records matching a flexible where input (PK, map, DTO, partial, tracked model).
+  ///
+  /// This provides the same input ergonomics as Repository.delete().
+  Future<int> deleteWhere(Object where) => deleteWhereMany([where]);
+
+  /// Deletes multiple records using flexible where inputs.
+  Future<int> deleteWhereMany(List<Object> wheres) async {
+    if (wheres.isEmpty) return 0;
+    final mutation = _buildDeleteWherePlan(wheres, returning: false);
+    final result = await context.runMutation(mutation);
+    return result.affectedRows;
+  }
+
+  /// Deletes records using flexible where inputs and returns hydrated models.
+  Future<List<T>> deleteWhereReturning(Object where) =>
+      deleteWhereManyReturning([where]);
+
+  /// Deletes multiple records using flexible where inputs and returns hydrated models.
+  Future<List<T>> deleteWhereManyReturning(List<Object> wheres) async {
+    if (wheres.isEmpty) return const [];
+    final mutation = _buildDeleteWherePlan(wheres, returning: true);
+    final result = await context.runMutation(mutation);
+    return _hydrateMutationResults(result);
+  }
+
+  /// Builds but does not execute a delete plan for flexible inputs (useful for previews).
+  MutationPlan previewDeleteWherePlan(
+    List<Object> wheres, {
+    bool returning = false,
+  }) => _buildDeleteWherePlan(wheres, returning: returning);
+
+  MutationPlan _buildDeleteWherePlan(
+    List<Object> wheres, {
+    required bool returning,
+  }) {
+    final helper = MutationInputHelper<T>(
+      definition: definition,
+      codecs: context.codecRegistry,
+    );
+    final pkField =
+        definition.primaryKeyField ??
+        (throw StateError(
+          'deleteWhere requires ${definition.modelName} to declare a primary key.',
+        ));
+
+    final keys = wheres
+        .map((input) {
+          if (input is T) {
+            final map = helper.whereInputToMap(input)!;
+            final pkValue = map[pkField.columnName];
+            if (pkValue == null) {
+              throw StateError('Primary key cannot be null for delete().');
+            }
+            return {pkField.columnName: pkValue};
+          }
+          try {
+            final map = helper.whereInputToMap(input);
+            if (map != null && map.isNotEmpty) return map;
+          } catch (_) {}
+
+          final pk = helper.extractPrimaryKey(input);
+          if (pk != null) return {pkField.columnName: pk};
+
+          return {pkField.columnName: input};
+        })
+        .toList(growable: false);
+
+    final softDeleteField = _softDeleteField;
+    if (softDeleteField != null) {
+      final now = Carbon.now();
+      final rows = keys
+          .map(
+            (key) => MutationRow(
+              values: {softDeleteField.columnName: now},
+              keys: key,
+            ),
+          )
+          .toList();
+      return MutationPlan.update(
+        definition: definition,
+        rows: rows,
+        driverName: context.driver.metadata.name,
+        returning: returning,
+      );
+    }
+
+    final rows = keys
+        .map((conditions) => MutationRow(values: const {}, keys: conditions))
+        .toList(growable: false);
+    return MutationPlan.delete(
+      definition: definition,
+      rows: rows,
+      driverName: context.driver.metadata.name,
+      returning: returning,
+    );
+  }
+
   /// Upserts (insert or update) a single record.
   ///
   /// If a record with the same unique key exists, it will be updated.
@@ -568,7 +1164,7 @@ extension CrudExtension<T extends OrmEntity> on Query<T> {
     List<String>? uniqueBy,
     List<String>? updateColumns,
   }) async {
-    final results = await upsertMany(
+    final results = await upsertInputs(
       [attributes],
       uniqueBy: uniqueBy,
       updateColumns: updateColumns,
@@ -602,36 +1198,54 @@ extension CrudExtension<T extends OrmEntity> on Query<T> {
     List<String>? uniqueBy,
     List<String>? updateColumns,
   }) async {
-    if (records.isEmpty) return const [];
-
-    // Normalize attribute keys but don't decode to models
-    // Decoding to models would add default values like id: 0 for auto-increment fields
-    final normalizedRecords = records.map((attrs) {
-      return _normalizeAttributeKeys(attrs);
-    }).toList();
-
-    final repo = _buildRepository();
-
-    // Pass maps directly - the repository handles DTOs/Maps
-    return await repo.upsertMany(
-      normalizedRecords,
+    return upsertInputs(
+      records,
       uniqueBy: uniqueBy,
       updateColumns: updateColumns,
     );
   }
 
-  /// Helper method to build a repository instance.
-  Repository<T> _buildRepository() {
-    return Repository<T>(
-      definition: definition,
-      driverName: context.driver.metadata.name,
-      runMutation: context.runMutation,
-      describeMutation: context.describeMutation,
-      attachRuntimeMetadata: (model) {
-        if (model is ModelConnection) {
-          model.attachConnectionResolver(context);
-        }
-      },
+  /// Upserts flexible inputs (maps/DTOs/tracked models) and returns hydrated models.
+  Future<List<T>> upsertInputs(
+    List<Object> inputs, {
+    List<String>? uniqueBy,
+    List<String>? updateColumns,
+  }) async {
+    if (inputs.isEmpty) return const [];
+
+    final rows = _buildUpsertRows(inputs);
+
+    final mutation = _buildUpsertPlan(
+      rows,
+      uniqueBy: uniqueBy,
+      updateColumns: updateColumns,
+      returning: true,
+    );
+
+    final result = await context.runMutation(mutation);
+    final originalModels = inputs.whereType<T>().toList();
+    final inputMaps = rows.map((r) => r.values).toList();
+    return _hydrateMutationResults(
+      result,
+      originalModels: originalModels,
+      inputMaps: inputMaps,
+      canCreateFromInputs: true,
+    );
+  }
+
+  /// Builds but does not execute an upsert plan (useful for previews).
+  MutationPlan previewUpsertPlan(
+    List<Object> inputs, {
+    List<String>? uniqueBy,
+    List<String>? updateColumns,
+    bool returning = false,
+  }) {
+    final rows = _buildUpsertRows(inputs);
+    return _buildUpsertPlan(
+      rows,
+      uniqueBy: uniqueBy,
+      updateColumns: updateColumns,
+      returning: returning,
     );
   }
 
@@ -665,6 +1279,72 @@ extension CrudExtension<T extends OrmEntity> on Query<T> {
     }
 
     return normalized;
+  }
+
+  /// Hydrates mutation results keeping merge semantics consistent
+  /// (returned > original model > input map) without depending on Repository.
+  List<T> _hydrateMutationResults(
+    MutationResult result, {
+    List<T> originalModels = const [],
+    List<Map<String, Object?>> inputMaps = const [],
+    bool canCreateFromInputs = true,
+    bool fallbackToOriginalWhenNoReturn = true,
+  }) {
+    if (result.returnedRows != null && result.returnedRows!.isNotEmpty) {
+      final returned = <T>[];
+      for (int i = 0; i < result.returnedRows!.length; i++) {
+        final returnedRow = result.returnedRows![i];
+        final originalModel = i < originalModels.length
+            ? originalModels[i]
+            : null;
+        final inputMap = i < inputMaps.length ? inputMaps[i] : null;
+
+        final Map<String, Object?> mergedData;
+        if (originalModel != null) {
+          final originalData = definition.toMap(
+            originalModel,
+            registry: context.codecRegistry,
+          );
+          mergedData = {...originalData, ...returnedRow};
+        } else if (inputMap != null) {
+          mergedData = {...inputMap, ...returnedRow};
+        } else {
+          mergedData = returnedRow;
+        }
+
+        final model = definition.fromMap(
+          mergedData,
+          registry: context.codecRegistry,
+        );
+        if (model is ModelConnection) {
+          (model as ModelConnection).attachConnectionResolver(context);
+        }
+        if (model is ModelAttributes) {
+          (model as ModelAttributes).syncOriginal();
+        }
+        returned.add(model);
+      }
+      return returned;
+    }
+
+    if (fallbackToOriginalWhenNoReturn && originalModels.isNotEmpty) {
+      return originalModels;
+    }
+
+    if (canCreateFromInputs && inputMaps.isNotEmpty) {
+      return inputMaps.map((map) {
+        final model = definition.fromMap(map, registry: context.codecRegistry);
+        if (model is ModelConnection) {
+          (model as ModelConnection).attachConnectionResolver(context);
+        }
+        if (model is ModelAttributes) {
+          (model as ModelAttributes).syncOriginal();
+        }
+        return model;
+      }).toList();
+    }
+
+    return const [];
   }
 
   /// Updates existing record or inserts if it doesn't exist.

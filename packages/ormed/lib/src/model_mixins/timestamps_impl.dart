@@ -74,7 +74,7 @@ mixin TimestampsTZImpl on ModelAttributes {
     return Carbon.fromDateTime(utcDateTime).tz('UTC');
   }
 
-  set createdAt(value) {
+  set createdAt(Object? value) {
     if (value == null) {
       setAttribute(_createdAtColumn, null);
     } else if (value is CarbonInterface) {
@@ -97,7 +97,7 @@ mixin TimestampsTZImpl on ModelAttributes {
     return Carbon.fromDateTime(utcDateTime).tz('UTC');
   }
 
-  set updatedAt(value) {
+  set updatedAt(Object? value) {
     if (value == null) {
       setAttribute(_updatedAtColumn, null);
     } else if (value is CarbonInterface) {

@@ -74,7 +74,7 @@ class ModelDefinition<TModel extends OrmEntity> {
   ///
   /// Accepts both the user-defined model and the generated tracked model.
   /// Automatically converts user-defined models to tracked models if needed.
-  /// For ad-hoc queries where TModel is Map<String, Object?>, returns the map directly.
+  /// For ad-hoc queries where TModel is [Map<String, Object?>], returns the map directly.
   Map<String, Object?> toMap(
     covariant dynamic model, {
     ValueCodecRegistry? registry,
@@ -612,7 +612,7 @@ class TableQueryDefinition<T extends OrmEntity>
 }
 
 /// Codec for _TableQueryDefinition that encodes/decodes using the underlying
-/// model's codec but returns Map<String, Object?>.
+/// model's codec but returns [Map<String, Object?>].
 class _TableQueryCodec<T extends OrmEntity> extends ModelCodec<AdHocRow> {
   const _TableQueryCodec(this.underlying);
 

@@ -16,7 +16,8 @@ import '../exceptions.dart';
 import '../model_definition.dart';
 import '../model_mixins/model_attributes.dart';
 import '../model_mixins/model_connection.dart';
-import '../repository/repository.dart';
+import '../mutation/mutation_input_helper.dart';
+import '../mutation/json_update.dart';
 import '../contracts.dart';
 import 'json_path.dart' as json_path;
 import 'query.dart';
@@ -154,7 +155,7 @@ class Query<T extends OrmEntity> {
     OrmConfig.ensureInitialized();
   }
 
-  final ModelDefinition<T > definition;
+  final ModelDefinition<T> definition;
   final QueryContext context;
   final List<FilterClause> _filters;
   final List<OrderClause> _orders;
@@ -292,7 +293,7 @@ class Query<T extends OrmEntity> {
 
   Future<void> _applyRelationHookBatch<R extends OrmEntity>(
     QueryPlan plan,
-    List<QueryRow<R >> batch,
+    List<QueryRow<R>> batch,
   ) async {
     if (batch.isEmpty || (_relations.isEmpty && _relationAggregates.isEmpty)) {
       return;
@@ -342,7 +343,10 @@ class Query<T extends OrmEntity> {
     if (plan.relationAggregates.isNotEmpty && model is ModelAttributes) {
       for (final aggregate in plan.relationAggregates) {
         if (row.containsKey(aggregate.alias)) {
-          (model as ModelAttributes).setAttribute(aggregate.alias, row[aggregate.alias]);
+          (model as ModelAttributes).setAttribute(
+            aggregate.alias,
+            row[aggregate.alias],
+          );
         }
       }
     }
@@ -780,6 +784,7 @@ class Query<T extends OrmEntity> {
     List<JsonUpdateClause> jsonUpdates = const [],
     Map<String, num> queryIncrementValues = const {},
     String feature = 'update',
+    bool returning = false,
   }) {
     final pkField = definition.primaryKeyField;
     final metadata = context.driver.metadata;
@@ -801,6 +806,7 @@ class Query<T extends OrmEntity> {
       driverName: metadata.name,
       primaryKey: identifier,
       queryIncrementValues: queryIncrementValues,
+      returning: returning,
     );
   }
 

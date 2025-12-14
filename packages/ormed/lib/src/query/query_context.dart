@@ -268,8 +268,10 @@ class QueryContext implements ConnectionResolver {
   ///
   /// [name] is the name of the local scope.
   /// [scope] is the callback function that applies the scope's constraints to a query.
-  void registerLocalScope<T extends OrmEntity>(String name, LocalScopeCallback<T> scope) =>
-      scopeRegistry.addLocalScope<T>(name, scope);
+  void registerLocalScope<T extends OrmEntity>(
+    String name,
+    LocalScopeCallback<T> scope,
+  ) => scopeRegistry.addLocalScope<T>(name, scope);
 
   /// Registers a local scope pattern for models of type [T].
   ///
@@ -340,6 +342,7 @@ class QueryContext implements ConnectionResolver {
       runMutation: runMutation,
       describeMutation: describeMutation,
       attachRuntimeMetadata: attachRuntimeMetadata,
+      context: this,
     );
     final hook = _resolveRepositoryHook(definition);
     if (hook != null && hook.handles(definition)) {
@@ -361,7 +364,9 @@ class QueryContext implements ConnectionResolver {
     return driver.metadata.queryBuilderHook;
   }
 
-  RepositoryHook? _resolveRepositoryHook(ModelDefinition<OrmEntity> definition) {
+  RepositoryHook? _resolveRepositoryHook(
+    ModelDefinition<OrmEntity> definition,
+  ) {
     for (final annotation in definition.metadata.driverAnnotations) {
       final hook =
           driver.metadata.annotationRepositoryHooks?[annotation.runtimeType];
@@ -531,7 +536,12 @@ class QueryContext implements ConnectionResolver {
 
       // Store in cache if caching is enabled
       if (plan.cacheTtl != null && !plan.disableCache) {
-        queryCache.put(preview.sql, preview.parameters, result, ttl: plan.cacheTtl);
+        queryCache.put(
+          preview.sql,
+          preview.parameters,
+          result,
+          ttl: plan.cacheTtl,
+        );
       }
 
       return result;

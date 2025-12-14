@@ -16,10 +16,12 @@ void runDriverRepositoryTests() {
   ormedGroup('Repository Operations', (dataSource) {
     late Repository<$User> userRepo;
     late Repository<$Author> authorRepo;
+    late Repository<Comment> softRepo;
 
     setUp(() async {
       userRepo = dataSource.context.repository<$User>();
       authorRepo = dataSource.context.repository<$Author>();
+      softRepo = dataSource.context.repository<Comment>();
     });
 
     group('Insert Operations', () {
@@ -238,6 +240,133 @@ void runDriverRepositoryTests() {
           expect(inserted[1].email, 'dto@example.com');
           expect(inserted[2].email, 'map@example.com');
         });
+      });
+    });
+
+    group('Read & convenience operations', () {
+      setUp(() async {
+        await userRepo.insertMany([
+          $User(id: 5000, email: 'read-1@example.com', active: true),
+          $User(id: 5001, email: 'read-2@example.com', active: false),
+        ]);
+      });
+
+      test('find() and findMany()', () async {
+        final one = await userRepo.find(5000);
+        expect(one, isNotNull);
+        expect(one!.email, 'read-1@example.com');
+
+        final many = await userRepo.findMany([5000, 5001]);
+        expect(many.length, 2);
+      });
+
+      test('findOrFail() throws when missing', () async {
+        expect(() => userRepo.findOrFail(999999), throwsA(isA<ModelNotFoundException>()));
+      });
+
+      test('all() returns every row', () async {
+        final rows = await userRepo.all();
+        expect(rows.length, greaterThanOrEqualTo(2));
+      });
+
+      test('first/firstOrFail with where map', () async {
+        final first = await userRepo.first(where: {'email': 'read-2@example.com'});
+        expect(first, isNotNull);
+        expect(first!.id, 5001);
+
+        final required = await userRepo.firstOrFail(where: {'email': 'read-1@example.com'});
+        expect(required.id, 5000);
+      });
+
+      test('exists/count with where map', () async {
+        final any = await userRepo.exists(where: {'email': 'read-1@example.com'});
+        expect(any, isTrue);
+        final count = await userRepo.count(where: {'active': false});
+        expect(count, 1);
+      });
+
+      test('save() inserts when PK missing, upserts when PK present', () async {
+        final inserted = await userRepo.save({'email': 'save-insert@example.com', 'active': true});
+        expect(inserted.id, isNotNull);
+
+        final updated = await userRepo.save($User(
+          id: inserted.id,
+          email: 'save-updated@example.com',
+          active: true,
+        ));
+        expect(updated.email, 'save-updated@example.com');
+      });
+
+      test('saveMany mixes insert and upsert', () async {
+        final results = await userRepo.saveMany([
+          {'email': 'savemany-insert@example.com', 'active': true},
+          $User(id: 5000, email: 'read-1@example.com', active: true),
+        ]);
+        expect(results.length, 2);
+        // upsert branch should have preserved PK and can change other fields
+        final refreshed = await userRepo.findOrFail(5000);
+        expect(refreshed.email, 'read-1@example.com');
+      });
+
+      test('refresh reloads attributes', () async {
+        var user = await userRepo.findOrFail(5000);
+        // mutate in DB
+        await dataSource.context
+            .query<$User>()
+            .whereEquals('id', 5000)
+            .update({'email': 'refreshed@example.com'});
+
+        user = await userRepo.refresh(user);
+        expect(user.email, 'refreshed@example.com');
+      });
+
+      test('first returns null when no match', () async {
+        final result = await userRepo.first(where: {'email': 'missing@example.com'});
+        expect(result, isNull);
+      });
+
+      test('replicate drops primary key so it can be inserted', () async {
+        final original = await userRepo.findOrFail(5001);
+        final clone = userRepo.replicate(original);
+        // Change a unique field to avoid conflicts, then insert
+        final newEmail = 'replica-${DateTime.now().microsecondsSinceEpoch}@example.com';
+        clone.email = newEmail;
+        final inserted = await userRepo.insert(clone);
+        expect(inserted.id, isNot(equals(original.id)));
+        expect(inserted.email, newEmail);
+        expect(inserted.active, original.active);
+      });
+    });
+
+    group('Soft delete operations', () {
+      setUp(() async {
+        await softRepo.insertMany([
+          const Comment(id: 1, body: 'keep me'),
+          const Comment(id: 2, body: 'trash me'),
+        ]);
+      });
+
+      test('trash soft-deletes matching rows', () async {
+        final removed = await softRepo.trash({'id': 2});
+        expect(removed, 1);
+        final exists = await softRepo.exists(where: {'id': 2});
+        // soft-deleted rows are filtered by default scopes
+        expect(exists, isFalse);
+      });
+
+      test('restore brings back soft-deleted rows', () async {
+        await softRepo.trash({'id': 2});
+        final restored = await softRepo.restore({'id': 2});
+        expect(restored, 1);
+        final exists = await softRepo.exists(where: {'id': 2});
+        expect(exists, isTrue);
+      });
+
+      test('forceDelete permanently removes rows', () async {
+        final removed = await softRepo.forceDelete({'id': 1});
+        expect(removed, 1);
+        final exists = await softRepo.exists(where: {'id': 1});
+        expect(exists, isFalse);
       });
     });
 
@@ -1726,7 +1855,7 @@ void runDriverRepositoryTests() {
 
           expect(
             () => userRepo.update(dto, where: 'invalid'),
-            throwsArgumentError,
+            throwsA(isA<StateError>()),
           );
         });
 
@@ -1743,7 +1872,7 @@ void runDriverRepositoryTests() {
               dto,
               where: const AuthorInsertDto(name: 'Author'),
             ),
-            throwsArgumentError,
+            throwsA(isA<StateError>()),
           );
         });
       });

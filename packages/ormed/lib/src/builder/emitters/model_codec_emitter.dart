@@ -34,7 +34,7 @@ class ModelCodecEmitter {
     buffer.writeln('    return <String, Object?>{');
     for (final field in fields) {
       final accessor = field.isVirtual
-          ? "(model is ModelAttributes ? model.getAttribute<${field.resolvedType}>('${field.columnName}') : null)"
+          ? "model.getAttribute<${field.resolvedType}>('${field.columnName}')"
           : 'model.${field.name}';
       buffer.writeln(
         "      '${field.columnName}': registry.encodeField(${field.identifier}, $accessor),",

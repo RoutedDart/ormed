@@ -62,9 +62,11 @@ class ModelPartialEmitter {
       buffer.writeln(
         '    final ${field.dartType}? ${field.name}Value = ${field.name};',
       );
-      buffer.writeln(
-        "    if (${field.name}Value == null) throw StateError('Missing required field: ${field.name}');",
-      );
+      buffer.writeAll([
+        "    if (${field.name}Value == null) {",
+        "        throw StateError('Missing required field: ${field.name}');",
+        "    }",
+      ]);
     }
     buffer.writeln('    return $trackedName(');
     for (final field in visible) {
@@ -83,16 +85,15 @@ class ModelPartialEmitter {
     buffer.writeln('}');
   }
 
-  void _writeToMapMethod(
-    StringBuffer buffer,
-    List<FieldDescriptor> fields,
-  ) {
+  void _writeToMapMethod(StringBuffer buffer, List<FieldDescriptor> fields) {
     buffer.writeln();
     buffer.writeln('  @override');
     buffer.writeln('  Map<String, Object?> toMap() {');
     buffer.writeln('    return {');
     for (final field in fields) {
-      buffer.writeln("      if (${field.name} != null) '${field.columnName}': ${field.name},");
+      buffer.writeln(
+        "      if (${field.name} != null) '${field.columnName}': ${field.name},",
+      );
     }
     buffer.writeln('    };');
     buffer.writeln('  }');

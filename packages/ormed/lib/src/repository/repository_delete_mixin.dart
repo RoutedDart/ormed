@@ -24,9 +24,8 @@ mixin RepositoryDeleteMixin<T extends OrmEntity>
   Future<int> deleteMany(List<Object> wheres) async {
     if (wheres.isEmpty) return 0;
 
-    final plan = buildDeletePlanFromWhereInputs(wheres);
-    final result = await runMutation(plan);
-    return result.affectedRows;
+    final query = _requireQuery('deleteMany');
+    return query.deleteWhereMany(wheres);
   }
 
   /// Deletes a single record by primary key [id].
@@ -40,17 +39,8 @@ mixin RepositoryDeleteMixin<T extends OrmEntity>
   Future<int> deleteByIds(List<Object> ids) async {
     if (ids.isEmpty) return 0;
 
-    final pk = definition.primaryKeyField;
-    if (pk == null) {
-      throw StateError(
-        'deleteByIds requires ${definition.modelName} to declare a primary key.',
-      );
-    }
-
-    final keys = ids
-        .map((id) => <String, Object?>{pk.columnName: id})
-        .toList(growable: false);
-    return deleteByKeys(keys);
+    final query = _requireQuery('deleteByIds');
+    return query.deleteWhereMany(ids);
   }
 
   /// Deletes records from the database by their [keys].
@@ -67,55 +57,8 @@ mixin RepositoryDeleteMixin<T extends OrmEntity>
   Future<int> deleteByKeys(List<Map<String, Object?>> keys) async {
     if (keys.isEmpty) return 0;
     requireKeys(keys);
-    final plan = buildDeletePlan(keys);
-    final result = await runMutation(plan);
 
-    return result.affectedRows;
-  }
-
-  /// Builds a delete plan from flexible where inputs.
-  MutationPlan buildDeletePlanFromWhereInputs(List<Object> wheres) {
-    final keys = wheres.map(_whereInputToKey).toList(growable: false);
-    return buildDeletePlan(keys);
-  }
-
-  Map<String, Object?> _whereInputToKey(Object input) {
-    final pkField = definition.primaryKeyField;
-
-    // For tracked models, prefer deleting by primary key to avoid null column matches
-    if (input is T) {
-      if (pkField == null) {
-        throw StateError(
-          'delete requires ${definition.modelName} to declare a primary key.',
-        );
-      }
-      final map = definition.toMap(input, registry: codecs);
-      final pkValue = map[pkField.columnName];
-      if (pkValue == null) {
-        throw StateError('Primary key cannot be null for delete().');
-      }
-      return {pkField.columnName: pkValue};
-    }
-
-    // Try the flexible where conversion first
-    try {
-      final map = whereInputToMap(input);
-      if (map != null && map.isNotEmpty) {
-        return map;
-      }
-    } on ArgumentError {
-      // fall through to PK fallback
-    }
-
-    // Fallback: treat input as a primary key value (any type) if PK exists
-    if (pkField != null) {
-      return {pkField.columnName: input};
-    }
-
-    throw ArgumentError.value(
-      input,
-      'where',
-      'Delete requires at least one condition.',
-    );
+    final query = _requireQuery('deleteByKeys');
+    return query.deleteWhereMany(keys);
   }
 }

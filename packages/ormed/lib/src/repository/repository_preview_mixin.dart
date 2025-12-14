@@ -47,11 +47,8 @@ mixin RepositoryPreviewMixin<T extends OrmEntity>
         'previewInsertMany requires inputs',
       );
     }
-    final hasTrackedModels = inputs.any((input) => isTrackedModel(input));
-    final plan = buildInsertPlanFromInputs(
-      inputs,
-      applySentinelFiltering: hasTrackedModels,
-    );
+    final query = _requireQuery('previewInsertMany');
+    final plan = query.previewInsertPlan(inputs);
     return describeMutation(plan);
   }
 
@@ -66,12 +63,8 @@ mixin RepositoryPreviewMixin<T extends OrmEntity>
         'previewInsertOrIgnoreMany requires inputs',
       );
     }
-    final hasTrackedModels = inputs.any((input) => isTrackedModel(input));
-    final plan = buildInsertPlanFromInputs(
-      inputs,
-      ignoreConflicts: true,
-      applySentinelFiltering: hasTrackedModels,
-    );
+    final query = _requireQuery('previewInsertOrIgnoreMany');
+    final plan = query.previewInsertPlan(inputs, ignoreConflicts: true);
     return describeMutation(plan);
   }
 
@@ -96,7 +89,8 @@ mixin RepositoryPreviewMixin<T extends OrmEntity>
         'previewUpdateMany requires inputs',
       );
     }
-    final plan = buildUpdatePlanFromInputs(
+    final query = _requireQuery('previewUpdateMany');
+    final plan = query.previewUpdatePlan(
       inputs,
       where: where,
       jsonUpdates: jsonUpdates,
@@ -129,12 +123,12 @@ mixin RepositoryPreviewMixin<T extends OrmEntity>
         'previewUpsertMany requires inputs',
       );
     }
-    final plan = buildUpsertPlanFromInputs(
+    final query = _requireQuery('previewUpsertMany');
+    final plan = query.previewUpsertPlan(
       inputs,
-      returning: false,
       uniqueBy: uniqueBy,
       updateColumns: updateColumns,
-      jsonUpdates: jsonUpdates,
+      returning: false,
     );
     return describeMutation(plan);
   }
@@ -149,7 +143,8 @@ mixin RepositoryPreviewMixin<T extends OrmEntity>
   /// ```
   StatementPreview previewDeleteByKeys(List<Map<String, Object?>> keys) {
     requireKeys(keys);
-    final plan = buildDeletePlan(keys);
+    final query = _requireQuery('previewDeleteByKeys');
+    final plan = query.previewDeleteWherePlan(keys);
     return describeMutation(plan);
   }
 
@@ -175,7 +170,8 @@ mixin RepositoryPreviewMixin<T extends OrmEntity>
         'previewDeleteMany requires inputs',
       );
     }
-    final plan = buildDeletePlanFromWhereInputs(wheres);
+    final query = _requireQuery('previewDeleteMany');
+    final plan = query.previewDeleteWherePlan(wheres);
     return describeMutation(plan);
   }
 

@@ -7,7 +7,10 @@ part of 'repository.dart';
 /// - Insert DTOs (`$ModelInsertDto`)
 /// - Raw maps (`Map<String, Object?>`)
 mixin RepositoryInsertMixin<T extends OrmEntity>
-    on RepositoryBase<T>, RepositoryHelpersMixin<T>, RepositoryInputHandlerMixin<T> {
+    on
+        RepositoryBase<T>,
+        RepositoryHelpersMixin<T>,
+        RepositoryInputHandlerMixin<T> {
   /// Inserts a single [model] into the database and returns the inserted record.
   ///
   /// Accepts tracked models, insert DTOs, or raw maps.
@@ -34,6 +37,12 @@ mixin RepositoryInsertMixin<T extends OrmEntity>
   /// final insertedUser = await repository.insert(data);
   /// ```
   Future<T> insert(Object model) async {
+    final query = _queryOrNull;
+    if (query != null) {
+      final inserted = await query.insertManyInputs([model]);
+      return inserted.first;
+    }
+
     final inserted = await insertMany([model]);
     return inserted.first;
   }
@@ -54,25 +63,18 @@ mixin RepositoryInsertMixin<T extends OrmEntity>
   /// ];
   /// final insertedUsers = await repository.insertMany(users);
   /// ```
-  Future<List<T>> insertMany(List<Object> inputs, {bool returning = true}) async {
+  Future<List<T>> insertMany(
+    List<Object> inputs, {
+    bool returning = true,
+  }) async {
     if (inputs.isEmpty) return const [];
 
-    // Determine if we're dealing with tracked models for sentinel filtering
-    final hasTrackedModels = inputs.any((input) => isTrackedModel(input));
-
-    final plan = buildInsertPlanFromInputs(
+    final query = _requireQuery('insertMany');
+    return query.insertManyInputs(
       inputs,
+      ignoreConflicts: false,
       returning: returning,
-      applySentinelFiltering: hasTrackedModels,
     );
-    final result = await runMutation(plan);
-
-    // For returning results, we need the original models if available
-    final originalModels = inputs.whereType<T>().toList();
-
-    // Extract the input maps from the plan for merging with returned data
-    final inputMaps = plan.rows.map((r) => r.values).toList();
-    return mapResultWithInputs(originalModels, inputMaps, result, returning);
   }
 
   /// Inserts a single item into the database, ignoring any conflicts.
@@ -104,49 +106,11 @@ mixin RepositoryInsertMixin<T extends OrmEntity>
   Future<int> insertOrIgnoreMany(List<Object> inputs) async {
     if (inputs.isEmpty) return 0;
 
-    final hasTrackedModels = inputs.any((input) => isTrackedModel(input));
-
-    final plan = buildInsertPlanFromInputs(
+    final query = _requireQuery('insertOrIgnoreMany');
+    final result = await query.insertManyInputsRaw(
       inputs,
       ignoreConflicts: true,
-      applySentinelFiltering: hasTrackedModels,
     );
-    final result = await runMutation(plan);
     return result.affectedRows;
-  }
-
-  /// Builds an insert plan from various input types.
-  MutationPlan buildInsertPlanFromInputs(
-    List<Object> inputs, {
-    bool returning = true,
-    bool ignoreConflicts = false,
-    bool applySentinelFiltering = false,
-  }) {
-    final rows = inputs.map((input) {
-      // Apply timestamps to tracked models before serialization
-      if (input is T) {
-        _applyInsertTimestampsToModel(input);
-      }
-
-      final map = insertInputToMap(
-        input,
-        applySentinelFiltering: applySentinelFiltering && isTrackedModel(input),
-      );
-
-      // For non-tracked models, ensure timestamps in the map
-      if (input is! ModelAttributes) {
-        _ensureTimestampsInMap(map, isInsert: true);
-      }
-
-      return map;
-    }).toList(growable: false);
-
-    return MutationPlan.insert(
-      definition: definition,
-      rows: rows,
-      driverName: driverName,
-      returning: returning,
-      ignoreConflicts: ignoreConflicts,
-    );
   }
 }
