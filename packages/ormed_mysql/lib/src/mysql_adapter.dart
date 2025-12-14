@@ -979,39 +979,83 @@ class MySqlDriverAdapter
       return const MutationResult(affectedRows: 0);
     }
 
+    final pkField = plan.definition.primaryKeyField;
+    final pkColumn = pkField?.columnName;
+
+    // If returning is requested, pre-fetch the PK values for rows where the
+    // WHERE clause doesn't include the PK (e.g., using InsertDto with email)
+    // We also need to validate rows exist when WHERE has multiple conditions (e.g., Partial with id AND email)
+    List<Object?>? preFetchedPkValues;
+    if (plan.returning && pkColumn != null) {
+      preFetchedPkValues = <Object?>[];
+      
+      for (final row in plan.rows) {
+        // Check if PK is in the keys
+        final pkValue = row.keys[pkColumn];
+        
+        // If there are additional WHERE conditions beyond just the PK,
+        // we need to validate a row actually matches ALL conditions
+        final hasAdditionalConditions = row.keys.length > 1 || 
+            (row.keys.length == 1 && !row.keys.containsKey(pkColumn));
+        
+        if (pkValue != null && !hasAdditionalConditions) {
+          // Simple case: only PK in WHERE, use it directly
+          preFetchedPkValues.add(pkValue);
+        } else if (row.keys.isNotEmpty) {
+          // Either PK is not in keys, or there are additional WHERE conditions
+          // Need to pre-fetch to validate and get the PK
+          final whereClauses = row.keys.entries
+              .map((e) => '${_quote(e.key)} = ?')
+              .join(' AND ');
+          final fetchSql = 'SELECT ${_quote(pkColumn)} FROM '
+              '${_tableIdentifier(plan.definition)} WHERE $whereClauses LIMIT 1';
+          final fetchResult = await _executeStatement(
+            fetchSql,
+            row.keys.values.toList(),
+          );
+          final fetchedRows = _collectRows(fetchResult);
+          if (fetchedRows.isNotEmpty) {
+            preFetchedPkValues.add(fetchedRows.first[pkColumn]);
+          } else {
+            preFetchedPkValues.add(null);
+          }
+        } else {
+          preFetchedPkValues.add(null);
+        }
+      }
+    }
+
     final shape = _buildUpdateShape(plan);
     final result = await _executeMutation(shape);
 
     // If returning is requested, re-query to get the updated rows
     // MySQL doesn't support RETURNING for UPDATE, so we simulate it
-    if (plan.returning) {
-      final pkField = plan.definition.primaryKeyField;
-      if (pkField != null) {
-        final pkColumn = pkField.columnName;
-        final connection = await _connection();
-        final returnedRows = <Map<String, Object?>>[];
+    if (plan.returning && pkColumn != null) {
+      final connection = await _connection();
+      final returnedRows = <Map<String, Object?>>[];
 
-        for (final row in plan.rows) {
-          // Get the PK value from the keys (WHERE clause)
-          final pkValue = row.keys[pkColumn];
-          if (pkValue != null) {
-            final fetchedRow = await _fetchRowByPrimaryKey(
-              plan.definition,
-              pkValue,
-              connection,
-            );
-            if (fetchedRow != null) {
-              returnedRows.add(fetchedRow);
-            }
+      // Use pre-fetched PK values if available, otherwise fall back to keys
+      final pkValues = preFetchedPkValues ?? 
+          plan.rows.map((r) => r.keys[pkColumn]).toList();
+
+      for (final pkValue in pkValues) {
+        if (pkValue != null) {
+          final fetchedRow = await _fetchRowByPrimaryKey(
+            plan.definition,
+            pkValue,
+            connection,
+          );
+          if (fetchedRow != null) {
+            returnedRows.add(fetchedRow);
           }
         }
+      }
 
-        if (returnedRows.isNotEmpty) {
-          return MutationResult(
-            affectedRows: result.affectedRows > 0 ? result.affectedRows : returnedRows.length,
-            returnedRows: returnedRows,
-          );
-        }
+      if (returnedRows.isNotEmpty) {
+        return MutationResult(
+          affectedRows: result.affectedRows > 0 ? result.affectedRows : returnedRows.length,
+          returnedRows: returnedRows,
+        );
       }
     }
 
@@ -1024,8 +1068,28 @@ class MySqlDriverAdapter
   }
 
   Future<MutationResult> _runQueryDelete(MutationPlan plan) async {
+    // MySQL doesn't support RETURNING for DELETE, so we need to:
+    // 1. First SELECT the rows that will be deleted (before the delete)
+    // 2. Execute the DELETE
+    // 3. Return the pre-fetched rows
+    List<Map<String, Object?>>? preSelectedRows;
+    if (plan.returning && plan.queryPlan != null) {
+      // Execute the original SELECT query to get the rows that will be deleted
+      preSelectedRows = await execute(plan.queryPlan!);
+    }
+
     final shape = _buildQueryDeleteShape(plan);
-    return _executeMutation(shape);
+    final result = await _executeMutation(shape);
+
+    // If returning is requested and we have pre-selected rows, return them
+    if (plan.returning && preSelectedRows != null && preSelectedRows.isNotEmpty) {
+      return MutationResult(
+        affectedRows: result.affectedRows > 0 ? result.affectedRows : preSelectedRows.length,
+        returnedRows: preSelectedRows,
+      );
+    }
+
+    return result;
   }
 
   Future<MutationResult> _runUpsert(MutationPlan plan) async {
@@ -1151,8 +1215,51 @@ class MySqlDriverAdapter
   }
 
   Future<MutationResult> _runQueryUpdate(MutationPlan plan) async {
+    // MySQL doesn't support RETURNING for UPDATE, so we need to:
+    // 1. First SELECT the rows that will be updated (before the update)
+    // 2. Execute the UPDATE
+    // 3. Re-fetch the updated rows and return them
+    List<Map<String, Object?>>? preSelectedRows;
+    if (plan.returning && plan.queryPlan != null) {
+      // Execute the original SELECT query to get the rows that will be updated
+      preSelectedRows = await execute(plan.queryPlan!);
+    }
+
     final shape = _buildQueryUpdateShape(plan);
-    return _executeMutation(shape);
+    final result = await _executeMutation(shape);
+
+    // If returning is requested and we have pre-selected rows, re-fetch them
+    if (plan.returning && preSelectedRows != null && preSelectedRows.isNotEmpty) {
+      final pkField = plan.definition.primaryKeyField;
+      if (pkField != null) {
+        final pkColumn = pkField.columnName;
+        final connection = await _connection();
+        final returnedRows = <Map<String, Object?>>[];
+
+        for (final row in preSelectedRows) {
+          final pkValue = row[pkColumn];
+          if (pkValue != null) {
+            final fetchedRow = await _fetchRowByPrimaryKey(
+              plan.definition,
+              pkValue,
+              connection,
+            );
+            if (fetchedRow != null) {
+              returnedRows.add(fetchedRow);
+            }
+          }
+        }
+
+        if (returnedRows.isNotEmpty) {
+          return MutationResult(
+            affectedRows: result.affectedRows > 0 ? result.affectedRows : returnedRows.length,
+            returnedRows: returnedRows,
+          );
+        }
+      }
+    }
+
+    return result;
   }
 
   Future<MutationResult> _executeMutation(_MySqlMutationShape shape) async {
