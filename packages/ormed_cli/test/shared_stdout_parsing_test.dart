@@ -1,4 +1,4 @@
-import 'package:ormed_cli/src/commands/shared.dart';
+import 'package:ormed_cli/src/commands/base/shared.dart';
 import 'package:test/test.dart';
 
 void main() {

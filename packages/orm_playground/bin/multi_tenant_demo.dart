@@ -3,30 +3,43 @@ library;
 
 import 'dart:io';
 
+import 'package:artisan_args/artisan_args.dart';
 import 'package:orm_playground/src/database/seeders.dart' as playground_seeders;
 import 'package:ormed/ormed.dart';
 import 'package:orm_playground/orm_playground.dart';
+
+/// Shared CLI IO for styled output.
+final io = ArtisanIO(
+  style: ArtisanStyle(ansi: stdout.supportsAnsiEscapes),
+  out: stdout.writeln,
+  err: stderr.writeln,
+);
 
 Future<void> main(List<String> arguments) async {
   final database = PlaygroundDatabase();
   final logSql = arguments.contains('--sql');
 
+  io.title('Multi-Tenant Demo');
+
   // Get available tenants from configuration
   final tenants = database.tenantNames.toList();
-  stdout.writeln('Available tenants: ${tenants.join(', ')}');
+  io.twoColumnDetail('Available tenants', tenants.join(', '));
+  io.newLine();
 
   // Store data sources for each tenant
   final dataSources = <String, DataSource>{};
 
   try {
     // Initialize and prepare each tenant
+    io.section('Initializing Tenants');
     for (final tenant in tenants) {
       final ds = await database.dataSource(tenant: tenant);
       dataSources[tenant] = ds;
       await _prepareTenant(ds, tenant, logSql: logSql);
     }
 
-    stdout.writeln('\n--- Tenant Summary ---');
+    io.newLine();
+    io.section('Tenant Summary');
 
     // Summarize each tenant
     for (final tenant in tenants) {
@@ -35,8 +48,12 @@ Future<void> main(List<String> arguments) async {
     }
 
     // Demonstrate tenant isolation
-    stdout.writeln('\n--- Tenant Isolation Demo ---');
+    io.newLine();
+    io.section('Tenant Isolation Demo');
     await _demonstrateTenantIsolation(dataSources);
+
+    io.newLine();
+    io.success('Multi-tenant demo completed successfully.');
   } finally {
     await database.dispose();
   }
@@ -51,12 +68,20 @@ Future<void> _prepareTenant(
   if (!await _hasUsers(ds)) {
     // Seed using the underlying connection for compatibility
     await playground_seeders.seedPlayground(ds.connection);
-    stdout.writeln('Seeded tenant: $tenant');
+    io.writeln(
+      '${io.style.success('✓')} Seeded tenant: ${io.style.emphasize(tenant)}',
+    );
+  } else {
+    io.writeln(
+      '${io.style.muted('○')} Tenant ${io.style.emphasize(tenant)} already has data',
+    );
   }
 
   if (logSql) {
     ds.beforeExecuting((statement) {
-      stdout.writeln('[Tenant $tenant SQL] ${statement.sqlWithBindings}');
+      io.writeln(
+        io.style.muted('[Tenant $tenant SQL] ${statement.sqlWithBindings}'),
+      );
     });
   }
 }
@@ -70,13 +95,14 @@ Future<bool> _hasUsers(DataSource ds) async {
 Future<void> _summarizeTenant(String tenant, DataSource ds) async {
   final users = await ds.query<User>().orderBy('id').get();
   final emails = users.map((user) => user.email).join(', ');
-
-  stdout.writeln('Tenant "$tenant" has ${users.length} users.');
-  stdout.writeln('  Users: ${emails.isEmpty ? '<none>' : emails}');
-
-  // Also show post counts
   final postCount = await ds.query<Post>().count();
-  stdout.writeln('  Posts: $postCount');
+
+  io.writeln(io.style.emphasize('Tenant "$tenant"'));
+  io.twoColumnDetail(
+    '  Users',
+    '${users.length} (${emails.isEmpty ? 'none' : emails})',
+  );
+  io.twoColumnDetail('  Posts', '$postCount');
 }
 
 /// Demonstrates that each DataSource operates independently.
@@ -87,7 +113,7 @@ Future<void> _demonstrateTenantIsolation(
   final analyticsDs = dataSources['analytics'];
 
   if (defaultDs == null || analyticsDs == null) {
-    stdout.writeln('Not all tenants available for isolation demo.');
+    io.warning('Not all tenants available for isolation demo.');
     return;
   }
 
@@ -95,18 +121,19 @@ Future<void> _demonstrateTenantIsolation(
   final defaultUserCount = await defaultDs.query<User>().count();
   final analyticsUserCount = await analyticsDs.query<User>().count();
 
-  stdout.writeln('Default tenant users: $defaultUserCount');
-  stdout.writeln('Analytics tenant users: $analyticsUserCount');
+  io.twoColumnDetail('Default tenant users', '$defaultUserCount');
+  io.twoColumnDetail('Analytics tenant users', '$analyticsUserCount');
 
   // Demonstrate using repo<T>() and query<T>() on different tenants
-  stdout.writeln('\nLatest user from each tenant:');
+  io.newLine();
+  io.info('Latest user from each tenant:');
 
   final latestDefault = await defaultDs
       .query<User>()
       .orderBy('id', descending: true)
       .firstOrNull();
   if (latestDefault != null) {
-    stdout.writeln('  Default: ${latestDefault.email}');
+    io.twoColumnDetail('  Default', latestDefault.email);
   }
 
   final latestAnalytics = await analyticsDs
@@ -114,11 +141,12 @@ Future<void> _demonstrateTenantIsolation(
       .orderBy('id', descending: true)
       .firstOrNull();
   if (latestAnalytics != null) {
-    stdout.writeln('  Analytics: ${latestAnalytics.email}');
+    io.twoColumnDetail('  Analytics', latestAnalytics.email);
   }
 
   // Demonstrate transaction on specific tenant
-  stdout.writeln('\nRunning transaction on default tenant...');
+  io.newLine();
+  io.info('Running transaction on default tenant...');
   final now = DateTime.now().toUtc();
   final tempTagName = 'multi-tenant-demo-${now.microsecondsSinceEpoch}';
 
@@ -132,13 +160,14 @@ Future<void> _demonstrateTenantIsolation(
         .query<Tag>()
         .whereEquals('name', tempTagName)
         .exists();
-    stdout.writeln(
-      '  Tag "$tempTagName" exists in analytics: $existsInAnalytics',
+    io.twoColumnDetail(
+      '  Tag exists in analytics',
+      existsInAnalytics ? 'yes' : 'no',
     );
 
     // Clean up
     await defaultDs.query<Tag>().whereEquals('name', tempTagName).forceDelete();
   });
 
-  stdout.writeln('Transaction completed - tenants remain isolated.');
+  io.success('Transaction completed - tenants remain isolated.');
 }

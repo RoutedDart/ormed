@@ -5,8 +5,8 @@ import 'package:artisan_args/artisan_args.dart';
 import 'package:ormed/ormed.dart';
 import 'package:path/path.dart' as p;
 
-import '../config.dart';
-import 'shared.dart';
+import '../../config.dart';
+import '../base/shared.dart';
 
 class SchemaDumpCommand extends ArtisanCommand<void> {
   SchemaDumpCommand() {
@@ -52,7 +52,7 @@ class SchemaDumpCommand extends ArtisanCommand<void> {
     final config = loadOrmProjectConfig(context.configFile);
 
     if (prune && !confirmToProceed(force: force, action: 'prune migrations')) {
-      stdout.writeln('Schema dump cancelled.');
+      cliIO.warning('Schema dump cancelled.');
       return;
     }
 
@@ -109,7 +109,7 @@ class SchemaDumpCommand extends ArtisanCommand<void> {
           schemaFile.path,
           from: context.root.path,
         );
-        stdout.writeln('Database schema dumped to: $relativePath');
+        cliIO.success('Database schema dumped to: $relativePath');
 
         if (prune) {
           await _pruneMigrations(context, config);
@@ -131,7 +131,7 @@ class SchemaDumpCommand extends ArtisanCommand<void> {
     final migrationsDir = Directory(migrationsPath);
 
     if (!migrationsDir.existsSync()) {
-      stdout.writeln('No migrations directory found.');
+      cliIO.warning('No migrations directory found.');
       return;
     }
 
@@ -143,7 +143,7 @@ class SchemaDumpCommand extends ArtisanCommand<void> {
       }
     }
 
-    stdout.writeln('Pruned $deletedCount migration file(s).');
+    cliIO.success('Pruned $deletedCount migration file(s).');
   }
 }
 
@@ -181,16 +181,21 @@ class SchemaDescribeCommand extends ArtisanCommand<void> {
 
         if (asJson) {
           final payload = const JsonEncoder.withIndent('  ').convert(metadata);
-          stdout.writeln(payload);
+          cliIO.writeln(payload);
         } else {
-          for (final table in metadata) {
-            final name = table['name'];
-            stdout.writeln('Table: $name');
-            if (table['indexCount'] != null) {
-              stdout.writeln('  Indexes: ${table['indexCount']}');
-            }
-            if (table['validator'] != null) {
-              stdout.writeln('  Validator: ${table['validator']}');
+          if (metadata.isEmpty) {
+            cliIO.info('No tables found in database.');
+          } else {
+            cliIO.title('Database Schema');
+            for (final table in metadata) {
+              final name = table['name'];
+              cliIO.writeln(cliIO.style.emphasize('Table: $name'));
+              if (table['indexCount'] != null) {
+                cliIO.twoColumnDetail('  Indexes', '${table['indexCount']}');
+              }
+              if (table['validator'] != null) {
+                cliIO.twoColumnDetail('  Validator', '${table['validator']}');
+              }
             }
           }
         }

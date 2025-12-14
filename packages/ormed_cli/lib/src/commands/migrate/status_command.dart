@@ -1,9 +1,10 @@
 import 'dart:io';
 
+import 'package:artisan_args/artisan_args.dart';
 import 'package:ormed/ormed.dart';
 
-import 'runner_command.dart';
-import 'shared.dart';
+import '../base/runner_command.dart';
+import '../base/shared.dart';
 
 class StatusCommand extends RunnerCommand {
   StatusCommand() {
@@ -36,28 +37,35 @@ class StatusCommand extends RunnerCommand {
         : statuses;
     if (filtered.isEmpty) {
       if (pendingOnly) {
-        stdout.writeln('No pending migrations.');
+        cliIO.info('No pending migrations.');
       } else {
-        stdout.writeln('No migrations registered.');
+        cliIO.info('No migrations registered.');
       }
       return;
     }
 
-    stdout.writeln('Migration                                 Status');
-    stdout.writeln(
-      '------------------------------------------ -------------------------',
-    );
-    for (final status in filtered) {
-      final batchSuffix = status.batch != null
-          ? ' [batch ${status.batch}]'
-          : '';
+    cliIO.title('Migration Status');
+
+    final rows = filtered.map((status) {
+      final batchStr = status.batch?.toString() ?? '-';
       final statusLabel = status.applied
-          ? 'Ran at ${status.appliedAt?.toIso8601String() ?? 'unknown'}'
-          : 'Pending';
-      stdout.writeln(
-        '${status.descriptor.id}$batchSuffix'.padRight(40) + statusLabel,
-      );
-    }
+          ? cliIO.style.success('Applied')
+          : cliIO.style.warning('Pending');
+      final appliedAt = status.applied
+          ? (status.appliedAt?.toIso8601String() ?? 'unknown')
+          : '-';
+      return [
+        status.descriptor.id.toString(),
+        batchStr,
+        statusLabel,
+        appliedAt,
+      ];
+    }).toList();
+
+    cliIO.table(
+      headers: ['Migration', 'Batch', 'Status', 'Applied At'],
+      rows: rows,
+    );
 
     if (pendingOnly && filtered.isNotEmpty) {
       exitCode = 1;

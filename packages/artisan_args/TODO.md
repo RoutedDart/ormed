@@ -141,10 +141,83 @@
   - [x] `Select<T>` - single select with arrow keys
   - [x] `MultiSelect<T>` - multi select with arrow keys
   - [x] `SpinnerComponent` - async spinner
+  - [x] `SearchComponent<T>` - fuzzy search selection
+  - [x] `AnticipateComponent` - autocomplete input
+  - [x] `PasswordComponent` - password input (no echo, confirmation)
+  - [x] `PauseComponent` - press any key to continue
+  - [x] `CountdownComponent` - countdown timer
 - [x] **Composition:**
   - [x] `CompositeComponent` - combine components
   - [x] `ColumnComponent` - vertical layout
   - [x] `RowComponent` - horizontal layout
+- [x] **Output Components:**
+  - [x] `PanelComponent` - boxed panel with title
+  - [x] `TreeComponent` - tree structure display
+  - [x] `ColumnsComponent` - multi-column layout
+  - [x] `DefinitionListComponent` - term:description pairs
+  - [x] `TwoColumnDetailComponent` - dot-fill key-value
+  - [x] `TaskComponent` - Laravel-style task status
+  - [x] `AlertComponent` - info/success/warning/error blocks
+  - [x] `TableComponent` - ASCII table with headers/rows
+  - [x] `HorizontalTableComponent` - row-as-headers table
+  - [x] `StyledBlockComponent` - Symfony-style block
+  - [x] `CommentComponent` - dimmed comment text
+  - [x] `ExceptionComponent` - pretty exception rendering
+  - [x] `SimpleExceptionComponent` - one-line exception
+  - [x] `LinkComponent` - clickable terminal link (OSC 8)
+  - [x] `LinkGroupComponent` - grouped links with footnotes
+  - [x] `SpinnerComponent` - animated spinner (interactive)
+  - [x] `StatefulSpinner` - manual control spinner
+  - [x] `ProgressBarComponent` - static progress bar
+  - [x] `StatefulProgressBar` - manual control progress bar
+
+## Package Structure
+
+```
+lib/src/
+├── components/          # All components (29 files)
+│   ├── base.dart        # CliComponent, InteractiveComponent, ComponentContext
+│   ├── layout.dart      # CompositeComponent, ColumnComponent, RowComponent
+│   ├── text.dart        # Text, StyledText, Rule
+│   ├── list.dart        # BulletList, NumberedList
+│   ├── box.dart         # KeyValue, Box
+│   ├── progress.dart    # ProgressBar (static), SpinnerFrame
+│   ├── progress_bar.dart # ProgressBarComponent, StatefulProgressBar
+│   ├── spinner.dart     # SpinnerComponent, StatefulSpinner, SpinnerFrames
+│   ├── input.dart       # TextInput, Confirm, SecretInputComponent
+│   ├── select.dart      # Select, MultiSelect
+│   ├── search.dart      # SearchComponent, PauseComponent, CountdownComponent
+│   ├── anticipate.dart  # AnticipateComponent
+│   ├── password.dart    # PasswordComponent
+│   ├── textarea.dart    # TextareaComponent (external editor)
+│   ├── wizard.dart      # WizardComponent, WizardStep
+│   ├── panel.dart       # PanelComponent
+│   ├── tree.dart        # TreeComponent
+│   ├── columns.dart     # ColumnsComponent
+│   ├── table.dart       # TableComponent, HorizontalTableComponent
+│   ├── alert.dart       # AlertComponent
+│   ├── task.dart        # TaskComponent
+│   ├── styled_block.dart # StyledBlockComponent, CommentComponent
+│   ├── exception.dart   # ExceptionComponent, SimpleExceptionComponent
+│   └── link.dart        # LinkComponent, LinkGroupComponent
+│
+├── io/                  # IO utilities (3 files)
+│   ├── artisan_io.dart  # Main IO facade (uses components)
+│   ├── components.dart  # ArtisanComponents (high-level helpers)
+│   └── validators.dart  # Input validators (Acanthis)
+│
+├── output/              # Terminal utilities (1 file)
+│   └── terminal.dart    # Terminal, KeyCode, RawModeState
+│
+├── style/               # Styling utilities
+│   ├── artisan_style.dart # ArtisanStyle
+│   ├── verbosity.dart   # ArtisanVerbosity
+│   └── chalk.dart       # ArtisanChalk, ColorPresets
+│
+└── runner/              # Command runner
+    ├── artisan_command.dart
+    └── artisan_command_runner.dart
+```
 
 ## Still Missing (Future Enhancements)
 
@@ -162,4 +235,3 @@
 - [ ] Terminal resize events
 - [ ] Clipboard support
 - [ ] `logo(ascii)` - ASCII art logo display
-

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:artisan_args/artisan_args.dart';
 import 'package:ormed/ormed.dart';
 // ignore: unused_import
 import 'package:ormed_mysql/ormed_mysql.dart';
@@ -11,7 +12,194 @@ import 'package:ormed_sqlite/ormed_sqlite.dart';
 import 'package:path/path.dart' as p;
 import 'package:meta/meta.dart';
 
-import '../config.dart';
+import '../../config.dart';
+
+/// Interface for loading migration definitions from the project.
+abstract class MigrationRegistryLoader {
+  Future<List<MigrationDescriptor>> load(
+    Directory root,
+    OrmProjectConfig config, {
+    String? registryPath,
+  });
+
+  Future<SchemaPlan> buildPlan({
+    required Directory root,
+    required OrmProjectConfig config,
+    required MigrationId id,
+    required MigrationDirection direction,
+    required SchemaSnapshot snapshot,
+    String? registryPath,
+  });
+}
+
+/// Interface for running project seeders.
+abstract class ProjectSeederRunner {
+  Future<void> run({
+    required OrmProjectContext project,
+    required OrmProjectConfig config,
+    required SeedSection seeds,
+    List<String>? overrideClasses,
+    bool pretend = false,
+    String? databaseOverride,
+    String? connection,
+  });
+}
+
+class ProcessMigrationRegistryLoader implements MigrationRegistryLoader {
+  const ProcessMigrationRegistryLoader();
+
+  @override
+  Future<List<MigrationDescriptor>> load(
+    Directory root,
+    OrmProjectConfig config, {
+    String? registryPath,
+  }) async {
+    final path = registryPath ?? resolvePath(root, config.migrations.registry);
+    final script = File(path);
+    if (!script.existsSync()) {
+      throw StateError('Migration registry ${script.path} not found.');
+    }
+    final result = await Process.run(
+      'dart',
+      ['run', p.relative(script.path, from: root.path), '--dump-json'],
+      workingDirectory: root.path,
+      runInShell: Platform.isWindows,
+    );
+    if (result.exitCode != 0) {
+      throw StateError('Failed to load migrations:\n${result.stderr}');
+    }
+    final stdoutText = result.stdout as String;
+    final payloadText = _extractJsonPayload(
+      stdoutText,
+      context: 'migration registry',
+      expectArray: true,
+    );
+    final payload = jsonDecode(payloadText) as List;
+    return payload
+        .map(
+          (entry) => MigrationDescriptor.fromJson(
+            Map<String, Object?>.from(entry as Map),
+          ),
+        )
+        .toList(growable: false);
+  }
+
+  @override
+  Future<SchemaPlan> buildPlan({
+    required Directory root,
+    required OrmProjectConfig config,
+    required MigrationId id,
+    required MigrationDirection direction,
+    required SchemaSnapshot snapshot,
+    String? registryPath,
+  }) async {
+    final path = registryPath ?? resolvePath(root, config.migrations.registry);
+    final script = File(path);
+    if (!script.existsSync()) {
+      throw StateError('Migration registry ${script.path} not found.');
+    }
+    final snapshotPayload = jsonEncode(snapshot.toJson());
+    final snapshotArg = base64.encode(utf8.encode(snapshotPayload));
+    final result = await Process.run(
+      'dart',
+      [
+        'run',
+        p.relative(script.path, from: root.path),
+        '--plan-json',
+        id.toString(),
+        '--direction',
+        direction.name,
+        '--schema-snapshot',
+        snapshotArg,
+      ],
+      workingDirectory: root.path,
+      runInShell: Platform.isWindows,
+    );
+    if (result.exitCode != 0) {
+      throw StateError('Failed to build migration plan:\n${result.stderr}');
+    }
+    final stdoutText = (result.stdout as String).trim();
+    if (stdoutText.isEmpty) {
+      throw StateError(
+        'Migration registry produced no plan output.\n${result.stderr}',
+      );
+    }
+    final payloadText = _extractJsonPayload(
+      stdoutText,
+      context: 'migration plan',
+      expectArray: false,
+    );
+    final payload = jsonDecode(payloadText) as Map<String, Object?>;
+    return SchemaPlan.fromJson(payload);
+  }
+}
+
+class ProcessProjectSeederRunner implements ProjectSeederRunner {
+  const ProcessProjectSeederRunner();
+
+  @override
+  Future<void> run({
+    required OrmProjectContext project,
+    required OrmProjectConfig config,
+    required SeedSection seeds,
+    List<String>? overrideClasses,
+    bool pretend = false,
+    String? databaseOverride,
+    String? connection,
+  }) async {
+    final scriptPath = resolvePath(project.root, seeds.registry);
+    final script = File(scriptPath);
+    if (!script.existsSync()) {
+      throw StateError(
+        'Seed registry ${script.path} not found. Run `orm init`.',
+      );
+    }
+    final relativeScript = p.relative(script.path, from: project.root.path);
+    final args = <String>['run', relativeScript];
+    final configPath = p.relative(
+      project.configFile.path,
+      from: project.root.path,
+    );
+    args
+      ..add('--config')
+      ..add(configPath);
+    for (final className in overrideClasses ?? const <String>[]) {
+      args
+        ..add('--run')
+        ..add(className);
+    }
+    if (pretend) {
+      args.add('--pretend');
+    }
+    if (databaseOverride != null) {
+      args
+        ..add('--database')
+        ..add(databaseOverride);
+    }
+    if (connection != null && connection.trim().isNotEmpty) {
+      args
+        ..add('--connection')
+        ..add(connection);
+    }
+
+    final process = await Process.start(
+      'dart',
+      args,
+      workingDirectory: project.root.path,
+      runInShell: Platform.isWindows,
+      mode: ProcessStartMode.inheritStdio,
+    );
+    final code = await process.exitCode;
+    if (code != 0) {
+      throw StateError('Seed registry exited with code $code.');
+    }
+  }
+}
+
+MigrationRegistryLoader migrationRegistryLoader =
+    const ProcessMigrationRegistryLoader();
+
+ProjectSeederRunner projectSeederRunner = const ProcessProjectSeederRunner();
 
 const String importsMarkerStart = '// <ORM-MIGRATION-IMPORTS>';
 const String importsMarkerEnd = '// </ORM-MIGRATION-IMPORTS>';
@@ -213,36 +401,7 @@ Future<List<MigrationDescriptor>> loadMigrations(
   Directory root,
   OrmProjectConfig config, {
   String? registryPath,
-}) async {
-  final path = registryPath ?? resolvePath(root, config.migrations.registry);
-  final script = File(path);
-  if (!script.existsSync()) {
-    throw StateError('Migration registry ${script.path} not found.');
-  }
-  final result = await Process.run(
-    'dart',
-    ['run', p.relative(script.path, from: root.path), '--dump-json'],
-    workingDirectory: root.path,
-    runInShell: Platform.isWindows,
-  );
-  if (result.exitCode != 0) {
-    throw StateError('Failed to load migrations:\n${result.stderr}');
-  }
-  final stdoutText = result.stdout as String;
-  final payloadText = _extractJsonPayload(
-    stdoutText,
-    context: 'migration registry',
-    expectArray: true,
-  );
-  final payload = jsonDecode(payloadText) as List;
-  return payload
-      .map(
-        (entry) => MigrationDescriptor.fromJson(
-          Map<String, Object?>.from(entry as Map),
-        ),
-      )
-      .toList(growable: false);
-}
+}) => migrationRegistryLoader.load(root, config, registryPath: registryPath);
 
 Future<SchemaPlan> buildRuntimePlan({
   required Directory root,
@@ -251,46 +410,14 @@ Future<SchemaPlan> buildRuntimePlan({
   required MigrationDirection direction,
   required SchemaSnapshot snapshot,
   String? registryPath,
-}) async {
-  final path = registryPath ?? resolvePath(root, config.migrations.registry);
-  final script = File(path);
-  if (!script.existsSync()) {
-    throw StateError('Migration registry ${script.path} not found.');
-  }
-  final snapshotPayload = jsonEncode(snapshot.toJson());
-  final snapshotArg = base64.encode(utf8.encode(snapshotPayload));
-  final result = await Process.run(
-    'dart',
-    [
-      'run',
-      p.relative(script.path, from: root.path),
-      '--plan-json',
-      id.toString(),
-      '--direction',
-      direction.name,
-      '--schema-snapshot',
-      snapshotArg,
-    ],
-    workingDirectory: root.path,
-    runInShell: Platform.isWindows,
-  );
-  if (result.exitCode != 0) {
-    throw StateError('Failed to build migration plan:\n${result.stderr}');
-  }
-  final stdoutText = (result.stdout as String).trim();
-  if (stdoutText.isEmpty) {
-    throw StateError(
-      'Migration registry produced no plan output.\n${result.stderr}',
-    );
-  }
-  final payloadText = _extractJsonPayload(
-    stdoutText,
-    context: 'migration plan',
-    expectArray: false,
-  );
-  final payload = jsonDecode(payloadText) as Map<String, Object?>;
-  return SchemaPlan.fromJson(payload);
-}
+}) => migrationRegistryLoader.buildPlan(
+  root: root,
+  config: config,
+  id: id,
+  direction: direction,
+  snapshot: snapshot,
+  registryPath: registryPath,
+);
 
 Future<void> runSeedRegistry({
   required OrmProjectContext project,
@@ -300,55 +427,15 @@ Future<void> runSeedRegistry({
   bool pretend = false,
   String? databaseOverride,
   String? connection,
-}) async {
-  final scriptPath = resolvePath(project.root, seeds.registry);
-  final script = File(scriptPath);
-  if (!script.existsSync()) {
-    throw StateError('Seed registry ${script.path} not found. Run `orm init`.');
-  }
-  final relativeScript = p.relative(script.path, from: project.root.path);
-  final args = <String>['run', relativeScript];
-  final configPath = p.relative(
-    project.configFile.path,
-    from: project.root.path,
-  );
-  args
-    ..add('--config')
-    ..add(configPath);
-  for (final className in overrideClasses ?? const <String>[]) {
-    args
-      ..add('--run')
-      ..add(className);
-  }
-  if (pretend) {
-    args.add('--pretend');
-  }
-  if (databaseOverride != null) {
-    args
-      ..add('--database')
-      ..add(databaseOverride);
-  }
-  if (connection != null && connection.trim().isNotEmpty) {
-    args
-      ..add('--connection')
-      ..add(connection);
-  }
-
-  final process = await Process.start(
-    'dart',
-    args,
-    workingDirectory: project.root.path,
-    runInShell: Platform.isWindows,
-  );
-  await Future.wait([
-    stdout.addStream(process.stdout),
-    stderr.addStream(process.stderr),
-  ]);
-  final code = await process.exitCode;
-  if (code != 0) {
-    throw StateError('Seed registry exited with code $code.');
-  }
-}
+}) => projectSeederRunner.run(
+  project: project,
+  config: config,
+  seeds: seeds,
+  overrideClasses: overrideClasses,
+  pretend: pretend,
+  databaseOverride: databaseOverride,
+  connection: connection,
+);
 
 /// Registers [config]’s tenants and returns the handle for [targetConnection].
 Future<OrmConnectionHandle> createConnection(
@@ -374,6 +461,14 @@ void _bootstrapCliDrivers() {
   ensurePostgresDriverRegistration();
 }
 
+/// Shared ArtisanIO instance for CLI output.
+ArtisanIO get cliIO => _cliIO ??= ArtisanIO(
+  style: ArtisanStyle(ansi: stdout.supportsAnsiEscapes),
+  out: stdout.writeln,
+  err: stderr.writeln,
+);
+ArtisanIO? _cliIO;
+
 void printMigrationPlanPreview({
   required MigrationDescriptor descriptor,
   required MigrationDirection direction,
@@ -381,22 +476,39 @@ void printMigrationPlanPreview({
   required SchemaPreview preview,
   bool includeStatements = false,
 }) {
-  stdout.writeln('');
-  stdout.writeln('Migration ${descriptor.id} (${direction.name}) change set:');
+  final io = cliIO;
+
+  io.newLine();
+  io.section('Migration ${descriptor.id} (${direction.name})');
+
   if (diff.isEmpty) {
-    stdout.writeln('  • No schema changes detected');
+    io.info('No schema changes detected');
   } else {
     for (final entry in diff.entries) {
-      stdout.writeln('  ${entry.symbol} ${entry.description}');
+      // Color-code based on entry type
+      final symbol = entry.symbol;
+      String styledEntry;
+      if (symbol == '+') {
+        styledEntry = io.style.success('  $symbol ${entry.description}');
+      } else if (symbol == '-') {
+        styledEntry = io.style.error('  $symbol ${entry.description}');
+      } else {
+        styledEntry = io.style.warning('  $symbol ${entry.description}');
+      }
+      io.writeln(styledEntry);
+
       for (final note in entry.notes) {
-        stdout.writeln('      - $note');
+        io.writeln(io.style.muted('      - $note'));
       }
     }
   }
-  stdout.writeln('  SQL statements: ${preview.statements.length}');
+
+  io.twoColumnDetail('SQL statements', '${preview.statements.length}');
+
   if (includeStatements && preview.statements.isNotEmpty) {
+    io.newLine();
     for (final statement in preview.statements) {
-      stdout.writeln('    • ${statement.sql}');
+      io.writeln(io.style.muted('    ${statement.sql}'));
     }
   }
 }
@@ -404,11 +516,11 @@ void printMigrationPlanPreview({
 bool confirmToProceed({bool force = false, String action = 'proceed'}) {
   if (force) return true;
   if (!_isProductionEnvironment()) return true;
-  stdout.write(
-    'Application is running in production. Continue to $action? (y/N) ',
+
+  return cliIO.confirm(
+    'Application is running in production. Continue to $action?',
+    defaultValue: false,
   );
-  final response = stdin.readLineSync();
-  return response != null && response.toLowerCase().startsWith('y');
 }
 
 bool _isProductionEnvironment() {
@@ -496,3 +608,82 @@ String _cleanProcessStdout(String stdoutText) {
 
 final RegExp _ansiEscapePattern = RegExp('\x1B\\[[0-9;?]*[ -/]*[@-~]');
 final RegExp _oscControlPattern = RegExp('\x1B\\][^\x07]*\x07');
+
+Future<void> previewRollbacks({
+  required Directory root,
+  required OrmProjectConfig config,
+  required MigrationRunner runner,
+  required SchemaDriver schemaDriver,
+  required int steps,
+  required String registryPath,
+}) async {
+  final statuses = await runner.status();
+  final applied = statuses.where((status) => status.applied).toList();
+  if (applied.isEmpty) {
+    stdout.writeln('No applied migrations to preview.');
+    return;
+  }
+  final count = steps > applied.length ? applied.length : steps;
+  final snapshot = await SchemaSnapshot.capture(schemaDriver);
+  final targets = applied.reversed.take(count).toList();
+  for (final status in targets) {
+    final descriptor = status.descriptor;
+    final plan = await buildRuntimePlan(
+      root: root,
+      config: config,
+      id: descriptor.id,
+      direction: MigrationDirection.down,
+      snapshot: snapshot,
+      registryPath: registryPath,
+    );
+    final diff = SchemaDiffer().diff(plan: plan, snapshot: snapshot);
+    final preview = schemaDriver.describeSchemaPlan(plan);
+    printMigrationPlanPreview(
+      descriptor: descriptor,
+      direction: MigrationDirection.down,
+      diff: diff,
+      preview: preview,
+      includeStatements: true,
+    );
+  }
+}
+
+Future<void> previewMigrations({
+  required Directory root,
+  required OrmProjectConfig config,
+  required MigrationRunner runner,
+  required SchemaDriver schemaDriver,
+  int? limit,
+  required String registryPath,
+}) async {
+  final statuses = await runner.status();
+  final pending = statuses.where((status) => !status.applied).toList();
+  if (pending.isEmpty) {
+    stdout.writeln('No pending migrations.');
+    return;
+  }
+  final snapshot = await SchemaSnapshot.capture(schemaDriver);
+  final count = limit == null || limit > pending.length
+      ? pending.length
+      : limit;
+  for (var i = 0; i < count; i++) {
+    final descriptor = pending[i].descriptor;
+    final plan = await buildRuntimePlan(
+      root: root,
+      config: config,
+      id: descriptor.id,
+      direction: MigrationDirection.up,
+      snapshot: snapshot,
+      registryPath: registryPath,
+    );
+    final diff = SchemaDiffer().diff(plan: plan, snapshot: snapshot);
+    final preview = schemaDriver.describeSchemaPlan(plan);
+    printMigrationPlanPreview(
+      descriptor: descriptor,
+      direction: MigrationDirection.up,
+      diff: diff,
+      preview: preview,
+      includeStatements: true,
+    );
+  }
+}

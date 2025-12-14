@@ -2,8 +2,8 @@ import 'dart:io';
 
 import 'package:artisan_args/artisan_args.dart';
 
-import '../config.dart';
-import 'shared.dart';
+import '../../config.dart';
+import '../base/shared.dart';
 
 class SeedCommand extends ArtisanCommand<void> {
   SeedCommand() {
@@ -85,10 +85,11 @@ class SeedCommand extends ArtisanCommand<void> {
     }
 
     if (!confirmToProceed(force: force)) {
-      stdout.writeln('Seeding cancelled.');
+      cliIO.warning('Seeding cancelled.');
       return;
     }
 
+    cliIO.info('Running seeders...');
     await runSeedRegistry(
       project: project,
       config: config,
@@ -97,5 +98,6 @@ class SeedCommand extends ArtisanCommand<void> {
       databaseOverride: databaseOverride,
       connection: connectionOverride,
     );
+    cliIO.success('Seeding complete.');
   }
 }

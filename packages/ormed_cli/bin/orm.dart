@@ -8,9 +8,13 @@ Future<void> main(List<String> args) async {
     ..addCommand(MakeCommand())
     ..addCommand(ApplyCommand())
     ..addCommand(RollbackCommand())
+    ..addCommand(ResetCommand())
+    ..addCommand(RefreshCommand())
+    ..addCommand(FreshCommand())
     ..addCommand(StatusCommand())
     ..addCommand(SchemaDumpCommand())
     ..addCommand(SchemaDescribeCommand())
+    ..addCommand(WipeCommand())
     ..addCommand(SeedCommand());
 
   await runner.run(args);

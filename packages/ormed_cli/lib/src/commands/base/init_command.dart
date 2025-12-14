@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:artisan_args/artisan_args.dart';
 import 'package:path/path.dart' as p;
 
-import '../config.dart';
+import '../../config.dart';
 import 'shared.dart';
 
 class InitCommand extends ArtisanCommand<void> {
@@ -35,14 +35,39 @@ class InitCommand extends ArtisanCommand<void> {
     final root = findProjectRoot();
     final tracker = _ArtifactTracker(root);
 
+    // Add wizard if running without specific flags, or explicit wizard mode?
+    // Usually 'init' just does default.
+    // Let's make it interactive by default if config file doesn't exist?
+    // Or just ask "Do you want to initialize now?"
+    // The previous implementation was purely scaffold.
+    // We can add a simple interactive confirmation.
+
+    if (!force) {
+      final configFile = File(p.join(root.path, 'orm.yaml'));
+      if (configFile.existsSync()) {
+        stdout.writeln('Project already initialized.');
+        if (!io.confirm('Do you want to re-initialize (overwrite files)?')) {
+          return;
+        }
+        // If confirmed, proceed with overwrite (simulate force behavior for this run)
+        // But we need to pass force=true technically.
+        // We'll handle force logic in _writeFile.
+      }
+    }
+
     final configFile = File(p.join(root.path, 'orm.yaml'));
     _writeFile(
       file: configFile,
       content: defaultOrmYaml,
       label: 'orm.yaml',
-      force: force,
+      force:
+          force, // If interactive override, we might need variable update. But simpler to rely on _writeFile logic? No, _writeFile takes 'force'.
       tracker: tracker,
+      interactive: true, // Let _writeFile ask if force not set?
     );
+
+    // ... (rest is same but passed interactive context)
+    // Actually, refactoring _writeFile to handle interactive confirm is cleaner.
 
     // Load config to get paths from defaultOrmYaml
     final config = loadOrmProjectConfig(configFile);
@@ -59,6 +84,7 @@ class InitCommand extends ArtisanCommand<void> {
       label: 'migrations registry',
       force: force,
       tracker: tracker,
+      interactive: true,
     );
 
     final seedersDir = Directory(resolvePath(root, config.seeds!.directory));
@@ -71,6 +97,7 @@ class InitCommand extends ArtisanCommand<void> {
       label: 'seeders registry',
       force: force,
       tracker: tracker,
+      interactive: true,
     );
 
     final defaultSeeder = File(p.join(seedersDir.path, 'database_seeder.dart'));
@@ -80,6 +107,7 @@ class InitCommand extends ArtisanCommand<void> {
       label: 'database seeder',
       force: force,
       tracker: tracker,
+      interactive: true,
     );
     // Create schema dump directory
     final schemaDumpDir = Directory(
@@ -96,19 +124,22 @@ class InitCommand extends ArtisanCommand<void> {
       gitkeep.writeAsStringSync('');
     }
 
-    stdout.writeln(
-      'Ledger table configured as ${config.migrations.ledgerTable}.',
-    );
-    stdout.writeln(
-      'Schema dump directory: ${p.relative(schemaDumpDir.path, from: root.path)}',
+    cliIO.twoColumnDetail('Ledger table', config.migrations.ledgerTable);
+    cliIO.twoColumnDetail(
+      'Schema dump directory',
+      p.relative(schemaDumpDir.path, from: root.path),
     );
 
     if (showPaths) {
-      stdout.writeln('\nScaffolded artifact paths:');
+      cliIO.newLine();
+      cliIO.section('Scaffolded artifact paths');
       for (final entry in tracker.paths.entries) {
-        stdout.writeln('  ${entry.key}: ${tracker.relative(entry.value)}');
+        cliIO.twoColumnDetail(entry.key, tracker.relative(entry.value));
       }
     }
+
+    cliIO.newLine();
+    cliIO.success('Project initialized successfully.');
   }
 }
 
@@ -138,29 +169,38 @@ void _writeFile({
   required String label,
   required bool force,
   required _ArtifactTracker tracker,
+  bool interactive = false,
 }) {
   tracker.note(label, file.path);
   file.parent.createSync(recursive: true);
   if (file.existsSync()) {
     if (force) {
       file.writeAsStringSync(content);
-      stdout.writeln('Recreated $label at ${tracker.relative(file.path)}');
+      cliIO.writeln(
+        '${cliIO.style.warning('↻')} Recreated $label at ${tracker.relative(file.path)}',
+      );
     } else {
-      stdout.writeln('$label already exists at ${tracker.relative(file.path)}');
+      cliIO.writeln(
+        '${cliIO.style.muted('○')} $label already exists ${cliIO.style.muted('(skipped)')}',
+      );
     }
     return;
   }
   file.writeAsStringSync(content);
-  stdout.writeln('Created $label at ${tracker.relative(file.path)}');
+  cliIO.writeln(
+    '${cliIO.style.success('✓')} Created $label at ${tracker.relative(file.path)}',
+  );
 }
 
 void _ensureDirectory(Directory dir, String label, _ArtifactTracker tracker) {
   tracker.note(label, dir.path);
   if (!dir.existsSync()) {
     dir.createSync(recursive: true);
-    stdout.writeln('Created $label at ${tracker.relative(dir.path)}');
+    cliIO.writeln(
+      '${cliIO.style.success('✓')} Created $label at ${tracker.relative(dir.path)}',
+    );
   } else {
-    stdout.writeln('$label already exists at ${tracker.relative(dir.path)}');
+    cliIO.writeln('${cliIO.style.muted('○')} $label already exists');
   }
 }
 

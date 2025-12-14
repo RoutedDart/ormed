@@ -3,9 +3,9 @@ import 'dart:io';
 import 'package:ormed/ormed.dart';
 import 'package:path/path.dart' as p;
 
-import '../config.dart';
-import 'runner_command.dart';
-import 'shared.dart';
+import '../../config.dart';
+import '../base/runner_command.dart';
+import '../base/shared.dart';
 
 class ApplyCommand extends RunnerCommand {
   ApplyCommand() {
@@ -102,7 +102,7 @@ class ApplyCommand extends RunnerCommand {
     }
 
     if (!confirmToProceed(force: force)) {
-      stdout.writeln('Migration cancelled.');
+      cliIO.warning('Migration cancelled.');
       return;
     }
 
@@ -111,17 +111,19 @@ class ApplyCommand extends RunnerCommand {
     try {
       final report = await runner.applyAll(limit: limitToApply);
       if (report.isEmpty) {
-        stdout.writeln('No migrations to apply.');
+        cliIO.info('No migrations to apply.');
       } else {
         for (final action in report.actions) {
-          stdout.writeln(
-            'Applied ${action.descriptor.id} in ${action.duration.inMilliseconds}ms',
+          cliIO.writeln(
+            '${cliIO.style.success('✓')} Applied ${cliIO.style.emphasize(action.descriptor.id.toString())} ${cliIO.style.muted('(${action.duration.inMilliseconds}ms)')}',
           );
         }
+        cliIO.newLine();
+        cliIO.success('Applied ${report.actions.length} migration(s).');
       }
     } catch (error) {
       if (graceful) {
-        stdout.writeln('Warning: $error');
+        cliIO.warning('$error');
         return;
       }
       rethrow;
@@ -135,7 +137,7 @@ class ApplyCommand extends RunnerCommand {
       }
       final seederOverride = argResults?['seeder'] as String?;
       final targetClass = seederOverride ?? seeds.defaultClass;
-      stdout.writeln('Running seeder $targetClass...');
+      cliIO.info('Running seeder $targetClass...');
       await runSeedRegistry(
         project: project,
         config: config,
@@ -174,13 +176,13 @@ Future<void> _prepareLedger({
   );
   if (state != null && state.canLoad) {
     await state.load(dumpFile);
-    stdout.writeln(
+    cliIO.success(
       'Loaded schema dump from ${p.relative(dumpFile.path, from: project.root.path)}',
     );
     return;
   }
   await _executeSchemaDump(driver, dumpFile);
-  stdout.writeln(
+  cliIO.success(
     'Loaded schema dump from ${p.relative(dumpFile.path, from: project.root.path)} (fallback)',
   );
 }
@@ -235,7 +237,7 @@ Future<void> _previewMigrations({
   final statuses = await runner.status();
   final pending = statuses.where((status) => !status.applied).toList();
   if (pending.isEmpty) {
-    stdout.writeln('No pending migrations.');
+    cliIO.info('No pending migrations.');
     return;
   }
   final snapshot = await SchemaSnapshot.capture(schemaDriver);

@@ -80,7 +80,7 @@ abstract class RunnerCommand extends ArtisanCommand<void> {
       registryPath: registryPath,
     );
     if (migrations.isEmpty) {
-      stdout.writeln('No migrations found in registry.');
+      cliIO.warning('No migrations found in registry.');
       return;
     }
     final connectionHandle = await createConnection(root, effectiveConfig);

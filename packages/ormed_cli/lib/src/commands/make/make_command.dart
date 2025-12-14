@@ -4,8 +4,8 @@ import 'package:args/command_runner.dart' show UsageException;
 import 'package:artisan_args/artisan_args.dart';
 import 'package:path/path.dart' as p;
 
-import '../config.dart';
-import 'shared.dart';
+import '../../config.dart';
+import '../base/shared.dart';
 
 class MakeCommand extends ArtisanCommand<void> {
   MakeCommand() {
@@ -58,13 +58,39 @@ class MakeCommand extends ArtisanCommand<void> {
 
   @override
   Future<void> run() async {
-    final slug = (argResults?['name'] as String?)?.trim();
+    // Interactively ask for name if not provided
+    var slug = (argResults?['name'] as String?)?.trim();
     if (slug == null || slug.isEmpty) {
-      usageException('Missing --name for generator.');
+      slug = io.ask(
+        'What is the name of the migration/seeder?',
+        validator: (value) {
+          if (value.trim().isEmpty) return 'Name cannot be empty.';
+          return null;
+        },
+      );
     }
-    final shouldCreateSeeder = argResults?['seeder'] == true;
+
+    // Determine type (seeder or migration)
+    var shouldCreateSeeder = argResults?['seeder'] == true;
+
+    // If user provided no type flags and we're interactive, maybe ask?
+    // Actually standard behavior is migration unless --seeder specified.
+    // However, if the name ends in 'Seeder', we could guess?
+    if (!shouldCreateSeeder && slug.toLowerCase().endsWith('seeder')) {
+      if (io.confirm(
+        'The name ends in "Seeder". Do you want to create a seeder?',
+        defaultValue: true,
+      )) {
+        shouldCreateSeeder = true;
+      }
+    }
+
     final tableOption = (argResults?['table'] as String?)?.trim();
     final createFlag = argResults?['create'] == true;
+
+    // If not a seeder, and we didn't specify table/create, ask intent
+    // Or just rely on reasonable defaults (guess table from slug).
+
     final configArg = argResults?['config'] as String?;
     final context = resolveOrmProject(configPath: configArg);
     final root = context.root;
@@ -90,7 +116,7 @@ class MakeCommand extends ArtisanCommand<void> {
     final tableName =
         tableOption ?? (createFlag ? _guessTableFromSlug(slug) : null);
     if (createFlag && tableName == null) {
-      stdout.writeln(
+      io.note(
         'Hint: add --table=<name> so the generated migration can scaffold columns for the right table.',
       );
     }
@@ -222,7 +248,9 @@ void _createSeeder({
     throw UsageException('Seeder file ${file.path} already exists.', usage);
   }
   file.writeAsStringSync(_seederFileTemplate(className));
-  stdout.writeln('Created ${p.relative(file.path, from: root.path)}');
+  cliIO.success('Created seeder');
+  cliIO.twoColumnDetail('File', p.relative(file.path, from: root.path));
+  cliIO.twoColumnDetail('Class', className);
 
   final registryPath = resolvePath(root, seeds.registry);
   final registry = File(registryPath);
@@ -264,10 +292,7 @@ void _createSeeder({
     );
   }
   registry.writeAsStringSync(content);
-  stdout.writeln('Registered seeder $className');
-  stdout.writeln('Seeder snippet:');
-  stdout.writeln('  import: $importLine');
-  stdout.writeln('  entry: $entry');
+  cliIO.success('Registered seeder $className');
 }
 
 void _createMigration({
@@ -301,12 +326,12 @@ void _createMigration({
   final displayPath = fullPath
       ? file.path
       : p.relative(file.path, from: root.path);
-  stdout.writeln('Created migration at $displayPath');
+  cliIO.success('Created migration');
+  cliIO.twoColumnDetail('File', displayPath);
+  cliIO.twoColumnDetail('Class', className);
   if (createTable || tableName != null) {
     final tableInfo = tableName ?? 'guessing from slug';
-    stdout.writeln(
-      'Migration intent: create table = $createTable, target table = $tableInfo',
-    );
+    cliIO.twoColumnDetail('Table', tableInfo);
   }
 
   final registryPath = resolvePath(root, config.migrations.registry);
@@ -343,8 +368,5 @@ void _createMigration({
     indent: '  ',
   );
   registry.writeAsStringSync(content);
-  stdout.writeln('Registered migration ${timestamp}_$slug');
-  stdout.writeln('Migration snippet:');
-  stdout.writeln('  import: $importLine');
-  stdout.writeln('  descriptor: $descriptor');
+  cliIO.success('Registered migration ${timestamp}_$slug');
 }

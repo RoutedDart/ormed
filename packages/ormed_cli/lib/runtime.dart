@@ -7,9 +7,9 @@ import 'dart:io';
 import 'package:meta/meta.dart';
 import 'package:ormed/ormed.dart';
 
-import 'src/commands/shared.dart';
+import 'src/commands/base/shared.dart';
 
-export 'src/commands/shared.dart'
+export 'src/commands/base/shared.dart'
     show OrmProjectContext, resolveOrmProject, createConnection;
 export 'src/config.dart'
     show
