@@ -252,6 +252,125 @@ class _$OrmMigrationRecordCodec extends ModelCodec<$OrmMigrationRecord> {
   }
 }
 
+/// Insert DTO for [OrmMigrationRecord].
+///
+/// Auto-increment/DB-generated fields are omitted by default.
+class OrmMigrationRecordInsertDto implements InsertDto<$OrmMigrationRecord> {
+  const OrmMigrationRecordInsertDto({
+    this.id,
+    this.checksum,
+    this.appliedAt,
+    this.batch,
+  });
+  final String? id;
+  final String? checksum;
+  final DateTime? appliedAt;
+  final int? batch;
+
+  @override
+  Map<String, Object?> toMap() {
+    return <String, Object?>{
+      if (id != null) 'id': id,
+      if (checksum != null) 'checksum': checksum,
+      if (appliedAt != null) 'applied_at': appliedAt,
+      if (batch != null) 'batch': batch,
+    };
+  }
+}
+
+/// Update DTO for [OrmMigrationRecord].
+///
+/// All fields are optional; only provided entries are used in SET clauses.
+class OrmMigrationRecordUpdateDto implements UpdateDto<$OrmMigrationRecord> {
+  const OrmMigrationRecordUpdateDto({
+    this.id,
+    this.checksum,
+    this.appliedAt,
+    this.batch,
+  });
+  final String? id;
+  final String? checksum;
+  final DateTime? appliedAt;
+  final int? batch;
+
+  @override
+  Map<String, Object?> toMap() {
+    return <String, Object?>{
+      if (id != null) 'id': id,
+      if (checksum != null) 'checksum': checksum,
+      if (appliedAt != null) 'applied_at': appliedAt,
+      if (batch != null) 'batch': batch,
+    };
+  }
+}
+
+/// Partial projection for [OrmMigrationRecord].
+///
+/// All fields are nullable; intended for subset SELECTs.
+class OrmMigrationRecordPartial implements PartialEntity<$OrmMigrationRecord> {
+  const OrmMigrationRecordPartial({
+    this.id,
+    this.checksum,
+    this.appliedAt,
+    this.batch,
+  });
+
+  /// Creates a partial from a database row map.
+  ///
+  /// The [row] keys should be column names (snake_case).
+  /// Missing columns will result in null field values.
+  factory OrmMigrationRecordPartial.fromRow(Map<String, Object?> row) {
+    return OrmMigrationRecordPartial(
+      id: row['id'] as String?,
+      checksum: row['checksum'] as String?,
+      appliedAt: row['applied_at'] as DateTime?,
+      batch: row['batch'] as int?,
+    );
+  }
+
+  final String? id;
+  final String? checksum;
+  final DateTime? appliedAt;
+  final int? batch;
+
+  @override
+  $OrmMigrationRecord toEntity() {
+    // Basic required-field check: non-nullable fields must be present.
+    final String? idValue = id;
+    if (idValue == null) {
+      throw StateError('Missing required field: id');
+    }
+    final String? checksumValue = checksum;
+    if (checksumValue == null) {
+      throw StateError('Missing required field: checksum');
+    }
+    final DateTime? appliedAtValue = appliedAt;
+    if (appliedAtValue == null) {
+      throw StateError('Missing required field: appliedAt');
+    }
+    final int? batchValue = batch;
+    if (batchValue == null) {
+      throw StateError('Missing required field: batch');
+    }
+    return $OrmMigrationRecord(
+      id: idValue,
+      checksum: checksumValue,
+      appliedAt: appliedAtValue,
+      batch: batchValue,
+    );
+  }
+
+  @override
+  Map<String, Object?> toMap() {
+    return {
+      if (id != null) 'id': id,
+      if (checksum != null) 'checksum': checksum,
+      if (appliedAt != null) 'applied_at': appliedAt,
+      if (batch != null) 'batch': batch,
+    };
+  }
+}
+
 /// Generated tracked model class for [OrmMigrationRecord].
 ///
 /// This class extends the user-defined [OrmMigrationRecord] model and adds
@@ -260,7 +379,9 @@ class _$OrmMigrationRecordCodec extends ModelCodec<$OrmMigrationRecord> {
 ///
 /// **Do not instantiate this class directly.** Use queries, repositories,
 /// or model factories to create tracked model instances.
-class $OrmMigrationRecord extends OrmMigrationRecord with ModelAttributes {
+class $OrmMigrationRecord extends OrmMigrationRecord
+    with ModelAttributes
+    implements OrmEntity {
   $OrmMigrationRecord({
     required String id,
     required String checksum,

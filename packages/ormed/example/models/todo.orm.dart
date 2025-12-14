@@ -183,6 +183,94 @@ class _$TodoCodec extends ModelCodec<$Todo> {
   }
 }
 
+/// Insert DTO for [Todo].
+///
+/// Auto-increment/DB-generated fields are omitted by default.
+class TodoInsertDto implements InsertDto<$Todo> {
+  const TodoInsertDto({this.id, this.title, this.completed});
+  final int? id;
+  final String? title;
+  final bool? completed;
+
+  @override
+  Map<String, Object?> toMap() {
+    return <String, Object?>{
+      if (id != null) 'id': id,
+      if (title != null) 'title': title,
+      if (completed != null) 'completed': completed,
+    };
+  }
+}
+
+/// Update DTO for [Todo].
+///
+/// All fields are optional; only provided entries are used in SET clauses.
+class TodoUpdateDto implements UpdateDto<$Todo> {
+  const TodoUpdateDto({this.id, this.title, this.completed});
+  final int? id;
+  final String? title;
+  final bool? completed;
+
+  @override
+  Map<String, Object?> toMap() {
+    return <String, Object?>{
+      if (id != null) 'id': id,
+      if (title != null) 'title': title,
+      if (completed != null) 'completed': completed,
+    };
+  }
+}
+
+/// Partial projection for [Todo].
+///
+/// All fields are nullable; intended for subset SELECTs.
+class TodoPartial implements PartialEntity<$Todo> {
+  const TodoPartial({this.id, this.title, this.completed});
+
+  /// Creates a partial from a database row map.
+  ///
+  /// The [row] keys should be column names (snake_case).
+  /// Missing columns will result in null field values.
+  factory TodoPartial.fromRow(Map<String, Object?> row) {
+    return TodoPartial(
+      id: row['id'] as int?,
+      title: row['title'] as String?,
+      completed: row['completed'] as bool?,
+    );
+  }
+
+  final int? id;
+  final String? title;
+  final bool? completed;
+
+  @override
+  $Todo toEntity() {
+    // Basic required-field check: non-nullable fields must be present.
+    final int? idValue = id;
+    if (idValue == null) {
+      throw StateError('Missing required field: id');
+    }
+    final String? titleValue = title;
+    if (titleValue == null) {
+      throw StateError('Missing required field: title');
+    }
+    final bool? completedValue = completed;
+    if (completedValue == null) {
+      throw StateError('Missing required field: completed');
+    }
+    return $Todo(id: idValue, title: titleValue, completed: completedValue);
+  }
+
+  @override
+  Map<String, Object?> toMap() {
+    return {
+      if (id != null) 'id': id,
+      if (title != null) 'title': title,
+      if (completed != null) 'completed': completed,
+    };
+  }
+}
+
 /// Generated tracked model class for [Todo].
 ///
 /// This class extends the user-defined [Todo] model and adds
@@ -191,7 +279,7 @@ class _$TodoCodec extends ModelCodec<$Todo> {
 ///
 /// **Do not instantiate this class directly.** Use queries, repositories,
 /// or model factories to create tracked model instances.
-class $Todo extends Todo with ModelAttributes {
+class $Todo extends Todo with ModelAttributes implements OrmEntity {
   $Todo({required int id, required String title, required bool completed})
     : super.new(id: id, title: title, completed: completed) {
     _attachOrmRuntimeMetadata({

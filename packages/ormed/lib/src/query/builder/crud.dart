@@ -1227,9 +1227,36 @@ extension CrudExtension<T extends OrmEntity> on Query<T> {
   /// Deletes records matching a flexible where input (PK, map, DTO, partial, tracked model).
   ///
   /// This provides the same input ergonomics as Repository.delete().
+  ///
+  /// The [where] parameter accepts:
+  /// - Primary key value (int, String, etc.)
+  /// - `Map<String, Object?>` - Raw column/value pairs
+  /// - `PartialEntity<T>` - Partial entity with fields to match
+  /// - `InsertDto<T>` / `UpdateDto<T>` - DTO with fields to match
+  /// - Tracked model (`T`) - Uses primary key for matching
+  /// - `Query<T>` - A pre-built query with where conditions
+  /// - `Query<T> Function(Query<T>)` - A callback that builds a query
+  ///
+  /// **Important**: When using a callback function, the parameter must be
+  /// explicitly typed (e.g., `(Query<$User> q) => q.whereEquals(...)`)
+  /// because Dart extension methods are not accessible on dynamic parameters.
   Future<int> deleteWhere(Object where) => deleteWhereMany([where]);
 
   /// Deletes multiple records using flexible where inputs.
+  ///
+  /// Each entry in [wheres] can be any supported where input (see [deleteWhere]).
+  ///
+  /// When a `Query` or callback is provided, it is executed separately from
+  /// other inputs, allowing mixed input types in the same call.
+  ///
+  /// Example:
+  /// ```dart
+  /// final affected = await query.deleteWhereMany([
+  ///   (Query<$User> q) => q.whereEquals('role', 'guest'),
+  ///   {'id': 42},
+  ///   somePartial,
+  /// ]);
+  /// ```
   Future<int> deleteWhereMany(List<Object> wheres) async {
     if (wheres.isEmpty) return 0;
 
