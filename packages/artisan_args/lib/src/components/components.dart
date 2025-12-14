@@ -98,6 +98,7 @@ export 'box.dart';
 
 // Progress components
 export 'progress.dart';
+export 'progress_bar.dart';
 
 // Input components
 export 'input.dart';
@@ -111,3 +112,14 @@ export 'spinner.dart';
 // Output components (Panel, Tree, Columns, etc.)
 export 'output.dart';
 
+// Table components
+export 'table.dart';
+
+// Styled block components
+export 'styled_block.dart';
+
+// Exception components
+export 'exception.dart';
+
+// Link components
+export 'link.dart';

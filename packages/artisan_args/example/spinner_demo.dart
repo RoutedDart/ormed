@@ -6,6 +6,12 @@ import 'package:artisan_args/artisan_args.dart';
 /// Run this directly: dart run example/spinner_demo.dart
 void main() async {
   final style = ArtisanStyle(ansi: stdout.supportsAnsiEscapes);
+  final context = ComponentContext(
+    style: style,
+    stdout: stdout,
+    stdin: stdin,
+    terminalWidth: stdout.hasTerminal ? stdout.terminalColumns : 80,
+  );
 
   print('Testing animated spinner...\n');
 
@@ -13,9 +19,8 @@ void main() async {
   print('1. Dots spinner (default):');
   await withSpinner(
     message: 'Loading data...',
-    style: style,
-    stdout: stdout,
-    run: () async {
+    context: context,
+    task: () async {
       await Future<void>.delayed(const Duration(seconds: 3));
       return 'Done!';
     },
@@ -24,10 +29,9 @@ void main() async {
   print('\n2. Line spinner:');
   await withSpinner(
     message: 'Processing...',
-    style: style,
-    stdout: stdout,
-    config: const SpinnerConfig(frames: SpinnerFrames.line),
-    run: () async {
+    context: context,
+    frames: SpinnerFrames.line,
+    task: () async {
       await Future<void>.delayed(const Duration(seconds: 2));
       return null;
     },
@@ -36,10 +40,9 @@ void main() async {
   print('\n3. Circle spinner:');
   await withSpinner(
     message: 'Compiling...',
-    style: style,
-    stdout: stdout,
-    config: const SpinnerConfig(frames: SpinnerFrames.circle),
-    run: () async {
+    context: context,
+    frames: SpinnerFrames.circle,
+    task: () async {
       await Future<void>.delayed(const Duration(seconds: 2));
       return null;
     },
@@ -48,10 +51,9 @@ void main() async {
   print('\n4. Arc spinner:');
   await withSpinner(
     message: 'Uploading...',
-    style: style,
-    stdout: stdout,
-    config: const SpinnerConfig(frames: SpinnerFrames.arc),
-    run: () async {
+    context: context,
+    frames: SpinnerFrames.arc,
+    task: () async {
       await Future<void>.delayed(const Duration(seconds: 2));
       return null;
     },
@@ -60,39 +62,33 @@ void main() async {
   print('\n5. Arrows spinner:');
   await withSpinner(
     message: 'Syncing...',
-    style: style,
-    stdout: stdout,
-    config: const SpinnerConfig(frames: SpinnerFrames.arrows),
-    run: () async {
+    context: context,
+    frames: SpinnerFrames.arrows,
+    task: () async {
       await Future<void>.delayed(const Duration(seconds: 2));
       return null;
     },
   );
 
   print('\n6. Manual spinner control:');
-  final spinner = Spinner(
-    message: 'Doing work step by step...',
-    style: style,
-    stdout: stdout,
-  );
+  final spinner = StatefulSpinner(message: 'Doing work step by step...');
 
-  spinner.start();
+  spinner.start(context);
   await Future<void>.delayed(const Duration(seconds: 1));
-  spinner.update('Step 1 of 3...');
+  spinner.update(context, 'Step 1 of 3...');
   await Future<void>.delayed(const Duration(seconds: 1));
-  spinner.update('Step 2 of 3...');
+  spinner.update(context, 'Step 2 of 3...');
   await Future<void>.delayed(const Duration(seconds: 1));
-  spinner.update('Step 3 of 3...');
+  spinner.update(context, 'Step 3 of 3...');
   await Future<void>.delayed(const Duration(seconds: 1));
-  spinner.success('All steps complete!');
+  spinner.success(context, 'All steps complete!');
 
   print('\n7. Error spinner:');
   try {
     await withSpinner(
       message: 'This will fail...',
-      style: style,
-      stdout: stdout,
-      run: () async {
+      context: context,
+      task: () async {
         await Future<void>.delayed(const Duration(seconds: 2));
         throw Exception('Simulated error');
       },
@@ -101,5 +97,13 @@ void main() async {
     // Error was already displayed by spinner
   }
 
-  print('\nDone testing spinners!');
+  print('\n8. SpinnerComponent (interactive component):');
+  await SpinnerComponent(
+    message: 'Using SpinnerComponent...',
+    task: () async {
+      await Future<void>.delayed(const Duration(seconds: 2));
+    },
+  ).interact(context);
+
+  print('\nAll spinners tested!');
 }

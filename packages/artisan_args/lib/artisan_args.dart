@@ -60,17 +60,8 @@ export 'src/io/textarea.dart' show Textarea, editText;
 export 'src/io/wizard.dart'
     show Wizard, WizardStep, WizardStepResult, WizardContext;
 
-// Output
-export 'src/output/progress_bar.dart' show ArtisanProgressBar;
-export 'src/output/table.dart' show ArtisanTable;
-export 'src/output/spinner.dart'
-    show Spinner, SpinnerConfig, SpinnerFrames, withSpinner;
-export 'src/output/panel.dart'
-    show Panel, PanelAlign, Columns, Tree, BoxChars, BoxCharSet;
+// Terminal utilities
 export 'src/output/terminal.dart' show Terminal, RawModeState, KeyCode;
-export 'src/output/formatting.dart'
-    show ExceptionRenderer, HorizontalTable, StyledBlock, BlockStyle;
-export 'src/output/link.dart' show TerminalLink, LinkGroup, link;
 
 // Style
 export 'src/style/artisan_style.dart' show ArtisanStyle;
@@ -97,6 +88,8 @@ export 'src/components/box.dart'
 
 // Component System - Progress
 export 'src/components/progress.dart' show ProgressBar, SpinnerFrame;
+export 'src/components/progress_bar.dart'
+    show ProgressBarComponent, StatefulProgressBar;
 
 // Component System - Input
 export 'src/components/input.dart'
@@ -106,4 +99,30 @@ export 'src/components/input.dart'
 export 'src/components/select.dart' show Select, MultiSelect;
 
 // Component System - Spinner
-export 'src/components/spinner.dart' show SpinnerComponent;
+export 'src/components/spinner.dart'
+    show SpinnerComponent, SpinnerFrames, StatefulSpinner, withSpinner;
+
+// Component System - Output Components
+export 'src/components/alert.dart' show AlertComponent, AlertType;
+export 'src/components/columns.dart' show ColumnsComponent;
+export 'src/components/definition_list.dart' show DefinitionListComponent;
+export 'src/components/panel.dart' show PanelComponent, PanelAlignment;
+export 'src/components/panel_chars.dart' show PanelBoxChars, PanelBoxCharSet;
+export 'src/components/task.dart' show TaskComponent, TaskStatus;
+export 'src/components/tree.dart' show TreeComponent;
+export 'src/components/two_column_detail.dart' show TwoColumnDetailComponent;
+
+// Component System - Table
+export 'src/components/table.dart'
+    show TableComponent, HorizontalTableComponent;
+
+// Component System - Styled Block
+export 'src/components/styled_block.dart'
+    show StyledBlockComponent, BlockStyleType, CommentComponent;
+
+// Component System - Exception
+export 'src/components/exception.dart'
+    show ExceptionComponent, SimpleExceptionComponent;
+
+// Component System - Link
+export 'src/components/link.dart' show LinkComponent, LinkGroupComponent;

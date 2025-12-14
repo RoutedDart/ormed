@@ -192,13 +192,20 @@ class UiProgressCommand extends ArtisanCommand<void> {
     final countRaw = argResults?['count'] as String? ?? '25';
     final count = int.tryParse(countRaw) ?? 25;
 
+    final context = ComponentContext(
+      style: io.style,
+      stdout: dartio.stdout,
+      stdin: dartio.stdin,
+      terminalWidth: io.terminalWidth,
+    );
+
     final bar = io.createProgressBar(max: count);
-    bar.start();
+    bar.start(context);
     for (var i = 0; i < count; i++) {
       await Future<void>.delayed(const Duration(milliseconds: 20));
-      bar.advance();
+      bar.advance(context);
     }
-    bar.finish();
+    bar.finish(context);
     io.newLine();
   }
 }
@@ -497,12 +504,18 @@ class UiSpinnerCommand extends ArtisanCommand<void> {
     io.text('This demonstrates a real animated spinner.');
     io.newLine();
 
-    final result = await withSpinner(
-      message: 'Processing your request...',
+    final context = ComponentContext(
       style: io.style,
       stdout: dartio.stdout,
-      config: SpinnerConfig(frames: frames),
-      run: () async {
+      stdin: dartio.stdin,
+      terminalWidth: io.terminalWidth,
+    );
+
+    final result = await withSpinner(
+      message: 'Processing your request...',
+      context: context,
+      frames: frames,
+      task: () async {
         await Future<void>.delayed(const Duration(seconds: 2));
         return 'Completed successfully!';
       },
@@ -534,77 +547,67 @@ class UiPanelCommand extends ArtisanCommand<void> {
     final boxStyle = argResults?['style'] as String? ?? 'rounded';
 
     final chars = switch (boxStyle) {
-      'single' => BoxChars.single,
-      'double' => BoxChars.double,
-      'heavy' => BoxChars.heavy,
-      'ascii' => BoxChars.ascii,
-      _ => BoxChars.rounded,
+      'single' => PanelBoxChars.single,
+      'double' => PanelBoxChars.double,
+      'heavy' => PanelBoxChars.heavy,
+      'ascii' => PanelBoxChars.ascii,
+      _ => PanelBoxChars.rounded,
     };
+
+    final context = ComponentContext(
+      style: io.style,
+      stdout: dartio.stdout,
+      stdin: dartio.stdin,
+      terminalWidth: io.terminalWidth,
+    );
 
     io.title('Panels');
 
-    final panel = Panel(
-      style: io.style,
-      terminalWidth: io.terminalWidth,
-      chars: chars,
-    );
-
     // Simple panel
-    io.writeln(
-      panel.render(
-        content:
-            'This is a simple panel with some content.\nIt can have multiple lines.',
-        title: 'Info',
-        titleStyle: io.style.info,
-      ),
-    );
+    PanelComponent(
+      content:
+          'This is a simple panel with some content.\nIt can have multiple lines.',
+      title: 'Info',
+      chars: chars,
+    ).renderln(context);
     io.newLine();
 
     // Success panel
-    io.writeln(
-      panel.render(
-        content: 'Your operation completed successfully!',
-        title: 'Success',
-        titleStyle: io.style.success,
-        borderStyle: io.style.success,
-      ),
-    );
+    PanelComponent(
+      content: 'Your operation completed successfully!',
+      title: 'Success',
+      chars: chars,
+    ).renderln(context);
     io.newLine();
 
     // Warning panel
-    io.writeln(
-      panel.render(
-        content: 'Please review your configuration before proceeding.',
-        title: 'Warning',
-        titleAlign: PanelAlign.center,
-        titleStyle: io.style.warning,
-        borderStyle: io.style.warning,
-      ),
-    );
+    PanelComponent(
+      content: 'Please review your configuration before proceeding.',
+      title: 'Warning',
+      titleAlign: PanelAlignment.center,
+      chars: chars,
+    ).renderln(context);
     io.newLine();
 
     // Columns demo
     io.section('Multi-Column Layout');
-    final columns = Columns(terminalWidth: io.terminalWidth);
-    io.writeln(
-      columns.render(
-        items: [
-          'apple',
-          'banana',
-          'cherry',
-          'date',
-          'elderberry',
-          'fig',
-          'grape',
-          'honeydew',
-          'kiwi',
-          'lemon',
-          'mango',
-          'nectarine',
-        ],
-        columnCount: 4,
-      ),
-    );
+    ColumnsComponent(
+      items: [
+        'apple',
+        'banana',
+        'cherry',
+        'date',
+        'elderberry',
+        'fig',
+        'grape',
+        'honeydew',
+        'kiwi',
+        'lemon',
+        'mango',
+        'nectarine',
+      ],
+      columnCount: 4,
+    ).renderln(context);
   }
 }
 
@@ -620,10 +623,15 @@ class UiTreeCommand extends ArtisanCommand<void> {
   Future<void> run() async {
     io.title('Tree Structure');
 
-    final tree = Tree(style: io.style);
+    final context = ComponentContext(
+      style: io.style,
+      stdout: dartio.stdout,
+      stdin: dartio.stdin,
+      terminalWidth: io.terminalWidth,
+    );
 
-    io.writeln(
-      tree.render({
+    TreeComponent(
+      data: {
         'lib': {
           'src': {
             'io': ['artisan_io.dart', 'components.dart', 'prompts.dart'],
@@ -637,8 +645,8 @@ class UiTreeCommand extends ArtisanCommand<void> {
         'example': ['main.dart'],
         'pubspec.yaml': null,
         'README.md': null,
-      }),
-    );
+      },
+    ).renderln(context);
   }
 }
 
@@ -960,16 +968,21 @@ class UiExceptionCommand extends ArtisanCommand<void> {
       io.components.renderException(e, stack);
     }
 
-    io.section('Using ExceptionRenderer directly');
-    final renderer = ExceptionRenderer(
+    io.section('Using ExceptionComponent directly');
+    final context = ComponentContext(
       style: io.style,
+      stdout: dartio.stdout,
+      stdin: dartio.stdin,
       terminalWidth: io.terminalWidth,
-      maxStackFrames: 5,
     );
     try {
       throw ArgumentError.value('invalid', 'name', 'Name cannot be "invalid"');
     } catch (e, stack) {
-      io.writeln(renderer.render(e, stack));
+      ExceptionComponent(
+        exception: e,
+        stackTrace: stack,
+        maxStackFrames: 5,
+      ).renderln(context);
     }
   }
 }
@@ -1005,16 +1018,21 @@ class UiHorizontalTableCommand extends ArtisanCommand<void> {
       'SSL': 'disabled',
     });
 
-    io.section('Using HorizontalTable directly');
-    final table = HorizontalTable(style: io.style);
-    io.writeln(
-      table.render({
+    io.section('Using HorizontalTableComponent directly');
+    final context = ComponentContext(
+      style: io.style,
+      stdout: dartio.stdout,
+      stdin: dartio.stdin,
+      terminalWidth: io.terminalWidth,
+    );
+    HorizontalTableComponent(
+      data: {
         'Status': io.style.success('● Online'),
         'Uptime': '3 days, 14 hours',
         'Memory': '256 MB / 1 GB',
         'CPU': '12%',
-      }),
-    );
+      },
+    ).renderln(context);
   }
 }
 
@@ -1099,61 +1117,57 @@ class UiBlockCommand extends ArtisanCommand<void> {
 
     io.title('Styled Blocks');
 
-    final block = StyledBlock(style: io.style, terminalWidth: io.terminalWidth);
+    final context = ComponentContext(
+      style: io.style,
+      stdout: dartio.stdout,
+      stdin: dartio.stdin,
+      terminalWidth: io.terminalWidth,
+    );
 
     io.section('Info Block');
-    io.writeln(
-      block.render(
-        'This is an informational message that provides context.',
-        blockStyle: BlockStyle.info,
-        large: large,
-      ),
-    );
+    StyledBlockComponent(
+      message: 'This is an informational message that provides context.',
+      blockStyle: BlockStyleType.info,
+      large: large,
+    ).renderln(context);
 
     io.section('Success Block');
-    io.writeln(
-      block.render(
-        'Operation completed successfully!\nAll tasks finished without errors.',
-        blockStyle: BlockStyle.success,
-        large: large,
-      ),
-    );
+    StyledBlockComponent(
+      message:
+          'Operation completed successfully!\nAll tasks finished without errors.',
+      blockStyle: BlockStyleType.success,
+      large: large,
+    ).renderln(context);
 
     io.section('Warning Block');
-    io.writeln(
-      block.render(
-        'Please review the configuration before proceeding.',
-        blockStyle: BlockStyle.warning,
-        large: large,
-      ),
-    );
+    StyledBlockComponent(
+      message: 'Please review the configuration before proceeding.',
+      blockStyle: BlockStyleType.warning,
+      large: large,
+    ).renderln(context);
 
     io.section('Error Block');
-    io.writeln(
-      block.render(
-        'An error occurred during the operation.',
-        blockStyle: BlockStyle.error,
-        large: large,
-      ),
-    );
+    StyledBlockComponent(
+      message: 'An error occurred during the operation.',
+      blockStyle: BlockStyleType.error,
+      large: large,
+    ).renderln(context);
 
     io.section('Note Block');
-    io.writeln(
-      block.render(
-        'This is a note with additional information.',
-        blockStyle: BlockStyle.note,
-        large: large,
-      ),
-    );
+    StyledBlockComponent(
+      message: 'This is a note with additional information.',
+      blockStyle: BlockStyleType.note,
+      large: large,
+    ).renderln(context);
 
     io.section('Comment Style');
-    io.writeln(
-      block.comment([
+    CommentComponent(
+      text: [
         'This is a comment block.',
         'It displays text in a dimmed, code-comment style.',
         'Useful for showing hints or secondary information.',
-      ]),
-    );
+      ],
+    ).renderln(context);
   }
 }
 
@@ -1180,74 +1194,72 @@ class UiColumnsCommand extends ArtisanCommand<void> {
 
     io.title('Multi-Column Layout');
 
-    final columns = Columns(terminalWidth: io.terminalWidth);
+    final context = ComponentContext(
+      style: io.style,
+      stdout: dartio.stdout,
+      stdin: dartio.stdin,
+      terminalWidth: io.terminalWidth,
+    );
 
     io.section('Fruits ($colCount columns)');
-    io.writeln(
-      columns.render(
-        items: [
-          'Apple',
-          'Banana',
-          'Cherry',
-          'Date',
-          'Elderberry',
-          'Fig',
-          'Grape',
-          'Honeydew',
-          'Kiwi',
-          'Lemon',
-          'Mango',
-          'Nectarine',
-          'Orange',
-          'Papaya',
-          'Quince',
-          'Raspberry',
-        ],
-        columnCount: colCount,
-      ),
-    );
+    ColumnsComponent(
+      items: [
+        'Apple',
+        'Banana',
+        'Cherry',
+        'Date',
+        'Elderberry',
+        'Fig',
+        'Grape',
+        'Honeydew',
+        'Kiwi',
+        'Lemon',
+        'Mango',
+        'Nectarine',
+        'Orange',
+        'Papaya',
+        'Quince',
+        'Raspberry',
+      ],
+      columnCount: colCount,
+    ).renderln(context);
     io.newLine();
 
     io.section('Commands (auto columns)');
-    io.writeln(
-      columns.render(
-        items: [
-          'make:model',
-          'make:controller',
-          'make:migration',
-          'make:seeder',
-          'db:migrate',
-          'db:seed',
-          'db:rollback',
-          'db:fresh',
-          'serve',
-          'build',
-          'test',
-          'lint',
-          'cache:clear',
-          'config:cache',
-          'route:list',
-          'queue:work',
-        ],
-        itemStyle: io.style.command,
-      ),
-    );
+    ColumnsComponent(
+      items: [
+        'make:model',
+        'make:controller',
+        'make:migration',
+        'make:seeder',
+        'db:migrate',
+        'db:seed',
+        'db:rollback',
+        'db:fresh',
+        'serve',
+        'build',
+        'test',
+        'lint',
+        'cache:clear',
+        'config:cache',
+        'route:list',
+        'queue:work',
+      ],
+    ).renderln(context);
     io.newLine();
 
     io.section('Status Items');
-    io.writeln(
-      columns.render(
-        items: [
-          '${io.style.success("●")} Online',
-          '${io.style.error("●")} Offline',
-          '${io.style.warning("●")} Degraded',
-          '${io.style.info("●")} Maintenance',
-          '${io.style.success("●")} Healthy',
-          '${io.style.error("●")} Critical',
-        ],
-        columnCount: 3,
-      ),
-    );
+    ColumnsComponent(
+      items: [
+        '${io.style.success("●")} Online',
+        '${io.style.error("●")} Offline',
+        '${io.style.warning("●")} Degraded',
+        '${io.style.info("●")} Maintenance',
+        '${io.style.success("●")} Healthy',
+        '${io.style.error("●")} Critical',
+      ],
+      columnCount: 3,
+    ).renderln(context);
   }
 }
 
@@ -1383,49 +1395,48 @@ class UiAllCommand extends ArtisanCommand<void> {
 
     // Panel
     io.section('7. Panel');
-    final panel = Panel(style: io.style, terminalWidth: io.terminalWidth);
-    io.writeln(
-      panel.render(
-        content: 'This is a boxed panel with a title.',
-        title: 'Panel Title',
-      ),
+    final context = ComponentContext(
+      style: io.style,
+      stdout: dartio.stdout,
+      stdin: dartio.stdin,
+      terminalWidth: io.terminalWidth,
     );
+    PanelComponent(
+      content: 'This is a boxed panel with a title.',
+      title: 'Panel Title',
+    ).renderln(context);
     io.newLine();
 
     // Tree
     io.section('8. Tree');
-    final tree = Tree(style: io.style);
-    io.writeln(
-      tree.render({
+    TreeComponent(
+      data: {
         'src': {
           'lib': ['main.dart'],
           'test': ['main_test.dart'],
         },
         'pubspec.yaml': null,
-      }),
-    );
+      },
+    ).renderln(context);
     io.newLine();
 
     // Columns
     io.section('9. Columns');
-    final columns = Columns(terminalWidth: io.terminalWidth);
-    io.writeln(
-      columns.render(
-        items: ['one', 'two', 'three', 'four', 'five', 'six'],
-        columnCount: 3,
-      ),
-    );
+    ColumnsComponent(
+      items: ['one', 'two', 'three', 'four', 'five', 'six'],
+      columnCount: 3,
+    ).renderln(context);
     io.newLine();
 
     // Progress bar
     io.section('10. Progress Bar');
     final bar = io.createProgressBar(max: 20);
-    bar.start();
+    bar.start(context);
     for (var i = 0; i < 20; i++) {
       await Future<void>.delayed(const Duration(milliseconds: 30));
-      bar.advance();
+      bar.advance(context);
     }
-    bar.finish();
+    bar.finish(context);
     io.newLine();
 
     // Task
@@ -1738,52 +1749,68 @@ class UiLinkCommand extends ArtisanCommand<void> {
     io.text('Modern terminals support clickable links.');
     io.newLine();
 
-    final termLink = TerminalLink(style: io.style, stdout: dartio.stdout);
+    final context = ComponentContext(
+      style: io.style,
+      stdout: dartio.stdout,
+      stdin: dartio.stdin,
+      terminalWidth: io.terminalWidth,
+    );
 
     io.section('Link Support');
-    io.twoColumnDetail('OSC 8 Supported', termLink.isSupported ? 'Yes' : 'No');
+    io.twoColumnDetail(
+      'OSC 8 Supported',
+      LinkComponent.isSupported ? 'Yes' : 'No',
+    );
     io.newLine();
 
     io.section('Basic Links');
     io.write('  Visit ');
-    termLink.write('https://dart.dev', text: 'Dart');
+    LinkComponent(url: 'https://dart.dev', text: 'Dart').render(context);
     io.writeln(' for more information.');
 
     io.write('  Check out ');
-    termLink.write('https://flutter.dev', text: 'Flutter');
+    LinkComponent(url: 'https://flutter.dev', text: 'Flutter').render(context);
     io.writeln(' for mobile development.');
 
     io.write('  Read the ');
-    termLink.write(
-      'https://pub.dev/packages/artisan_args',
+    LinkComponent(
+      url: 'https://pub.dev/packages/artisan_args',
       text: 'artisan_args docs',
-    );
+    ).render(context);
     io.writeln('.');
     io.newLine();
 
     io.section('Styled Links');
     io.write('  ');
-    termLink.writelnStyled(
-      'https://github.com',
+    LinkComponent(
+      url: 'https://github.com',
       text: 'GitHub (underlined & blue)',
-    );
+      styled: true,
+    ).renderln(context);
     io.newLine();
 
-    io.section('Using link() function');
-    io.writeln('  ${link('https://google.com', text: 'Google')}');
-    io.writeln(
-      '  ${link('https://dart.dev/guides', text: 'Dart Guides', styled: true)}',
-    );
+    io.section('Using LinkComponent');
+    io.write('  ');
+    LinkComponent(url: 'https://google.com', text: 'Google').renderln(context);
+    io.write('  ');
+    LinkComponent(
+      url: 'https://dart.dev/guides',
+      text: 'Dart Guides',
+      styled: true,
+    ).renderln(context);
     io.newLine();
 
     io.section('Link Group (for footnotes)');
-    final links = LinkGroup(prefix: 'ref');
+    final links = LinkGroupComponent(prefix: 'ref');
     io.writeln(
       '  Dart${links.add('https://dart.dev', text: '[1]')} is great for building ',
     );
     io.writeln(
       '  Flutter${links.add('https://flutter.dev', text: '[2]')} apps.',
     );
+    io.newLine();
+    io.writeln('  References:');
+    links.renderln(context);
     io.newLine();
 
     io.note('Links may not be clickable in all terminals.');
@@ -1894,6 +1921,89 @@ class UiComponentSystemCommand extends ArtisanCommand<void> {
         Text(' | '),
         StyledText.warning('⚠ Warn'),
       ],
+    ).renderln(context);
+    io.newLine();
+
+    // ─────────────────────────────────────────────────────────────────────────
+    io.section('Output Components');
+
+    io.writeln('PanelComponent:');
+    PanelComponent(
+      content:
+          'This is a panel using the component system.\nIt supports titles and alignment.',
+      title: 'Panel Demo',
+    ).renderln(context);
+    io.newLine();
+
+    io.writeln('TaskComponent:');
+    TaskComponent(
+      description: 'Compiling assets',
+      status: TaskStatus.success,
+    ).renderln(context);
+    TaskComponent(
+      description: 'Running tests',
+      status: TaskStatus.failure,
+    ).renderln(context);
+    TaskComponent(
+      description: 'Deploying',
+      status: TaskStatus.skipped,
+    ).renderln(context);
+    io.newLine();
+
+    io.writeln('AlertComponent:');
+    AlertComponent(
+      message: 'This is informational',
+      type: AlertType.info,
+    ).renderln(context);
+    AlertComponent(
+      message: 'Operation succeeded',
+      type: AlertType.success,
+    ).renderln(context);
+    AlertComponent(
+      message: 'Be careful!',
+      type: AlertType.warning,
+    ).renderln(context);
+    AlertComponent(
+      message: 'Something went wrong',
+      type: AlertType.error,
+    ).renderln(context);
+    io.newLine();
+
+    io.writeln('TwoColumnDetailComponent:');
+    TwoColumnDetailComponent(
+      left: 'Name',
+      right: 'artisan_args',
+    ).renderln(context);
+    TwoColumnDetailComponent(left: 'Version', right: '1.0.0').renderln(context);
+    TwoColumnDetailComponent(left: 'Status', right: 'Active').renderln(context);
+    io.newLine();
+
+    io.writeln('TreeComponent:');
+    TreeComponent(
+      data: {
+        'src': {
+          'lib': ['main.dart', 'utils.dart'],
+          'test': ['main_test.dart'],
+        },
+        'pubspec.yaml': null,
+        'README.md': null,
+      },
+    ).renderln(context);
+    io.newLine();
+
+    io.writeln('ColumnsComponent:');
+    ColumnsComponent(
+      items: [
+        'apple',
+        'banana',
+        'cherry',
+        'date',
+        'elderberry',
+        'fig',
+        'grape',
+        'honeydew',
+      ],
+      columnCount: 4,
     ).renderln(context);
     io.newLine();
 

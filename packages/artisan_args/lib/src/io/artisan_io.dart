@@ -1,8 +1,9 @@
 import 'dart:async';
 import 'dart:io' as io;
 
-import '../output/progress_bar.dart';
-import '../output/table.dart';
+import '../components/base.dart';
+import '../components/progress_bar.dart';
+import '../components/table.dart';
 import '../style/artisan_style.dart';
 import '../style/verbosity.dart';
 import 'components.dart';
@@ -291,10 +292,15 @@ class ArtisanIO {
     required List<String> headers,
     required List<List<Object?>> rows,
   }) {
-    final rendered = ArtisanTable(
+    final context = ComponentContext(
       style: style,
-    ).render(headers: headers, rows: rows);
-    for (final line in rendered.split('\n')) {
+      stdout: _stdout ?? io.stdout,
+      stdin: _stdin ?? io.stdin,
+      terminalWidth: terminalWidth,
+    );
+    final component = TableComponent(headers: headers, rows: rows);
+    final result = component.build(context);
+    for (final line in result.output.split('\n')) {
       writeln(line);
     }
     newLine();
@@ -304,31 +310,30 @@ class ArtisanIO {
   // Progress
   // ─────────────────────────────────────────────────────────────────────────────
 
+  /// Creates a component context for the current IO.
+  ComponentContext get _componentContext => ComponentContext(
+    style: style,
+    stdout: _stdout ?? io.stdout,
+    stdin: _stdin ?? io.stdin,
+    terminalWidth: terminalWidth,
+  );
+
   /// Creates a new progress bar.
-  ArtisanProgressBar createProgressBar({int max = 0}) {
-    return ArtisanProgressBar(
-      style: style,
-      outRaw: _outRaw,
-      terminalWidth: terminalWidth,
-      max: max,
-    );
+  StatefulProgressBar createProgressBar({int max = 0}) {
+    return StatefulProgressBar(max: max);
   }
 
   /// Iterates over items with a progress bar.
   Iterable<T> progressIterate<T>(Iterable<T> iterable, {int? max}) sync* {
     final total = max ?? (iterable is List<T> ? iterable.length : 0);
     final bar = createProgressBar(max: total);
-    bar.start();
-    var i = 0;
+    final context = _componentContext;
+    bar.start(context);
     for (final item in iterable) {
       yield item;
-      i++;
-      bar.advance();
+      bar.advance(context);
     }
-    if (total == 0) {
-      bar.setMax(i);
-    }
-    bar.finish();
+    bar.finish(context);
     newLine();
   }
 
