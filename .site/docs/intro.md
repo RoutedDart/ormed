@@ -21,33 +21,12 @@ Ormed is a **strongly-typed ORM for Dart** inspired by Eloquent, GORM, SQLAlchem
 
 ## Quick Example
 
-```dart
-import 'package:ormed/ormed.dart';
+```dart file=../examples/lib/models/user.dart#intro-model
 
-part 'user.orm.dart';
+```
 
-@OrmModel(table: 'users')
-class User extends Model<User> {
-  const User({required this.id, required this.email, this.name});
+```dart file=../examples/lib/queries.dart#intro-query
 
-  @OrmField(isPrimaryKey: true, autoIncrement: true)
-  final int id;
-
-  final String email;
-  final String? name;
-}
-
-// Query with fluent API
-final users = await dataSource.query<$User>()
-    .whereEquals('active', true)
-    .orderBy('createdAt', descending: true)
-    .limit(10)
-    .get();
-
-// Repository operations
-final repo = dataSource.repo<$User>();
-final user = await repo.find(1);
-await repo.update(user..name = 'John');
 ```
 
 ## Installation

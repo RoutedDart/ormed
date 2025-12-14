@@ -97,78 +97,28 @@ targets:
 
 Then register models manually:
 
-```dart
-final registry = ModelRegistry()
-  ..register(UserOrmDefinition.definition)
-  ..register(PostOrmDefinition.definition);
+```dart file=../../examples/lib/setup.dart#manual-registration
 ```
 
 ## Generated Registry Helpers
 
 The `orm_registry.g.dart` file provides:
 
-```dart
-// Pre-populated registry
-final registry = buildOrmRegistry();
-
-// Registry with factory support
-final registry = buildOrmRegistryWithFactories();
-
-// Extension method
-final registry = ModelRegistry()..registerGeneratedModels();
-
-// Direct access to definitions
-final definitions = generatedOrmModelDefinitions;
+```dart file=../../examples/lib/setup.dart#registry-usage
 ```
 
 ## Constructor Targeting
 
 By default, the generator uses the first generative constructor. Override with the `constructor` parameter:
 
-```dart
-@OrmModel(
-  table: 'users',
-  constructor: 'fromDatabase',
-)
-class User extends Model<User> {
-  // Default constructor - NOT used by generator
-  const User({required this.id, required this.email});
-
-  // Named constructor that the generator will use
-  const User.fromDatabase({required this.id, required this.email});
-
-  @OrmField(isPrimaryKey: true)
-  final int id;
-  final String email;
-}
+```dart file=../../examples/lib/setup.dart#constructor-targeting
 ```
 
 ## Generated Relation Getters
 
 For models with `@OrmRelation` annotations, the generator produces relation getters that integrate with lazy loading:
 
-**Single relations** (`belongsTo`, `hasOne`):
-
-```dart
-@override
-Author? get author {
-  if (relationLoaded('author')) {
-    return getRelation<Author>('author');
-  }
-  return super.author;
-}
-```
-
-**List relations** (`hasMany`, `manyToMany`):
-
-```dart
-@override
-List<Tag> get tags {
-  if (relationLoaded('tags')) {
-    return getRelationList<Tag>('tags');
-  }
-  return super.tags;
-}
+```dart file=../../examples/lib/setup.dart#generated-relation-getters
 ```
 
 ## Recommended `.gitignore`
@@ -186,21 +136,7 @@ List<Tag> get tags {
 
 Use `driverOverrides` for per-driver behavior:
 
-```dart
-@OrmField(
-  columnType: 'TEXT',
-  driverOverrides: {
-    'postgres': OrmDriverFieldOverride(
-      columnType: 'jsonb',
-      codec: PostgresPayloadCodec,
-    ),
-    'sqlite': OrmDriverFieldOverride(
-      columnType: 'TEXT',
-      codec: SqlitePayloadCodec,
-    ),
-  },
-)
-final Map<String, Object?> payload;
+```dart file=../../examples/lib/setup.dart#driver-field-overrides
 ```
 
 ## Tips

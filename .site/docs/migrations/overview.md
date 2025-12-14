@@ -16,27 +16,8 @@ Ormed migrations support SQLite, PostgreSQL, and MySQL, providing a unified API 
 
 Every migration extends the `Migration` base class:
 
-```dart
-import 'package:ormed/migrations.dart';
+```dart file=../../examples/lib/migrations/basic.dart#migration-basic
 
-class CreateUsersTable extends Migration {
-  const CreateUsersTable();
-
-  @override
-  void up(SchemaBuilder schema) {
-    schema.create('users', (table) {
-      table.integer('id').primaryKey();
-      table.string('email').unique();
-      table.string('name');
-      table.timestamp('created_at').nullable();
-    });
-  }
-
-  @override
-  void down(SchemaBuilder schema) {
-    schema.drop('users', ifExists: true);
-  }
-}
 ```
 
 The `up` method runs when applying migrations, `down` runs during rollbacks. Always implement both to ensure migrations are reversible.
@@ -45,32 +26,8 @@ The `up` method runs when applying migrations, `down` runs during rollbacks. Alw
 
 Use `schema.create()` to define a new table:
 
-```dart
-@override
-void up(SchemaBuilder schema) {
-  schema.create('posts', (table) {
-    table.integer('id').primaryKey().autoIncrement();
-    table.string('title');
-    table.text('content');
-    table.integer('author_id');
-    table.boolean('published').defaultValue(false);
-    table.timestamp('created_at').nullable();
-    
-    table.foreign(
-      ['author_id'],
-      references: 'users',
-      referencedColumns: ['id'],
-      onDelete: ReferenceAction.cascade,
-    );
-    
-    table.index(['author_id', 'published']);
-  });
-}
+```dart file=../../examples/lib/migrations/basic.dart#migration-create-table
 
-@override
-void down(SchemaBuilder schema) {
-  schema.drop('posts', ifExists: true);
-}
 ```
 
 **Note:** Foreign key constraints require referenced tables to exist first. Create parent tables before child tables.
@@ -79,25 +36,8 @@ void down(SchemaBuilder schema) {
 
 Use `schema.table()` to alter existing tables:
 
-```dart
-@override
-void up(SchemaBuilder schema) {
-  schema.table('posts', (table) {
-    table.string('slug').nullable();
-    table.integer('view_count').defaultValue(0);
-    table.index(['slug']).unique();
-    table.renameColumn('content', 'body');
-  });
-}
+```dart file=../../examples/lib/migrations/basic.dart#migration-alter-table
 
-@override
-void down(SchemaBuilder schema) {
-  schema.table('posts', (table) {
-    table.renameColumn('body', 'content');
-    table.dropColumn('view_count');
-    table.dropColumn('slug');
-  });
-}
 ```
 
 **When adding non-nullable columns** to tables with existing data:
