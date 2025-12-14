@@ -562,6 +562,70 @@ void runDriverRepositoryTests() {
           expect(updated[1].email, 'map-b-updated@example.com');
         });
       });
+
+      group('with Query where inputs', () {
+        test('update() accepts Query callback where', () async {
+          await userRepo.insert(
+            $User(
+              id: 2240,
+              email: 'query-where@example.com',
+              active: true,
+            ),
+          );
+
+          const dto = UserUpdateDto(name: 'Query Where User');
+
+          final updated = await userRepo.update(
+            dto,
+            where: (Query<$User> q) => q.whereEquals('email', 'query-where@example.com'),
+          );
+
+          expect(updated.name, 'Query Where User');
+        });
+
+        test('updateMany() with Query where enforces single input', () async {
+          await userRepo.insert(
+            $User(
+              id: 2241,
+              email: 'query-where-single@example.com',
+              active: true,
+            ),
+          );
+
+          const dto1 = UserUpdateDto(name: 'One');
+          const dto2 = UserUpdateDto(name: 'Two');
+
+          expect(
+            () => userRepo.updateMany(
+              const [dto1, dto2],
+              where: (Query<$User> q) => q.whereEquals('email', 'query-where-single@example.com'),
+            ),
+            throwsArgumentError,
+          );
+        });
+
+        test('updateManyRaw() supports Query where', () async {
+          await userRepo.insert(
+            $User(
+              id: 2242,
+              email: 'query-where-raw@example.com',
+              active: true,
+            ),
+          );
+
+          const dto = UserUpdateDto(active: false);
+
+          final result = await userRepo.updateManyRaw(
+            const [dto],
+            where: dataSource
+                .context
+                .query<$User>()
+                .whereEquals('email', 'query-where-raw@example.com'),
+          );
+
+          expect(result.affectedRows, 1);
+        });
+      });
     });
 
     group('Upsert Operations', () {
@@ -826,6 +890,23 @@ void runDriverRepositoryTests() {
         expect(fetched, isNull);
       });
 
+      test('delete() accepts Query callback where', () async {
+        final user = await userRepo.insert(
+          $User(id: 7107, email: 'delete-query@example.com', active: true),
+        );
+
+        final affected = await userRepo.delete(
+          (Query<$User> q) => q.whereEquals('email', 'delete-query@example.com'),
+        );
+
+        expect(affected, 1);
+        final fetched = await dataSource
+            .query<$User>()
+            .whereEquals('id', user.id)
+            .first();
+        expect(fetched, isNull);
+      });
+
       test('delete() deletes record with primary key value', () async {
         final user = await userRepo.insert(
           $User(id: 7101, email: 'delete-pk@example.com', active: true),
@@ -839,6 +920,28 @@ void runDriverRepositoryTests() {
             .whereEquals('id', user.id)
             .first();
         expect(fetched, isNull);
+      });
+
+      test('deleteMany() handles Query alongside other inputs', () async {
+        final users = await userRepo.insertMany([
+          $User(id: 7108, email: 'delete-mix-1@example.com', active: true),
+          $User(id: 7109, email: 'delete-mix-2@example.com', active: true),
+        ]);
+
+        final affected = await userRepo.deleteMany([
+          (Query<$User> q) => q.whereEquals('email', 'delete-mix-1@example.com'),
+          {'id': users[1].id},
+        ]);
+
+        expect(affected, 2);
+
+        for (final user in users) {
+          final fetched = await dataSource
+              .query<$User>()
+              .whereEquals('id', user.id)
+              .first();
+          expect(fetched, isNull);
+        }
       });
 
       test('delete() accepts tracked model as where', () async {

@@ -24,6 +24,12 @@ mixin RepositoryUpdateMixin<T extends OrmEntity>
   /// - `$ModelPartial` - Partial entity with the fields to match
   /// - `$ModelUpdateDto` or `$ModelInsertDto` - DTO with fields to match
   /// - Tracked model (`$Model`) - Uses all column values for matching
+  /// - `Query<T>` - A pre-built query with where conditions
+  /// - `Query<T> Function(Query<T>)` - A callback that builds a query
+  ///
+  /// **Important**: When using a callback function, you must explicitly type
+  /// the parameter (e.g., `(Query<$User> q) => ...`) because Dart extension
+  /// methods are not accessible on dynamically-typed parameters.
   ///
   /// Example with tracked model:
   /// ```dart
@@ -49,6 +55,15 @@ mixin RepositoryUpdateMixin<T extends OrmEntity>
   /// final data = {'name': 'John Smith'};
   /// final updated = await repository.update(data, where: {'id': 1});
   /// ```
+  ///
+  /// Example with Query callback:
+  /// ```dart
+  /// final dto = $UserUpdateDto(name: 'Updated Name');
+  /// final updated = await repository.update(
+  ///   dto,
+  ///   where: (Query<$User> q) => q.whereEquals('email', 'john@example.com'),
+  /// );
+  /// ```
   Future<T> update(
     Object model, {
     Object? where,
@@ -72,6 +87,10 @@ mixin RepositoryUpdateMixin<T extends OrmEntity>
   ///
   /// The [where] parameter accepts various input types (see [update] for details).
   ///
+  /// **Note**: When providing a `Query` or callback as the [where] parameter,
+  /// only a single input is allowed. Passing multiple inputs with a Query where
+  /// will throw an [ArgumentError].
+  ///
   /// An optional [jsonUpdates] builder can be provided to update JSON fields.
   ///
   /// Example:
@@ -81,6 +100,15 @@ mixin RepositoryUpdateMixin<T extends OrmEntity>
   ///   user.active = true;
   /// }
   /// final updatedUsers = await repository.updateMany(users);
+  /// ```
+  ///
+  /// Example with Query callback (single input only):
+  /// ```dart
+  /// final dto = $UserUpdateDto(active: false);
+  /// final updated = await repository.updateMany(
+  ///   [dto],
+  ///   where: (Query<$User> q) => q.whereEquals('role', 'guest'),
+  /// );
   /// ```
   Future<List<T>> updateMany(
     List<Object> inputs, {
@@ -96,6 +124,19 @@ mixin RepositoryUpdateMixin<T extends OrmEntity>
   /// Updates multiple items in the database and returns the raw result.
   ///
   /// Use this when you only need the affected row count, not the updated data.
+  ///
+  /// The [where] parameter accepts the same inputs as [update], including
+  /// `Query<T>` and `Query<T> Function(Query<T>)` callbacks.
+  ///
+  /// Example with Query:
+  /// ```dart
+  /// final dto = $UserUpdateDto(active: false);
+  /// final result = await repository.updateManyRaw(
+  ///   [dto],
+  ///   where: dataSource.query<$User>().whereEquals('role', 'guest'),
+  /// );
+  /// print('Updated ${result.affectedRows} rows');
+  /// ```
   Future<MutationResult> updateManyRaw(
     List<Object> inputs, {
     Object? where,

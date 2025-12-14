@@ -59,7 +59,8 @@ Future<SqliteTestHarness> createSqliteTestHarness({
 
   final dataSource = DataSource(
     DataSourceOptions(
-      name: 'driver_tests_sqlite_base',
+      // Bump name to force fresh provisioning when migrations evolve.
+      name: 'driver_tests_sqlite_base_v2',
       driver: adapter,
       entities: registry.allDefinitions,
       registry: registry,

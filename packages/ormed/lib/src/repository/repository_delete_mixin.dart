@@ -8,19 +8,59 @@ mixin RepositoryDeleteMixin<T extends OrmEntity>
         RepositoryInputHandlerMixin<T> {
   /// Deletes records that match the provided [where] clause.
   ///
-  /// Accepts the same flexible inputs as [RepositoryUpdateMixin.where]:
-  /// - `Map<String, Object?>`
-  /// - `PartialEntity<$T>`
-  /// - `InsertDto<$T>` / `UpdateDto<$T>`
-  /// - tracked model `$T`
+  /// The [where] parameter accepts:
+  /// - `Map<String, Object?>` - Raw column/value pairs
+  /// - `PartialEntity<$T>` - Partial entity with fields to match
+  /// - `InsertDto<$T>` / `UpdateDto<$T>` - DTO with fields to match
+  /// - Tracked model (`$T`) - Uses primary key for matching
+  /// - `Query<T>` - A pre-built query with where conditions
+  /// - `Query<T> Function(Query<T>)` - A callback that builds a query
+  ///
+  /// **Important**: When using a callback function, you must explicitly type
+  /// the parameter (e.g., `(Query<$User> q) => ...`) because Dart extension
+  /// methods are not accessible on dynamically-typed parameters.
   ///
   /// Returns the number of affected rows.
+  ///
+  /// Example with primary key:
+  /// ```dart
+  /// final affected = await repository.delete(userId);
+  /// ```
+  ///
+  /// Example with tracked model:
+  /// ```dart
+  /// final affected = await repository.delete(user);
+  /// ```
+  ///
+  /// Example with Query callback:
+  /// ```dart
+  /// final affected = await repository.delete(
+  ///   (Query<$User> q) => q.whereEquals('email', 'john@example.com'),
+  /// );
+  /// ```
   Future<int> delete(Object where) => deleteMany([where]);
 
   /// Deletes multiple records using a list of [wheres].
   ///
-  /// Each entry can be any supported where input (Map, Partial, DTO, tracked model).
+  /// Each entry can be any supported where input:
+  /// - `Map<String, Object?>` - Raw column/value pairs
+  /// - `PartialEntity<$T>` - Partial entity with fields to match
+  /// - `InsertDto<$T>` / `UpdateDto<$T>` - DTO with fields to match
+  /// - Tracked model (`$T`) - Uses primary key for matching
+  /// - Primary key value (int, String, etc.)
+  /// - `Query<T>` - A pre-built query with where conditions
+  /// - `Query<T> Function(Query<T>)` - A callback that builds a query
+  ///
   /// Returns the number of affected rows.
+  ///
+  /// Example with mixed inputs:
+  /// ```dart
+  /// final affected = await repository.deleteMany([
+  ///   (Query<$User> q) => q.whereEquals('role', 'guest'),
+  ///   {'id': 42},
+  ///   someTrackedUser,
+  /// ]);
+  /// ```
   Future<int> deleteMany(List<Object> wheres) async {
     if (wheres.isEmpty) return 0;
 

@@ -9,8 +9,8 @@ import 'package:test/test.dart';
 /// codecs at runtime based on the driver context.
 ///
 /// Generated model codecs do NOT hardcode specific codecs. Instead they delegate:
-///   registry.encodeField(fieldDef, value)  →  uses TypeMapper codec
-///   registry.decodeField<T>(fieldDef, data) →  uses TypeMapper codec
+///   [registry.encodeField(fieldDef, value)]  →  uses [TypeMapper ]codec
+///   [registry.decodeField<T>(fieldDef, data)] →  uses [TypeMapper] codec
 void main() {
   group('Code Generation with TypeMapper Integration', () {
     setUpAll(() {

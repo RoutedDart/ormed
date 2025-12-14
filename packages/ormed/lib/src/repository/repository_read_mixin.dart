@@ -7,41 +7,6 @@ mixin RepositoryReadMixin<T extends OrmEntity>
         RepositoryHelpersMixin<T>,
         RepositoryInsertMixin<T>,
         RepositoryUpsertMixin<T> {
-  Query<T> _applyWhere(Query<T> query, Object? where) {
-    if (where == null) return query;
-
-    // If caller supplies a prebuilt query, reuse it (ensuring same context).
-    if (where is Query<T>) {
-      if (!identical(where.context, query.context)) {
-        throw StateError(
-          'Query.where must use the same QueryContext as the repository.',
-        );
-      }
-      return where;
-    }
-
-    // If caller supplies a builder callback, apply it.
-    if (where is Query<T> Function(Query<T>)) {
-      return where(query);
-    }
-
-    final helper = MutationInputHelper<T>(
-      definition: definition,
-      codecs: query.context.codecRegistry,
-    );
-    final map = helper.whereInputToMap(where);
-    if (map == null || map.isEmpty) {
-      throw StateError(
-        'Unsupported where input for ${definition.modelName}: ${where.runtimeType}',
-      );
-    }
-    var q = query;
-    map.forEach((key, value) {
-      q = q.where(key, value);
-    });
-    return q;
-  }
-
   Query<T> _scopedQuery(String method) {
     final ctx = queryContext;
     if (ctx == null) {
@@ -62,22 +27,22 @@ mixin RepositoryReadMixin<T extends OrmEntity>
   Future<List<T>> all() => _scopedQuery('all').get();
 
   Future<T?> first({Object? where}) {
-    final q = _applyWhere(_scopedQuery('first'), where);
+    final q = applyWhere(_scopedQuery('first'), where);
     return q.first();
   }
 
   Future<T> firstOrFail({Object? where}) {
-    final q = _applyWhere(_scopedQuery('firstOrFail'), where);
+    final q = applyWhere(_scopedQuery('firstOrFail'), where);
     return q.firstOrFail();
   }
 
   Future<bool> exists({Object? where}) async {
-    final q = _applyWhere(_scopedQuery('exists'), where);
+    final q = applyWhere(_scopedQuery('exists'), where);
     return q.exists();
   }
 
   Future<int> count({Object? where}) async {
-    final q = _applyWhere(_scopedQuery('count'), where);
+    final q = applyWhere(_scopedQuery('count'), where);
     return q.count();
   }
 
@@ -149,11 +114,15 @@ mixin RepositoryReadMixin<T extends OrmEntity>
   }
 
   Future<int> trash(Object where) =>
-      _applyWhere(_requireQuery('trash'), where).delete();
+      applyWhere(_requireQuery('trash'), where, feature: 'trash').delete();
 
   Future<int> restore(Object where) =>
-      _applyWhere(_requireQuery('restore'), where).restore();
+      applyWhere(_requireQuery('restore'), where, feature: 'restore')
+          .restore();
 
-  Future<int> forceDelete(Object where) =>
-      _applyWhere(_requireQuery('forceDelete'), where).forceDelete();
+  Future<int> forceDelete(Object where) => applyWhere(
+        _requireQuery('forceDelete'),
+        where,
+        feature: 'forceDelete',
+      ).forceDelete();
 }

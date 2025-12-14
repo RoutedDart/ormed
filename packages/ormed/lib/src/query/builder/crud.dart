@@ -543,11 +543,32 @@ extension CrudExtension<T extends OrmEntity> on Query<T> {
   /// Matches repository semantics: keys are inferred from tracked models,
   /// explicit `where` input, or primary key values embedded in DTO/map data.
   /// Returns hydrated models when the driver supports RETURNING.
+  ///
+  /// The [where] parameter accepts:
+  /// - `Map<String, Object?>` - Raw column/value pairs
+  /// - `PartialEntity<T>` - Partial entity with fields to match
+  /// - `InsertDto<T>` / `UpdateDto<T>` - DTO with fields to match
+  /// - Tracked model (`T`) - Uses primary key for matching
+  /// - `Query<T>` - A pre-built query with where conditions
+  /// - `Query<T> Function(Query<T>)` - A callback that builds a query
+  ///
+  /// **Important**: When using a callback function, the parameter must be
+  /// explicitly typed (e.g., `(Query<$User> q) => q.whereEquals(...)`)
+  /// because Dart extension methods are not accessible on dynamic parameters.
   Future<List<T>> updateInputs(
     List<Object> inputs, {
     Object? where,
     JsonUpdateBuilder<T>? jsonUpdates,
   }) async {
+    final whereQuery = _resolveWhereQuery(where, 'updateInputs');
+    if (whereQuery != null) {
+      return _updateInputsAgainstQuery(
+        whereQuery,
+        inputs,
+        jsonUpdates: jsonUpdates,
+      );
+    }
+
     final build = _buildUpdateRows(
       inputs,
       where: where,
@@ -574,11 +595,23 @@ extension CrudExtension<T extends OrmEntity> on Query<T> {
   ///
   /// Mirrors [updateInputs] but skips hydration when RETURNING is unsupported
   /// or unnecessary.
+  ///
+  /// The [where] parameter accepts the same inputs as [updateInputs], including
+  /// `Query<T>` and `Query<T> Function(Query<T>)` callbacks.
   Future<MutationResult> updateInputsRaw(
     List<Object> inputs, {
     Object? where,
     JsonUpdateBuilder<T>? jsonUpdates,
   }) async {
+    final whereQuery = _resolveWhereQuery(where, 'updateInputsRaw');
+    if (whereQuery != null) {
+      return _updateInputsAgainstQueryRaw(
+        whereQuery,
+        inputs,
+        jsonUpdates: jsonUpdates,
+      );
+    }
+
     final build = _buildUpdateRows(
       inputs,
       where: where,
@@ -711,6 +744,113 @@ extension CrudExtension<T extends OrmEntity> on Query<T> {
     );
   }
 
+  Future<List<T>> _updateInputsAgainstQuery(
+    Query<T> target,
+    List<Object> inputs, {
+    JsonUpdateBuilder<T>? jsonUpdates,
+  }) async {
+    if (inputs.isEmpty) return const [];
+    if (inputs.length != 1) {
+      throw ArgumentError(
+        'updateInputs with a Query where requires exactly one input; '
+        'received ${inputs.length}.',
+      );
+    }
+
+    final input = inputs.single;
+    final helper = MutationInputHelper<T>(
+      definition: definition,
+      codecs: context.codecRegistry,
+    );
+    final jsonSupport = JsonUpdateSupport<T>(definition);
+
+    if (input is T) {
+      helper.applyUpdateTimestampsToModel(input);
+    }
+
+    final baseValues = helper.updateInputToMap(input);
+    if (input is! ModelAttributes) {
+      helper.ensureTimestampsInMap(baseValues, isInsert: false);
+    }
+
+    final payload = _normalizeUpdateValues(_addUpdateTimestamp(baseValues));
+    final jsonClauses = input is T
+        ? jsonSupport.buildJsonUpdates(input, jsonUpdates)
+        : const <JsonUpdateClause>[];
+
+    if (payload.values.isEmpty &&
+        payload.jsonUpdates.isEmpty &&
+        jsonClauses.isEmpty) {
+      return const [];
+    }
+
+    final mutation = target._buildQueryUpdateMutation(
+      values: payload.values,
+      jsonUpdates: [...payload.jsonUpdates, ...jsonClauses],
+      feature: 'updateInputs.queryWhere',
+      returning: true,
+    );
+
+    final result = await target.context.runMutation(mutation);
+    return _hydrateMutationResults(
+      result,
+      originalModels: input is T ? <T>[input] : const [],
+      inputMaps: <Map<String, Object?>>[baseValues],
+      canCreateFromInputs: false,
+    );
+  }
+
+  Future<MutationResult> _updateInputsAgainstQueryRaw(
+    Query<T> target,
+    List<Object> inputs, {
+    JsonUpdateBuilder<T>? jsonUpdates,
+  }) async {
+    if (inputs.isEmpty) {
+      return const MutationResult(affectedRows: 0);
+    }
+    if (inputs.length != 1) {
+      throw ArgumentError(
+        'updateInputsRaw with a Query where requires exactly one input; '
+        'received ${inputs.length}.',
+      );
+    }
+
+    final input = inputs.single;
+    final helper = MutationInputHelper<T>(
+      definition: definition,
+      codecs: context.codecRegistry,
+    );
+    final jsonSupport = JsonUpdateSupport<T>(definition);
+
+    if (input is T) {
+      helper.applyUpdateTimestampsToModel(input);
+    }
+
+    final baseValues = helper.updateInputToMap(input);
+    if (input is! ModelAttributes) {
+      helper.ensureTimestampsInMap(baseValues, isInsert: false);
+    }
+
+    final payload = _normalizeUpdateValues(_addUpdateTimestamp(baseValues));
+    final jsonClauses = input is T
+        ? jsonSupport.buildJsonUpdates(input, jsonUpdates)
+        : const <JsonUpdateClause>[];
+
+    if (payload.values.isEmpty &&
+        payload.jsonUpdates.isEmpty &&
+        jsonClauses.isEmpty) {
+      return const MutationResult(affectedRows: 0);
+    }
+
+    final mutation = target._buildQueryUpdateMutation(
+      values: payload.values,
+      jsonUpdates: [...payload.jsonUpdates, ...jsonClauses],
+      feature: 'updateInputsRaw.queryWhere',
+      returning: false,
+    );
+    return target.context.runMutation(mutation);
+  }
+
   _InsertInputBuildResult<T> _buildInsertRows(List<Object> inputs) {
     if (inputs.isEmpty) {
       return _InsertInputBuildResult(
@@ -802,6 +942,46 @@ extension CrudExtension<T extends OrmEntity> on Query<T> {
       returning: returning,
       ignoreConflicts: ignoreConflicts,
     );
+  }
+
+  /// Resolves a [where] parameter that may be a `Query` or query-builder callback.
+  ///
+  /// Returns the resolved `Query<T>` if [where] is:
+  /// - A `Query<T>` instance
+  /// - A `Query<T> Function(Query<T>)` callback
+  /// - A `Query Function(Query)` callback (with runtime type check)
+  ///
+  /// Returns `null` if [where] is not a query type, allowing the caller to
+  /// fall back to other input handling (maps, DTOs, etc.).
+  ///
+  /// **Note**: Untyped callbacks like `(q) => q.where(...)` are not supported
+  /// because Dart extension methods are not accessible when the parameter is
+  /// typed as `dynamic`. Users must explicitly type their callback parameters.
+  Query<T>? _resolveWhereQuery(Object? where, String feature) {
+    if (where is Query<T>) {
+      _ensureSharedContext(where, feature);
+      return where;
+    }
+    if (where is Query<T> Function(Query<T>)) {
+      final built = where(this);
+      _ensureSharedContext(built, feature);
+      return built;
+    }
+    if (where is Query Function(Query)) {
+      final built = where(this);
+      if (built is! Query<T>) {
+        throw ArgumentError(
+          '$feature callback must return Query<$T>, got ${built.runtimeType}.',
+        );
+      }
+      _ensureSharedContext(built, feature);
+      return built;
+    }
+    // Handle untyped functions (e.g., (q) => q.where(...))
+    // We cannot use dynamic Function(dynamic) because extension methods
+    // don't work with dynamic receivers. Instead, reject untyped functions
+    // and require users to type their lambda parameters.
+    return null;
   }
 
   List<MutationRow> _buildUpsertRows(List<Object> inputs) {
@@ -1052,9 +1232,21 @@ extension CrudExtension<T extends OrmEntity> on Query<T> {
   /// Deletes multiple records using flexible where inputs.
   Future<int> deleteWhereMany(List<Object> wheres) async {
     if (wheres.isEmpty) return 0;
-    final mutation = _buildDeleteWherePlan(wheres, returning: false);
+
+    final split = _splitWhereInputs(wheres, 'deleteWhereMany');
+    var affected = 0;
+
+    for (final query in split.queries) {
+      affected += await query.delete();
+    }
+
+    if (split.inputs.isEmpty) {
+      return affected;
+    }
+
+    final mutation = _buildDeleteWherePlan(split.inputs, returning: false);
     final result = await context.runMutation(mutation);
-    return result.affectedRows;
+    return affected + result.affectedRows;
   }
 
   /// Deletes records using flexible where inputs and returns hydrated models.
@@ -1064,9 +1256,23 @@ extension CrudExtension<T extends OrmEntity> on Query<T> {
   /// Deletes multiple records using flexible where inputs and returns hydrated models.
   Future<List<T>> deleteWhereManyReturning(List<Object> wheres) async {
     if (wheres.isEmpty) return const [];
-    final mutation = _buildDeleteWherePlan(wheres, returning: true);
+
+    final split = _splitWhereInputs(wheres, 'deleteWhereManyReturning');
+    final models = <T>[];
+
+    for (final query in split.queries) {
+      final returned = await query.deleteReturning();
+      models.addAll(returned);
+    }
+
+    if (split.inputs.isEmpty) {
+      return models;
+    }
+
+    final mutation = _buildDeleteWherePlan(split.inputs, returning: true);
     final result = await context.runMutation(mutation);
-    return _hydrateMutationResults(result);
+    models.addAll(_hydrateMutationResults(result));
+    return models;
   }
 
   /// Builds but does not execute a delete plan for flexible inputs (useful for previews).
@@ -1139,6 +1345,22 @@ extension CrudExtension<T extends OrmEntity> on Query<T> {
       driverName: context.driver.metadata.name,
       returning: returning,
     );
+  }
+
+  _WhereSplit<T> _splitWhereInputs(List<Object> wheres, String feature) {
+    final queries = <Query<T>>[];
+    final inputs = <Object>[];
+
+    for (final where in wheres) {
+      final query = _resolveWhereQuery(where, feature);
+      if (query != null) {
+        queries.add(query);
+        continue;
+      }
+      inputs.add(where);
+    }
+
+    return _WhereSplit<T>(queries: queries, inputs: inputs);
   }
 
   /// Upserts (insert or update) a single record.
@@ -1383,4 +1605,11 @@ extension CrudExtension<T extends OrmEntity> on Query<T> {
       );
     }
   }
+}
+
+class _WhereSplit<T extends OrmEntity> {
+  _WhereSplit({required this.queries, required this.inputs});
+
+  final List<Query<T>> queries;
+  final List<Object> inputs;
 }

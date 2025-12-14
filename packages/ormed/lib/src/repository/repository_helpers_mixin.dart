@@ -5,6 +5,44 @@ mixin RepositoryHelpersMixin<T extends OrmEntity> on RepositoryBase<T> {
   Query<T>? get _queryOrNull =>
       queryContext?.queryFromDefinition<T>(definition);
 
+  Query<T> applyWhere(
+    Query<T> query,
+    Object? where, {
+    String feature = 'where',
+  }) {
+    if (where == null) return query;
+
+    if (where is Query<T>) {
+      if (!identical(where.context, query.context)) {
+        throw StateError(
+          '$feature requires the provided Query to use the same QueryContext as the repository.',
+        );
+      }
+      return where;
+    }
+
+    if (where is Query<T> Function(Query<T>)) {
+      return where(query);
+    }
+
+    final helper = MutationInputHelper<T>(
+      definition: definition,
+      codecs: query.context.codecRegistry,
+    );
+    final map = helper.whereInputToMap(where);
+    if (map == null || map.isEmpty) {
+      throw StateError(
+        'Unsupported where input for ${definition.modelName}: ${where.runtimeType}',
+      );
+    }
+
+    var q = query;
+    map.forEach((key, value) {
+      q = q.where(key, value);
+    });
+    return q;
+  }
+
   Query<T> _requireQuery(String method) {
     final q = _queryOrNull;
     if (q != null) return q;

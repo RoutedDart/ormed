@@ -908,7 +908,8 @@ class SqliteDriverAdapter
           if (pkField != null) {
             // For auto-increment integer PKs, use lastInsertRowId
             // For non-integer PKs (like String), use the value from the plan
-            final isIntegerPk = pkField.dartType == 'int' || pkField.dartType == 'int?';
+            final isIntegerPk =
+                pkField.dartType == 'int' || pkField.dartType == 'int?';
             final isAutoIncrement = pkField.autoIncrement;
             if (isIntegerPk && isAutoIncrement) {
               final lastId = database.lastInsertRowId;
@@ -997,11 +998,24 @@ class SqliteDriverAdapter
     final stmt = _prepareStatement(database, shape.sql);
     try {
       var affected = 0;
+      final returnedRows = <Map<String, Object?>>[];
       for (final parameters in shape.parameterSets) {
-        stmt.execute(normalizeSqliteParameters(parameters));
-        affected += database.updatedRows;
+        final normalized = normalizeSqliteParameters(parameters);
+        if (plan.returning) {
+          final resultSet = stmt.select(normalized);
+          for (final row in resultSet) {
+            returnedRows.add(Map<String, Object?>.from(row));
+          }
+          affected += database.updatedRows;
+        } else {
+          stmt.execute(normalized);
+          affected += database.updatedRows;
+        }
       }
-      return MutationResult(affectedRows: affected);
+      return MutationResult(
+        affectedRows: affected,
+        returnedRows: plan.returning ? returnedRows : null,
+      );
     } finally {
       stmt.dispose();
     }
@@ -1118,7 +1132,8 @@ class SqliteDriverAdapter
           .map((f) => f.columnName)
           .toList(growable: false);
       final allColumnsSql = allColumnNames.map(_quote).join(', ');
-      final fetchSql = 'SELECT $allColumnsSql FROM $table WHERE $whereClause LIMIT 1';
+      final fetchSql =
+          'SELECT $allColumnsSql FROM $table WHERE $whereClause LIMIT 1';
       fetchStmt = _prepareStatement(database, fetchSql);
     }
 
@@ -1193,11 +1208,24 @@ class SqliteDriverAdapter
     final stmt = _prepareStatement(database, shape.sql);
     try {
       var affected = 0;
+      final returnedRows = <Map<String, Object?>>[];
       for (final parameters in shape.parameterSets) {
-        stmt.execute(normalizeSqliteParameters(parameters));
-        affected += database.updatedRows;
+        final normalized = normalizeSqliteParameters(parameters);
+        if (plan.returning) {
+          final resultSet = stmt.select(normalized);
+          for (final row in resultSet) {
+            returnedRows.add(Map<String, Object?>.from(row));
+          }
+          affected += database.updatedRows;
+        } else {
+          stmt.execute(normalized);
+          affected += database.updatedRows;
+        }
       }
-      return MutationResult(affectedRows: affected);
+      return MutationResult(
+        affectedRows: affected,
+        returnedRows: plan.returning ? returnedRows : null,
+      );
     } finally {
       stmt.dispose();
     }
@@ -1231,11 +1259,24 @@ class SqliteDriverAdapter
     final stmt = _prepareStatement(database, shape.sql);
     try {
       var affected = 0;
+      final returnedRows = <Map<String, Object?>>[];
       for (final parameters in shape.parameterSets) {
-        stmt.execute(normalizeSqliteParameters(parameters));
-        affected += database.updatedRows;
+        final normalized = normalizeSqliteParameters(parameters);
+        if (plan.returning) {
+          final resultSet = stmt.select(normalized);
+          for (final row in resultSet) {
+            returnedRows.add(Map<String, Object?>.from(row));
+          }
+          affected += database.updatedRows;
+        } else {
+          stmt.execute(normalized);
+          affected += database.updatedRows;
+        }
       }
-      return MutationResult(affectedRows: affected);
+      return MutationResult(
+        affectedRows: affected,
+        returnedRows: plan.returning ? returnedRows : null,
+      );
     } finally {
       stmt.dispose();
     }
@@ -1320,8 +1361,9 @@ class SqliteDriverAdapter
     assignments.addAll(jsonTemplates.map((template) => template.sql));
     final whereColumns = firstRow.keys.keys.toList();
     final whereClause = _whereClause(firstRow.keys);
-    final sqlBuf =
-        StringBuffer('UPDATE $table SET ${assignments.join(', ')} WHERE $whereClause');
+    final sqlBuf = StringBuffer(
+      'UPDATE $table SET ${assignments.join(', ')} WHERE $whereClause',
+    );
 
     // Add RETURNING clause if requested
     if (plan.returning) {
@@ -1362,7 +1404,10 @@ class SqliteDriverAdapter
           return values;
         })
         .toList(growable: false);
-    return _SqliteMutationShape(sql: sqlBuf.toString(), parameterSets: parameters);
+    return _SqliteMutationShape(
+      sql: sqlBuf.toString(),
+      parameterSets: parameters,
+    );
   }
 
   _SqliteMutationShape _buildDeleteShape(MutationPlan plan) {
@@ -1373,11 +1418,17 @@ class SqliteDriverAdapter
     final firstRow = plan.rows.first;
     final whereColumns = firstRow.keys.keys.toList();
     final whereClause = _whereClause(firstRow.keys);
-    final sql = 'DELETE FROM $table WHERE $whereClause';
+    final sql = StringBuffer('DELETE FROM $table WHERE $whereClause');
+    if (plan.returning) {
+      final columns = plan.definition.fields
+          .map((f) => _quote(f.columnName))
+          .join(', ');
+      sql.write(' RETURNING $columns');
+    }
     final parameters = plan.rows
         .map((row) => whereColumns.map((column) => row.keys[column]).toList())
         .toList(growable: false);
-    return _SqliteMutationShape(sql: sql, parameterSets: parameters);
+    return _SqliteMutationShape(sql: sql.toString(), parameterSets: parameters);
   }
 
   _SqliteMutationShape _buildQueryDeleteShape(MutationPlan plan) {
@@ -1417,6 +1468,12 @@ class SqliteDriverAdapter
       ..write(' FROM (')
       ..write(compilation.sql)
       ..write(') AS "__orm_delete_source")');
+    if (plan.returning) {
+      final columns = plan.definition.fields
+          .map((f) => _quote(f.columnName))
+          .join(', ');
+      sql.write(' RETURNING $columns');
+    }
     return _SqliteMutationShape(
       sql: sql.toString(),
       parameterSets: [compilation.bindings.toList(growable: false)],
@@ -1518,6 +1575,12 @@ class SqliteDriverAdapter
       ..write(' = "__orm_update_source".')
       ..write(quotedKey)
       ..write(')');
+    if (plan.returning) {
+      final columns = plan.definition.fields
+          .map((f) => _quote(f.columnName))
+          .join(', ');
+      sql.write(' RETURNING $columns');
+    }
     parameters.addAll(compilation.bindings);
     return _SqliteMutationShape(
       sql: sql.toString(),
