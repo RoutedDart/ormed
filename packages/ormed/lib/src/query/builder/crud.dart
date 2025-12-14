@@ -1142,7 +1142,7 @@ extension CrudExtension<T extends OrmEntity> on Query<T> {
       if (keys.isEmpty) {
         return 0;
       }
-      final now = Carbon.now();
+      final now = Carbon.now().toUtc().toDateTime();
       final rows = keys
           .map(
             (key) => MutationRow(
@@ -1187,7 +1187,7 @@ extension CrudExtension<T extends OrmEntity> on Query<T> {
       final keys = await _collectPrimaryKeyConditions(this);
       if (keys.isEmpty) return const [];
 
-      final now = Carbon.now();
+      final now = Carbon.now().toUtc().toDateTime();
       final rows = keys
           .map(
             (key) => MutationRow(
@@ -1346,7 +1346,7 @@ extension CrudExtension<T extends OrmEntity> on Query<T> {
 
     final softDeleteField = _softDeleteField;
     if (softDeleteField != null) {
-      final now = Carbon.now();
+      final now = Carbon.now().toUtc().toDateTime();
       final rows = keys
           .map(
             (key) => MutationRow(

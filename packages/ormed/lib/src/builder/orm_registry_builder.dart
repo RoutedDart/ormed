@@ -131,7 +131,7 @@ String renderRegistryContent(List<ModelSummary> models) {
   // Generate registerOrmFactories() for models with factory support
   final factoryModels = summaries.where((s) => s.hasFactory).toList();
   buffer.writeln('/// Registers factory definitions for all models that have factory support.');
-  buffer.writeln('/// Call this before using Model.factory<T>() to ensure definitions are available.');
+  buffer.writeln('/// Call this before using [Model.factory<T>()] to ensure definitions are available.');
   buffer.writeln('void registerOrmFactories() {');
   for (final summary in factoryModels) {
     final userClassName = summary.className.startsWith('\$')

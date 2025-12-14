@@ -639,7 +639,7 @@ abstract class Model<TModel extends Model<TModel>>
     if (!force && def.usesSoftDeletes) {
       final column =
           def.softDeleteField?.columnName ?? def.metadata.softDeleteColumn;
-      final timestamp = Carbon.now();
+      final timestamp = Carbon.now().toUtc().toDateTime();
       _asAttributes.setAttribute(column, timestamp);
       final plan = MutationPlan.update(
         definition: def,
