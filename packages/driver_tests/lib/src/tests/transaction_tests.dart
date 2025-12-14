@@ -27,8 +27,8 @@ void runDriverTransactionTests() {
     });
 
     test('commits when transaction completes', () async {
-      dataSource.connection.onQueryLogged((l) {
-        print(l.preview.sqlWithBindings);
+      dataSource.connection.listen((event) {
+        print(event.sql);
       });
       final repo = dataSource.context.repository<User>();
       final uniqueEmail = 'eve_${DateTime.now().millisecondsSinceEpoch}@example.com';
