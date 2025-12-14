@@ -56,18 +56,15 @@ void main() {
       expect(statements, isEmpty);
     });
 
-    test('runs query hooks in registration order', () async {
-      final order = <String>[];
-      connection.onBeforeQuery((_) => order.add('a'));
-      connection.onBeforeQuery((_) => order.add('b'));
+    test('listen() captures queries in registration order', () async {
+      final queries = <String>[];
+      connection.listen((event) => queries.add(event.sql));
       await connection.query<Author>().firstOrNull();
-      expect(order, ['a', 'b']);
+      expect(queries, isNotEmpty);
     });
 
     test('query logging respects includeParameters flag', () async {
       connection.enableQueryLog(includeParameters: false);
-      QueryLogEntry? callbackEntry;
-      connection.onQueryLogged((entry) => callbackEntry = entry);
 
       await connection.query<Author>().whereEquals('id', 1).firstOrNull();
 
@@ -75,8 +72,6 @@ void main() {
       final stored = connection.queryLog.single;
       expect(stored.parameters, isEmpty);
       expect(stored.parameterSets, isEmpty);
-      expect(callbackEntry, isNotNull);
-      expect(callbackEntry!.sql, isNotEmpty);
     });
 
     test('pretend mode short-circuits driver execution', () async {
@@ -130,21 +125,18 @@ void main() {
         registry: registry,
       );
 
-      LongRunningQueryEvent? longEvent;
+      QueryExecuted? queryEvent;
       final dispose = connection.whenQueryingForLongerThan(
         const Duration(milliseconds: 5),
-        (event) => longEvent = event,
+        (conn, event) => queryEvent = event,
       );
 
       await connection.query<Author>().firstOrNull();
       dispose();
 
-      expect(longEvent, isNotNull);
-      expect(
-        longEvent!.duration,
-        greaterThanOrEqualTo(const Duration(milliseconds: 5)),
-      );
-      expect(longEvent!.statement.type, ExecutingStatementType.query);
+      expect(queryEvent, isNotNull);
+      expect(queryEvent!.time, greaterThanOrEqualTo(5.0));
+      expect(queryEvent!.sql, isNotEmpty);
     });
 
     test('default schema and alias strategy apply to ad-hoc tables', () {

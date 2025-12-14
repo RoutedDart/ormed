@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'carbon_config.dart';
 import 'connection/connection.dart';
+import 'connection/connection_events.dart';
 import 'connection/connection_manager.dart';
 import 'connection/orm_connection.dart';
 import 'driver/driver.dart';
@@ -478,16 +479,71 @@ class DataSource {
     return _connection!.pretend(action);
   }
 
-  /// Registers a callback to run before each query executes.
-  void onBeforeQuery(QueryHook callback) {
+  // ---------------------------------------------------------------------------
+  // Observability API
+  // ---------------------------------------------------------------------------
+
+  /// Registers a listener for [QueryExecuted] events (like Laravel's listen).
+  ///
+  /// This is the primary method for observing database queries. The callback
+  /// receives a [QueryExecuted] event after every query completes.
+  ///
+  /// Returns a function that can be called to unregister the listener.
+  ///
+  /// ## Example
+  ///
+  /// ```dart
+  /// final unsubscribe = ds.listen((event) {
+  ///   print('Query: ${event.sql} took ${event.time}ms');
+  /// });
+  /// ```
+  void Function() listen(void Function(QueryExecuted event) callback) {
     _ensureInitialized();
-    _connection!.onBeforeQuery(callback);
+    return _connection!.listen(callback);
   }
 
-  /// Registers a callback to run before each mutation executes.
-  void onBeforeMutation(MutationHook callback) {
+  /// Registers a listener for specific connection event types.
+  ///
+  /// Returns a function that can be called to unregister the listener.
+  ///
+  /// ## Example
+  ///
+  /// ```dart
+  /// ds.onEvent<TransactionBeginning>((event) {
+  ///   print('Transaction started');
+  /// });
+  /// ```
+  void Function() onEvent<T extends ConnectionEvent>(
+    void Function(T event) callback,
+  ) {
     _ensureInitialized();
-    _connection!.onBeforeMutation(callback);
+    return _connection!.onEvent<T>(callback);
+  }
+
+  /// Returns the total time spent executing queries in milliseconds.
+  double totalQueryDuration() {
+    _ensureInitialized();
+    return _connection!.totalQueryDuration();
+  }
+
+  /// Registers a callback when cumulative query time exceeds [threshold].
+  ///
+  /// ## Example
+  ///
+  /// ```dart
+  /// ds.whenQueryingForLongerThan(
+  ///   Duration(seconds: 2),
+  ///   (connection, event) {
+  ///     logger.warning('Slow queries detected');
+  ///   },
+  /// );
+  /// ```
+  void Function() whenQueryingForLongerThan(
+    Duration threshold,
+    void Function(OrmConnection connection, QueryExecuted event) handler,
+  ) {
+    _ensureInitialized();
+    return _connection!.whenQueryingForLongerThan(threshold, handler);
   }
 
   /// Registers a callback invoked before any SQL is dispatched.
@@ -519,10 +575,10 @@ class DataSource {
     return _connection!.queryLog;
   }
 
-  /// Clears the accumulated query log entries.
-  void clearQueryLog() {
+  /// Clears all accumulated query log entries.
+  void flushQueryLog() {
     _ensureInitialized();
-    _connection!.clearQueryLog();
+    _connection!.flushQueryLog();
   }
 
   /// Closes the data source connection and releases resources.

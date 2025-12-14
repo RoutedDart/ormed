@@ -266,7 +266,7 @@ void main() {
       expect(capturedStatements, isNotEmpty);
     });
 
-    test('enableQueryLog and clearQueryLog work correctly', () async {
+    test('enableQueryLog and flushQueryLog work correctly', () async {
       dataSource = DataSource(
         DataSourceOptions(driver: driver, registry: registry),
       );
@@ -278,7 +278,7 @@ void main() {
 
       expect(dataSource.queryLog, isNotEmpty);
 
-      dataSource.clearQueryLog();
+      dataSource.flushQueryLog();
 
       expect(dataSource.queryLog, isEmpty);
     });

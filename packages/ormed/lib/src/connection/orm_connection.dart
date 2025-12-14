@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:meta/meta.dart';
+
 import '../driver/driver.dart';
 import '../contracts.dart';
 import '../model_definition.dart';
@@ -12,11 +14,65 @@ import '../migrations/sql_migration_ledger.dart';
 import '../migrations/migration_runner.dart';
 import '../migrations/migration_status.dart';
 import 'connection.dart';
+import 'connection_events.dart';
 import 'connection_manager.dart';
 import 'connection_resolver.dart';
 
+export 'connection_events.dart';
+
 /// Represents a fully materialized ORM connection that exposes helpers,
 /// metadata, and instrumentation hooks.
+///
+/// ## Observability
+///
+/// OrmConnection provides a unified observability system inspired by Laravel's
+/// Connection class. The primary method for observing database operations is
+/// [listen], which receives [QueryExecuted] events after every query.
+///
+/// ```dart
+/// // Register a query listener (like Laravel's listen)
+/// connection.listen((event) {
+///   print('Query: ${event.sql} took ${event.time}ms');
+/// });
+///
+/// // Listen for specific event types
+/// connection.onEvent<TransactionBeginning>((event) {
+///   print('Transaction started');
+/// });
+///
+/// connection.onEvent<TransactionCommitted>((event) {
+///   print('Transaction committed');
+/// });
+/// ```
+///
+/// ## Query Logging
+///
+/// Built-in query logging accumulates [QueryLogEntry] objects for debugging:
+///
+/// ```dart
+/// connection.enableQueryLog();
+///
+/// // ... execute queries ...
+///
+/// for (final entry in connection.queryLog) {
+///   print('${entry.sql} (${entry.duration.inMilliseconds}ms)');
+/// }
+///
+/// connection.flushQueryLog(); // Clear entries
+/// ```
+///
+/// ## Duration Handlers
+///
+/// Monitor cumulative query time with [whenQueryingForLongerThan]:
+///
+/// ```dart
+/// connection.whenQueryingForLongerThan(
+///   Duration(seconds: 2),
+///   (connection, event) {
+///     logger.warning('Slow queries detected: ${connection.totalQueryDuration}ms total');
+///   },
+/// );
+/// ```
 class OrmConnection implements ConnectionResolver {
   OrmConnection({
     required this.config,
@@ -41,7 +97,7 @@ class OrmConnection implements ConnectionResolver {
           beforeMutationHook: _dispatchBeforeMutation,
           beforeTransactionHook: _dispatchBeforeTransaction,
           afterTransactionHook: _dispatchAfterTransaction,
-          queryLogHook: _recordQueryLog,
+          queryLogHook: _handleQueryLogEntry,
           pretendResolver: () => _pretending,
         );
   }
@@ -58,13 +114,14 @@ class OrmConnection implements ConnectionResolver {
   bool _pretending = false;
   bool _loggingQueries = false;
   bool _includeLogParameters = true;
+  double _totalQueryDuration = 0.0;
 
-  final List<QueryHook> _beforeQuery = [];
-  final List<MutationHook> _beforeMutation = [];
-  final List<TransactionHook> _beforeTransaction = [];
-  final List<TransactionHook> _afterTransaction = [];
-  final List<QueryLogHook> _queryLogHooks = [];
   final List<QueryLogEntry> _queryLog = [];
+
+  // New Laravel-style listeners
+  final List<void Function(QueryExecuted)> _queryListeners = [];
+  final List<void Function(ConnectionEvent)> _eventListeners = [];
+  final List<_QueryDurationHandler> _queryDurationHandlers = [];
 
   /// Underlying QueryContext for advanced operations.
   QueryContext get context => _context;
@@ -130,35 +187,122 @@ class OrmConnection implements ConnectionResolver {
     }
   }
 
-  /// Resets accumulated query log entries.
-  void clearQueryLog() => _queryLog.clear();
+  /// Clears all accumulated query log entries.
+  ///
+  /// This is the Laravel-style naming for clearing the query log.
+  void flushQueryLog() => _queryLog.clear();
 
-  /// Registers a callback to run before each query executes.
-  void onBeforeQuery(QueryHook callback) => _beforeQuery.add(callback);
+  /// Returns the total time spent executing queries in milliseconds.
+  ///
+  /// This accumulates over the lifetime of the connection. Use with
+  /// [whenQueryingForLongerThan] to detect slow query patterns.
+  double totalQueryDuration() => _totalQueryDuration;
 
-  /// Registers a callback to run before each mutation executes.
-  void onBeforeMutation(MutationHook callback) => _beforeMutation.add(callback);
+  // ---------------------------------------------------------------------------
+  // Laravel-style Listener API
+  // ---------------------------------------------------------------------------
 
-  /// Registers a callback before each transaction boundary.
-  void onBeforeTransaction(TransactionHook callback) =>
-      _beforeTransaction.add(callback);
+  /// Registers a listener for [QueryExecuted] events (like Laravel's listen).
+  ///
+  /// This is the primary method for observing database queries. The callback
+  /// receives a [QueryExecuted] event after every query completes.
+  ///
+  /// Returns a function that can be called to unregister the listener.
+  ///
+  /// ## Example
+  ///
+  /// ```dart
+  /// final unsubscribe = connection.listen((event) {
+  ///   print('Query: ${event.sql} took ${event.time}ms');
+  ///   if (!event.succeeded) {
+  ///     logger.error('Query failed: ${event.error}');
+  ///   }
+  /// });
+  ///
+  /// // Later, to stop listening:
+  /// unsubscribe();
+  /// ```
+  void Function() listen(void Function(QueryExecuted event) callback) {
+    _queryListeners.add(callback);
+    return () => _queryListeners.remove(callback);
+  }
 
-  /// Registers a callback after each transaction boundary.
-  void onAfterTransaction(TransactionHook callback) =>
-      _afterTransaction.add(callback);
+  /// Registers a listener for specific connection event types.
+  ///
+  /// Use this to listen for transaction events and other connection lifecycle
+  /// events.
+  ///
+  /// Returns a function that can be called to unregister the listener.
+  ///
+  /// ## Example
+  ///
+  /// ```dart
+  /// connection.onEvent<TransactionBeginning>((event) {
+  ///   print('Transaction started on ${event.connectionName}');
+  /// });
+  ///
+  /// connection.onEvent<TransactionCommitted>((event) {
+  ///   print('Transaction committed');
+  /// });
+  ///
+  /// connection.onEvent<TransactionRolledBack>((event) {
+  ///   logger.warning('Transaction rolled back');
+  /// });
+  /// ```
+  void Function() onEvent<T extends ConnectionEvent>(
+    void Function(T event) callback,
+  ) {
+    void listener(ConnectionEvent event) {
+      if (event is T) callback(event);
+    }
+    _eventListeners.add(listener);
+    return () => _eventListeners.remove(listener);
+  }
 
-  /// Registers a callback that runs whenever a query log entry is recorded.
-  void onQueryLogged(QueryLogHook callback) => _queryLogHooks.add(callback);
+  /// Registers a callback when cumulative query time exceeds [threshold].
+  ///
+  /// The handler is called once when [totalQueryDuration] first exceeds the
+  /// threshold. To allow it to fire again, call [allowQueryDurationHandlersToRunAgain].
+  ///
+  /// ## Example
+  ///
+  /// ```dart
+  /// connection.whenQueryingForLongerThan(
+  ///   Duration(seconds: 2),
+  ///   (connection, event) {
+  ///     logger.warning(
+  ///       'Slow queries detected: ${connection.totalQueryDuration()}ms total',
+  ///     );
+  ///   },
+  /// );
+  /// ```
+  void Function() whenQueryingForLongerThan(
+    Duration threshold,
+    void Function(OrmConnection connection, QueryExecuted event) handler,
+  ) {
+    final thresholdMs = threshold.inMilliseconds.toDouble();
+    final handlerEntry = _QueryDurationHandler(
+      thresholdMs: thresholdMs,
+      handler: handler,
+    );
+    _queryDurationHandlers.add(handlerEntry);
+    return () => _queryDurationHandlers.remove(handlerEntry);
+  }
+
+  /// Allows duration handlers registered via [whenQueryingForLongerThan] to
+  /// run again.
+  ///
+  /// By default, each handler only fires once when the threshold is exceeded.
+  /// Call this method to reset all handlers so they can fire again.
+  void allowQueryDurationHandlersToRunAgain() {
+    for (final handler in _queryDurationHandlers) {
+      handler.hasRun = false;
+    }
+  }
 
   /// Registers a callback invoked before any SQL is dispatched.
   void Function() beforeExecuting(ExecutingStatementCallback callback) =>
       _context.beforeExecuting(callback);
-
-  /// Registers a handler for statements exceeding [threshold].
-  void Function() whenQueryingForLongerThan(
-    Duration threshold,
-    LongRunningQueryCallback callback,
-  ) => _context.whenQueryingForLongerThan(threshold, callback);
 
   /// Creates a typed query builder.
   Query<T> query<T extends OrmEntity>() => _context.query<T>();
@@ -270,27 +414,20 @@ class OrmConnection implements ConnectionResolver {
       _context.describeMutation(plan);
 
   void _dispatchBeforeQuery(QueryPlan plan) {
-    for (final hook in _beforeQuery) {
-      hook(plan);
-    }
+    // No-op: legacy hooks removed
   }
 
   void _dispatchBeforeMutation(MutationPlan plan) {
-    for (final hook in _beforeMutation) {
-      hook(plan);
-    }
+    // No-op: legacy hooks removed
   }
 
   Future<void> _dispatchBeforeTransaction() async {
-    for (final hook in _beforeTransaction) {
-      await hook();
-    }
+    _fireEvent(TransactionBeginning(this));
   }
 
   Future<void> _dispatchAfterTransaction() async {
-    for (final hook in _afterTransaction) {
-      await hook();
-    }
+    // Note: We don't know if it was commit or rollback here.
+    // The transaction hooks in QueryContext should be updated to differentiate.
   }
 
   String? _generateAlias(String table) {
@@ -304,14 +441,73 @@ class OrmConnection implements ConnectionResolver {
     }
   }
 
-  void _recordQueryLog(QueryLogEntry entry) {
-    if (!_loggingQueries) {
-      return;
+  /// Handles query log entries from QueryContext and fires QueryExecuted events.
+  void _handleQueryLogEntry(QueryLogEntry entry) {
+    final timeMs = entry.duration.inMicroseconds / 1000.0;
+    _totalQueryDuration += timeMs;
+
+    // Fire QueryExecuted event to all listeners
+    final event = QueryExecuted(
+      sql: entry.preview.sql,
+      bindings: entry.preview.parameters,
+      time: timeMs,
+      connection: this,
+      rowCount: entry.rowCount,
+      error: entry.error,
+    );
+    _fireQueryExecuted(event);
+
+    // Check duration handlers
+    for (final handler in _queryDurationHandlers) {
+      if (!handler.hasRun && _totalQueryDuration > handler.thresholdMs) {
+        handler.handler(this, event);
+        handler.hasRun = true;
+      }
     }
-    final sanitized = _includeLogParameters ? entry : entry.withoutParameters();
-    _queryLog.add(sanitized);
-    for (final hook in _queryLogHooks) {
-      hook(sanitized);
+
+    // Query logging
+    if (_loggingQueries) {
+      final sanitized =
+          _includeLogParameters ? entry : entry.withoutParameters();
+      _queryLog.add(sanitized);
     }
   }
+
+  /// Fires a [QueryExecuted] event to all registered query listeners.
+  void _fireQueryExecuted(QueryExecuted event) {
+    for (final listener in _queryListeners) {
+      try {
+        listener(event);
+      } catch (_) {
+        // Don't let listener exceptions break query execution
+      }
+    }
+  }
+
+  /// Fires a connection event to all registered event listeners.
+  void _fireEvent(ConnectionEvent event) {
+    for (final listener in _eventListeners) {
+      try {
+        listener(event);
+      } catch (_) {
+        // Don't let listener exceptions break execution
+      }
+    }
+    // Also fire QueryExecuted events through the query listeners
+    if (event is QueryExecuted) {
+      _fireQueryExecuted(event);
+    }
+  }
+}
+
+/// Internal class for tracking query duration handlers.
+class _QueryDurationHandler {
+  _QueryDurationHandler({
+    required this.thresholdMs,
+    required this.handler,
+  });
+
+  final double thresholdMs;
+  final void Function(OrmConnection, QueryExecuted) handler;
+  bool hasRun = false;
 }

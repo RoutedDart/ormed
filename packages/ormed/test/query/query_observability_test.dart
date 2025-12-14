@@ -1,4 +1,11 @@
 /// Ensures query and mutation observability hooks behave as expected.
+///
+/// Tests the observability flow:
+/// - DataSource → OrmConnection → QueryContext → Driver
+///
+/// All observability features (listeners, query logging, duration handlers)
+/// should work consistently whether accessed from DataSource, OrmConnection,
+/// or QueryContext.
 library;
 
 import 'package:driver_tests/driver_tests.dart';
@@ -7,6 +14,7 @@ import 'package:test/test.dart';
 
 void main() {
   ModelRegistry registry = buildOrmRegistry();
+
   group('QueryContext observability', () {
     late InMemoryQueryExecutor driver;
     late QueryContext context;
@@ -99,11 +107,307 @@ void main() {
       }
     });
   });
+
+  group('OrmConnection observability', () {
+    late InMemoryQueryExecutor driver;
+    late OrmConnection connection;
+
+    setUp(() {
+      driver = InMemoryQueryExecutor()
+        ..register(AuthorOrmDefinition.definition, const [
+          Author(id: 1, name: 'Alice', active: true),
+        ]);
+      connection = OrmConnection(
+        config: ConnectionConfig(name: 'test'),
+        driver: driver,
+        registry: registry,
+      );
+    });
+
+    test('listen receives QueryExecuted events', () async {
+      final events = <QueryExecuted>[];
+      connection.listen(events.add);
+
+      await connection.query<Author>().get();
+
+      expect(events, hasLength(1));
+      expect(events.first.sql, isNotEmpty);
+      expect(events.first.time, greaterThanOrEqualTo(0));
+      expect(events.first.connection, same(connection));
+    });
+
+    test('enableQueryLog captures queries', () async {
+      connection.enableQueryLog();
+
+      await connection.query<Author>().get();
+      await connection.repository<Author>().insert(
+        const Author(id: 2, name: 'Bob', active: true),
+      );
+
+      expect(connection.queryLog, hasLength(2));
+      expect(connection.queryLog[0].type, 'query');
+      expect(connection.queryLog[1].type, 'mutation');
+    });
+
+    test('disableQueryLog stops capturing', () async {
+      connection.enableQueryLog();
+      await connection.query<Author>().get();
+      expect(connection.queryLog, hasLength(1));
+
+      connection.disableQueryLog();
+      await connection.query<Author>().get();
+      expect(connection.queryLog, hasLength(1)); // No new entries
+    });
+
+    test('flushQueryLog clears entries', () async {
+      connection.enableQueryLog();
+      await connection.query<Author>().get();
+      expect(connection.queryLog, isNotEmpty);
+
+      connection.flushQueryLog();
+      expect(connection.queryLog, isEmpty);
+    });
+
+    test('totalQueryDuration accumulates', () async {
+      expect(connection.totalQueryDuration(), 0);
+
+      await connection.query<Author>().get();
+      final duration1 = connection.totalQueryDuration();
+      expect(duration1, greaterThanOrEqualTo(0));
+
+      await connection.query<Author>().get();
+      expect(connection.totalQueryDuration(), greaterThanOrEqualTo(duration1));
+    });
+
+    test('onEvent receives transaction events', () async {
+      final beginEvents = <TransactionBeginning>[];
+      connection.onEvent<TransactionBeginning>(beginEvents.add);
+
+      await connection.transaction(() async {
+        await connection.query<Author>().get();
+      });
+
+      expect(beginEvents, hasLength(1));
+      expect(beginEvents.first.connection, same(connection));
+    });
+  });
+
+  group('DataSource observability', () {
+    late InMemoryQueryExecutor driver;
+    late DataSource dataSource;
+
+    setUp(() {
+      driver = InMemoryQueryExecutor();
+    });
+
+    tearDown(() async {
+      if (dataSource.isInitialized) {
+        await dataSource.dispose();
+      }
+    });
+
+    test('listen flows from DataSource to OrmConnection', () async {
+      dataSource = DataSource(
+        DataSourceOptions(driver: driver, registry: registry),
+      );
+      await dataSource.init();
+
+      final events = <QueryExecuted>[];
+      dataSource.listen(events.add);
+
+      await dataSource.query<Author>().get();
+
+      expect(events, hasLength(1));
+      expect(events.first.sql, isNotEmpty);
+    });
+
+    test('enableQueryLog flows from DataSource to OrmConnection', () async {
+      dataSource = DataSource(
+        DataSourceOptions(driver: driver, registry: registry),
+      );
+      await dataSource.init();
+
+      dataSource.enableQueryLog();
+
+      await dataSource.query<Author>().get();
+
+      expect(dataSource.queryLog, hasLength(1));
+      // Verify both return the same entries (same data)
+      expect(
+        dataSource.queryLog.first.preview.sql,
+        dataSource.connection.queryLog.first.preview.sql,
+      );
+    });
+
+    test('logging option in DataSourceOptions enables query log', () async {
+      dataSource = DataSource(
+        DataSourceOptions(driver: driver, registry: registry, logging: true),
+      );
+      await dataSource.init();
+
+      // Query log should already be enabled
+      expect(dataSource.connection.loggingQueries, isTrue);
+
+      await dataSource.query<Author>().get();
+      expect(dataSource.queryLog, hasLength(1));
+    });
+
+    test('beforeExecuting flows from DataSource', () async {
+      dataSource = DataSource(
+        DataSourceOptions(driver: driver, registry: registry),
+      );
+      await dataSource.init();
+
+      final statements = <ExecutingStatement>[];
+      dataSource.beforeExecuting(statements.add);
+
+      await dataSource.query<Author>().get();
+
+      expect(statements, hasLength(1));
+      expect(statements.first.type, ExecutingStatementType.query);
+    });
+
+    test('whenQueryingForLongerThan flows from DataSource', () async {
+      final slowDriver = _DelayingDriver(delay: const Duration(milliseconds: 20))
+        ..register(AuthorOrmDefinition.definition, const [
+          Author(id: 1, name: 'Alice', active: true),
+        ]);
+
+      dataSource = DataSource(
+        DataSourceOptions(driver: slowDriver, registry: registry),
+      );
+      await dataSource.init();
+
+      QueryExecuted? capturedEvent;
+      dataSource.whenQueryingForLongerThan(
+        const Duration(milliseconds: 5),
+        (conn, event) => capturedEvent = event,
+      );
+
+      await dataSource.query<Author>().get();
+
+      expect(capturedEvent, isNotNull);
+      expect(capturedEvent!.time, greaterThanOrEqualTo(5));
+    });
+
+    test('totalQueryDuration flows from DataSource', () async {
+      dataSource = DataSource(
+        DataSourceOptions(driver: driver, registry: registry),
+      );
+      await dataSource.init();
+
+      expect(dataSource.totalQueryDuration(), 0);
+
+      await dataSource.query<Author>().get();
+
+      expect(dataSource.totalQueryDuration(), greaterThanOrEqualTo(0));
+    });
+
+    test('pretend captures SQL without executing', () async {
+      dataSource = DataSource(
+        DataSourceOptions(driver: driver, registry: registry),
+      );
+      await dataSource.init();
+
+      final statements = await dataSource.pretend(() async {
+        await dataSource.query<Author>().get();
+        await dataSource.repo<Author>().insert(
+          const Author(id: 1, name: 'Test', active: true),
+        );
+      });
+
+      expect(statements, hasLength(2));
+      // Verify no actual data was inserted
+      final authors = await dataSource.query<Author>().get();
+      expect(authors, isEmpty);
+    });
+  });
+
+  group('Observability flow: DataSource → OrmConnection → QueryContext', () {
+    late InMemoryQueryExecutor driver;
+    late DataSource dataSource;
+
+    setUp(() async {
+      driver = InMemoryQueryExecutor()
+        ..register(AuthorOrmDefinition.definition, const [
+          Author(id: 1, name: 'Alice', active: true),
+        ]);
+      dataSource = DataSource(
+        DataSourceOptions(driver: driver, registry: registry),
+      );
+      await dataSource.init();
+    });
+
+    tearDown(() async {
+      await dataSource.dispose();
+    });
+
+    test('listeners at DataSource receive events from QueryContext operations',
+        () async {
+      final dsEvents = <QueryExecuted>[];
+      final connEvents = <QueryExecuted>[];
+
+      dataSource.listen(dsEvents.add);
+      dataSource.connection.listen(connEvents.add);
+
+      // Execute query via DataSource
+      await dataSource.query<Author>().get();
+
+      // Both should receive the same event
+      expect(dsEvents, hasLength(1));
+      expect(connEvents, hasLength(1));
+    });
+
+    test('query log entries contain connection metadata', () async {
+      final customDs = DataSource(
+        DataSourceOptions(
+          driver: InMemoryQueryExecutor()
+            ..register(AuthorOrmDefinition.definition, const <Author>[]),
+          registry: registry,
+          name: 'custom-connection',
+          database: 'custom-db',
+          tablePrefix: 'prefix_',
+          logging: true,
+        ),
+      );
+      await customDs.init();
+
+      try {
+        await customDs.query<Author>().get();
+
+        expect(customDs.queryLog, hasLength(1));
+        // Connection metadata should be available in events
+        expect(customDs.connection.name, 'custom-connection');
+        expect(customDs.connection.database, 'custom-db');
+        expect(customDs.connection.tablePrefix, 'prefix_');
+      } finally {
+        await customDs.dispose();
+      }
+    });
+  });
 }
 
 class _ThrowingDriver extends InMemoryQueryExecutor {
   @override
   Future<List<Map<String, Object?>>> execute(QueryPlan plan) async {
     throw StateError('boom');
+  }
+}
+
+class _DelayingDriver extends InMemoryQueryExecutor {
+  _DelayingDriver({required this.delay});
+
+  final Duration delay;
+
+  @override
+  Future<List<Map<String, Object?>>> execute(QueryPlan plan) async {
+    await Future.delayed(delay);
+    return super.execute(plan);
+  }
+
+  @override
+  Future<MutationResult> runMutation(MutationPlan plan) async {
+    await Future.delayed(delay);
+    return super.runMutation(plan);
   }
 }

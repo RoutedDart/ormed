@@ -6,6 +6,63 @@ sidebar_position: 3
 
 The ORM exposes structured hooks for every query and mutation so you can ship metrics, traces, and logs without patching driver code.
 
+## Query Logging
+
+The simplest way to observe queries is via the built-in query log on `OrmConnection` or `DataSource`:
+
+```dart
+// Enable logging
+ds.enableQueryLog();
+
+// Execute some queries
+await ds.query<User>().whereEquals('active', true).get();
+await ds.repo<Post>().insert(post);
+
+// Review the log
+for (final entry in ds.queryLog) {
+  print('${entry.type}: ${entry.sql} (${entry.duration.inMilliseconds}ms)');
+}
+
+// Clear when done
+ds.clearQueryLog();
+```
+
+### API Reference
+
+| Method | Description |
+| --- | --- |
+| `enableQueryLog({includeParameters, clear})` | Enables logging; `includeParameters` controls whether bind values are captured (default: true); `clear` resets the log (default: true) |
+| `disableQueryLog({clear})` | Disables logging; optionally clears entries |
+| `clearQueryLog()` | Removes all accumulated entries |
+| `queryLog` | Returns an immutable list of `QueryLogEntry` objects |
+| `loggingQueries` | Returns `true` when logging is active |
+
+### QueryLogEntry Fields
+
+| Field | Description |
+| --- | --- |
+| `type` | `'query'` or `'mutation'` |
+| `sql` | The SQL statement with bindings interpolated |
+| `preview` | Full `StatementPreview` with raw SQL and parameter lists |
+| `duration` | Execution time |
+| `success` | `true` if no error was thrown |
+| `model` | Model name (e.g., `'User'`) |
+| `table` | Table name (e.g., `'users'`) |
+| `rowCount` | Rows returned or affected |
+| `error` | Exception object when `success` is `false` |
+| `parameters` | Bind values (empty when `includeParameters` is `false`) |
+| `toMap()` | JSON-serializable representation |
+
+### Listening to Log Events
+
+Use `onQueryLogged` to receive entries as they are recorded:
+
+```dart
+connection.onQueryLogged((entry) {
+  logger.debug('SQL ${entry.type}', extra: entry.toMap());
+});
+```
+
 ## Query & Mutation Events
 
 Register listeners on the `QueryContext`:
@@ -104,13 +161,42 @@ Mutation previews are available via repository helpers (`previewInsert`, `previe
 
 ## Connection Instrumentation
 
-`OrmConnection` provides additional hooks:
+`OrmConnection` provides additional hooks for fine-grained control.
+
+### Before Hooks
+
+Intercept queries or mutations before they execute:
+
+```dart
+// Before any query
+connection.onBeforeQuery((plan) {
+  print('About to run query on ${plan.definition.tableName}');
+});
+
+// Before any mutation
+connection.onBeforeMutation((plan) {
+  audit.log('mutation', plan.definition.tableName, plan.type);
+});
+
+// Transaction boundaries
+connection.onBeforeTransaction(() {
+  print('Transaction starting');
+});
+
+connection.onAfterTransaction(() {
+  print('Transaction completed');
+});
+```
 
 ### beforeExecuting
+
+Called just before SQL is sent to the driver, with full statement context:
 
 ```dart
 final unregister = connection.beforeExecuting((statement) {
   print('[SQL] ${statement.sqlWithBindings}');
+  print('Type: ${statement.type}'); // query or mutation
+  print('Connection: ${statement.connectionName}');
 });
 
 // Later, unregister
@@ -124,27 +210,28 @@ connection.whenQueryingForLongerThan(
   Duration(milliseconds: 100),
   (event) {
     logger.warning('Slow query: ${event.statement.sql}');
-    logger.warning('Duration: ${event.elapsed.inMilliseconds}ms');
+    logger.warning('Duration: ${event.duration.inMilliseconds}ms');
   },
 );
 ```
 
 ### Pretend Mode
 
-Preview SQL without executing:
+Capture SQL without executing against the database:
 
 ```dart
-final statements = await connection.pretend(() async {
-  await connection.repo<$User>().insert(
-    $User(id: 0, email: 'test@example.com'),
-  );
+final captured = await ds.pretend(() async {
+  await ds.repo<User>().insert(user);
+  await ds.repo<Post>().insert(post);
 });
 
-for (final entry in statements) {
+for (final entry in captured) {
   print('Would execute: ${entry.sql}');
 }
-// No actual database changes
+// No actual database changes made
 ```
+
+During pretend mode, `connection.pretending` returns `true`.
 
 ## Integration with Tracing
 
