@@ -205,6 +205,28 @@ class Table extends FluentComponent<Table> {
   Style? _borderStyle;
   Style? _cellStyle;
 
+  Style? _styleForCell(int row, int col, String raw) {
+    if (_styleFunc != null) {
+      final style = _styleFunc!(row, col, raw);
+      if (style != null) return configureStyle(style);
+    }
+
+    if (row == headerRow && _headerStyle != null) {
+      return configureStyle(_headerStyle!);
+    }
+
+    if (_cellStyle != null) {
+      return configureStyle(_cellStyle!);
+    }
+
+    return null;
+  }
+
+  String _renderCellValue(int row, int col, String raw) {
+    final style = _styleForCell(row, col, raw);
+    return style?.render(raw) ?? raw;
+  }
+
   /// Sets the table headers.
   Table headers(List<String> headers) {
     _headers.clear();
@@ -280,18 +302,26 @@ class Table extends FluentComponent<Table> {
         ? _headers.length
         : (_rows.isNotEmpty ? _rows.first.length : 0);
 
-    // Calculate column widths
+    // Calculate column widths using rendered cell content so width/align styles are respected.
     final widths = List<int>.filled(columns, 0);
 
-    for (var c = 0; c < columns && c < _headers.length; c++) {
-      widths[c] = Style.visibleLength(_headers[c]);
-    }
-    for (final row in _rows) {
+    void applyWidths(List<String> cells, int rowIndex) {
       for (var c = 0; c < columns; c++) {
-        final cell = c < row.length ? row[c] : '';
-        final len = Style.visibleLength(cell);
-        if (len > widths[c]) widths[c] = len;
+        final raw = c < cells.length ? cells[c] : '';
+        final rendered = _renderCellValue(rowIndex, c, raw);
+        for (final line in rendered.split('\n')) {
+          final len = Style.visibleLength(line);
+          if (len > widths[c]) widths[c] = len;
+        }
       }
+    }
+
+    if (_headers.isNotEmpty) {
+      applyWidths(_headers, headerRow);
+    }
+
+    for (var i = 0; i < _rows.length; i++) {
+      applyWidths(_rows[i], i);
     }
 
     // Adjust for fixed width if specified
@@ -322,38 +352,41 @@ class Table extends FluentComponent<Table> {
       return styleBorderText('$left${parts.join(mid)}$right');
     }
 
-    // Build a row with optional styling
-    String buildRow(List<String> cells, int rowIndex) {
-      final parts = <String>[];
+    // Build a row with optional styling - handles multi-line cells
+    List<String> buildRow(List<String> cells, int rowIndex) {
+      // First, process each cell and split into lines
+      final cellLines = <List<String>>[];
+      var maxLines = 1;
+
       for (var c = 0; c < columns; c++) {
         final raw = c < cells.length ? cells[c] : '';
-        final visible = Style.visibleLength(raw);
-        final fill = widths[c] - visible;
-        final fillCount = fill > 0 ? fill : 0;
+        final styledContent = _renderCellValue(rowIndex, c, raw);
 
-        var cellContent = '$pad$raw${' ' * fillCount}$pad';
-
-        // Apply style function if provided
-        if (_styleFunc != null) {
-          final style = _styleFunc!(rowIndex, c, raw);
-          if (style != null) {
-            // Apply style to just the content, not padding
-            final styledContent = configureStyle(style).render(raw);
-            cellContent = '$pad$styledContent${' ' * fillCount}$pad';
-          }
-        } else if (rowIndex == headerRow && _headerStyle != null) {
-          // Apply header style
-          final styledContent = configureStyle(_headerStyle!).render(raw);
-          cellContent = '$pad$styledContent${' ' * fillCount}$pad';
-        } else if (_cellStyle != null) {
-          // Apply default cell style
-          final styledContent = configureStyle(_cellStyle!).render(raw);
-          cellContent = '$pad$styledContent${' ' * fillCount}$pad';
-        }
-
-        parts.add(cellContent);
+        // Split by newlines to handle multi-line content
+        final lines = styledContent.split('\n');
+        cellLines.add(lines);
+        if (lines.length > maxLines) maxLines = lines.length;
       }
-      return '${styleBorderText(b.left)}${parts.join(styleBorderText(b.left))}${styleBorderText(b.right)}';
+
+      // Build output rows
+      final outputRows = <String>[];
+      for (var lineIdx = 0; lineIdx < maxLines; lineIdx++) {
+        final parts = <String>[];
+        for (var c = 0; c < columns; c++) {
+          final lines = cellLines[c];
+          final line = lineIdx < lines.length ? lines[lineIdx] : '';
+          final visible = Style.visibleLength(line);
+          final fill = widths[c] - visible;
+          final fillCount = fill > 0 ? fill : 0;
+          final cellContent = '$pad$line${' ' * fillCount}$pad';
+          parts.add(cellContent);
+        }
+        outputRows.add(
+          '${styleBorderText(b.left)}${parts.join(styleBorderText(b.left))}${styleBorderText(b.right)}',
+        );
+      }
+
+      return outputRows;
     }
 
     final buffer = StringBuffer();
@@ -365,7 +398,9 @@ class Table extends FluentComponent<Table> {
 
     // Header row
     if (_headers.isNotEmpty) {
-      buffer.writeln(buildRow(_headers, headerRow));
+      for (final line in buildRow(_headers, headerRow)) {
+        buffer.writeln(line);
+      }
       // Header separator
       buffer.writeln(
         buildBorder(
@@ -379,7 +414,9 @@ class Table extends FluentComponent<Table> {
 
     // Data rows
     for (var i = 0; i < _rows.length; i++) {
-      buffer.writeln(buildRow(_rows[i], i));
+      for (final line in buildRow(_rows[i], i)) {
+        buffer.writeln(line);
+      }
     }
 
     // Bottom border

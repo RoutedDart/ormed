@@ -162,6 +162,23 @@ class Style {
   String Function(String)? _transform;
 
   // ─────────────────────────────────────────────────────────────────────────────
+  // Pre-set String
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /// Pre-set string content for this style.
+  String? _string;
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Whitespace Options
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /// Custom character(s) for whitespace fill.
+  String _whitespaceChar = ' ';
+
+  /// Foreground color for whitespace fill.
+  Color? _whitespaceForeground;
+
+  // ─────────────────────────────────────────────────────────────────────────────
   // Rendering Context
   // ─────────────────────────────────────────────────────────────────────────────
 
@@ -437,6 +454,11 @@ class Style {
     return this;
   }
 
+  /// Alias for [border] - sets the border style.
+  ///
+  /// This matches the lipgloss API where `BorderStyle()` sets the border type.
+  Style borderStyle(Border value) => border(value);
+
   /// Sets which border sides are visible.
   Style borderSides(BorderSides value) {
     _borderSides = value;
@@ -469,6 +491,54 @@ class Style {
   Style borderRight(bool visible) {
     _borderSides = _borderSides.copyWith(right: visible);
     _setFlag(_PropBits.borderSides);
+    return this;
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Pre-set String
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /// Sets a pre-defined string content for this style.
+  ///
+  /// When set, calling [toString] will render this string with the style,
+  /// allowing the style to be used directly as a string.
+  ///
+  /// ```dart
+  /// final divider = Style()
+  ///     .foreground(Colors.muted)
+  ///     .padding(0, 1)
+  ///     .setString('•');
+  ///
+  /// print('Item 1${divider}Item 2${divider}Item 3');
+  /// // Output: Item 1 • Item 2 • Item 3
+  /// ```
+  Style setString(String value) {
+    _string = value;
+    return this;
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Whitespace Options
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /// Sets custom character(s) for whitespace fill.
+  ///
+  /// Used when filling space in aligned content or padding.
+  ///
+  /// ```dart
+  /// final style = Style()
+  ///     .width(20)
+  ///     .align(HorizontalAlign.center)
+  ///     .whitespaceChars('·');
+  /// ```
+  Style whitespaceChars(String chars) {
+    _whitespaceChar = chars;
+    return this;
+  }
+
+  /// Sets the foreground color for whitespace fill.
+  Style whitespaceForeground(Color color) {
+    _whitespaceForeground = color;
     return this;
   }
 
@@ -891,7 +961,7 @@ class Style {
     // Process lines for layout
     var lines = result.split('\n');
 
-    // Apply max width (truncate/wrap)
+    // Apply max width (truncate)
     if (_hasFlag(_PropBits.maxWidth) && _maxWidth > 0) {
       lines = _truncateLines(lines, _maxWidth);
     }
@@ -899,8 +969,10 @@ class Style {
     // Calculate content width
     var contentWidth = _getMaxLineWidth(lines);
 
-    // Apply fixed width
+    // Apply fixed width - wrap text to fit
     if (_hasFlag(_PropBits.width) && _width > 0) {
+      // Wrap text to fit within width
+      lines = _wrapText(lines, _width);
       contentWidth = _width;
     }
 
@@ -920,7 +992,11 @@ class Style {
       lines = _applyBorder(lines, contentWidth);
     }
 
-    // Apply margin
+    // Apply text styles to content lines BEFORE margin
+    // (margin is outside the styled area)
+    lines = lines.map(_applyTextStyles).toList();
+
+    // Apply margin (after text styles - margin lines are unstyled)
     if (!_margin.isZero) {
       lines = _applyMargin(lines, contentWidth);
     }
@@ -937,8 +1013,7 @@ class Style {
       lines = lines.take(_maxHeight).toList();
     }
 
-    // Apply text styles to each line
-    result = lines.map(_applyTextStyles).join('\n');
+    result = lines.join('\n');
 
     return result;
   }
@@ -1009,7 +1084,69 @@ class Style {
 
   /// Gets the visible length of a string (ignoring ANSI codes).
   static int visibleLength(String text) {
-    return stripAnsi(text).length;
+    final stripped = stripAnsi(text);
+    return _displayWidth(stripped);
+  }
+
+  /// Calculates the display width of a string, accounting for double-width characters.
+  ///
+  /// CJK characters, emoji, and other full-width characters take 2 columns in a terminal.
+  static int _displayWidth(String text) {
+    var width = 0;
+    for (final rune in text.runes) {
+      width += _charWidth(rune);
+    }
+    return width;
+  }
+
+  /// Returns the display width of a single Unicode code point.
+  ///
+  /// Returns 2 for full-width characters (CJK, emoji, etc.), 0 for combining
+  /// characters and control codes, and 1 for everything else.
+  static int _charWidth(int codePoint) {
+    // Control characters and null
+    if (codePoint < 32 || (codePoint >= 0x7F && codePoint < 0xA0)) {
+      return 0;
+    }
+
+    // Combining characters (zero width)
+    if (_isCombining(codePoint)) {
+      return 0;
+    }
+
+    // Full-width characters (CJK and others)
+    if (_isFullWidth(codePoint)) {
+      return 2;
+    }
+
+    return 1;
+  }
+
+  /// Checks if a code point is a combining character (zero width).
+  static bool _isCombining(int cp) {
+    return (cp >= 0x0300 && cp <= 0x036F) || // Combining Diacritical Marks
+        (cp >= 0x1AB0 && cp <= 0x1AFF) || // Combining Diacritical Marks Extended
+        (cp >= 0x1DC0 && cp <= 0x1DFF) || // Combining Diacritical Marks Supplement
+        (cp >= 0x20D0 && cp <= 0x20FF) || // Combining Diacritical Marks for Symbols
+        (cp >= 0xFE20 && cp <= 0xFE2F); // Combining Half Marks
+  }
+
+  /// Checks if a code point is a full-width character (displays as 2 columns).
+  static bool _isFullWidth(int cp) {
+    // CJK Unified Ideographs and related blocks
+    return (cp >= 0x1100 && cp <= 0x115F) || // Hangul Jamo
+        (cp >= 0x2E80 && cp <= 0x9FFF) || // CJK Radicals through CJK Unified Ideographs
+        (cp >= 0xAC00 && cp <= 0xD7A3) || // Hangul Syllables
+        (cp >= 0xF900 && cp <= 0xFAFF) || // CJK Compatibility Ideographs
+        (cp >= 0xFE10 && cp <= 0xFE1F) || // Vertical Forms
+        (cp >= 0xFE30 && cp <= 0xFE6F) || // CJK Compatibility Forms
+        (cp >= 0xFF00 && cp <= 0xFF60) || // Fullwidth ASCII variants
+        (cp >= 0xFFE0 && cp <= 0xFFE6) || // Fullwidth symbol variants
+        (cp >= 0x20000 && cp <= 0x2FFFF) || // CJK Unified Ideographs Extension B-F
+        (cp >= 0x30000 && cp <= 0x3FFFF) || // CJK Unified Ideographs Extension G-H
+        // Common emoji ranges (simplified - many emoji are double-width)
+        (cp >= 0x1F300 && cp <= 0x1F9FF) || // Miscellaneous Symbols and Pictographs, Emoticons, etc.
+        (cp >= 0x1FA00 && cp <= 0x1FAFF); // Chess, symbols, extended-A
   }
 
   int _getMaxLineWidth(List<String> lines) {
@@ -1018,12 +1155,178 @@ class Style {
   }
 
   List<String> _truncateLines(List<String> lines, int maxWidth) {
-    return lines.map((line) {
-      if (visibleLength(line) <= maxWidth) return line;
-      // Simple truncation - doesn't handle ANSI codes perfectly
-      // TODO: Improve to handle ANSI codes properly
-      return '${line.substring(0, maxWidth - 1)}…';
-    }).toList();
+    return lines.map((line) => _truncateLine(line, maxWidth)).toList();
+  }
+
+  /// Truncates a single line while preserving ANSI codes.
+  String _truncateLine(String line, int maxWidth) {
+    final visible = visibleLength(line);
+    if (visible <= maxWidth) return line;
+
+    final targetLen = maxWidth - 1; // Leave room for ellipsis
+    if (targetLen <= 0) return '…';
+
+    final buffer = StringBuffer();
+    final ansiPattern = RegExp(r'\x1B\[[0-9;]*m');
+    var currentLen = 0;
+    var i = 0;
+
+    while (i < line.length && currentLen < targetLen) {
+      // Check for ANSI escape sequence
+      final match = ansiPattern.matchAsPrefix(line, i);
+      if (match != null) {
+        // Include the ANSI code but don't count its length
+        buffer.write(match.group(0));
+        i += match.group(0)!.length;
+        continue;
+      }
+
+      // Regular character
+      buffer.write(line[i]);
+      currentLen++;
+      i++;
+    }
+
+    // Add reset and ellipsis
+    buffer.write('\x1B[0m…');
+    return buffer.toString();
+  }
+
+  /// Wraps text to fit within a specified width.
+  ///
+  /// Breaks lines at word boundaries when possible, preserving ANSI codes.
+  List<String> _wrapText(List<String> lines, int maxWidth) {
+    final result = <String>[];
+
+    for (final line in lines) {
+      if (visibleLength(line) <= maxWidth) {
+        result.add(line);
+        continue;
+      }
+
+      // Need to wrap this line
+      result.addAll(_wrapLine(line, maxWidth));
+    }
+
+    return result;
+  }
+
+  /// Wraps a single line to fit within maxWidth.
+  List<String> _wrapLine(String line, int maxWidth) {
+    final result = <String>[];
+    final words = _splitIntoWords(line);
+    var currentLine = StringBuffer();
+    var currentLen = 0;
+
+    for (final word in words) {
+      final wordLen = visibleLength(word);
+
+      // If adding this word would exceed maxWidth
+      if (currentLen + wordLen > maxWidth) {
+        // If we have content, save it and start new line
+        if (currentLen > 0) {
+          result.add(currentLine.toString());
+          currentLine = StringBuffer();
+          currentLen = 0;
+        }
+
+        // If the word itself is longer than maxWidth, break it
+        if (wordLen > maxWidth) {
+          final broken = _breakLongWord(word, maxWidth);
+          // Add all but last piece as complete lines
+          for (var i = 0; i < broken.length - 1; i++) {
+            result.add(broken[i]);
+          }
+          // Continue with last piece
+          if (broken.isNotEmpty) {
+            currentLine.write(broken.last);
+            currentLen = visibleLength(broken.last);
+          }
+          continue;
+        }
+      }
+
+      currentLine.write(word);
+      currentLen += wordLen;
+    }
+
+    // Don't forget the last line
+    if (currentLen > 0) {
+      result.add(currentLine.toString());
+    }
+
+    return result.isEmpty ? [''] : result;
+  }
+
+  /// Splits text into words, preserving spaces and ANSI codes.
+  List<String> _splitIntoWords(String text) {
+    final words = <String>[];
+    final buffer = StringBuffer();
+    final ansiPattern = RegExp(r'\x1B\[[0-9;]*m');
+    var i = 0;
+
+    while (i < text.length) {
+      // Check for ANSI escape sequence
+      final match = ansiPattern.matchAsPrefix(text, i);
+      if (match != null) {
+        buffer.write(match.group(0));
+        i += match.group(0)!.length;
+        continue;
+      }
+
+      final char = text[i];
+      if (char == ' ') {
+        // Include space with current word
+        buffer.write(char);
+        words.add(buffer.toString());
+        buffer.clear();
+      } else {
+        buffer.write(char);
+      }
+      i++;
+    }
+
+    // Don't forget the last word
+    if (buffer.isNotEmpty) {
+      words.add(buffer.toString());
+    }
+
+    return words;
+  }
+
+  /// Breaks a long word into pieces that fit within maxWidth.
+  List<String> _breakLongWord(String word, int maxWidth) {
+    final result = <String>[];
+    final ansiPattern = RegExp(r'\x1B\[[0-9;]*m');
+    var buffer = StringBuffer();
+    var currentLen = 0;
+    var i = 0;
+
+    while (i < word.length) {
+      // Check for ANSI escape sequence
+      final match = ansiPattern.matchAsPrefix(word, i);
+      if (match != null) {
+        buffer.write(match.group(0));
+        i += match.group(0)!.length;
+        continue;
+      }
+
+      if (currentLen >= maxWidth) {
+        result.add(buffer.toString());
+        buffer = StringBuffer();
+        currentLen = 0;
+      }
+
+      buffer.write(word[i]);
+      currentLen++;
+      i++;
+    }
+
+    if (buffer.isNotEmpty) {
+      result.add(buffer.toString());
+    }
+
+    return result;
   }
 
   List<String> _alignLines(List<String> lines, int width) {
@@ -1134,20 +1437,22 @@ class Style {
   List<String> _applyMargin(List<String> lines, int contentWidth) {
     final result = <String>[];
     final leftMargin = ' ' * _margin.left;
+    final rightMargin = ' ' * _margin.right;
+    final horizontalFill = ' ' * contentWidth;
 
     // Top margin
     for (var i = 0; i < _margin.top; i++) {
-      result.add('');
+      result.add('$leftMargin$horizontalFill$rightMargin');
     }
 
     // Content with horizontal margin
     for (final line in lines) {
-      result.add('$leftMargin$line');
+      result.add('$leftMargin$line$rightMargin');
     }
 
     // Bottom margin
     for (var i = 0; i < _margin.bottom; i++) {
-      result.add('');
+      result.add('$leftMargin$horizontalFill$rightMargin');
     }
 
     return result;
@@ -1168,6 +1473,11 @@ class Style {
 
   @override
   String toString() {
+    // If a string was pre-set, render it
+    if (_string != null) {
+      return render(_string!);
+    }
+    // Otherwise, return a debug representation
     final parts = <String>[];
     if (isBold) parts.add('bold');
     if (isItalic) parts.add('italic');

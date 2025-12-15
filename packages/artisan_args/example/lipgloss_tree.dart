@@ -1,0 +1,114 @@
+/// Dart port of lipgloss tree examples.
+///
+/// Demonstrates the Tree component with various styles.
+///
+/// Run with: dart run example/lipgloss_tree.dart
+library;
+
+import 'package:artisan_args/artisan_args.dart';
+
+void main() {
+  print('=== Simple Tree ===\n');
+  _simpleTree();
+
+  print('\n=== Styled Tree ===\n');
+  _styledTree();
+
+  print('\n=== File System Tree ===\n');
+  _fileSystemTree();
+}
+
+/// Simple tree example from lipgloss.
+void _simpleTree() {
+  final tree = Tree()
+      .root('.')
+      .child('macOS')
+      .child(
+        Tree()
+            .root('Linux')
+            .child('NixOS')
+            .child('Arch Linux (btw)')
+            .child('Void Linux'),
+      )
+      .child(
+        Tree().root('BSD').child('FreeBSD').child('OpenBSD'),
+      );
+
+  print(tree.render());
+}
+
+/// Tree with custom styling.
+void _styledTree() {
+  final rootStyle = Style().bold().foreground(BasicColor('#FF6B6B'));
+
+  final dirStyle = Style().foreground(BasicColor('#7D56F4')).bold();
+
+  final fileStyle = Style().foreground(BasicColor('#FAFAFA'));
+
+  final branchStyle = Style().foreground(BasicColor('#7D56F4'));
+
+  final tree = Tree()
+      .root('🌳 Projects')
+      .enumerator(TreeEnumerator.rounded)
+      .rootStyle(rootStyle)
+      .directoryStyle(dirStyle)
+      .fileStyle(fileStyle)
+      .branchStyle(branchStyle)
+      .child(
+        Tree()
+            .root('📁 dart_packages')
+            .child('📦 artisan_args')
+            .child('📦 ormed')
+            .child('📦 ormed_cli'),
+      )
+      .child(
+        Tree().root('📁 web_apps').child('🌐 portfolio').child('🌐 blog'),
+      )
+      .child(
+        Tree()
+            .root('📁 experiments')
+            .child('🧪 ml_playground')
+            .child('🧪 rust_learning'),
+      );
+
+  print(tree.render());
+}
+
+/// File system tree with icons.
+void _fileSystemTree() {
+  final tree = Tree()
+      .root('lib/')
+      .enumerator(TreeEnumerator.normal)
+      .itemStyleFunc((item, depth, isLast) {
+        // Color files differently than directories
+        final isFile = item.toString().endsWith('.dart');
+        if (isFile) {
+          return Style().foreground(BasicColor('#73F59F'));
+        }
+        return Style().foreground(BasicColor('#7D56F4')).bold();
+      })
+      .child(
+        Tree()
+            .root('src/')
+            .child(
+              Tree()
+                  .root('components/')
+                  .child('alert.dart')
+                  .child('box.dart')
+                  .child('spinner.dart')
+                  .child('table.dart')
+                  .child('tree.dart'),
+            )
+            .child(
+              Tree()
+                  .root('style/')
+                  .child('border.dart')
+                  .child('color.dart')
+                  .child('style.dart'),
+            )
+            .child('layout.dart'),
+      )
+      .child('artisan_args.dart');
+
+  print(tree.render());
+}

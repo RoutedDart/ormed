@@ -1,6 +1,6 @@
 .dart_tool/
 pubspec.lock
 .idea/
-# openspec/
+ openspec/
 third_party/
 build/

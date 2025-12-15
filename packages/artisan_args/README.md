@@ -165,6 +165,41 @@ await io.components.spin('Processing...', run: () async {
 });
 ```
 
+### Fluent Style System
+
+Create advanced styles with a chainable API:
+
+```dart
+final style = Style()
+    .bold()
+    .foreground(Colors.green)
+    .padding(1, 2)
+    .border(Border.rounded);
+
+print(style.render('Styled Text'));
+```
+
+**Components with Fluent Builders:**
+
+```dart
+// Table with per-cell styling
+Table()
+    .headers(['Item', 'Status'])
+    .row(['Task 1', 'Done'])
+    .styleFunc((row, col, data) {
+         if (data == 'Done') return Style().foreground(Colors.green);
+         return null;
+    })
+    .render();
+
+// Tree with custom enumerators
+Tree()
+    .root('Project')
+    .child('src')
+    .enumerator(TreeEnumerator.rounded)
+    .render();
+```
+
 ## Global Flags
 
 The runner automatically adds these flags:
