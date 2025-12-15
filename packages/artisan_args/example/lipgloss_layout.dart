@@ -312,6 +312,10 @@ void _buildDialog(StringBuffer doc) {
     horizontal: HorizontalAlign.center,
     vertical: VerticalAlign.center,
     content: dialogBoxStyle().render(ui),
+    whitespace: WhitespaceOptions(
+      chars: '猫咪',
+      foreground: subtle,
+    ),
   );
 
   doc.writeln(dialog);

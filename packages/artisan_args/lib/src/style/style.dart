@@ -60,6 +60,19 @@ class _PropBits {
   static const int maxHeight = 1 << 27;
   static const int inline = 1 << 28;
   static const int transform = 1 << 29;
+  static const int alignVertical = 1 << 30;
+  // Per-side border colors use a separate bitfield (_borderProps)
+
+  // Additional properties (using a second bitfield _props2)
+  static const int tabWidth = 1 << 0;
+  static const int underlineSpaces = 1 << 1;
+  static const int strikethroughSpaces = 1 << 2;
+  static const int marginBackground = 1 << 3;
+  static const int stringValue = 1 << 4;
+  static const int borderTop = 1 << 5;
+  static const int borderRight = 1 << 6;
+  static const int borderBottom = 1 << 7;
+  static const int borderLeft = 1 << 8;
 }
 
 /// Fluent, chainable style builder for terminal output.
@@ -105,9 +118,16 @@ class Style {
   /// Bitfield tracking which properties are explicitly set.
   int _props = 0;
 
+  /// Second bitfield for additional properties.
+  int _props2 = 0;
+
   bool _hasFlag(int flag) => _props & flag != 0;
   void _setFlag(int flag) => _props |= flag;
   void _clearFlag(int flag) => _props &= ~flag;
+
+  bool _hasFlag2(int flag) => _props2 & flag != 0;
+  void _setFlag2(int flag) => _props2 |= flag;
+  void _clearFlag2(int flag) => _props2 &= ~flag;
 
   // ─────────────────────────────────────────────────────────────────────────────
   // Text Attribute Properties
@@ -130,6 +150,27 @@ class Style {
   Color? _borderForeground;
   Color? _borderBackground;
 
+  // Per-side border colors
+  Color? _borderTopForeground;
+  Color? _borderRightForeground;
+  Color? _borderBottomForeground;
+  Color? _borderLeftForeground;
+  Color? _borderTopBackground;
+  Color? _borderRightBackground;
+  Color? _borderBottomBackground;
+  Color? _borderLeftBackground;
+
+  /// Bitfield for per-side border color properties.
+  int _borderProps = 0;
+  static const int _borderTopFg = 1 << 0;
+  static const int _borderRightFg = 1 << 1;
+  static const int _borderBottomFg = 1 << 2;
+  static const int _borderLeftFg = 1 << 3;
+  static const int _borderTopBg = 1 << 4;
+  static const int _borderRightBg = 1 << 5;
+  static const int _borderBottomBg = 1 << 6;
+  static const int _borderLeftBg = 1 << 7;
+
   // ─────────────────────────────────────────────────────────────────────────────
   // Dimension Properties
   // ─────────────────────────────────────────────────────────────────────────────
@@ -151,6 +192,7 @@ class Style {
   // ─────────────────────────────────────────────────────────────────────────────
 
   HorizontalAlign _align = HorizontalAlign.left;
+  VerticalAlign _alignVertical = VerticalAlign.top;
   Border? _border;
   BorderSides _borderSides = BorderSides.all;
   bool _inline = false;
@@ -177,6 +219,28 @@ class Style {
 
   /// Foreground color for whitespace fill.
   Color? _whitespaceForeground;
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Additional Style Properties
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /// Tab width for tab character handling.
+  int _tabWidth = 4;
+
+  /// Whether to underline spaces.
+  bool _underlineSpaces = false;
+
+  /// Whether to strikethrough spaces.
+  bool _strikethroughSpaces = false;
+
+  /// Background color for margin areas.
+  Color? _marginBackground;
+
+  /// Individual border side visibility.
+  bool _borderTopVisible = true;
+  bool _borderRightVisible = true;
+  bool _borderBottomVisible = true;
+  bool _borderLeftVisible = true;
 
   // ─────────────────────────────────────────────────────────────────────────────
   // Rendering Context
@@ -274,6 +338,62 @@ class Style {
   Style borderBackground(Color color) {
     _borderBackground = color;
     _setFlag(_PropBits.borderBackground);
+    return this;
+  }
+
+  /// Sets the top border foreground color.
+  Style borderTopForeground(Color color) {
+    _borderTopForeground = color;
+    _borderProps |= _borderTopFg;
+    return this;
+  }
+
+  /// Sets the right border foreground color.
+  Style borderRightForeground(Color color) {
+    _borderRightForeground = color;
+    _borderProps |= _borderRightFg;
+    return this;
+  }
+
+  /// Sets the bottom border foreground color.
+  Style borderBottomForeground(Color color) {
+    _borderBottomForeground = color;
+    _borderProps |= _borderBottomFg;
+    return this;
+  }
+
+  /// Sets the left border foreground color.
+  Style borderLeftForeground(Color color) {
+    _borderLeftForeground = color;
+    _borderProps |= _borderLeftFg;
+    return this;
+  }
+
+  /// Sets the top border background color.
+  Style borderTopBackground(Color color) {
+    _borderTopBackground = color;
+    _borderProps |= _borderTopBg;
+    return this;
+  }
+
+  /// Sets the right border background color.
+  Style borderRightBackground(Color color) {
+    _borderRightBackground = color;
+    _borderProps |= _borderRightBg;
+    return this;
+  }
+
+  /// Sets the bottom border background color.
+  Style borderBottomBackground(Color color) {
+    _borderBottomBackground = color;
+    _borderProps |= _borderBottomBg;
+    return this;
+  }
+
+  /// Sets the left border background color.
+  Style borderLeftBackground(Color color) {
+    _borderLeftBackground = color;
+    _borderProps |= _borderLeftBg;
     return this;
   }
 
@@ -427,37 +547,104 @@ class Style {
   // Alignment
   // ─────────────────────────────────────────────────────────────────────────────
 
-  /// Sets horizontal text alignment within the width.
-  Style align(HorizontalAlign value) {
-    _align = value;
+  /// Sets horizontal text alignment, optionally with vertical alignment.
+  ///
+  /// With one argument, sets horizontal alignment only.
+  /// With two arguments, sets both horizontal and vertical alignment.
+  ///
+  /// ```dart
+  /// style.align(HorizontalAlign.center); // horizontal only
+  /// style.align(HorizontalAlign.center, VerticalAlign.middle); // both
+  /// ```
+  Style align(HorizontalAlign horizontal, [VerticalAlign? vertical]) {
+    _align = horizontal;
     _setFlag(_PropBits.align);
+    if (vertical != null) {
+      _alignVertical = vertical;
+      _setFlag(_PropBits.alignVertical);
+    }
+    return this;
+  }
+
+  /// Sets horizontal text alignment (alias for [align]).
+  Style alignHorizontal(HorizontalAlign value) => align(value);
+
+  /// Sets vertical text alignment within the height.
+  Style alignVertical(VerticalAlign value) {
+    _alignVertical = value;
+    _setFlag(_PropBits.alignVertical);
     return this;
   }
 
   /// Aligns text to the left.
   Style alignLeft() => align(HorizontalAlign.left);
 
-  /// Aligns text to the center.
+  /// Aligns text to the center horizontally.
   Style alignCenter() => align(HorizontalAlign.center);
 
   /// Aligns text to the right.
   Style alignRight() => align(HorizontalAlign.right);
 
+  /// Aligns text to the top.
+  Style alignTop() => alignVertical(VerticalAlign.top);
+
+  /// Aligns text to the center vertically.
+  Style alignMiddle() => alignVertical(VerticalAlign.center);
+
+  /// Aligns text to the bottom.
+  Style alignBottom() => alignVertical(VerticalAlign.bottom);
+
   // ─────────────────────────────────────────────────────────────────────────────
   // Border
   // ─────────────────────────────────────────────────────────────────────────────
 
-  /// Sets the border style.
-  Style border(Border value) {
+  /// Sets the border style, optionally specifying which sides are visible.
+  ///
+  /// With one argument, sets the border style and enables all sides.
+  /// With additional arguments, sets visibility for top, right, bottom, left.
+  ///
+  /// ```dart
+  /// // Enable border on all sides
+  /// style.border(Border.rounded());
+  ///
+  /// // Enable border on top and bottom only
+  /// style.border(Border.rounded(), top: true, bottom: true);
+  ///
+  /// // Explicitly set all sides
+  /// style.border(Border.rounded(), top: true, right: false, bottom: true, left: false);
+  /// ```
+  Style border(
+    Border value, {
+    bool? top,
+    bool? right,
+    bool? bottom,
+    bool? left,
+  }) {
+    _border = value;
+    _setFlag(_PropBits.border);
+
+    // If any side is specified, apply the border sides
+    if (top != null || right != null || bottom != null || left != null) {
+      _borderSides = BorderSides(
+        top: top ?? false,
+        right: right ?? false,
+        bottom: bottom ?? false,
+        left: left ?? false,
+      );
+      _setFlag(_PropBits.borderSides);
+    }
+    return this;
+  }
+
+  /// Alias for setting border style only (without changing sides).
+  ///
+  /// This matches the lipgloss API where `BorderStyle()` sets the border type
+  /// without affecting which sides are visible.
+  Style borderStyle(Border value) {
     _border = value;
     _setFlag(_PropBits.border);
     return this;
   }
-
-  /// Alias for [border] - sets the border style.
-  ///
-  /// This matches the lipgloss API where `BorderStyle()` sets the border type.
-  Style borderStyle(Border value) => border(value);
 
   /// Sets which border sides are visible.
   Style borderSides(BorderSides value) {
@@ -514,6 +701,7 @@ class Style {
   /// ```
   Style setString(String value) {
     _string = value;
+    _setFlag2(_PropBits.stringValue);
     return this;
   }
 
@@ -557,6 +745,34 @@ class Style {
   Style transform(String Function(String) fn) {
     _transform = fn;
     _setFlag(_PropBits.transform);
+    return this;
+  }
+
+  /// Sets the tab width for tab character handling.
+  Style tabWidth(int width) {
+    _tabWidth = width;
+    _setFlag2(_PropBits.tabWidth);
+    return this;
+  }
+
+  /// Sets whether to underline spaces.
+  Style underlineSpaces([bool value = true]) {
+    _underlineSpaces = value;
+    _setFlag2(_PropBits.underlineSpaces);
+    return this;
+  }
+
+  /// Sets whether to strikethrough spaces.
+  Style strikethroughSpaces([bool value = true]) {
+    _strikethroughSpaces = value;
+    _setFlag2(_PropBits.strikethroughSpaces);
+    return this;
+  }
+
+  /// Sets the background color for margin areas.
+  Style marginBackground(Color color) {
+    _marginBackground = color;
+    _setFlag2(_PropBits.marginBackground);
     return this;
   }
 
@@ -656,6 +872,205 @@ class Style {
     return this;
   }
 
+  /// Unsets dim.
+  Style unsetDim() {
+    _dim = false;
+    _clearFlag(_PropBits.dim);
+    return this;
+  }
+
+  /// Unsets blink.
+  Style unsetBlink() {
+    _blink = false;
+    _clearFlag(_PropBits.blink);
+    return this;
+  }
+
+  /// Unsets reverse (inverse colors).
+  Style unsetReverse() {
+    _inverse = false;
+    _clearFlag(_PropBits.inverse);
+    return this;
+  }
+
+  /// Unsets max width.
+  Style unsetMaxWidth() {
+    _maxWidth = 0;
+    _clearFlag(_PropBits.maxWidth);
+    return this;
+  }
+
+  /// Unsets max height.
+  Style unsetMaxHeight() {
+    _maxHeight = 0;
+    _clearFlag(_PropBits.maxHeight);
+    return this;
+  }
+
+  /// Unsets horizontal alignment.
+  Style unsetAlignHorizontal() {
+    _align = HorizontalAlign.left;
+    _clearFlag(_PropBits.align);
+    return this;
+  }
+
+  /// Unsets vertical alignment.
+  Style unsetAlignVertical() {
+    _alignVertical = VerticalAlign.top;
+    _clearFlag(_PropBits.alignVertical);
+    return this;
+  }
+
+  /// Unsets inline mode.
+  Style unsetInline() {
+    _inline = false;
+    _clearFlag(_PropBits.inline);
+    return this;
+  }
+
+  /// Unsets tab width.
+  Style unsetTabWidth() {
+    _tabWidth = 4;
+    _clearFlag2(_PropBits.tabWidth);
+    return this;
+  }
+
+  /// Unsets underline spaces.
+  Style unsetUnderlineSpaces() {
+    _underlineSpaces = false;
+    _clearFlag2(_PropBits.underlineSpaces);
+    return this;
+  }
+
+  /// Unsets strikethrough spaces.
+  Style unsetStrikethroughSpaces() {
+    _strikethroughSpaces = false;
+    _clearFlag2(_PropBits.strikethroughSpaces);
+    return this;
+  }
+
+  /// Unsets margin background color.
+  Style unsetMarginBackground() {
+    _marginBackground = null;
+    _clearFlag2(_PropBits.marginBackground);
+    return this;
+  }
+
+  /// Unsets top border visibility.
+  Style unsetBorderTop() {
+    _borderTopVisible = true;
+    _clearFlag2(_PropBits.borderTop);
+    return this;
+  }
+
+  /// Unsets right border visibility.
+  Style unsetBorderRight() {
+    _borderRightVisible = true;
+    _clearFlag2(_PropBits.borderRight);
+    return this;
+  }
+
+  /// Unsets bottom border visibility.
+  Style unsetBorderBottom() {
+    _borderBottomVisible = true;
+    _clearFlag2(_PropBits.borderBottom);
+    return this;
+  }
+
+  /// Unsets left border visibility.
+  Style unsetBorderLeft() {
+    _borderLeftVisible = true;
+    _clearFlag2(_PropBits.borderLeft);
+    return this;
+  }
+
+  /// Unsets the pre-set string value.
+  Style unsetString() {
+    _string = null;
+    _clearFlag2(_PropBits.stringValue);
+    return this;
+  }
+
+  /// Unsets border foreground color.
+  Style unsetBorderForeground() {
+    _borderForeground = null;
+    _borderTopForeground = null;
+    _borderRightForeground = null;
+    _borderBottomForeground = null;
+    _borderLeftForeground = null;
+    _clearFlag(_PropBits.borderForeground);
+    _borderProps &= ~(_borderTopFg | _borderRightFg | _borderBottomFg | _borderLeftFg);
+    return this;
+  }
+
+  /// Unsets border background color.
+  Style unsetBorderBackground() {
+    _borderBackground = null;
+    _borderTopBackground = null;
+    _borderRightBackground = null;
+    _borderBottomBackground = null;
+    _borderLeftBackground = null;
+    _clearFlag(_PropBits.borderBackground);
+    _borderProps &= ~(_borderTopBg | _borderRightBg | _borderBottomBg | _borderLeftBg);
+    return this;
+  }
+
+  /// Unsets padding top.
+  Style unsetPaddingTop() {
+    _padding = _padding.copyWith(top: 0);
+    _clearFlag(_PropBits.paddingTop);
+    return this;
+  }
+
+  /// Unsets padding right.
+  Style unsetPaddingRight() {
+    _padding = _padding.copyWith(right: 0);
+    _clearFlag(_PropBits.paddingRight);
+    return this;
+  }
+
+  /// Unsets padding bottom.
+  Style unsetPaddingBottom() {
+    _padding = _padding.copyWith(bottom: 0);
+    _clearFlag(_PropBits.paddingBottom);
+    return this;
+  }
+
+  /// Unsets padding left.
+  Style unsetPaddingLeft() {
+    _padding = _padding.copyWith(left: 0);
+    _clearFlag(_PropBits.paddingLeft);
+    return this;
+  }
+
+  /// Unsets margin top.
+  Style unsetMarginTop() {
+    _margin = _margin.copyWith(top: 0);
+    _clearFlag(_PropBits.marginTop);
+    return this;
+  }
+
+  /// Unsets margin right.
+  Style unsetMarginRight() {
+    _margin = _margin.copyWith(right: 0);
+    _clearFlag(_PropBits.marginRight);
+    return this;
+  }
+
+  /// Unsets margin bottom.
+  Style unsetMarginBottom() {
+    _margin = _margin.copyWith(bottom: 0);
+    _clearFlag(_PropBits.marginBottom);
+    return this;
+  }
+
+  /// Unsets margin left.
+  Style unsetMarginLeft() {
+    _margin = _margin.copyWith(left: 0);
+    _clearFlag(_PropBits.marginLeft);
+    return this;
+  }
+
   // ═══════════════════════════════════════════════════════════════════════════
   // GETTERS
   // ═══════════════════════════════════════════════════════════════════════════
@@ -685,6 +1100,40 @@ class Style {
   /// Whether inline mode is set.
   bool get isInline => _hasFlag(_PropBits.inline) && _inline;
 
+  /// Gets the tab width.
+  int get getTabWidth => _hasFlag2(_PropBits.tabWidth) ? _tabWidth : 4;
+
+  /// Whether underline spaces is set.
+  bool get isUnderlineSpaces =>
+      _hasFlag2(_PropBits.underlineSpaces) && _underlineSpaces;
+
+  /// Whether strikethrough spaces is set.
+  bool get isStrikethroughSpaces =>
+      _hasFlag2(_PropBits.strikethroughSpaces) && _strikethroughSpaces;
+
+  /// Gets the margin background color if set.
+  Color? get getMarginBackground =>
+      _hasFlag2(_PropBits.marginBackground) ? _marginBackground : null;
+
+  /// Gets whether top border is visible.
+  bool get getBorderTop =>
+      _hasFlag2(_PropBits.borderTop) ? _borderTopVisible : true;
+
+  /// Gets whether right border is visible.
+  bool get getBorderRight =>
+      _hasFlag2(_PropBits.borderRight) ? _borderRightVisible : true;
+
+  /// Gets whether bottom border is visible.
+  bool get getBorderBottom =>
+      _hasFlag2(_PropBits.borderBottom) ? _borderBottomVisible : true;
+
+  /// Gets whether left border is visible.
+  bool get getBorderLeft =>
+      _hasFlag2(_PropBits.borderLeft) ? _borderLeftVisible : true;
+
+  /// Gets the pre-set string value.
+  String? get value => _hasFlag2(_PropBits.stringValue) ? _string : _string;
+
   /// Gets the foreground color if set.
   Color? get getForeground =>
       _hasFlag(_PropBits.foreground) ? _foreground : null;
@@ -708,21 +1157,134 @@ class Style {
   /// Gets the padding.
   Padding get getPadding => _padding;
 
+  /// Gets the top padding.
+  int get getPaddingTop => _padding.top;
+
+  /// Gets the right padding.
+  int get getPaddingRight => _padding.right;
+
+  /// Gets the bottom padding.
+  int get getPaddingBottom => _padding.bottom;
+
+  /// Gets the left padding.
+  int get getPaddingLeft => _padding.left;
+
+  /// Gets the horizontal padding (left + right).
+  int get getHorizontalPadding => _padding.horizontal;
+
+  /// Gets the vertical padding (top + bottom).
+  int get getVerticalPadding => _padding.vertical;
+
   /// Gets the margin.
   Margin get getMargin => _margin;
 
-  /// Gets the alignment.
+  /// Gets the top margin.
+  int get getMarginTop => _margin.top;
+
+  /// Gets the right margin.
+  int get getMarginRight => _margin.right;
+
+  /// Gets the bottom margin.
+  int get getMarginBottom => _margin.bottom;
+
+  /// Gets the left margin.
+  int get getMarginLeft => _margin.left;
+
+  /// Gets the horizontal margin (left + right).
+  int get getHorizontalMargins => _margin.horizontal;
+
+  /// Gets the vertical margin (top + bottom).
+  int get getVerticalMargins => _margin.vertical;
+
+  /// Gets the horizontal alignment.
   HorizontalAlign get getAlign => _align;
+
+  /// Gets the horizontal alignment (alias).
+  HorizontalAlign get getAlignHorizontal => _align;
+
+  /// Gets the vertical alignment.
+  VerticalAlign get getAlignVertical => _alignVertical;
 
   /// Gets the border if set.
   Border? get getBorder => _hasFlag(_PropBits.border) ? _border : null;
 
+  /// Gets the border style (alias for getBorder).
+  Border? get getBorderStyle => getBorder;
+
+
   /// Gets the border sides.
   BorderSides get getBorderSides => _borderSides;
+
+  /// Gets the border foreground color if set.
+  Color? get getBorderForeground =>
+      _hasFlag(_PropBits.borderForeground) ? _borderForeground : null;
+
+  /// Gets the border background color if set.
+  Color? get getBorderBackground =>
+      _hasFlag(_PropBits.borderBackground) ? _borderBackground : null;
+
+  /// Gets the top border foreground color if set.
+  Color? get getBorderTopForeground =>
+      (_borderProps & _borderTopFg) != 0 ? _borderTopForeground : null;
+
+  /// Gets the right border foreground color if set.
+  Color? get getBorderRightForeground =>
+      (_borderProps & _borderRightFg) != 0 ? _borderRightForeground : null;
+
+  /// Gets the bottom border foreground color if set.
+  Color? get getBorderBottomForeground =>
+      (_borderProps & _borderBottomFg) != 0 ? _borderBottomForeground : null;
+
+  /// Gets the left border foreground color if set.
+  Color? get getBorderLeftForeground =>
+      (_borderProps & _borderLeftFg) != 0 ? _borderLeftForeground : null;
+
+  /// Gets the top border background color if set.
+  Color? get getBorderTopBackground =>
+      (_borderProps & _borderTopBg) != 0 ? _borderTopBackground : null;
+
+  /// Gets the right border background color if set.
+  Color? get getBorderRightBackground =>
+      (_borderProps & _borderRightBg) != 0 ? _borderRightBackground : null;
+
+  /// Gets the bottom border background color if set.
+  Color? get getBorderBottomBackground =>
+      (_borderProps & _borderBottomBg) != 0 ? _borderBottomBackground : null;
+
+  /// Gets the left border background color if set.
+  Color? get getBorderLeftBackground =>
+      (_borderProps & _borderLeftBg) != 0 ? _borderLeftBackground : null;
+
+  /// Gets the horizontal frame size (border + padding).
+  int get getHorizontalFrameSize {
+    var size = _padding.horizontal;
+    if (_hasFlag(_PropBits.border) && _border != null && _border!.isVisible) {
+      if (_borderSides.left) size += 1;
+      if (_borderSides.right) size += 1;
+    }
+    return size;
+  }
+
+  /// Gets the vertical frame size (border + padding).
+  int get getVerticalFrameSize {
+    var size = _padding.vertical;
+    if (_hasFlag(_PropBits.border) && _border != null && _border!.isVisible) {
+      if (_borderSides.top) size += 1;
+      if (_borderSides.bottom) size += 1;
+    }
+    return size;
+  }
+
+  /// Gets the frame size (border + padding) as (width, height).
+  ({int width, int height}) get getFrameSize =>
+      (width: getHorizontalFrameSize, height: getVerticalFrameSize);
 
   /// Gets the transform function if set.
   String Function(String)? get getTransform =>
       _hasFlag(_PropBits.transform) ? _transform : null;
+
+  /// Gets the pre-set string value if set.
+  String? get getValue => _string;
 
   // ═══════════════════════════════════════════════════════════════════════════
   // PROPERTY CHECKING
@@ -766,6 +1328,7 @@ class Style {
   Style copy() {
     final s = Style();
     s._props = _props;
+    s._props2 = _props2;
     s._bold = _bold;
     s._italic = _italic;
     s._underline = _underline;
@@ -777,6 +1340,15 @@ class Style {
     s._background = _background;
     s._borderForeground = _borderForeground;
     s._borderBackground = _borderBackground;
+    s._borderTopForeground = _borderTopForeground;
+    s._borderTopBackground = _borderTopBackground;
+    s._borderRightForeground = _borderRightForeground;
+    s._borderRightBackground = _borderRightBackground;
+    s._borderBottomForeground = _borderBottomForeground;
+    s._borderBottomBackground = _borderBottomBackground;
+    s._borderLeftForeground = _borderLeftForeground;
+    s._borderLeftBackground = _borderLeftBackground;
+    s._borderProps = _borderProps;
     s._width = _width;
     s._height = _height;
     s._maxWidth = _maxWidth;
@@ -784,10 +1356,22 @@ class Style {
     s._padding = _padding;
     s._margin = _margin;
     s._align = _align;
+    s._alignVertical = _alignVertical;
     s._border = _border;
     s._borderSides = _borderSides;
     s._inline = _inline;
     s._transform = _transform;
+    s._whitespaceChar = _whitespaceChar;
+    s._whitespaceForeground = _whitespaceForeground;
+    s._string = _string;
+    s._tabWidth = _tabWidth;
+    s._underlineSpaces = _underlineSpaces;
+    s._strikethroughSpaces = _strikethroughSpaces;
+    s._marginBackground = _marginBackground;
+    s._borderTopVisible = _borderTopVisible;
+    s._borderRightVisible = _borderRightVisible;
+    s._borderBottomVisible = _borderBottomVisible;
+    s._borderLeftVisible = _borderLeftVisible;
     s.colorProfile = colorProfile;
     s.hasDarkBackground = hasDarkBackground;
     return s;
@@ -918,6 +1502,80 @@ class Style {
       _transform = other._transform;
       _setFlag(_PropBits.transform);
     }
+    if (other._hasFlag(_PropBits.alignVertical)) {
+      _alignVertical = other._alignVertical;
+      _setFlag(_PropBits.alignVertical);
+    }
+    // Per-side border colors use _borderProps bitfield
+    if ((other._borderProps & _borderTopFg) != 0) {
+      _borderTopForeground = other._borderTopForeground;
+      _borderProps |= _borderTopFg;
+    }
+    if ((other._borderProps & _borderTopBg) != 0) {
+      _borderTopBackground = other._borderTopBackground;
+      _borderProps |= _borderTopBg;
+    }
+    if ((other._borderProps & _borderRightFg) != 0) {
+      _borderRightForeground = other._borderRightForeground;
+      _borderProps |= _borderRightFg;
+    }
+    if ((other._borderProps & _borderRightBg) != 0) {
+      _borderRightBackground = other._borderRightBackground;
+      _borderProps |= _borderRightBg;
+    }
+    if ((other._borderProps & _borderBottomFg) != 0) {
+      _borderBottomForeground = other._borderBottomForeground;
+      _borderProps |= _borderBottomFg;
+    }
+    if ((other._borderProps & _borderBottomBg) != 0) {
+      _borderBottomBackground = other._borderBottomBackground;
+      _borderProps |= _borderBottomBg;
+    }
+    if ((other._borderProps & _borderLeftFg) != 0) {
+      _borderLeftForeground = other._borderLeftForeground;
+      _borderProps |= _borderLeftFg;
+    }
+    if ((other._borderProps & _borderLeftBg) != 0) {
+      _borderLeftBackground = other._borderLeftBackground;
+      _borderProps |= _borderLeftBg;
+    }
+    // Properties from _props2
+    if (other._hasFlag2(_PropBits.tabWidth)) {
+      _tabWidth = other._tabWidth;
+      _setFlag2(_PropBits.tabWidth);
+    }
+    if (other._hasFlag2(_PropBits.underlineSpaces)) {
+      _underlineSpaces = other._underlineSpaces;
+      _setFlag2(_PropBits.underlineSpaces);
+    }
+    if (other._hasFlag2(_PropBits.strikethroughSpaces)) {
+      _strikethroughSpaces = other._strikethroughSpaces;
+      _setFlag2(_PropBits.strikethroughSpaces);
+    }
+    if (other._hasFlag2(_PropBits.marginBackground)) {
+      _marginBackground = other._marginBackground;
+      _setFlag2(_PropBits.marginBackground);
+    }
+    if (other._hasFlag2(_PropBits.stringValue)) {
+      _string = other._string;
+      _setFlag2(_PropBits.stringValue);
+    }
+    if (other._hasFlag2(_PropBits.borderTop)) {
+      _borderTopVisible = other._borderTopVisible;
+      _setFlag2(_PropBits.borderTop);
+    }
+    if (other._hasFlag2(_PropBits.borderRight)) {
+      _borderRightVisible = other._borderRightVisible;
+      _setFlag2(_PropBits.borderRight);
+    }
+    if (other._hasFlag2(_PropBits.borderBottom)) {
+      _borderBottomVisible = other._borderBottomVisible;
+      _setFlag2(_PropBits.borderBottom);
+    }
+    if (other._hasFlag2(_PropBits.borderLeft)) {
+      _borderLeftVisible = other._borderLeftVisible;
+      _setFlag2(_PropBits.borderLeft);
+    }
     return this;
   }
 
@@ -977,18 +1635,23 @@ class Style {
       contentWidth = wrapAt > 0 ? wrapAt : _width;
     }
 
-    // Apply padding
+    // Apply padding (fixed spaces, alignment fills to width later)
     if (!_padding.isZero) {
-      lines = _applyPadding(lines, contentWidth);
-      contentWidth += _padding.horizontal;
+      lines = _applyPadding(lines);
     }
 
-    // Apply alignment/padding to width
+    // Apply alignment to reach target width
     // Like lipgloss, this runs when there are multiple lines OR when width is set
-    // to ensure content is padded to the specified width
-    if ((lines.length > 1 || _hasFlag(_PropBits.width)) && contentWidth > 0) {
-      lines = _alignLines(lines, contentWidth);
+    // The target width is the full _width (including padding), or the widest line if no width set
+    final alignWidth = _hasFlag(_PropBits.width) && _width > 0 
+        ? _width 
+        : _getMaxLineWidth(lines);
+    if ((lines.length > 1 || _hasFlag(_PropBits.width)) && alignWidth > 0) {
+      lines = _alignLines(lines, alignWidth);
     }
+    
+    // Update contentWidth after alignment for border
+    contentWidth = alignWidth;
 
     // Apply border
     if (_hasFlag(_PropBits.border) && _border != null && _border!.isVisible) {
@@ -1337,46 +2000,65 @@ class Style {
     return result;
   }
 
-  List<String> _alignLines(List<String> lines, int width) {
-    return lines.map((line) {
-      final visible = visibleLength(line);
-      if (visible >= width) return line;
+  /// Aligns lines horizontally, like lipgloss's alignTextHorizontal.
+  /// 
+  /// For each line:
+  /// 1. Calculate shortAmount = widestLine - lineWidth (to match widest line)
+  /// 2. Add additional space if width > (shortAmount + lineWidth)
+  /// This ensures all lines become the same width, and reach the target width if set.
+  List<String> _alignLines(List<String> lines, int targetWidth) {
+    if (lines.isEmpty) return lines;
 
-      final diff = width - visible;
+    // Find the widest line
+    final widestLine = lines
+        .map(visibleLength)
+        .reduce((a, b) => a > b ? a : b);
+
+    return lines.map((line) {
+      final lineWidth = visibleLength(line);
+      var shortAmount = widestLine - lineWidth; // difference from widest line
+      
+      // Add more if we need to reach target width
+      final neededForWidth = targetWidth - (shortAmount + lineWidth);
+      if (neededForWidth > 0) {
+        shortAmount += neededForWidth;
+      }
+
+      if (shortAmount <= 0) return line;
+
       switch (_align) {
         case HorizontalAlign.left:
-          return '$line${' ' * diff}';
+          return '$line${' ' * shortAmount}';
         case HorizontalAlign.center:
-          final left = diff ~/ 2;
-          final right = diff - left;
+          final left = shortAmount ~/ 2;
+          final right = shortAmount - left;
           return '${' ' * left}$line${' ' * right}';
         case HorizontalAlign.right:
-          return '${' ' * diff}$line';
+          return '${' ' * shortAmount}$line';
       }
     }).toList();
   }
 
-  List<String> _applyPadding(List<String> lines, int contentWidth) {
+  /// Applies padding (fixed spaces, not filling to width).
+  /// Like lipgloss, padding adds fixed space characters - alignment fills to width later.
+  List<String> _applyPadding(List<String> lines) {
     final result = <String>[];
-    final horizontalPad = ' ' * _padding.left;
-    final horizontalPadRight = ' ' * _padding.right;
-    final totalWidth = contentWidth + _padding.horizontal;
+    final leftPad = ' ' * _padding.left;
+    final rightPad = ' ' * _padding.right;
 
-    // Top padding
+    // Top padding - empty lines (will be filled by alignment)
     for (var i = 0; i < _padding.top; i++) {
-      result.add(' ' * totalWidth);
+      result.add('');
     }
 
-    // Content with horizontal padding
+    // Content with horizontal padding (fixed spaces, not filling)
     for (final line in lines) {
-      final visible = visibleLength(line);
-      final rightFill = ' ' * (contentWidth - visible);
-      result.add('$horizontalPad$line$rightFill$horizontalPadRight');
+      result.add('$leftPad$line$rightPad');
     }
 
-    // Bottom padding
+    // Bottom padding - empty lines (will be filled by alignment)
     for (var i = 0; i < _padding.bottom; i++) {
-      result.add(' ' * totalWidth);
+      result.add('');
     }
 
     return result;

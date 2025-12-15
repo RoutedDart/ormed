@@ -291,6 +291,82 @@ class Border {
       middleBottom != null ||
       middle != null;
 
+  /// Returns the width of the top border.
+  ///
+  /// If borders contain runes of varying widths, the widest rune is returned.
+  /// If no border exists on the top edge, 0 is returned.
+  int getTopSize() {
+    return _getBorderEdgeWidth([topLeft, top, topRight]);
+  }
+
+  /// Returns the width of the right border.
+  ///
+  /// If borders contain runes of varying widths, the widest rune is returned.
+  /// If no border exists on the right edge, 0 is returned.
+  int getRightSize() {
+    return _getBorderEdgeWidth([topRight, right, bottomRight]);
+  }
+
+  /// Returns the width of the bottom border.
+  ///
+  /// If borders contain runes of varying widths, the widest rune is returned.
+  /// If no border exists on the bottom edge, 0 is returned.
+  int getBottomSize() {
+    return _getBorderEdgeWidth([bottomLeft, bottom, bottomRight]);
+  }
+
+  /// Returns the width of the left border.
+  ///
+  /// If borders contain runes of varying widths, the widest rune is returned.
+  /// If no border exists on the left edge, 0 is returned.
+  int getLeftSize() {
+    return _getBorderEdgeWidth([topLeft, left, bottomLeft]);
+  }
+
+  /// Helper to get the maximum rune width among border parts.
+  static int _getBorderEdgeWidth(List<String> borderParts) {
+    var maxWidth = 0;
+    for (final piece in borderParts) {
+      final w = _maxRuneWidth(piece);
+      if (w > maxWidth) {
+        maxWidth = w;
+      }
+    }
+    return maxWidth;
+  }
+
+  /// Returns the maximum display width of any rune in a string.
+  static int _maxRuneWidth(String s) {
+    if (s.isEmpty) return 0;
+    var maxWidth = 0;
+    for (final rune in s.runes) {
+      final w = _runeWidth(rune);
+      if (w > maxWidth) {
+        maxWidth = w;
+      }
+    }
+    return maxWidth;
+  }
+
+  /// Returns the display width of a single rune.
+  static int _runeWidth(int rune) {
+    // Full-width characters (CJK, emoji, etc.)
+    if ((rune >= 0x1100 && rune <= 0x115F) || // Hangul Jamo
+        (rune >= 0x2E80 && rune <= 0x9FFF) || // CJK
+        (rune >= 0xAC00 && rune <= 0xD7A3) || // Hangul Syllables
+        (rune >= 0xF900 && rune <= 0xFAFF) || // CJK Compatibility
+        (rune >= 0xFE10 && rune <= 0xFE1F) || // Vertical Forms
+        (rune >= 0xFE30 && rune <= 0xFE6F) || // CJK Compatibility Forms
+        (rune >= 0xFF00 && rune <= 0xFF60) || // Fullwidth ASCII
+        (rune >= 0xFFE0 && rune <= 0xFFE6) || // Fullwidth symbols
+        (rune >= 0x20000 && rune <= 0x3FFFF) || // CJK Extensions
+        (rune >= 0x1F300 && rune <= 0x1F9FF)) {
+      // Emoji
+      return 2;
+    }
+    return 1;
+  }
+
   /// Creates a copy with the specified values replaced.
   Border copyWith({
     String? top,

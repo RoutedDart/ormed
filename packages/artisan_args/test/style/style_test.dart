@@ -150,6 +150,110 @@ void main() {
       });
     });
 
+    group('extended Style properties', () {
+      test('tabWidth sets and retrieves tab width', () {
+        final style = Style().tabWidth(4);
+        expect(style.getTabWidth, equals(4));
+      });
+
+      test('tabWidth defaults to 4 when not set', () {
+        final style = Style();
+        expect(style.getTabWidth, equals(4));
+      });
+
+      test('underlineSpaces sets and retrieves underline spaces', () {
+        final style = Style().underlineSpaces();
+        expect(style.isUnderlineSpaces, isTrue);
+      });
+
+      test('underlineSpaces with false parameter', () {
+        final style = Style().underlineSpaces(false);
+        expect(style.isUnderlineSpaces, isFalse);
+      });
+
+      test('strikethroughSpaces sets and retrieves strikethrough spaces', () {
+        final style = Style().strikethroughSpaces();
+        expect(style.isStrikethroughSpaces, isTrue);
+      });
+
+      test('strikethroughSpaces with false parameter', () {
+        final style = Style().strikethroughSpaces(false);
+        expect(style.isStrikethroughSpaces, isFalse);
+      });
+
+      test('marginBackground sets and retrieves margin background', () {
+        final color = Colors.red;
+        final style = Style().marginBackground(color);
+        expect(style.getMarginBackground, equals(color));
+      });
+
+      test('marginBackground is null when not set', () {
+        final style = Style();
+        expect(style.getMarginBackground, isNull);
+      });
+
+      test('getValue returns set string value', () {
+        final style = Style().setString('test');
+        expect(style.getValue, equals('test'));
+      });
+
+      test('getValue returns null when not set', () {
+        final style = Style();
+        expect(style.getValue, isNull);
+      });
+
+      test('unsetTabWidth clears tab width to default', () {
+        final style = Style().tabWidth(8).unsetTabWidth();
+        expect(style.getTabWidth, equals(4)); // back to default
+      });
+
+      test('unsetUnderlineSpaces clears underline spaces', () {
+        final style = Style().underlineSpaces().unsetUnderlineSpaces();
+        expect(style.isUnderlineSpaces, isFalse);
+      });
+
+      test('unsetStrikethroughSpaces clears strikethrough spaces', () {
+        final style = Style().strikethroughSpaces().unsetStrikethroughSpaces();
+        expect(style.isStrikethroughSpaces, isFalse);
+      });
+
+      test('unsetMarginBackground clears margin background', () {
+        final style = Style().marginBackground(Colors.red).unsetMarginBackground();
+        expect(style.getMarginBackground, isNull);
+      });
+
+      test('extended properties are copied', () {
+        final original = Style()
+            .tabWidth(8)
+            .underlineSpaces()
+            .strikethroughSpaces()
+            .marginBackground(Colors.blue)
+            .setString('hello');
+
+        final copied = original.copy();
+
+        expect(copied.getTabWidth, equals(8));
+        expect(copied.isUnderlineSpaces, isTrue);
+        expect(copied.isStrikethroughSpaces, isTrue);
+        expect(copied.getMarginBackground, equals(Colors.blue));
+        expect(copied.getValue, equals('hello'));
+      });
+
+      test('extended properties are inherited', () {
+        final base = Style();
+        final other = Style()
+            .tabWidth(4)
+            .underlineSpaces()
+            .marginBackground(Colors.green);
+
+        base.inherit(other);
+
+        expect(base.getTabWidth, equals(4));
+        expect(base.isUnderlineSpaces, isTrue);
+        expect(base.getMarginBackground, equals(Colors.green));
+      });
+    });
+
     group('copy', () {
       test('copy creates independent instance', () {
         final original = Style().bold().foreground(Colors.green);
@@ -496,6 +600,33 @@ void main() {
       expect(Border.rounded, equals(Border.rounded));
       expect(Border.rounded, isNot(equals(Border.normal)));
     });
+
+    test('getTopSize returns width of top border elements', () {
+      expect(Border.normal.getTopSize(), equals(1));
+      expect(Border.none.getTopSize(), equals(0));
+      expect(Border.ascii.getTopSize(), equals(1));
+    });
+
+    test('getBottomSize returns width of bottom border elements', () {
+      expect(Border.normal.getBottomSize(), equals(1));
+      expect(Border.none.getBottomSize(), equals(0));
+    });
+
+    test('getLeftSize returns width of left border elements', () {
+      expect(Border.normal.getLeftSize(), equals(1));
+      expect(Border.none.getLeftSize(), equals(0));
+    });
+
+    test('getRightSize returns width of right border elements', () {
+      expect(Border.normal.getRightSize(), equals(1));
+      expect(Border.none.getRightSize(), equals(0));
+    });
+
+    test('size helpers work with block border', () {
+      // Block characters are typically single-width
+      expect(Border.block.getTopSize(), equals(1));
+      expect(Border.block.getLeftSize(), equals(1));
+    });
   });
 
   group('BorderSides', () {
@@ -636,6 +767,92 @@ void main() {
     });
   });
 
+  group('CompleteAdaptiveColor', () {
+    test('uses dark variant on dark backgrounds', () {
+      final color = CompleteAdaptiveColor(
+        light: CompleteColor(
+          trueColor: '#000000',
+          ansi256: '0',
+          ansi: '0',
+        ),
+        dark: CompleteColor(
+          trueColor: '#ffffff',
+          ansi256: '255',
+          ansi: '7',
+        ),
+      );
+
+      final ansi = color.toAnsi(
+        ColorProfile.ansi256,
+        hasDarkBackground: true,
+      );
+      expect(ansi, contains('255')); // Dark variant
+    });
+
+    test('uses light variant on light backgrounds', () {
+      final color = CompleteAdaptiveColor(
+        light: CompleteColor(
+          trueColor: '#000000',
+          ansi256: '0',
+          ansi: '0',
+        ),
+        dark: CompleteColor(
+          trueColor: '#ffffff',
+          ansi256: '255',
+          ansi: '7',
+        ),
+      );
+
+      final ansi = color.toAnsi(
+        ColorProfile.ansi256,
+        hasDarkBackground: false,
+      );
+      expect(ansi, contains(';5;0')); // Light variant
+    });
+
+    test('respects color profile', () {
+      final color = CompleteAdaptiveColor(
+        light: CompleteColor(
+          trueColor: '#ff0000',
+          ansi256: '196',
+          ansi: '1',
+        ),
+        dark: CompleteColor(
+          trueColor: '#00ff00',
+          ansi256: '46',
+          ansi: '2',
+        ),
+      );
+
+      // ANSI profile on dark bg
+      final ansi = color.toAnsi(
+        ColorProfile.ansi,
+        hasDarkBackground: true,
+      );
+      expect(ansi, contains('32')); // 30 + 2 = green in ANSI
+    });
+
+    test('equality works', () {
+      final c1 = CompleteAdaptiveColor(
+        light: CompleteColor(trueColor: '#000'),
+        dark: CompleteColor(trueColor: '#fff'),
+      );
+      final c2 = CompleteAdaptiveColor(
+        light: CompleteColor(trueColor: '#000'),
+        dark: CompleteColor(trueColor: '#fff'),
+      );
+      expect(c1, equals(c2));
+    });
+
+    test('toString works', () {
+      final color = CompleteAdaptiveColor(
+        light: CompleteColor(trueColor: '#000'),
+        dark: CompleteColor(trueColor: '#fff'),
+      );
+      expect(color.toString(), contains('CompleteAdaptiveColor'));
+    });
+  });
+
   group('NoColor', () {
     test('toAnsi returns empty string', () {
       expect(NoColor().toAnsi(ColorProfile.trueColor), isEmpty);
@@ -643,6 +860,83 @@ void main() {
 
     test('equality works', () {
       expect(NoColor(), equals(NoColor()));
+    });
+  });
+
+  group('align with optional vertical', () {
+    test('align with horizontal only', () {
+      final style = Style().align(HorizontalAlign.center);
+      expect(style.getAlign, equals(HorizontalAlign.center));
+    });
+
+    test('align with horizontal and vertical', () {
+      final style = Style().align(HorizontalAlign.center, VerticalAlign.center);
+      expect(style.getAlign, equals(HorizontalAlign.center));
+      expect(style.getAlignVertical, equals(VerticalAlign.center));
+    });
+
+    test('align sets both flags when vertical provided', () {
+      final style = Style().align(HorizontalAlign.right, VerticalAlign.bottom);
+      // Both should be tracked as set
+      expect(style.getAlign, equals(HorizontalAlign.right));
+      expect(style.getAlignVertical, equals(VerticalAlign.bottom));
+    });
+
+    test('align only sets horizontal flag when vertical not provided', () {
+      final base = Style().alignVertical(VerticalAlign.top);
+      final style = base.align(HorizontalAlign.center);
+      // Horizontal should change, vertical should remain
+      expect(style.getAlign, equals(HorizontalAlign.center));
+      expect(style.getAlignVertical, equals(VerticalAlign.top));
+    });
+  });
+
+  group('border with optional sides', () {
+    test('border with style only', () {
+      final style = Style().border(Border.rounded);
+      expect(style.getBorder, equals(Border.rounded));
+    });
+
+    test('border with specific sides', () {
+      final style = Style().border(Border.rounded, top: true, bottom: true);
+      expect(style.getBorder, equals(Border.rounded));
+      expect(style.getBorderSides.top, isTrue);
+      expect(style.getBorderSides.right, isFalse);
+      expect(style.getBorderSides.bottom, isTrue);
+      expect(style.getBorderSides.left, isFalse);
+    });
+
+    test('border with all sides specified', () {
+      final style = Style().border(
+        Border.double,
+        top: true,
+        right: true,
+        bottom: false,
+        left: false,
+      );
+      expect(style.getBorder, equals(Border.double));
+      expect(style.getBorderSides.top, isTrue);
+      expect(style.getBorderSides.right, isTrue);
+      expect(style.getBorderSides.bottom, isFalse);
+      expect(style.getBorderSides.left, isFalse);
+    });
+
+    test('borderStyle only sets border without affecting sides', () {
+      final style = Style()
+          .borderSides(BorderSides(top: true, bottom: true))
+          .borderStyle(Border.thick);
+      expect(style.getBorder, equals(Border.thick));
+      expect(style.getBorderSides.top, isTrue);
+      expect(style.getBorderSides.bottom, isTrue);
+    });
+
+    test('border without sides does not reset existing sides', () {
+      final style = Style()
+          .borderSides(BorderSides(top: true, right: true, bottom: true, left: true))
+          .border(Border.rounded);
+      // Should keep the existing sides
+      expect(style.getBorderSides.top, isTrue);
+      expect(style.getBorderSides.right, isTrue);
     });
   });
 }

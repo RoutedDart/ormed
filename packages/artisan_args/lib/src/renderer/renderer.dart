@@ -29,16 +29,29 @@ abstract class Renderer {
   /// The color profile of the output target.
   ColorProfile get colorProfile;
 
+  /// Sets the color profile for this renderer.
+  set colorProfile(ColorProfile profile);
+
   /// Whether the output target has a dark background.
   ///
   /// Used by [AdaptiveColor] to select appropriate color variants.
   bool get hasDarkBackground;
+
+  /// Sets whether this renderer has a dark background.
+  set hasDarkBackground(bool value);
 
   /// Writes text to the output without a trailing newline.
   void write(String text);
 
   /// Writes text to the output followed by a newline.
   void writeln([String text = '']);
+
+  /// Gets the output sink/writer for this renderer.
+  ///
+  /// Returns the underlying output destination.
+  /// For [TerminalRenderer], this is the IOSink.
+  /// For [StringRenderer], this returns null (use [output] getter instead).
+  IOSink? get output;
 }
 
 /// A renderer that outputs to a terminal.
@@ -56,26 +69,44 @@ class TerminalRenderer implements Renderer {
     ColorProfile? forceProfile,
     bool? forceDarkBackground,
   }) : _output = output ?? stdout,
-       _forceProfile = forceProfile,
-       _forceDarkBackground = forceDarkBackground;
+       _overrideProfile = forceProfile,
+       _overrideDarkBackground = forceDarkBackground;
 
-  final IOSink _output;
-  final ColorProfile? _forceProfile;
-  final bool? _forceDarkBackground;
+  IOSink _output;
+  ColorProfile? _overrideProfile;
+  bool? _overrideDarkBackground;
 
   ColorProfile? _cachedProfile;
   bool? _cachedDarkBackground;
 
   @override
   ColorProfile get colorProfile {
-    if (_forceProfile != null) return _forceProfile;
+    if (_overrideProfile != null) return _overrideProfile!;
     return _cachedProfile ??= _detectColorProfile();
   }
 
   @override
+  set colorProfile(ColorProfile profile) {
+    _overrideProfile = profile;
+  }
+
+  @override
   bool get hasDarkBackground {
-    if (_forceDarkBackground != null) return _forceDarkBackground;
+    if (_overrideDarkBackground != null) return _overrideDarkBackground!;
     return _cachedDarkBackground ??= _detectDarkBackground();
+  }
+
+  @override
+  set hasDarkBackground(bool value) {
+    _overrideDarkBackground = value;
+  }
+
+  @override
+  IOSink get output => _output;
+
+  /// Sets the output sink for this renderer.
+  set output(IOSink sink) {
+    _output = sink;
   }
 
   @override
@@ -214,16 +245,32 @@ class StringRenderer implements Renderer {
   /// [colorProfile] defaults to [ColorProfile.trueColor] for testing.
   /// [hasDarkBackground] defaults to true.
   StringRenderer({ColorProfile? colorProfile, bool? hasDarkBackground})
-    : colorProfile = colorProfile ?? ColorProfile.trueColor,
-      hasDarkBackground = hasDarkBackground ?? true;
+    : _colorProfile = colorProfile ?? ColorProfile.trueColor,
+      _hasDarkBackground = hasDarkBackground ?? true;
 
   final StringBuffer _buffer = StringBuffer();
 
-  @override
-  final ColorProfile colorProfile;
+  ColorProfile _colorProfile;
+  bool _hasDarkBackground;
 
   @override
-  final bool hasDarkBackground;
+  ColorProfile get colorProfile => _colorProfile;
+
+  @override
+  set colorProfile(ColorProfile profile) {
+    _colorProfile = profile;
+  }
+
+  @override
+  bool get hasDarkBackground => _hasDarkBackground;
+
+  @override
+  set hasDarkBackground(bool value) {
+    _hasDarkBackground = value;
+  }
+
+  @override
+  IOSink? get output => null;
 
   @override
   void write(String text) => _buffer.write(text);
@@ -231,8 +278,8 @@ class StringRenderer implements Renderer {
   @override
   void writeln([String text = '']) => _buffer.writeln(text);
 
-  /// Gets the captured output.
-  String get output => _buffer.toString();
+  /// Gets the captured output as a string.
+  String get stringOutput => _buffer.toString();
 
   /// Gets the output and clears the buffer.
   String flush() {
@@ -263,16 +310,33 @@ class StringRenderer implements Renderer {
 /// Useful for silencing output in quiet mode or benchmarking.
 class NullRenderer implements Renderer {
   /// Creates a null renderer.
-  const NullRenderer({
-    this.colorProfile = ColorProfile.ascii,
-    this.hasDarkBackground = true,
-  });
+  NullRenderer({
+    ColorProfile colorProfile = ColorProfile.ascii,
+    bool hasDarkBackground = true,
+  })  : _colorProfile = colorProfile,
+        _hasDarkBackground = hasDarkBackground;
+
+  ColorProfile _colorProfile;
+  bool _hasDarkBackground;
 
   @override
-  final ColorProfile colorProfile;
+  ColorProfile get colorProfile => _colorProfile;
 
   @override
-  final bool hasDarkBackground;
+  set colorProfile(ColorProfile profile) {
+    _colorProfile = profile;
+  }
+
+  @override
+  bool get hasDarkBackground => _hasDarkBackground;
+
+  @override
+  set hasDarkBackground(bool value) {
+    _hasDarkBackground = value;
+  }
+
+  @override
+  IOSink? get output => null;
 
   @override
   void write(String text) {}

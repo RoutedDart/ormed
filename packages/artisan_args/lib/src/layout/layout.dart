@@ -28,6 +28,75 @@
 library;
 
 import '../style/properties.dart';
+import '../style/color.dart';
+import '../style/style.dart';
+
+/// Options for rendering whitespace in layout functions.
+///
+/// Used with [Layout.place] to customize how empty space is filled.
+class WhitespaceOptions {
+  /// Characters to cycle through when filling whitespace.
+  final String chars;
+
+  /// Foreground color for the whitespace characters.
+  final Color? foreground;
+
+  /// Background color for the whitespace.
+  final Color? background;
+
+  const WhitespaceOptions({
+    this.chars = ' ',
+    this.foreground,
+    this.background,
+  });
+
+  /// Renders whitespace of the given width using these options.
+  String render(int width) {
+    if (width <= 0) return '';
+
+    final runes = chars.runes.toList();
+    if (runes.isEmpty) return ' ' * width;
+
+    final buffer = StringBuffer();
+    var j = 0;
+    var currentWidth = 0;
+
+    // Cycle through runes to fill the width
+    while (currentWidth < width) {
+      final char = String.fromCharCode(runes[j]);
+      final charWidth = Layout._charWidth(runes[j]);
+
+      // Don't exceed width
+      if (currentWidth + charWidth > width) break;
+
+      buffer.write(char);
+      currentWidth += charWidth;
+
+      j = (j + 1) % runes.length;
+    }
+
+    // Fill any remaining gap with spaces
+    if (currentWidth < width) {
+      buffer.write(' ' * (width - currentWidth));
+    }
+
+    var result = buffer.toString();
+
+    // Apply styling if needed
+    if (foreground != null || background != null) {
+      var style = Style();
+      if (foreground != null) {
+        style = style.foreground(foreground!);
+      }
+      if (background != null) {
+        style = style.background(background!);
+      }
+      result = style.render(result);
+    }
+
+    return result;
+  }
+}
 
 /// Layout utilities for composing rendered blocks.
 class Layout {
@@ -326,6 +395,9 @@ class Layout {
   /// Creates a box of the given [width] and [height], and positions
   /// the [content] according to the alignment parameters.
   ///
+  /// Use [whitespace] to customize how empty space is filled with
+  /// custom characters and colors.
+  ///
   /// ```dart
   /// final centered = Layout.place(
   ///   width: 80,
@@ -333,6 +405,10 @@ class Layout {
   ///   horizontal: HorizontalAlign.center,
   ///   vertical: VerticalAlign.center,
   ///   content: 'Hello, World!',
+  ///   whitespace: WhitespaceOptions(
+  ///     chars: '猫咪',
+  ///     foreground: Color(0x383838),
+  ///   ),
   /// );
   /// ```
   static String place({
@@ -341,45 +417,115 @@ class Layout {
     required HorizontalAlign horizontal,
     required VerticalAlign vertical,
     required String content,
-    String fillChar = ' ',
+    WhitespaceOptions? whitespace,
+    @Deprecated('Use whitespace parameter instead') String fillChar = ' ',
   }) {
-    final lines = content.split('\n');
-    final contentHeight = lines.length;
+    final ws = whitespace ?? WhitespaceOptions(chars: fillChar);
+    // First place horizontally, then vertically (like Go)
+    final horizontalPlaced = _placeHorizontal(width, horizontal, content, ws);
+    return _placeVertical(height, vertical, horizontalPlaced, ws);
+  }
+
+  /// Places content horizontally within a given width.
+  static String _placeHorizontal(
+    int width,
+    HorizontalAlign pos,
+    String str,
+    WhitespaceOptions ws,
+  ) {
+    final lines = str.split('\n');
     final contentWidth = lines.isEmpty
         ? 0
         : lines.map(visibleLength).reduce((a, b) => a > b ? a : b);
 
-    // Ensure content fits
-    final effectiveWidth = width > contentWidth ? width : contentWidth;
-    final effectiveHeight = height > contentHeight ? height : contentHeight;
+    final gap = width - contentWidth;
+    if (gap <= 0) return str;
 
-    // Align horizontally
-    final alignedLines = lines
-        .map((l) => alignText(l, effectiveWidth, horizontal))
-        .toList();
+    final buffer = StringBuffer();
 
-    // Pad to width
-    final paddedLines = alignedLines
-        .map((l) => pad(l, effectiveWidth))
-        .toList();
+    for (var i = 0; i < lines.length; i++) {
+      final line = lines[i];
+      // Is this line shorter than the longest line?
+      final short = contentWidth - visibleLength(line);
+      final totalGap = gap + (short > 0 ? short : 0);
 
-    // Align vertically
-    final verticalPadded = _padBlockHeight(
-      paddedLines,
-      effectiveHeight,
-      effectiveWidth,
-      vertical,
-    );
+      switch (pos) {
+        case HorizontalAlign.left:
+          buffer.write(line);
+          buffer.write(ws.render(totalGap));
 
-    // Replace empty lines with fill char if needed
-    final result = verticalPadded.map((l) {
-      if (l.trim().isEmpty && fillChar != ' ') {
-        return fillChar * effectiveWidth;
+        case HorizontalAlign.right:
+          buffer.write(ws.render(totalGap));
+          buffer.write(line);
+
+        case HorizontalAlign.center:
+          final left = totalGap ~/ 2;
+          final right = totalGap - left;
+          buffer.write(ws.render(left));
+          buffer.write(line);
+          buffer.write(ws.render(right));
       }
-      return l;
-    }).toList();
 
-    return result.join('\n');
+      if (i < lines.length - 1) {
+        buffer.write('\n');
+      }
+    }
+
+    return buffer.toString();
+  }
+
+  /// Places content vertically within a given height.
+  static String _placeVertical(
+    int height,
+    VerticalAlign pos,
+    String str,
+    WhitespaceOptions ws,
+  ) {
+    final lines = str.split('\n');
+    final contentHeight = lines.length;
+    final gap = height - contentHeight;
+
+    if (gap <= 0) return str;
+
+    // Get width from content
+    final width = lines.isEmpty
+        ? 0
+        : lines.map(visibleLength).reduce((a, b) => a > b ? a : b);
+
+    final emptyLine = ws.render(width);
+    final buffer = StringBuffer();
+
+    switch (pos) {
+      case VerticalAlign.top:
+        buffer.write(str);
+        for (var i = 0; i < gap; i++) {
+          buffer.write('\n');
+          buffer.write(emptyLine);
+        }
+
+      case VerticalAlign.bottom:
+        for (var i = 0; i < gap; i++) {
+          buffer.write(emptyLine);
+          buffer.write('\n');
+        }
+        buffer.write(str);
+
+      case VerticalAlign.center:
+        final top = gap ~/ 2;
+        final bottom = gap - top;
+
+        for (var i = 0; i < top; i++) {
+          buffer.write(emptyLine);
+          buffer.write('\n');
+        }
+        buffer.write(str);
+        for (var i = 0; i < bottom; i++) {
+          buffer.write('\n');
+          buffer.write(emptyLine);
+        }
+    }
+
+    return buffer.toString();
   }
 
   /// Places content within a width, respecting the given alignment.
@@ -410,6 +556,52 @@ class Layout {
 
     final padded = _padBlockHeight(lines, height, width, align);
     return padded.join('\n');
+  }
+
+  /// Places a string or text block horizontally in an unstyled block of a given
+  /// width.
+  ///
+  /// If the given [width] is shorter than the max width of the string
+  /// (measured by its longest line) this will be a noop.
+  ///
+  /// ```dart
+  /// final centered = Layout.placeHorizontal(
+  ///   80,
+  ///   HorizontalAlign.center,
+  ///   'Hello!',
+  /// );
+  /// ```
+  static String placeHorizontal(
+    int width,
+    HorizontalAlign pos,
+    String str, {
+    WhitespaceOptions? whitespace,
+  }) {
+    final ws = whitespace ?? const WhitespaceOptions();
+    return _placeHorizontal(width, pos, str, ws);
+  }
+
+  /// Places a string or text block vertically in an unstyled block of a given
+  /// height.
+  ///
+  /// If the given [height] is shorter than the height of the string
+  /// (measured by its newlines) then this will be a noop.
+  ///
+  /// ```dart
+  /// final centered = Layout.placeVertical(
+  ///   24,
+  ///   VerticalAlign.center,
+  ///   'Hello!',
+  /// );
+  /// ```
+  static String placeVertical(
+    int height,
+    VerticalAlign pos,
+    String str, {
+    WhitespaceOptions? whitespace,
+  }) {
+    final ws = whitespace ?? const WhitespaceOptions();
+    return _placeVertical(height, pos, str, ws);
   }
 
   // ─────────────────────────────────────────────────────────────────────────────

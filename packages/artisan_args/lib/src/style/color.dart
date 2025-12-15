@@ -362,6 +362,83 @@ class CompleteColor extends Color {
       'CompleteColor(trueColor: $trueColor, ansi256: $ansi256, ansi: $ansi)';
 }
 
+/// A color with explicit values for each profile, with light and dark variants.
+///
+/// Combines [CompleteColor] with adaptive background detection.
+/// Use this when you need full control over color appearance at each
+/// capability level AND need to adapt to light/dark backgrounds.
+///
+/// ```dart
+/// final brand = CompleteAdaptiveColor(
+///   light: CompleteColor(
+///     trueColor: '#0044aa',
+///     ansi256: '25',
+///     ansi: '4',  // Blue
+///   ),
+///   dark: CompleteColor(
+///     trueColor: '#66aaff',
+///     ansi256: '117',
+///     ansi: '6',  // Cyan
+///   ),
+/// );
+/// ```
+class CompleteAdaptiveColor extends Color {
+  /// Creates a complete adaptive color with light and dark variants.
+  const CompleteAdaptiveColor({required this.light, required this.dark});
+
+  /// Complete color to use on light backgrounds.
+  final CompleteColor light;
+
+  /// Complete color to use on dark backgrounds.
+  final CompleteColor dark;
+
+  @override
+  String toAnsi(
+    ColorProfile profile, {
+    bool background = false,
+    bool hasDarkBackground = true,
+  }) {
+    final color = hasDarkBackground ? dark : light;
+    return color.toAnsi(
+      profile,
+      background: background,
+      hasDarkBackground: hasDarkBackground,
+    );
+  }
+
+  @override
+  Color get dim => CompleteAdaptiveColor(
+        light: CompleteColor(
+          trueColor: BasicColor(light.trueColor).dim is BasicColor
+              ? (BasicColor(light.trueColor).dim as BasicColor).value
+              : light.trueColor,
+          ansi256: light.ansi256,
+          ansi: light.ansi,
+        ),
+        dark: CompleteColor(
+          trueColor: BasicColor(dark.trueColor).dim is BasicColor
+              ? (BasicColor(dark.trueColor).dim as BasicColor).value
+              : dark.trueColor,
+          ansi256: dark.ansi256,
+          ansi: dark.ansi,
+        ),
+      );
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CompleteAdaptiveColor &&
+          other.light == light &&
+          other.dark == dark);
+
+  @override
+  int get hashCode => Object.hash(light, dark);
+
+  @override
+  String toString() =>
+      'CompleteAdaptiveColor(light: $light, dark: $dark)';
+}
+
 /// No color (absence of color styling).
 ///
 /// Use this to explicitly indicate no color should be applied.

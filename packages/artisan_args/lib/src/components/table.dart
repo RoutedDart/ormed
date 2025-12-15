@@ -198,12 +198,25 @@ class Table extends FluentComponent<Table> {
   final List<String> _headers = [];
   final List<List<String>> _rows = [];
   TableStyleFunc? _styleFunc;
-  style_border.Border _border = style_border.Border.ascii;
+  style_border.Border _border = style_border.Border.rounded;
   int _padding = 1;
   int? _width;
+  int? _height;
+  int _offset = 0;
+  // ignore: unused_field
+  bool _wrap = true; // Reserved for future cell wrapping support
   Style? _headerStyle;
   Style? _borderStyle;
   Style? _cellStyle;
+
+  // Border visibility flags
+  bool _borderTop = true;
+  bool _borderBottom = true;
+  bool _borderLeft = true;
+  bool _borderRight = true;
+  bool _borderHeader = true;
+  bool _borderColumn = true;
+  bool _borderRow = false;
 
   Style? _styleForCell(int row, int col, String raw) {
     if (_styleFunc != null) {
@@ -248,6 +261,12 @@ class Table extends FluentComponent<Table> {
     return this;
   }
 
+  /// Clears all rows from the table.
+  Table clearRows() {
+    _rows.clear();
+    return this;
+  }
+
   /// Sets the style function for per-cell conditional styling.
   ///
   /// The function receives [row] (-1 for header), [col], and [data],
@@ -275,6 +294,24 @@ class Table extends FluentComponent<Table> {
     return this;
   }
 
+  /// Sets the table height (limits visible rows).
+  Table height(int value) {
+    _height = value;
+    return this;
+  }
+
+  /// Sets the row offset (skips first N rows).
+  Table offset(int value) {
+    _offset = value;
+    return this;
+  }
+
+  /// Sets whether text should wrap in cells.
+  Table wrap(bool value) {
+    _wrap = value;
+    return this;
+  }
+
   /// Sets the header row style.
   Table headerStyle(Style style) {
     _headerStyle = style;
@@ -290,6 +327,48 @@ class Table extends FluentComponent<Table> {
   /// Sets the default cell style.
   Table cellStyle(Style style) {
     _cellStyle = style;
+    return this;
+  }
+
+  /// Sets whether to show the top border.
+  Table borderTop(bool value) {
+    _borderTop = value;
+    return this;
+  }
+
+  /// Sets whether to show the bottom border.
+  Table borderBottom(bool value) {
+    _borderBottom = value;
+    return this;
+  }
+
+  /// Sets whether to show the left border.
+  Table borderLeft(bool value) {
+    _borderLeft = value;
+    return this;
+  }
+
+  /// Sets whether to show the right border.
+  Table borderRight(bool value) {
+    _borderRight = value;
+    return this;
+  }
+
+  /// Sets whether to show the header separator.
+  Table borderHeader(bool value) {
+    _borderHeader = value;
+    return this;
+  }
+
+  /// Sets whether to show column separators.
+  Table borderColumn(bool value) {
+    _borderColumn = value;
+    return this;
+  }
+
+  /// Sets whether to show row separators.
+  Table borderRow(bool value) {
+    _borderRow = value;
     return this;
   }
 
@@ -327,8 +406,8 @@ class Table extends FluentComponent<Table> {
     // Adjust for fixed width if specified
     if (_width != null) {
       final totalPadding = _padding * 2 * columns;
-      final borders = columns + 1; // |col|col|col|
-      final available = _width! - totalPadding - borders;
+      final borderCount = _borderColumn ? columns + 1 : 2;
+      final available = _width! - totalPadding - borderCount;
       if (available > 0) {
         final perColumn = available ~/ columns;
         for (var i = 0; i < widths.length; i++) {
@@ -349,7 +428,10 @@ class Table extends FluentComponent<Table> {
     // Build horizontal border line
     String buildBorder(String left, String mid, String right, String fill) {
       final parts = widths.map((w) => fill * (w + _padding * 2));
-      return styleBorderText('$left${parts.join(mid)}$right');
+      final leftChar = _borderLeft ? left : '';
+      final rightChar = _borderRight ? right : '';
+      final midChar = _borderColumn ? mid : '';
+      return styleBorderText('$leftChar${parts.join(midChar)}$rightChar');
     }
 
     // Build a row with optional styling - handles multi-line cells
@@ -381,9 +463,10 @@ class Table extends FluentComponent<Table> {
           final cellContent = '$pad$line${' ' * fillCount}$pad';
           parts.add(cellContent);
         }
-        outputRows.add(
-          '${styleBorderText(b.left)}${parts.join(styleBorderText(b.left))}${styleBorderText(b.right)}',
-        );
+        final leftBorder = _borderLeft ? styleBorderText(b.left) : '';
+        final rightBorder = _borderRight ? styleBorderText(b.right) : '';
+        final colSep = _borderColumn ? styleBorderText(b.left) : '';
+        outputRows.add('$leftBorder${parts.join(colSep)}$rightBorder');
       }
 
       return outputRows;
@@ -392,9 +475,11 @@ class Table extends FluentComponent<Table> {
     final buffer = StringBuffer();
 
     // Top border
-    buffer.writeln(
-      buildBorder(b.topLeft, b.middleTop ?? b.top, b.topRight, b.top),
-    );
+    if (_borderTop) {
+      buffer.writeln(
+        buildBorder(b.topLeft, b.middleTop ?? b.top, b.topRight, b.top),
+      );
+    }
 
     // Header row
     if (_headers.isNotEmpty) {
@@ -402,42 +487,89 @@ class Table extends FluentComponent<Table> {
         buffer.writeln(line);
       }
       // Header separator
-      buffer.writeln(
-        buildBorder(
-          b.middleLeft ?? b.left,
-          b.middle ?? b.top,
-          b.middleRight ?? b.right,
-          b.top,
-        ),
-      );
+      if (_borderHeader) {
+        buffer.writeln(
+          buildBorder(
+            b.middleLeft ?? b.left,
+            b.middle ?? b.top,
+            b.middleRight ?? b.right,
+            b.top,
+          ),
+        );
+      }
     }
 
-    // Data rows
-    for (var i = 0; i < _rows.length; i++) {
+    // Data rows with offset and height
+    final startRow = _offset.clamp(0, _rows.length);
+    var endRow = _rows.length;
+    if (_height != null) {
+      // Calculate available rows based on height
+      var usedLines = 0;
+      if (_borderTop) usedLines++;
+      if (_headers.isNotEmpty) usedLines++;
+      if (_borderHeader && _headers.isNotEmpty) usedLines++;
+      if (_borderBottom) usedLines++;
+
+      final availableRows = _height! - usedLines;
+      if (availableRows > 0 && startRow + availableRows < endRow) {
+        endRow = startRow + availableRows;
+      }
+    }
+
+    for (var i = startRow; i < endRow; i++) {
       for (final line in buildRow(_rows[i], i)) {
         buffer.writeln(line);
+      }
+      // Row separator (between rows, not after last)
+      if (_borderRow && i < endRow - 1) {
+        buffer.writeln(
+          buildBorder(
+            b.middleLeft ?? b.left,
+            b.middle ?? b.top,
+            b.middleRight ?? b.right,
+            b.top,
+          ),
+        );
       }
     }
 
     // Bottom border
-    buffer.write(
-      buildBorder(
-        b.bottomLeft,
-        b.middleBottom ?? b.bottom,
-        b.bottomRight,
-        b.bottom,
-      ),
-    );
+    if (_borderBottom) {
+      buffer.write(
+        buildBorder(
+          b.bottomLeft,
+          b.middleBottom ?? b.bottom,
+          b.bottomRight,
+          b.bottom,
+        ),
+      );
+    }
 
-    return buffer.toString();
+    return buffer.toString().trimRight();
   }
 
   /// Returns the number of lines in the rendered table.
   @override
   int get lineCount {
-    var count = 2; // Top and bottom borders
-    if (_headers.isNotEmpty) count += 2; // Header row + separator
-    count += _rows.length;
+    var count = 0;
+    if (_borderTop) count++;
+    if (_borderBottom) count++;
+    if (_headers.isNotEmpty) count++; // Header row
+    if (_borderHeader && _headers.isNotEmpty) count++; // Header separator
+
+    final startRow = _offset.clamp(0, _rows.length);
+    var visibleRows = _rows.length - startRow;
+    if (_height != null) {
+      var usedLines = count;
+      final availableRows = _height! - usedLines;
+      if (availableRows > 0 && availableRows < visibleRows) {
+        visibleRows = availableRows;
+      }
+    }
+    count += visibleRows;
+    if (_borderRow && visibleRows > 1) {
+      count += visibleRows - 1; // Row separators
+    }
     return count;
   }
 }

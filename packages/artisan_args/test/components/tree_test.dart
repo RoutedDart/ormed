@@ -423,4 +423,230 @@ void main() {
       expect(result.output, contains('\x1B['));
     });
   });
+
+  group('Tree lipgloss features', () {
+    test('value getter returns root label', () {
+      final tree = Tree().root('MyRoot');
+      expect(tree.value, equals('MyRoot'));
+    });
+
+    test('value getter returns null when no root set', () {
+      final tree = Tree();
+      expect(tree.value, isNull);
+    });
+
+    test('getChildren getter returns children', () {
+      final tree = Tree().child('A').child('B').child('C');
+      expect(tree.getChildren, hasLength(3));
+      expect(tree.getChildren, contains('A'));
+      expect(tree.getChildren, contains('B'));
+      expect(tree.getChildren, contains('C'));
+    });
+
+    test('getChildren returns unmodifiable list', () {
+      final tree = Tree().child('A');
+      final children = tree.getChildren;
+      expect(() => children.add('X'), throwsA(isA<UnsupportedError>()));
+    });
+
+    test('hide makes tree render empty string', () {
+      final tree = Tree().root('Root').child('Child').hide(true);
+      expect(tree.render(), isEmpty);
+    });
+
+    test('hidden getter returns current state', () {
+      final tree = Tree();
+      expect(tree.hidden, isFalse);
+
+      tree.hide(true);
+      expect(tree.hidden, isTrue);
+
+      tree.hide(false);
+      expect(tree.hidden, isFalse);
+    });
+
+    test('offset skips first N children', () {
+      final tree = Tree().root('Root').child('A').child('B').child('C').offset(
+        1,
+      );
+      final result = tree.render();
+
+      expect(result, contains('B'));
+      expect(result, contains('C'));
+      expect(result.contains('├── A'), isFalse);
+    });
+
+    test('offset with end limits children', () {
+      final tree = Tree()
+          .root('Root')
+          .child('A')
+          .child('B')
+          .child('C')
+          .child('D')
+          .offset(1, 3);
+      final result = tree.render();
+
+      expect(result, contains('B'));
+      expect(result, contains('C'));
+      expect(result.contains('├── A'), isFalse);
+      expect(result.contains('D'), isFalse);
+    });
+
+    test('offset clamps to valid range', () {
+      final tree = Tree().root('Root').child('A').child('B').offset(10, 20);
+      final result = tree.render();
+
+      // Should still render root but no children (offset out of range)
+      expect(result, contains('Root'));
+      expect(result.contains('├── A'), isFalse);
+    });
+  });
+
+  group('enumeratorStyleFunc', () {
+    test('applies style function to branches', () {
+      // Create a tree and verify enumeratorStyleFunc is called
+      var callCount = 0;
+      final indices = <int>[];
+
+      final tree = Tree()
+          .root('Root')
+          .child('A')
+          .child('B')
+          .child('C')
+          .enumeratorStyleFunc((children, index) {
+        callCount++;
+        indices.add(index);
+        // Return null to use default styling
+        return null;
+      });
+
+      tree.render();
+
+      // Should be called once per child (3 times)
+      expect(callCount, equals(3));
+      expect(indices, equals([0, 1, 2]));
+    });
+
+    test('enumeratorStyleFunc receives correct children list', () {
+      final receivedChildren = <List<dynamic>>[];
+
+      final tree = Tree()
+          .root('Root')
+          .child('A')
+          .child('B')
+          .enumeratorStyleFunc((children, index) {
+        receivedChildren.add(List.from(children));
+        return null;
+      });
+
+      tree.render();
+
+      // Both calls should receive the same children list
+      expect(receivedChildren.length, equals(2));
+      expect(receivedChildren[0], equals(['A', 'B']));
+      expect(receivedChildren[1], equals(['A', 'B']));
+    });
+
+    test('enumeratorStyleFunc applies returned style', () {
+      final tree = Tree()
+          .root('Root')
+          .child('A')
+          .child('B')
+          .enumeratorStyleFunc((children, index) {
+        // Apply bold style to all branches
+        return Style().bold();
+      });
+
+      final result = tree.render();
+
+      // Branches should contain ANSI bold codes
+      expect(result, contains('\x1B[1m'));
+    });
+
+    test('enumeratorStyleFunc null return falls through to branchStyle', () {
+      final tree = Tree()
+          .root('Root')
+          .child('A')
+          .child('B')
+          .branchStyle(Style().italic())
+          .enumeratorStyleFunc((children, index) {
+        // Return null to fall through to branchStyle
+        return null;
+      });
+
+      final result = tree.render();
+
+      // Should use branchStyle (italic)
+      expect(result, contains('\x1B[3m'));
+    });
+
+    test('enumeratorStyleFunc overrides branchStyle when not null', () {
+      var styleApplied = false;
+
+      final tree = Tree()
+          .root('Root')
+          .child('A')
+          .branchStyle(Style().italic())
+          .enumeratorStyleFunc((children, index) {
+        styleApplied = true;
+        return Style().bold();
+      });
+
+      final result = tree.render();
+
+      // Should use enumeratorStyleFunc style, not branchStyle
+      expect(styleApplied, isTrue);
+      expect(result, contains('\x1B[1m')); // bold
+    });
+
+    test('enumeratorStyleFunc allows conditional styling based on index', () {
+      final stylesReturned = <int, bool>{};
+
+      final tree = Tree()
+          .root('Root')
+          .child('A')
+          .child('B')
+          .child('C')
+          .enumeratorStyleFunc((children, index) {
+        // Only style the second item (index 1)
+        if (index == 1) {
+          stylesReturned[index] = true;
+          return Style().bold();
+        }
+        stylesReturned[index] = false;
+        return null;
+      });
+
+      tree.render();
+
+      expect(stylesReturned[0], isFalse);
+      expect(stylesReturned[1], isTrue);
+      expect(stylesReturned[2], isFalse);
+    });
+
+    test('enumeratorStyleFunc works with nested trees', () {
+      final allCalls = <int>[];
+
+      // Note: When rendering nested trees, the outer tree's enumeratorStyleFunc
+      // is called for all items including nested tree children because nested
+      // trees' children get flattened into the parent's rendering loop.
+      final innerTree = Tree().root('Inner').child('X').child('Y');
+
+      final tree = Tree()
+          .root('Root')
+          .child('A')
+          .child(innerTree)
+          .child('B')
+          .enumeratorStyleFunc((children, index) {
+        allCalls.add(index);
+        return null;
+      });
+
+      tree.render();
+
+      // Should be called for: A (0), Inner (1), X (0), Y (1), B (2)
+      // The inner tree's children are rendered at their own indices within their parent
+      expect(allCalls, equals([0, 1, 0, 1, 2]));
+    });
+  });
 }

@@ -12,6 +12,25 @@ import 'base.dart';
 typedef TreeStyleFunc =
     Style? Function(String item, int depth, bool isDirectory);
 
+/// Callback for per-item enumerator (branch character) styling in trees.
+///
+/// [children] is the list of sibling items at the current level.
+/// [index] is the index of the current item being rendered.
+///
+/// Return a [Style] to apply to the enumerator, or `null` for no styling.
+///
+/// Example:
+/// ```dart
+/// tree.enumeratorStyleFunc((children, index) {
+///   if (index == selectedIndex) {
+///     return Style().foreground(Colors.green);
+///   }
+///   return Style().foreground(Colors.dim);
+/// });
+/// ```
+typedef TreeEnumeratorStyleFunc = Style? Function(
+    List<dynamic> children, int index);
+
 /// Defines the characters used to draw tree branches.
 ///
 /// ```dart
@@ -346,17 +365,27 @@ class Tree extends FluentComponent<Tree> {
   final List<dynamic> _children = [];
   TreeEnumerator _enumerator = TreeEnumerator.normal;
   TreeStyleFunc? _styleFunc;
+  TreeEnumeratorStyleFunc? _enumeratorStyleFunc;
   bool _showRoot = true;
   Style? _rootStyle;
   Style? _directoryStyle;
   Style? _fileStyle;
   Style? _branchStyle;
+  bool _hidden = false;
+  int _offsetStart = 0;
+  int _offsetEnd = -1; // -1 means no end limit
 
   /// Sets the root label.
   Tree root(String label) {
     _root = label;
     return this;
   }
+
+  /// Gets the root label value.
+  String? get value => _root;
+
+  /// Gets the children items.
+  List<dynamic> get getChildren => List.unmodifiable(_children);
 
   /// Adds a child item.
   ///
@@ -417,9 +446,50 @@ class Tree extends FluentComponent<Tree> {
     return this;
   }
 
+  /// Sets a function to determine branch (enumerator) style per-item.
+  ///
+  /// This allows conditional styling of the tree branches (├──, └──, etc.)
+  /// based on the current item's position.
+  ///
+  /// Example:
+  /// ```dart
+  /// tree.enumeratorStyleFunc((children, index) {
+  ///   // Highlight the selected item's branch
+  ///   if (index == selectedIndex) {
+  ///     return Style().foreground(Colors.green);
+  ///   }
+  ///   return Style().foreground(Colors.dim);
+  /// });
+  /// ```
+  Tree enumeratorStyleFunc(TreeEnumeratorStyleFunc fn) {
+    _enumeratorStyleFunc = fn;
+    return this;
+  }
+
+  /// Sets whether to hide this tree when rendering.
+  Tree hide(bool value) {
+    _hidden = value;
+    return this;
+  }
+
+  /// Returns whether this tree is hidden.
+  bool get hidden => _hidden;
+
+  /// Sets the offset range for rendering children.
+  ///
+  /// [start] is the first child index to render (0-based).
+  /// [end] is the exclusive end index. Use -1 or omit for no limit.
+  Tree offset(int start, [int end = -1]) {
+    _offsetStart = start;
+    _offsetEnd = end;
+    return this;
+  }
+
   /// Renders the tree to a string.
   @override
   String render() {
+    if (_hidden) return '';
+
     final buffer = StringBuffer();
 
     if (_showRoot && _root != null) {
@@ -427,7 +497,16 @@ class Tree extends FluentComponent<Tree> {
       buffer.writeln(styled);
     }
 
-    _renderChildren(buffer, _children, '', 0);
+    // Apply offset to root children only
+    final startIndex = _offsetStart.clamp(0, _children.length);
+    final endIndex = _offsetEnd < 0
+        ? _children.length
+        : _offsetEnd.clamp(startIndex, _children.length);
+    final slicedChildren = startIndex < endIndex
+        ? _children.sublist(startIndex, endIndex)
+        : <dynamic>[];
+
+    _renderChildren(buffer, slicedChildren, '', 0);
 
     return buffer.toString().trimRight();
   }
@@ -446,7 +525,7 @@ class Tree extends FluentComponent<Tree> {
           prefix + (isLast ? _enumerator.indent : '${_enumerator.pipe}   ');
 
       // Style the branch characters
-      final styledConnector = _styleBranch('$connector${_enumerator.dash}');
+      final styledConnector = _styleBranch('$connector${_enumerator.dash}', children, i);
 
       if (child is Tree) {
         // Nested tree
@@ -497,7 +576,16 @@ class Tree extends FluentComponent<Tree> {
     return text;
   }
 
-  String _styleBranch(String text) {
+  String _styleBranch(String text, List<dynamic> children, int index) {
+    // Try enumerator style function first (most specific)
+    if (_enumeratorStyleFunc != null) {
+      final style = _enumeratorStyleFunc!(children, index);
+      if (style != null) {
+        return configureStyle(style).render(text);
+      }
+    }
+
+    // Fall back to static branch style
     if (_branchStyle != null) {
       return configureStyle(_branchStyle!).render(text);
     }

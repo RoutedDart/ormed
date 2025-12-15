@@ -9,7 +9,7 @@ void main() {
       renderer.write('Hello');
       renderer.write(' World');
 
-      expect(renderer.output, equals('Hello World'));
+      expect(renderer.stringOutput, equals('Hello World'));
     });
 
     test('writeln adds newline', () {
@@ -18,7 +18,7 @@ void main() {
       renderer.writeln('Line 1');
       renderer.writeln('Line 2');
 
-      expect(renderer.output, equals('Line 1\nLine 2\n'));
+      expect(renderer.stringOutput, equals('Line 1\nLine 2\n'));
     });
 
     test('writeln without argument adds empty line', () {
@@ -26,7 +26,7 @@ void main() {
 
       renderer.writeln();
 
-      expect(renderer.output, equals('\n'));
+      expect(renderer.stringOutput, equals('\n'));
     });
 
     test('flush returns and clears output', () {
@@ -36,7 +36,7 @@ void main() {
       final result = renderer.flush();
 
       expect(result, equals('Test'));
-      expect(renderer.output, isEmpty);
+      expect(renderer.stringOutput, isEmpty);
     });
 
     test('clear removes all output', () {
@@ -45,7 +45,7 @@ void main() {
       renderer.write('Test');
       renderer.clear();
 
-      expect(renderer.output, isEmpty);
+      expect(renderer.stringOutput, isEmpty);
     });
 
     test('isEmpty returns correct value', () {
@@ -86,10 +86,31 @@ void main() {
       expect(renderer.colorProfile, equals(ColorProfile.ansi256));
     });
 
+    test('colorProfile can be changed via setter', () {
+      final renderer = StringRenderer();
+
+      expect(renderer.colorProfile, equals(ColorProfile.trueColor));
+      renderer.colorProfile = ColorProfile.ansi;
+      expect(renderer.colorProfile, equals(ColorProfile.ansi));
+    });
+
     test('hasDarkBackground can be configured', () {
       final renderer = StringRenderer(hasDarkBackground: false);
 
       expect(renderer.hasDarkBackground, isFalse);
+    });
+
+    test('hasDarkBackground can be changed via setter', () {
+      final renderer = StringRenderer();
+
+      expect(renderer.hasDarkBackground, isTrue);
+      renderer.hasDarkBackground = false;
+      expect(renderer.hasDarkBackground, isFalse);
+    });
+
+    test('output getter returns null for StringRenderer', () {
+      final renderer = StringRenderer();
+      expect(renderer.output, isNull);
     });
 
     test('toString includes useful info', () {
@@ -105,7 +126,7 @@ void main() {
 
   group('NullRenderer', () {
     test('write does nothing', () {
-      const renderer = NullRenderer();
+      final renderer = NullRenderer();
 
       // Should not throw
       renderer.write('Test');
@@ -113,13 +134,13 @@ void main() {
     });
 
     test('default colorProfile is ascii', () {
-      const renderer = NullRenderer();
+      final renderer = NullRenderer();
 
       expect(renderer.colorProfile, equals(ColorProfile.ascii));
     });
 
     test('can be configured', () {
-      const renderer = NullRenderer(
+      final renderer = NullRenderer(
         colorProfile: ColorProfile.trueColor,
         hasDarkBackground: false,
       );
@@ -128,8 +149,29 @@ void main() {
       expect(renderer.hasDarkBackground, isFalse);
     });
 
+    test('colorProfile can be changed via setter', () {
+      final renderer = NullRenderer();
+
+      expect(renderer.colorProfile, equals(ColorProfile.ascii));
+      renderer.colorProfile = ColorProfile.trueColor;
+      expect(renderer.colorProfile, equals(ColorProfile.trueColor));
+    });
+
+    test('hasDarkBackground can be changed via setter', () {
+      final renderer = NullRenderer();
+
+      expect(renderer.hasDarkBackground, isTrue);
+      renderer.hasDarkBackground = false;
+      expect(renderer.hasDarkBackground, isFalse);
+    });
+
+    test('output getter returns null', () {
+      final renderer = NullRenderer();
+      expect(renderer.output, isNull);
+    });
+
     test('toString returns NullRenderer', () {
-      expect(const NullRenderer().toString(), equals('NullRenderer()'));
+      expect(NullRenderer().toString(), equals('NullRenderer()'));
     });
   });
 
@@ -147,6 +189,27 @@ void main() {
       final renderer = TerminalRenderer(forceDarkBackground: false);
 
       expect(renderer.hasDarkBackground, isFalse);
+    });
+
+    test('colorProfile can be changed via setter', () {
+      final renderer = TerminalRenderer(forceProfile: ColorProfile.ansi);
+
+      expect(renderer.colorProfile, equals(ColorProfile.ansi));
+      renderer.colorProfile = ColorProfile.trueColor;
+      expect(renderer.colorProfile, equals(ColorProfile.trueColor));
+    });
+
+    test('hasDarkBackground can be changed via setter', () {
+      final renderer = TerminalRenderer(forceDarkBackground: true);
+
+      expect(renderer.hasDarkBackground, isTrue);
+      renderer.hasDarkBackground = false;
+      expect(renderer.hasDarkBackground, isFalse);
+    });
+
+    test('output getter returns IOSink', () {
+      final renderer = TerminalRenderer();
+      expect(renderer.output, isNotNull);
     });
 
     test('toString includes useful info', () {

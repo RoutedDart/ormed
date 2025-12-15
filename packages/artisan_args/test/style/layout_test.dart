@@ -607,5 +607,109 @@ void main() {
         expect(lines.length, equals(4));
       });
     });
+
+    group('placeHorizontal', () {
+      test('centers content in width', () {
+        final result = Layout.placeHorizontal(10, HorizontalAlign.center, 'Hi');
+        expect(Layout.visibleLength(result), equals(10));
+        expect(result, contains('Hi'));
+      });
+
+      test('right-aligns content', () {
+        final result = Layout.placeHorizontal(10, HorizontalAlign.right, 'Hi');
+        expect(result.startsWith('        Hi'), isTrue);
+      });
+
+      test('left-aligns content', () {
+        final result = Layout.placeHorizontal(10, HorizontalAlign.left, 'Hi');
+        expect(result.startsWith('Hi'), isTrue);
+        expect(result.endsWith('        '), isTrue);
+      });
+
+      test('handles multiline content', () {
+        final result = Layout.placeHorizontal(
+          10,
+          HorizontalAlign.center,
+          'A\nBC',
+        );
+        final lines = result.split('\n');
+        expect(lines.length, equals(2));
+        // Each line should be padded to width 10
+        for (final line in lines) {
+          expect(Layout.visibleLength(line), equals(10));
+        }
+      });
+
+      test('returns content unchanged if wider than width', () {
+        final result = Layout.placeHorizontal(
+          3,
+          HorizontalAlign.center,
+          'Hello',
+        );
+        expect(result, equals('Hello'));
+      });
+
+      test('supports whitespace options', () {
+        final result = Layout.placeHorizontal(
+          10,
+          HorizontalAlign.center,
+          'Hi',
+          whitespace: WhitespaceOptions(chars: '.'),
+        );
+        expect(result, contains('.'));
+        expect(result, contains('Hi'));
+      });
+    });
+
+    group('placeVertical', () {
+      test('centers content in height', () {
+        final result = Layout.placeVertical(5, VerticalAlign.center, 'Hi');
+        final lines = result.split('\n');
+        expect(lines.length, equals(5));
+      });
+
+      test('top-aligns content', () {
+        final result = Layout.placeVertical(5, VerticalAlign.top, 'Hi');
+        final lines = result.split('\n');
+        expect(lines.length, equals(5));
+        expect(lines[0], equals('Hi'));
+      });
+
+      test('bottom-aligns content', () {
+        final result = Layout.placeVertical(5, VerticalAlign.bottom, 'Hi');
+        final lines = result.split('\n');
+        expect(lines.length, equals(5));
+        expect(lines[4], equals('Hi'));
+      });
+
+      test('handles multiline content', () {
+        final result = Layout.placeVertical(5, VerticalAlign.center, 'A\nB');
+        final lines = result.split('\n');
+        expect(lines.length, equals(5));
+      });
+
+      test('returns content unchanged if taller than height', () {
+        final result = Layout.placeVertical(
+          2,
+          VerticalAlign.center,
+          'A\nB\nC\nD',
+        );
+        final lines = result.split('\n');
+        expect(lines.length, equals(4)); // Content height is 4, target is 2
+      });
+
+      test('supports whitespace options', () {
+        final result = Layout.placeVertical(
+          3,
+          VerticalAlign.top,
+          'Hi',
+          whitespace: WhitespaceOptions(chars: '.'),
+        );
+        final lines = result.split('\n');
+        expect(lines.length, equals(3));
+        // Empty lines should contain dots
+        expect(lines[1], contains('.'));
+      });
+    });
   });
 }

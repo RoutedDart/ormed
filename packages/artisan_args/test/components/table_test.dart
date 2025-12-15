@@ -58,22 +58,23 @@ void main() {
     });
 
     group('borders', () {
-      test('uses ASCII border by default', () {
+      test('uses rounded border by default', () {
         final table = Table().headers(['X']).row(['Y']);
+        final result = table.render();
+
+        expect(result, contains('╭'));
+        expect(result, contains('╰'));
+        expect(result, contains('│'));
+      });
+
+      test('supports ASCII border', () {
+        final table = Table().headers(['X']).row(['Y']).border(Border.ascii);
+
         final result = table.render();
 
         expect(result, contains('+'));
         expect(result, contains('-'));
         expect(result, contains('|'));
-      });
-
-      test('supports rounded border', () {
-        final table = Table().headers(['X']).row(['Y']).border(Border.rounded);
-
-        final result = table.render();
-
-        expect(result, contains('╭'));
-        expect(result, contains('╰'));
       });
 
       test('supports thick border', () {
@@ -120,7 +121,7 @@ void main() {
 
         final result = table.render();
 
-        expect(result, contains('|X|'));
+        expect(result, contains('│X│'));
       });
     });
 
@@ -361,6 +362,128 @@ void main() {
       // if (styleFunc != null) { style = styleFunc!(rowIndex, ...)}
       // So headers ARE passed with -1.
       expect(calls, contains('-1:0:H'));
+    });
+  });
+
+  group('Table border toggles', () {
+    test('borderTop(false) removes top border', () {
+      final table = Table().headers(['X']).row(['Y']).borderTop(false);
+      final result = table.render();
+
+      // Should not start with border corner
+      expect(result.startsWith('╭'), isFalse);
+      expect(result, contains('│'));
+    });
+
+    test('borderBottom(false) removes bottom border', () {
+      final table = Table().headers(['X']).row(['Y']).borderBottom(false);
+      final result = table.render();
+
+      // Should not end with border corner
+      expect(result.endsWith('╯'), isFalse);
+      expect(result, contains('│'));
+    });
+
+    test('borderLeft(false) removes left border', () {
+      final table = Table().headers(['X']).row(['Y']).borderLeft(false);
+      final result = table.render();
+
+      // First character of content line should not be left border
+      final lines = result.split('\n');
+      for (final line in lines) {
+        if (line.isNotEmpty) {
+          expect(line.startsWith('│'), isFalse);
+        }
+      }
+    });
+
+    test('borderRight(false) removes right border', () {
+      final table = Table().headers(['X']).row(['Y']).borderRight(false);
+      final result = table.render();
+
+      // Last character of content line should not be right border
+      final lines = result.split('\n');
+      for (final line in lines) {
+        if (line.isNotEmpty) {
+          expect(line.endsWith('│'), isFalse);
+        }
+      }
+    });
+
+    test('borderHeader(false) removes header separator', () {
+      final table = Table().headers(['X']).row(['Y']).borderHeader(false);
+      final result = table.render();
+
+      // Should have top, content lines, and bottom
+      // But not the separator between header and data
+      expect(result.contains('├'), isFalse);
+    });
+
+    test('borderColumn(true) shows column separators', () {
+      final table = Table().headers(['A', 'B']).row(['1', '2']);
+      final result = table.render();
+
+      // Default has column separators enabled
+      // Lines should have the column separator character between cells
+      // The default border separator for columns is the same as left/right
+      expect(result, contains('│'));
+    });
+
+    test('borderRow(true) shows row separators', () {
+      final table = Table().headers(['X']).row(['Y']).row(['Z']).borderRow(
+        true,
+      );
+      final result = table.render();
+
+      // With row separators, there should be a horizontal line between rows
+      final lines = result.split('\n');
+      // Count horizontal separator lines (ones with middle characters)
+      final separatorCount = lines.where((l) => l.contains('├')).length;
+      expect(separatorCount, greaterThanOrEqualTo(2)); // header + row separator
+    });
+
+    test('clearRows removes all data rows', () {
+      final table = Table().headers(['X']).row(['A']).row(['B']);
+      expect(table.render(), contains('A'));
+      expect(table.render(), contains('B'));
+
+      table.clearRows();
+      final result = table.render();
+
+      expect(result, contains('X'));
+      expect(result.contains('A'), isFalse);
+      expect(result.contains('B'), isFalse);
+    });
+
+    test('height limits visible rows', () {
+      final table = Table()
+          .headers(['X'])
+          .row(['A'])
+          .row(['B'])
+          .row(['C'])
+          .row(['D'])
+          .height(5); // Top border + header + header sep + 1 data row + bottom = 5 lines
+
+      final result = table.render();
+      final lines = result.split('\n').where((l) => l.isNotEmpty).toList();
+
+      // With height 5, should limit output
+      expect(lines.length, lessThanOrEqualTo(5));
+    });
+
+    test('offset skips first N rows', () {
+      final table = Table()
+          .headers(['X'])
+          .row(['A'])
+          .row(['B'])
+          .row(['C'])
+          .offset(1); // Skip first row
+
+      final result = table.render();
+
+      expect(result, contains('B'));
+      expect(result, contains('C'));
+      expect(result.contains('A'), isFalse);
     });
   });
 }

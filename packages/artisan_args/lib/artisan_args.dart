@@ -68,6 +68,7 @@ export 'src/style/color.dart'
         AnsiColor,
         AdaptiveColor,
         CompleteColor,
+        CompleteAdaptiveColor,
         NoColor,
         Colors,
         ColorProfile;
@@ -93,7 +94,7 @@ export 'src/renderer/renderer.dart'
         resetDefaultRenderer;
 
 // Layout
-export 'src/layout/layout.dart' show Layout;
+export 'src/layout/layout.dart' show Layout, WhitespaceOptions;
 
 // Component System - Base
 export 'src/components/base.dart'
@@ -115,6 +116,17 @@ export 'src/components/text.dart' show Text, StyledText, Rule;
 // Component System - List
 export 'src/components/list.dart'
     show BulletList, NumberedList, ListEnumerator, ListStyleFunc;
+
+// Component System - List (Fluent/Lipgloss-style)
+export 'src/style/list.dart'
+    show
+        LipList,
+        ListItems,
+        ListItem,
+        ListEnumerators,
+        ListIndenters,
+        ListEnumeratorFunc,
+        ListIndenterFunc;
 
 // Component System - Box (Legacy + Fluent)
 export 'src/components/box.dart'
@@ -181,7 +193,7 @@ export 'src/components/task.dart' show TaskComponent, TaskStatus;
 
 // Component System - Tree (Legacy + Fluent)
 export 'src/components/tree.dart'
-    show TreeComponent, Tree, TreeEnumerator, TreeStyleFunc, TreeFactory;
+    show TreeComponent, Tree, TreeEnumerator, TreeStyleFunc, TreeEnumeratorStyleFunc, TreeFactory;
 
 // Component System - Two Column Detail (Legacy + Fluent)
 export 'src/components/two_column_detail.dart'
