@@ -124,8 +124,8 @@ class UiTableCommand extends ArtisanCommand<void> {
     io.table(
       headers: ['id', 'name', 'status'],
       rows: [
-        [1, 'create_users_table', io.style.success('DONE')],
-        [2, 'add_posts_table', io.style.warning('PENDING')],
+        [1, 'create_users_table', io.style.foreground(Colors.success).render('DONE')],
+        [2, 'add_posts_table', io.style.foreground(Colors.warning).render('PENDING')],
       ],
     );
   }
@@ -193,7 +193,6 @@ class UiProgressCommand extends ArtisanCommand<void> {
     final count = int.tryParse(countRaw) ?? 25;
 
     final context = ComponentContext(
-      style: io.style,
       stdout: dartio.stdout,
       stdin: dartio.stdin,
       terminalWidth: io.terminalWidth,
@@ -505,7 +504,6 @@ class UiSpinnerCommand extends ArtisanCommand<void> {
     io.newLine();
 
     final context = ComponentContext(
-      style: io.style,
       stdout: dartio.stdout,
       stdin: dartio.stdin,
       terminalWidth: io.terminalWidth,
@@ -555,7 +553,6 @@ class UiPanelCommand extends ArtisanCommand<void> {
     };
 
     final context = ComponentContext(
-      style: io.style,
       stdout: dartio.stdout,
       stdin: dartio.stdin,
       terminalWidth: io.terminalWidth,
@@ -624,7 +621,6 @@ class UiTreeCommand extends ArtisanCommand<void> {
     io.title('Tree Structure');
 
     final context = ComponentContext(
-      style: io.style,
       stdout: dartio.stdout,
       stdin: dartio.stdin,
       terminalWidth: io.terminalWidth,
@@ -694,7 +690,6 @@ class UiSearchCommand extends ArtisanCommand<void> {
     ];
 
     final context = ComponentContext(
-      style: io.style,
       stdout: dartio.stdout,
       stdin: dartio.stdin,
       terminalWidth: io.terminalWidth,
@@ -738,7 +733,6 @@ class UiPauseCommand extends ArtisanCommand<void> {
     io.title('Pause & Countdown');
 
     final context = ComponentContext(
-      style: io.style,
       stdout: dartio.stdout,
       stdin: dartio.stdin,
       terminalWidth: io.terminalWidth,
@@ -774,60 +768,54 @@ class UiChalkCommand extends ArtisanCommand<void> {
   String get name => 'ui:chalk';
 
   @override
-  String get description => 'Demonstrate advanced color styling with chalk.';
+  String get description => 'Demonstrate advanced color styling with Style.';
 
   @override
   Future<void> run() async {
-    final chalk = ArtisanChalk(enabled: io.style.enabled);
+    final style = io.style;
 
-    io.title('Advanced Styling with Chalk');
+    io.title('Advanced Styling with Style');
 
     io.section('Basic Colors');
     io.writeln(
-      '  ${chalk.red('Red')} ${chalk.green('Green')} ${chalk.blue('Blue')} ${chalk.yellow('Yellow')}',
+      '  ${style.foreground(Colors.red).render('Red')} ${style.foreground(Colors.green).render('Green')} ${style.foreground(Colors.blue).render('Blue')} ${style.foreground(Colors.yellow).render('Yellow')}',
     );
     io.writeln(
-      '  ${chalk.magenta('Magenta')} ${chalk.cyan('Cyan')} ${chalk.white('White')} ${chalk.black('Black (on light bg)')}',
+      '  ${style.foreground(Colors.magenta).render('Magenta')} ${style.foreground(Colors.cyan).render('Cyan')} ${style.foreground(Colors.white).render('White')} ${style.foreground(Colors.black).render('Black (on light bg)')}',
     );
     io.newLine();
 
     io.section('Bright Colors');
     io.writeln(
-      '  ${chalk.brightRed('Bright Red')} ${chalk.brightGreen('Bright Green')} ${chalk.brightBlue('Bright Blue')}',
+      '  ${style.foreground(Colors.brightRed).render('Bright Red')} ${style.foreground(Colors.brightGreen).render('Bright Green')} ${style.foreground(Colors.brightBlue).render('Bright Blue')}',
     );
     io.writeln(
-      '  ${chalk.brightYellow('Bright Yellow')} ${chalk.brightMagenta('Bright Magenta')} ${chalk.brightCyan('Bright Cyan')}',
+      '  ${style.foreground(Colors.brightYellow).render('Bright Yellow')} ${style.foreground(Colors.brightMagenta).render('Bright Magenta')} ${style.foreground(Colors.brightCyan).render('Bright Cyan')}',
     );
     io.newLine();
 
     io.section('Text Styles');
     io.writeln(
-      '  ${chalk.bold('Bold')} ${chalk.dim('Dim')} ${chalk.italic('Italic')} ${chalk.underline('Underline')}',
+      '  ${style.bold().render('Bold')} ${style.dim().render('Dim')} ${style.italic().render('Italic')} ${style.underline().render('Underline')}',
     );
     io.writeln(
-      '  ${chalk.inverse('Inverse')} ${chalk.strikethrough('Strikethrough')}',
+      '  ${style.inverse().render('Inverse')} ${style.strikethrough().render('Strikethrough')}',
     );
-    io.newLine();
-
-    io.section('True Color (RGB)');
-    io.writeln('  ${chalk.rgb(255, 100, 50, 'Orange RGB')}');
-    io.writeln('  ${chalk.rgb(150, 50, 255, 'Purple RGB')}');
-    io.writeln('  ${chalk.rgb(50, 200, 150, 'Teal RGB')}');
     io.newLine();
 
     io.section('Hex Colors');
-    io.writeln('  ${chalk.hex('#ff6b6b', 'Coral')}');
-    io.writeln('  ${chalk.hex('#4ecdc4', 'Turquoise')}');
-    io.writeln('  ${chalk.hex('#ffe66d', 'Lemon')}');
+    io.writeln('  ${style.foreground(BasicColor('#ff6b6b')).render('Coral')}');
+    io.writeln('  ${style.foreground(BasicColor('#4ecdc4')).render('Turquoise')}');
+    io.writeln('  ${style.foreground(BasicColor('#ffe66d')).render('Lemon')}');
     io.newLine();
 
     io.section('Semantic Styles');
-    io.writeln('  ${chalk.success('Success message')}');
-    io.writeln('  ${chalk.error('Error message')}');
-    io.writeln('  ${chalk.warning('Warning message')}');
-    io.writeln('  ${chalk.info('Info message')}');
-    io.writeln('  ${chalk.muted('Muted message')}');
-    io.writeln('  ${chalk.highlight('Highlighted text')}');
+    io.writeln('  ${style.foreground(Colors.success).render('Success message')}');
+    io.writeln('  ${style.foreground(Colors.error).render('Error message')}');
+    io.writeln('  ${style.foreground(Colors.warning).render('Warning message')}');
+    io.writeln('  ${style.foreground(Colors.info).render('Info message')}');
+    io.writeln('  ${style.foreground(Colors.muted).render('Muted message')}');
+    io.writeln('  ${style.bold().foreground(Colors.yellow).render('Highlighted text')}');
   }
 }
 
@@ -973,7 +961,6 @@ class UiExceptionCommand extends ArtisanCommand<void> {
 
     io.section('Using ExceptionComponent directly');
     final context = ComponentContext(
-      style: io.style,
       stdout: dartio.stdout,
       stdin: dartio.stdin,
       terminalWidth: io.terminalWidth,
@@ -1023,14 +1010,13 @@ class UiHorizontalTableCommand extends ArtisanCommand<void> {
 
     io.section('Using HorizontalTableComponent directly');
     final context = ComponentContext(
-      style: io.style,
       stdout: dartio.stdout,
       stdin: dartio.stdin,
       terminalWidth: io.terminalWidth,
     );
     HorizontalTableComponent(
       data: {
-        'Status': io.style.success('● Online'),
+        'Status': io.style.foreground(Colors.success).render('● Online'),
         'Uptime': '3 days, 14 hours',
         'Memory': '256 MB / 1 GB',
         'CPU': '12%',
@@ -1074,7 +1060,6 @@ class UiPasswordCommand extends ArtisanCommand<void> {
     io.newLine();
 
     final context = ComponentContext(
-      style: io.style,
       stdout: dartio.stdout,
       stdin: dartio.stdin,
       terminalWidth: io.terminalWidth,
@@ -1120,7 +1105,6 @@ class UiBlockCommand extends ArtisanCommand<void> {
     io.title('Styled Blocks');
 
     final context = ComponentContext(
-      style: io.style,
       stdout: dartio.stdout,
       stdin: dartio.stdin,
       terminalWidth: io.terminalWidth,
@@ -1197,7 +1181,6 @@ class UiColumnsCommand extends ArtisanCommand<void> {
     io.title('Multi-Column Layout');
 
     final context = ComponentContext(
-      style: io.style,
       stdout: dartio.stdout,
       stdin: dartio.stdin,
       terminalWidth: io.terminalWidth,
@@ -1253,12 +1236,12 @@ class UiColumnsCommand extends ArtisanCommand<void> {
     io.section('Status Items');
     ColumnsComponent(
       items: [
-        '${io.style.success("●")} Online',
-        '${io.style.error("●")} Offline',
-        '${io.style.warning("●")} Degraded',
-        '${io.style.info("●")} Maintenance',
-        '${io.style.success("●")} Healthy',
-        '${io.style.error("●")} Critical',
+        '${io.style.foreground(Colors.success).render("●")} Online',
+        '${io.style.foreground(Colors.error).render("●")} Offline',
+        '${io.style.foreground(Colors.warning).render("●")} Degraded',
+        '${io.style.foreground(Colors.info).render("●")} Maintenance',
+        '${io.style.foreground(Colors.success).render("●")} Healthy',
+        '${io.style.foreground(Colors.error).render("●")} Critical',
       ],
       columnCount: 3,
     ).renderln(context);
@@ -1362,9 +1345,9 @@ class UiAllCommand extends ArtisanCommand<void> {
     io.table(
       headers: ['ID', 'Name', 'Status'],
       rows: [
-        ['1', 'users', io.style.success('migrated')],
-        ['2', 'posts', io.style.success('migrated')],
-        ['3', 'comments', io.style.warning('pending')],
+        ['1', 'users', io.style.foreground(Colors.success).render('migrated')],
+        ['2', 'posts', io.style.foreground(Colors.success).render('migrated')],
+        ['3', 'comments', io.style.foreground(Colors.warning).render('pending')],
       ],
     );
 
@@ -1398,7 +1381,6 @@ class UiAllCommand extends ArtisanCommand<void> {
     // Panel
     io.section('7. Panel');
     final context = ComponentContext(
-      style: io.style,
       stdout: dartio.stdout,
       stdin: dartio.stdin,
       terminalWidth: io.terminalWidth,
@@ -1463,16 +1445,16 @@ class UiAllCommand extends ArtisanCommand<void> {
     io.newLine();
 
     // Colors
-    io.section('13. Chalk Colors');
-    final chalk = ArtisanChalk(enabled: io.style.enabled);
+    io.section('13. Colors');
+    final style = io.style;
     io.writeln(
-      '  ${chalk.red("Red")} ${chalk.green("Green")} ${chalk.blue("Blue")} ${chalk.yellow("Yellow")}',
+      '  ${style.foreground(Colors.red).render("Red")} ${style.foreground(Colors.green).render("Green")} ${style.foreground(Colors.blue).render("Blue")} ${style.foreground(Colors.yellow).render("Yellow")}',
     );
     io.writeln(
-      '  ${chalk.bold("Bold")} ${chalk.italic("Italic")} ${chalk.underline("Underline")}',
+      '  ${style.bold().render("Bold")} ${style.italic().render("Italic")} ${style.underline().render("Underline")}',
     );
     io.writeln(
-      '  ${chalk.hex("#ff6b6b", "Coral")} ${chalk.hex("#4ecdc4", "Turquoise")} ${chalk.rgb(255, 100, 50, "Orange")}',
+      '  ${style.foreground(BasicColor("#ff6b6b")).render("Coral")} ${style.foreground(BasicColor("#4ecdc4")).render("Turquoise")} ${style.foreground(BasicColor("#ff6432")).render("Orange")}',
     );
     io.newLine();
 
@@ -1521,7 +1503,6 @@ class UiAnticipateCommand extends ArtisanCommand<void> {
     io.newLine();
 
     final context = ComponentContext(
-      style: io.style,
       stdout: dartio.stdout,
       stdin: dartio.stdin,
       terminalWidth: io.terminalWidth,
@@ -1615,7 +1596,6 @@ class UiTextareaCommand extends ArtisanCommand<void> {
     io.newLine();
 
     final context = ComponentContext(
-      style: io.style,
       stdout: dartio.stdout,
       stdin: dartio.stdin,
       terminalWidth: io.terminalWidth,
@@ -1670,7 +1650,6 @@ class UiWizardCommand extends ArtisanCommand<void> {
     io.title('Wizard / Multi-Step Flow');
 
     final context = ComponentContext(
-      style: io.style,
       stdout: dartio.stdout,
       stdin: dartio.stdin,
       terminalWidth: io.terminalWidth,
@@ -1758,7 +1737,6 @@ class UiLinkCommand extends ArtisanCommand<void> {
     io.newLine();
 
     final context = ComponentContext(
-      style: io.style,
       stdout: dartio.stdout,
       stdin: dartio.stdin,
       terminalWidth: io.terminalWidth,
@@ -1839,7 +1817,6 @@ class UiComponentSystemCommand extends ArtisanCommand<void> {
   Future<void> run() async {
     // Create a component context
     final context = ComponentContext(
-      style: io.style,
       stdout: dartio.stdout,
       stdin: dartio.stdin,
       terminalWidth: io.terminalWidth,
@@ -2058,7 +2035,7 @@ class UiComponentSystemCommand extends ArtisanCommand<void> {
       @override
       RenderResult build(ComponentContext context) {
         return RenderResult(
-          output: context.style.heading('★ \$title ★'),
+          output: context.newStyle().bold().foreground(Colors.yellow).render('★ \$title ★'),
           lineCount: 1,
         );
       }
@@ -2079,7 +2056,7 @@ class _CustomBanner extends CliComponent {
   @override
   RenderResult build(ComponentContext context) {
     final stars = '★ ' * 3;
-    final output = context.style.heading('$stars$title$stars');
+    final output = context.newStyle().bold().foreground(Colors.yellow).render('$stars$title$stars');
     return RenderResult(output: output, lineCount: 1);
   }
 }

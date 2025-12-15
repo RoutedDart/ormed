@@ -1,3 +1,4 @@
+import '../style/color.dart';
 import 'base.dart';
 
 /// A text input component.
@@ -17,15 +18,15 @@ class TextInput extends InteractiveComponent<String> {
   @override
   RenderResult build(ComponentContext context) {
     final defaultDisplay = defaultValue != null
-        ? context.style.muted(' [$defaultValue]')
+        ? context.newStyle().dim().render(' [$defaultValue]')
         : '';
     final placeholderDisplay = placeholder != null
-        ? context.style.muted(placeholder!)
+        ? context.newStyle().dim().render(placeholder!)
         : '';
 
     return RenderResult(
       output:
-          '${context.style.info("?")} ${context.style.emphasize(prompt)}$defaultDisplay: $placeholderDisplay',
+          '${context.newStyle().foreground(Colors.info).render("?")} ${context.newStyle().foreground(Colors.warning).bold().render(prompt)}$defaultDisplay: $placeholderDisplay',
       lineCount: 1,
     );
   }
@@ -41,7 +42,9 @@ class TextInput extends InteractiveComponent<String> {
       if (validator != null) {
         final error = validator!(value);
         if (error != null) {
-          context.writeln(context.style.error('  $error'));
+          context.writeln(
+            context.newStyle().foreground(Colors.error).render('  $error'),
+          );
           render(context); // Re-render prompt
           continue;
         }
@@ -64,7 +67,7 @@ class Confirm extends InteractiveComponent<bool> {
     final hint = defaultValue ? '[Y/n]' : '[y/N]';
     return RenderResult(
       output:
-          '${context.style.info("?")} ${context.style.emphasize(prompt)} ${context.style.muted(hint)}: ',
+          '${context.newStyle().foreground(Colors.info).render("?")} ${context.newStyle().foreground(Colors.warning).bold().render(prompt)} ${context.newStyle().dim().render(hint)}: ',
       lineCount: 1,
     );
   }
@@ -95,7 +98,8 @@ class SecretInputComponent extends InteractiveComponent<String> {
   @override
   RenderResult build(ComponentContext context) {
     return RenderResult(
-      output: '${context.style.info("?")} ${context.style.emphasize(prompt)}: ',
+      output:
+          '${context.newStyle().foreground(Colors.info).render("?")} ${context.newStyle().foreground(Colors.warning).bold().render(prompt)}: ',
       lineCount: 1,
     );
   }

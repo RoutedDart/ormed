@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import '../style/color.dart';
 import 'base.dart';
 
 /// Spinner animation frame presets.
@@ -80,7 +81,10 @@ class SpinnerComponent extends InteractiveComponent<void> {
 
   @override
   RenderResult build(ComponentContext context) {
-    final frame = context.style.info(frames.first);
+    final frame = context
+        .newStyle()
+        .foreground(Colors.info)
+        .render(frames.first);
     return RenderResult(output: '$frame $message', lineCount: 1);
   }
 
@@ -94,7 +98,10 @@ class SpinnerComponent extends InteractiveComponent<void> {
     final timer = Timer.periodic(interval, (_) {
       if (!running) return;
       context.clearLine();
-      final frame = context.style.info(frames[frameIndex]);
+      final frame = context
+          .newStyle()
+          .foreground(Colors.info)
+          .render(frames[frameIndex]);
       context.write('$frame $message');
       frameIndex = (frameIndex + 1) % frames.length;
     });
@@ -105,13 +112,17 @@ class SpinnerComponent extends InteractiveComponent<void> {
       timer.cancel();
       context.clearLine();
       final successText = successMessage ?? message;
-      context.writeln('${context.style.success(successIcon)} $successText');
+      context.writeln(
+        '${context.newStyle().foreground(Colors.success).render(successIcon)} $successText',
+      );
     } catch (e) {
       running = false;
       timer.cancel();
       context.clearLine();
       final failText = failureMessage ?? message;
-      context.writeln('${context.style.error(failureIcon)} $failText');
+      context.writeln(
+        '${context.newStyle().foreground(Colors.error).render(failureIcon)} $failText',
+      );
       rethrow;
     } finally {
       context.showCursor();
@@ -165,19 +176,39 @@ class StatefulSpinner {
   }
 
   void success(ComponentContext context, [String? msg]) {
-    _stop(context, successIcon, msg ?? message, context.style.success);
+    _stop(
+      context,
+      successIcon,
+      msg ?? message,
+      (s) => context.newStyle().foreground(Colors.success).render(s),
+    );
   }
 
   void error(ComponentContext context, [String? msg]) {
-    _stop(context, errorIcon, msg ?? message, context.style.error);
+    _stop(
+      context,
+      errorIcon,
+      msg ?? message,
+      (s) => context.newStyle().foreground(Colors.error).render(s),
+    );
   }
 
   void warn(ComponentContext context, [String? msg]) {
-    _stop(context, warnIcon, msg ?? message, context.style.warning);
+    _stop(
+      context,
+      warnIcon,
+      msg ?? message,
+      (s) => context.newStyle().foreground(Colors.warning).bold().render(s),
+    );
   }
 
   void info(ComponentContext context, [String? msg]) {
-    _stop(context, 'ℹ', msg ?? message, context.style.info);
+    _stop(
+      context,
+      'ℹ',
+      msg ?? message,
+      (s) => context.newStyle().foreground(Colors.info).render(s),
+    );
   }
 
   void stop(ComponentContext context, [String? msg]) {
@@ -187,7 +218,9 @@ class StatefulSpinner {
   void update(ComponentContext context, String newMessage) {
     if (!_running) return;
     context.clearLine();
-    context.write('${context.style.info(frames[_frameIndex])} $newMessage');
+    context.write(
+      '${context.newStyle().foreground(Colors.info).render(frames[_frameIndex])} $newMessage',
+    );
   }
 
   void _stop(
@@ -207,7 +240,9 @@ class StatefulSpinner {
 
   void _render(ComponentContext context) {
     context.clearLine();
-    context.write('${context.style.info(frames[_frameIndex])} $message');
+    context.write(
+      '${context.newStyle().foreground(Colors.info).render(frames[_frameIndex])} $message',
+    );
   }
 }
 

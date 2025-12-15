@@ -1,5 +1,6 @@
 import 'dart:io' as io;
 
+import '../style/color.dart';
 import 'base.dart';
 
 /// A clickable hyperlink component (OSC 8).
@@ -27,7 +28,7 @@ class LinkComponent extends CliComponent {
   RenderResult build(ComponentContext context) {
     final displayText = text ?? url;
 
-    if (!context.style.enabled) {
+    if (context.colorProfile == ColorProfile.ascii) {
       return RenderResult(output: displayText, lineCount: 1);
     }
 
@@ -131,11 +132,13 @@ class LinkGroupComponent extends CliComponent {
 
       if (i > 0) buffer.writeln();
 
-      if (context.style.enabled) {
+      if (context.colorProfile != ColorProfile.ascii) {
         final params = 'id=${link.id}';
         final linkText =
             '\x1B]8;$params;${link.url}\x07${link.url}\x1B]8;;\x07';
-        buffer.write('${context.style.muted('[$refNumber]')} $linkText');
+        buffer.write(
+          '${context.newStyle().dim().render('[$refNumber]')} $linkText',
+        );
       } else {
         buffer.write('[$refNumber] ${link.url}');
       }

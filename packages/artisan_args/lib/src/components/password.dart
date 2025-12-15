@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import '../output/terminal.dart';
+import '../style/color.dart';
 import 'base.dart';
 
 /// A password input component that doesn't echo characters.
@@ -30,7 +31,8 @@ class PasswordComponent extends InteractiveComponent<String> {
   @override
   RenderResult build(ComponentContext context) {
     return RenderResult(
-      output: '${context.style.emphasize(prompt)}: ',
+      output:
+          '${context.newStyle().foreground(Colors.warning).bold().render(prompt)}: ',
       lineCount: 1,
     );
   }
@@ -52,7 +54,9 @@ class PasswordComponent extends InteractiveComponent<String> {
         return password;
       }
 
-      context.writeln(context.style.error(mismatchMessage));
+      context.writeln(
+        context.newStyle().foreground(Colors.error).render(mismatchMessage),
+      );
     }
 
     throw StateError('Too many failed password confirmation attempts.');
@@ -62,7 +66,9 @@ class PasswordComponent extends InteractiveComponent<String> {
     ComponentContext context,
     String promptText,
   ) async {
-    context.write('${context.style.emphasize(promptText)}: ');
+    context.write(
+      '${context.newStyle().foreground(Colors.warning).bold().render(promptText)}: ',
+    );
 
     final terminal = Terminal(stdin: context.stdin, stdout: context.stdout);
 

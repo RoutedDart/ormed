@@ -47,10 +47,10 @@ class ProgressBarComponent extends CliComponent {
     final parts = <String>[bar];
 
     if (showCount) {
-      parts.add(context.style.muted('$current/$total'));
+      parts.add(context.newStyle().dim().render('$current/$total'));
     }
     if (showPercentage) {
-      parts.add(context.style.muted('$pct%'));
+      parts.add(context.newStyle().dim().render('$pct%'));
     }
 
     return RenderResult(output: parts.join(' '), lineCount: 1);
@@ -157,7 +157,7 @@ class StatefulProgressBar {
     final bar = '[${fillChar * filled}${emptyChar * empty}]';
     final label = max <= 0 ? '$_current' : '$_current/$max';
     final line =
-        '$bar ${context.style.muted(label)} ${context.style.muted('$pct%')}';
+        '$bar ${context.newStyle().dim().render(label)} ${context.newStyle().dim().render('$pct%')}';
 
     context.clearLine();
     context.write(line);

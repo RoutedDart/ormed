@@ -1,3 +1,4 @@
+import '../style/color.dart';
 import 'base.dart';
 
 /// An exception renderer component.
@@ -32,7 +33,13 @@ class ExceptionComponent extends CliComponent {
 
     buffer.writeln();
     lineCount++;
-    buffer.writeln(context.style.error('  $exceptionType  '));
+    buffer.writeln(
+      context
+          .newStyle()
+          .foreground(Colors.error)
+          .bold()
+          .render('  $exceptionType  '),
+    );
     lineCount++;
     buffer.writeln();
     lineCount++;
@@ -40,7 +47,9 @@ class ExceptionComponent extends CliComponent {
     // Exception message
     final messageLines = message.split('\n');
     for (final line in messageLines) {
-      buffer.writeln('  ${context.style.warning(line)}');
+      buffer.writeln(
+        '  ${context.newStyle().foreground(Colors.warning).bold().render(line)}',
+      );
       lineCount++;
     }
 
@@ -48,7 +57,7 @@ class ExceptionComponent extends CliComponent {
     if (stackTrace != null) {
       buffer.writeln();
       lineCount++;
-      buffer.writeln(context.style.muted('  Stack trace:'));
+      buffer.writeln(context.newStyle().dim().render('  Stack trace:'));
       lineCount++;
       buffer.writeln();
       lineCount++;
@@ -64,10 +73,10 @@ class ExceptionComponent extends CliComponent {
             : _shortenPath(frame.location);
 
         buffer.writeln(
-          '  ${context.style.muted(number)}  ${context.style.info(frame.member)}',
+          '  ${context.newStyle().dim().render(number)}  ${context.newStyle().foreground(Colors.info).bold().render(frame.member)}',
         );
         lineCount++;
-        buffer.writeln('      ${context.style.muted(location)}');
+        buffer.writeln('      ${context.newStyle().dim().render(location)}');
         lineCount++;
       }
 
@@ -75,7 +84,9 @@ class ExceptionComponent extends CliComponent {
         final remaining = frames.length - maxStackFrames;
         buffer.writeln();
         lineCount++;
-        buffer.writeln(context.style.muted('  ... and $remaining more frames'));
+        buffer.writeln(
+          context.newStyle().dim().render('  ... and $remaining more frames'),
+        );
         lineCount++;
       }
     }
@@ -150,7 +161,8 @@ class SimpleExceptionComponent extends CliComponent {
     final exceptionType = exception.runtimeType.toString();
     final message = exception.toString().split('\n').first;
     return RenderResult(
-      output: '${context.style.error('[$exceptionType]')} $message',
+      output:
+          '${context.newStyle().foreground(Colors.error).bold().render('[$exceptionType]')} $message',
       lineCount: 1,
     );
   }

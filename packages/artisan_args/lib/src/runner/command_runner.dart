@@ -3,7 +3,9 @@ import 'dart:io' as dartio;
 import 'package:args/command_runner.dart';
 
 import '../io/artisan_io.dart';
-import '../style/artisan_style.dart';
+import '../renderer/renderer.dart';
+import '../style/color.dart';
+import '../style/style.dart';
 import '../style/verbosity.dart';
 import 'command_listing.dart';
 
@@ -62,7 +64,11 @@ class ArtisanCommandRunner<T> extends CommandRunner<T> {
        _readLine = readLine,
        _setExitCode = setExitCode ?? ((code) => dartio.exitCode = code),
        _ansiOverride = ansi,
-       _style = ArtisanStyle(ansi: ansi ?? dartio.stdout.supportsAnsiEscapes),
+       _renderer = TerminalRenderer(
+         forceProfile: ansi == true
+             ? null
+             : (ansi == false ? ColorProfile.ascii : null),
+       ),
        super(usageLineLength: usageLineLength) {
     _setupGlobalFlags();
   }
@@ -80,13 +86,13 @@ class ArtisanCommandRunner<T> extends CommandRunner<T> {
   final ArtisanReadLine? _readLine;
   final ArtisanExitCodeSetter _setExitCode;
   final bool? _ansiOverride;
-  ArtisanStyle _style;
+  Renderer _renderer;
   ArtisanVerbosity _verbosity = ArtisanVerbosity.normal;
   bool _interactive = true;
   ArtisanIO? _io;
 
-  /// The current ANSI style configuration.
-  ArtisanStyle get style => _style;
+  /// The renderer for output.
+  Renderer get renderer => _renderer;
 
   /// The current verbosity level.
   ArtisanVerbosity get verbosity => _verbosity;
@@ -117,7 +123,17 @@ class ArtisanCommandRunner<T> extends CommandRunner<T> {
 
   @override
   Future<T?> run(Iterable<String> args) async {
-    _style = ArtisanStyle(ansi: _resolveAnsiForArgs(args));
+    final ansi = _resolveAnsiForArgs(args);
+    if (ansi == false) {
+      _renderer = TerminalRenderer(forceProfile: ColorProfile.ascii);
+    } else if (ansi == true) {
+      // If forced on, we use default detection but could optionally force ANSI support
+      // For now we leave it to auto-detect the best profile
+      _renderer = TerminalRenderer();
+    } else {
+      _renderer = TerminalRenderer();
+    }
+
     _verbosity = _resolveVerbosityForArgs(args);
     _interactive = _resolveInteractiveForArgs(args);
     _io = null;
@@ -140,29 +156,29 @@ class ArtisanCommandRunner<T> extends CommandRunner<T> {
       buffer.writeln();
     }
 
-    buffer.writeln(style.heading('Usage:'));
+    buffer.writeln(_heading('Usage:'));
     buffer.writeln('  ${invocation.trim()}');
     buffer.writeln();
 
-    buffer.writeln(style.heading('Options:'));
+    buffer.writeln(_heading('Options:'));
     final globalOptions = argParser.usage.trimRight();
     if (globalOptions.isNotEmpty) {
-      buffer.writeln(indentBlock(style.formatOptionsUsage(globalOptions), 2));
+      buffer.writeln(indentBlock(_formatOptionsUsage(globalOptions), 2));
     }
     buffer.writeln();
 
-    buffer.writeln(style.heading('Available commands:'));
+    buffer.writeln(_heading('Available commands:'));
     buffer.writeln(
       formatCommandListing(
         _uniqueTopLevelEntries(),
         namespaceSeparator: namespaceSeparator,
-        styleNamespace: style.heading,
-        styleCommand: style.command,
+        styleNamespace: _heading,
+        styleCommand: _command,
       ),
     );
     buffer.writeln();
     buffer.writeln(
-      'Run ${style.emphasize('"$executableName <command> --help"')} for more information about a command.',
+      'Run ${_emphasize('"$executableName <command> --help"')} for more information about a command.',
     );
 
     return buffer.toString().trimRight();
@@ -210,7 +226,7 @@ class ArtisanCommandRunner<T> extends CommandRunner<T> {
   void _printUsageError(UsageException e) {
     final message = e.message.trim();
     if (message.isNotEmpty) {
-      writeErr(style.error('Error: $message'));
+      writeErr(_error('Error: $message'));
       writeErr('');
     }
     writeOut(e.usage.trimRight());
@@ -232,7 +248,7 @@ class ArtisanCommandRunner<T> extends CommandRunner<T> {
         ? dartio.stdout.terminalColumns
         : null;
     return ArtisanIO(
-      style: style,
+      renderer: _renderer,
       out: writeOut,
       err: writeErr,
       outRaw: _outRaw,
@@ -275,5 +291,67 @@ class ArtisanCommandRunner<T> extends CommandRunner<T> {
     if (vCount == 1) return ArtisanVerbosity.verbose;
     if (vCount == 2) return ArtisanVerbosity.veryVerbose;
     return ArtisanVerbosity.debug;
+  }
+
+  // Helpers for styling
+  String _heading(String text) => (Style()
+      ..colorProfile = _renderer.colorProfile
+      ..hasDarkBackground = _renderer.hasDarkBackground)
+      .bold()
+      .foreground(Colors.yellow)
+      .render(text);
+  String _command(String text) => (Style()
+      ..colorProfile = _renderer.colorProfile
+      ..hasDarkBackground = _renderer.hasDarkBackground)
+      .foreground(Colors.green)
+      .render(text);
+  String _option(String text) => (Style()
+      ..colorProfile = _renderer.colorProfile
+      ..hasDarkBackground = _renderer.hasDarkBackground)
+      .foreground(Colors.green)
+      .render(text);
+  String _emphasize(String text) => (Style()
+      ..colorProfile = _renderer.colorProfile
+      ..hasDarkBackground = _renderer.hasDarkBackground)
+      .bold()
+      .render(text);
+  String _error(String text) => (Style()
+      ..colorProfile = _renderer.colorProfile
+      ..hasDarkBackground = _renderer.hasDarkBackground)
+      .foreground(Colors.red)
+      .render(text);
+
+  String _formatOptionsUsage(String usage) {
+    if (_renderer.colorProfile == ColorProfile.ascii) return usage;
+
+    final lines = usage.split('\n');
+    final styled = <String>[];
+    for (final line in lines) {
+      if (line.trim().isEmpty) {
+        styled.add(line);
+        continue;
+      }
+
+      final match = RegExp(r'^(\s*)(.*)$').firstMatch(line);
+      if (match == null) {
+        styled.add(line);
+        continue;
+      }
+
+      final indent = match.group(1) ?? '';
+      final rest = match.group(2) ?? '';
+      final split = RegExp(r'\s{2,}').firstMatch(rest);
+      if (split == null) {
+        styled.add(line);
+        continue;
+      }
+
+      final left = rest.substring(0, split.start).trimRight();
+      final spacing = rest.substring(split.start, split.end);
+      final right = rest.substring(split.end);
+      styled.add('$indent${_option(left)}$spacing$right');
+    }
+
+    return styled.join('\n');
   }
 }

@@ -1,4 +1,5 @@
 import '../output/terminal.dart';
+import '../style/color.dart';
 import 'base.dart';
 
 /// An interactive single-select component with arrow-key navigation.
@@ -22,7 +23,9 @@ class Select<T> extends InteractiveComponent<T> {
   @override
   RenderResult build(ComponentContext context) {
     final buffer = StringBuffer();
-    buffer.writeln(context.style.emphasize(prompt));
+    buffer.writeln(
+      context.newStyle().foreground(Colors.warning).bold().render(prompt),
+    );
 
     final displayFn = display ?? (v) => v.toString();
     final displayCount = options.length.clamp(1, maxVisible);
@@ -33,7 +36,9 @@ class Select<T> extends InteractiveComponent<T> {
       final isHighlighted = i == defaultIndex;
 
       if (isHighlighted) {
-        buffer.writeln(context.style.info(' $pointer $label'));
+        buffer.writeln(
+          context.newStyle().foreground(Colors.info).render(' $pointer $label'),
+        );
       } else {
         buffer.writeln('   $label');
       }
@@ -78,7 +83,12 @@ class Select<T> extends InteractiveComponent<T> {
         final isHighlighted = i == cursor;
 
         if (isHighlighted) {
-          context.writeln(context.style.info(' $pointer $label'));
+          context.writeln(
+            context
+                .newStyle()
+                .foreground(Colors.info)
+                .render(' $pointer $label'),
+          );
         } else {
           context.writeln('   $label');
         }
@@ -86,7 +96,9 @@ class Select<T> extends InteractiveComponent<T> {
     }
 
     // Initial render
-    context.writeln(context.style.emphasize(prompt));
+    context.writeln(
+      context.newStyle().foreground(Colors.warning).bold().render(prompt),
+    );
     render(initial: true);
 
     context.hideCursor();
@@ -126,7 +138,7 @@ class Select<T> extends InteractiveComponent<T> {
           _clearRender(context, options.length.clamp(1, maxVisible) + 1);
           final selected = options[cursor];
           context.writeln(
-            '${context.style.emphasize(prompt)}: ${context.style.success(displayFn(selected))}',
+            '${context.newStyle().foreground(Colors.warning).bold().render(prompt)}: ${context.newStyle().foreground(Colors.success).render(displayFn(selected))}',
           );
           context.showCursor();
           return selected;
@@ -182,9 +194,11 @@ class MultiSelect<T> extends InteractiveComponent<List<T>> {
     final buffer = StringBuffer();
     final displayFn = display ?? (v) => v.toString();
 
-    buffer.writeln(context.style.emphasize(prompt));
+    buffer.writeln(
+      context.newStyle().foreground(Colors.warning).bold().render(prompt),
+    );
     if (hint != null) {
-      buffer.writeln(context.style.muted('  $hint'));
+      buffer.writeln(context.newStyle().dim().render('  $hint'));
     }
 
     final displayCount = options.length.clamp(1, maxVisible);
@@ -195,10 +209,12 @@ class MultiSelect<T> extends InteractiveComponent<List<T>> {
       final isSelected = defaultSelected.contains(i);
 
       final icon = isSelected
-          ? context.style.success(selectedIcon)
-          : context.style.muted(unselectedIcon);
+          ? context.newStyle().foreground(Colors.success).render(selectedIcon)
+          : context.newStyle().dim().render(unselectedIcon);
       final ptr = isHighlighted ? pointer : ' ';
-      final text = isHighlighted ? context.style.info(label) : label;
+      final text = isHighlighted
+          ? context.newStyle().foreground(Colors.info).render(label)
+          : label;
 
       buffer.writeln('  $ptr $icon $text');
     }
@@ -234,9 +250,11 @@ class MultiSelect<T> extends InteractiveComponent<List<T>> {
       }
 
       // Header
-      context.writeln(context.style.emphasize(prompt));
+      context.writeln(
+        context.newStyle().foreground(Colors.warning).bold().render(prompt),
+      );
       if (hint != null) {
-        context.writeln(context.style.muted('  $hint'));
+        context.writeln(context.newStyle().dim().render('  $hint'));
       }
 
       // Adjust scroll
@@ -255,10 +273,12 @@ class MultiSelect<T> extends InteractiveComponent<List<T>> {
         final isSelected = selected.contains(i);
 
         final icon = isSelected
-            ? context.style.success(selectedIcon)
-            : context.style.muted(unselectedIcon);
+            ? context.newStyle().foreground(Colors.success).render(selectedIcon)
+            : context.newStyle().dim().render(unselectedIcon);
         final ptr = isHighlighted ? pointer : ' ';
-        final text = isHighlighted ? context.style.info(label) : label;
+        final text = isHighlighted
+            ? context.newStyle().foreground(Colors.info).render(label)
+            : label;
 
         context.writeln('  $ptr $icon $text');
       }
@@ -312,9 +332,14 @@ class MultiSelect<T> extends InteractiveComponent<List<T>> {
             ..map((i) => options[i]).toList();
           final values = result.map((i) => options[i]).toList();
           final displayStr = values.isEmpty
-              ? context.style.muted('(none)')
-              : context.style.success(values.map(displayFn).join(', '));
-          context.writeln('${context.style.emphasize(prompt)}: $displayStr');
+              ? context.newStyle().dim().render('(none)')
+              : context
+                    .newStyle()
+                    .foreground(Colors.success)
+                    .render(values.map(displayFn).join(', '));
+          context.writeln(
+            '${context.newStyle().foreground(Colors.warning).bold().render(prompt)}: $displayStr',
+          );
           context.showCursor();
           return values;
         } else if (key == KeyCode.ctrlC || key == KeyCode.ctrlD) {

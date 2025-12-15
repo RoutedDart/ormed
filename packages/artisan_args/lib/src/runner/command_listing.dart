@@ -10,6 +10,47 @@ String indentBlock(String input, int spaces) {
       .join('\n');
 }
 
+/// Formats option usage text, highlighting option names.
+///
+/// [usage] is the raw output from `argParser.usage`.
+/// [styleOption] is an optional callback to style the option flags (e.g. `--foo`).
+String formatOptionsUsage(
+  String usage, {
+  String Function(String text)? styleOption,
+}) {
+  final lines = usage.split('\n');
+  final styled = <String>[];
+  for (final line in lines) {
+    if (line.trim().isEmpty) {
+      styled.add(line);
+      continue;
+    }
+
+    final match = RegExp(r'^(\s*)(.*)$').firstMatch(line);
+    if (match == null) {
+      styled.add(line);
+      continue;
+    }
+
+    final indent = match.group(1) ?? '';
+    final rest = match.group(2) ?? '';
+    final split = RegExp(r'\s{2,}').firstMatch(rest);
+    if (split == null) {
+      styled.add(line);
+      continue;
+    }
+
+    final left = rest.substring(0, split.start).trimRight();
+    final spacing = rest.substring(split.start, split.end);
+    final right = rest.substring(split.end);
+
+    final formattedLeft = styleOption != null ? styleOption(left) : left;
+    styled.add('$indent$formattedLeft$spacing$right');
+  }
+
+  return styled.join('\n');
+}
+
 /// Formats a list of commands for display, grouping by namespace.
 ///
 /// Commands are grouped by their namespace prefix (e.g., `ui:task` belongs

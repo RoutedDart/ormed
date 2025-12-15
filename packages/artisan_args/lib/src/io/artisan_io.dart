@@ -6,7 +6,9 @@ import '../components/password.dart';
 import '../components/progress_bar.dart';
 import '../components/select.dart';
 import '../components/table.dart';
-import '../style/artisan_style.dart';
+import '../renderer/renderer.dart';
+import '../style/color.dart';
+import '../style/style.dart';
 import '../style/verbosity.dart';
 import 'components.dart';
 
@@ -52,7 +54,6 @@ enum ArtisanTaskResult {
 class ArtisanIO {
   /// Creates a new I/O helper.
   ArtisanIO({
-    required this.style,
     required ArtisanWriteLine out,
     required ArtisanWriteLine err,
     ArtisanWriteRaw? outRaw,
@@ -64,6 +65,7 @@ class ArtisanIO {
     this.interactive = true,
     this.verbosity = ArtisanVerbosity.normal,
     int? terminalWidth,
+    Renderer? renderer,
   }) : _out = out,
        _err = err,
        _outRaw = outRaw ?? ((text) => out(text)),
@@ -72,10 +74,19 @@ class ArtisanIO {
        _secretReader = secretReader,
        _stdin = stdin,
        _stdout = stdout,
-       terminalWidth = terminalWidth ?? 120;
+       terminalWidth = terminalWidth ?? 120,
+       _renderer = renderer ?? defaultRenderer;
+
+  /// The renderer for output.
+  final Renderer _renderer;
 
   /// The ANSI style configuration.
-  final ArtisanStyle style;
+  Style get style => Style()
+    ..colorProfile = _renderer.colorProfile
+    ..hasDarkBackground = _renderer.hasDarkBackground;
+
+  /// Private getter for internal use (backwards compatibility).
+  Style get _style => style;
 
   /// Whether interactive prompts are enabled.
   final bool interactive;
@@ -150,16 +161,16 @@ class ArtisanIO {
   /// Outputs a title with underline.
   void title(String message) {
     final trimmed = message.trimRight();
-    writeln(style.heading(trimmed));
-    writeln(style.heading('=' * ArtisanStyle.visibleLength(trimmed)));
+    writeln(_style.bold().render(trimmed));
+    writeln(_style.bold().render('=' * Style.visibleLength(trimmed)));
     newLine();
   }
 
   /// Outputs a section header with underline.
   void section(String message) {
     final trimmed = message.trimRight();
-    writeln(style.heading(trimmed));
-    writeln(style.heading('-' * ArtisanStyle.visibleLength(trimmed)));
+    writeln(_style.bold().render(trimmed));
+    writeln(_style.bold().render('-' * Style.visibleLength(trimmed)));
     newLine();
   }
 
@@ -184,46 +195,54 @@ class ArtisanIO {
   // ─────────────────────────────────────────────────────────────────────────────
 
   /// Outputs an info message.
-  void info(Object message) => _labeledBlock('INFO', message, style.info);
+  void info(Object message) =>
+      _labeledBlock('INFO', message, _style.bold().foreground(Colors.info));
 
   /// Outputs a success message.
-  void success(Object message) => _labeledBlock('OK', message, style.success);
+  void success(Object message) =>
+      _labeledBlock('OK', message, _style.bold().foreground(Colors.success));
 
   /// Outputs a warning message.
-  void warning(Object message) =>
-      _labeledBlock('WARNING', message, style.warning);
+  void warning(Object message) => _labeledBlock(
+    'WARNING',
+    message,
+    _style.bold().foreground(Colors.warning),
+  );
 
   /// Outputs an error message.
-  void error(Object message) => _labeledBlock('ERROR', message, style.error);
+  void error(Object message) =>
+      _labeledBlock('ERROR', message, _style.bold().foreground(Colors.error));
 
   /// Outputs a note message.
-  void note(Object message) => _labeledBlock('NOTE', message, style.heading);
+  void note(Object message) =>
+      _labeledBlock('NOTE', message, _style.bold().foreground(Colors.warning));
 
   /// Outputs a caution message.
   void caution(Object message) =>
-      _labeledBlock('CAUTION', message, style.error);
+      _labeledBlock('CAUTION', message, _style.bold().foreground(Colors.error));
 
   /// Outputs an alert box.
   void alert(Object message) {
+    final warningStyle = _style.bold().foreground(Colors.warning);
     final lines = _normalizeLines(message);
     final contentWidth = lines
-        .map((line) => ArtisanStyle.visibleLength(line))
+        .map((line) => Style.visibleLength(line))
         .fold<int>(0, (m, v) => v > m ? v : m);
     final width = (contentWidth + 4).clamp(0, terminalWidth);
 
     final top = '+${'-' * (width - 2)}+';
-    writeln(style.warning(top));
+    writeln(warningStyle.render(top));
     for (final line in lines) {
-      final visible = ArtisanStyle.visibleLength(line);
+      final visible = Style.visibleLength(line);
       final fill = width - 4 - visible;
       writeln(
-        style.warning('| ') +
+        warningStyle.render('| ') +
             line +
             (' ' * (fill > 0 ? fill : 0)) +
-            style.warning(' |'),
+            warningStyle.render(' |'),
       );
     }
-    writeln(style.warning(top));
+    writeln(warningStyle.render(top));
     newLine();
   }
 
@@ -232,7 +251,7 @@ class ArtisanIO {
     final left = first;
     final right = second ?? '';
     final maxLeft = (terminalWidth / 2).floor().clamp(16, 60);
-    final leftLen = ArtisanStyle.visibleLength(left);
+    final leftLen = Style.visibleLength(left);
     final pad = maxLeft - leftLen;
     final gap = pad > 0 ? ' ' * pad : ' ';
     writeln('  $left$gap$right');
@@ -263,22 +282,25 @@ class ArtisanIO {
       watch.stop();
       final runtime = run == null ? '' : ' ${_formatDuration(watch.elapsed)}';
       final statusLabel = switch (result) {
-        ArtisanTaskResult.success => style.success('DONE'),
-        ArtisanTaskResult.skipped => style.warning('SKIPPED'),
-        ArtisanTaskResult.failure => style.error('FAIL'),
+        ArtisanTaskResult.success =>
+          _style.bold().foreground(Colors.success).render('DONE'),
+        ArtisanTaskResult.skipped =>
+          _style.bold().foreground(Colors.warning).render('SKIPPED'),
+        ArtisanTaskResult.failure =>
+          _style.bold().foreground(Colors.error).render('FAIL'),
       };
 
       final used =
           2 +
-          ArtisanStyle.visibleLength(desc) +
+          Style.visibleLength(desc) +
           1 +
-          ArtisanStyle.visibleLength(runtime) +
+          Style.visibleLength(runtime) +
           1 +
           4;
       final dots = (terminalWidth - used).clamp(0, terminalWidth);
-      write(style.muted('.' * dots));
+      write(_style.dim().render('.' * dots));
       if (runtime.isNotEmpty) {
-        write(style.muted(runtime));
+        write(_style.dim().render(runtime));
       }
       writeln(' $statusLabel');
     }
@@ -294,10 +316,10 @@ class ArtisanIO {
     required List<List<Object?>> rows,
   }) {
     final context = ComponentContext(
-      style: style,
       stdout: _stdout ?? io.stdout,
       stdin: _stdin ?? io.stdin,
       terminalWidth: terminalWidth,
+      renderer: _renderer,
     );
     final component = TableComponent(headers: headers, rows: rows);
     final result = component.build(context);
@@ -313,10 +335,10 @@ class ArtisanIO {
 
   /// Creates a component context for the current IO.
   ComponentContext get _componentContext => ComponentContext(
-    style: style,
     stdout: _stdout ?? io.stdout,
     stdin: _stdin ?? io.stdin,
     terminalWidth: terminalWidth,
+    renderer: _renderer,
   );
 
   /// Creates a new progress bar.
@@ -347,7 +369,9 @@ class ArtisanIO {
     if (!interactive) return defaultValue;
 
     final suffix = defaultValue ? '[Y/n]' : '[y/N]';
-    write('${style.emphasize(question)} $suffix ');
+    write(
+      '${_style.bold().foreground(Colors.warning).render(question)} $suffix ',
+    );
     final input = (_readLine?.call() ?? '').trim().toLowerCase();
     if (input.isEmpty) return defaultValue;
     if (input == 'y' || input == 'yes') return true;
@@ -369,12 +393,16 @@ class ArtisanIO {
 
     for (var i = 0; i < attempts; i++) {
       final suffix = defaultValue == null ? '' : ' [$defaultValue]';
-      write('${style.emphasize(question)}$suffix: ');
+      write(
+        '${_style.bold().foreground(Colors.warning).render(question)}$suffix: ',
+      );
       final raw = _readLine?.call();
       final value = (raw == null || raw.isEmpty) ? (defaultValue ?? '') : raw;
       final error = validator?.call(value);
       if (error == null) return value;
-      writelnErr(style.error('Error: $error'));
+      writelnErr(
+        _style.bold().foreground(Colors.error).render('Error: $error'),
+      );
     }
 
     throw StateError('Too many invalid attempts.');
@@ -415,7 +443,7 @@ class ArtisanIO {
       throw StateError('Cannot prompt in non-interactive mode.');
     }
 
-    writeln(style.emphasize(question));
+    writeln(_style.bold().foreground(Colors.warning).render(question));
     for (var i = 0; i < choices.length; i++) {
       writeln('  [$i] ${choices[i]}');
     }
@@ -508,14 +536,10 @@ class ArtisanIO {
     return message.toString().split('\n');
   }
 
-  void _labeledBlock(
-    String label,
-    Object message,
-    String Function(String text) labelStyle,
-  ) {
+  void _labeledBlock(String label, Object message, Style labelStyle) {
     final lines = _normalizeLines(message);
     for (final line in lines) {
-      writeln('${labelStyle('[$label]')} $line');
+      writeln('${labelStyle.render('[$label]')} $line');
     }
     newLine();
   }

@@ -1,3 +1,4 @@
+import '../style/color.dart';
 import 'base.dart';
 
 /// A simple text component.
@@ -31,13 +32,18 @@ class StyledText extends CliComponent {
   @override
   RenderResult build(ComponentContext context) {
     final output = switch (_type) {
-      _StyleType.info => context.style.info(text),
-      _StyleType.success => context.style.success(text),
-      _StyleType.warning => context.style.warning(text),
-      _StyleType.error => context.style.error(text),
-      _StyleType.muted => context.style.muted(text),
-      _StyleType.emphasize => context.style.emphasize(text),
-      _StyleType.heading => context.style.heading(text),
+      _StyleType.info =>
+        context.newStyle().foreground(Colors.info).render(text),
+      _StyleType.success =>
+        context.newStyle().foreground(Colors.success).render(text),
+      _StyleType.warning =>
+        context.newStyle().foreground(Colors.warning).bold().render(text),
+      _StyleType.error =>
+        context.newStyle().foreground(Colors.error).render(text),
+      _StyleType.muted => context.newStyle().dim().render(text),
+      _StyleType.emphasize =>
+        context.newStyle().foreground(Colors.warning).bold().render(text),
+      _StyleType.heading => context.newStyle().bold().render(text),
     };
     return RenderResult(output: output, lineCount: 1);
   }

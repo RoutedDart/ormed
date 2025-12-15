@@ -56,14 +56,54 @@ export 'src/io/validators.dart' show Validators;
 // Terminal utilities
 export 'src/output/terminal.dart' show Terminal, RawModeState, KeyCode;
 
-// Style
-export 'src/style/artisan_style.dart' show ArtisanStyle;
+// Style - Verbosity
 export 'src/style/verbosity.dart' show ArtisanVerbosity;
-export 'src/style/chalk.dart' show ArtisanChalk, ColorPresets;
+
+// Style - Fluent Style System
+export 'src/style/style.dart' show Style;
+export 'src/style/color.dart'
+    show
+        Color,
+        BasicColor,
+        AnsiColor,
+        AdaptiveColor,
+        CompleteColor,
+        NoColor,
+        Colors,
+        ColorProfile;
+export 'src/style/border.dart' show Border, BorderSides;
+export 'src/style/properties.dart'
+    show
+        Padding,
+        Margin,
+        Align,
+        HorizontalAlign,
+        VerticalAlign,
+        HorizontalAlignPosition,
+        VerticalAlignPosition;
+
+// Renderer
+export 'src/renderer/renderer.dart'
+    show
+        Renderer,
+        TerminalRenderer,
+        StringRenderer,
+        NullRenderer,
+        defaultRenderer,
+        resetDefaultRenderer;
+
+// Layout
+export 'src/layout/layout.dart' show Layout;
 
 // Component System - Base
 export 'src/components/base.dart'
-    show CliComponent, InteractiveComponent, ComponentContext, RenderResult;
+    show
+        CliComponent,
+        InteractiveComponent,
+        ComponentContext,
+        RenderResult,
+        StyledComponent,
+        FluentComponent;
 
 // Component System - Layout
 export 'src/components/layout.dart'
@@ -73,11 +113,20 @@ export 'src/components/layout.dart'
 export 'src/components/text.dart' show Text, StyledText, Rule;
 
 // Component System - List
-export 'src/components/list.dart' show BulletList, NumberedList;
+export 'src/components/list.dart'
+    show BulletList, NumberedList, ListEnumerator, ListStyleFunc;
 
-// Component System - Box
+// Component System - Box (Legacy + Fluent)
 export 'src/components/box.dart'
-    show KeyValue, Box, BorderStyle, ComponentBoxChars;
+    show
+        KeyValue,
+        Box,
+        BorderStyle,
+        ComponentBoxChars,
+        BoxBuilder,
+        BoxAlign,
+        BoxContentStyleFunc,
+        BoxPresets;
 
 // Component System - Progress
 export 'src/components/progress.dart' show ProgressBar, SpinnerFrame;
@@ -95,23 +144,74 @@ export 'src/components/select.dart' show Select, MultiSelect;
 export 'src/components/spinner.dart'
     show SpinnerComponent, SpinnerFrames, StatefulSpinner, withSpinner;
 
-// Component System - Output Components
-export 'src/components/alert.dart' show AlertComponent, AlertType;
+// Component System - Alert (Legacy + Fluent)
+export 'src/components/alert.dart'
+    show
+        AlertComponent,
+        AlertType,
+        Alert,
+        AlertDisplayStyle,
+        AlertStyleFunc,
+        AlertFactory;
+
+// Component System - Columns
 export 'src/components/columns.dart' show ColumnsComponent;
-export 'src/components/definition_list.dart' show DefinitionListComponent;
-export 'src/components/panel.dart' show PanelComponent, PanelAlignment;
+
+// Component System - Definition List (Legacy + Fluent)
+export 'src/components/definition_list.dart'
+    show
+        DefinitionListComponent,
+        DefinitionList,
+        DefinitionStyleFunc,
+        GroupedDefinitionList,
+        DefinitionListFactory;
+
+// Component System - Panel (Legacy + Fluent)
+export 'src/components/panel.dart'
+    show
+        PanelComponent,
+        PanelAlignment,
+        Panel,
+        PanelContentStyleFunc,
+        PanelPresets;
 export 'src/components/panel_chars.dart' show PanelBoxChars, PanelBoxCharSet;
+
+// Component System - Task
 export 'src/components/task.dart' show TaskComponent, TaskStatus;
-export 'src/components/tree.dart' show TreeComponent;
-export 'src/components/two_column_detail.dart' show TwoColumnDetailComponent;
 
-// Component System - Table
+// Component System - Tree (Legacy + Fluent)
+export 'src/components/tree.dart'
+    show TreeComponent, Tree, TreeEnumerator, TreeStyleFunc, TreeFactory;
+
+// Component System - Two Column Detail (Legacy + Fluent)
+export 'src/components/two_column_detail.dart'
+    show
+        TwoColumnDetailComponent,
+        TwoColumnDetail,
+        TwoColumnStyleFunc,
+        TwoColumnDetailList,
+        TwoColumnDetailFactory;
+
+// Component System - Table (Legacy + Fluent)
 export 'src/components/table.dart'
-    show TableComponent, HorizontalTableComponent;
+    show
+        TableComponent,
+        HorizontalTableComponent,
+        Table,
+        TableStyleFunc,
+        TableFactory;
 
-// Component System - Styled Block
+// Component System - Styled Block (Legacy + Fluent)
 export 'src/components/styled_block.dart'
-    show StyledBlockComponent, BlockStyleType, CommentComponent;
+    show
+        StyledBlockComponent,
+        BlockStyleType,
+        CommentComponent,
+        StyledBlock,
+        StyledBlockDisplayStyle,
+        StyledBlockStyleFunc,
+        StyledBlockFactory,
+        Comment;
 
 // Component System - Exception
 export 'src/components/exception.dart'

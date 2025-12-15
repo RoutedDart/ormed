@@ -1,7 +1,8 @@
 import 'dart:async';
 
 import '../output/terminal.dart';
-import '../style/artisan_style.dart';
+import '../style/color.dart';
+import '../style/style.dart';
 import 'base.dart';
 
 /// Configuration for anticipate/autocomplete component.
@@ -45,11 +46,11 @@ class AnticipateComponent extends InteractiveComponent<String?> {
   @override
   RenderResult build(ComponentContext context) {
     final inputText = defaultValue != null
-        ? context.style.muted(defaultValue!)
+        ? context.newStyle().dim().render(defaultValue!)
         : '';
     return RenderResult(
       output:
-          '${context.style.info('?')} ${context.style.emphasize(question)}: $inputText',
+          '${context.newStyle().foreground(Colors.info).render('?')} ${context.newStyle().foreground(Colors.warning).bold().render(question)}: $inputText',
       lineCount: 1,
     );
   }
@@ -98,10 +99,10 @@ class AnticipateComponent extends InteractiveComponent<String?> {
       context.stdout.write('\r\x1B[2K');
 
       final inputText = buffer.isEmpty
-          ? context.style.muted(defaultValue ?? '')
+          ? context.newStyle().dim().render(defaultValue ?? '')
           : buffer.toString();
       context.stdout.write(
-        '${context.style.info('?')} ${context.style.emphasize(question)}: $inputText',
+        '${context.newStyle().foreground(Colors.info).render('?')} ${context.newStyle().foreground(Colors.warning).bold().render(question)}: $inputText',
       );
 
       for (var i = 0; i < filteredSuggestions.length; i++) {
@@ -118,8 +119,7 @@ class AnticipateComponent extends InteractiveComponent<String?> {
 
       if (filteredSuggestions.isNotEmpty) {
         context.stdout.write('\x1B[${filteredSuggestions.length}A');
-        final col =
-            4 + ArtisanStyle.visibleLength(question) + 2 + buffer.length;
+        final col = 4 + Style.visibleLength(question) + 2 + buffer.length;
         context.stdout.write('\r\x1B[${col}C');
       }
 
@@ -183,7 +183,7 @@ class AnticipateComponent extends InteractiveComponent<String?> {
           }
           cleanup();
           context.writeln(
-            '${context.style.info('?')} ${context.style.emphasize(question)}: ${context.style.success(result)}',
+            '${context.newStyle().foreground(Colors.info).render('?')} ${context.newStyle().foreground(Colors.warning).bold().render(question)}: ${context.newStyle().foreground(Colors.success).bold().render(result)}',
           );
           context.showCursor();
           return result;
@@ -217,7 +217,7 @@ class AnticipateComponent extends InteractiveComponent<String?> {
   }
 
   String _highlight(ComponentContext context, String text) {
-    if (!context.style.enabled) return text;
+    if (context.colorProfile == ColorProfile.ascii) return text;
     return '\x1B[${config.highlightColor}m$text\x1B[0m';
   }
 }

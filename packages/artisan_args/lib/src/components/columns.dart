@@ -1,4 +1,4 @@
-import '../style/artisan_style.dart';
+import '../style/style.dart';
 import 'base.dart';
 
 /// A multi-column layout component.
@@ -28,7 +28,7 @@ class ColumnsComponent extends CliComponent {
 
     // Auto-calculate columns if not specified
     final maxItemWidth = items
-        .map((i) => ArtisanStyle.visibleLength(i))
+        .map((i) => Style.visibleLength(i))
         .fold<int>(0, (m, v) => v > m ? v : m);
     final cols =
         columnCount ??
@@ -47,7 +47,7 @@ class ColumnsComponent extends CliComponent {
       final row = <String>[];
       for (var j = 0; j < cols && i + j < items.length; j++) {
         final item = items[i + j];
-        final visible = ArtisanStyle.visibleLength(item);
+        final visible = Style.visibleLength(item);
         final fill = colWidth - visible;
         row.add('$item${' ' * (fill > 0 ? fill : 0)}');
       }

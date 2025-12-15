@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import '../output/terminal.dart';
+import '../style/color.dart';
 import 'base.dart';
 
 /// Configuration for search component.
@@ -46,9 +47,11 @@ class SearchComponent<T> extends InteractiveComponent<T?> {
   @override
   RenderResult build(ComponentContext context) {
     final buffer = StringBuffer();
-    buffer.writeln(context.style.emphasize(question));
+    buffer.writeln(
+      context.newStyle().foreground(Colors.warning).bold().render(question),
+    );
     buffer.write(
-      '${context.style.info('/')} ${context.style.muted(config.placeholder)}',
+      '${context.newStyle().foreground(Colors.info).render('/')} ${context.newStyle().dim().render(config.placeholder)}',
     );
     return RenderResult(output: buffer.toString(), lineCount: 2);
   }
@@ -67,7 +70,9 @@ class SearchComponent<T> extends InteractiveComponent<T?> {
     var filteredChoices = choices.toList();
 
     context.hideCursor();
-    context.writeln(context.style.emphasize(question));
+    context.writeln(
+      context.newStyle().foreground(Colors.warning).bold().render(question),
+    );
 
     void render() {
       terminal.clearPreviousLines(
@@ -75,9 +80,11 @@ class SearchComponent<T> extends InteractiveComponent<T?> {
       );
 
       final searchText = buffer.isEmpty
-          ? context.style.muted(config.placeholder)
+          ? context.newStyle().dim().render(config.placeholder)
           : buffer.toString();
-      context.writeln('${context.style.info('/')} $searchText');
+      context.writeln(
+        '${context.newStyle().foreground(Colors.info).render('/')} $searchText',
+      );
 
       final query = buffer.toString();
       filteredChoices = query.isEmpty
@@ -85,7 +92,9 @@ class SearchComponent<T> extends InteractiveComponent<T?> {
           : choices.where((c) => filterFn(c, query)).toList();
 
       if (filteredChoices.isEmpty) {
-        context.writeln(context.style.muted('  ${config.emptyMessage}'));
+        context.writeln(
+          context.newStyle().dim().render('  ${config.emptyMessage}'),
+        );
         return;
       }
 
@@ -109,7 +118,7 @@ class SearchComponent<T> extends InteractiveComponent<T?> {
     }
 
     // Initial render
-    context.writeln(context.style.muted('  ${config.placeholder}'));
+    context.writeln(context.newStyle().dim().render('  ${config.placeholder}'));
     for (var i = 0; i < choices.length.clamp(1, config.maxResults); i++) {
       context.writeln('');
     }
@@ -167,7 +176,7 @@ class SearchComponent<T> extends InteractiveComponent<T?> {
   }
 
   String _highlight(ComponentContext context, String text) {
-    if (!context.style.enabled) return text;
+    if (context.colorProfile == ColorProfile.ascii) return text;
     return '\x1B[${config.highlightColor}m$text\x1B[0m';
   }
 }
@@ -186,12 +195,15 @@ class PauseComponent extends InteractiveComponent<void> {
 
   @override
   RenderResult build(ComponentContext context) {
-    return RenderResult(output: context.style.muted(message), lineCount: 1);
+    return RenderResult(
+      output: context.newStyle().dim().render(message),
+      lineCount: 1,
+    );
   }
 
   @override
   Future<void> interact(ComponentContext context) async {
-    context.write(context.style.muted(message));
+    context.write(context.newStyle().dim().render(message));
 
     final terminal = Terminal(stdin: context.stdin, stdout: context.stdout);
     final rawMode = terminal.enableRawMode();
@@ -227,7 +239,7 @@ class CountdownComponent extends InteractiveComponent<void> {
   RenderResult build(ComponentContext context) {
     return RenderResult(
       output:
-          '${context.style.muted(message)} ${context.style.emphasize('$seconds')}${context.style.muted('...')}',
+          '${context.newStyle().dim().render(message)} ${context.newStyle().foreground(Colors.warning).bold().render('$seconds')}${context.newStyle().dim().render('...')}',
       lineCount: 1,
     );
   }
@@ -238,7 +250,7 @@ class CountdownComponent extends InteractiveComponent<void> {
     try {
       for (var i = seconds; i > 0; i--) {
         context.write(
-          '\r${context.style.muted(message)} ${context.style.emphasize('$i')}${context.style.muted('...')}   ',
+          '\r${context.newStyle().dim().render(message)} ${context.newStyle().foreground(Colors.warning).bold().render('$i')}${context.newStyle().dim().render('...')}   ',
         );
         await Future<void>.delayed(const Duration(seconds: 1));
       }

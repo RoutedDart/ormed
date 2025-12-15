@@ -1,3 +1,4 @@
+import '../style/color.dart';
 import 'base.dart';
 
 /// A progress indicator component.
@@ -43,7 +44,8 @@ class SpinnerFrame extends CliComponent {
   @override
   RenderResult build(ComponentContext context) {
     return RenderResult(
-      output: '${context.style.info(frame)} $message',
+      output:
+          '${context.newStyle().foreground(Colors.info).render(frame)} $message',
       lineCount: 1,
     );
   }

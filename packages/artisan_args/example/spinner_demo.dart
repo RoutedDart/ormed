@@ -5,9 +5,7 @@ import 'package:artisan_args/artisan_args.dart';
 
 /// Run this directly: dart run example/spinner_demo.dart
 void main() async {
-  final style = ArtisanStyle(ansi: stdout.supportsAnsiEscapes);
   final context = ComponentContext(
-    style: style,
     stdout: stdout,
     stdin: stdin,
     terminalWidth: stdout.hasTerminal ? stdout.terminalColumns : 80,

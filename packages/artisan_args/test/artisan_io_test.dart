@@ -5,8 +5,8 @@ void main() {
   test('ArtisanIO title has deterministic output when ansi is disabled', () {
     final out = StringBuffer();
     final err = StringBuffer();
-    final style = ArtisanStyle(ansi: false);
-    final io = ArtisanIO(style: style, out: out.writeln, err: err.writeln);
+    final renderer = StringRenderer(colorProfile: ColorProfile.ascii);
+    final io = ArtisanIO(renderer: renderer, out: out.writeln, err: err.writeln);
 
     io.title('Hello');
 
@@ -18,25 +18,26 @@ void main() {
 
   test('ArtisanIO table alignment ignores ANSI sequences', () {
     final out = StringBuffer();
-    final style = ArtisanStyle(ansi: true);
-    final io = ArtisanIO(style: style, out: out.writeln, err: (_) {});
+    final renderer = StringRenderer(colorProfile: ColorProfile.trueColor);
+    final io = ArtisanIO(renderer: renderer, out: out.writeln, err: (_) {});
 
     io.table(
       headers: ['status'],
       rows: [
-        [style.success('DONE')],
+        [io.style.foreground(Colors.success).render('DONE')],
       ],
     );
 
     final rendered = out.toString();
     expect(rendered, contains('\x1B['));
-    expect(ArtisanStyle.stripAnsi(rendered), contains('DONE'));
-    expect(ArtisanStyle.stripAnsi(rendered), contains('+'));
+    expect(Style.stripAnsi(rendered), contains('DONE'));
+    expect(Style.stripAnsi(rendered), contains('+'));
   });
 
   test('ArtisanIO confirm returns default in non-interactive mode', () {
+    final renderer = StringRenderer(colorProfile: ColorProfile.ascii);
     final io = ArtisanIO(
-      style: ArtisanStyle(ansi: false),
+      renderer: renderer,
       out: (_) {},
       err: (_) {},
       interactive: false,
@@ -50,8 +51,9 @@ void main() {
     final inputs = <String>['n', 'yes'];
     String? readLine() => inputs.removeAt(0);
 
+    final renderer = StringRenderer(colorProfile: ColorProfile.ascii);
     final io = ArtisanIO(
-      style: ArtisanStyle(ansi: false),
+      renderer: renderer,
       out: (_) {},
       err: (_) {},
       readLine: readLine,
@@ -64,8 +66,9 @@ void main() {
 
   group('secret()', () {
     test('returns fallback in non-interactive mode', () async {
+      final renderer = StringRenderer(colorProfile: ColorProfile.ascii);
       final io = ArtisanIO(
-        style: ArtisanStyle(ansi: false),
+        renderer: renderer,
         out: (_) {},
         err: (_) {},
         interactive: false,
@@ -75,8 +78,9 @@ void main() {
     });
 
     test('throws in non-interactive mode without fallback', () async {
+      final renderer = StringRenderer(colorProfile: ColorProfile.ascii);
       final io = ArtisanIO(
-        style: ArtisanStyle(ansi: false),
+        renderer: renderer,
         out: (_) {},
         err: (_) {},
         interactive: false,
@@ -86,8 +90,9 @@ void main() {
     });
 
     test('uses injected secretReader when provided', () async {
+      final renderer = StringRenderer(colorProfile: ColorProfile.ascii);
       final io = ArtisanIO(
-        style: ArtisanStyle(ansi: false),
+        renderer: renderer,
         out: (_) {},
         err: (_) {},
         interactive: true,
@@ -100,8 +105,9 @@ void main() {
 
   group('components', () {
     test('provides access to ArtisanComponents facade', () {
+      final renderer = StringRenderer(colorProfile: ColorProfile.ascii);
       final io = ArtisanIO(
-        style: ArtisanStyle(ansi: false),
+        renderer: renderer,
         out: (_) {},
         err: (_) {},
       );
@@ -113,8 +119,9 @@ void main() {
 
     test('components.bulletList outputs formatted list', () {
       final out = StringBuffer();
+      final renderer = StringRenderer(colorProfile: ColorProfile.ascii);
       final io = ArtisanIO(
-        style: ArtisanStyle(ansi: false),
+        renderer: renderer,
         out: out.writeln,
         err: (_) {},
       );
@@ -130,8 +137,9 @@ void main() {
 
     test('components.definitionList outputs aligned terms', () {
       final out = StringBuffer();
+      final renderer = StringRenderer(colorProfile: ColorProfile.ascii);
       final io = ArtisanIO(
-        style: ArtisanStyle(ansi: false),
+        renderer: renderer,
         out: out.writeln,
         err: (_) {},
       );
@@ -151,8 +159,9 @@ void main() {
 
     test('components.rule outputs horizontal separator', () {
       final out = StringBuffer();
+      final renderer = StringRenderer(colorProfile: ColorProfile.ascii);
       final io = ArtisanIO(
-        style: ArtisanStyle(ansi: false),
+        renderer: renderer,
         out: out.writeln,
         err: (_) {},
       );
@@ -167,8 +176,9 @@ void main() {
 
     test('components.twoColumnDetail delegates to io', () {
       final out = StringBuffer();
+      final renderer = StringRenderer(colorProfile: ColorProfile.ascii);
       final io = ArtisanIO(
-        style: ArtisanStyle(ansi: false),
+        renderer: renderer,
         out: out.writeln,
         err: (_) {},
       );
@@ -183,8 +193,9 @@ void main() {
 
   group('selectChoice / multiSelectChoice', () {
     test('selectChoice returns default in non-interactive mode', () async {
+      final renderer = StringRenderer(colorProfile: ColorProfile.ascii);
       final io = ArtisanIO(
-        style: ArtisanStyle(ansi: false),
+        renderer: renderer,
         out: (_) {},
         err: (_) {},
         interactive: false,
@@ -200,8 +211,9 @@ void main() {
     });
 
     test('selectChoice throws in non-interactive mode without default', () {
+      final renderer = StringRenderer(colorProfile: ColorProfile.ascii);
       final io = ArtisanIO(
-        style: ArtisanStyle(ansi: false),
+        renderer: renderer,
         out: (_) {},
         err: (_) {},
         interactive: false,
@@ -216,8 +228,9 @@ void main() {
     test(
       'multiSelectChoice returns defaults in non-interactive mode',
       () async {
+        final renderer = StringRenderer(colorProfile: ColorProfile.ascii);
         final io = ArtisanIO(
-          style: ArtisanStyle(ansi: false),
+          renderer: renderer,
           out: (_) {},
           err: (_) {},
           interactive: false,

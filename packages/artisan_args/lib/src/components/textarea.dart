@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io' as io;
 
+import '../style/color.dart';
 import 'base.dart';
 
 /// A textarea component that opens an external editor.
@@ -30,7 +31,7 @@ class TextareaComponent extends InteractiveComponent<String?> {
     if (prompt != null) {
       return RenderResult(
         output:
-            '${context.style.info('?')} ${context.style.emphasize(prompt!)}',
+            '${context.newStyle().foreground(Colors.info).render('?')} ${context.newStyle().foreground(Colors.warning).bold().render(prompt!)}',
         lineCount: 1,
       );
     }
@@ -67,10 +68,12 @@ class TextareaComponent extends InteractiveComponent<String?> {
       // Show prompt
       if (prompt != null) {
         context.writeln(
-          '${context.style.info('?')} ${context.style.emphasize(prompt!)}',
+          '${context.newStyle().foreground(Colors.info).render('?')} ${context.newStyle().foreground(Colors.warning).bold().render(prompt!)}',
         );
         context.writeln(
-          context.style.muted('  Opening ${_getEditorName(editorCmd)}...'),
+          context.newStyle().dim().render(
+            '  Opening ${_getEditorName(editorCmd)}...',
+          ),
         );
       }
 

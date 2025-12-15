@@ -1,4 +1,5 @@
-import '../style/artisan_style.dart';
+import '../style/color.dart';
+import '../style/style.dart';
 import 'base.dart';
 
 /// Task status values.
@@ -28,13 +29,13 @@ class TaskComponent extends CliComponent {
   @override
   RenderResult build(ComponentContext context) {
     final statusText = switch (status) {
-      TaskStatus.success => context.style.success('DONE'),
-      TaskStatus.failure => context.style.error('FAIL'),
-      TaskStatus.skipped => context.style.warning('SKIP'),
-      TaskStatus.running => context.style.info('...'),
+      TaskStatus.success => context.newStyle().foreground(Colors.success).bold().render('DONE'),
+      TaskStatus.failure => context.newStyle().foreground(Colors.error).bold().render('FAIL'),
+      TaskStatus.skipped => context.newStyle().foreground(Colors.warning).bold().render('SKIP'),
+      TaskStatus.running => context.newStyle().foreground(Colors.info).bold().render('...'),
     };
 
-    final descLen = ArtisanStyle.visibleLength(description);
+    final descLen = Style.visibleLength(description);
     final statusLen = 4; // DONE/FAIL/SKIP
     final available = context.terminalWidth - indent - descLen - statusLen - 2;
     final fill = available > 0 ? ' ${fillChar * available} ' : ' ';

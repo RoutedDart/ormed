@@ -3,7 +3,9 @@ import 'dart:io' as dartio;
 import 'package:args/command_runner.dart';
 
 import '../io/artisan_io.dart';
-import '../style/artisan_style.dart';
+import '../renderer/renderer.dart';
+import '../style/color.dart';
+import '../style/style.dart';
 import 'command_listing.dart';
 import 'command_runner.dart';
 
@@ -45,7 +47,7 @@ abstract class ArtisanCommand<T> extends Command<T> {
       return r.io;
     }
     return ArtisanIO(
-      style: ArtisanStyle(ansi: false),
+      renderer: StringRenderer(colorProfile: ColorProfile.ascii),
       out: dartio.stdout.writeln,
       err: dartio.stderr.writeln,
     );
@@ -79,27 +81,71 @@ abstract class ArtisanCommand<T> extends Command<T> {
   /// Formats help output for this command.
   String formatUsage({bool includeDescription = true}) {
     final buffer = StringBuffer();
-    final style = runner is ArtisanCommandRunner<T>
-        ? (runner as ArtisanCommandRunner<T>).style
-        : ArtisanStyle(ansi: false);
+    final Renderer renderer = runner is ArtisanCommandRunner<T>
+        ? (runner as ArtisanCommandRunner<T>).renderer
+        : StringRenderer(colorProfile: ColorProfile.ascii);
+    
+    String heading(String text) => (Style()
+        ..colorProfile = renderer.colorProfile
+        ..hasDarkBackground = renderer.hasDarkBackground)
+        .bold()
+        .foreground(Colors.yellow)
+        .render(text);
+    String command(String text) => (Style()
+        ..colorProfile = renderer.colorProfile
+        ..hasDarkBackground = renderer.hasDarkBackground)
+        .foreground(Colors.green)
+        .render(text);
+    String formatOptionsUsage(String usage) {
+      if (renderer.colorProfile == ColorProfile.ascii) return usage;
+      final lines = usage.split('\n');
+      final styled = <String>[];
+      for (final line in lines) {
+        if (line.trim().isEmpty) {
+          styled.add(line);
+          continue;
+        }
+        final match = RegExp(r'^(\s*)(.*)$').firstMatch(line);
+        if (match == null) {
+          styled.add(line);
+          continue;
+        }
+        final indent = match.group(1) ?? '';
+        final rest = match.group(2) ?? '';
+        final split = RegExp(r'\s{2,}').firstMatch(rest);
+        if (split == null) {
+          styled.add(line);
+          continue;
+        }
+        final option = rest.substring(0, split.start);
+        final desc = rest.substring(split.end);
+        final styledOption = (Style()
+            ..colorProfile = renderer.colorProfile
+            ..hasDarkBackground = renderer.hasDarkBackground)
+            .foreground(Colors.green)
+            .render(option);
+        styled.add('$indent$styledOption${' ' * (split.end - split.start)}$desc');
+      }
+      return styled.join('\n');
+    }
 
     final desc = description.trim();
     if (includeDescription && desc.isNotEmpty) {
-      buffer.writeln(style.heading('Description:'));
+      buffer.writeln(heading('Description:'));
       buffer.writeln('  $desc');
       buffer.writeln();
     }
 
-    buffer.writeln(style.heading('Usage:'));
+    buffer.writeln(heading('Usage:'));
     buffer.writeln('  ${invocation.trim()}');
     buffer.writeln();
 
-    buffer.writeln(style.heading('Options:'));
+    buffer.writeln(heading('Options:'));
     final options = argParser.usage.trimRight();
     if (options.isEmpty) {
       buffer.writeln('  (none)');
     } else {
-      buffer.writeln(indentBlock(style.formatOptionsUsage(options), 2));
+      buffer.writeln(indentBlock(formatOptionsUsage(options), 2));
     }
 
     final uniqueSubs = <Command<T>>{};
@@ -113,13 +159,13 @@ abstract class ArtisanCommand<T> extends Command<T> {
     }
     if (entries.isNotEmpty) {
       buffer.writeln();
-      buffer.writeln(style.heading('Available commands:'));
+      buffer.writeln(heading('Available commands:'));
       buffer.writeln(
         formatCommandListing(
           entries,
           namespaceSeparator: namespaceSeparator,
-          styleNamespace: style.heading,
-          styleCommand: style.command,
+          styleNamespace: heading,
+          styleCommand: command,
         ),
       );
     }

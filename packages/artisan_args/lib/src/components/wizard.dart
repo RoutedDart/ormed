@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import '../style/color.dart';
 import 'base.dart';
 import 'input.dart';
 import 'password.dart';
@@ -131,7 +132,7 @@ class WizardComponent extends InteractiveComponent<Map<String, dynamic>> {
   RenderResult build(ComponentContext context) {
     if (title != null) {
       return RenderResult(
-        output: context.style.heading(' $title '),
+        output: context.newStyle().bold().render(' $title '),
         lineCount: 1,
       );
     }
@@ -144,9 +145,9 @@ class WizardComponent extends InteractiveComponent<Map<String, dynamic>> {
 
     if (title != null) {
       context.writeln();
-      context.writeln(context.style.heading(' $title '));
+      context.writeln(context.newStyle().bold().render(' $title '));
       if (description != null) {
-        context.writeln(context.style.muted(description!));
+        context.writeln(context.newStyle().dim().render(description!));
       }
       context.writeln();
     }
@@ -169,14 +170,19 @@ class WizardComponent extends InteractiveComponent<Map<String, dynamic>> {
     }
 
     context.writeln();
-    context.writeln(context.style.success('✓ Wizard completed'));
+    context.writeln(
+      context
+          .newStyle()
+          .foreground(Colors.success)
+          .render('✓ Wizard completed'),
+    );
     context.writeln();
 
     return answers;
   }
 
   void _showProgress(ComponentContext context, int current, int total) {
-    final progress = context.style.muted('[$current/$total]');
+    final progress = context.newStyle().dim().render('[$current/$total]');
     context.write('$progress ');
   }
 
@@ -266,16 +272,20 @@ class _ChoiceStep extends WizardStep {
     ComponentContext context,
     Map<String, dynamic> answers,
   ) async {
-    context.writeln(context.style.emphasize(question));
+    context.writeln(
+      context.newStyle().foreground(Colors.warning).bold().render(question),
+    );
 
     for (var i = 0; i < choices.length; i++) {
       final isDefault = i == defaultIndex;
-      final marker = isDefault ? context.style.info('*') : ' ';
+      final marker = isDefault
+          ? context.newStyle().foreground(Colors.info).render('*')
+          : ' ';
       context.writeln('  $marker [${i + 1}] ${choices[i]}');
     }
 
     final defaultDisplay = defaultIndex != null
-        ? context.style.muted(' [${defaultIndex! + 1}]')
+        ? context.newStyle().dim().render(' [${defaultIndex! + 1}]')
         : '';
     context.write('  Choice$defaultDisplay: ');
 
@@ -289,9 +299,12 @@ class _ChoiceStep extends WizardStep {
         final parsed = int.tryParse(input);
         if (parsed == null || parsed < 1 || parsed > choices.length) {
           context.writeln(
-            context.style.error(
-              '  Please enter a number between 1 and ${choices.length}',
-            ),
+            context
+                .newStyle()
+                .foreground(Colors.error)
+                .render(
+                  '  Please enter a number between 1 and ${choices.length}',
+                ),
           );
           context.write('  Choice$defaultDisplay: ');
           continue;
@@ -322,20 +335,26 @@ class _MultiChoiceStep extends WizardStep {
     ComponentContext context,
     Map<String, dynamic> answers,
   ) async {
-    context.writeln(context.style.emphasize(question));
     context.writeln(
-      context.style.muted('  (Enter comma-separated numbers, e.g., 1,3,4)'),
+      context.newStyle().foreground(Colors.warning).bold().render(question),
+    );
+    context.writeln(
+      context.newStyle().dim().render(
+        '  (Enter comma-separated numbers, e.g., 1,3,4)',
+      ),
     );
 
     for (var i = 0; i < choices.length; i++) {
       final isDefault = defaultSelected?.contains(i) ?? false;
-      final marker = isDefault ? context.style.info('*') : ' ';
+      final marker = isDefault
+          ? context.newStyle().foreground(Colors.info).render('*')
+          : ' ';
       context.writeln('  $marker [${i + 1}] ${choices[i]}');
     }
 
     final defaultDisplay =
         defaultSelected != null && defaultSelected!.isNotEmpty
-        ? context.style.muted(
+        ? context.newStyle().dim().render(
             ' [${defaultSelected!.map((i) => i + 1).join(',')}]',
           )
         : '';
@@ -361,7 +380,12 @@ class _MultiChoiceStep extends WizardStep {
       for (final part in parts) {
         final parsed = int.tryParse(part);
         if (parsed == null || parsed < 1 || parsed > choices.length) {
-          context.writeln(context.style.error('  Invalid selection: $part'));
+          context.writeln(
+            context
+                .newStyle()
+                .foreground(Colors.error)
+                .render('  Invalid selection: $part'),
+          );
           valid = false;
           break;
         }
@@ -492,7 +516,9 @@ class _GroupStep extends WizardStep {
     Map<String, dynamic> answers,
   ) async {
     context.writeln();
-    context.writeln(context.style.info('── $title ──'));
+    context.writeln(
+      context.newStyle().foreground(Colors.info).render('── $title ──'),
+    );
     context.writeln();
 
     final groupAnswers = <String, dynamic>{};
