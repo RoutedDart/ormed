@@ -37,7 +37,8 @@ Style baseStyle() => Style().foreground(normal);
 final divider = Style()
     .setString('•')
     .padding(0, 1)
-    .foreground(subtle);
+    .foreground(subtle)
+    .toString();
 
 String urlStyle(String text) => Style().foreground(special).render(text);
 
@@ -100,8 +101,11 @@ Style infoStyle() => baseStyle()
 Style dialogBoxStyle() => Style()
     .border(Border.rounded)
     .borderForeground(BasicColor('#874BFD'))
-    .paddingTop(1)
-    .paddingBottom(1);
+    .padding(1, 0)
+    .borderTop(true)
+    .borderLeft(true)
+    .borderRight(true)
+    .borderBottom(true);
 
 Style buttonStyle() => Style()
     .foreground(BasicColor('#FFF7DB'))
@@ -135,6 +139,7 @@ String listHeader(String text) => baseStyle()
     .borderTop(false)
     .borderLeft(false)
     .borderRight(false)
+    .borderBottom(true)
     .borderForeground(subtle)
     .marginRight(2)
     .render(text);
@@ -177,16 +182,17 @@ Style statusBarStyle() => Style()
     .foreground(AdaptiveColor(light: BasicColor('#343433'), dark: BasicColor('#C1C6B2')))
     .background(AdaptiveColor(light: BasicColor('#D9DCCF'), dark: BasicColor('#353533')));
 
-Style statusStyle() => Style()
+Style statusStyle() => statusBarStyle()
     .foreground(BasicColor('#FFFDF5'))
     .background(BasicColor('#FF5F87'))
-    .paddingLeft(1)
-    .paddingRight(1)
+    .padding(0, 1)
     .marginRight(1);
 
 Style encodingStyle() => statusNuggetStyle()
     .background(BasicColor('#A550DF'))
     .align(HorizontalAlign.right);
+
+Style statusTextStyle() => statusBarStyle();
 
 Style fishCakeStyle() => statusNuggetStyle().background(BasicColor('#6124DF'));
 
@@ -363,7 +369,10 @@ String _buildColorGrid() {
     buffer.writeln();
   }
 
-  return buffer.toString().trimRight();
+  // Pad the grid to align with list column widths
+  return Style()
+      .width(columnWidth + 1)
+      .render(buffer.toString().trimRight());
 }
 
 void _buildHistory(StringBuffer doc) {
@@ -376,7 +385,7 @@ void _buildHistory(StringBuffer doc) {
 
   final col1 = historyStyle().align(HorizontalAlign.right).render(historyA);
   final col2 = historyStyle().align(HorizontalAlign.center).render(historyB);
-  final col3 = historyStyle().margin(1, 0, 0, 0).render(historyC);
+  final col3 = historyStyle().marginRight(0).render(historyC);
 
   final history = Layout.joinHorizontal(VerticalAlign.top, [col1, col2, col3]);
   doc.writeln(history);
@@ -392,9 +401,7 @@ void _buildStatusBar(StringBuffer doc) {
   final encodingWidth = Layout.getWidth(encoding);
   final fishCakeWidth = Layout.getWidth(fishCake);
 
-  final statusVal = Style()
-      .foreground(AdaptiveColor(light: BasicColor('#343433'), dark: BasicColor('#C1C6B2')))
-      .background(AdaptiveColor(light: BasicColor('#D9DCCF'), dark: BasicColor('#353533')))
+  final statusVal = statusTextStyle()
       .width(width - statusKeyWidth - encodingWidth - fishCakeWidth)
       .render('Ravishing');
 

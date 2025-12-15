@@ -970,10 +970,11 @@ class Style {
     var contentWidth = _getMaxLineWidth(lines);
 
     // Apply fixed width - wrap text to fit
+    // Like lipgloss, wrap at (width - horizontal padding) so content + padding = width
     if (_hasFlag(_PropBits.width) && _width > 0) {
-      // Wrap text to fit within width
-      lines = _wrapText(lines, _width);
-      contentWidth = _width;
+      final wrapAt = _width - _padding.horizontal;
+      lines = _wrapText(lines, wrapAt > 0 ? wrapAt : _width);
+      contentWidth = wrapAt > 0 ? wrapAt : _width;
     }
 
     // Apply padding
@@ -982,8 +983,10 @@ class Style {
       contentWidth += _padding.horizontal;
     }
 
-    // Apply alignment (needs width)
-    if (_hasFlag(_PropBits.align) && contentWidth > 0) {
+    // Apply alignment/padding to width
+    // Like lipgloss, this runs when there are multiple lines OR when width is set
+    // to ensure content is padded to the specified width
+    if ((lines.length > 1 || _hasFlag(_PropBits.width)) && contentWidth > 0) {
       lines = _alignLines(lines, contentWidth);
     }
 
@@ -996,12 +999,7 @@ class Style {
     // (margin is outside the styled area)
     lines = lines.map(_applyTextStyles).toList();
 
-    // Apply margin (after text styles - margin lines are unstyled)
-    if (!_margin.isZero) {
-      lines = _applyMargin(lines, contentWidth);
-    }
-
-    // Apply fixed height
+    // Apply fixed height (affects the styled box, margin is applied after)
     if (_hasFlag(_PropBits.height) && _height > 0) {
       lines = _applyHeight(lines, _height);
     }
@@ -1011,6 +1009,16 @@ class Style {
         _maxHeight > 0 &&
         lines.length > _maxHeight) {
       lines = lines.take(_maxHeight).toList();
+    }
+
+    // Apply margin (after sizing the box; margin lines are unstyled)
+    if (!_margin.isZero) {
+      // Use the actual rendered line width to keep margin rows aligned with
+      // the styled box (padding/border may have changed width).
+      final renderedWidth = lines.isEmpty
+          ? contentWidth
+          : lines.map(visibleLength).reduce((a, b) => a > b ? a : b);
+      lines = _applyMargin(lines, renderedWidth);
     }
 
     result = lines.join('\n');
