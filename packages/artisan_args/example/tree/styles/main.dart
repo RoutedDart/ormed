@@ -1,0 +1,23 @@
+/// Tree styles example - ported from lipgloss/examples/tree/styles
+///
+/// Demonstrates different enumerator styles per subtree.
+import 'package:artisan_args/artisan_args.dart';
+
+void main() {
+  final purple = Style().foreground(AnsiColor(99)).marginRight(1);
+  final pink = Style().foreground(AnsiColor(212)).marginRight(1);
+
+  final t = Tree()
+      .children([
+        'Glossier',
+        "Claire's Boutique",
+        Tree()
+            .root('Nyx')
+            .children(['Lip Gloss', 'Foundation']).branchStyle(pink),
+        'Mac',
+        'Milk',
+      ])
+      .branchStyle(purple);
+
+  print(t);
+}
