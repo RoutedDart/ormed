@@ -1,9 +1,5 @@
-import 'dart:io';
-
-import 'package:artisan_args/artisan_args.dart';
 import 'package:ormed/ormed.dart';
 
-import '../../config.dart';
 import '../base/runner_command.dart';
 import '../base/shared.dart';
 
@@ -42,6 +38,7 @@ class WipeCommand extends RunnerCommand {
     MigrationRunner runner,
     OrmConnection connection,
     SqlMigrationLedger ledger,
+    CliEventReporter reporter,
   ) async {
     final force = argResults?['force'] == true;
     final dropViews = argResults?['drop-views'] == true;

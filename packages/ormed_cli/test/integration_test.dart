@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:args/command_runner.dart';
 import 'package:artisan_args/artisan_args.dart';
 import 'package:ormed/ormed.dart';
-import 'package:ormed/src/connection/connection_manager.dart';
 import 'package:ormed_cli/src/commands/base/shared.dart';
 import 'package:ormed_cli/src/commands/migrate/migrate_command.dart';
 import 'package:ormed_cli/src/commands/migrate/status_command.dart';
@@ -60,6 +59,7 @@ class TestMigrationRegistryLoader implements MigrationRegistryLoader {
 // Test implementation of SeederRunner
 class TestProjectSeederRunner implements ProjectSeederRunner {
   List<String> executedSeeders = [];
+  String? receivedConnection;
 
   @override
   Future<void> run({
@@ -71,6 +71,7 @@ class TestProjectSeederRunner implements ProjectSeederRunner {
     String? databaseOverride,
     String? connection,
   }) async {
+    receivedConnection = connection ?? config.connectionName;
     executedSeeders.add(overrideClasses?.first ?? seeds.defaultClass);
     final handle = await createConnection(project.root, config);
     try {
@@ -199,6 +200,12 @@ environment:
       final logFile = File(p.join(scratchDir.path, 'seed.log'));
       expect(logFile.existsSync(), isTrue);
       expect(logFile.readAsStringSync(), contains('TestSeeder'));
+      expect(testSeederRunner.receivedConnection, isNotNull);
+    });
+
+    test('seed command accepts --connection override', () async {
+      await runOrm(['seed', '--connection', 'default']);
+      expect(testSeederRunner.receivedConnection, 'default');
     });
 
     test('migrate --seed executes seeder', () async {

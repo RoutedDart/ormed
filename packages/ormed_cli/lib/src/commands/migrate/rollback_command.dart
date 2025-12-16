@@ -1,6 +1,3 @@
-import 'dart:io';
-
-import 'package:artisan_args/artisan_args.dart';
 import 'package:ormed/ormed.dart';
 
 import '../base/runner_command.dart';
@@ -50,6 +47,7 @@ class RollbackCommand extends RunnerCommand {
     MigrationRunner runner,
     OrmConnection connection,
     SqlMigrationLedger ledger,
+    CliEventReporter reporter,
   ) async {
     final stepsRaw = argResults?['steps'] as String? ?? '1';
     var steps = int.tryParse(stepsRaw) ?? 1;
@@ -121,20 +119,7 @@ class RollbackCommand extends RunnerCommand {
       final report = await runner.rollback(steps: steps);
       if (report.isEmpty) {
         cliIO.info('No migrations rolled back.');
-        return;
       }
-      final lookup = {
-        for (final record in appliedRecords) record.id.toString(): record,
-      };
-      for (final action in report.actions) {
-        final batch = lookup[action.descriptor.id.toString()]?.batch;
-        final batchSuffix = batch != null ? ' (batch $batch)' : '';
-        cliIO.writeln(
-          '${cliIO.style.success('✓')} Rolled back ${cliIO.style.emphasize(action.descriptor.id.toString())}$batchSuffix',
-        );
-      }
-      cliIO.newLine();
-      cliIO.success('Rolled back ${report.actions.length} migration(s).');
     } catch (error) {
       if (graceful) {
         cliIO.warning('$error');

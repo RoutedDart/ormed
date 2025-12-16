@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:artisan_args/artisan_args.dart';
 import 'package:ormed/ormed.dart';
 
 import '../base/runner_command.dart';
@@ -29,6 +28,7 @@ class StatusCommand extends RunnerCommand {
     MigrationRunner runner,
     OrmConnection connection,
     SqlMigrationLedger ledger,
+    CliEventReporter reporter,
   ) async {
     final pendingOnly = argResults?['pending'] == true;
     final statuses = await runner.status();

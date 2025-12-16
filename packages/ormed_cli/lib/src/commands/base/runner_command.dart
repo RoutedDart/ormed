@@ -1,9 +1,10 @@
-import 'dart:io';
-
 import 'package:artisan_args/artisan_args.dart';
 import 'package:ormed/ormed.dart';
 
+import 'event_reporter.dart';
 import 'shared.dart';
+
+export 'event_reporter.dart';
 
 abstract class RunnerCommand extends ArtisanCommand<void> {
   RunnerCommand() {
@@ -45,6 +46,7 @@ abstract class RunnerCommand extends ArtisanCommand<void> {
     MigrationRunner runner,
     OrmConnection connection,
     SqlMigrationLedger ledger,
+    CliEventReporter reporter,
   );
 
   @override
@@ -89,6 +91,9 @@ abstract class RunnerCommand extends ArtisanCommand<void> {
       manager: connectionHandle.manager,
       tableName: effectiveConfig.migrations.ledgerTable,
     );
+    final reporter = CliEventReporter(io: cliIO)
+      ..listenToMigrations()
+      ..listenToSeeders();
     try {
       await connectionHandle.use((connection) async {
         final driver = connection.driver;
@@ -122,9 +127,17 @@ abstract class RunnerCommand extends ArtisanCommand<void> {
           migrations: migrations,
           planResolver: planResolver,
         );
-        await handle(context, effectiveConfig, runner, connection, ledger);
+        await handle(
+          context,
+          effectiveConfig,
+          runner,
+          connection,
+          ledger,
+          reporter,
+        );
       });
     } finally {
+      reporter.dispose();
       await connectionHandle.dispose();
     }
   }

@@ -1,9 +1,5 @@
-import 'dart:io';
-
-import 'package:artisan_args/artisan_args.dart';
 import 'package:ormed/ormed.dart';
 
-import '../../config.dart';
 import '../base/runner_command.dart';
 import '../base/shared.dart';
 
@@ -35,6 +31,7 @@ class ResetCommand extends RunnerCommand {
     MigrationRunner runner,
     OrmConnection connection,
     SqlMigrationLedger ledger,
+    CliEventReporter reporter,
   ) async {
     final force = argResults?['force'] == true;
     final pretend = argResults?['pretend'] == true;
@@ -76,16 +73,6 @@ class ResetCommand extends RunnerCommand {
 
     if (report.isEmpty) {
       cliIO.info('Nothing to rollback.');
-    } else {
-      for (final action in report.actions) {
-        cliIO.writeln(
-          '${cliIO.style.success('✓')} Rolled back ${cliIO.style.emphasize(action.descriptor.id.toString())} ${cliIO.style.muted('(${action.duration.inMilliseconds}ms)')}',
-        );
-      }
-      cliIO.newLine();
-      cliIO.success(
-        'Reset complete. Rolled back ${report.actions.length} migration(s).',
-      );
     }
   }
 }

@@ -1,9 +1,5 @@
-import 'dart:io';
-
-import 'package:artisan_args/artisan_args.dart';
 import 'package:ormed/ormed.dart';
 
-import '../../config.dart';
 import '../base/runner_command.dart';
 import '../base/shared.dart';
 
@@ -44,6 +40,7 @@ class RefreshCommand extends RunnerCommand {
     MigrationRunner runner,
     OrmConnection connection,
     SqlMigrationLedger ledger,
+    CliEventReporter reporter,
   ) async {
     final force = argResults?['force'] == true;
     final step = argResults?['step'] == true;
@@ -62,11 +59,6 @@ class RefreshCommand extends RunnerCommand {
     if (appliedCount > 0) {
       cliIO.section('Rolling back $appliedCount migration(s)');
       final report = await runner.rollback(steps: appliedCount);
-      for (final action in report.actions) {
-        cliIO.writeln(
-          '${cliIO.style.success('✓')} Rolled back ${cliIO.style.emphasize(action.descriptor.id.toString())} ${cliIO.style.muted('(${action.duration.inMilliseconds}ms)')}',
-        );
-      }
     } else {
       cliIO.info('Nothing to rollback.');
     }
@@ -79,15 +71,8 @@ class RefreshCommand extends RunnerCommand {
 
     if (report.isEmpty) {
       cliIO.info('No migrations to apply.');
-    } else {
-      for (final action in report.actions) {
-        cliIO.writeln(
-          '${cliIO.style.success('✓')} Applied ${cliIO.style.emphasize(action.descriptor.id.toString())} ${cliIO.style.muted('(${action.duration.inMilliseconds}ms)')}',
-        );
-      }
-      cliIO.newLine();
-      cliIO.success('Database refreshed successfully.');
     }
+    cliIO.success('Database refreshed successfully.');
 
     // 3. Seed
     if (seed || seederOverride != null) {

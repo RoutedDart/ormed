@@ -62,6 +62,7 @@ class ApplyCommand extends RunnerCommand {
     MigrationRunner runner,
     OrmConnection connection,
     SqlMigrationLedger ledger,
+    CliEventReporter reporter,
   ) async {
     final limitRaw = argResults?['limit'] as String?;
     final limit = limitRaw == null ? null : int.tryParse(limitRaw);
@@ -112,14 +113,6 @@ class ApplyCommand extends RunnerCommand {
       final report = await runner.applyAll(limit: limitToApply);
       if (report.isEmpty) {
         cliIO.info('No migrations to apply.');
-      } else {
-        for (final action in report.actions) {
-          cliIO.writeln(
-            '${cliIO.style.success('✓')} Applied ${cliIO.style.emphasize(action.descriptor.id.toString())} ${cliIO.style.muted('(${action.duration.inMilliseconds}ms)')}',
-          );
-        }
-        cliIO.newLine();
-        cliIO.success('Applied ${report.actions.length} migration(s).');
       }
     } catch (error) {
       if (graceful) {

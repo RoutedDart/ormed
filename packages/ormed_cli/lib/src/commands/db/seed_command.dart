@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:artisan_args/artisan_args.dart';
 
 import '../../config.dart';
@@ -61,7 +59,10 @@ class SeedCommand extends ArtisanCommand<void> {
     final connectionOverride = argResults?['connection'] as String?;
 
     final project = resolveOrmProject(configPath: configArg);
-    final config = loadOrmProjectConfig(project.configFile);
+    var config = loadOrmProjectConfig(project.configFile);
+    if (connectionOverride != null && connectionOverride.trim().isNotEmpty) {
+      config = config.withConnection(connectionOverride);
+    }
     final seeds = config.seeds;
     if (seeds == null) {
       usageException(

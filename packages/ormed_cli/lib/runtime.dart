@@ -8,6 +8,7 @@ import 'package:meta/meta.dart';
 import 'package:ormed/ormed.dart';
 
 import 'src/commands/base/shared.dart';
+import 'src/commands/base/event_reporter.dart';
 
 export 'src/commands/base/shared.dart'
     show OrmProjectContext, resolveOrmProject, createConnection;
@@ -30,32 +31,26 @@ Future<void> runSeedRegistryOnConnection(
   if (seeds.isEmpty) {
     throw StateError('No seeders registered.');
   }
-  beforeRun?.call(connection);
-  final lookup = {for (final entry in seeds) entry.name: entry.factory};
-  final queue = (names == null || names.isEmpty)
-      ? <String>[seeds.first.name]
-      : names;
   final logger = log ?? (String message) => stdout.writeln(message);
-
-  for (final target in queue) {
-    final factory = lookup[target];
-    if (factory == null) {
-      throw StateError('Seeder $target is not registered.');
-    }
-    final seeder = factory(connection);
-
-    if (pretend) {
-      // Use core's pretend functionality
-      final statements = await connection.pretend(
-        () async => await seeder.run(),
-      );
-      for (final entry in statements) {
-        logger('[pretend] ${formatPretendEntry(entry)}');
-      }
-    } else {
-      // Use core's seeding functionality
-      await seeder.run();
-    }
+  final reporter = CliEventReporter(io: cliIO)..listenToSeeders();
+  try {
+    await SeederRunner().run(
+      connection: connection,
+      seeders: seeds,
+      names: names,
+      pretend: pretend,
+      beforeRun: beforeRun,
+      log: null, // Preserve previous behavior (no default log output).
+      onPretendQueries: pretend
+          ? (entries) {
+              for (final entry in entries) {
+                logger('[pretend] ${formatPretendEntry(entry)}');
+              }
+            }
+          : null,
+    );
+  } finally {
+    reporter.dispose();
   }
 }
 
