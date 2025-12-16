@@ -177,6 +177,7 @@ class EventModelFactory {
 
 class _$EventModelCodec extends ModelCodec<$EventModel> {
   const _$EventModelCodec();
+
   @override
   Map<String, Object?> encode($EventModel model, ValueCodecRegistry registry) {
     return <String, Object?>{
@@ -224,6 +225,7 @@ class _$EventModelCodec extends ModelCodec<$EventModel> {
 /// Auto-increment/DB-generated fields are omitted by default.
 class EventModelInsertDto implements InsertDto<$EventModel> {
   const EventModelInsertDto({this.name, this.score});
+
   final String? name;
   final int? score;
 
@@ -241,6 +243,7 @@ class EventModelInsertDto implements InsertDto<$EventModel> {
 /// All fields are optional; only provided entries are used in SET clauses.
 class EventModelUpdateDto implements UpdateDto<$EventModel> {
   const EventModelUpdateDto({this.id, this.name, this.score});
+
   final int? id;
   final String? name;
   final int? score;
@@ -372,101 +375,87 @@ extension EventModelOrmExtension on EventModel {
 
 void registerEventModelEventHandlers(EventBus bus) {
   bus.on<ModelSavingEvent>((event) {
-    if (event is ModelEvent &&
-        event.modelType != EventModel &&
-        event.modelType != $EventModel)
+    if (event.modelType != EventModel && event.modelType != $EventModel) {
       return;
+    }
     EventModel.onSaving(event);
   });
   bus.on<ModelCreatingEvent>((event) {
-    if (event is ModelEvent &&
-        event.modelType != EventModel &&
-        event.modelType != $EventModel)
+    if (event.modelType != EventModel && event.modelType != $EventModel) {
       return;
+    }
     EventModel.onCreating(event);
   });
   bus.on<ModelCreatedEvent>((event) {
-    if (event is ModelEvent &&
-        event.modelType != EventModel &&
-        event.modelType != $EventModel)
+    if (event.modelType != EventModel && event.modelType != $EventModel) {
       return;
+    }
     EventModel.onCreated(event);
   });
   bus.on<ModelSavedEvent>((event) {
-    if (event is ModelEvent &&
-        event.modelType != EventModel &&
-        event.modelType != $EventModel)
+    if (event.modelType != EventModel && event.modelType != $EventModel) {
       return;
+    }
     EventModel.onSaved(event);
   });
   bus.on<ModelUpdatingEvent>((event) {
-    if (event is ModelEvent &&
-        event.modelType != EventModel &&
-        event.modelType != $EventModel)
+    if (event.modelType != EventModel && event.modelType != $EventModel) {
       return;
+    }
     EventModel.onUpdating(event);
   });
   bus.on<ModelUpdatedEvent>((event) {
-    if (event is ModelEvent &&
-        event.modelType != EventModel &&
-        event.modelType != $EventModel)
+    if (event.modelType != EventModel && event.modelType != $EventModel) {
       return;
+    }
     EventModel.onUpdated(event);
   });
   bus.on<ModelDeletingEvent>((event) {
-    if (event is ModelEvent &&
-        event.modelType != EventModel &&
-        event.modelType != $EventModel)
+    if (event.modelType != EventModel && event.modelType != $EventModel) {
       return;
+    }
     EventModel.onDeleting(event);
   });
   bus.on<ModelDeletedEvent>((event) {
-    if (event is ModelEvent &&
-        event.modelType != EventModel &&
-        event.modelType != $EventModel)
+    if (event.modelType != EventModel && event.modelType != $EventModel) {
       return;
+    }
     EventModel.onDeleted(event);
   });
   bus.on<ModelTrashedEvent>((event) {
-    if (event is ModelEvent &&
-        event.modelType != EventModel &&
-        event.modelType != $EventModel)
+    if (event.modelType != EventModel && event.modelType != $EventModel) {
       return;
+    }
     EventModel.onTrashed(event);
   });
   bus.on<ModelForceDeletedEvent>((event) {
-    if (event is ModelEvent &&
-        event.modelType != EventModel &&
-        event.modelType != $EventModel)
+    if (event.modelType != EventModel && event.modelType != $EventModel) {
       return;
+    }
     EventModel.onForceDeleted(event);
   });
   bus.on<ModelRestoringEvent>((event) {
-    if (event is ModelEvent &&
-        event.modelType != EventModel &&
-        event.modelType != $EventModel)
+    if (event.modelType != EventModel && event.modelType != $EventModel) {
       return;
+    }
     EventModel.onRestoring(event);
   });
   bus.on<ModelRestoredEvent>((event) {
-    if (event is ModelEvent &&
-        event.modelType != EventModel &&
-        event.modelType != $EventModel)
+    if (event.modelType != EventModel && event.modelType != $EventModel) {
       return;
+    }
     EventModel.onRestored(event);
   });
   bus.on<ModelReplicatingEvent>((event) {
-    if (event is ModelEvent &&
-        event.modelType != EventModel &&
-        event.modelType != $EventModel)
+    if (event.modelType != EventModel && event.modelType != $EventModel) {
       return;
+    }
     EventModel.onReplicating(event);
   });
   bus.on<ModelRetrievedEvent>((event) {
-    if (event is ModelEvent &&
-        event.modelType != EventModel &&
-        event.modelType != $EventModel)
+    if (event.modelType != EventModel && event.modelType != $EventModel) {
       return;
+    }
     EventModel.onRetrieved(event);
   });
 }

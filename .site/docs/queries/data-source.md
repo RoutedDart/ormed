@@ -17,7 +17,7 @@ The `DataSource` class provides a modern, declarative API for configuring and us
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `driver` | `DriverAdapter` | **required** | The database driver adapter |
-| `entities` | `List<ModelDefinition>` | **required** | List of model definitions to register |
+| `entities` | `List<ModelDefinition>` | **required** | Models to register. Pass the generated registry output (e.g., `buildOrmRegistry().definitions.values.toList()`) or a curated subset. |
 | `name` | `String` | `'default'` | Logical name for the connection |
 | `database` | `String?` | `null` | Database/catalog identifier for observability |
 | `tablePrefix` | `String` | `''` | Prefix applied to table names |
@@ -25,7 +25,7 @@ The `DataSource` class provides a modern, declarative API for configuring and us
 | `codecs` | `Map<String, ValueCodec>` | `{}` | Custom value codecs to register |
 | `logging` | `bool` | `false` | Enable query logging |
 
-### Example Configuration
+### Example Configuration (with generated registry)
 
 ```dart file=../../examples/lib/datasource.dart#datasource-options
 

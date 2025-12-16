@@ -23,6 +23,7 @@ const sidebars: SidebarsConfig = {
         'models/relationships',
         'models/timestamps',
         'models/soft-deletes',
+        'models/events',
         'models/model-methods',
         'models/factories',
       ],
@@ -45,7 +46,18 @@ const sidebars: SidebarsConfig = {
         'migrations/overview',
         'migrations/schema-builder',
         'migrations/running-migrations',
+        'migrations/events',
         'migrations/squashing',
+      ],
+    },
+    {
+      type: 'category',
+      label: 'Drivers',
+      items: [
+        'drivers/overview',
+        'drivers/sqlite',
+        'drivers/postgres',
+        'drivers/mysql',
       ],
     },
     {

@@ -2,6 +2,7 @@
 // ignore_for_file: unused_local_variable
 
 import 'package:ormed/ormed.dart';
+import 'package:ormed_sqlite/ormed_sqlite.dart';
 
 import 'models/user.dart';
 import 'models/user.orm.dart';
@@ -11,7 +12,7 @@ import 'models/post.orm.dart';
 // #region datasource-overview
 Future<void> dataSourceOverview() async {
   final ds = DataSource(DataSourceOptions(
-    driver: InMemoryQueryExecutor(),
+    driver: SqliteDriverAdapter.file('database.sqlite'),
     entities: [UserOrmDefinition.definition, PostOrmDefinition.definition],
   ));
 
@@ -50,7 +51,7 @@ Future<void> initializeDataSource(DataSource ds) async {
 Future<void> staticHelpersExample() async {
   final ds = DataSource(DataSourceOptions(
     name: 'myapp',
-    driver: InMemoryQueryExecutor(),
+    driver: SqliteDriverAdapter.file('database.sqlite'),
     entities: [UserOrmDefinition.definition],
   ));
 

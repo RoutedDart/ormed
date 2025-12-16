@@ -11,17 +11,18 @@ sidebar_position: 1
 
 ## Install Dependencies
 
-Add Ormed and a database driver to your `pubspec.yaml`:
+Add Ormed, the CLI, and at least one database driver to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
   ormed: ^0.1.0
-  # Choose your database driver:
-  ormed_sqlite: ^0.1.0   # SQLite (file or in-memory)
-  # ormed_postgres: ^0.1.0  # PostgreSQL (coming soon)
-  # ormed_mysql: ^0.1.0     # MySQL (coming soon)
+  # Choose your database driver(s):
+  ormed_sqlite: ^0.1.0    # SQLite (local dev / tests / embedded)
+  # ormed_postgres: ^0.1.0 # PostgreSQL
+  # ormed_mysql: ^0.1.0    # MySQL / MariaDB
 
 dev_dependencies:
+  ormed_cli: ^0.1.0
   build_runner: ^2.4.0
 ```
 
@@ -30,6 +31,19 @@ Then run:
 ```bash
 dart pub get
 ```
+
+## Initialize Project Files
+
+Scaffold the default config, migration registry, and seed stubs:
+
+```bash
+dart run ormed_cli:orm init
+```
+
+Key outputs:
+- `orm.yaml` — CLI + connection settings  
+- `lib/src/database/migrations.dart` — migration registry  
+- `lib/src/database/seeders.dart` — seeder registry
 
 ## Project Structure
 

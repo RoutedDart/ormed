@@ -4,11 +4,30 @@ sidebar_position: 3
 
 # Configuration
 
-Ormed uses an `orm.yaml` file for CLI configuration and database connections.
+Ormed uses `orm.yaml` for CLI + runtime configuration. Two shapes are supported: a single top-level connection (scaffold default) or a `connections:` map for multi-db setups.
 
-## Basic Configuration
+## Single Connection (default)
 
 Create `orm.yaml` in your project root:
+
+```yaml
+driver:
+  type: sqlite
+  options:
+    database: database.sqlite
+migrations:
+  directory: lib/src/database/migrations
+  registry: lib/src/database/migrations.dart
+  ledger_table: orm_migrations
+  schema_dump: database/schema.sql
+seeds:
+  directory: lib/src/database/seeders
+  registry: lib/src/database/seeders.dart
+```
+
+CLI commands read these top-level blocks as the single active connection.
+
+## Multiple Connections (multi-tenant or multi-env)
 
 ```yaml
 default_connection: primary
@@ -18,15 +37,30 @@ connections:
     driver:
       type: sqlite
       options:
-        database: database.sqlite
+        database: data/app.sqlite
     migrations:
       directory: lib/src/database/migrations
       registry: lib/src/database/migrations.dart
-      ledger_table: _orm_migrations
+      ledger_table: orm_migrations
       schema_dump: database/schema.sql
+    seeds:
+      directory: lib/src/database/seeders
+      registry: lib/src/database/seeders.dart
+
+  analytics:
+    driver:
+      type: postgres
+      options:
+        url: ${ANALYTICS_URL}
+        schema: analytics
+    migrations:
+      directory: lib/src/database/migrations/analytics
+      registry: lib/src/database/analytics_migrations.dart
 ```
 
-## Configuration Options
+Use `--connection <name>` on any CLI command to target a specific entry.
+
+## Configuration Blocks (what each section means)
 
 ### `default_connection`
 
@@ -43,9 +77,8 @@ Named database connections. Each connection has its own driver, migrations, and 
 ```yaml
 connections:
   primary:
-    # Driver configuration
     driver:
-      type: sqlite  # sqlite, postgres, mysql
+      type: sqlite  # sqlite, postgres, mysql, mariadb
       options:
         database: database.sqlite
     
@@ -60,97 +93,31 @@ connections:
     seeds:
       directory: lib/src/database/seeders
       registry: lib/src/database/seeders.dart
-      default_class: DatabaseSeeder
 ```
 
-## Driver Options
+## Registry Files (Why They Matter)
 
-### SQLite
+Both `migrations.registry` and `seeds.registry` are **standalone Dart entrypoints**. The CLI shells out to these files, so keep their paths accurate in `orm.yaml`.
 
-```yaml
-driver:
-  type: sqlite
-  options:
-    database: database.sqlite  # File path or ":memory:" for in-memory
-```
+- **Migrations registry** (`migrations.registry`): exports `buildMigrations()` and a small `main` that supports flags like `--dump-json`/`--plan-json` for schema previews. You can run it directly:
 
-### PostgreSQL
+  ```bash
+  dart run lib/src/database/migrations.dart --dump-json
+  ```
 
-```yaml
-driver:
-  type: postgres
-  options:
-    host: localhost
-    port: 5432
-    database: myapp
-    username: postgres
-    password: secret
-    # Or use a connection URL:
-    # url: postgres://user:pass@localhost:5432/myapp
-```
+- **Seeds registry** (`seeds.registry`): lists `SeederRegistration`s and exposes `main` for `orm seed` / `orm migrate --seed`. You can execute it without the CLI wrapper:
 
-### MySQL
+  ```bash
+  dart run lib/src/database/seeders.dart
+  ```
 
-```yaml
-driver:
-  type: mysql
-  options:
-    host: localhost
-    port: 3306
-    database: myapp
-    username: root
-    password: secret
-```
+If you relocate these files, update the `registry` paths so the CLI can find and execute them.
 
-## Multiple Connections
-
-Configure multiple database connections for different purposes:
-
-```yaml
-default_connection: primary
-
-connections:
-  primary:
-    driver:
-      type: sqlite
-      options:
-        database: data/app.sqlite
-    migrations:
-      directory: lib/src/database/migrations
-      registry: lib/src/database/migrations.dart
-
-  analytics:
-    driver:
-      type: sqlite
-      options:
-        database: data/analytics.sqlite
-    migrations:
-      directory: lib/src/database/migrations/analytics
-      registry: lib/src/database/analytics_migrations.dart
-
-  testing:
-    driver:
-      type: sqlite
-      options:
-        database: ":memory:"
-    migrations:
-      directory: lib/src/database/migrations
-      registry: lib/src/database/migrations.dart
-```
-
-Use the `--connection` flag to target a specific connection:
-
-```bash
-# Run migrations on analytics database
-dart run orm migrate:apply --connection analytics
-
-# Check status of testing database
-dart run orm migrate:status --connection testing
-```
+Driver-specific options live on the dedicated pages: **Drivers → SQLite / PostgreSQL / MySQL**.
 
 ## Environment Variables
 
-You can use environment variables in your configuration:
+You can use environment variables in your configuration. `${VAR}` resolves from the current process environment; `${VAR:-fallback}` uses `fallback` when unset.
 
 ```yaml
 connections:
@@ -159,6 +126,7 @@ connections:
       type: postgres
       options:
         url: ${DATABASE_URL}
+         sslmode: ${DB_SSLMODE:-disable}
 ```
 
 Set the environment variable:
@@ -167,6 +135,8 @@ Set the environment variable:
 export DATABASE_URL="postgres://user:pass@db.example.com:5432/myapp"
 dart run orm migrate:apply --connection production
 ```
+
+`.env` support: if a `.env` file sits next to `orm.yaml`, it is loaded automatically (merged with platform environment). Useful for local secrets without exporting them.
 
 ## Programmatic Configuration
 
@@ -184,6 +154,7 @@ If you prefer manual control, you can still register models individually:
 
 ## Next Steps
 
-- [Defining Models](../models/defining-models) - Create your first models
-- [CLI Commands](../cli/commands) - Learn all available CLI commands
-- [Migrations](../migrations/overview) - Set up database migrations
+- [Drivers](../drivers/overview) — choose and configure your target database
+- [Defining Models](../models/defining-models) — create your first models
+- [CLI Commands](../cli/commands) — learn all available CLI commands
+- [Migrations](../migrations/overview) — set up database migrations

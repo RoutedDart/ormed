@@ -2,6 +2,7 @@
 // ignore_for_file: unused_local_variable
 
 import 'package:ormed/ormed.dart';
+import 'package:ormed_sqlite/ormed_sqlite.dart';
 
 import 'models/user.dart';
 import 'models/user.orm.dart';
@@ -15,8 +16,8 @@ import 'orm_registry.g.dart';
 
 // #region quickstart-setup
 Future<void> quickstartSetup() async {
-  // Create SQLite driver (in-memory for this example)
-  final driver = InMemoryQueryExecutor();
+  // Create a SQLite adapter (file-backed)
+  final driver = SqliteDriverAdapter.file('database.sqlite');
 
   // Use the generated registry helper
   final registry = buildOrmRegistry();

@@ -13,7 +13,6 @@ connections:
     seeds:
       directory: lib/src/database/seeders
       registry: lib/src/database/seeders.dart
-      default_class: DatabaseSeeder
   analytics:
     driver:
       type: sqlite
@@ -27,4 +26,3 @@ connections:
     seeds:
       directory: lib/src/database/seeders
       registry: lib/src/database/seeders.dart
-      default_class: DatabaseSeeder

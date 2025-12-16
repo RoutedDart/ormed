@@ -4,7 +4,7 @@ sidebar_position: 5
 
 # Model Methods
 
-Laravel-inspired convenience methods for working with model instances.
+Familiar convenience methods for working with model instances.
 
 ## Model Replication
 
@@ -142,7 +142,7 @@ The `save()` method uses upsert semantics:
 
 ## Static Helpers
 
-After binding a connection resolver, `Model<T>` provides Laravel-style helpers:
+After binding a connection resolver, `Model<T>` provides convenient static helpers:
 
 ```dart file=../../examples/lib/usage/model_methods.dart#model-static-helpers
 

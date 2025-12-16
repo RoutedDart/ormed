@@ -6,6 +6,30 @@ sidebar_position: 2
 
 This guide will walk you through creating a simple Ormed application with a User model.
 
+## 0. Scaffold the Project (CLI)
+
+From your app root:
+
+```bash
+dart run ormed_cli:orm init
+```
+
+This creates:
+- `orm.yaml` with database + migration settings  
+- `lib/src/database/migrations.dart` (registry)  
+- `lib/src/database/seeders.dart` and `seeders/database_seeder.dart`
+
+See the generated starter files:
+
+```yaml file=../../examples/orm.yaml
+```
+
+```dart file=../../examples/lib/src/database/migrations.dart
+```
+
+```dart file=../../examples/lib/src/database/seeders.dart
+```
+
 ## 1. Create Your Model
 
 Create `lib/src/models/user.dart`:
@@ -30,7 +54,7 @@ Create `lib/src/database/migrations/m_20241201000000_create_users_table.dart`:
 ```dart file=../../examples/lib/migrations/basic.dart#create-users-migration
 ```
 
-## 4. Set Up the Database
+## 4. Set Up the Database (SQLite)
 
 ```dart file=../../examples/lib/setup.dart#quickstart-setup
 ```

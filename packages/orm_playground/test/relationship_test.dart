@@ -31,7 +31,6 @@ void main() {
     });
 
     test('Relationship Query Method: user.postsQuery()', () {
-      final user = User(id: 1, email: 'test@example.com', name: 'Test User');
 
       // This method should exist and return a Query<Post>
       // Note: User model doesn't have posts relation in current schema

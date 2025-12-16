@@ -239,7 +239,6 @@ connections:
     seeds:
       directory: database/seeders
       registry: database/seeders.dart
-      default_class: DatabaseSeeder
   analytics:
     driver:
       type: sqlite

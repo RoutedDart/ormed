@@ -120,7 +120,7 @@ Future<void> realDatabaseExample() async {
 // #endregion testing-real-db
 
 // #region testing-migration-harness
-// For Laravel-style workflows with migrations and FK-safe cleanup:
+// For migration-driven test setups with FK-safe cleanup:
 // Use setUpOrmed from package:ormed/testing.dart
 //
 // setUpOrmed(
