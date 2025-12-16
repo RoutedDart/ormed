@@ -52,6 +52,42 @@ class ModelCreatedEvent extends ModelEvent {
   final Map<String, dynamic> attributes;
 }
 
+/// Event emitted before a model is saved (create or update).
+///
+/// This event is cancellable - calling [cancel] will prevent the operation.
+class ModelSavingEvent extends ModelEvent with CancellableEvent {
+  ModelSavingEvent({
+    required super.modelType,
+    required super.tableName,
+    this.model,
+    required this.attributes,
+    super.timestamp,
+  });
+
+  /// The model being saved (may be null for inserts created from maps/DTOs).
+  final dynamic model;
+
+  /// Attributes that will be persisted.
+  final Map<String, dynamic> attributes;
+}
+
+/// Event emitted after a model is saved (create or update).
+class ModelSavedEvent extends ModelEvent {
+  ModelSavedEvent({
+    required super.modelType,
+    required super.tableName,
+    required this.model,
+    required this.attributes,
+    super.timestamp,
+  });
+
+  /// The saved model instance.
+  final dynamic model;
+
+  /// Attributes persisted in the save.
+  final Map<String, dynamic> attributes;
+}
+
 /// Event emitted before a model is updated in the database.
 ///
 /// This event is cancellable - calling [cancel] will prevent the update.
@@ -115,6 +151,32 @@ class ModelDeletingEvent extends ModelEvent with CancellableEvent {
   final bool forceDelete;
 }
 
+/// Event emitted when a soft-deleted model is trashed.
+class ModelTrashedEvent extends ModelEvent {
+  ModelTrashedEvent({
+    required super.modelType,
+    required super.tableName,
+    required this.model,
+    super.timestamp,
+  });
+
+  /// The trashed model instance.
+  final dynamic model;
+}
+
+/// Event emitted when a model is permanently deleted (force delete).
+class ModelForceDeletedEvent extends ModelEvent {
+  ModelForceDeletedEvent({
+    required super.modelType,
+    required super.tableName,
+    required this.model,
+    super.timestamp,
+  });
+
+  /// The force-deleted model instance.
+  final dynamic model;
+}
+
 /// Event emitted after a model is deleted from the database.
 class ModelDeletedEvent extends ModelEvent {
   ModelDeletedEvent({
@@ -158,6 +220,19 @@ class ModelRestoredEvent extends ModelEvent {
   final dynamic model;
 }
 
+/// Event emitted when a model is being replicated.
+class ModelReplicatingEvent extends ModelEvent with CancellableEvent {
+  ModelReplicatingEvent({
+    required super.modelType,
+    required super.tableName,
+    required this.model,
+    super.timestamp,
+  });
+
+  /// The model being replicated.
+  final dynamic model;
+}
+
 /// Event emitted when a model is retrieved from the database.
 class ModelRetrievedEvent extends ModelEvent {
   ModelRetrievedEvent({
@@ -183,6 +258,16 @@ class OnCreating extends OnEvent {
 /// Convenience annotation for model created events.
 class OnCreated extends OnEvent {
   const OnCreated() : super(ModelCreatedEvent);
+}
+
+/// Convenience annotation for model saving events.
+class OnSaving extends OnEvent {
+  const OnSaving() : super(ModelSavingEvent);
+}
+
+/// Convenience annotation for model saved events.
+class OnSaved extends OnEvent {
+  const OnSaved() : super(ModelSavedEvent);
 }
 
 /// Convenience annotation for model updating events.
@@ -215,8 +300,22 @@ class OnRestored extends OnEvent {
   const OnRestored() : super(ModelRestoredEvent);
 }
 
+/// Convenience annotation for model trashed events.
+class OnTrashed extends OnEvent {
+  const OnTrashed() : super(ModelTrashedEvent);
+}
+
+/// Convenience annotation for model force-deleted events.
+class OnForceDeleted extends OnEvent {
+  const OnForceDeleted() : super(ModelForceDeletedEvent);
+}
+
+/// Convenience annotation for model replicating events.
+class OnReplicating extends OnEvent {
+  const OnReplicating() : super(ModelReplicatingEvent);
+}
+
 /// Convenience annotation for model retrieved events.
 class OnRetrieved extends OnEvent {
   const OnRetrieved() : super(ModelRetrievedEvent);
 }
-

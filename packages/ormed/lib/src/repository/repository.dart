@@ -7,8 +7,10 @@ import '../driver/driver.dart';
 import '../contracts.dart';
 import '../model_definition.dart';
 import '../model_mixins/model_attributes.dart';
+import '../model/model_events.dart';
 import '../mutation/json_update.dart';
 import '../mutation/mutation_input_helper.dart';
+import '../events/event_bus.dart';
 import '../value_codec.dart';
 import '../query/query.dart';
 

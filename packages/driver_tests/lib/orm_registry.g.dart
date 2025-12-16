@@ -10,6 +10,7 @@ import 'src/models/custom_soft_delete.dart';
 import 'src/models/derived_for_factory.dart';
 import 'src/models/driver_override_entry.dart';
 import 'src/models/driver_override.dart';
+import 'src/models/event_model.dart';
 import 'src/models/image.dart';
 import 'src/models/mutation_target.dart';
 import 'src/models/named_constructor_model.dart';
@@ -33,6 +34,7 @@ final List<ModelDefinition<OrmEntity>> _$ormModelDefinitions = [
   DerivedForFactoryOrmDefinition.definition,
   DriverOverrideEntryOrmDefinition.definition,
   DriverOverrideModelOrmDefinition.definition,
+  EventModelOrmDefinition.definition,
   ImageOrmDefinition.definition,
   MutationTargetOrmDefinition.definition,
   NamedConstructorModelOrmDefinition.definition,
@@ -58,18 +60,19 @@ ModelRegistry buildOrmRegistry() => ModelRegistry()
   ..registerTypeAlias<DerivedForFactory>(_$ormModelDefinitions[6])
   ..registerTypeAlias<DriverOverrideEntry>(_$ormModelDefinitions[7])
   ..registerTypeAlias<DriverOverrideModel>(_$ormModelDefinitions[8])
-  ..registerTypeAlias<Image>(_$ormModelDefinitions[9])
-  ..registerTypeAlias<MutationTarget>(_$ormModelDefinitions[10])
-  ..registerTypeAlias<NamedConstructorModel>(_$ormModelDefinitions[11])
-  ..registerTypeAlias<NoFactory>(_$ormModelDefinitions[12])
-  ..registerTypeAlias<Photo>(_$ormModelDefinitions[13])
-  ..registerTypeAlias<Post>(_$ormModelDefinitions[14])
-  ..registerTypeAlias<PostTag>(_$ormModelDefinitions[15])
-  ..registerTypeAlias<SerialTest>(_$ormModelDefinitions[16])
-  ..registerTypeAlias<Setting>(_$ormModelDefinitions[17])
-  ..registerTypeAlias<Tag>(_$ormModelDefinitions[18])
-  ..registerTypeAlias<UniqueUser>(_$ormModelDefinitions[19])
-  ..registerTypeAlias<User>(_$ormModelDefinitions[20])
+  ..registerTypeAlias<EventModel>(_$ormModelDefinitions[9])
+  ..registerTypeAlias<Image>(_$ormModelDefinitions[10])
+  ..registerTypeAlias<MutationTarget>(_$ormModelDefinitions[11])
+  ..registerTypeAlias<NamedConstructorModel>(_$ormModelDefinitions[12])
+  ..registerTypeAlias<NoFactory>(_$ormModelDefinitions[13])
+  ..registerTypeAlias<Photo>(_$ormModelDefinitions[14])
+  ..registerTypeAlias<Post>(_$ormModelDefinitions[15])
+  ..registerTypeAlias<PostTag>(_$ormModelDefinitions[16])
+  ..registerTypeAlias<SerialTest>(_$ormModelDefinitions[17])
+  ..registerTypeAlias<Setting>(_$ormModelDefinitions[18])
+  ..registerTypeAlias<Tag>(_$ormModelDefinitions[19])
+  ..registerTypeAlias<UniqueUser>(_$ormModelDefinitions[20])
+  ..registerTypeAlias<User>(_$ormModelDefinitions[21])
   ;
 
 List<ModelDefinition<OrmEntity>> get generatedOrmModelDefinitions =>
@@ -87,18 +90,19 @@ extension GeneratedOrmModels on ModelRegistry {
     registerTypeAlias<DerivedForFactory>(_$ormModelDefinitions[6]);
     registerTypeAlias<DriverOverrideEntry>(_$ormModelDefinitions[7]);
     registerTypeAlias<DriverOverrideModel>(_$ormModelDefinitions[8]);
-    registerTypeAlias<Image>(_$ormModelDefinitions[9]);
-    registerTypeAlias<MutationTarget>(_$ormModelDefinitions[10]);
-    registerTypeAlias<NamedConstructorModel>(_$ormModelDefinitions[11]);
-    registerTypeAlias<NoFactory>(_$ormModelDefinitions[12]);
-    registerTypeAlias<Photo>(_$ormModelDefinitions[13]);
-    registerTypeAlias<Post>(_$ormModelDefinitions[14]);
-    registerTypeAlias<PostTag>(_$ormModelDefinitions[15]);
-    registerTypeAlias<SerialTest>(_$ormModelDefinitions[16]);
-    registerTypeAlias<Setting>(_$ormModelDefinitions[17]);
-    registerTypeAlias<Tag>(_$ormModelDefinitions[18]);
-    registerTypeAlias<UniqueUser>(_$ormModelDefinitions[19]);
-    registerTypeAlias<User>(_$ormModelDefinitions[20]);
+    registerTypeAlias<EventModel>(_$ormModelDefinitions[9]);
+    registerTypeAlias<Image>(_$ormModelDefinitions[10]);
+    registerTypeAlias<MutationTarget>(_$ormModelDefinitions[11]);
+    registerTypeAlias<NamedConstructorModel>(_$ormModelDefinitions[12]);
+    registerTypeAlias<NoFactory>(_$ormModelDefinitions[13]);
+    registerTypeAlias<Photo>(_$ormModelDefinitions[14]);
+    registerTypeAlias<Post>(_$ormModelDefinitions[15]);
+    registerTypeAlias<PostTag>(_$ormModelDefinitions[16]);
+    registerTypeAlias<SerialTest>(_$ormModelDefinitions[17]);
+    registerTypeAlias<Setting>(_$ormModelDefinitions[18]);
+    registerTypeAlias<Tag>(_$ormModelDefinitions[19]);
+    registerTypeAlias<UniqueUser>(_$ormModelDefinitions[20]);
+    registerTypeAlias<User>(_$ormModelDefinitions[21]);
     return this;
   }
 }
@@ -114,6 +118,7 @@ void registerOrmFactories() {
   ModelFactoryRegistry.registerIfAbsent<CustomSoftDelete>(CustomSoftDeleteOrmDefinition.definition);
   ModelFactoryRegistry.registerIfAbsent<DerivedForFactory>(DerivedForFactoryOrmDefinition.definition);
   ModelFactoryRegistry.registerIfAbsent<DriverOverrideEntry>(DriverOverrideEntryOrmDefinition.definition);
+  ModelFactoryRegistry.registerIfAbsent<EventModel>(EventModelOrmDefinition.definition);
   ModelFactoryRegistry.registerIfAbsent<Image>(ImageOrmDefinition.definition);
   ModelFactoryRegistry.registerIfAbsent<MutationTarget>(MutationTargetOrmDefinition.definition);
   ModelFactoryRegistry.registerIfAbsent<NamedConstructorModel>(NamedConstructorModelOrmDefinition.definition);
@@ -137,6 +142,7 @@ ModelRegistry buildOrmRegistryWithFactories() {
 /// Registers generated model event handlers.
 void registerModelEventHandlers({EventBus? bus}) {
   final _bus = bus ?? EventBus.instance;
+  registerEventModelEventHandlers(_bus);
   registerPostEventHandlers(_bus);
 }
 

@@ -52,19 +52,33 @@ extension SoftDeleteExtension<T extends OrmEntity> on Query<T> {
   /// ```
   Future<int> restore() async {
     final field = _requireSoftDeleteSupport('restore');
-    final keys = await _collectPrimaryKeyConditions(onlyTrashed());
-    if (keys.isEmpty) {
+    final targets = await _prepareDeletionTargets(
+      softDeleteField: field,
+      softDeleteValue: null,
+      includeTrashed: true,
+      restoring: true,
+    );
+    if (targets.rows.isEmpty) {
       return 0;
     }
-    final rows = keys
-        .map((key) => MutationRow(values: {field.columnName: null}, keys: key))
-        .toList(growable: false);
+
     final plan = MutationPlan.update(
       definition: definition,
-      rows: rows,
+      rows: targets.rows,
       driverName: context.driver.metadata.name,
     );
     final result = await context.runMutation(plan);
+    if (result.affectedRows > 0) {
+      for (final model in targets.models) {
+        _events.emit(
+          ModelRestoredEvent(
+            modelType: definition.modelType,
+            tableName: definition.tableName,
+            model: model,
+          ),
+        );
+      }
+    }
     return result.affectedRows;
   }
 
@@ -82,27 +96,42 @@ extension SoftDeleteExtension<T extends OrmEntity> on Query<T> {
   /// print('Force deleted $deletedCount inactive users.');
   /// ```
   Future<int> forceDelete() async {
+    // If the driver supports query deletes, fall back to the query-level plan
+    // for ad-hoc tables that don't declare a PK.
     if (_supportsQueryDeletes) {
-      final target = withTrashed();
       final driverMetadata = context.driver.metadata;
       final pk = definition.primaryKeyField;
       final fallbackIdentifier = driverMetadata.queryUpdateRowIdentifier;
       final identifier = pk?.columnName ?? fallbackIdentifier?.column;
-      if (identifier == null) {
-        throw StateError(
-          'forceDelete requires ${definition.modelName} to declare a primary key or expose a driver row identifier.',
+      if (identifier != null && pk == null) {
+        final selection = withTrashed();
+        final plan = MutationPlan.queryDelete(
+          definition: definition,
+          plan: selection._buildPlan(),
+          primaryKey: identifier,
+          driverName: driverMetadata.name,
         );
+        final result = await context.runMutation(plan);
+        return result.affectedRows;
       }
-      final selection = pk != null ? target.select([pk.name]) : target;
-      final plan = MutationPlan.queryDelete(
-        definition: definition,
-        plan: selection._buildPlan(),
-        primaryKey: identifier,
-        driverName: driverMetadata.name,
-      );
-      final result = await context.runMutation(plan);
-      return result.affectedRows;
     }
-    return _forceDeleteByKeys();
+
+    final targets = await _prepareDeletionTargets(
+      softDeleteField: null,
+      scopeSoftDeleteField: _softDeleteField,
+      includeTrashed: true,
+    );
+    if (targets.rows.isEmpty) return 0;
+
+    final mutation = MutationPlan.delete(
+      definition: definition,
+      rows: targets.rows,
+      driverName: context.driver.metadata.name,
+    );
+    final result = await context.runMutation(mutation);
+    if (result.affectedRows > 0) {
+      _emitDeletedEventsForModels(targets.models, forceDelete: true);
+    }
+    return result.affectedRows;
   }
 }

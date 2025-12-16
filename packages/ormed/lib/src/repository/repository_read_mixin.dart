@@ -104,6 +104,15 @@ mixin RepositoryReadMixin<T extends OrmEntity>
   }
 
   T replicate(T model) {
+    final bus = queryContext?.events ?? EventBus.instance;
+    final replicating = ModelReplicatingEvent(
+      modelType: definition.modelType,
+      tableName: definition.tableName,
+      model: model,
+    );
+    bus.emit(replicating);
+    if (replicating.isCancelled) return model;
+
     final map = definition.toMap(model, registry: codecs);
     final pk = definition.primaryKeyField?.columnName;
     if (pk != null) {

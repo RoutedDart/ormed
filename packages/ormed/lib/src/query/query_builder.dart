@@ -11,9 +11,11 @@ import 'package:ormed/src/query/relation_loader.dart';
 import 'package:ormed/src/query/relation_resolver.dart';
 
 import '../core/orm_config.dart';
+import '../events/event_bus.dart';
 import '../driver/driver.dart';
 import '../exceptions.dart';
 import '../model_definition.dart';
+import '../model/model_events.dart';
 import '../model_mixins/model_attributes.dart';
 import '../model_mixins/model_connection.dart';
 import '../mutation/mutation_input_helper.dart';
@@ -198,6 +200,8 @@ class Query<T extends OrmEntity> {
   static const int _defaultStreamEagerBatchSize = 500;
   static const Object _unset = Object();
 
+  EventBus get _events => context.events;
+
   /// Lazy-loaded relation resolver instance.
   ///
   /// Reuses the same instance across multiple relation operations
@@ -355,6 +359,14 @@ class Query<T extends OrmEntity> {
     if (model is ModelAttributes) {
       (model as ModelAttributes).syncOriginal();
     }
+
+    _events.emit(
+      ModelRetrievedEvent(
+        modelType: definition.modelType,
+        tableName: definition.tableName,
+        model: model,
+      ),
+    );
 
     return QueryRow<T>(model: model, row: _projectionRow(row, plan));
   }

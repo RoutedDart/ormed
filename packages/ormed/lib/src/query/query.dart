@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:ormed/src/query/query_builder.dart';
 
 import '../connection/connection_resolver.dart';
+import '../events/event_bus.dart';
 import '../driver/driver.dart';
 import '../hook/query_builder_hook.dart';
 import '../model.dart';

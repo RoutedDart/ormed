@@ -71,8 +71,28 @@ extension CrudExtension<T extends OrmEntity> on Query<T> {
     final build = _buildInsertRows(inputs);
     if (build.rows.isEmpty) return const [];
 
-    final mutation = _buildInsertPlanFromInputs(
-      inputs,
+    final entries = _zipInsertEntries(inputs, build);
+    final ready = <_InsertEntry<T>>[];
+
+    for (final entry in entries) {
+      if (!_emitSavingEvent(entry.model, entry.inputMap)) continue;
+
+      final creatingEvent = ModelCreatingEvent(
+        modelType: definition.modelType,
+        tableName: definition.tableName,
+        attributes: Map<String, dynamic>.from(entry.inputMap),
+      );
+      _events.emit(creatingEvent);
+      if (creatingEvent.isCancelled) continue;
+      ready.add(entry);
+    }
+
+    if (ready.isEmpty) return const [];
+
+    final mutation = MutationPlan.insert(
+      definition: definition,
+      rows: ready.map((entry) => entry.row).toList(growable: false),
+      driverName: context.driver.metadata.name,
       returning: returning,
       ignoreConflicts: ignoreConflicts,
     );
@@ -81,13 +101,26 @@ extension CrudExtension<T extends OrmEntity> on Query<T> {
     if (ignoreConflicts && result.affectedRows == 0) {
       return const [];
     }
-    return _hydrateMutationResults(
+
+    final originalModels = ready
+        .map((entry) => entry.model)
+        .whereType<T>()
+        .toList(growable: false);
+    final inputMaps = ready
+        .map((entry) => entry.inputMap)
+        .toList(growable: false);
+
+    final models = _hydrateMutationResults(
       result,
-      originalModels: build.originalModels,
-      inputMaps: build.inputMaps,
+      originalModels: originalModels,
+      inputMaps: inputMaps,
       canCreateFromInputs: !ignoreConflicts,
       fallbackToOriginalWhenNoReturn: fallbackToOriginalWhenNoReturn,
     );
+
+    _emitCreatedEvents(models, inputMaps);
+    _emitSavedEvents(models, inputMaps);
+    return models;
   }
 
   /// Inserts flexible inputs and returns the raw [MutationResult].
@@ -102,12 +135,54 @@ extension CrudExtension<T extends OrmEntity> on Query<T> {
       return const MutationResult(affectedRows: 0);
     }
 
-    final mutation = _buildInsertPlanFromInputs(
-      inputs,
+    final entries = _zipInsertEntries(inputs, build);
+    final ready = <_InsertEntry<T>>[];
+
+    for (final entry in entries) {
+      if (!_emitSavingEvent(entry.model, entry.inputMap)) continue;
+
+      final creatingEvent = ModelCreatingEvent(
+        modelType: definition.modelType,
+        tableName: definition.tableName,
+        attributes: Map<String, dynamic>.from(entry.inputMap),
+      );
+      _events.emit(creatingEvent);
+      if (creatingEvent.isCancelled) continue;
+      ready.add(entry);
+    }
+
+    if (ready.isEmpty) {
+      return const MutationResult(affectedRows: 0);
+    }
+
+    final mutation = MutationPlan.insert(
+      definition: definition,
+      rows: ready.map((entry) => entry.row).toList(growable: false),
+      driverName: context.driver.metadata.name,
       returning: false,
       ignoreConflicts: ignoreConflicts,
     );
-    return context.runMutation(mutation);
+    final result = await context.runMutation(mutation);
+    if (ignoreConflicts && result.affectedRows == 0) {
+      return result;
+    }
+
+    final originalModels = ready
+        .map((entry) => entry.model)
+        .whereType<T>()
+        .toList(growable: false);
+    final inputMaps = ready
+        .map((entry) => entry.inputMap)
+        .toList(growable: false);
+    final hydrated = _hydrateMutationResults(
+      result,
+      originalModels: originalModels,
+      inputMaps: inputMaps,
+      canCreateFromInputs: !ignoreConflicts,
+    );
+    _emitCreatedEvents(hydrated, inputMaps);
+    _emitSavedEvents(hydrated, inputMaps);
+    return result;
   }
 
   /// Builds but does not execute an insert plan (useful for previews).
@@ -576,19 +651,55 @@ extension CrudExtension<T extends OrmEntity> on Query<T> {
     );
     if (build.rows.isEmpty) return const [];
 
+    final entries = _zipUpdateEntries(inputs, build);
+    final ready = <_UpdateEntry<T>>[];
+
+    for (final entry in entries) {
+      if (!_emitSavingEvent(entry.model, entry.inputMap)) continue;
+
+      if (entry.model != null && entry.originalAttributes != null) {
+        final updatingEvent = ModelUpdatingEvent(
+          modelType: definition.modelType,
+          tableName: definition.tableName,
+          model: entry.model,
+          originalAttributes: Map<String, dynamic>.from(
+            entry.originalAttributes!,
+          ),
+          dirtyAttributes: Map<String, dynamic>.from(entry.dirtyAttributes),
+        );
+        _events.emit(updatingEvent);
+        if (updatingEvent.isCancelled) continue;
+      }
+      ready.add(entry);
+    }
+
+    if (ready.isEmpty) return const [];
+
     final mutation = MutationPlan.update(
       definition: definition,
-      rows: build.rows,
+      rows: ready.map((entry) => entry.row).toList(growable: false),
       driverName: context.driver.metadata.name,
       returning: true,
     );
     final result = await context.runMutation(mutation);
-    return _hydrateMutationResults(
+
+    final originalModels = ready
+        .map((entry) => entry.model)
+        .whereType<T>()
+        .toList();
+    final inputMaps = ready
+        .map((entry) => entry.inputMap)
+        .toList(growable: false);
+
+    final models = _hydrateMutationResults(
       result,
-      originalModels: build.originalModels,
-      inputMaps: build.inputMaps,
+      originalModels: originalModels,
+      inputMaps: inputMaps,
       canCreateFromInputs: false,
     );
+    _emitUpdatedEvents(models, ready);
+    _emitSavedEvents(models, inputMaps);
+    return models;
   }
 
   /// Updates rows using flexible inputs and returns the raw [MutationResult].
@@ -621,9 +732,35 @@ extension CrudExtension<T extends OrmEntity> on Query<T> {
       return const MutationResult(affectedRows: 0);
     }
 
+    final entries = _zipUpdateEntries(inputs, build);
+    final ready = <_UpdateEntry<T>>[];
+
+    for (final entry in entries) {
+      if (!_emitSavingEvent(entry.model, entry.inputMap)) continue;
+
+      if (entry.model != null && entry.originalAttributes != null) {
+        final updatingEvent = ModelUpdatingEvent(
+          modelType: definition.modelType,
+          tableName: definition.tableName,
+          model: entry.model,
+          originalAttributes: Map<String, dynamic>.from(
+            entry.originalAttributes!,
+          ),
+          dirtyAttributes: Map<String, dynamic>.from(entry.dirtyAttributes),
+        );
+        _events.emit(updatingEvent);
+        if (updatingEvent.isCancelled) continue;
+      }
+      ready.add(entry);
+    }
+
+    if (ready.isEmpty) {
+      return const MutationResult(affectedRows: 0);
+    }
+
     final mutation = MutationPlan.update(
       definition: definition,
-      rows: build.rows,
+      rows: ready.map((entry) => entry.row).toList(growable: false),
       driverName: context.driver.metadata.name,
     );
     return context.runMutation(mutation);
@@ -764,8 +901,24 @@ extension CrudExtension<T extends OrmEntity> on Query<T> {
     );
     final jsonSupport = JsonUpdateSupport<T>(definition);
 
+    Map<String, Object?>? originalAttributes;
+    Map<String, Object?> dirtyAttributes = const {};
+
     if (input is T) {
       helper.applyUpdateTimestampsToModel(input);
+      if (input is ModelAttributes) {
+        final attrs = input as ModelAttributes;
+        final originalMap = attrs.getOriginal();
+        if (originalMap is Map<String, Object?>) {
+          originalAttributes = Map<String, Object?>.from(originalMap);
+        }
+        dirtyAttributes = Map<String, Object?>.from(attrs.getDirty());
+      } else {
+        originalAttributes = definition.toMap(
+          input,
+          registry: context.codecRegistry,
+        );
+      }
     }
 
     final baseValues = helper.updateInputToMap(input);
@@ -784,6 +937,28 @@ extension CrudExtension<T extends OrmEntity> on Query<T> {
       return const [];
     }
 
+    if (input is T && originalAttributes != null) {
+      if (!_emitSavingEvent(input, baseValues)) {
+        return const [];
+      }
+
+      final updatingEvent = ModelUpdatingEvent(
+        modelType: definition.modelType,
+        tableName: definition.tableName,
+        model: input,
+        originalAttributes: Map<String, dynamic>.from(originalAttributes),
+        dirtyAttributes: Map<String, dynamic>.from(dirtyAttributes),
+      );
+      target._events.emit(updatingEvent);
+      if (updatingEvent.isCancelled) {
+        return const [];
+      }
+    } else {
+      if (!_emitSavingEvent(null, baseValues)) {
+        return const [];
+      }
+    }
+
     final mutation = target._buildQueryUpdateMutation(
       values: payload.values,
       jsonUpdates: [...payload.jsonUpdates, ...jsonClauses],
@@ -792,12 +967,27 @@ extension CrudExtension<T extends OrmEntity> on Query<T> {
     );
 
     final result = await target.context.runMutation(mutation);
-    return _hydrateMutationResults(
+    final models = _hydrateMutationResults(
       result,
       originalModels: input is T ? <T>[input] : const [],
       inputMaps: <Map<String, Object?>>[baseValues],
       canCreateFromInputs: false,
     );
+    _emitUpdatedEvents(models, [
+      _UpdateEntry<T>(
+        row: MutationRow(
+          values: payload.values,
+          keys: const {},
+          jsonUpdates: [...payload.jsonUpdates, ...jsonClauses],
+        ),
+        inputMap: baseValues,
+        model: input is T ? input : null,
+        originalAttributes: originalAttributes,
+        dirtyAttributes: dirtyAttributes,
+      ),
+    ]);
+    _emitSavedEvents(models, [baseValues]);
+    return models;
   }
 
   Future<MutationResult> _updateInputsAgainstQueryRaw(
@@ -822,8 +1012,24 @@ extension CrudExtension<T extends OrmEntity> on Query<T> {
     );
     final jsonSupport = JsonUpdateSupport<T>(definition);
 
+    Map<String, Object?>? originalAttributes;
+    Map<String, Object?> dirtyAttributes = const {};
+
     if (input is T) {
       helper.applyUpdateTimestampsToModel(input);
+      if (input is ModelAttributes) {
+        final attrs = input as ModelAttributes;
+        final originalMap = attrs.getOriginal();
+        if (originalMap is Map<String, Object?>) {
+          originalAttributes = Map<String, Object?>.from(originalMap);
+        }
+        dirtyAttributes = Map<String, Object?>.from(attrs.getDirty());
+      } else {
+        originalAttributes = definition.toMap(
+          input,
+          registry: context.codecRegistry,
+        );
+      }
     }
 
     final baseValues = helper.updateInputToMap(input);
@@ -840,6 +1046,28 @@ extension CrudExtension<T extends OrmEntity> on Query<T> {
         payload.jsonUpdates.isEmpty &&
         jsonClauses.isEmpty) {
       return const MutationResult(affectedRows: 0);
+    }
+
+    if (input is T && originalAttributes != null) {
+      if (!_emitSavingEvent(input, baseValues)) {
+        return const MutationResult(affectedRows: 0);
+      }
+
+      final updatingEvent = ModelUpdatingEvent(
+        modelType: definition.modelType,
+        tableName: definition.tableName,
+        model: input,
+        originalAttributes: Map<String, dynamic>.from(originalAttributes),
+        dirtyAttributes: Map<String, dynamic>.from(dirtyAttributes),
+      );
+      target._events.emit(updatingEvent);
+      if (updatingEvent.isCancelled) {
+        return const MutationResult(affectedRows: 0);
+      }
+    } else {
+      if (!_emitSavingEvent(null, baseValues)) {
+        return const MutationResult(affectedRows: 0);
+      }
     }
 
     final mutation = target._buildQueryUpdateMutation(
@@ -1050,7 +1278,11 @@ extension CrudExtension<T extends OrmEntity> on Query<T> {
           if (input is! ModelAttributes) {
             helper.ensureTimestampsInMap(values, isInsert: true);
           }
-          return MutationRow(values: values, keys: const {}, jsonUpdates: jsonUpdates);
+          return MutationRow(
+            values: values,
+            keys: const {},
+            jsonUpdates: jsonUpdates,
+          );
         })
         .toList(growable: false);
   }
@@ -1074,8 +1306,10 @@ extension CrudExtension<T extends OrmEntity> on Query<T> {
     // Default to primary key if uniqueBy not specified
     List<String>? resolvedUniqueBy;
     if (uniqueBy != null) {
-      resolvedUniqueBy =
-          uniqueBy.map(_ensureField).map((f) => f.columnName).toList();
+      resolvedUniqueBy = uniqueBy
+          .map(_ensureField)
+          .map((f) => f.columnName)
+          .toList();
     } else {
       final pk = definition.primaryKeyField;
       if (pk != null) {
@@ -1175,46 +1409,32 @@ extension CrudExtension<T extends OrmEntity> on Query<T> {
   /// print('Deleted $deletedCount inactive users.');
   /// ```
   Future<int> delete() async {
-    // If model supports soft deletes, perform soft delete instead
     final softDeleteField = _softDeleteField;
-    if (softDeleteField != null) {
-      final keys = await _collectPrimaryKeyConditions(this);
-      if (keys.isEmpty) {
-        return 0;
-      }
-      final now = Carbon.now().toUtc().toDateTime();
-      final rows = keys
-          .map(
-            (key) => MutationRow(
-              values: {softDeleteField.columnName: now},
-              keys: key,
-            ),
-          )
-          .toList();
-      final mutation = MutationPlan.update(
-        definition: definition,
-        rows: rows,
-        driverName: context.driver.metadata.name,
-      );
-      final result = await context.runMutation(mutation);
-      return result.affectedRows;
-    }
-
-    // Otherwise, perform hard delete
-    final pkField = definition.primaryKeyField;
-    if (pkField == null) {
-      throw StateError(
-        'delete requires ${definition.modelName} to declare a primary key.',
-      );
-    }
-    final plan = _buildPlan();
-    final mutation = MutationPlan.queryDelete(
-      definition: definition,
-      plan: plan,
-      primaryKey: pkField.columnName,
-      driverName: context.driver.metadata.name,
+    final now = Carbon.now().toUtc().toDateTime();
+    final targets = await _prepareDeletionTargets(
+      softDeleteField: softDeleteField,
+      softDeleteValue: now,
     );
+    if (targets.rows.isEmpty) return 0;
+
+    final mutation = softDeleteField != null
+        ? MutationPlan.update(
+            definition: definition,
+            rows: targets.rows,
+            driverName: context.driver.metadata.name,
+          )
+        : MutationPlan.delete(
+            definition: definition,
+            rows: targets.rows,
+            driverName: context.driver.metadata.name,
+          );
     final result = await context.runMutation(mutation);
+    if (result.affectedRows > 0) {
+      _emitDeletedEventsForModels(
+        targets.models,
+        forceDelete: softDeleteField == null,
+      );
+    }
     return result.affectedRows;
   }
 
@@ -1223,45 +1443,35 @@ extension CrudExtension<T extends OrmEntity> on Query<T> {
   /// For soft-delete models, this returns the rows after the soft delete update.
   Future<List<T>> deleteReturning() async {
     final softDeleteField = _softDeleteField;
-    if (softDeleteField != null) {
-      final keys = await _collectPrimaryKeyConditions(this);
-      if (keys.isEmpty) return const [];
-
-      final now = Carbon.now().toUtc().toDateTime();
-      final rows = keys
-          .map(
-            (key) => MutationRow(
-              values: {softDeleteField.columnName: now},
-              keys: key,
-            ),
-          )
-          .toList();
-      final mutation = MutationPlan.update(
-        definition: definition,
-        rows: rows,
-        driverName: context.driver.metadata.name,
-        returning: true,
-      );
-      final result = await context.runMutation(mutation);
-      return _hydrateMutationResults(result);
-    }
-
-    final pkField = definition.primaryKeyField;
-    if (pkField == null) {
-      throw StateError(
-        'delete requires ${definition.modelName} to declare a primary key.',
-      );
-    }
-    final plan = _buildPlan();
-    final mutation = MutationPlan.queryDelete(
-      definition: definition,
-      plan: plan,
-      primaryKey: pkField.columnName,
-      driverName: context.driver.metadata.name,
-      returning: true,
+    final now = Carbon.now().toUtc().toDateTime();
+    final targets = await _prepareDeletionTargets(
+      softDeleteField: softDeleteField,
+      softDeleteValue: softDeleteField != null ? now : null,
     );
+    if (targets.rows.isEmpty) return const [];
+
+    final mutation = softDeleteField != null
+        ? MutationPlan.update(
+            definition: definition,
+            rows: targets.rows,
+            driverName: context.driver.metadata.name,
+            returning: true,
+          )
+        : MutationPlan.delete(
+            definition: definition,
+            rows: targets.rows,
+            driverName: context.driver.metadata.name,
+            returning: true,
+          );
     final result = await context.runMutation(mutation);
-    return _hydrateMutationResults(result);
+    var models = _hydrateMutationResults(result);
+    if (models.isEmpty && result.affectedRows > 0 && targets.models.isNotEmpty) {
+      // Some drivers (e.g., MySQL/MariaDB) don't support RETURNING for deletes.
+      // Fall back to the models we collected prior to the mutation.
+      models = targets.models;
+    }
+    _emitDeletedEventsForModels(models, forceDelete: softDeleteField == null);
+    return models;
   }
 
   /// Deletes records matching a flexible where input (PK, map, DTO, partial, tracked model).
@@ -1300,7 +1510,11 @@ extension CrudExtension<T extends OrmEntity> on Query<T> {
   Future<int> deleteWhereMany(List<Object> wheres) async {
     if (wheres.isEmpty) return 0;
 
-    final split = _splitWhereInputs(wheres, 'deleteWhereMany');
+    final forceDelete = _softDeleteField == null;
+    final deleteFilter = _filterDeleteWheres(wheres, forceDelete: forceDelete);
+    if (deleteFilter.wheres.isEmpty) return 0;
+
+    final split = _splitWhereInputs(deleteFilter.wheres, 'deleteWhereMany');
     var affected = 0;
 
     for (final query in split.queries) {
@@ -1313,7 +1527,13 @@ extension CrudExtension<T extends OrmEntity> on Query<T> {
 
     final mutation = _buildDeleteWherePlan(split.inputs, returning: false);
     final result = await context.runMutation(mutation);
-    return affected + result.affectedRows;
+    final total = affected + result.affectedRows;
+
+    if (total > 0 && deleteFilter.contexts.isNotEmpty) {
+      _emitDeletedEvents(deleteFilter.contexts);
+    }
+
+    return total;
   }
 
   /// Deletes records using flexible where inputs and returns hydrated models.
@@ -1324,7 +1544,14 @@ extension CrudExtension<T extends OrmEntity> on Query<T> {
   Future<List<T>> deleteWhereManyReturning(List<Object> wheres) async {
     if (wheres.isEmpty) return const [];
 
-    final split = _splitWhereInputs(wheres, 'deleteWhereManyReturning');
+    final forceDelete = _softDeleteField == null;
+    final deleteFilter = _filterDeleteWheres(wheres, forceDelete: forceDelete);
+    if (deleteFilter.wheres.isEmpty) return const [];
+
+    final split = _splitWhereInputs(
+      deleteFilter.wheres,
+      'deleteWhereManyReturning',
+    );
     final models = <T>[];
 
     for (final query in split.queries) {
@@ -1332,13 +1559,17 @@ extension CrudExtension<T extends OrmEntity> on Query<T> {
       models.addAll(returned);
     }
 
-    if (split.inputs.isEmpty) {
-      return models;
+    if (split.inputs.isNotEmpty) {
+      final mutation = _buildDeleteWherePlan(split.inputs, returning: true);
+      final result = await context.runMutation(mutation);
+      final hydrated = _hydrateMutationResults(result);
+      if (hydrated.isNotEmpty) {
+        _emitDeletedEventsForModels(hydrated, forceDelete: forceDelete);
+        models.addAll(hydrated);
+      } else if (result.affectedRows > 0 && deleteFilter.contexts.isNotEmpty) {
+        _emitDeletedEvents(deleteFilter.contexts);
+      }
     }
-
-    final mutation = _buildDeleteWherePlan(split.inputs, returning: true);
-    final result = await context.runMutation(mutation);
-    models.addAll(_hydrateMutationResults(result));
     return models;
   }
 
@@ -1503,23 +1734,50 @@ extension CrudExtension<T extends OrmEntity> on Query<T> {
     if (inputs.isEmpty) return const [];
 
     final rows = _buildUpsertRows(inputs);
+    final readyRows = <MutationRow>[];
+    final filteredInputMaps = <Map<String, Object?>>[];
+    final filteredOriginalModels = <T>[];
+
+    for (var i = 0; i < rows.length && i < inputs.length; i++) {
+      final inputMap = rows[i].values;
+      final input = inputs[i];
+      if (!_emitSavingEvent(input is T ? input : null, inputMap)) {
+        continue;
+      }
+
+      final creatingEvent = ModelCreatingEvent(
+        modelType: definition.modelType,
+        tableName: definition.tableName,
+        attributes: Map<String, dynamic>.from(inputMap),
+      );
+      _events.emit(creatingEvent);
+      if (creatingEvent.isCancelled) continue;
+      readyRows.add(rows[i]);
+      filteredInputMaps.add(inputMap);
+      if (input is T) {
+        filteredOriginalModels.add(input);
+      }
+    }
+
+    if (readyRows.isEmpty) return const [];
 
     final mutation = _buildUpsertPlan(
-      rows,
+      readyRows,
       uniqueBy: uniqueBy,
       updateColumns: updateColumns,
       returning: true,
     );
 
     final result = await context.runMutation(mutation);
-    final originalModels = inputs.whereType<T>().toList();
-    final inputMaps = rows.map((r) => r.values).toList();
-    return _hydrateMutationResults(
+    final models = _hydrateMutationResults(
       result,
-      originalModels: originalModels,
-      inputMaps: inputMaps,
+      originalModels: filteredOriginalModels,
+      inputMaps: filteredInputMaps,
       canCreateFromInputs: true,
     );
+    _emitCreatedEvents(models, filteredInputMaps);
+    _emitSavedEvents(models, filteredInputMaps);
+    return models;
   }
 
   /// Builds but does not execute an upsert plan (useful for previews).
@@ -1672,6 +1930,307 @@ extension CrudExtension<T extends OrmEntity> on Query<T> {
       );
     }
   }
+
+  List<_InsertEntry<T>> _zipInsertEntries(
+    List<Object> inputs,
+    _InsertInputBuildResult<T> build,
+  ) {
+    final entries = <_InsertEntry<T>>[];
+    final count = build.rows.length;
+    for (var i = 0; i < count && i < inputs.length; i++) {
+      entries.add(
+        _InsertEntry<T>(
+          row: build.rows[i],
+          inputMap: i < build.inputMaps.length ? build.inputMaps[i] : const {},
+          model: inputs[i] is T ? inputs[i] as T : null,
+        ),
+      );
+    }
+    return entries;
+  }
+
+  List<_UpdateEntry<T>> _zipUpdateEntries(
+    List<Object> inputs,
+    _UpdateInputBuildResult<T> build,
+  ) {
+    final entries = <_UpdateEntry<T>>[];
+    final count = build.rows.length;
+
+    for (var i = 0; i < count && i < inputs.length; i++) {
+      final input = inputs[i];
+      final model = input is T ? input : null;
+
+      Map<String, Object?>? original;
+      Map<String, Object?> dirty = const {};
+      if (model is ModelAttributes) {
+        final attrs = model as ModelAttributes;
+        final originalMap = attrs.getOriginal();
+        if (originalMap is Map<String, Object?>) {
+          original = Map<String, Object?>.from(originalMap);
+        }
+        final dirtyMap = attrs.getDirty();
+        dirty = Map<String, Object?>.from(dirtyMap);
+      } else if (model != null) {
+        original = definition.toMap(model, registry: context.codecRegistry);
+      }
+
+      entries.add(
+        _UpdateEntry<T>(
+          row: build.rows[i],
+          inputMap: i < build.inputMaps.length ? build.inputMaps[i] : const {},
+          model: model,
+          originalAttributes: original,
+          dirtyAttributes: dirty,
+        ),
+      );
+    }
+
+    return entries;
+  }
+
+  void _emitCreatedEvents(
+    List<T> models,
+    List<Map<String, Object?>> inputMaps,
+  ) {
+    for (var i = 0; i < models.length; i++) {
+      final model = models[i];
+      final attributes = i < inputMaps.length ? inputMaps[i] : const {};
+      _events.emit(
+        ModelCreatedEvent(
+          modelType: definition.modelType,
+          tableName: definition.tableName,
+          model: model,
+          attributes: Map<String, dynamic>.from(attributes),
+        ),
+      );
+    }
+  }
+
+  void _emitSavedEvents(
+    List<T> models,
+    List<Map<String, Object?>> inputMaps,
+  ) {
+    for (var i = 0; i < models.length; i++) {
+      final model = models[i];
+      final attributes = i < inputMaps.length ? inputMaps[i] : const {};
+      _events.emit(
+        ModelSavedEvent(
+          modelType: definition.modelType,
+          tableName: definition.tableName,
+          model: model,
+          attributes: Map<String, dynamic>.from(attributes),
+        ),
+      );
+    }
+  }
+
+  void _emitUpdatedEvents(List<T> models, List<_UpdateEntry<T>> entries) {
+    final limit = models.length < entries.length
+        ? models.length
+        : entries.length;
+    for (var i = 0; i < limit; i++) {
+      final entry = entries[i];
+      final original = entry.originalAttributes;
+      if (original == null) continue;
+
+      final model = models[i];
+      final updated = definition.toMap(model, registry: context.codecRegistry);
+      final changed = _diffAttributes(original, updated);
+
+      _events.emit(
+        ModelUpdatedEvent(
+          modelType: definition.modelType,
+          tableName: definition.tableName,
+          model: model,
+          originalAttributes: Map<String, dynamic>.from(original),
+          changedAttributes: Map<String, dynamic>.from(changed),
+        ),
+      );
+    }
+  }
+
+  bool _emitSavingEvent(T? model, Map<String, Object?> attributes) {
+    final savingEvent = ModelSavingEvent(
+      modelType: definition.modelType,
+      tableName: definition.tableName,
+      model: model,
+      attributes: Map<String, dynamic>.from(attributes),
+    );
+    _events.emit(savingEvent);
+    return !savingEvent.isCancelled;
+  }
+
+  Map<String, Object?> _diffAttributes(
+    Map<String, Object?> original,
+    Map<String, Object?> updated,
+  ) {
+    final changed = <String, Object?>{};
+    final keys = {...original.keys, ...updated.keys};
+    for (final key in keys) {
+      if (original[key] != updated[key]) {
+        changed[key] = updated[key];
+      }
+    }
+    return changed;
+  }
+
+  _DeleteFilter<T> _filterDeleteWheres(
+    List<Object> wheres, {
+    required bool forceDelete,
+  }) {
+    final filtered = <Object>[];
+    final contexts = <_DeleteEventContext<T>>[];
+
+    for (final where in wheres) {
+      if (where is T) {
+        final deleting = ModelDeletingEvent(
+          modelType: definition.modelType,
+          tableName: definition.tableName,
+          model: where,
+          forceDelete: forceDelete,
+        );
+        _events.emit(deleting);
+        if (deleting.isCancelled) {
+          continue;
+        }
+        contexts.add(
+          _DeleteEventContext<T>(model: where, forceDelete: forceDelete),
+        );
+      }
+      filtered.add(where);
+    }
+
+    return _DeleteFilter<T>(wheres: filtered, contexts: contexts);
+  }
+
+  void _emitDeletedEvents(List<_DeleteEventContext<T>> contexts) {
+    for (final context in contexts) {
+      _events.emit(
+        ModelDeletedEvent(
+          modelType: definition.modelType,
+          tableName: definition.tableName,
+          model: context.model,
+          forceDelete: context.forceDelete,
+        ),
+      );
+      if (context.forceDelete) {
+        _events.emit(
+          ModelForceDeletedEvent(
+            modelType: definition.modelType,
+            tableName: definition.tableName,
+            model: context.model,
+          ),
+        );
+      } else {
+        _events.emit(
+          ModelTrashedEvent(
+            modelType: definition.modelType,
+            tableName: definition.tableName,
+            model: context.model,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<_DeletionTargets<T>> _prepareDeletionTargets({
+    FieldDefinition? softDeleteField,
+    Object? softDeleteValue,
+    bool includeTrashed = false,
+    bool restoring = false,
+    FieldDefinition? scopeSoftDeleteField,
+  }) async {
+    final scopeField = scopeSoftDeleteField ?? softDeleteField;
+    final pkField = definition.primaryKeyField;
+    if (pkField == null) {
+      throw StateError(
+        'delete requires ${definition.modelName} to declare a primary key.',
+      );
+    }
+
+    Query<T> target = this;
+    if (includeTrashed && scopeField != null) {
+      target = restoring ? onlyTrashed() : withTrashed();
+    }
+
+    final queryRows = await target.rows();
+    final rows = <MutationRow>[];
+    final models = <T>[];
+
+    for (final queryRow in queryRows) {
+      final model = queryRow.model;
+      final pkValue = queryRow.row[pkField.columnName];
+      if (pkValue == null) continue;
+
+      if (restoring) {
+        final restoringEvent = ModelRestoringEvent(
+          modelType: definition.modelType,
+          tableName: definition.tableName,
+          model: model,
+        );
+        _events.emit(restoringEvent);
+        if (restoringEvent.isCancelled) {
+          continue;
+        }
+      } else {
+        final deletingEvent = ModelDeletingEvent(
+          modelType: definition.modelType,
+          tableName: definition.tableName,
+          model: model,
+          forceDelete: softDeleteField == null,
+        );
+        _events.emit(deletingEvent);
+        if (deletingEvent.isCancelled) {
+          continue;
+        }
+      }
+
+      rows.add(
+        MutationRow(
+          values: softDeleteField != null
+              ? {softDeleteField.columnName: softDeleteValue}
+              : const {},
+          keys: {pkField.columnName: pkValue},
+        ),
+      );
+      models.add(model);
+    }
+
+    return _DeletionTargets<T>(rows: rows, models: models);
+  }
+
+  void _emitDeletedEventsForModels(
+    List<T> models, {
+    required bool forceDelete,
+  }) {
+    for (final model in models) {
+      _events.emit(
+        ModelDeletedEvent(
+          modelType: definition.modelType,
+          tableName: definition.tableName,
+          model: model,
+          forceDelete: forceDelete,
+        ),
+      );
+      if (forceDelete) {
+        _events.emit(
+          ModelForceDeletedEvent(
+            modelType: definition.modelType,
+            tableName: definition.tableName,
+            model: model,
+          ),
+        );
+      } else {
+        _events.emit(
+          ModelTrashedEvent(
+            modelType: definition.modelType,
+            tableName: definition.tableName,
+            model: model,
+          ),
+        );
+      }
+    }
+  }
 }
 
 class _WhereSplit<T extends OrmEntity> {
@@ -1679,4 +2238,49 @@ class _WhereSplit<T extends OrmEntity> {
 
   final List<Query<T>> queries;
   final List<Object> inputs;
+}
+
+final class _InsertEntry<T extends OrmEntity> {
+  _InsertEntry({required this.row, required this.inputMap, this.model});
+
+  final Map<String, Object?> row;
+  final Map<String, Object?> inputMap;
+  final T? model;
+}
+
+final class _UpdateEntry<T extends OrmEntity> {
+  _UpdateEntry({
+    required this.row,
+    required this.inputMap,
+    this.model,
+    this.originalAttributes,
+    Map<String, Object?>? dirtyAttributes,
+  }) : dirtyAttributes = dirtyAttributes ?? const {};
+
+  final MutationRow row;
+  final Map<String, Object?> inputMap;
+  final T? model;
+  final Map<String, Object?>? originalAttributes;
+  final Map<String, Object?> dirtyAttributes;
+}
+
+final class _DeleteEventContext<T extends OrmEntity> {
+  _DeleteEventContext({required this.model, required this.forceDelete});
+
+  final T model;
+  final bool forceDelete;
+}
+
+final class _DeleteFilter<T extends OrmEntity> {
+  _DeleteFilter({required this.wheres, required this.contexts});
+
+  final List<Object> wheres;
+  final List<_DeleteEventContext<T>> contexts;
+}
+
+final class _DeletionTargets<T extends OrmEntity> {
+  _DeletionTargets({required this.rows, required this.models});
+
+  final List<MutationRow> rows;
+  final List<T> models;
 }

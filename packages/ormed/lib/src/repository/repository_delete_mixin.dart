@@ -83,6 +83,22 @@ mixin RepositoryDeleteMixin<T extends OrmEntity>
     return query.deleteWhereMany(ids);
   }
 
+  /// Deletes records using flexible where inputs and returns hydrated models.
+  Future<List<T>> deleteWhereManyReturning(List<Object> wheres) async {
+    if (wheres.isEmpty) return const [];
+
+    final query = _requireQuery('deleteWhereManyReturning');
+    return query.deleteWhereManyReturning(wheres);
+  }
+
+  /// Deletes multiple records by their primary key [ids] and returns the models.
+  Future<List<T>> deleteByIdsReturning(List<Object> ids) async {
+    if (ids.isEmpty) return const [];
+
+    final query = _requireQuery('deleteByIdsReturning');
+    return query.deleteWhereManyReturning(ids);
+  }
+
   /// Deletes records from the database by their [keys].
   ///
   /// Each key is a map of column names to values.

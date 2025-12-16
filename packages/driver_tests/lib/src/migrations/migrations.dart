@@ -15,3 +15,4 @@ export 'create_serial_tests_table.dart';
 export 'create_mutation_targets_table.dart';
 export 'create_derived_for_factories_table.dart';
 export 'create_custom_soft_delete_models_table.dart';
+export 'create_event_models_table.dart';

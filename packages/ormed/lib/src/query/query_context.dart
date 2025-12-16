@@ -42,6 +42,7 @@ class QueryContext implements ConnectionResolver {
     required this.registry,
     required this.driver,
     ScopeRegistry? scopeRegistry,
+    EventBus? events,
     this.connectionName,
     this.connectionDatabase,
     this.connectionTablePrefix,
@@ -55,6 +56,7 @@ class QueryContext implements ConnectionResolver {
          driver.metadata.name,
        ),
        scopeRegistry = scopeRegistry ?? ScopeRegistry(),
+       events = events ?? EventBus.instance,
        queryCache = QueryCache(),
        _beforeQueryHook = beforeQueryHook,
        _beforeMutationHook = beforeMutationHook,
@@ -77,6 +79,9 @@ class QueryContext implements ConnectionResolver {
   /// The registry for custom field and value codecs.
   @override
   final ValueCodecRegistry codecRegistry;
+
+  /// Event bus used for emitting model lifecycle events.
+  final EventBus events;
 
   /// The registry for global and local query scopes.
   final ScopeRegistry scopeRegistry;
