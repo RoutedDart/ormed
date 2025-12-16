@@ -152,7 +152,7 @@ void registerModelEventHandlers({EventBus? bus}) {
 
 /// Registers generated model scopes into a [ScopeRegistry].
 void registerModelScopes({ScopeRegistry? scopeRegistry}) {
-  final _registry = scopeRegistry ?? ScopeRegistry();
+  final _registry = scopeRegistry ?? ScopeRegistry.instance;
   registerScopedUserScopes(_registry);
 }
 

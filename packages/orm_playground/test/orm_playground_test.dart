@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:ormed/ormed.dart';
 import 'package:orm_playground/orm_playground.dart';
+import 'package:orm_playground/orm_registry.g.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
@@ -15,7 +16,7 @@ void main() {
   });
 
   test('model registry registers generated definitions', () {
-    final registry = buildOrmRegistry();
+    final registry = bootstrapOrm();
     expect(registry.contains<User>(), isTrue);
     expect(registry.contains<Post>(), isTrue);
     expect(registry.contains<Comment>(), isTrue);

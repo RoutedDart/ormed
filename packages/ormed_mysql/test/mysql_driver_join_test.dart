@@ -22,7 +22,7 @@ Future<(MySqlDriverAdapter, DataSource)> _createSimpleHarness() async {
     ),
   );
 
-  final registry = buildOrmRegistry();
+  final registry = bootstrapOrm();
 
   final dataSource = DataSource(
     DataSourceOptions(

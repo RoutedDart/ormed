@@ -440,9 +440,13 @@ class PostPartial implements PartialEntity<$Post> {
   $Post toEntity() {
     // Basic required-field check: non-nullable fields must be present.
     final int? userIdValue = userId;
-    if (userIdValue == null) throw StateError('Missing required field: userId');
+    if (userIdValue == null) {
+      throw StateError('Missing required field: userId');
+    }
     final String? titleValue = title;
-    if (titleValue == null) throw StateError('Missing required field: title');
+    if (titleValue == null) {
+      throw StateError('Missing required field: title');
+    }
     final bool? publishedValue = published;
     if (publishedValue == null) {
       throw StateError('Missing required field: published');
@@ -525,6 +529,28 @@ class $Post extends Post with ModelAttributes implements OrmEntity {
       publishedAt: model.publishedAt,
       createdAt: model.createdAt,
       updatedAt: model.updatedAt,
+    );
+  }
+
+  $Post copyWith({
+    int? id,
+    int? userId,
+    String? title,
+    String? body,
+    bool? published,
+    DateTime? publishedAt,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) {
+    return $Post(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      title: title ?? this.title,
+      body: body ?? this.body,
+      published: published ?? this.published,
+      publishedAt: publishedAt ?? this.publishedAt,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 
@@ -627,4 +653,8 @@ extension PostOrmExtension on Post {
   $Post toTracked() {
     return $Post.fromModel(this);
   }
+}
+
+void registerPostEventHandlers(EventBus bus) {
+  // No event handlers registered for Post.
 }

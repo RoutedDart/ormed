@@ -3,7 +3,7 @@ import 'package:ormed/ormed.dart';
 import 'package:test/test.dart';
 
 void main() {
-  buildOrmRegistryWithFactories();
+  bootstrapOrm();
 
   group('ModelFactoryBuilder', () {
     group('Basic Generation', () {

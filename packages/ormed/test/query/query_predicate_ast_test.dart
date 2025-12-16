@@ -3,7 +3,7 @@ import 'package:ormed/ormed.dart';
 import 'package:test/test.dart';
 
 void main() {
-  ModelRegistry registry = buildOrmRegistry();
+  ModelRegistry registry = bootstrapOrm();
   group('Query predicate AST', () {
     late QueryContext context;
 

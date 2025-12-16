@@ -223,9 +223,13 @@ class PostTagPartial implements PartialEntity<$PostTag> {
   $PostTag toEntity() {
     // Basic required-field check: non-nullable fields must be present.
     final int? postIdValue = postId;
-    if (postIdValue == null) throw StateError('Missing required field: postId');
+    if (postIdValue == null) {
+      throw StateError('Missing required field: postId');
+    }
     final int? tagIdValue = tagId;
-    if (tagIdValue == null) throw StateError('Missing required field: tagId');
+    if (tagIdValue == null) {
+      throw StateError('Missing required field: tagId');
+    }
     return $PostTag(postId: postIdValue, tagId: tagIdValue);
   }
 
@@ -257,6 +261,10 @@ class $PostTag extends PostTag with ModelAttributes implements OrmEntity {
     return $PostTag(postId: model.postId, tagId: model.tagId);
   }
 
+  $PostTag copyWith({int? postId, int? tagId}) {
+    return $PostTag(postId: postId ?? this.postId, tagId: tagId ?? this.tagId);
+  }
+
   @override
   int get postId => getAttribute<int>('post_id') ?? super.postId;
 
@@ -285,4 +293,8 @@ extension PostTagOrmExtension on PostTag {
   $PostTag toTracked() {
     return $PostTag.fromModel(this);
   }
+}
+
+void registerPostTagEventHandlers(EventBus bus) {
+  // No event handlers registered for PostTag.
 }

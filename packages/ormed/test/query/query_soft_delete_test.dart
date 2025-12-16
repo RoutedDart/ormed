@@ -4,7 +4,7 @@ import 'package:test/test.dart';
 import 'package:driver_tests/driver_tests.dart';
 
 void main() {
-  ModelRegistry registry = buildOrmRegistry();
+  ModelRegistry registry = bootstrapOrm();
   group('Soft deletes', () {
     late InMemoryQueryExecutor executor;
     late QueryContext context;

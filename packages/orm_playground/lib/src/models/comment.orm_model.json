@@ -1,1 +1,1 @@
-{"className":"Comment","import":"src/models/comment.dart","definition":"CommentOrmDefinition.definition","hasFactory":false}
+{"className":"Comment","import":"src/models/comment.dart","definition":"CommentOrmDefinition.definition","hasFactory":false,"hasEventHandlers":false,"hasScopes":false}

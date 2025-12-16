@@ -365,9 +365,13 @@ class CommentPartial implements PartialEntity<$Comment> {
   $Comment toEntity() {
     // Basic required-field check: non-nullable fields must be present.
     final int? postIdValue = postId;
-    if (postIdValue == null) throw StateError('Missing required field: postId');
+    if (postIdValue == null) {
+      throw StateError('Missing required field: postId');
+    }
     final String? bodyValue = body;
-    if (bodyValue == null) throw StateError('Missing required field: body');
+    if (bodyValue == null) {
+      throw StateError('Missing required field: body');
+    }
     return $Comment(
       id: id,
       postId: postIdValue,
@@ -437,6 +441,24 @@ class $Comment extends Comment with ModelAttributes implements OrmEntity {
     );
   }
 
+  $Comment copyWith({
+    int? id,
+    int? postId,
+    int? userId,
+    String? body,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) {
+    return $Comment(
+      id: id ?? this.id,
+      postId: postId ?? this.postId,
+      userId: userId ?? this.userId,
+      body: body ?? this.body,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
   @override
   int? get id => getAttribute<int?>('id') ?? super.id;
 
@@ -501,4 +523,8 @@ extension CommentOrmExtension on Comment {
   $Comment toTracked() {
     return $Comment.fromModel(this);
   }
+}
+
+void registerCommentEventHandlers(EventBus bus) {
+  // No event handlers registered for Comment.
 }

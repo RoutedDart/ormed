@@ -122,7 +122,7 @@ Future<PostgresTestHarness> createPostgresTestHarness({
   registerOrmFactories();
   PostgresDriverAdapter.registerCodecs();
 
-  final registry = buildOrmRegistry();
+  final registry = bootstrapOrm();
 
   // Custom codecs used by driver_tests fixtures.
   final customCodecs = <String, ValueCodec<dynamic>>{

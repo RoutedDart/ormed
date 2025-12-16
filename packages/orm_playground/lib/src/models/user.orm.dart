@@ -350,11 +350,17 @@ class UserPartial implements PartialEntity<$User> {
   $User toEntity() {
     // Basic required-field check: non-nullable fields must be present.
     final String? emailValue = email;
-    if (emailValue == null) throw StateError('Missing required field: email');
+    if (emailValue == null) {
+      throw StateError('Missing required field: email');
+    }
     final String? nameValue = name;
-    if (nameValue == null) throw StateError('Missing required field: name');
+    if (nameValue == null) {
+      throw StateError('Missing required field: name');
+    }
     final bool? activeValue = active;
-    if (activeValue == null) throw StateError('Missing required field: active');
+    if (activeValue == null) {
+      throw StateError('Missing required field: active');
+    }
     return $User(
       id: id,
       email: emailValue,
@@ -424,6 +430,24 @@ class $User extends User with ModelAttributes implements OrmEntity {
     );
   }
 
+  $User copyWith({
+    int? id,
+    String? email,
+    String? name,
+    bool? active,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) {
+    return $User(
+      id: id ?? this.id,
+      email: email ?? this.email,
+      name: name ?? this.name,
+      active: active ?? this.active,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
   @override
   int? get id => getAttribute<int?>('id') ?? super.id;
 
@@ -474,4 +498,8 @@ extension UserOrmExtension on User {
   $User toTracked() {
     return $User.fromModel(this);
   }
+}
+
+void registerUserEventHandlers(EventBus bus) {
+  // No event handlers registered for User.
 }

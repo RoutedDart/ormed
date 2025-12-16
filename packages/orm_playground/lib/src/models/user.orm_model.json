@@ -1,1 +1,1 @@
-{"className":"User","import":"src/models/user.dart","definition":"UserOrmDefinition.definition","hasFactory":false}
+{"className":"User","import":"src/models/user.dart","definition":"UserOrmDefinition.definition","hasFactory":false,"hasEventHandlers":false,"hasScopes":false}

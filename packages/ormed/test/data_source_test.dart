@@ -3,7 +3,7 @@ import 'package:ormed/ormed.dart';
 import 'package:test/test.dart';
 
 void main() {
-  ModelRegistry registry = buildOrmRegistry();
+  ModelRegistry registry = bootstrapOrm();
   group('DataSource', () {
     late InMemoryQueryExecutor driver;
     late DataSource dataSource;

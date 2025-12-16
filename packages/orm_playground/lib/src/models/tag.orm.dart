@@ -276,7 +276,9 @@ class TagPartial implements PartialEntity<$Tag> {
   $Tag toEntity() {
     // Basic required-field check: non-nullable fields must be present.
     final String? nameValue = name;
-    if (nameValue == null) throw StateError('Missing required field: name');
+    if (nameValue == null) {
+      throw StateError('Missing required field: name');
+    }
     return $Tag(
       id: id,
       name: nameValue,
@@ -334,6 +336,20 @@ class $Tag extends Tag with ModelAttributes implements OrmEntity {
     );
   }
 
+  $Tag copyWith({
+    int? id,
+    String? name,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) {
+    return $Tag(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
   @override
   int? get id => getAttribute<int?>('id') ?? super.id;
 
@@ -374,4 +390,8 @@ extension TagOrmExtension on Tag {
   $Tag toTracked() {
     return $Tag.fromModel(this);
   }
+}
+
+void registerTagEventHandlers(EventBus bus) {
+  // No event handlers registered for Tag.
 }

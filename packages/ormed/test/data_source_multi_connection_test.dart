@@ -4,7 +4,7 @@ import 'package:test/test.dart';
 import 'package:driver_tests/driver_tests.dart';
 
 void main() {
-  ModelRegistry registry = buildOrmRegistry();
+  ModelRegistry registry = bootstrapOrm();
   group('DataSource Multi-Connection', () {
     late DataSource primary;
     late DataSource secondary;

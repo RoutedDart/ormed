@@ -15,7 +15,7 @@ void groupHasMany() {
     late QueryContext context;
 
     setUp(() {
-      ModelRegistry registry = buildOrmRegistry();
+      ModelRegistry registry = bootstrapOrm();
       final executor = InMemoryQueryExecutor()
         ..register(AuthorOrmDefinition.definition, const [
           Author(id: 1, name: 'Alice', active: true),
@@ -122,7 +122,7 @@ void groupBelongsTo() {
     late QueryContext context;
 
     setUp(() {
-      ModelRegistry registry = buildOrmRegistry();
+      ModelRegistry registry = bootstrapOrm();
       final executor = InMemoryQueryExecutor()
         ..register(AuthorOrmDefinition.definition, const [
           Author(id: 1, name: 'Alice', active: true),
@@ -174,7 +174,7 @@ void groupManyToMany() {
     late QueryContext context;
 
     setUp(() {
-      ModelRegistry registry = buildOrmRegistry();
+      ModelRegistry registry = bootstrapOrm();
       final executor = InMemoryQueryExecutor()
         ..register(PostOrmDefinition.definition, [
           Post(
@@ -217,7 +217,7 @@ void groupMorphRelations() {
     late QueryContext context;
 
     setUp(() {
-      ModelRegistry registry = buildOrmRegistry();
+      ModelRegistry registry = bootstrapOrm();
       final executor = InMemoryQueryExecutor()
         ..register(AuthorOrmDefinition.definition, const [
           Author(id: 1, name: 'Alice', active: true),

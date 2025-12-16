@@ -41,7 +41,7 @@ void main() {
         config: DatabaseConfig(driver: 'postgres', options: {'url': url}),
       );
 
-      final registry = buildOrmRegistry();
+      final registry = bootstrapOrm();
       dataSource = DataSource(
         DataSourceOptions(
           driver: driverAdapter,

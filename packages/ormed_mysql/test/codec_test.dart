@@ -12,7 +12,7 @@ void main() {
 
     // Use the shared driver-test registry to ensure all models (including User)
     // are registered exactly as in the shared suites.
-    final registry = buildOrmRegistry();
+    final registry = bootstrapOrm();
     registerOrmFactories();
 
     final adapter = MySqlDriverAdapter.custom(

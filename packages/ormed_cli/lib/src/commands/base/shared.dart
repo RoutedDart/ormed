@@ -263,7 +263,9 @@ void main(List<String> args) {
     }
     final plan = entry.migration.plan(direction, snapshot: snapshot);
     print(jsonEncode(plan.toJson()));
+    return;
   }
+}
 ''';
 
 const String defaultOrmYaml = '''

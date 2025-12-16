@@ -1,1 +1,1 @@
-{"className":"Tag","import":"src/models/tag.dart","definition":"TagOrmDefinition.definition","hasFactory":false}
+{"className":"Tag","import":"src/models/tag.dart","definition":"TagOrmDefinition.definition","hasFactory":false,"hasEventHandlers":false,"hasScopes":false}

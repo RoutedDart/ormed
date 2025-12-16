@@ -14,6 +14,7 @@ void runScopeTests() {
 
       final example = await dataSource.context
           .query<$ScopedUser>()
+          .withoutGlobalScope('activeOnly')
           .emailDomain('example.com')
           .get();
 
@@ -22,6 +23,7 @@ void runScopeTests() {
 
       final named = await dataSource.context
           .query<$ScopedUser>()
+          .withoutGlobalScope('activeOnly')
           .named(name: 'B')
           .get();
 

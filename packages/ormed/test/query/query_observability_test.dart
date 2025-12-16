@@ -13,7 +13,7 @@ import 'package:ormed/ormed.dart';
 import 'package:test/test.dart';
 
 void main() {
-  ModelRegistry registry = buildOrmRegistry();
+  ModelRegistry registry = bootstrapOrm();
 
   group('QueryContext observability', () {
     late InMemoryQueryExecutor driver;

@@ -22,7 +22,7 @@ class PreviewDriver extends InMemoryQueryExecutor {
 }
 
 void main() {
-  ModelRegistry registry = buildOrmRegistry();
+  ModelRegistry registry = bootstrapOrm();
 
   QueryContext context0(String driver) =>
       QueryContext(registry: registry, driver: PreviewDriver(driver));

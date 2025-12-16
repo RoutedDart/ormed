@@ -285,7 +285,9 @@ class AuthorPartial implements PartialEntity<$Author> {
   $Author toEntity() {
     // Basic required-field check: non-nullable fields must be present.
     final String? nameValue = name;
-    if (nameValue == null) throw StateError('Missing required field: name');
+    if (nameValue == null) {
+      throw StateError('Missing required field: name');
+    }
     return $Author(
       id: id,
       name: nameValue,
@@ -343,6 +345,20 @@ class $Author extends Author with ModelAttributes implements OrmEntity {
     );
   }
 
+  $Author copyWith({
+    int? id,
+    String? name,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) {
+    return $Author(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
   @override
   int? get id => getAttribute<int?>('id') ?? super.id;
 
@@ -383,4 +399,8 @@ extension AuthorOrmExtension on Author {
   $Author toTracked() {
     return $Author.fromModel(this);
   }
+}
+
+void registerAuthorEventHandlers(EventBus bus) {
+  // No event handlers registered for Author.
 }
