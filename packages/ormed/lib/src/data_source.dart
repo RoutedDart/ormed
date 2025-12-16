@@ -27,7 +27,7 @@ import 'value_codec.dart';
 class DataSourceOptions {
   DataSourceOptions({
     required this.driver,
-    this.entities = const [],
+    List<ModelDefinition<OrmEntity>> entities = const [],
     this.registry,
     this.name = 'default',
     this.database,
@@ -39,10 +39,13 @@ class DataSourceOptions {
     this.carbonTimezone = 'UTC',
     this.carbonLocale = 'en_US',
     this.enableNamedTimezones = false,
-  }) : assert(
-         entities.isNotEmpty || registry != null,
-         'Either entities or registry must be provided',
-       );
+  })  : entities = entities.isNotEmpty
+            ? entities
+            : (registry?.allDefinitions ?? const []),
+        assert(
+          entities.isNotEmpty || registry != null,
+          'Either entities or registry must be provided',
+        );
 
   /// The database driver adapter to use for connections.
   final DriverAdapter driver;

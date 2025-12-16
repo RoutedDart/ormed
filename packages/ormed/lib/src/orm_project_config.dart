@@ -96,8 +96,8 @@ class SeedSection {
   SeedSection({
     required this.directory,
     required this.registry,
-    required this.defaultClass,
-  });
+    List<String>? seedNames,
+  }) : seedNames = List.unmodifiable(seedNames ?? const []);
 
   /// Directory containing seeder libraries.
   final String directory;
@@ -105,33 +105,35 @@ class SeedSection {
   /// Registry file (e.g., `database/seeders.dart`).
   final String registry;
 
-  /// Default class invoked by `orm seed`.
-  final String defaultClass;
+  /// Known seeders (populated at runtime/CLI when available).
+  final List<String> seedNames;
 
   /// Creates the section from a YAML map.
   factory SeedSection.fromMap(Map<String, Object?> map) => SeedSection(
     directory: map['directory']?.toString() ?? '',
     registry: map['registry']?.toString() ?? '',
-    defaultClass: map['default_class']?.toString() ?? 'DatabaseSeeder',
+    seedNames: (map['seed_names'] as List?)
+        ?.map((entry) => entry.toString())
+        .toList(),
   );
 
   /// Serializes the section back to plain data.
   Map<String, Object?> toMap() => {
     'directory': directory,
     'registry': registry,
-    'default_class': defaultClass,
+    if (seedNames.isNotEmpty) 'seed_names': seedNames,
   };
 
   /// Clones the section with the provided overrides.
   SeedSection copyWith({
     String? directory,
     String? registry,
-    String? defaultClass,
+    List<String>? seedNames,
   }) {
     return SeedSection(
       directory: directory ?? this.directory,
       registry: registry ?? this.registry,
-      defaultClass: defaultClass ?? this.defaultClass,
+      seedNames: seedNames ?? this.seedNames,
     );
   }
 }

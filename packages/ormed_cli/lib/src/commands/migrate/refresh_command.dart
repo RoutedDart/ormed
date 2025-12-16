@@ -80,13 +80,13 @@ class RefreshCommand extends RunnerCommand {
       if (seeds == null) {
         cliIO.warning('No seeds configuration found. Skipping seeder.');
       } else {
-        final targetClass = seederOverride ?? seeds.defaultClass;
-        cliIO.info('Running seeder $targetClass...');
+        cliIO.info('Running seeders...');
         await runSeedRegistry(
           project: project,
           config: config,
           seeds: seeds,
-          overrideClasses: <String>[targetClass],
+          overrideClasses:
+              seederOverride == null ? null : <String>[seederOverride],
           databaseOverride: argResults?['database'] as String?,
           connection: argResults?['connection'] as String?,
         );

@@ -1,5 +1,6 @@
 import 'package:ormed/ormed.dart';
 import 'package:test/test.dart';
+import 'dart:io';
 
 void main() {
   test('single connection map can be read and written', () {
@@ -16,7 +17,6 @@ void main() {
       'seeds': {
         'directory': 'database/seeders',
         'registry': 'database/seeders.dart',
-        'default_class': 'DatabaseSeeder',
       },
     };
 
@@ -63,5 +63,26 @@ void main() {
     expect(config.connectionName, 'analytics');
     final primary = config.withConnection('default');
     expect(primary.connectionName, 'default');
+  });
+
+  test('environment variables expand inside orm.yaml', () async {
+    final tmpDir = await Directory.systemTemp.createTemp('ormed_config_test');
+    final configFile = File('${tmpDir.path}/orm.yaml');
+    final pathValue = Platform.environment['PATH'] ?? '';
+    configFile.writeAsStringSync('''
+driver:
+  type: sqlite
+  options:
+    database: \${PATH}
+    missing: \${NOT_SET_ENV:-fallback}
+migrations:
+  directory: migrations
+  registry: migrations.dart
+''');
+
+    final config = loadOrmProjectConfig(configFile);
+    expect(config.driver.option('database'), pathValue);
+    expect(config.driver.options['missing'], 'fallback');
+    await tmpDir.delete(recursive: true);
   });
 }

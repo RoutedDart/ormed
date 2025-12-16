@@ -163,10 +163,16 @@ class ProcessProjectSeederRunner implements ProjectSeederRunner {
     args
       ..add('--config')
       ..add(configPath);
-    for (final className in overrideClasses ?? const <String>[]) {
-      args
-        ..add('--run')
-        ..add(className);
+    final targetClasses = (overrideClasses == null || overrideClasses.isEmpty)
+        ? seeds.seedNames
+        : overrideClasses;
+
+    if (targetClasses.isNotEmpty) {
+      for (final className in targetClasses) {
+        args
+          ..add('--run')
+          ..add(className);
+      }
     }
     if (pretend) {
       args.add('--pretend');
@@ -273,7 +279,6 @@ migrations:
 seeds:
   directory: lib/src/database/seeders
   registry: lib/src/database/seeders.dart
-  default_class: DatabaseSeeder
 ''';
 
 const String seedImportsMarkerStart = '// <ORM-SEED-IMPORTS>';
@@ -293,8 +298,8 @@ $seedImportsMarkerEnd
 final List<SeederRegistration> _seeders = <SeederRegistration>[
 $seedRegistryMarkerStart
   SeederRegistration(
-    name: 'DatabaseSeeder',
-    factory: (context) => DatabaseSeeder(context.connection),
+    name: 'AppDatabaseSeeder',
+    factory: (context) => AppDatabaseSeeder(context.connection),
   ),
 $seedRegistryMarkerEnd
 ];

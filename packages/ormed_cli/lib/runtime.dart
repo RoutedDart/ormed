@@ -37,7 +37,7 @@ Future<void> runSeedRegistryOnConnection(
     await SeederRunner().run(
       connection: connection,
       seeders: seeds,
-      names: names,
+      names: (names == null || names.isEmpty) ? null : names,
       pretend: pretend,
       beforeRun: beforeRun,
       log: null, // Preserve previous behavior (no default log output).
@@ -91,9 +91,7 @@ Future<void> runSeedRegistryEntrypoint({
         connection,
         seeds,
         names: requestedClasses.isEmpty
-            ? (effectiveConfig.seeds?.defaultClass != null
-                  ? <String>[effectiveConfig.seeds!.defaultClass]
-                  : <String>[seeds.first.name])
+            ? <String>[seeds.first.name]
             : requestedClasses,
         pretend: pretend,
         beforeRun: beforeRun,

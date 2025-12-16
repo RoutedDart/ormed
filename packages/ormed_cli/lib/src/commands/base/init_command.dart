@@ -146,8 +146,9 @@ class InitCommand extends ArtisanCommand<void> {
 const String _defaultSeederTemplate = '''
 import 'package:ormed/ormed.dart';
 
-class DatabaseSeeder extends DatabaseSeeder {
-  DatabaseSeeder(super.connection);
+/// Root seeder executed by `orm seed` and `orm migrate --seed`.
+class AppDatabaseSeeder extends DatabaseSeeder {
+  AppDatabaseSeeder(super.connection);
 
   @override
   Future<void> run() async {

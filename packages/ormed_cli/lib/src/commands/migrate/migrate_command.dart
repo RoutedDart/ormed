@@ -129,13 +129,13 @@ class ApplyCommand extends RunnerCommand {
         );
       }
       final seederOverride = argResults?['seeder'] as String?;
-      final targetClass = seederOverride ?? seeds.defaultClass;
-      cliIO.info('Running seeder $targetClass...');
+      cliIO.info('Running seeders...');
       await runSeedRegistry(
         project: project,
         config: config,
         seeds: seeds,
-        overrideClasses: <String>[targetClass],
+        overrideClasses:
+            seederOverride == null ? null : <String>[seederOverride],
         databaseOverride: argResults?['database'] as String?,
       );
     }

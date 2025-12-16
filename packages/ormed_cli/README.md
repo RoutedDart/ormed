@@ -21,8 +21,8 @@ dart run ormed_cli:orm migrate:rollback --steps 1
 # Show migration status
 dart run ormed_cli:orm migrate:status
 
-# Run seeders
-dart run ormed_cli:orm seed --class DatabaseSeeder
+# Run seeders (optional --class to target specific seeders)
+dart run ormed_cli:orm seed
 ```
 
 The CLI reads `orm.yaml` to determine the driver + connection options and

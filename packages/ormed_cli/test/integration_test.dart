@@ -72,15 +72,22 @@ class TestProjectSeederRunner implements ProjectSeederRunner {
     String? connection,
   }) async {
     receivedConnection = connection ?? config.connectionName;
-    executedSeeders.add(overrideClasses?.first ?? seeds.defaultClass);
+    final targetSeeders = (overrideClasses == null || overrideClasses.isEmpty)
+        ? (seeds.seedNames.isNotEmpty
+            ? seeds.seedNames
+            : const ['AppDatabaseSeeder'])
+        : overrideClasses;
+    executedSeeders.addAll(targetSeeders);
     final handle = await createConnection(project.root, config);
     try {
-      if (overrideClasses?.contains('TestSeeder') == true ||
-          seeds.defaultClass == 'TestSeeder') {
+      if (targetSeeders.contains('AppDatabaseSeeder')) {
         await handle.use((conn) async {
           _registerCliModels(conn);
           final logFile = File(p.join(project.root.path, 'seed.log'));
-          logFile.writeAsStringSync('TestSeeder\n', mode: FileMode.append);
+          logFile.writeAsStringSync(
+            'AppDatabaseSeeder\n',
+            mode: FileMode.append,
+          );
         });
       }
     } finally {
@@ -119,14 +126,14 @@ void main() {
 
       ormConfig = File(p.join(scratchDir.path, 'orm.yaml'))
         ..writeAsStringSync(
-          _ormYaml(
-            databasePath: p.relative(dbPath, from: scratchDir.path),
-            migrationsDir: 'migrations',
-            registryPath: 'migrations.dart',
-            seedsDir: 'seeds',
-            seedsRegistry: 'seeders.dart',
-          ),
-        );
+        _ormYaml(
+          databasePath: p.relative(dbPath, from: scratchDir.path),
+          migrationsDir: 'migrations',
+          registryPath: 'migrations.dart',
+          seedsDir: 'seeds',
+          seedsRegistry: 'seeders.dart',
+        ),
+      );
 
       File(p.join(scratchDir.path, 'pubspec.yaml')).writeAsStringSync('''
 name: test_project
@@ -195,11 +202,11 @@ environment:
 
     test('seed command execution', () async {
       await runOrm(['seed']);
-      expect(testSeederRunner.executedSeeders, contains('TestSeeder'));
+      expect(testSeederRunner.executedSeeders, contains('AppDatabaseSeeder'));
 
       final logFile = File(p.join(scratchDir.path, 'seed.log'));
       expect(logFile.existsSync(), isTrue);
-      expect(logFile.readAsStringSync(), contains('TestSeeder'));
+      expect(logFile.readAsStringSync(), contains('AppDatabaseSeeder'));
       expect(testSeederRunner.receivedConnection, isNotNull);
     });
 
@@ -210,7 +217,7 @@ environment:
 
     test('migrate --seed executes seeder', () async {
       await runOrm(['migrate', '--seed']);
-      expect(testSeederRunner.executedSeeders, contains('TestSeeder'));
+      expect(testSeederRunner.executedSeeders, contains('AppDatabaseSeeder'));
     });
 
     test('migrate --pretend', () async {
@@ -243,7 +250,6 @@ migrations:
 seeds:
   directory: $seedsDir
   registry: $seedsRegistry
-  default_class: TestSeeder
 ''';
 
 Future<void> _expectTableExists(
