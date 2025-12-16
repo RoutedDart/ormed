@@ -27,8 +27,25 @@ typedef UntypedLocalScope =
 ///
 /// Macros allow you to add custom methods to the query builder.
 class ScopeRegistry {
+  ScopeRegistry._internal({required bool cloneFromTemplate}) {
+    if (cloneFromTemplate) {
+      _cloneFrom(instance);
+    }
+  }
+
   /// Creates a new [ScopeRegistry].
-  ScopeRegistry();
+  ///
+  /// New registries copy any scopes/macros registered on [ScopeRegistry.instance]
+  /// (the global template registry), but remain isolated from other contexts.
+  factory ScopeRegistry() => ScopeRegistry._internal(cloneFromTemplate: true);
+
+  /// Global template registry.
+  ///
+  /// Generated bootstrapping (e.g., `bootstrapOrm()`) registers scopes here.
+  /// New [ScopeRegistry] instances copy these registrations by default.
+  static final ScopeRegistry instance = ScopeRegistry._internal(
+    cloneFromTemplate: false,
+  );
 
   static const String softDeleteScopeIdentifier = '__softDeletes';
   static const String adHocScopeKey = '__adHoc__';
@@ -40,6 +57,24 @@ class ScopeRegistry {
   final List<_PatternGlobalScopeRegistration> _patternGlobalScopes = [];
   final Map<String, List<_PatternLocalScopeRegistration>> _patternLocalScopes =
       {};
+
+  void _cloneFrom(ScopeRegistry other) {
+    for (final entry in other._globalScopes.entries) {
+      _globalScopes[entry.key] = Map<String, UntypedScope>.from(entry.value);
+    }
+    for (final entry in other._localScopes.entries) {
+      _localScopes[entry.key] = Map<String, Object>.from(entry.value);
+    }
+    _macros.addAll(other._macros);
+    for (final entry in other._adHocScopes.entries) {
+      _adHocScopes[entry.key] = List<_AdHocScopeRegistration>.from(entry.value);
+    }
+    _patternGlobalScopes.addAll(other._patternGlobalScopes);
+    for (final entry in other._patternLocalScopes.entries) {
+      _patternLocalScopes[entry.key] =
+          List<_PatternLocalScopeRegistration>.from(entry.value);
+    }
+  }
 
   /// Adds a global scope for a model of type [T].
   ///

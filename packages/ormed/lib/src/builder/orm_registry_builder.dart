@@ -194,7 +194,7 @@ String renderRegistryContent(List<ModelSummary> models) {
   if (scopeModels.isEmpty) {
     buffer.writeln('  // No model scopes were generated.');
   } else {
-    buffer.writeln('  final _registry = scopeRegistry ?? ScopeRegistry();');
+    buffer.writeln('  final _registry = scopeRegistry ?? ScopeRegistry.instance;');
     for (final summary in scopeModels) {
       buffer.writeln('  register${summary.className}Scopes(_registry);');
     }

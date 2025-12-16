@@ -29,6 +29,7 @@ class DataSourceOptions {
     required this.driver,
     List<ModelDefinition<OrmEntity>> entities = const [],
     this.registry,
+    this.scopeRegistry,
     this.name = 'default',
     this.database,
     this.tablePrefix = '',
@@ -56,6 +57,15 @@ class DataSourceOptions {
   /// Optional pre-built model registry with type aliases already registered.
   /// If provided, this registry will be used instead of creating a new one.
   final ModelRegistry? registry;
+
+  /// Optional scope registry to use for this data source.
+  ///
+  /// If omitted, a new [ScopeRegistry] is created per connection context. That
+  /// registry will copy any registrations from [ScopeRegistry.instance] (the
+  /// global template), so generated bootstrapping can register scopes once and
+  /// have them apply automatically without sharing mutable state across
+  /// connections.
+  final ScopeRegistry? scopeRegistry;
 
   /// Logical name for this connection. Defaults to 'default'.
   final String name;
@@ -97,6 +107,7 @@ class DataSourceOptions {
     DriverAdapter? driver,
     List<ModelDefinition<OrmEntity>>? entities,
     ModelRegistry? registry,
+    ScopeRegistry? scopeRegistry,
     String? name,
     String? database,
     String? tablePrefix,
@@ -111,6 +122,7 @@ class DataSourceOptions {
     driver: driver ?? this.driver,
     entities: entities ?? this.entities,
     registry: registry ?? this.registry,
+    scopeRegistry: scopeRegistry ?? this.scopeRegistry,
     name: name ?? this.name,
     database: database ?? this.database,
     tablePrefix: tablePrefix ?? this.tablePrefix,
@@ -276,6 +288,7 @@ class DataSource {
       driver: options.driver,
       registry: _registry,
       codecRegistry: _codecRegistry,
+      scopeRegistry: options.scopeRegistry,
     );
 
     // Enable logging if requested
