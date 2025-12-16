@@ -15,7 +15,14 @@ Events (all emitted by `MigrationRunner`):
 
 Example listener + runner setup:
 
-```dart file=../../examples/lib/events/migration_events.dart#migration-event-listeners
+### Subscribe
+
+```dart file=../../examples/lib/events/migration_events.dart#migration-event-subscribe
+```
+
+### Run
+
+```dart file=../../examples/lib/events/migration_events.dart#migration-event-runner
 ```
 
 ## Seeding Lifecycle
@@ -27,7 +34,19 @@ Events (emitted by `SeederRunner` and database seeders):
 
 Example with a custom seeder and event hooks:
 
-```dart file=../../examples/lib/events/migration_events.dart#seeding-event-listeners
+### Define a seeder
+
+```dart file=../../examples/lib/events/migration_events.dart#seeding-seeder-class
+```
+
+### Subscribe
+
+```dart file=../../examples/lib/events/migration_events.dart#seeding-event-subscribe
+```
+
+### Run
+
+```dart file=../../examples/lib/events/migration_events.dart#seeding-event-runner
 ```
 
 Tips:

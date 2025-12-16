@@ -121,9 +121,7 @@ class ModelSubclassEmitter {
         final paramType = field.resolvedType.endsWith('?')
             ? field.resolvedType
             : '${field.resolvedType}?';
-        buffer.writeln(
-          '    $paramType ${field.name},',
-        );
+        buffer.writeln('    $paramType ${field.name},');
       }
       buffer.writeln('  }) {');
       buffer.writeln('    return $modelSubclassName(');
@@ -321,7 +319,9 @@ class ModelSubclassEmitter {
         final call = StringBuffer('      return query.${scope.name}(');
         int index = 0;
         for (final param in tail.where((p) => !p.isNamed)) {
-          call.write('args[$index] as ${param.type.getDisplayString(withNullability: true)}, ');
+          call.write(
+            'args[$index] as ${param.type.getDisplayString(withNullability: true)}, ',
+          );
           index++;
         }
         for (final param in tail.where((p) => p.isNamed)) {

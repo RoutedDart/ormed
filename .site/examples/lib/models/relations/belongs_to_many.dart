@@ -5,6 +5,7 @@ part 'belongs_to_many.orm.dart';
 
 // #region relation-belongs-to-many
 @OrmModel(table: 'posts')
+// #region relation-belongs-to-many-post
 class PostWithTags extends Model<PostWithTags> {
   const PostWithTags({
     required this.id,
@@ -22,8 +23,10 @@ class PostWithTags extends Model<PostWithTags> {
   )
   final List<Tag>? tags;
 }
+// #endregion relation-belongs-to-many-post
 
 @OrmModel(table: 'tags')
+// #region relation-belongs-to-many-tag
 class Tag extends Model<Tag> {
   const Tag({
     required this.id,
@@ -35,5 +38,5 @@ class Tag extends Model<Tag> {
 
   final String name;
 }
+// #endregion relation-belongs-to-many-tag
 // #endregion relation-belongs-to-many
-

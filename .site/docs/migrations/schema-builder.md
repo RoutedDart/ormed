@@ -78,7 +78,12 @@ Chain modifiers to customize column behavior:
 
 Use `schema.table()` to modify existing tables:
 
-```dart file=../../examples/lib/schema/schema_builder.dart#schema-alter
+```dart file=../../examples/lib/schema/schema_builder.dart#schema-alter-up
+```
+
+Rollback example:
+
+```dart file=../../examples/lib/schema/schema_builder.dart#schema-alter-down
 ```
 
 ## Dropping Tables

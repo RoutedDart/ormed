@@ -5,6 +5,7 @@ import 'basic.dart';
 
 // #region migration-runner
 Future<void> runMigrationsProgrammatically(DriverAdapter driver) async {
+  // #region migration-runner-entries
   final entries = [
     MigrationEntry(
       id: MigrationId.parse('m_20241201000000_create_users_table'),
@@ -18,38 +19,49 @@ Future<void> runMigrationsProgrammatically(DriverAdapter driver) async {
 
   // Build descriptors (sorted by timestamp)
   final descriptors = MigrationEntry.buildDescriptors(entries);
+  // #endregion migration-runner-entries
 
+  // #region migration-runner-ledger
   // Create ledger to track applied migrations
   final ledger = SqlMigrationLedger(
     driver,
     tableName: '_orm_migrations',
   );
   await ledger.ensureInitialized();
+  // #endregion migration-runner-ledger
 
+  // #region migration-runner-runner
   // Create runner
   final runner = MigrationRunner(
     schemaDriver: driver,
     ledger: ledger,
     migrations: descriptors,
   );
+  // #endregion migration-runner-runner
 
+  // #region migration-runner-apply
   // Apply all pending migrations
   await runner.applyAll();
 
   // Or apply with a limit
   await runner.applyAll(limit: 5);
+  // #endregion migration-runner-apply
 
+  // #region migration-runner-rollback
   // Rollback last batch
   await runner.rollback();
 
   // Rollback multiple batches
   await runner.rollback(steps: 3);
+  // #endregion migration-runner-rollback
 
+  // #region migration-runner-status
   // Check status
   final statuses = await runner.status();
   for (final status in statuses) {
     print('${status.id}: ${status.isApplied ? 'Applied' : 'Pending'}');
   }
+  // #endregion migration-runner-status
 }
 // #endregion migration-runner
 
@@ -101,4 +113,3 @@ Future<void> ledgerApiExample(DriverAdapter driver) async {
 // List<MigrationDescriptor> buildMigrations() =>
 //     MigrationEntry.buildDescriptors(_entries);
 // #endregion migration-registry
-

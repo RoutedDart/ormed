@@ -226,13 +226,13 @@ void executionHooksExample(DataSource ds) {
 Future<void> multipleDataSourcesExample() async {
   final mainDs = DataSource(DataSourceOptions(
     name: 'main',
-    driver: InMemoryQueryExecutor(),
+    driver: SqliteDriverAdapter.inMemory(),
     entities: [UserOrmDefinition.definition],
   ));
 
   final analyticsDs = DataSource(DataSourceOptions(
     name: 'analytics',
-    driver: InMemoryQueryExecutor(),
+    driver: SqliteDriverAdapter.inMemory(),
     entities: [PostOrmDefinition.definition],
   ));
 

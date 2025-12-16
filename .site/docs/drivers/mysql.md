@@ -4,7 +4,7 @@ sidebar_position: 4
 
 # MySQL / MariaDB
 
-The MySQL adapter also supports MariaDB. Configure via URL or explicit fields; most Laravel‑style keys are accepted.
+The MySQL adapter also supports MariaDB. Configure via URL or explicit fields; common alias keys are accepted.
 
 ## orm.yaml
 

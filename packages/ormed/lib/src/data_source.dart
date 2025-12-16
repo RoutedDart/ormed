@@ -40,13 +40,13 @@ class DataSourceOptions {
     this.carbonTimezone = 'UTC',
     this.carbonLocale = 'en_US',
     this.enableNamedTimezones = false,
-  })  : entities = entities.isNotEmpty
-            ? entities
-            : (registry?.allDefinitions ?? const []),
-        assert(
-          entities.isNotEmpty || registry != null,
-          'Either entities or registry must be provided',
-        );
+  }) : entities = entities.isNotEmpty
+           ? entities
+           : (registry?.allDefinitions ?? const []),
+       assert(
+         entities.isNotEmpty || registry != null,
+         'Either entities or registry must be provided',
+       );
 
   /// The database driver adapter to use for connections.
   final DriverAdapter driver;
@@ -191,8 +191,9 @@ class DataSource {
   /// Creates a new data source with the given configuration options.
   DataSource(this.options)
     : _registry = options.registry ?? ModelRegistry(),
-      _codecRegistry = ValueCodecRegistry.instance
-          .fork(codecs: options.codecs) {
+      _codecRegistry = ValueCodecRegistry.instance.fork(
+        codecs: options.codecs,
+      ) {
     // no-op: codecs applied via fork above
   }
 

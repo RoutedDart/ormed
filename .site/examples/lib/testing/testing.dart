@@ -4,6 +4,7 @@
 import 'dart:io';
 
 import 'package:ormed/ormed.dart';
+import 'package:ormed_sqlite/ormed_sqlite.dart';
 
 import '../models/user.dart';
 import '../models/user.orm.dart';
@@ -21,7 +22,7 @@ Future<void> basicTestSetup() async {
   dataSource = DataSource(
     DataSourceOptions(
       name: 'test_db',
-      driver: InMemoryQueryExecutor(),
+      driver: SqliteDriverAdapter.inMemory(),
       entities: generatedOrmModelDefinitions,
     ),
   );
@@ -47,16 +48,16 @@ Future<void> inMemoryExecutorExample() async {
   final dataSource = DataSource(
     DataSourceOptions(
       name: 'test',
-      driver: InMemoryQueryExecutor(),
+      driver: SqliteDriverAdapter.inMemory(),
       entities: generatedOrmModelDefinitions,
     ),
   );
   await dataSource.init();
 
-  // The in-memory executor automatically:
+  // The SQLite in-memory driver automatically:
   // - Generates auto-increment IDs
-  // - Maintains referential integrity
-  // - Resets between test runs
+  // - Enforces foreign keys (when enabled by the driver)
+  // - Starts from a fresh database per DataSource instance
   // - Supports basic query operations
 }
 // #endregion testing-in-memory
@@ -80,7 +81,7 @@ Future<void> seederExample() async {
   final dataSource = DataSource(
     DataSourceOptions(
       name: 'test',
-      driver: InMemoryQueryExecutor(),
+      driver: SqliteDriverAdapter.inMemory(),
       entities: generatedOrmModelDefinitions,
     ),
   );
@@ -102,7 +103,7 @@ Future<void> realDatabaseExample() async {
   dataSource = DataSource(
     DataSourceOptions(
       name: 'integration_test',
-      driver: InMemoryQueryExecutor(), // Use SqliteDriverAdapter.file(testDbPath) in real tests
+      driver: SqliteDriverAdapter.file(testDbPath),
       entities: generatedOrmModelDefinitions,
     ),
   );
@@ -148,7 +149,7 @@ Future<void> staticHelpersExample() async {
   final dataSource = DataSource(
     DataSourceOptions(
       name: 'test',
-      driver: InMemoryQueryExecutor(),
+      driver: SqliteDriverAdapter.inMemory(),
       entities: generatedOrmModelDefinitions,
     ),
   );
@@ -167,7 +168,7 @@ Future<void> testingRelationsExample() async {
   final dataSource = DataSource(
     DataSourceOptions(
       name: 'test',
-      driver: InMemoryQueryExecutor(),
+      driver: SqliteDriverAdapter.inMemory(),
       entities: [
         UserOrmDefinition.definition,
         PostOrmDefinition.definition,
@@ -195,7 +196,7 @@ Future<void> parallelTestingExample() async {
   final dataSource = DataSource(
     DataSourceOptions(
       name: 'test_${DateTime.now().microsecondsSinceEpoch}',
-      driver: InMemoryQueryExecutor(),
+      driver: SqliteDriverAdapter.inMemory(),
       entities: generatedOrmModelDefinitions,
     ),
   );
@@ -205,16 +206,16 @@ Future<void> parallelTestingExample() async {
 // #endregion testing-parallel
 
 // #region testing-best-practices-in-memory
-// Use In-Memory for Unit Tests - Fast and isolated
+// Use SQLite in-memory for unit tests - fast and isolated
 void inMemoryBestPractice() {
-  // driver: InMemoryQueryExecutor()
+  // driver: SqliteDriverAdapter.inMemory()
 }
 // #endregion testing-best-practices-in-memory
 
 // #region testing-best-practices-real-db
 // Use Real Databases for Integration Tests - More realistic
 void realDbBestPractice() {
-  // driver: SqliteDriverAdapter.memory()
+  // driver: SqliteDriverAdapter.file('test.db')
 }
 // #endregion testing-best-practices-real-db
 
@@ -226,7 +227,7 @@ Future<void> keepTestsIsolated() async {
   dataSource = DataSource(
     DataSourceOptions(
       name: 'test',
-      driver: InMemoryQueryExecutor(),
+      driver: SqliteDriverAdapter.inMemory(),
       entities: generatedOrmModelDefinitions,
     ),
   );
@@ -275,18 +276,18 @@ Future<void> testBothSuccessAndFailure(DataSource dataSource) async {
 Future<void> exampleTestSuite() async {
   late DataSource dataSource;
 
-  // setUp
+  // #region testing-example-suite-setup
   dataSource = DataSource(
     DataSourceOptions(
       name: 'test_${DateTime.now().microsecondsSinceEpoch}',
-      driver: InMemoryQueryExecutor(),
+      driver: SqliteDriverAdapter.inMemory(),
       entities: generatedOrmModelDefinitions,
     ),
   );
   await dataSource.init();
+  // #endregion testing-example-suite-setup
 
-  // tearDown
-  // await dataSource.dispose();
+  // #region testing-example-suite-tests
 
   // group('User model', () {
   //   test('can create user', () async {
@@ -313,5 +314,11 @@ Future<void> exampleTestSuite() async {
   // expect(deleted, isNull);
   //   });
   // });
+
+  // #endregion testing-example-suite-tests
+
+  // #region testing-example-suite-teardown
+  await dataSource.dispose();
+  // #endregion testing-example-suite-teardown
 }
 // #endregion testing-example-suite

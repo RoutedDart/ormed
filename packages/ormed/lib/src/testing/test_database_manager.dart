@@ -1,6 +1,5 @@
 import 'dart:async';
 
-
 import '../../migrations.dart';
 import '../connection/orm_connection.dart';
 import '../data_source.dart';

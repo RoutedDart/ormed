@@ -30,13 +30,11 @@ class ScopedUser extends Model<ScopedUser> {
   static Query<$ScopedUser> emailDomain(
     Query<$ScopedUser> query,
     String domain,
-  ) =>
-      query.whereLike('email', '%@$domain');
+  ) => query.whereLike('email', '%@$domain');
 
   @OrmScope()
   static Query<$ScopedUser> named(
     Query<$ScopedUser> query, {
     required String name,
-  }) =>
-      query.whereEquals('name', name);
+  }) => query.whereEquals('name', name);
 }

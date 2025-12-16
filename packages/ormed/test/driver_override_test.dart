@@ -29,7 +29,10 @@ void main() {
           return const MutationResult(
             affectedRows: 1,
             returnedRows: [
-              {'id': 1, 'payload': {'theme': 'dark', 'encoded_by': 'postgres'}},
+              {
+                'id': 1,
+                'payload': {'theme': 'dark', 'encoded_by': 'postgres'},
+              },
             ],
           );
         },
@@ -101,7 +104,8 @@ class _MockDriver implements DriverAdapter {
   PlanCompiler get planCompiler => fallbackPlanCompiler();
 
   @override
-  Future<MutationResult> runMutation(MutationPlan plan) async => onMutation(plan);
+  Future<MutationResult> runMutation(MutationPlan plan) async =>
+      onMutation(plan);
 
   @override
   StatementPreview describeMutation(MutationPlan plan) =>
@@ -121,10 +125,16 @@ class _MockDriver implements DriverAdapter {
   Future<void> close() async {}
 
   @override
-  Future<void> executeRaw(String sql, [List<Object?> parameters = const []]) async {}
+  Future<void> executeRaw(
+    String sql, [
+    List<Object?> parameters = const [],
+  ]) async {}
 
   @override
-  Future<List<Map<String, Object?>>> queryRaw(String sql, [List<Object?> parameters = const []]) async => [];
+  Future<List<Map<String, Object?>>> queryRaw(
+    String sql, [
+    List<Object?> parameters = const [],
+  ]) async => [];
 
   @override
   Future<R> transaction<R>(Future<R> Function() action) => Future.sync(action);

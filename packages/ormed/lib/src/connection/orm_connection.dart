@@ -1,6 +1,5 @@
 import 'dart:async';
 
-
 import '../driver/driver.dart';
 import '../contracts.dart';
 import '../model_definition.dart';

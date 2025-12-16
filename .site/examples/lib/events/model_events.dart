@@ -2,6 +2,7 @@
 // ignore_for_file: unused_import, unused_local_variable
 
 import 'package:ormed/ormed.dart';
+import 'package:ormed_sqlite/ormed_sqlite.dart';
 
 import '../models/user.dart';
 import '../models/user.orm.dart';
@@ -80,6 +81,7 @@ class AuditedUser extends Model<AuditedUser> {
 
 // #region model-events-usage
 Future<void> modelEventsUsageExample() async {
+  // #region model-events-setup
   final bus = EventBus.instance;
   registerModelEventListeners(bus);
   enforceActiveUserDeletes(bus);
@@ -87,12 +89,14 @@ Future<void> modelEventsUsageExample() async {
   final dataSource = DataSource(
     DataSourceOptions(
       name: 'events-demo',
-      driver: InMemoryQueryExecutor(),
+      driver: SqliteDriverAdapter.inMemory(),
       entities: generatedOrmModelDefinitions,
     ),
   );
   await dataSource.init();
+  // #endregion model-events-setup
 
+  // #region model-events-mutations
   final alice = await dataSource.repo<$User>().insert(
         $User(id: 0, name: 'Alice', email: 'alice@example.com'),
       );
@@ -108,6 +112,6 @@ Future<void> modelEventsUsageExample() async {
       .deleteReturning();
 
   print(modelEventLog);
+  // #endregion model-events-mutations
 }
 // #endregion model-events-usage
-

@@ -1,1 +1,1 @@
-{"className":"ValidatedUser","import":"best_practices/best_practices.dart","definition":"ValidatedUserOrmDefinition.definition","hasFactory":false}
+{"className":"ValidatedUser","import":"best_practices/best_practices.dart","definition":"ValidatedUserOrmDefinition.definition","hasFactory":false,"hasEventHandlers":false,"hasScopes":false}

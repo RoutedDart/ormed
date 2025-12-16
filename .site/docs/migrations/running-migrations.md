@@ -8,8 +8,32 @@ sidebar_position: 3
 
 Use `MigrationRunner` to run migrations in code:
 
-```dart file=../../examples/lib/migrations/runner.dart#migration-runner
+### 1) Define entries
 
+```dart file=../../examples/lib/migrations/runner.dart#migration-runner-entries
+```
+
+### 2) Create a ledger
+
+```dart file=../../examples/lib/migrations/runner.dart#migration-runner-ledger
+```
+
+### 3) Create the runner
+
+```dart file=../../examples/lib/migrations/runner.dart#migration-runner-runner
+```
+
+### 4) Apply / rollback
+
+```dart file=../../examples/lib/migrations/runner.dart#migration-runner-apply
+```
+
+```dart file=../../examples/lib/migrations/runner.dart#migration-runner-rollback
+```
+
+### 5) Inspect status
+
+```dart file=../../examples/lib/migrations/runner.dart#migration-runner-status
 ```
 
 ## Ledger API

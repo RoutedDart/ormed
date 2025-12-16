@@ -16,7 +16,7 @@ Ormed is a **strongly-typed ORM for Dart** inspired by Eloquent, GORM, SQLAlchem
 - **Soft deletes** - Built-in support for soft delete patterns
 - **Timestamps** - Automatic timestamp management for created_at/updated_at
 - **Migrations** - Fluent schema builder with reversible migrations
-- **Multi-database** - Support for SQLite, PostgreSQL, MySQL (planned)
+- **Multi-database** - Support for SQLite, PostgreSQL, MySQL
 - **Value codecs** - Custom type serialization between Dart and database
 
 ## Quick Example

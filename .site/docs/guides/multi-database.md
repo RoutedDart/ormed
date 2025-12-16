@@ -10,7 +10,12 @@ Ormed supports connecting to multiple databases simultaneously for read replicas
 
 ### Define Multiple DataSources
 
-```dart file=../../examples/lib/multi_db/multi_database.dart#multi-db-setup
+```dart file=../../examples/lib/multi_db/multi_database.dart#multi-db-setup-sources
+```
+
+Initialize them (can be in parallel):
+
+```dart file=../../examples/lib/multi_db/multi_database.dart#multi-db-setup-init
 ```
 
 ## Using Named Connections
@@ -29,7 +34,7 @@ Transactions cannot span multiple databases:
 
 Use compensating transactions for cross-database operations:
 
-```dart file=../../examples/lib/multi_db/multi_database.dart#multi-db-coordinating
+```dart file=../../examples/lib/multi_db/multi_database.dart#multi-db-coordinating-operations
 ```
 
 ## Multi-Tenant Architecture

@@ -1,1 +1,1 @@
-{"className":"SoftDeletePost","import":"models/soft_delete_model.dart","definition":"SoftDeletePostOrmDefinition.definition","hasFactory":false}
+{"className":"SoftDeletePost","import":"models/soft_delete_model.dart","definition":"SoftDeletePostOrmDefinition.definition","hasFactory":false,"hasEventHandlers":false,"hasScopes":false}

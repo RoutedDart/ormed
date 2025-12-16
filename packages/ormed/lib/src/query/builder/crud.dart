@@ -1465,7 +1465,9 @@ extension CrudExtension<T extends OrmEntity> on Query<T> {
           );
     final result = await context.runMutation(mutation);
     var models = _hydrateMutationResults(result);
-    if (models.isEmpty && result.affectedRows > 0 && targets.models.isNotEmpty) {
+    if (models.isEmpty &&
+        result.affectedRows > 0 &&
+        targets.models.isNotEmpty) {
       // Some drivers (e.g., MySQL/MariaDB) don't support RETURNING for deletes.
       // Fall back to the models we collected prior to the mutation.
       models = targets.models;
@@ -2006,10 +2008,7 @@ extension CrudExtension<T extends OrmEntity> on Query<T> {
     }
   }
 
-  void _emitSavedEvents(
-    List<T> models,
-    List<Map<String, Object?>> inputMaps,
-  ) {
+  void _emitSavedEvents(List<T> models, List<Map<String, Object?>> inputMaps) {
     for (var i = 0; i < models.length; i++) {
       final model = models[i];
       final attributes = i < inputMaps.length ? inputMaps[i] : const {};

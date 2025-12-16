@@ -332,6 +332,15 @@ class $User extends User with ModelAttributes implements OrmEntity {
     );
   }
 
+  $User copyWith({int? id, String? email, String? name, DateTime? createdAt}) {
+    return $User(
+      id: id ?? this.id,
+      email: email ?? this.email,
+      name: name ?? this.name,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
   @override
   int get id => getAttribute<int>('id') ?? super.id;
 
@@ -371,4 +380,8 @@ extension UserOrmExtension on User {
   $User toTracked() {
     return $User.fromModel(this);
   }
+}
+
+void registerUserEventHandlers(EventBus bus) {
+  // No event handlers registered for User.
 }

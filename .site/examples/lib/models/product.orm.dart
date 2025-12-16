@@ -342,6 +342,20 @@ class $Product extends Product with ModelAttributes implements OrmEntity {
     );
   }
 
+  $Product copyWith({
+    int? id,
+    String? sku,
+    bool? active,
+    Map<String, Object?>? metadata,
+  }) {
+    return $Product(
+      id: id ?? this.id,
+      sku: sku ?? this.sku,
+      active: active ?? this.active,
+      metadata: metadata ?? this.metadata,
+    );
+  }
+
   @override
   int get id => getAttribute<int>('id') ?? super.id;
 
@@ -381,4 +395,8 @@ extension ProductOrmExtension on Product {
   $Product toTracked() {
     return $Product.fromModel(this);
   }
+}
+
+void registerProductEventHandlers(EventBus bus) {
+  // No event handlers registered for Product.
 }

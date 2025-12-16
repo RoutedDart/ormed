@@ -332,6 +332,15 @@ class $Post extends Post with ModelAttributes implements OrmEntity {
     );
   }
 
+  $Post copyWith({int? id, String? title, String? content, int? authorId}) {
+    return $Post(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      content: content ?? this.content,
+      authorId: authorId ?? this.authorId,
+    );
+  }
+
   @override
   int get id => getAttribute<int>('id') ?? super.id;
 
@@ -370,4 +379,8 @@ extension PostOrmExtension on Post {
   $Post toTracked() {
     return $Post.fromModel(this);
   }
+}
+
+void registerPostEventHandlers(EventBus bus) {
+  // No event handlers registered for Post.
 }

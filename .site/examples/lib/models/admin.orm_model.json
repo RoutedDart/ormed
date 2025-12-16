@@ -1,1 +1,1 @@
-{"className":"Admin","import":"models/admin.dart","definition":"AdminOrmDefinition.definition","hasFactory":false}
+{"className":"Admin","import":"models/admin.dart","definition":"AdminOrmDefinition.definition","hasFactory":false,"hasEventHandlers":false,"hasScopes":false}

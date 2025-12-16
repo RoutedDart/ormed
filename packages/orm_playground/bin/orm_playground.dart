@@ -76,7 +76,7 @@ Future<void> main(List<String> arguments) async {
     await _runTableHelpers(ds!, animate: animate);
     await _runPretendPreview(ds!, animate: animate);
     await _runModelCrudShowcase(ds!, animate: animate);
-    await _runRelationQueryShowcase(ds!, );
+    await _runRelationQueryShowcase(ds!);
     await _runPaginationShowcase(ds!);
     await _runChunkingShowcase(ds!);
     await _runTransactionShowcase(ds!);

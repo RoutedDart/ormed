@@ -13,7 +13,7 @@ Create a fresh DataSource for each test suite:
 ```dart file=../../examples/lib/testing/testing.dart#testing-basic-setup
 ```
 
-## Using InMemoryQueryExecutor
+## Using SQLite In-Memory
 
 For fast, isolated tests:
 
@@ -62,7 +62,7 @@ For parallel test execution without conflicts:
 
 ## Best Practices
 
-### Use In-Memory for Unit Tests
+### Use SQLite In-Memory for Unit Tests
 
 ```dart file=../../examples/lib/testing/testing.dart#testing-best-practices-in-memory
 ```
@@ -89,5 +89,17 @@ For parallel test execution without conflicts:
 
 ## Example Test Suite
 
-```dart file=../../examples/lib/testing/testing.dart#testing-example-suite
+### Setup
+
+```dart file=../../examples/lib/testing/testing.dart#testing-example-suite-setup
+```
+
+### Tests
+
+```dart file=../../examples/lib/testing/testing.dart#testing-example-suite-tests
+```
+
+### Tear Down
+
+```dart file=../../examples/lib/testing/testing.dart#testing-example-suite-teardown
 ```

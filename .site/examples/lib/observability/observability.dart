@@ -2,6 +2,7 @@
 // ignore_for_file: unused_local_variable
 
 import 'package:ormed/ormed.dart';
+import 'package:ormed_sqlite/ormed_sqlite.dart';
 
 import '../models/user.dart';
 import '../models/user.orm.dart';
@@ -14,7 +15,7 @@ Future<void> queryLoggingExample() async {
   final dataSource = DataSource(
     DataSourceOptions(
       name: 'primary',
-      driver: InMemoryQueryExecutor(),
+      driver: SqliteDriverAdapter.inMemory(),
       entities: generatedOrmModelDefinitions,
       logging: true, // Enable query logging
     ),

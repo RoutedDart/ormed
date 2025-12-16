@@ -257,7 +257,7 @@ Future<void> transactionExample(
 
 // #region testing-in-memory
 // Use in-memory databases for fast, isolated tests
-// driver: InMemoryQueryExecutor()
+// driver: SqliteDriverAdapter.inMemory()
 // #endregion testing-in-memory
 
 // #region testing-factories

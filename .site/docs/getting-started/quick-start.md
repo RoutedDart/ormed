@@ -59,6 +59,11 @@ Create `lib/src/database/migrations/m_20241201000000_create_users_table.dart`:
 ```dart file=../../examples/lib/setup.dart#quickstart-setup
 ```
 
+Then use the generated tracked model (`$User`) with the repository and query builder:
+
+```dart file=../../examples/lib/setup.dart#quickstart-crud
+```
+
 ## 5. Run Your App
 
 ```bash
@@ -68,7 +73,7 @@ dart run lib/main.dart
 Output:
 ```
 Created user: 1
-Active users: 1
+Found users: 1
 Updated name: John Smith
 User deleted
 ```

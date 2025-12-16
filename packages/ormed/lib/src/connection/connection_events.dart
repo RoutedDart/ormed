@@ -7,7 +7,7 @@ import 'orm_connection.dart';
 /// while also providing access to the connection where the event originated.
 abstract class ConnectionEvent extends Event {
   ConnectionEvent(this.connection, {super.timestamp})
-      : connectionName = connection.name;
+    : connectionName = connection.name;
 
   /// The connection where this event occurred.
   final OrmConnection connection;
@@ -74,8 +74,8 @@ class QueryExecuted extends ConnectionEvent {
       final value = binding == null
           ? 'NULL'
           : binding is String
-              ? "'${binding.replaceAll("'", "''")}'"
-              : binding.toString();
+          ? "'${binding.replaceAll("'", "''")}'"
+          : binding.toString();
       rawSql = rawSql.replaceFirst('?', value);
     }
     return rawSql;

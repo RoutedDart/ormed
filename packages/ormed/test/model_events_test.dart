@@ -229,16 +229,17 @@ void main() {
         received.add(event);
       });
 
-      bus.emit(ModelCreatedEvent(
-        modelType: String,
-        tableName: 'users',
-        model: {'id': 1},
-        attributes: {},
-      ));
+      bus.emit(
+        ModelCreatedEvent(
+          modelType: String,
+          tableName: 'users',
+          model: {'id': 1},
+          attributes: {},
+        ),
+      );
 
       expect(received, hasLength(1));
       expect(received.first.tableName, equals('users'));
     });
   });
 }
-

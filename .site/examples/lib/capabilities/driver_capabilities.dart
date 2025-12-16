@@ -18,41 +18,41 @@ class $Comment extends Model<$Comment> {
 }
 
 // #region capability-enum
-// Available capabilities in Ormed:
-// enum DriverCapability {
-//   /// Driver supports raw SQL expressions in select, where, orderBy
-//   rawExpressions,
+// Ormed exposes a fixed set of driver capabilities:
 //
-//   /// Driver supports UPDATE/DELETE with WHERE clauses on arbitrary tables
-//   adHocQueryUpdates,
-//
-//   /// Driver supports complex multi-table JOINs
-//   complexJoins,
-//
-//   /// Driver supports window functions (ROW_NUMBER, RANK, etc.)
-//   windowFunctions,
-//
-//   /// Driver supports Common Table Expressions (WITH clause)
-//   cte,
-//
-//   /// Driver supports subqueries in WHERE/HAVING/SELECT
-//   subqueries,
-// }
+// joins
+// insertUsing
+// queryDeletes
+// schemaIntrospection
+// returning
+// transactions
+// threadCount
+// adHocQueryUpdates
+// advancedQueryBuilders
+// sqlPreviews
+// increment
+// rawSQL
+// relationAggregates
+// caseInsensitiveLike
+// rightJoin
+// distinctOn
+// databaseManagement
+// foreignKeyConstraintControl
 // #endregion capability-enum
 
 // #region check-capabilities
-void checkCapabilitiesExample() async {
-  final adapter = InMemoryQueryExecutor();
+void checkCapabilitiesExample(QueryContext context) async {
+  final adapter = context.driver;
 
   // Check single capability
-  if (adapter.supportsCapability(DriverCapability.rawExpressions)) {
-    print('Can use raw SQL expressions');
+  if (adapter.supportsCapability(DriverCapability.rawSQL)) {
+    print('Can use raw SQL fragments');
   }
 
   // Check multiple capabilities
   final canDoComplexQuery =
-      adapter.supportsCapability(DriverCapability.complexJoins) &&
-          adapter.supportsCapability(DriverCapability.subqueries);
+      adapter.supportsCapability(DriverCapability.joins) &&
+          adapter.supportsCapability(DriverCapability.rawSQL);
 
   // Get all supported capabilities
   final supported = adapter.capabilities;
@@ -65,11 +65,11 @@ Future<List<$Post>> getTopPostsWithCapabilityCheck(
     QueryContext context) async {
   var query = context.query<$Post>();
 
-  if (context.driver.supportsCapability(DriverCapability.rawExpressions)) {
-    query = query.selectRaw(
-        'posts.*, (SELECT COUNT(*) FROM comments WHERE post_id = posts.id) as comment_count');
+  if (context.driver.supportsCapability(DriverCapability.rawSQL)) {
+    query = query.selectRaw('posts.*, (SELECT COUNT(*) FROM comments WHERE post_id = posts.id) AS comment_count');
   } else {
-    query = query.withCount(['comments']);
+    // Prefer query builder fallbacks when raw SQL isn't supported.
+    query = query.select(['id', 'title', 'views']);
   }
 
   return query.orderBy('created_at', descending: true).limit(10).get();
@@ -105,7 +105,7 @@ class SqlSearchStrategy implements SearchStrategy {
   Future<List<$Post>> search(QueryContext context, String term) async {
     return context
         .query<$Post>()
-        .whereRaw('title LIKE ?', ['%$term%'])
+        .whereRaw('title LIKE ?', ['%$term%']) // requires rawSQL
         .orWhereRaw('content LIKE ?', ['%$term%'])
         .get();
   }
@@ -122,11 +122,13 @@ class BasicSearchStrategy implements SearchStrategy {
   }
 }
 
+// #region feature-detection-strategy-select
 SearchStrategy selectStrategy(QueryContext context) {
-  return context.driver.supportsCapability(DriverCapability.rawExpressions)
+  return context.driver.supportsCapability(DriverCapability.rawSQL)
       ? SqlSearchStrategy()
       : BasicSearchStrategy();
 }
+// #endregion feature-detection-strategy-select
 // #endregion feature-detection-strategy
 
 // #region skip-incompatible-tests
@@ -145,17 +147,14 @@ void skipIncompatibleTestsExample(DriverAdapter adapter) {
 class AddFullTextSearchMigration extends Migration {
   @override
   Future<void> up(SchemaBuilder schema) async {
-    if (schema.driver.supportsCapability(DriverCapability.rawExpressions)) {
-      // SQLite FTS5
-      await schema.rawStatement('''
-        CREATE VIRTUAL TABLE posts_fts USING fts5(title, content, content=posts);
-      ''');
+    if (schema.driver.supportsCapability(DriverCapability.rawSQL)) {
+      await schema.rawStatement("CREATE VIRTUAL TABLE posts_fts USING fts5(title, content, content=posts);");
     }
   }
 
   @override
   Future<void> down(SchemaBuilder schema) async {
-    if (schema.driver.supportsCapability(DriverCapability.rawExpressions)) {
+    if (schema.driver.supportsCapability(DriverCapability.rawSQL)) {
       await schema.rawStatement('DROP TABLE IF EXISTS posts_fts');
     }
   }
@@ -197,10 +196,10 @@ Future<void> bestPracticeCheckCapabilities(
 /// Performs full-text search on posts.
 ///
 /// **Requirements:**
-/// - Driver must support [DriverCapability.rawExpressions]
+/// - Driver must support [DriverCapability.rawSQL]
 Future<List<$Post>> fullTextSearch(DriverAdapter adapter, String term) async {
-  if (!adapter.supportsCapability(DriverCapability.rawExpressions)) {
-    throw UnsupportedError('Full-text search requires raw expression support');
+  if (!adapter.supportsCapability(DriverCapability.rawSQL)) {
+    throw UnsupportedError('Full-text search requires raw SQL support');
   }
   // ... implementation
   return [];

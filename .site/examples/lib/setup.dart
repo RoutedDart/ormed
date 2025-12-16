@@ -20,7 +20,7 @@ Future<void> quickstartSetup() async {
   final driver = SqliteDriverAdapter.file('database.sqlite');
 
   // Use the generated registry helper
-  final registry = buildOrmRegistry();
+  final registry = bootstrapOrm();
 
   // Create data source
   final dataSource = DataSource(
@@ -38,7 +38,9 @@ Future<void> quickstartSetup() async {
 
   await dataSource.dispose();
 }
+// #endregion quickstart-setup
 
+// #region quickstart-crud
 Future<void> useOrm(DataSource dataSource) async {
   final userRepo = dataSource.repo<$User>();
 
@@ -64,21 +66,15 @@ Future<void> useOrm(DataSource dataSource) async {
   await userRepo.delete({'id': user.id});
   print('User deleted');
 }
-// #endregion quickstart-setup
+// #endregion quickstart-crud
 
 // #region programmatic-config
 Future<void> programmaticConfig() async {
-  // Create driver
-  final driver = InMemoryQueryExecutor();
+  // Create driver (SQLite in-memory for fast tests / examples)
+  final driver = SqliteDriverAdapter.inMemory();
 
   // Use the generated registry helper (includes all models)
-  final registry = buildOrmRegistry();
-
-  // Or with factory support
-  final registryWithFactories = buildOrmRegistryWithFactories();
-
-  // Or manually extend an existing registry
-  final customRegistry = ModelRegistry()..registerGeneratedModels();
+  final registry = bootstrapOrm();
 
   // Create data source
   final dataSource = DataSource(
@@ -97,10 +93,10 @@ Future<void> programmaticConfig() async {
 // #region registry-usage
 Future<void> registryUsage() async {
   // Pre-populated registry
-  final registry = buildOrmRegistry();
+  final registry = bootstrapOrm();
 
   // Registry with factory support
-  final registryWithFactories = buildOrmRegistryWithFactories();
+  final registryWithFactories = bootstrapOrm();
 
   // Extension method
   final customRegistry = ModelRegistry()..registerGeneratedModels();

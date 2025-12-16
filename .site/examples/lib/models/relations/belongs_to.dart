@@ -5,6 +5,7 @@ part 'belongs_to.orm.dart';
 
 // #region relation-belongs-to
 @OrmModel(table: 'posts')
+// #region relation-belongs-to-post
 class PostWithAuthor extends Model<PostWithAuthor> {
   const PostWithAuthor({
     required this.id,
@@ -22,8 +23,10 @@ class PostWithAuthor extends Model<PostWithAuthor> {
   @OrmRelation.belongsTo(PostAuthor, foreignKey: 'author_id')
   final PostAuthor? author;
 }
+// #endregion relation-belongs-to-post
 
 @OrmModel(table: 'users')
+// #region relation-belongs-to-author
 class PostAuthor extends Model<PostAuthor> {
   const PostAuthor({
     required this.id,
@@ -35,5 +38,5 @@ class PostAuthor extends Model<PostAuthor> {
 
   final String name;
 }
+// #endregion relation-belongs-to-author
 // #endregion relation-belongs-to
-

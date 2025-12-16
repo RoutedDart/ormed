@@ -177,6 +177,7 @@ class AlterTableExample extends Migration {
 
   @override
   void up(SchemaBuilder schema) {
+    // #region schema-alter-up
     schema.table('users', (table) {
       // Add columns
       table.string('avatar_url').nullable();
@@ -193,15 +194,18 @@ class AlterTableExample extends Migration {
       // Drop indexes
       table.dropIndex('idx_old_index');
     });
+    // #endregion schema-alter-up
   }
 
   @override
   void down(SchemaBuilder schema) {
+    // #region schema-alter-down
     schema.table('users', (table) {
       table.dropColumn('avatar_url');
       table.string('old_field').nullable();
       table.renameColumn('primary_email', 'email');
     });
+    // #endregion schema-alter-down
   }
 }
 // #endregion schema-alter

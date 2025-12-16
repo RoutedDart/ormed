@@ -8,16 +8,11 @@ Ormed supports multiple database drivers (SQLite, PostgreSQL, MySQL), but not al
 
 ## Overview
 
-Different databases have varying levels of SQL feature support:
+Drivers advertise supported features via `DriverAdapter.capabilities` and `supportsCapability(...)`. Use this to:
 
-| Feature | SQLite | PostgreSQL | MySQL |
-|---------|--------|------------|-------|
-| Raw SQL Expressions | ✅ | ✅ | ✅ |
-| Ad-hoc Updates/Deletes | ✅ | ✅ | ✅ |
-| Complex Joins | ✅ | ✅ | ✅ |
-| Window Functions | ✅ 3.25+ | ✅ | ✅ 8.0+ |
-| Subqueries | ✅ | ✅ | ✅ |
-| CTEs (WITH clause) | ✅ 3.8+ | ✅ | ✅ 8.0+ |
+- Guard optional features (e.g. `returning`, `rawSQL`, `schemaIntrospection`)
+- Skip incompatible tests in shared driver suites
+- Provide fallbacks when a feature is unavailable
 
 ## Available Capabilities
 
@@ -31,49 +26,7 @@ Different databases have varying levels of SQL feature support:
 
 ## Driver-Specific Behavior
 
-### SQLite
-
-**Supported Capabilities:**
-- ✅ `rawExpressions`
-- ✅ `adHocQueryUpdates`
-- ✅ `complexJoins`
-- ✅ `windowFunctions` (SQLite 3.25+)
-- ✅ `cte` (SQLite 3.8+)
-- ✅ `subqueries`
-
-**Notes:**
-- Window functions require SQLite 3.25 or higher
-- CTEs require SQLite 3.8 or higher
-- Full-text search available via FTS5 extension
-
-### PostgreSQL
-
-**Supported Capabilities:**
-- ✅ `rawExpressions`
-- ✅ `adHocQueryUpdates`
-- ✅ `complexJoins`
-- ✅ `windowFunctions`
-- ✅ `cte`
-- ✅ `subqueries`
-
-**Notes:**
-- Most feature-complete SQL implementation
-- Supports advanced features like LATERAL joins, JSONB operators
-- Excellent subquery optimization
-
-### MySQL
-
-**Supported Capabilities:**
-- ✅ `rawExpressions`
-- ✅ `adHocQueryUpdates`
-- ✅ `complexJoins`
-- ✅ `windowFunctions` (MySQL 8.0+)
-- ✅ `cte` (MySQL 8.0+)
-- ✅ `subqueries`
-
-**Notes:**
-- Window functions and CTEs require MySQL 8.0+
-- MariaDB has similar but slightly different feature set
+Different drivers can expose different capability sets. Prefer runtime checks over hard-coded assumptions.
 
 ## Writing Cross-Database Code
 
@@ -91,7 +44,7 @@ The query builder API works across all drivers:
 
 ### Strategy 3: Feature Detection
 
-```dart file=../../examples/lib/capabilities/driver_capabilities.dart#feature-detection-strategy
+```dart file=../../examples/lib/capabilities/driver_capabilities.dart#feature-detection-strategy-select
 ```
 
 ## Testing Across Drivers

@@ -12,6 +12,7 @@ import '../orm_registry.g.dart';
 Future<void> migrationEventsExample(DriverAdapter schemaDriver) async {
   final bus = EventBus.instance;
 
+  // #region migration-event-subscribe
   bus.on<MigrationBatchStartedEvent>((event) {
     print('Migration batch ${event.batch} started');
   });
@@ -27,7 +28,9 @@ Future<void> migrationEventsExample(DriverAdapter schemaDriver) async {
   bus.on<MigrationFailedEvent>((event) {
     print('Failed ${event.id}: ${event.error}');
   });
+  // #endregion migration-event-subscribe
 
+  // #region migration-event-runner
   final descriptors = MigrationEntry.buildDescriptors([
     MigrationEntry(
       id: MigrationId.parse('m_20241201000000_create_users_table'),
@@ -43,10 +46,12 @@ Future<void> migrationEventsExample(DriverAdapter schemaDriver) async {
   );
 
   await runner.applyAll();
+  // #endregion migration-event-runner
 }
 // #endregion migration-event-listeners
 
 // #region seeding-event-listeners
+// #region seeding-seeder-class
 class DemoUserSeeder extends DatabaseSeeder {
   DemoUserSeeder(super.connection);
 
@@ -57,12 +62,14 @@ class DemoUserSeeder extends DatabaseSeeder {
     ]);
   }
 }
+// #endregion seeding-seeder-class
 
 Future<void> seedingEventsExample(DataSource dataSource) async {
   await dataSource.init();
 
   final bus = EventBus.instance;
 
+  // #region seeding-event-subscribe
   bus.on<SeedingStartedEvent>((event) {
     print('Seeding started: ${event.seederNames.join(', ')}');
   });
@@ -82,7 +89,9 @@ Future<void> seedingEventsExample(DataSource dataSource) async {
   bus.on<SeedingCompletedEvent>((event) {
     print('Seeding complete (${event.count} seeders) in ${event.duration}');
   });
+  // #endregion seeding-event-subscribe
 
+  // #region seeding-event-runner
   final runner = SeederRunner(events: bus);
   await runner.run(
     connection: dataSource.connection,
@@ -90,6 +99,6 @@ Future<void> seedingEventsExample(DataSource dataSource) async {
       SeederRegistration(name: 'DemoUserSeeder', factory: DemoUserSeeder.new),
     ],
   );
+  // #endregion seeding-event-runner
 }
 // #endregion seeding-event-listeners
-

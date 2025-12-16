@@ -30,12 +30,12 @@ dev_dependencies:
 dart run build_runner build --delete-conflicting-outputs
 ```
 
-This produces `lib/orm_registry.g.dart` with `buildOrmRegistry()`.
+This produces `lib/orm_registry.g.dart` with `bootstrapOrm()` (and other helpers).
 
 ### 4. Bootstrap CLI
 
 ```bash
-dart run ormed_cli:init
+dart run ormed_cli:orm init
 ```
 
 Creates `orm.yaml`, registry, and migrations directory.
@@ -43,9 +43,9 @@ Creates `orm.yaml`, registry, and migrations directory.
 ### 5. Create/Apply Migrations
 
 ```bash
-dart run ormed_cli:make --name create_users
+dart run ormed_cli:orm make --name create_users --create --table users
 # Edit the generated file
-dart run ormed_cli:apply
+dart run ormed_cli:orm migrate
 ```
 
 ### 6. Query
@@ -60,9 +60,9 @@ Bind a global resolver for cleaner code:
 ```dart file=../../examples/lib/examples/workflows.dart#static-helpers-pattern
 ```
 
-## PostgreSQL + QueryContext
+## QueryContext (Advanced)
 
-```dart file=../../examples/lib/examples/workflows.dart#postgres-example
+```dart file=../../examples/lib/examples/workflows.dart#query-context-example
 ```
 
 ## Observability Example
@@ -130,7 +130,7 @@ Output:
 
 ## Testing Tips
 
-- Use `InMemoryQueryExecutor` for fast tests without a real database
+- Use `SqliteDriverAdapter.inMemory()` for fast tests without a real database
 - Attach listeners to `context.onQuery`/`.onMutation` to assert behavior
 - For migrations, use `MigrationRunner` with a fake ledger to verify ordering
 - For Postgres integration tests, use `PostgresTestHarness` which spins up a schema per test

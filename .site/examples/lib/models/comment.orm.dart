@@ -286,6 +286,14 @@ class $Comment extends Comment with ModelAttributes implements OrmEntity {
     return $Comment(id: model.id, body: model.body, postId: model.postId);
   }
 
+  $Comment copyWith({int? id, String? body, int? postId}) {
+    return $Comment(
+      id: id ?? this.id,
+      body: body ?? this.body,
+      postId: postId ?? this.postId,
+    );
+  }
+
   @override
   int get id => getAttribute<int>('id') ?? super.id;
 
@@ -319,4 +327,8 @@ extension CommentOrmExtension on Comment {
   $Comment toTracked() {
     return $Comment.fromModel(this);
   }
+}
+
+void registerCommentEventHandlers(EventBus bus) {
+  // No event handlers registered for Comment.
 }

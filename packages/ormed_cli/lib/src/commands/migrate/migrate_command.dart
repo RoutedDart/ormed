@@ -134,8 +134,9 @@ class ApplyCommand extends RunnerCommand {
         project: project,
         config: config,
         seeds: seeds,
-        overrideClasses:
-            seederOverride == null ? null : <String>[seederOverride],
+        overrideClasses: seederOverride == null
+            ? null
+            : <String>[seederOverride],
         databaseOverride: argResults?['database'] as String?,
       );
     }

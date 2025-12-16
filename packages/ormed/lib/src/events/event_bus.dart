@@ -40,7 +40,8 @@ import 'package:meta/meta.dart';
 ///
 /// All event types should extend this class.
 abstract class Event {
-  Event({DateTime? timestamp}) : timestamp = timestamp ?? DateTime.now().toUtc();
+  Event({DateTime? timestamp})
+    : timestamp = timestamp ?? DateTime.now().toUtc();
 
   /// When the event occurred.
   final DateTime timestamp;
@@ -276,4 +277,3 @@ class OnEvent {
   /// The event type this handler responds to.
   final Type eventType;
 }
-

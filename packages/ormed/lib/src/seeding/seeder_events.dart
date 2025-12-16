@@ -89,4 +89,3 @@ class SeederFailedEvent extends SeederEvent {
   /// Stack trace if available.
   final StackTrace? stackTrace;
 }
-

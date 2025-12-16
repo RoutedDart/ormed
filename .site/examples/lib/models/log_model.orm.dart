@@ -292,6 +292,14 @@ class $Log extends Log with ModelAttributes implements OrmEntity {
     );
   }
 
+  $Log copyWith({int? id, String? message, DateTime? timestamp}) {
+    return $Log(
+      id: id ?? this.id,
+      message: message ?? this.message,
+      timestamp: timestamp ?? this.timestamp,
+    );
+  }
+
   @override
   int get id => getAttribute<int>('id') ?? super.id;
 
@@ -326,4 +334,8 @@ extension LogOrmExtension on Log {
   $Log toTracked() {
     return $Log.fromModel(this);
   }
+}
+
+void registerLogEventHandlers(EventBus bus) {
+  // No event handlers registered for Log.
 }

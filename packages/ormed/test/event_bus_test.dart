@@ -36,10 +36,7 @@ void main() {
         event.timestamp.isAfter(before.subtract(Duration(seconds: 1))),
         isTrue,
       );
-      expect(
-        event.timestamp.isBefore(after.add(Duration(seconds: 1))),
-        isTrue,
-      );
+      expect(event.timestamp.isBefore(after.add(Duration(seconds: 1))), isTrue);
     });
 
     test('uses provided timestamp', () {
@@ -151,7 +148,10 @@ void main() {
         bus.emit(TestEvent(message: '4'));
 
         expect(received, hasLength(3));
-        expect(received.map((e) => e.message).toList(), equals(['1', '2', '3']));
+        expect(
+          received.map((e) => e.message).toList(),
+          equals(['1', '2', '3']),
+        );
       });
     });
 
@@ -338,4 +338,3 @@ void main() {
     });
   });
 }
-

@@ -51,10 +51,17 @@ The generator wires these static handlers into `registerModelEventHandlers`, whi
 
 ## Full Lifecycle Walkthrough
 
-```dart file=../../examples/lib/events/model_events.dart#model-events-usage
+This example logs every phase for a `User` insert, update, delete, and retrieval.
+
+### Setup
+
+```dart file=../../examples/lib/events/model_events.dart#model-events-setup
 ```
 
-This example logs every phase for a `User` insert, update, delete, and retrieval.
+### Mutations
+
+```dart file=../../examples/lib/events/model_events.dart#model-events-mutations
+```
 
 ## Event Ordering
 

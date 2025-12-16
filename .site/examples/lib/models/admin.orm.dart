@@ -342,6 +342,20 @@ class $Admin extends Admin with ModelAttributes implements OrmEntity {
     );
   }
 
+  $Admin copyWith({
+    int? id,
+    String? email,
+    String? password,
+    DateTime? createdAt,
+  }) {
+    return $Admin(
+      id: id ?? this.id,
+      email: email ?? this.email,
+      password: password ?? this.password,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
   @override
   int get id => getAttribute<int>('id') ?? super.id;
 
@@ -381,4 +395,8 @@ extension AdminOrmExtension on Admin {
   $Admin toTracked() {
     return $Admin.fromModel(this);
   }
+}
+
+void registerAdminEventHandlers(EventBus bus) {
+  // No event handlers registered for Admin.
 }

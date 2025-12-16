@@ -2,6 +2,7 @@
 // ignore_for_file: unused_local_variable
 
 import 'package:ormed/ormed.dart';
+import 'package:ormed_sqlite/ormed_sqlite.dart';
 
 import '../models/user.dart';
 import '../models/user.orm.dart';
@@ -11,11 +12,12 @@ import '../orm_registry.g.dart';
 
 // #region multi-db-setup
 Future<void> multiDatabaseSetup() async {
+  // #region multi-db-setup-sources
   // Primary database
   final primaryDs = DataSource(
     DataSourceOptions(
       name: 'primary',
-      driver: InMemoryQueryExecutor(),
+      driver: SqliteDriverAdapter.inMemory(),
       entities: generatedOrmModelDefinitions,
     ),
   );
@@ -24,7 +26,7 @@ Future<void> multiDatabaseSetup() async {
   final analyticsDs = DataSource(
     DataSourceOptions(
       name: 'analytics',
-      driver: InMemoryQueryExecutor(),
+      driver: SqliteDriverAdapter.inMemory(),
       entities: generatedOrmModelDefinitions,
     ),
   );
@@ -33,16 +35,19 @@ Future<void> multiDatabaseSetup() async {
   final testingDs = DataSource(
     DataSourceOptions(
       name: 'testing',
-      driver: InMemoryQueryExecutor(),
+      driver: SqliteDriverAdapter.inMemory(),
       entities: generatedOrmModelDefinitions,
     ),
   );
+  // #endregion multi-db-setup-sources
 
+  // #region multi-db-setup-init
   await Future.wait([
     primaryDs.init(),
     analyticsDs.init(),
     testingDs.init(),
   ]);
+  // #endregion multi-db-setup-init
 }
 // #endregion multi-db-setup
 
@@ -51,7 +56,7 @@ Future<void> namedConnectionsExample() async {
   final primaryDs = DataSource(
     DataSourceOptions(
       name: 'primary',
-      driver: InMemoryQueryExecutor(),
+      driver: SqliteDriverAdapter.inMemory(),
       entities: generatedOrmModelDefinitions,
     ),
   );
@@ -60,7 +65,7 @@ Future<void> namedConnectionsExample() async {
   final analyticsDs = DataSource(
     DataSourceOptions(
       name: 'analytics',
-      driver: InMemoryQueryExecutor(),
+      driver: SqliteDriverAdapter.inMemory(),
       entities: generatedOrmModelDefinitions,
     ),
   );
@@ -77,7 +82,7 @@ Future<void> transactionCaveatExample() async {
   final primaryDs = DataSource(
     DataSourceOptions(
       name: 'primary',
-      driver: InMemoryQueryExecutor(),
+      driver: SqliteDriverAdapter.inMemory(),
       entities: generatedOrmModelDefinitions,
     ),
   );
@@ -86,7 +91,7 @@ Future<void> transactionCaveatExample() async {
   final analyticsDs = DataSource(
     DataSourceOptions(
       name: 'analytics',
-      driver: InMemoryQueryExecutor(),
+      driver: SqliteDriverAdapter.inMemory(),
       entities: generatedOrmModelDefinitions,
     ),
   );
@@ -106,10 +111,11 @@ Future<void> transactionCaveatExample() async {
 
 // #region multi-db-coordinating
 Future<void> coordinatingDatabasesExample() async {
+  // #region multi-db-coordinating-setup
   final primaryDs = DataSource(
     DataSourceOptions(
       name: 'primary',
-      driver: InMemoryQueryExecutor(),
+      driver: SqliteDriverAdapter.inMemory(),
       entities: generatedOrmModelDefinitions,
     ),
   );
@@ -118,12 +124,14 @@ Future<void> coordinatingDatabasesExample() async {
   final analyticsDs = DataSource(
     DataSourceOptions(
       name: 'analytics',
-      driver: InMemoryQueryExecutor(),
+      driver: SqliteDriverAdapter.inMemory(),
       entities: generatedOrmModelDefinitions,
     ),
   );
   await analyticsDs.init();
+  // #endregion multi-db-coordinating-setup
 
+  // #region multi-db-coordinating-operations
   // Coordinate operations across databases manually
   try {
     // Step 1: Primary operation
@@ -139,6 +147,7 @@ Future<void> coordinatingDatabasesExample() async {
     // Handle compensation if needed
     rethrow;
   }
+  // #endregion multi-db-coordinating-operations
 }
 // #endregion multi-db-coordinating
 
@@ -151,7 +160,7 @@ class TenantDataSourceManager {
       final ds = DataSource(
         DataSourceOptions(
           name: 'tenant_$tenantId',
-          driver: InMemoryQueryExecutor(),
+          driver: SqliteDriverAdapter.inMemory(),
           entities: generatedOrmModelDefinitions,
           tablePrefix: '${tenantId}_',
         ),
@@ -197,7 +206,7 @@ DataSourceFactory createDataSourceFactory(
     final ds = DataSource(
       DataSourceOptions(
         name: name,
-        driver: InMemoryQueryExecutor(),
+        driver: SqliteDriverAdapter.inMemory(),
         entities: definitions,
       ),
     );

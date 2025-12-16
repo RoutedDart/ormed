@@ -7,9 +7,19 @@ void runScopeTests() {
   ormedGroup('Query Scope Operations', (dataSource) {
     test('generated local scope extensions work for ScopedUser', () async {
       await dataSource.repo<ScopedUser>().insertMany([
-        const ScopedUser(id: 1, email: 'a@example.com', active: true, name: 'A'),
+        const ScopedUser(
+          id: 1,
+          email: 'a@example.com',
+          active: true,
+          name: 'A',
+        ),
         const ScopedUser(id: 2, email: 'b@test.com', active: true, name: 'B'),
-        const ScopedUser(id: 3, email: 'c@example.com', active: false, name: 'C'),
+        const ScopedUser(
+          id: 3,
+          email: 'c@example.com',
+          active: false,
+          name: 'C',
+        ),
       ]);
 
       final example = await dataSource.context
@@ -33,8 +43,18 @@ void runScopeTests() {
 
     test('generated global scope applies automatically', () async {
       await dataSource.repo<ScopedUser>().insertMany([
-        const ScopedUser(id: 1, email: 'a@example.com', active: true, name: 'A'),
-        const ScopedUser(id: 2, email: 'b@example.com', active: false, name: 'B'),
+        const ScopedUser(
+          id: 1,
+          email: 'a@example.com',
+          active: true,
+          name: 'A',
+        ),
+        const ScopedUser(
+          id: 2,
+          email: 'b@example.com',
+          active: false,
+          name: 'B',
+        ),
       ]);
 
       // activeOnly is @OrmScope(global: true), so inactive rows are filtered

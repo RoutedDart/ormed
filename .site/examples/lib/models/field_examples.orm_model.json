@@ -1,1 +1,1 @@
-{"className":"ItemWithIntPK","import":"models/field_examples.dart","definition":"ItemWithIntPKOrmDefinition.definition","hasFactory":false}
+{"className":"ItemWithIntPK","import":"models/field_examples.dart","definition":"ItemWithIntPKOrmDefinition.definition","hasFactory":false,"hasEventHandlers":false,"hasScopes":false}

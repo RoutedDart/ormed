@@ -4,7 +4,7 @@ sidebar_position: 5
 
 # Model Scopes
 
-Scopes let you package reusable query constraints on a model. They are **static methods** annotated with `@OrmScope`, and the generator creates typed helpers on `Query<Model>` so you can call them fluently.
+Scopes let you package reusable query constraints on a model. They are **static methods** annotated with `@OrmScope`, and the generator creates typed helpers on `Query<$Model>` so you can call them fluently.
 
 ## Defining scopes
 
@@ -13,16 +13,33 @@ Scopes let you package reusable query constraints on a model. They are **static 
 - Optional parameters are supported (positional or named).  
 - Set `global: true` to have the scope applied to every query for the model; global scopes must not declare extra required parameters beyond the initial `Query<T>`.
 
-```dart file=../../examples/lib/models/model_scopes.dart#model-scopes-definition
+```dart file=../../examples/lib/models/model_scopes.dart#model-scopes-global
 ```
 
 ## Using scopes
 
 The generator adds:
-- Extensions on `Query<Model>` (and the tracked `$Model`) for every `@OrmScope`.
+- Extensions on `Query<$Model>` for every `@OrmScope`.
 - `register<Model>Scopes(ScopeRegistry)` that registers all scopes (global and local). `registerModelScopes()` calls every generated registrar; `bootstrapOrm(registerScopes: true)` wires them automatically.
 
-```dart file=../../examples/lib/models/model_scopes.dart#model-scopes-usage
+Register the model’s scopes once when you bootstrap:
+
+```dart file=../../examples/lib/models/model_scopes.dart#model-scopes-register
+```
+
+Then use the generated query helpers:
+
+```dart file=../../examples/lib/models/model_scopes.dart#model-scopes-query-local
+```
+
+Global scopes apply automatically:
+
+```dart file=../../examples/lib/models/model_scopes.dart#model-scopes-query-global
+```
+
+Disable a global scope when needed:
+
+```dart file=../../examples/lib/models/model_scopes.dart#model-scopes-query-without-global
 ```
 
 Notes:
@@ -34,7 +51,7 @@ Notes:
 
 You can also register scopes at runtime without touching the model by using the `ScopeRegistry` on your `QueryContext`. This is handy for environment-specific filters or tests.
 
-```dart file=../../examples/lib/models/model_scopes.dart#model-scopes-inline
+```dart file=../../examples/lib/models/model_scopes.dart#model-scopes-inline-register
 ```
 
 Ad-hoc scopes share the same APIs (`scope('name')`, `withoutGlobalScope('name')`) as generated scopes; mix and match as needed.

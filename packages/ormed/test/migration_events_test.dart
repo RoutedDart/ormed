@@ -16,10 +16,7 @@ void main() {
         event.timestamp.isAfter(before.subtract(Duration(seconds: 1))),
         isTrue,
       );
-      expect(
-        event.timestamp.isBefore(after.add(Duration(seconds: 1))),
-        isTrue,
-      );
+      expect(event.timestamp.isBefore(after.add(Duration(seconds: 1))), isTrue);
     });
   });
 
@@ -151,13 +148,15 @@ void main() {
         received.add(event);
       });
 
-      bus.emit(MigrationStartedEvent(
-        migrationId: 'test',
-        migrationName: 'test_migration',
-        direction: MigrationDirection.up,
-        index: 1,
-        total: 1,
-      ));
+      bus.emit(
+        MigrationStartedEvent(
+          migrationId: 'test',
+          migrationName: 'test_migration',
+          direction: MigrationDirection.up,
+          index: 1,
+          total: 1,
+        ),
+      );
 
       expect(received, hasLength(1));
       expect(received.first.migrationName, equals('test_migration'));
@@ -170,16 +169,17 @@ void main() {
         received.add(event);
       });
 
-      bus.emit(MigrationFailedEvent(
-        migrationId: 'test',
-        migrationName: 'test_migration',
-        direction: MigrationDirection.up,
-        error: 'Failed!',
-      ));
+      bus.emit(
+        MigrationFailedEvent(
+          migrationId: 'test',
+          migrationName: 'test_migration',
+          direction: MigrationDirection.up,
+          error: 'Failed!',
+        ),
+      );
 
       expect(received, hasLength(1));
       expect(received.first.error, equals('Failed!'));
     });
   });
 }
-

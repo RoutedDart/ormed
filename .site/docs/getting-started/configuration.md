@@ -126,7 +126,7 @@ connections:
       type: postgres
       options:
         url: ${DATABASE_URL}
-         sslmode: ${DB_SSLMODE:-disable}
+        sslmode: ${DB_SSLMODE:-disable}
 ```
 
 Set the environment variable:

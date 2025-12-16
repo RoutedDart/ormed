@@ -31,7 +31,6 @@ void main() {
     });
 
     test('Relationship Query Method: user.postsQuery()', () {
-
       // This method should exist and return a Query<Post>
       // Note: User model doesn't have posts relation in current schema
       // This test is conceptual - would work if User had a posts relation defined

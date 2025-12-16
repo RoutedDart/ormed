@@ -9,7 +9,6 @@ The `DataSource` class provides a modern, declarative API for configuring and us
 ## Overview
 
 ```dart file=../../examples/lib/datasource.dart#datasource-overview
-
 ```
 
 ## DataSourceOptions
@@ -17,7 +16,8 @@ The `DataSource` class provides a modern, declarative API for configuring and us
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `driver` | `DriverAdapter` | **required** | The database driver adapter |
-| `entities` | `List<ModelDefinition>` | **required** | Models to register. Pass the generated registry output (e.g., `buildOrmRegistry().definitions.values.toList()`) or a curated subset. |
+| `entities` | `List<ModelDefinition>` | `[]` | Models to register. Provide this or `registry`. |
+| `registry` | `ModelRegistry?` | `null` | Generated registry (includes type aliases). If provided and `entities` is empty, models are taken from the registry. |
 | `name` | `String` | `'default'` | Logical name for the connection |
 | `database` | `String?` | `null` | Database/catalog identifier for observability |
 | `tablePrefix` | `String` | `''` | Prefix applied to table names |
@@ -28,7 +28,6 @@ The `DataSource` class provides a modern, declarative API for configuring and us
 ### Example Configuration (with generated registry)
 
 ```dart file=../../examples/lib/datasource.dart#datasource-options
-
 ```
 
 ## Initialization
@@ -36,7 +35,6 @@ The `DataSource` class provides a modern, declarative API for configuring and us
 Always call `init()` before using the data source:
 
 ```dart file=../../examples/lib/datasource.dart#datasource-init
-
 ```
 
 The `init()` method:
@@ -49,7 +47,6 @@ The `init()` method:
 Once initialized, the first DataSource automatically becomes the default:
 
 ```dart file=../../examples/lib/datasource.dart#datasource-static-helpers
-
 ```
 
 ## Querying Data
@@ -57,7 +54,6 @@ Once initialized, the first DataSource automatically becomes the default:
 Use `query<T>()` to create a typed query builder:
 
 ```dart file=../../examples/lib/datasource.dart#datasource-querying
-
 ```
 
 ## Repository Operations
@@ -65,7 +61,6 @@ Use `query<T>()` to create a typed query builder:
 Use `repo<T>()` for CRUD operations:
 
 ```dart file=../../examples/lib/datasource.dart#datasource-repository
-
 ```
 
 ## Transactions
@@ -73,7 +68,6 @@ Use `repo<T>()` for CRUD operations:
 Execute multiple operations atomically:
 
 ```dart file=../../examples/lib/datasource.dart#datasource-transactions
-
 ```
 
 ## Ad-hoc Table Queries
@@ -81,23 +75,19 @@ Execute multiple operations atomically:
 Query tables without a model definition:
 
 ```dart file=../../examples/lib/datasource.dart#datasource-adhoc
-
 ```
 
 ## Query Logging & Debugging
 
 ```dart file=../../examples/lib/datasource.dart#datasource-logging
-
 ```
 
 ```dart file=../../examples/lib/datasource.dart#datasource-logging-options
-
 ```
 
 ### Access Query Log
 
 ```dart file=../../examples/lib/datasource.dart#datasource-query-log-access
-
 ```
 
 ### Pretend Mode
@@ -105,13 +95,11 @@ Query tables without a model definition:
 Preview SQL without executing:
 
 ```dart file=../../examples/lib/datasource.dart#datasource-pretend-mode
-
 ```
 
 ### Execution Hooks
 
 ```dart file=../../examples/lib/datasource.dart#datasource-execution-hooks
-
 ```
 
 ## Multiple DataSources
@@ -119,23 +107,19 @@ Preview SQL without executing:
 Create separate data sources for different databases:
 
 ```dart file=../../examples/lib/datasource.dart#datasource-multiple
-
 ```
 
 ## Lifecycle Management
 
 ```dart file=../../examples/lib/datasource.dart#datasource-lifecycle
-
 ```
 
 ### Access Underlying Components
 
 ```dart file=../../examples/lib/datasource.dart#datasource-underlying
-
 ```
 
 ## Custom Codecs
 
 ```dart file=../../examples/lib/datasource.dart#datasource-custom-codecs
-
 ```

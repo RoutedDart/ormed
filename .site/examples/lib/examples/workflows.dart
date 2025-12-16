@@ -2,6 +2,7 @@
 // ignore_for_file: unused_local_variable
 
 import 'package:ormed/ormed.dart';
+import 'package:ormed_sqlite/ormed_sqlite.dart';
 
 import '../models/user.dart';
 import '../models/user.orm.dart';
@@ -18,7 +19,7 @@ Future<void> sqliteQueryExample() async {
   final dataSource = DataSource(
     DataSourceOptions(
       name: 'primary',
-      driver: InMemoryQueryExecutor(),
+      driver: SqliteDriverAdapter.file('database.sqlite'),
       entities: generatedOrmModelDefinitions,
     ),
   );
@@ -49,7 +50,7 @@ Future<void> staticHelpersPattern() async {
   final dataSource = DataSource(
     DataSourceOptions(
       name: 'primary',
-      driver: InMemoryQueryExecutor(),
+      driver: SqliteDriverAdapter.file('database.sqlite'),
       entities: generatedOrmModelDefinitions,
     ),
   );
@@ -61,32 +62,25 @@ Future<void> staticHelpersPattern() async {
 }
 // #endregion static-helpers-pattern
 
-// #region postgres-example
-Future<void> postgresExample() async {
-  // In real usage, use PostgresDriverAdapter
-  final dataSource = DataSource(
-    DataSourceOptions(
-      name: 'postgres',
-      driver: InMemoryQueryExecutor(), // Replace with PostgresDriverAdapter
-      entities: generatedOrmModelDefinitions,
-    ),
+// #region query-context-example
+Future<void> queryContextExample() async {
+  final registry = bootstrapOrm();
+  final context = QueryContext(
+    registry: registry,
+    driver: SqliteDriverAdapter.inMemory(),
   );
-  await dataSource.init();
 
-  // Same API as SQLite
-  final users = await dataSource.query<$User>().get();
-  await dataSource.repo<$User>().insert(
-        $User(id: 0, email: 'user@example.com'),
-      );
+  final users = await context.query<$User>().get();
+  print('Users: ${users.length}');
 }
-// #endregion postgres-example
+// #endregion query-context-example
 
 // #region observability-example
 Future<void> observabilityExample() async {
   final dataSource = DataSource(
     DataSourceOptions(
       name: 'primary',
-      driver: InMemoryQueryExecutor(),
+      driver: SqliteDriverAdapter.file('database.sqlite'),
       entities: generatedOrmModelDefinitions,
       logging: true,
     ),

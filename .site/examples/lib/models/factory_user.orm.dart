@@ -307,6 +307,14 @@ class $FactoryUser extends FactoryUser
     return $FactoryUser(id: model.id, email: model.email, name: model.name);
   }
 
+  $FactoryUser copyWith({int? id, String? email, String? name}) {
+    return $FactoryUser(
+      id: id ?? this.id,
+      email: email ?? this.email,
+      name: name ?? this.name,
+    );
+  }
+
   @override
   int get id => getAttribute<int>('id') ?? super.id;
 
@@ -340,4 +348,8 @@ extension FactoryUserOrmExtension on FactoryUser {
   $FactoryUser toTracked() {
     return $FactoryUser.fromModel(this);
   }
+}
+
+void registerFactoryUserEventHandlers(EventBus bus) {
+  // No event handlers registered for FactoryUser.
 }

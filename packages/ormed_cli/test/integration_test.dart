@@ -74,8 +74,8 @@ class TestProjectSeederRunner implements ProjectSeederRunner {
     receivedConnection = connection ?? config.connectionName;
     final targetSeeders = (overrideClasses == null || overrideClasses.isEmpty)
         ? (seeds.seedNames.isNotEmpty
-            ? seeds.seedNames
-            : const ['AppDatabaseSeeder'])
+              ? seeds.seedNames
+              : const ['AppDatabaseSeeder'])
         : overrideClasses;
     executedSeeders.addAll(targetSeeders);
     final handle = await createConnection(project.root, config);
@@ -126,14 +126,14 @@ void main() {
 
       ormConfig = File(p.join(scratchDir.path, 'orm.yaml'))
         ..writeAsStringSync(
-        _ormYaml(
-          databasePath: p.relative(dbPath, from: scratchDir.path),
-          migrationsDir: 'migrations',
-          registryPath: 'migrations.dart',
-          seedsDir: 'seeds',
-          seedsRegistry: 'seeders.dart',
-        ),
-      );
+          _ormYaml(
+            databasePath: p.relative(dbPath, from: scratchDir.path),
+            migrationsDir: 'migrations',
+            registryPath: 'migrations.dart',
+            seedsDir: 'seeds',
+            seedsRegistry: 'seeders.dart',
+          ),
+        );
 
       File(p.join(scratchDir.path, 'pubspec.yaml')).writeAsStringSync('''
 name: test_project

@@ -629,10 +629,9 @@ extension PostOrmExtension on Post {
 
 void registerPostEventHandlers(EventBus bus) {
   bus.on<ModelCreatedEvent>((event) {
-    if (event is ModelEvent &&
-        event.modelType != Post &&
-        event.modelType != $Post)
+    if (event.modelType != Post && event.modelType != $Post) {
       return;
+    }
     Post.onCreated(event);
   });
 }

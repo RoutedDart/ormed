@@ -91,8 +91,7 @@ class PlaygroundDatabase {
         driver: SqliteDriverAdapter.file(dbPath),
         name: tenant,
         database: dbPath,
-        registry:     buildOrmRegistryWithFactories()
-
+        registry: buildOrmRegistryWithFactories(),
       ),
     );
 

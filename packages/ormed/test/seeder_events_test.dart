@@ -13,10 +13,7 @@ void main() {
         event.timestamp.isAfter(before.subtract(Duration(seconds: 1))),
         isTrue,
       );
-      expect(
-        event.timestamp.isBefore(after.add(Duration(seconds: 1))),
-        isTrue,
-      );
+      expect(event.timestamp.isBefore(after.add(Duration(seconds: 1))), isTrue);
     });
   });
 
@@ -137,11 +134,13 @@ void main() {
         received.add(event);
       });
 
-      bus.emit(SeederCompletedEvent(
-        seederName: 'UserSeeder',
-        duration: Duration(seconds: 1),
-        recordsCreated: 50,
-      ));
+      bus.emit(
+        SeederCompletedEvent(
+          seederName: 'UserSeeder',
+          duration: Duration(seconds: 1),
+          recordsCreated: 50,
+        ),
+      );
 
       expect(received, hasLength(1));
       expect(received.first.seederName, equals('UserSeeder'));
@@ -155,14 +154,15 @@ void main() {
         received.add(event);
       });
 
-      bus.emit(SeederFailedEvent(
-        seederName: 'UserSeeder',
-        error: 'Constraint violation',
-      ));
+      bus.emit(
+        SeederFailedEvent(
+          seederName: 'UserSeeder',
+          error: 'Constraint violation',
+        ),
+      );
 
       expect(received, hasLength(1));
       expect(received.first.error, equals('Constraint violation'));
     });
   });
 }
-

@@ -1,0 +1,1 @@
+{"className":"AuditedUser","import":"events/model_events.dart","definition":"AuditedUserOrmDefinition.definition","hasFactory":false,"hasEventHandlers":true,"hasScopes":false}
