@@ -291,3 +291,7 @@ extension SettingOrmExtension on Setting {
     return $Setting.fromModel(this);
   }
 }
+
+void registerSettingEventHandlers(EventBus bus) {
+  // No event handlers registered for Setting.
+}

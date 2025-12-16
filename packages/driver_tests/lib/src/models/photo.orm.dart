@@ -414,3 +414,7 @@ extension PhotoOrmExtension on Photo {
     return $Photo.fromModel(this);
   }
 }
+
+void registerPhotoEventHandlers(EventBus bus) {
+  // No event handlers registered for Photo.
+}

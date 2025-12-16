@@ -294,3 +294,7 @@ extension PostTagOrmExtension on PostTag {
     return $PostTag.fromModel(this);
   }
 }
+
+void registerPostTagEventHandlers(EventBus bus) {
+  // No event handlers registered for PostTag.
+}

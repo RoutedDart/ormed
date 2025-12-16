@@ -65,4 +65,11 @@ class Post extends Model<Post> with ModelFactoryCapable, TimestampsTZ {
     morphClass: 'Post',
   )
   final List<Photo> photos;
+
+  // Demo model-level event handler
+  @OrmEvent(ModelCreatedEvent)
+  static void onCreated(ModelCreatedEvent event) {
+    if (event.model is! Post) return;
+    // no-op: just proves registration works
+  }
 }

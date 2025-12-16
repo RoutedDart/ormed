@@ -419,3 +419,7 @@ extension ActiveUserOrmExtension on ActiveUser {
     return $ActiveUser.fromModel(this);
   }
 }
+
+void registerActiveUserEventHandlers(EventBus bus) {
+  // No event handlers registered for ActiveUser.
+}

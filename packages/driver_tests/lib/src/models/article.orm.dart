@@ -630,3 +630,7 @@ extension ArticleOrmExtension on Article {
     return $Article.fromModel(this);
   }
 }
+
+void registerArticleEventHandlers(EventBus bus) {
+  // No event handlers registered for Article.
+}

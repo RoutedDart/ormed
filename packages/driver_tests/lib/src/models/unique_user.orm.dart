@@ -336,3 +336,7 @@ extension UniqueUserOrmExtension on UniqueUser {
     return $UniqueUser.fromModel(this);
   }
 }
+
+void registerUniqueUserEventHandlers(EventBus bus) {
+  // No event handlers registered for UniqueUser.
+}

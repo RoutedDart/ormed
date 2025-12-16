@@ -293,3 +293,7 @@ extension SerialTestOrmExtension on SerialTest {
     return $SerialTest.fromModel(this);
   }
 }
+
+void registerSerialTestEventHandlers(EventBus bus) {
+  // No event handlers registered for SerialTest.
+}

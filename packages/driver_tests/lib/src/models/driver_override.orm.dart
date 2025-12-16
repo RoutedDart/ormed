@@ -337,3 +337,7 @@ extension DriverOverrideModelOrmExtension on DriverOverrideModel {
     return $DriverOverrideModel.fromModel(this);
   }
 }
+
+void registerDriverOverrideModelEventHandlers(EventBus bus) {
+  // No event handlers registered for DriverOverrideModel.
+}

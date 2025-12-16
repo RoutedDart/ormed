@@ -385,3 +385,7 @@ extension NamedConstructorModelOrmExtension on NamedConstructorModel {
     return $NamedConstructorModel.fromModel(this);
   }
 }
+
+void registerNamedConstructorModelEventHandlers(EventBus bus) {
+  // No event handlers registered for NamedConstructorModel.
+}

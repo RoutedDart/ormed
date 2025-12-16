@@ -273,3 +273,7 @@ extension NoFactoryOrmExtension on NoFactory {
     return $NoFactory.fromModel(this);
   }
 }
+
+void registerNoFactoryEventHandlers(EventBus bus) {
+  // No event handlers registered for NoFactory.
+}

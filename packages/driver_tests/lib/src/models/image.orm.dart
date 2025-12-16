@@ -308,3 +308,7 @@ extension ImageOrmExtension on Image {
     return $Image.fromModel(this);
   }
 }
+
+void registerImageEventHandlers(EventBus bus) {
+  // No event handlers registered for Image.
+}

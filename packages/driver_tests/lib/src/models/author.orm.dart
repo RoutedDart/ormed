@@ -399,3 +399,7 @@ extension AuthorOrmExtension on Author {
     return $Author.fromModel(this);
   }
 }
+
+void registerAuthorEventHandlers(EventBus bus) {
+  // No event handlers registered for Author.
+}

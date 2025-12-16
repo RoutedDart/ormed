@@ -305,3 +305,7 @@ extension CommentOrmExtension on Comment {
     return $Comment.fromModel(this);
   }
 }
+
+void registerCommentEventHandlers(EventBus bus) {
+  // No event handlers registered for Comment.
+}

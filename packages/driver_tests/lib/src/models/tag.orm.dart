@@ -299,3 +299,7 @@ extension TagOrmExtension on Tag {
     return $Tag.fromModel(this);
   }
 }
+
+void registerTagEventHandlers(EventBus bus) {
+  // No event handlers registered for Tag.
+}

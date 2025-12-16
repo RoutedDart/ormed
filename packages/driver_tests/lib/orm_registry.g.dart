@@ -69,7 +69,8 @@ ModelRegistry buildOrmRegistry() => ModelRegistry()
   ..registerTypeAlias<Setting>(_$ormModelDefinitions[17])
   ..registerTypeAlias<Tag>(_$ormModelDefinitions[18])
   ..registerTypeAlias<UniqueUser>(_$ormModelDefinitions[19])
-  ..registerTypeAlias<User>(_$ormModelDefinitions[20]);
+  ..registerTypeAlias<User>(_$ormModelDefinitions[20])
+  ;
 
 List<ModelDefinition<OrmEntity>> get generatedOrmModelDefinitions =>
     List.unmodifiable(_$ormModelDefinitions);
@@ -103,52 +104,26 @@ extension GeneratedOrmModels on ModelRegistry {
 }
 
 /// Registers factory definitions for all models that have factory support.
-/// Call this before using [Model.factory<T>()]to ensure definitions are available.
+/// Call this before using [Model.factory<T>()] to ensure definitions are available.
 void registerOrmFactories() {
-  ModelFactoryRegistry.registerIfAbsent<ActiveUser>(
-    ActiveUserOrmDefinition.definition,
-  );
-  ModelFactoryRegistry.registerIfAbsent<Article>(
-    ArticleOrmDefinition.definition,
-  );
-  ModelFactoryRegistry.registerIfAbsent<AttributeUser>(
-    AttributeUserOrmDefinition.definition,
-  );
+  ModelFactoryRegistry.registerIfAbsent<ActiveUser>(ActiveUserOrmDefinition.definition);
+  ModelFactoryRegistry.registerIfAbsent<Article>(ArticleOrmDefinition.definition);
+  ModelFactoryRegistry.registerIfAbsent<AttributeUser>(AttributeUserOrmDefinition.definition);
   ModelFactoryRegistry.registerIfAbsent<Author>(AuthorOrmDefinition.definition);
-  ModelFactoryRegistry.registerIfAbsent<Comment>(
-    CommentOrmDefinition.definition,
-  );
-  ModelFactoryRegistry.registerIfAbsent<CustomSoftDelete>(
-    CustomSoftDeleteOrmDefinition.definition,
-  );
-  ModelFactoryRegistry.registerIfAbsent<DerivedForFactory>(
-    DerivedForFactoryOrmDefinition.definition,
-  );
-  ModelFactoryRegistry.registerIfAbsent<DriverOverrideEntry>(
-    DriverOverrideEntryOrmDefinition.definition,
-  );
+  ModelFactoryRegistry.registerIfAbsent<Comment>(CommentOrmDefinition.definition);
+  ModelFactoryRegistry.registerIfAbsent<CustomSoftDelete>(CustomSoftDeleteOrmDefinition.definition);
+  ModelFactoryRegistry.registerIfAbsent<DerivedForFactory>(DerivedForFactoryOrmDefinition.definition);
+  ModelFactoryRegistry.registerIfAbsent<DriverOverrideEntry>(DriverOverrideEntryOrmDefinition.definition);
   ModelFactoryRegistry.registerIfAbsent<Image>(ImageOrmDefinition.definition);
-  ModelFactoryRegistry.registerIfAbsent<MutationTarget>(
-    MutationTargetOrmDefinition.definition,
-  );
-  ModelFactoryRegistry.registerIfAbsent<NamedConstructorModel>(
-    NamedConstructorModelOrmDefinition.definition,
-  );
+  ModelFactoryRegistry.registerIfAbsent<MutationTarget>(MutationTargetOrmDefinition.definition);
+  ModelFactoryRegistry.registerIfAbsent<NamedConstructorModel>(NamedConstructorModelOrmDefinition.definition);
   ModelFactoryRegistry.registerIfAbsent<Photo>(PhotoOrmDefinition.definition);
   ModelFactoryRegistry.registerIfAbsent<Post>(PostOrmDefinition.definition);
-  ModelFactoryRegistry.registerIfAbsent<PostTag>(
-    PostTagOrmDefinition.definition,
-  );
-  ModelFactoryRegistry.registerIfAbsent<SerialTest>(
-    SerialTestOrmDefinition.definition,
-  );
-  ModelFactoryRegistry.registerIfAbsent<Setting>(
-    SettingOrmDefinition.definition,
-  );
+  ModelFactoryRegistry.registerIfAbsent<PostTag>(PostTagOrmDefinition.definition);
+  ModelFactoryRegistry.registerIfAbsent<SerialTest>(SerialTestOrmDefinition.definition);
+  ModelFactoryRegistry.registerIfAbsent<Setting>(SettingOrmDefinition.definition);
   ModelFactoryRegistry.registerIfAbsent<Tag>(TagOrmDefinition.definition);
-  ModelFactoryRegistry.registerIfAbsent<UniqueUser>(
-    UniqueUserOrmDefinition.definition,
-  );
+  ModelFactoryRegistry.registerIfAbsent<UniqueUser>(UniqueUserOrmDefinition.definition);
   ModelFactoryRegistry.registerIfAbsent<User>(UserOrmDefinition.definition);
 }
 
@@ -157,4 +132,22 @@ void registerOrmFactories() {
 ModelRegistry buildOrmRegistryWithFactories() {
   registerOrmFactories();
   return buildOrmRegistry();
+}
+
+/// Registers generated model event handlers.
+void registerModelEventHandlers({EventBus? bus}) {
+  final _bus = bus ?? EventBus.instance;
+  registerPostEventHandlers(_bus);
+}
+
+/// Bootstraps generated ORM pieces: registry, factories, and event handlers.
+ModelRegistry bootstrapOrm({ModelRegistry? registry, EventBus? bus, bool registerFactories = true, bool registerEventHandlers = true}) {
+  final reg = registry ?? buildOrmRegistry();
+  if (registerFactories) {
+    registerOrmFactories();
+  }
+  if (registerEventHandlers) {
+    registerModelEventHandlers(bus: bus);
+  }
+  return reg;
 }

@@ -410,3 +410,7 @@ extension MutationTargetOrmExtension on MutationTarget {
     return $MutationTarget.fromModel(this);
   }
 }
+
+void registerMutationTargetEventHandlers(EventBus bus) {
+  // No event handlers registered for MutationTarget.
+}

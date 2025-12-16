@@ -570,3 +570,7 @@ extension UserOrmExtension on User {
     return $User.fromModel(this);
   }
 }
+
+void registerUserEventHandlers(EventBus bus) {
+  // No event handlers registered for User.
+}

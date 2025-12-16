@@ -346,3 +346,7 @@ extension CustomSoftDeleteOrmExtension on CustomSoftDelete {
     return $CustomSoftDelete.fromModel(this);
   }
 }
+
+void registerCustomSoftDeleteEventHandlers(EventBus bus) {
+  // No event handlers registered for CustomSoftDelete.
+}

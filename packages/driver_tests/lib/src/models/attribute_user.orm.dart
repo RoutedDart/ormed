@@ -481,3 +481,7 @@ extension AttributeUserOrmExtension on AttributeUser {
     return $AttributeUser.fromModel(this);
   }
 }
+
+void registerAttributeUserEventHandlers(EventBus bus) {
+  // No event handlers registered for AttributeUser.
+}

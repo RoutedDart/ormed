@@ -608,3 +608,13 @@ extension PostOrmExtension on Post {
     return $Post.fromModel(this);
   }
 }
+
+void registerPostEventHandlers(EventBus bus) {
+  bus.on<ModelCreatedEvent>((event) {
+    if (event is ModelEvent &&
+        event.modelType != Post &&
+        event.modelType != $Post)
+      return;
+    Post.onCreated(event);
+  });
+}

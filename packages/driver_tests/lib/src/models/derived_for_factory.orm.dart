@@ -443,3 +443,7 @@ extension DerivedForFactoryOrmExtension on DerivedForFactory {
     return $DerivedForFactory.fromModel(this);
   }
 }
+
+void registerDerivedForFactoryEventHandlers(EventBus bus) {
+  // No event handlers registered for DerivedForFactory.
+}
