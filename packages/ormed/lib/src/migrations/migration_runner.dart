@@ -1,5 +1,8 @@
 import 'package:ormed/migrations.dart';
 
+import '../events/event_bus.dart';
+import 'migration_events.dart';
+
 /// Coordinates applying and rolling back migrations using a [SchemaDriver]
 /// and ledger store.
 typedef MigrationPlanResolver =
@@ -15,6 +18,8 @@ class MigrationRunner {
     required List<MigrationDescriptor> migrations,
     MigrationPlanResolver? planResolver,
     String? defaultSchema,
+    bool emitEvents = true,
+    EventBus? events,
   }) : _schemaDriver = schemaDriver,
        _ledger = ledger,
        _migrations = List.unmodifiable(
@@ -25,7 +30,9 @@ class MigrationRunner {
            descriptor.id.toString(): descriptor,
        },
        _planResolver = planResolver ?? _defaultPlanResolver,
-       _defaultSchema = defaultSchema;
+       _defaultSchema = defaultSchema,
+       _emitEvents = emitEvents,
+       _events = events ?? EventBus.instance;
 
   final SchemaDriver _schemaDriver;
   final MigrationLedger _ledger;
@@ -33,6 +40,8 @@ class MigrationRunner {
   final Map<String, MigrationDescriptor> _descriptorById;
   final MigrationPlanResolver _planResolver;
   final String? _defaultSchema;
+  final bool _emitEvents;
+  final EventBus _events;
 
   /// Applies all pending migrations (or up to [limit]).
   Future<MigrationReport> applyAll({int? limit}) async {
@@ -51,10 +60,10 @@ class MigrationRunner {
     };
     final batch = await _ledger.nextBatchNumber();
 
-    final actions = <MigrationAction>[];
+    // Collect pending migrations first
+    final pending = <MigrationDescriptor>[];
     for (final descriptor in _migrations) {
       final key = descriptor.id.toString();
-      // Check both by full ID and by timestamp for backward compatibility
       final existing =
           appliedById[key] ??
           appliedByTimestamp[descriptor.id.timestamp.toString()];
@@ -66,25 +75,105 @@ class MigrationRunner {
         }
         continue;
       }
-      if (limit != null && actions.length >= limit) {
+      pending.add(descriptor);
+      if (limit != null && pending.length >= limit) {
         break;
+      }
+    }
+
+    if (pending.isEmpty) {
+      return const MigrationReport([]);
+    }
+
+    // Emit batch started event
+    final batchStopwatch = Stopwatch()..start();
+    if (_emitEvents) {
+      _events.emit(
+        MigrationBatchStartedEvent(
+          direction: MigrationDirection.up,
+          count: pending.length,
+          batch: batch,
+        ),
+      );
+    }
+
+    final actions = <MigrationAction>[];
+    for (var i = 0; i < pending.length; i++) {
+      final descriptor = pending[i];
+      final migrationId = descriptor.id.toString();
+      final migrationName = descriptor.id.slug;
+
+      // Emit migration started
+      if (_emitEvents) {
+        _events.emit(
+          MigrationStartedEvent(
+            migrationId: migrationId,
+            migrationName: migrationName,
+            direction: MigrationDirection.up,
+            index: i + 1,
+            total: pending.length,
+          ),
+        );
       }
 
       final appliedAt = DateTime.now().toUtc();
       final stopwatch = Stopwatch()..start();
-      final plan = await _planResolver(descriptor, MigrationDirection.up);
-      await _schemaDriver.applySchemaPlan(plan);
-      stopwatch.stop();
-      await _ledger.logApplied(descriptor, appliedAt, batch: batch);
-      actions.add(
-        MigrationAction(
-          descriptor: descriptor,
-          operation: MigrationOperation.apply,
-          appliedAt: appliedAt,
-          duration: stopwatch.elapsed,
+
+      try {
+        final plan = await _planResolver(descriptor, MigrationDirection.up);
+        await _schemaDriver.applySchemaPlan(plan);
+        stopwatch.stop();
+        await _ledger.logApplied(descriptor, appliedAt, batch: batch);
+
+        // Emit migration completed
+        if (_emitEvents) {
+          _events.emit(
+            MigrationCompletedEvent(
+              migrationId: migrationId,
+              migrationName: migrationName,
+              direction: MigrationDirection.up,
+              duration: stopwatch.elapsed,
+            ),
+          );
+        }
+
+        actions.add(
+          MigrationAction(
+            descriptor: descriptor,
+            operation: MigrationOperation.apply,
+            appliedAt: appliedAt,
+            duration: stopwatch.elapsed,
+          ),
+        );
+      } catch (error, stackTrace) {
+        stopwatch.stop();
+        // Emit migration failed
+        if (_emitEvents) {
+          _events.emit(
+            MigrationFailedEvent(
+              migrationId: migrationId,
+              migrationName: migrationName,
+              direction: MigrationDirection.up,
+              error: error,
+              stackTrace: stackTrace,
+            ),
+          );
+        }
+        rethrow;
+      }
+    }
+
+    batchStopwatch.stop();
+    if (_emitEvents) {
+      _events.emit(
+        MigrationBatchCompletedEvent(
+          direction: MigrationDirection.up,
+          count: actions.length,
+          duration: batchStopwatch.elapsed,
         ),
       );
     }
+
     return MigrationReport(actions);
   }
 
@@ -99,26 +188,99 @@ class MigrationRunner {
       return const MigrationReport([]);
     }
     final targets = applied.reversed.take(steps).toList();
+
+    // Emit batch started
+    final batchStopwatch = Stopwatch()..start();
+    if (_emitEvents) {
+      _events.emit(
+        MigrationBatchStartedEvent(
+          direction: MigrationDirection.down,
+          count: targets.length,
+          batch: null,
+        ),
+      );
+    }
+
     final actions = <MigrationAction>[];
 
-    for (final record in targets) {
+    for (var i = 0; i < targets.length; i++) {
+      final record = targets[i];
       final descriptor = _descriptorById[record.id.toString()];
       if (descriptor == null) {
         throw StateError(
           'No migration descriptor registered for ${record.id}.',
         );
       }
+
+      final migrationId = descriptor.id.toString();
+      final migrationName = descriptor.id.slug;
+
+      // Emit migration started
+      if (_emitEvents) {
+        _events.emit(
+          MigrationStartedEvent(
+            migrationId: migrationId,
+            migrationName: migrationName,
+            direction: MigrationDirection.down,
+            index: i + 1,
+            total: targets.length,
+          ),
+        );
+      }
+
       final stopwatch = Stopwatch()..start();
-      final plan = await _planResolver(descriptor, MigrationDirection.down);
-      await _schemaDriver.applySchemaPlan(plan);
-      stopwatch.stop();
-      await _ledger.remove(record.id);
-      actions.add(
-        MigrationAction(
-          descriptor: descriptor,
-          operation: MigrationOperation.rollback,
-          appliedAt: DateTime.now().toUtc(),
-          duration: stopwatch.elapsed,
+
+      try {
+        final plan = await _planResolver(descriptor, MigrationDirection.down);
+        await _schemaDriver.applySchemaPlan(plan);
+        stopwatch.stop();
+        await _ledger.remove(record.id);
+
+        // Emit migration completed
+        if (_emitEvents) {
+          _events.emit(
+            MigrationCompletedEvent(
+              migrationId: migrationId,
+              migrationName: migrationName,
+              direction: MigrationDirection.down,
+              duration: stopwatch.elapsed,
+            ),
+          );
+        }
+
+        actions.add(
+          MigrationAction(
+            descriptor: descriptor,
+            operation: MigrationOperation.rollback,
+            appliedAt: DateTime.now().toUtc(),
+            duration: stopwatch.elapsed,
+          ),
+        );
+      } catch (error, stackTrace) {
+        stopwatch.stop();
+        // Emit migration failed
+        if (_emitEvents) {
+          _events.emit(
+            MigrationFailedEvent(
+              migrationId: migrationId,
+              migrationName: migrationName,
+              direction: MigrationDirection.down,
+              error: error,
+              stackTrace: stackTrace,
+            ),
+          );
+        }
+        rethrow;
+      }
+    }
+
+    batchStopwatch.stop();
+    if (_emitEvents) {
+      _events.emit(
+        MigrationBatchCompletedEvent(
+          direction: MigrationDirection.down,
+          count: actions.length,
+          duration: batchStopwatch.elapsed,
         ),
       );
     }

@@ -346,4 +346,12 @@ export 'src/blueprint/schema_diff.dart'
         SchemaDiffSeverity,
         SchemaDiffer;
 export 'src/data_source.dart';
+
+// Events
+export 'src/events/event_bus.dart';
+export 'src/model/model_events.dart';
+export 'src/migrations/migration_events.dart';
+export 'src/seeding/seeder_events.dart';
+export 'src/seeding/seeder_runner.dart';
+
 export 'testing.dart';

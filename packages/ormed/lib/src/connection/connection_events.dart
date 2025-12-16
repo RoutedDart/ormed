@@ -1,11 +1,13 @@
+import '../events/event_bus.dart';
 import 'orm_connection.dart';
 
 /// Base class for all connection-scoped events.
 ///
-/// Provides access to the connection where the event originated,
-/// allowing listeners to access connection metadata and configuration.
-abstract class ConnectionEvent {
-  ConnectionEvent(this.connection) : connectionName = connection.name;
+/// These events integrate with the [EventBus] for global pub/sub,
+/// while also providing access to the connection where the event originated.
+abstract class ConnectionEvent extends Event {
+  ConnectionEvent(this.connection, {super.timestamp})
+      : connectionName = connection.name;
 
   /// The connection where this event occurred.
   final OrmConnection connection;
@@ -38,6 +40,7 @@ class QueryExecuted extends ConnectionEvent {
     this.rowCount,
     this.error,
     this.stackTrace,
+    super.timestamp,
   }) : super(connection);
 
   /// The SQL that was executed.
@@ -71,8 +74,8 @@ class QueryExecuted extends ConnectionEvent {
       final value = binding == null
           ? 'NULL'
           : binding is String
-          ? "'${binding.replaceAll("'", "''")}'"
-          : binding.toString();
+              ? "'${binding.replaceAll("'", "''")}'"
+              : binding.toString();
       rawSql = rawSql.replaceFirst('?', value);
     }
     return rawSql;
@@ -89,7 +92,7 @@ class QueryExecuted extends ConnectionEvent {
 /// });
 /// ```
 class TransactionBeginning extends ConnectionEvent {
-  TransactionBeginning(super.connection);
+  TransactionBeginning(super.connection, {super.timestamp});
 }
 
 /// Fired when a transaction is about to commit.
@@ -97,7 +100,7 @@ class TransactionBeginning extends ConnectionEvent {
 /// This event fires before the actual commit occurs. If you need to
 /// perform validation or logging before commit, use this event.
 class TransactionCommitting extends ConnectionEvent {
-  TransactionCommitting(super.connection);
+  TransactionCommitting(super.connection, {super.timestamp});
 }
 
 /// Fired after a transaction commits successfully.
@@ -110,7 +113,7 @@ class TransactionCommitting extends ConnectionEvent {
 /// });
 /// ```
 class TransactionCommitted extends ConnectionEvent {
-  TransactionCommitted(super.connection);
+  TransactionCommitted(super.connection, {super.timestamp});
 }
 
 /// Fired after a transaction rolls back.
@@ -124,12 +127,41 @@ class TransactionCommitted extends ConnectionEvent {
 /// });
 /// ```
 class TransactionRolledBack extends ConnectionEvent {
-  TransactionRolledBack(super.connection);
+  TransactionRolledBack(super.connection, {super.timestamp});
 }
 
 /// Fired when a new database connection is established.
 ///
 /// This is useful for connection pool monitoring and initialization tasks.
 class ConnectionEstablished extends ConnectionEvent {
-  ConnectionEstablished(super.connection);
+  ConnectionEstablished(super.connection, {super.timestamp});
+}
+
+/// Fired when connecting to a database starts.
+class ConnectionStarted extends ConnectionEvent {
+  ConnectionStarted(super.connection, {this.database, super.timestamp});
+
+  /// Database name/path.
+  final String? database;
+}
+
+/// Fired when connection fails.
+class ConnectionFailed extends ConnectionEvent {
+  ConnectionFailed(
+    super.connection, {
+    required this.error,
+    this.stackTrace,
+    super.timestamp,
+  });
+
+  /// The error that occurred.
+  final Object error;
+
+  /// Stack trace if available.
+  final StackTrace? stackTrace;
+}
+
+/// Fired when a connection is closed.
+class ConnectionClosed extends ConnectionEvent {
+  ConnectionClosed(super.connection, {super.timestamp});
 }

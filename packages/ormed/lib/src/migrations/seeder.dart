@@ -2,7 +2,9 @@ import 'dart:async';
 
 import '../connection/orm_connection.dart';
 import '../data_source.dart';
+import '../events/event_bus.dart';
 import '../model.dart';
+import '../seeding/seeder_events.dart';
 
 /// Base class for database seeders
 ///
@@ -86,9 +88,17 @@ abstract class DatabaseSeeder {
   DatabaseSeeder(this.connection);
 
   final OrmConnection connection;
+  EventBus? eventBus;
 
   /// Run the seeder
   Future<void> run();
+
+  /// Attach an event bus so nested seeders share the same emitter.
+  void attachEventBus(EventBus bus) {
+    eventBus ??= bus;
+  }
+
+  EventBus _bus() => eventBus ?? EventBus.instance;
 
   /// Seed multiple records for a given model type
   ///
@@ -129,11 +139,55 @@ abstract class DatabaseSeeder {
   Future<void> call(
     List<DatabaseSeeder Function(OrmConnection)> factories,
   ) async {
-    for (final factory in factories) {
+    final bus = _bus();
+    for (var i = 0; i < factories.length; i++) {
+      final factory = factories[i];
       final seeder = factory(connection);
-      await seeder.run();
+      seeder.attachEventBus(bus);
+      final name = seeder.runtimeType.toString();
+      final stopwatch = Stopwatch()..start();
+
+      bus.emit(
+        SeederStartedEvent(
+          seederName: name,
+          index: i + 1,
+          total: factories.length,
+        ),
+      );
+
+      try {
+        await seeder.run();
+        stopwatch.stop();
+        bus.emit(
+          SeederCompletedEvent(seederName: name, duration: stopwatch.elapsed),
+        );
+      } catch (error, stackTrace) {
+        stopwatch.stop();
+        bus.emit(
+          SeederFailedEvent(
+            seederName: name,
+            error: error,
+            stackTrace: stackTrace,
+          ),
+        );
+        rethrow;
+      }
     }
   }
+}
+
+/// Seeder registration for managing multiple seeders.
+///
+/// Used by CLI tooling and tests to register seeders by name so they can be
+/// invoked dynamically.
+class SeederRegistration {
+  const SeederRegistration({required this.name, required this.factory});
+
+  /// Unique seeder name (typically the class name).
+  final String name;
+
+  /// Factory for creating the seeder with a connection.
+  final DatabaseSeeder Function(OrmConnection) factory;
 }
 
 /// Extension on DataSource for convenient seeding

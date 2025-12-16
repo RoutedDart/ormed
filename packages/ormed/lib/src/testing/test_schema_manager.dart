@@ -6,6 +6,7 @@ import '../../migrations.dart';
 import '../connection/orm_connection.dart';
 import '../driver/driver.dart';
 import '../model_definition.dart';
+import '../seeding/seeder_runner.dart';
 
 /// Manages test schema setup with migrations and seeding support
 ///
@@ -258,27 +259,6 @@ extension SchemaDriverTestExtensions on SchemaDriver {
   }
 }
 
-/// Seeder registration for managing multiple seeders
-///
-/// Used to register and run seeders by name, useful for CLI tools
-/// and test setup.
-///
-/// Example:
-/// ```dart
-/// final seeders = [
-///   SeederRegistration(name: 'UserSeeder', factory: UserSeeder.new),
-///   SeederRegistration(name: 'PostSeeder', factory: PostSeeder.new),
-/// ];
-///
-/// await runSeederRegistry(connection, seeders, names: ['UserSeeder']);
-/// ```
-class SeederRegistration {
-  const SeederRegistration({required this.name, required this.factory});
-
-  final String name;
-  final DatabaseSeeder Function(OrmConnection) factory;
-}
-
 /// Run registered seeders on a connection
 ///
 /// Example:
@@ -300,38 +280,21 @@ Future<void> runSeederRegistry(
   bool pretend = false,
   void Function(String message)? log,
 }) async {
-  if (seeders.isEmpty) {
-    throw StateError('No seeders registered.');
-  }
-
-  final lookup = {for (final entry in seeders) entry.name: entry.factory};
-  final queue = (names == null || names.isEmpty)
-      ? <String>[seeders.first.name]
-      : names;
-
-  for (final target in queue) {
-    final factory = lookup[target];
-    if (factory == null) {
-      throw StateError('Seeder $target is not registered.');
-    }
-
-    if (pretend) {
-      final statements = await connection.pretend(() async {
-        final seeder = factory(connection);
-        await seeder.run();
-      });
-
-      if (log != null) {
-        for (final entry in statements) {
-          log('[pretend] ${_formatQueryLogEntry(entry)}');
-        }
-      }
-    } else {
-      final seeder = factory(connection);
-      await seeder.run();
-      log?.call('[seeded] $target');
-    }
-  }
+  final runner = SeederRunner();
+  await runner.run(
+    connection: connection,
+    seeders: seeders,
+    names: names,
+    pretend: pretend,
+    log: log,
+    onPretendQueries: log == null
+        ? null
+        : (entries) {
+            for (final entry in entries) {
+              log('[pretend] ${_formatQueryLogEntry(entry)}');
+            }
+          },
+  );
 }
 
 /// Format a query log entry for display

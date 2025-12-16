@@ -86,6 +86,62 @@ void main() {
       expect(report.actions.single.descriptor.id, descriptors.last.id);
       expect(schemaDriver.appliedPlans.last, 'down:add_posts');
     });
+
+    test('emits events when applying migrations', () async {
+      final bus = EventBus();
+      final events = <Event>[];
+      final subscription = bus.allEvents.listen(events.add);
+
+      final runner = MigrationRunner(
+        schemaDriver: schemaDriver,
+        ledger: ledger,
+        migrations: descriptors,
+        events: bus,
+      );
+
+      await runner.applyAll();
+      await subscription.cancel();
+      await bus.dispose();
+
+      expect(events.whereType<MigrationBatchStartedEvent>(), hasLength(1));
+      expect(events.whereType<MigrationStartedEvent>(), hasLength(2));
+      expect(events.whereType<MigrationCompletedEvent>(), hasLength(2));
+      final batchCompleted = events
+          .whereType<MigrationBatchCompletedEvent>()
+          .single;
+      expect(batchCompleted.count, 2);
+      expect(batchCompleted.direction, MigrationDirection.up);
+    });
+
+    test('emits events when rolling back migrations', () async {
+      final bus = EventBus();
+      final events = <Event>[];
+      final subscription = bus.allEvents.listen(events.add);
+
+      final runner = MigrationRunner(
+        schemaDriver: schemaDriver,
+        ledger: ledger,
+        migrations: descriptors,
+        events: bus,
+      );
+
+      await runner.applyAll();
+      events.clear();
+
+      await runner.rollback(steps: 1);
+      await subscription.cancel();
+      await bus.dispose();
+
+      expect(events.whereType<MigrationBatchStartedEvent>(), hasLength(1));
+      expect(events.whereType<MigrationStartedEvent>(), hasLength(1));
+      expect(events.whereType<MigrationCompletedEvent>(), hasLength(1));
+      expect(events.whereType<MigrationFailedEvent>(), isEmpty);
+      final batchCompleted = events
+          .whereType<MigrationBatchCompletedEvent>()
+          .single;
+      expect(batchCompleted.direction, MigrationDirection.down);
+      expect(batchCompleted.count, 1);
+    });
   });
 }
 
