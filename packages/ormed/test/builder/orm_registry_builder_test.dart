@@ -9,12 +9,14 @@ void main() {
         importPath: 'src/user.dart',
         definition: 'UserOrmDefinition.definition',
         hasFactory: false,
+        hasEventHandlers: false,
       ),
       ModelSummary(
         className: 'Post',
         importPath: 'src/post.dart',
         definition: 'PostOrmDefinition.definition',
         hasFactory: false,
+        hasEventHandlers: false,
       ),
     ]);
 
@@ -34,12 +36,14 @@ void main() {
           importPath: 'src/user.dart',
           definition: 'UserOrmDefinition.definition',
           hasFactory: true,
+          hasEventHandlers: false,
         ),
         ModelSummary(
           className: 'Post',
           importPath: 'src/post.dart',
           definition: 'PostOrmDefinition.definition',
           hasFactory: false,
+          hasEventHandlers: false,
         ),
       ]);
 

@@ -38,6 +38,7 @@ class _OrmRegistryBuilder implements Builder {
       final className = data['className'] as String?;
       final definition = data['definition'] as String?;
       final hasFactory = data['hasFactory'] as bool? ?? false;
+      final hasEventHandlers = data['hasEventHandlers'] as bool? ?? false;
       if (importPath == null ||
           className == null ||
           definition == null ||
@@ -50,6 +51,7 @@ class _OrmRegistryBuilder implements Builder {
           importPath: importPath,
           definition: definition,
           hasFactory: hasFactory,
+          hasEventHandlers: hasEventHandlers,
         ),
       );
     }
@@ -163,6 +165,41 @@ String renderRegistryContent(List<ModelSummary> models) {
     ..writeln('  return buildOrmRegistry();')
     ..writeln('}');
 
+  // Generate event handler registration if any model declares handlers
+  final handlerModels = summaries
+      .where((summary) => summary.hasEventHandlers)
+      .toList();
+  buffer.writeln('');
+  buffer.writeln('/// Registers generated model event handlers.');
+  buffer.writeln('void registerModelEventHandlers({EventBus? bus}) {');
+  if (handlerModels.isEmpty) {
+    buffer.writeln('  // No model event handlers were generated.');
+  } else {
+    buffer.writeln('  final _bus = bus ?? EventBus.instance;');
+    for (final summary in handlerModels) {
+      buffer.writeln('  register${summary.className}EventHandlers(_bus);');
+    }
+  }
+  buffer.writeln('}');
+
+  // Unified bootstrap helper
+  buffer.writeln('');
+  buffer.writeln(
+    '/// Bootstraps generated ORM pieces: registry, factories, and event handlers.',
+  );
+  buffer.writeln(
+    'ModelRegistry bootstrapOrm({ModelRegistry? registry, EventBus? bus, bool registerFactories = true, bool registerEventHandlers = true}) {',
+  );
+  buffer.writeln('  final reg = registry ?? buildOrmRegistry();');
+  buffer.writeln('  if (registerFactories) {');
+  buffer.writeln('    registerOrmFactories();');
+  buffer.writeln('  }');
+  buffer.writeln('  if (registerEventHandlers) {');
+  buffer.writeln('    registerModelEventHandlers(bus: bus);');
+  buffer.writeln('  }');
+  buffer.writeln('  return reg;');
+  buffer.writeln('}');
+
   return buffer.toString();
 }
 
@@ -172,10 +209,12 @@ class ModelSummary {
     required this.importPath,
     required this.definition,
     required this.hasFactory,
+    required this.hasEventHandlers,
   });
 
   final String className;
   final String importPath;
   final String definition;
   final bool hasFactory;
+  final bool hasEventHandlers;
 }

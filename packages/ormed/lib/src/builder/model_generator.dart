@@ -13,6 +13,7 @@ import 'emitters/model_factory_emitter.dart';
 import 'emitters/model_dto_emitter.dart';
 import 'emitters/model_partial_emitter.dart';
 import 'emitters/model_subclass_emitter.dart';
+import 'emitters/model_event_handler_emitter.dart';
 
 import 'model_context.dart';
 import 'model_helper.dart';
@@ -55,6 +56,7 @@ class OrmModelGenerator extends GeneratorForAnnotation<OrmModel> {
     buffer.writeln(ModelDtoEmitter(context).emit());
     buffer.writeln(ModelPartialEmitter(context).emit());
     buffer.writeln(ModelSubclassEmitter(context).emit());
+    buffer.writeln(ModelEventHandlerEmitter(context).emit());
 
     await _writeModelSummary(buildStep, context);
     return buffer.toString();
@@ -72,6 +74,7 @@ class OrmModelGenerator extends GeneratorForAnnotation<OrmModel> {
       'import': relativeImport.replaceAll(r'\', '/'),
       'definition': '${context.className}OrmDefinition.definition',
       'hasFactory': context.hasFactory,
+      'hasEventHandlers': context.hasEventHandlers,
     });
     final outputId = inputId.changeExtension('.orm_model.json');
     await buildStep.writeAsString(outputId, summary);

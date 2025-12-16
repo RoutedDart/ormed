@@ -15,6 +15,15 @@ final _modelChecker = TypeChecker.fromUrl('package:ormed/src/model.dart#Model');
 final _hasFactoryChecker = TypeChecker.fromUrl(
   'package:ormed/src/annotations.dart#HasFactory',
 );
+final _ormEventChecker = TypeChecker.fromUrl(
+  'package:ormed/src/annotations.dart#OrmEvent',
+);
+final _eventChecker = TypeChecker.fromUrl(
+  'package:ormed/src/events/event_bus.dart#Event',
+);
+final _modelEventChecker = TypeChecker.fromUrl(
+  'package:ormed/src/model/model_events.dart#ModelEvent',
+);
 
 /// Checks if the class has the @HasFactory() annotation.
 bool _hasFactoryAnnotation(ClassElement element) {
@@ -101,6 +110,7 @@ class ModelContext {
 
     _markPrimaryKeyFallback(fields);
     constructor = _resolveConstructor();
+    eventHandlers = _collectEventHandlers();
   }
 
   final ConstantReader annotation;
@@ -133,12 +143,16 @@ class ModelContext {
   late final List<FieldDescriptor> fields;
   late final List<RelationDescriptor> relations;
   late final List<ScopeDescriptor> scopes;
+  late final List<EventHandlerDescriptor> eventHandlers;
   late final String? softDeleteColumn;
   late final bool effectiveSoftDeletes;
   late final ConstructorElement constructor;
 
   /// Whether this model has factory support enabled via mixin or annotation.
   bool get hasFactory => mixinModelFactory || annotationHasFactory;
+
+  /// Whether this model declares any @OrmEvent handlers.
+  bool get hasEventHandlers => eventHandlers.isNotEmpty;
 
   /// Returns the generated tracked model class name.
   /// Always just adds $ prefix to the class name.
@@ -463,15 +477,68 @@ class ModelContext {
       if (!method.isStatic) continue;
       final annotation = readAnnotation(method, 'OrmScope');
       if (annotation == null) continue;
+      final exec = method as ExecutableElement;
 
       scopes.add(
-        ScopeDescriptor(
-          name: method.name!,
-          parameters: (method as dynamic).parameters,
-        ),
+        ScopeDescriptor(name: method.name!, parameters: exec.formalParameters),
       );
     }
     return scopes;
+  }
+
+  List<EventHandlerDescriptor> _collectEventHandlers() {
+    final handlers = <EventHandlerDescriptor>[];
+    for (final method in element.methods) {
+      final annotation = _ormEventChecker.firstAnnotationOf(method);
+      if (annotation == null) continue;
+      final exec = method as ExecutableElement;
+
+      if (!method.isStatic) {
+        throw InvalidGenerationSourceError(
+          '@OrmEvent handlers must be static: ${method.displayName}',
+          element: method,
+        );
+      }
+
+      final reader = ConstantReader(annotation);
+      final eventTypeObj = reader.peek('eventType');
+      final eventType = eventTypeObj?.typeValue;
+      if (eventType == null || !_eventChecker.isAssignableFromType(eventType)) {
+        throw InvalidGenerationSourceError(
+          '@OrmEvent requires an event type that extends Event.',
+          element: method,
+        );
+      }
+
+      final positional = exec.formalParameters
+          .where((p) => p.isRequiredPositional)
+          .toList();
+      if (positional.length != 1) {
+        throw InvalidGenerationSourceError(
+          '@OrmEvent handler must accept exactly one positional parameter.',
+          element: method,
+        );
+      }
+      final paramType = positional.single.type;
+      final eventTypeChecker = TypeChecker.fromStatic(eventType);
+      if (!eventTypeChecker.isAssignableFromType(paramType)) {
+        throw InvalidGenerationSourceError(
+          '@OrmEvent handler parameter type must match the declared event type.',
+          element: method,
+        );
+      }
+
+      handlers.add(
+        EventHandlerDescriptor(
+          owner: className,
+          methodName: method.displayName,
+          eventType: eventType,
+          isStatic: method.isStatic,
+          isModelEvent: _modelEventChecker.isAssignableFromType(eventType),
+        ),
+      );
+    }
+    return handlers;
   }
 
   RelationKind _readRelationKind(DartObject? object) {

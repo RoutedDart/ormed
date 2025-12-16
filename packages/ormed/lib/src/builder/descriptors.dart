@@ -132,3 +132,22 @@ class ScopeDescriptor {
   final String name;
   final List<dynamic> parameters;
 }
+
+class EventHandlerDescriptor {
+  EventHandlerDescriptor({
+    required this.owner,
+    required this.methodName,
+    required this.eventType,
+    required this.isStatic,
+    required this.isModelEvent,
+  });
+
+  final String owner;
+  final String methodName;
+  final DartType eventType;
+  final bool isStatic;
+  final bool isModelEvent;
+
+  String get registrationFunction =>
+      'register${owner}EventHandlers'; // convention
+}

@@ -199,6 +199,22 @@ class OrmDriverFieldOverride {
   final Type? codec;
 }
 
+/// Marks a model method as a handler for a specific event type.
+///
+/// Usage:
+/// ```dart
+/// @OrmEvent(ModelCreatedEvent)
+/// static void onCreated(ModelCreatedEvent event) {
+///   // handle creation
+/// }
+/// ```
+class OrmEvent {
+  const OrmEvent(this.eventType);
+
+  /// The event type this handler responds to.
+  final Type eventType;
+}
+
 /// Relationship descriptor applied to fields referencing other models.
 @immutable
 class OrmRelation {
