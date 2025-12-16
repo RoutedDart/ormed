@@ -1,5 +1,6 @@
 import 'package:analyzer/dart/element/type.dart';
 import 'package:analyzer/dart/element/nullability_suffix.dart';
+import 'package:analyzer/dart/element/element.dart';
 import 'package:ormed/src/annotations.dart';
 import 'package:ormed/src/model_definition.dart';
 
@@ -127,10 +128,17 @@ class RelationDescriptor {
 }
 
 class ScopeDescriptor {
-  ScopeDescriptor({required this.name, required this.parameters});
+  ScopeDescriptor({
+    required this.name,
+    required this.identifier,
+    required this.parameters,
+    required this.isGlobal,
+  });
 
   final String name;
-  final List<dynamic> parameters;
+  final String identifier;
+  final List<FormalParameterElement> parameters;
+  final bool isGlobal;
 }
 
 class EventHandlerDescriptor {

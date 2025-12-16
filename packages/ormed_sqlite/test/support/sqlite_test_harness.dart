@@ -38,10 +38,9 @@ Future<SqliteTestHarness> createSqliteTestHarness({
   bool logging = true,
   bool enableNamedTimezones = true,
 }) async {
-  registerOrmFactories();
   SqliteDriverAdapter.registerCodecs();
 
-  final registry = buildOrmRegistry();
+  final registry = bootstrapOrm();
 
   // Custom codecs used by driver_tests fixtures.
   final customCodecs = <String, ValueCodec<dynamic>>{
@@ -74,6 +73,7 @@ Future<SqliteTestHarness> createSqliteTestHarness({
   if (logging) {
     dataSource.enableQueryLog();
   }
+
   setUpOrmed(
     dataSource: dataSource,
     migrationDescriptors: driverTestMigrationEntries

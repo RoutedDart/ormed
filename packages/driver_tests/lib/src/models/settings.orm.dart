@@ -261,6 +261,10 @@ class $Setting extends Setting with ModelAttributes implements OrmEntity {
     return $Setting(id: model.id, payload: model.payload);
   }
 
+  $Setting copyWith({int? id, Map<String, dynamic>? payload}) {
+    return $Setting(id: id ?? this.id, payload: payload ?? this.payload);
+  }
+
   @override
   int get id => getAttribute<int>('id') ?? super.id;
 

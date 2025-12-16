@@ -263,6 +263,10 @@ class $Image extends Image with ModelAttributes implements OrmEntity {
     return $Image(id: model.id, label: model.label);
   }
 
+  $Image copyWith({int? id, String? label}) {
+    return $Image(id: id ?? this.id, label: label ?? this.label);
+  }
+
   @override
   int get id => getAttribute<int>('id') ?? super.id;
 

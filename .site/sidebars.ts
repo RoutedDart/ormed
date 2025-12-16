@@ -23,6 +23,7 @@ const sidebars: SidebarsConfig = {
         'models/relationships',
         'models/timestamps',
         'models/soft-deletes',
+        'models/scopes',
         'models/events',
         'models/model-methods',
         'models/factories',

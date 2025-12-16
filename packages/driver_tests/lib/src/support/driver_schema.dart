@@ -88,6 +88,13 @@ final List<MigrationEntry> driverTestMigrationEntries = [
     ),
     migration: const CreateCustomSoftDeleteModelsTable(),
   ),
+  MigrationEntry(
+    id: MigrationId(
+      DateTime.utc(2023, 1, 1, 0, 0, 16),
+      'create_scoped_users_table',
+    ),
+    migration: const CreateScopedUsersTable(),
+  ),
 ];
 
 /// Create a test schema manager for driver tests

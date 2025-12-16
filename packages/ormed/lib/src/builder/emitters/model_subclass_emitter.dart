@@ -114,6 +114,28 @@ class ModelSubclassEmitter {
     buffer.writeln('    );');
     buffer.writeln('  }\n');
 
+    // copyWith helper for immutable updates
+    if (context.constructor.formalParameters.every((p) => p.isNamed)) {
+      buffer.writeln('  $modelSubclassName copyWith({');
+      for (final field in context.fields.where((f) => !f.isVirtual)) {
+        final paramType = field.resolvedType.endsWith('?')
+            ? field.resolvedType
+            : '${field.resolvedType}?';
+        buffer.writeln(
+          '    $paramType ${field.name},',
+        );
+      }
+      buffer.writeln('  }) {');
+      buffer.writeln('    return $modelSubclassName(');
+      for (final field in context.fields.where((f) => !f.isVirtual)) {
+        buffer.writeln(
+          "      ${field.name}: ${field.name} ?? this.${field.name},",
+        );
+      }
+      buffer.writeln('    );');
+      buffer.writeln('  }\n');
+    }
+
     for (final field in context.fields.where((f) => !f.isVirtual)) {
       buffer.writeln('  @override');
       buffer.writeln(
@@ -248,7 +270,188 @@ class ModelSubclassEmitter {
     // setAttribute() only exists on the generated subclass (via ModelAttributes mixin).
     // Users should use the generated model type or access via repository/query builder.
 
+    // Generate scope extensions and registrations
+    if (context.scopes.isNotEmpty) {
+      buffer.writeln(_emitScopeExtensions());
+      buffer.writeln(_emitScopeRegistrations());
+    }
+
     return buffer.toString();
+  }
+
+  String _emitScopeExtensions() {
+    final buffer = StringBuffer();
+    final className = context.className;
+    final trackedName = context.trackedModelClassName;
+    buffer.writeln('extension ${trackedName}Scopes on Query<$trackedName> {');
+    for (final scope in context.scopes) {
+      final signature = _scopeMethodSignature(scope);
+      final call = _scopeInvocation(
+        scope,
+        receiver: className,
+        firstArgument: 'this',
+      );
+      buffer.writeln(
+        '  Query<$trackedName> ${scope.name}$signature => ($call) as Query<$trackedName>;',
+      );
+    }
+    buffer.writeln('}');
+    buffer.writeln();
+
+    return buffer.toString();
+  }
+
+  String _emitScopeRegistrations() {
+    final buffer = StringBuffer();
+    final className = context.className;
+    final trackedName = context.trackedModelClassName;
+    buffer.writeln('void register${className}Scopes(ScopeRegistry registry) {');
+
+    for (final scope in context.scopes) {
+      final identifier = scope.identifier;
+      if (scope.isGlobal) {
+        buffer.writeln('  registry.addGlobalScope<$trackedName>(');
+        buffer.writeln("    '$identifier',");
+        buffer.writeln('    (query) => query.${scope.name}(),');
+        buffer.writeln('  );');
+      } else {
+        buffer.writeln("  registry.addLocalScope<$trackedName>('$identifier',");
+        buffer.writeln('    (query, args) {');
+        final tail = scope.parameters.skip(1).toList();
+        final call = StringBuffer('      return query.${scope.name}(');
+        int index = 0;
+        for (final param in tail.where((p) => !p.isNamed)) {
+          call.write('args[$index] as ${param.type.getDisplayString(withNullability: true)}, ');
+          index++;
+        }
+        for (final param in tail.where((p) => p.isNamed)) {
+          final typeStr = param.type.getDisplayString(withNullability: true);
+          if (param.isRequiredNamed) {
+            call.write('${param.displayName}: args[$index] as $typeStr, ');
+          } else {
+            call.write(
+              '${param.displayName}: args.length > $index ? args[$index] as $typeStr : ${param.defaultValueCode ?? 'null'}, ',
+            );
+          }
+          index++;
+        }
+        call.write(');');
+        buffer.writeln(call.toString());
+        buffer.writeln('    },');
+        buffer.writeln('  );');
+      }
+    }
+
+    buffer.writeln('}');
+    buffer.writeln();
+    return buffer.toString();
+  }
+
+  String _scopeMethodSignature(ScopeDescriptor scope) {
+    final tail = scope.parameters.skip(1).toList();
+    if (tail.isEmpty) return '()';
+
+    final requiredPos = tail.where((p) => p.isRequiredPositional).toList();
+    final optionalPos = tail.where((p) => p.isOptionalPositional).toList();
+    final named = tail.where((p) => p.isNamed).toList();
+
+    final buffer = StringBuffer('(');
+    // required positional
+    for (final param in requiredPos) {
+      buffer.write(
+        '${param.type.getDisplayString(withNullability: true)} ${param.displayName}, ',
+      );
+    }
+    // optional positional
+    if (optionalPos.isNotEmpty) {
+      buffer.write('[');
+      for (final param in optionalPos) {
+        buffer.write(
+          '${param.type.getDisplayString(withNullability: true)} ${param.displayName}',
+        );
+        if (param.defaultValueCode != null) {
+          buffer.write(' = ${param.defaultValueCode}');
+        }
+        buffer.write(', ');
+      }
+      buffer.write(']');
+    }
+    // named
+    if (named.isNotEmpty) {
+      buffer.write('{');
+      for (final param in named) {
+        if (param.isRequiredNamed) {
+          buffer.write('required ');
+        }
+        buffer.write(
+          '${param.type.getDisplayString(withNullability: true)} ${param.displayName}',
+        );
+        if (param.defaultValueCode != null) {
+          buffer.write(' = ${param.defaultValueCode}');
+        }
+        buffer.write(', ');
+      }
+      buffer.write('}');
+    }
+
+    buffer.write(')');
+    return buffer.toString();
+  }
+
+  String _scopeInvocation(
+    ScopeDescriptor scope, {
+    String receiver = '',
+    String? argsSource,
+    String firstArgument = 'this',
+    bool includeOptional = true,
+  }) {
+    final target = receiver.isEmpty ? scope.name : '$receiver.${scope.name}';
+    final tail = scope.parameters.skip(1).toList();
+    if (tail.isEmpty || !includeOptional) {
+      return '$target($firstArgument)';
+    }
+
+    // If argsSource is null, use parameter names (for extensions).
+    if (argsSource == null) {
+      final call = StringBuffer('$target($firstArgument');
+      for (final param in tail.where((p) => !p.isNamed)) {
+        call.write(', ${param.displayName}');
+      }
+      for (final param in tail.where((p) => p.isNamed)) {
+        call.write(', ${param.displayName}: ${param.displayName}');
+      }
+      call.write(')');
+      return call.toString();
+    }
+
+    // Otherwise use args list.
+    final call = StringBuffer('$target($firstArgument');
+    int index = 0;
+    for (final param in tail.where((p) => !p.isNamed)) {
+      final hasArg = '$argsSource.length > $index';
+      final defaultExpr = param.defaultValueCode ?? 'null';
+      final valueExpr = param.isOptionalPositional
+          ? '($hasArg ? $argsSource[$index] : $defaultExpr)'
+          : '$argsSource[$index]';
+      call.write(
+        ', $valueExpr as ${param.type.getDisplayString(withNullability: true)}',
+      );
+      index++;
+    }
+    final named = tail.where((p) => p.isNamed).toList();
+    for (final param in named) {
+      final hasArg = '$argsSource.length > $index';
+      final defaultExpr = param.defaultValueCode ?? 'null';
+      final valueExpr = param.isRequiredNamed
+          ? '$argsSource[$index]'
+          : '($hasArg ? $argsSource[$index] : $defaultExpr)';
+      call.write(
+        ', ${param.displayName}: $valueExpr as ${param.type.getDisplayString(withNullability: true)}',
+      );
+      index++;
+    }
+    call.write(')');
+    return call.toString();
   }
 
   String _constructorParameters(

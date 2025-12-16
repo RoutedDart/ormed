@@ -302,6 +302,14 @@ class $UniqueUser extends UniqueUser with ModelAttributes implements OrmEntity {
     return $UniqueUser(id: model.id, email: model.email, active: model.active);
   }
 
+  $UniqueUser copyWith({int? id, String? email, bool? active}) {
+    return $UniqueUser(
+      id: id ?? this.id,
+      email: email ?? this.email,
+      active: active ?? this.active,
+    );
+  }
+
   @override
   int get id => getAttribute<int>('id') ?? super.id;
 

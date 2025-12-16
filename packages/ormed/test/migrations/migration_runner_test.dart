@@ -1,4 +1,3 @@
-import 'package:ormed/migrations.dart';
 import 'package:ormed/ormed.dart';
 import 'package:test/test.dart';
 

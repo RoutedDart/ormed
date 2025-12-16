@@ -264,6 +264,10 @@ class $SerialTest extends SerialTest with ModelAttributes implements OrmEntity {
     return $SerialTest(id: model.id, label: model.label);
   }
 
+  $SerialTest copyWith({int? id, String? label}) {
+    return $SerialTest(id: id ?? this.id, label: label ?? this.label);
+  }
+
   @override
   int get id => getAttribute<int>('id') ?? super.id;
 

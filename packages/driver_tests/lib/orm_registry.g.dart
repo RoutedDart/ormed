@@ -18,6 +18,7 @@ import 'src/models/no_factory.dart';
 import 'src/models/photo.dart';
 import 'src/models/post.dart';
 import 'src/models/post_tag.dart';
+import 'src/models/scoped_user.dart';
 import 'src/models/serial_test.dart';
 import 'src/models/settings.dart';
 import 'src/models/tag.dart';
@@ -42,6 +43,7 @@ final List<ModelDefinition<OrmEntity>> _$ormModelDefinitions = [
   PhotoOrmDefinition.definition,
   PostOrmDefinition.definition,
   PostTagOrmDefinition.definition,
+  ScopedUserOrmDefinition.definition,
   SerialTestOrmDefinition.definition,
   SettingOrmDefinition.definition,
   TagOrmDefinition.definition,
@@ -68,11 +70,12 @@ ModelRegistry buildOrmRegistry() => ModelRegistry()
   ..registerTypeAlias<Photo>(_$ormModelDefinitions[14])
   ..registerTypeAlias<Post>(_$ormModelDefinitions[15])
   ..registerTypeAlias<PostTag>(_$ormModelDefinitions[16])
-  ..registerTypeAlias<SerialTest>(_$ormModelDefinitions[17])
-  ..registerTypeAlias<Setting>(_$ormModelDefinitions[18])
-  ..registerTypeAlias<Tag>(_$ormModelDefinitions[19])
-  ..registerTypeAlias<UniqueUser>(_$ormModelDefinitions[20])
-  ..registerTypeAlias<User>(_$ormModelDefinitions[21])
+  ..registerTypeAlias<ScopedUser>(_$ormModelDefinitions[17])
+  ..registerTypeAlias<SerialTest>(_$ormModelDefinitions[18])
+  ..registerTypeAlias<Setting>(_$ormModelDefinitions[19])
+  ..registerTypeAlias<Tag>(_$ormModelDefinitions[20])
+  ..registerTypeAlias<UniqueUser>(_$ormModelDefinitions[21])
+  ..registerTypeAlias<User>(_$ormModelDefinitions[22])
   ;
 
 List<ModelDefinition<OrmEntity>> get generatedOrmModelDefinitions =>
@@ -98,11 +101,12 @@ extension GeneratedOrmModels on ModelRegistry {
     registerTypeAlias<Photo>(_$ormModelDefinitions[14]);
     registerTypeAlias<Post>(_$ormModelDefinitions[15]);
     registerTypeAlias<PostTag>(_$ormModelDefinitions[16]);
-    registerTypeAlias<SerialTest>(_$ormModelDefinitions[17]);
-    registerTypeAlias<Setting>(_$ormModelDefinitions[18]);
-    registerTypeAlias<Tag>(_$ormModelDefinitions[19]);
-    registerTypeAlias<UniqueUser>(_$ormModelDefinitions[20]);
-    registerTypeAlias<User>(_$ormModelDefinitions[21]);
+    registerTypeAlias<ScopedUser>(_$ormModelDefinitions[17]);
+    registerTypeAlias<SerialTest>(_$ormModelDefinitions[18]);
+    registerTypeAlias<Setting>(_$ormModelDefinitions[19]);
+    registerTypeAlias<Tag>(_$ormModelDefinitions[20]);
+    registerTypeAlias<UniqueUser>(_$ormModelDefinitions[21]);
+    registerTypeAlias<User>(_$ormModelDefinitions[22]);
     return this;
   }
 }
@@ -146,14 +150,23 @@ void registerModelEventHandlers({EventBus? bus}) {
   registerPostEventHandlers(_bus);
 }
 
-/// Bootstraps generated ORM pieces: registry, factories, and event handlers.
-ModelRegistry bootstrapOrm({ModelRegistry? registry, EventBus? bus, bool registerFactories = true, bool registerEventHandlers = true}) {
+/// Registers generated model scopes into a [ScopeRegistry].
+void registerModelScopes({ScopeRegistry? scopeRegistry}) {
+  final _registry = scopeRegistry ?? ScopeRegistry();
+  registerScopedUserScopes(_registry);
+}
+
+/// Bootstraps generated ORM pieces: registry, factories, event handlers, and scopes.
+ModelRegistry bootstrapOrm({ModelRegistry? registry, EventBus? bus, ScopeRegistry? scopes, bool registerFactories = true, bool registerEventHandlers = true, bool registerScopes = true}) {
   final reg = registry ?? buildOrmRegistry();
   if (registerFactories) {
     registerOrmFactories();
   }
   if (registerEventHandlers) {
     registerModelEventHandlers(bus: bus);
+  }
+  if (registerScopes) {
+    registerModelScopes(scopeRegistry: scopes);
   }
   return reg;
 }

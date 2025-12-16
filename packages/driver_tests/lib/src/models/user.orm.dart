@@ -508,6 +508,28 @@ class $User extends User with ModelAttributes implements OrmEntity {
     );
   }
 
+  $User copyWith({
+    int? id,
+    String? email,
+    bool? active,
+    String? name,
+    int? age,
+    DateTime? createdAt,
+    Map<String, Object?>? profile,
+    Map<String, Object?>? metadata,
+  }) {
+    return $User(
+      id: id ?? this.id,
+      email: email ?? this.email,
+      active: active ?? this.active,
+      name: name ?? this.name,
+      age: age ?? this.age,
+      createdAt: createdAt ?? this.createdAt,
+      profile: profile ?? this.profile,
+      metadata: metadata ?? this.metadata,
+    );
+  }
+
   @override
   int get id => getAttribute<int>('id') ?? super.id;
 

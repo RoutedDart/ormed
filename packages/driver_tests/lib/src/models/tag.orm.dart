@@ -256,6 +256,10 @@ class $Tag extends Tag with ModelAttributes implements OrmEntity {
     return $Tag(id: model.id, label: model.label);
   }
 
+  $Tag copyWith({int? id, String? label}) {
+    return $Tag(id: id ?? this.id, label: label ?? this.label);
+  }
+
   @override
   int get id => getAttribute<int>('id') ?? super.id;
 

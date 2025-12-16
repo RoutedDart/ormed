@@ -75,6 +75,7 @@ class OrmModelGenerator extends GeneratorForAnnotation<OrmModel> {
       'definition': '${context.className}OrmDefinition.definition',
       'hasFactory': context.hasFactory,
       'hasEventHandlers': context.hasEventHandlers,
+      'hasScopes': context.scopes.isNotEmpty,
     });
     final outputId = inputId.changeExtension('.orm_model.json');
     await buildStep.writeAsString(outputId, summary);

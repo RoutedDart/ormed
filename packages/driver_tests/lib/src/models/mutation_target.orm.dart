@@ -371,6 +371,20 @@ class $MutationTarget extends MutationTarget
     );
   }
 
+  $MutationTarget copyWith({
+    String? id,
+    String? name,
+    bool? active,
+    String? category,
+  }) {
+    return $MutationTarget(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      active: active ?? this.active,
+      category: category ?? this.category,
+    );
+  }
+
   @override
   String get id => getAttribute<String>('_id') ?? super.id;
 

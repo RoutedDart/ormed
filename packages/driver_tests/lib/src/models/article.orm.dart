@@ -564,6 +564,30 @@ class $Article extends Article with ModelAttributes implements OrmEntity {
     );
   }
 
+  $Article copyWith({
+    int? id,
+    String? title,
+    String? body,
+    String? status,
+    double? rating,
+    int? priority,
+    DateTime? publishedAt,
+    DateTime? reviewedAt,
+    int? categoryId,
+  }) {
+    return $Article(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      body: body ?? this.body,
+      status: status ?? this.status,
+      rating: rating ?? this.rating,
+      priority: priority ?? this.priority,
+      publishedAt: publishedAt ?? this.publishedAt,
+      reviewedAt: reviewedAt ?? this.reviewedAt,
+      categoryId: categoryId ?? this.categoryId,
+    );
+  }
+
   @override
   int get id => getAttribute<int>('id') ?? super.id;
 

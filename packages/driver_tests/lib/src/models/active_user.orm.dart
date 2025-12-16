@@ -378,6 +378,20 @@ class $ActiveUser extends ActiveUser
     );
   }
 
+  $ActiveUser copyWith({
+    int? id,
+    String? email,
+    String? name,
+    Map<String, Object?>? settings,
+  }) {
+    return $ActiveUser(
+      id: id ?? this.id,
+      email: email ?? this.email,
+      name: name ?? this.name,
+      settings: settings ?? this.settings,
+    );
+  }
+
   @override
   int? get id => getAttribute<int?>('id') ?? super.id;
 

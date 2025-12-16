@@ -518,6 +518,24 @@ class $Post extends Post
     );
   }
 
+  $Post copyWith({
+    int? id,
+    int? authorId,
+    String? title,
+    String? content,
+    int? views,
+    DateTime? publishedAt,
+  }) {
+    return $Post(
+      id: id ?? this.id,
+      authorId: authorId ?? this.authorId,
+      title: title ?? this.title,
+      content: content ?? this.content,
+      views: views ?? this.views,
+      publishedAt: publishedAt ?? this.publishedAt,
+    );
+  }
+
   @override
   int get id => getAttribute<int>('id') ?? super.id;
 

@@ -22,3 +22,4 @@ export 'post_tag.dart';
 export 'article.dart';
 export 'driver_override_entry.dart';
 export 'event_model.dart';
+export 'scoped_user.dart';

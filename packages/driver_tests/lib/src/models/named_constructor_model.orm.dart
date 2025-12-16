@@ -351,6 +351,14 @@ class $NamedConstructorModel extends NamedConstructorModel
     );
   }
 
+  $NamedConstructorModel copyWith({int? id, String? name, int? value}) {
+    return $NamedConstructorModel(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      value: value ?? this.value,
+    );
+  }
+
   @override
   int? get id => getAttribute<int?>('id') ?? super.id;
 

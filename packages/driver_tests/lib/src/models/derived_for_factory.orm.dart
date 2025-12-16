@@ -400,6 +400,20 @@ class $DerivedForFactory extends DerivedForFactory
     );
   }
 
+  $DerivedForFactory copyWith({
+    bool? layerTwoFlag,
+    Map<String, Object?>? layerOneNotes,
+    int? id,
+    String? baseName,
+  }) {
+    return $DerivedForFactory(
+      layerTwoFlag: layerTwoFlag ?? this.layerTwoFlag,
+      layerOneNotes: layerOneNotes ?? this.layerOneNotes,
+      id: id ?? this.id,
+      baseName: baseName ?? this.baseName,
+    );
+  }
+
   @override
   bool? get layerTwoFlag =>
       getAttribute<bool?>('layerTwoFlag') ?? super.layerTwoFlag;

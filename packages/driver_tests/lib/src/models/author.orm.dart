@@ -351,6 +351,14 @@ class $Author extends Author
     return $Author(id: model.id, name: model.name, active: model.active);
   }
 
+  $Author copyWith({int? id, String? name, bool? active}) {
+    return $Author(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      active: active ?? this.active,
+    );
+  }
+
   @override
   int get id => getAttribute<int>('id') ?? super.id;
 

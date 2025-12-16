@@ -352,7 +352,7 @@ void main() {
       );
 
       expect(copied.driver, same(driver2));
-      expect(copied.entities, isEmpty);
+      expect(copied.entities, equals(registry.allDefinitions));
       expect(copied.name, 'new-name');
       expect(copied.database, 'new-db');
       expect(copied.tablePrefix, 'new_');

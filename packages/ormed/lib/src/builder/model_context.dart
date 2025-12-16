@@ -1,5 +1,6 @@
 import 'package:analyzer/dart/constant/value.dart';
 import 'package:analyzer/dart/element/element.dart';
+import 'package:analyzer/dart/element/type.dart';
 import 'package:analyzer/dart/element/nullability_suffix.dart';
 
 import 'package:collection/collection.dart';
@@ -82,8 +83,7 @@ class ModelContext {
     }
 
     relations = _collectRelations();
-    scopes =
-        []; // _collectScopes(); // TODO: Re-enable scopes after fixing ParameterElement type issue
+    scopes = _collectScopes();
 
     final softDeleteFields = fields
         .where((field) => field.isSoftDelete)
@@ -474,13 +474,61 @@ class ModelContext {
   List<ScopeDescriptor> _collectScopes() {
     final scopes = <ScopeDescriptor>[];
     for (final method in element.methods) {
-      if (!method.isStatic) continue;
       final annotation = readAnnotation(method, 'OrmScope');
       if (annotation == null) continue;
-      final exec = method as ExecutableElement;
+
+      if (!method.isStatic) {
+        throw InvalidGenerationSourceError(
+          '@OrmScope methods must be static: ${method.displayName}',
+          element: method,
+        );
+      }
+
+      final parameters = method.formalParameters;
+
+      // Validate first parameter: required positional Query<model>
+      if (parameters.isEmpty) {
+        throw InvalidGenerationSourceError(
+          '@OrmScope requires a Query parameter: ${method.displayName}',
+          element: method,
+        );
+      }
+      final first = parameters.first;
+      final firstType = first.type;
+      final isQueryType =
+          firstType is InterfaceType && firstType.element.name == 'Query';
+      if (!first.isRequiredPositional || !isQueryType) {
+        throw InvalidGenerationSourceError(
+          '@OrmScope methods must accept Query<T> as the first positional parameter.',
+          element: method,
+        );
+      }
+
+      final identifier =
+          annotation.peek('identifier')?.stringValue ?? method.displayName;
+      final isGlobal = annotation.peek('global')?.boolValue ?? false;
+
+      if (isGlobal) {
+        // Global scopes cannot accept additional required parameters beyond
+        // the Query<T> argument because they are applied automatically.
+        final extraRequired = parameters
+            .skip(1)
+            .where((p) => p.isRequiredPositional || p.isRequiredNamed);
+        if (extraRequired.isNotEmpty) {
+          throw InvalidGenerationSourceError(
+            '@OrmScope(global: true) cannot declare required parameters beyond the Query<T> argument.',
+            element: method,
+          );
+        }
+      }
 
       scopes.add(
-        ScopeDescriptor(name: method.name!, parameters: exec.formalParameters),
+        ScopeDescriptor(
+          name: method.displayName,
+          identifier: identifier,
+          parameters: parameters,
+          isGlobal: isGlobal,
+        ),
       );
     }
     return scopes;

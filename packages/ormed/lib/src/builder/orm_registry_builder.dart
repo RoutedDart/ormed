@@ -39,6 +39,7 @@ class _OrmRegistryBuilder implements Builder {
       final definition = data['definition'] as String?;
       final hasFactory = data['hasFactory'] as bool? ?? false;
       final hasEventHandlers = data['hasEventHandlers'] as bool? ?? false;
+      final hasScopes = data['hasScopes'] as bool? ?? false;
       if (importPath == null ||
           className == null ||
           definition == null ||
@@ -52,6 +53,7 @@ class _OrmRegistryBuilder implements Builder {
           definition: definition,
           hasFactory: hasFactory,
           hasEventHandlers: hasEventHandlers,
+          hasScopes: hasScopes,
         ),
       );
     }
@@ -182,13 +184,30 @@ String renderRegistryContent(List<ModelSummary> models) {
   }
   buffer.writeln('}');
 
+  // Scope registration if any scopes exist.
+  final scopeModels = summaries.where((summary) => summary.hasScopes).toList();
+  buffer.writeln('');
+  buffer.writeln(
+    '/// Registers generated model scopes into a [ScopeRegistry].',
+  );
+  buffer.writeln('void registerModelScopes({ScopeRegistry? scopeRegistry}) {');
+  if (scopeModels.isEmpty) {
+    buffer.writeln('  // No model scopes were generated.');
+  } else {
+    buffer.writeln('  final _registry = scopeRegistry ?? ScopeRegistry();');
+    for (final summary in scopeModels) {
+      buffer.writeln('  register${summary.className}Scopes(_registry);');
+    }
+  }
+  buffer.writeln('}');
+
   // Unified bootstrap helper
   buffer.writeln('');
   buffer.writeln(
-    '/// Bootstraps generated ORM pieces: registry, factories, and event handlers.',
+    '/// Bootstraps generated ORM pieces: registry, factories, event handlers, and scopes.',
   );
   buffer.writeln(
-    'ModelRegistry bootstrapOrm({ModelRegistry? registry, EventBus? bus, bool registerFactories = true, bool registerEventHandlers = true}) {',
+    'ModelRegistry bootstrapOrm({ModelRegistry? registry, EventBus? bus, ScopeRegistry? scopes, bool registerFactories = true, bool registerEventHandlers = true, bool registerScopes = true}) {',
   );
   buffer.writeln('  final reg = registry ?? buildOrmRegistry();');
   buffer.writeln('  if (registerFactories) {');
@@ -196,6 +215,9 @@ String renderRegistryContent(List<ModelSummary> models) {
   buffer.writeln('  }');
   buffer.writeln('  if (registerEventHandlers) {');
   buffer.writeln('    registerModelEventHandlers(bus: bus);');
+  buffer.writeln('  }');
+  buffer.writeln('  if (registerScopes) {');
+  buffer.writeln('    registerModelScopes(scopeRegistry: scopes);');
   buffer.writeln('  }');
   buffer.writeln('  return reg;');
   buffer.writeln('}');
@@ -210,6 +232,7 @@ class ModelSummary {
     required this.definition,
     required this.hasFactory,
     required this.hasEventHandlers,
+    required this.hasScopes,
   });
 
   final String className;
@@ -217,4 +240,5 @@ class ModelSummary {
   final String definition;
   final bool hasFactory;
   final bool hasEventHandlers;
+  final bool hasScopes;
 }

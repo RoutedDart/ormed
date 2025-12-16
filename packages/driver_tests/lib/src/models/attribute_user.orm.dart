@@ -436,6 +436,22 @@ class $AttributeUser extends AttributeUser
     );
   }
 
+  $AttributeUser copyWith({
+    int? id,
+    String? email,
+    String? secret,
+    String? role,
+    Map<String, Object?>? profile,
+  }) {
+    return $AttributeUser(
+      id: id ?? this.id,
+      email: email ?? this.email,
+      secret: secret ?? this.secret,
+      role: role ?? this.role,
+      profile: profile ?? this.profile,
+    );
+  }
+
   @override
   int get id => getAttribute<int>('id') ?? super.id;
 

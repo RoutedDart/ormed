@@ -84,9 +84,9 @@ class OrmField {
     this.hidden,
     this.visible,
     this.cast,
-    this.insertable,
-    this.updatable,
-    this.defaultDartValue,
+    // this.insertable,
+    // this.updatable,
+    // this.defaultDartValue,
   });
 
   /// Explicit column name override.
@@ -127,57 +127,57 @@ class OrmField {
   final bool? hidden;
   final bool? visible;
   final String? cast;
-
-  /// Whether this field should be included in INSERT statements.
-  ///
-  /// Defaults to `true`. When `null`, the generator will infer:
-  /// - `false` for auto-increment fields
-  /// - `false` for database-generated columns
-  /// - `true` otherwise
-  ///
-  /// **Deprecated:** Use generated `InsertDto` types instead of controlling
-  /// insertion behavior through this flag. The DTO approach provides better
-  /// type safety and clearer intent. This flag is honored for backward
-  /// compatibility but may be removed in a future major version.
-  @Deprecated(
-    'Use generated InsertDto types instead. '
-    'See migration guide at docs/dto_migration.md',
-  )
-  final bool? insertable;
-
-  /// Whether this field should be included in UPDATE statements.
-  ///
-  /// Defaults to `true`. When `null`, the generator will infer:
-  /// - `false` for primary key fields (typically shouldn't change)
-  /// - `false` for database-generated columns
-  /// - `true` otherwise
-  ///
-  /// **Deprecated:** Use generated `UpdateDto` types instead of controlling
-  /// update behavior through this flag. The DTO approach provides better
-  /// type safety and clearer intent. This flag is honored for backward
-  /// compatibility but may be removed in a future major version.
-  @Deprecated(
-    'Use generated UpdateDto types instead. '
-    'See migration guide at docs/dto_migration.md',
-  )
-  final bool? updatable;
-
-  /// Default Dart value used when creating new model instances.
-  ///
-  /// For auto-increment int fields, this typically defaults to a sentinel
-  /// value (e.g., -1 or 0) to indicate "not yet assigned".
-  ///
-  /// Example: `@OrmField(autoIncrement: true, defaultDartValue: -1)`
-  ///
-  /// **Deprecated:** Use generated `InsertDto` types instead of sentinel
-  /// values for handling auto-increment fields. The DTO approach eliminates
-  /// the need for sentinel values entirely. This flag is honored for backward
-  /// compatibility but may be removed in a future major version.
-  @Deprecated(
-    'Use generated InsertDto types instead of sentinel values. '
-    'See migration guide at docs/dto_migration.md',
-  )
-  final Object? defaultDartValue;
+  //
+  // /// Whether this field should be included in INSERT statements.
+  // ///
+  // /// Defaults to `true`. When `null`, the generator will infer:
+  // /// - `false` for auto-increment fields
+  // /// - `false` for database-generated columns
+  // /// - `true` otherwise
+  // ///
+  // /// **Deprecated:** Use generated `InsertDto` types instead of controlling
+  // /// insertion behavior through this flag. The DTO approach provides better
+  // /// type safety and clearer intent. This flag is honored for backward
+  // /// compatibility but may be removed in a future major version.
+  // @Deprecated(
+  //   'Use generated InsertDto types instead. '
+  //   'See migration guide at docs/dto_migration.md',
+  // )
+  // final bool? insertable;
+  //
+  // /// Whether this field should be included in UPDATE statements.
+  // ///
+  // /// Defaults to `true`. When `null`, the generator will infer:
+  // /// - `false` for primary key fields (typically shouldn't change)
+  // /// - `false` for database-generated columns
+  // /// - `true` otherwise
+  // ///
+  // /// **Deprecated:** Use generated `UpdateDto` types instead of controlling
+  // /// update behavior through this flag. The DTO approach provides better
+  // /// type safety and clearer intent. This flag is honored for backward
+  // /// compatibility but may be removed in a future major version.
+  // @Deprecated(
+  //   'Use generated UpdateDto types instead. '
+  //   'See migration guide at docs/dto_migration.md',
+  // )
+  // final bool? updatable;
+  //
+  // /// Default Dart value used when creating new model instances.
+  // ///
+  // /// For auto-increment int fields, this typically defaults to a sentinel
+  // /// value (e.g., -1 or 0) to indicate "not yet assigned".
+  // ///
+  // /// Example: `@OrmField(autoIncrement: true, defaultDartValue: -1)`
+  // ///
+  // /// **Deprecated:** Use generated `InsertDto` types instead of sentinel
+  // /// values for handling auto-increment fields. The DTO approach eliminates
+  // /// the need for sentinel values entirely. This flag is honored for backward
+  // /// compatibility but may be removed in a future major version.
+  // @Deprecated(
+  //   'Use generated InsertDto types instead of sentinel values. '
+  //   'See migration guide at docs/dto_migration.md',
+  // )
+  // final Object? defaultDartValue;
 }
 
 /// Describes driver-specific overrides for a model field.
@@ -239,6 +239,24 @@ class OrmRelation {
   final String? pivotRelatedKey;
   final String? morphType;
   final String? morphClass;
+}
+
+/// Marks a static model method as a query scope.
+///
+/// A scope must accept `Query<T>` as its first required positional parameter.
+/// Set [global] to `true` to have the scope applied automatically to all
+/// queries for the model; otherwise it is registered as a local scope that can
+/// be invoked explicitly.
+@immutable
+class OrmScope {
+  const OrmScope({this.identifier, this.global = false});
+
+  /// Optional explicit identifier used when registering the scope.
+  /// Defaults to the method name.
+  final String? identifier;
+
+  /// Whether this scope is registered as a global scope.
+  final bool global;
 }
 
 /// Supported relationship kinds mirrored after Eloquent/GORM semantics.

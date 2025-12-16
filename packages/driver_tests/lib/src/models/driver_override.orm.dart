@@ -307,6 +307,13 @@ class $DriverOverrideModel extends DriverOverrideModel
     return $DriverOverrideModel(id: model.id, payload: model.payload);
   }
 
+  $DriverOverrideModel copyWith({int? id, Map<String, Object?>? payload}) {
+    return $DriverOverrideModel(
+      id: id ?? this.id,
+      payload: payload ?? this.payload,
+    );
+  }
+
   @override
   int get id => getAttribute<int>('id') ?? super.id;
 

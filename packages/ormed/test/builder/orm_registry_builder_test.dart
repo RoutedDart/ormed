@@ -10,6 +10,7 @@ void main() {
         definition: 'UserOrmDefinition.definition',
         hasFactory: false,
         hasEventHandlers: false,
+        hasScopes: false,
       ),
       ModelSummary(
         className: 'Post',
@@ -17,6 +18,7 @@ void main() {
         definition: 'PostOrmDefinition.definition',
         hasFactory: false,
         hasEventHandlers: false,
+        hasScopes: false,
       ),
     ]);
 
@@ -37,6 +39,7 @@ void main() {
           definition: 'UserOrmDefinition.definition',
           hasFactory: true,
           hasEventHandlers: false,
+          hasScopes: false,
         ),
         ModelSummary(
           className: 'Post',
@@ -44,6 +47,7 @@ void main() {
           definition: 'PostOrmDefinition.definition',
           hasFactory: false,
           hasEventHandlers: false,
+          hasScopes: false,
         ),
       ]);
 
@@ -61,4 +65,21 @@ void main() {
       expect(content, contains('buildOrmRegistryWithFactories()'));
     },
   );
+
+  test('renderRegistryContent outputs registerModelScopes when needed', () {
+    final content = renderRegistryContent([
+      ModelSummary(
+        className: 'User',
+        importPath: 'src/user.dart',
+        definition: 'UserOrmDefinition.definition',
+        hasFactory: false,
+        hasEventHandlers: false,
+        hasScopes: true,
+      ),
+    ]);
+
+    expect(content, contains('void registerModelScopes'));
+    expect(content, contains('registerUserScopes(_registry);'));
+    expect(content, contains('registerModelScopes(scopeRegistry: scopes);'));
+  });
 }

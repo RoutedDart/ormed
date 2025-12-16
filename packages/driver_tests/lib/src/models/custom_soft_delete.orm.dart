@@ -316,6 +316,10 @@ class $CustomSoftDelete extends CustomSoftDelete
     return $CustomSoftDelete(id: model.id, title: model.title);
   }
 
+  $CustomSoftDelete copyWith({int? id, String? title}) {
+    return $CustomSoftDelete(id: id ?? this.id, title: title ?? this.title);
+  }
+
   @override
   int get id => getAttribute<int>('id') ?? super.id;
 

@@ -179,11 +179,9 @@ class DataSource {
   /// Creates a new data source with the given configuration options.
   DataSource(this.options)
     : _registry = options.registry ?? ModelRegistry(),
-      _codecRegistry = ValueCodecRegistry.instance {
-    // Register custom codecs
-    for (final entry in options.codecs.entries) {
-      _codecRegistry.registerCodec(key: entry.key, codec: entry.value);
-    }
+      _codecRegistry = ValueCodecRegistry.instance
+          .fork(codecs: options.codecs) {
+    // no-op: codecs applied via fork above
   }
 
   /// The configuration options for this data source.

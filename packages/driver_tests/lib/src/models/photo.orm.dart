@@ -374,6 +374,20 @@ class $Photo extends Photo with ModelAttributes implements OrmEntity {
     );
   }
 
+  $Photo copyWith({
+    int? id,
+    int? imageableId,
+    String? imageableType,
+    String? path,
+  }) {
+    return $Photo(
+      id: id ?? this.id,
+      imageableId: imageableId ?? this.imageableId,
+      imageableType: imageableType ?? this.imageableType,
+      path: path ?? this.path,
+    );
+  }
+
   @override
   int get id => getAttribute<int>('id') ?? super.id;
 

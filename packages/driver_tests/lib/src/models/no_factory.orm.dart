@@ -248,6 +248,10 @@ class $NoFactory extends NoFactory
     return $NoFactory(id: model.id);
   }
 
+  $NoFactory copyWith({int? id}) {
+    return $NoFactory(id: id ?? this.id);
+  }
+
   @override
   int? get id => getAttribute<int?>('id') ?? super.id;
 

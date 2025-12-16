@@ -275,6 +275,10 @@ class $Comment extends Comment
     return $Comment(id: model.id, body: model.body);
   }
 
+  $Comment copyWith({int? id, String? body}) {
+    return $Comment(id: id ?? this.id, body: body ?? this.body);
+  }
+
   @override
   int get id => getAttribute<int>('id') ?? super.id;
 

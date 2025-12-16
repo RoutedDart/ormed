@@ -265,6 +265,10 @@ class $PostTag extends PostTag with ModelAttributes implements OrmEntity {
     return $PostTag(postId: model.postId, tagId: model.tagId);
   }
 
+  $PostTag copyWith({int? postId, int? tagId}) {
+    return $PostTag(postId: postId ?? this.postId, tagId: tagId ?? this.tagId);
+  }
+
   @override
   int get postId => getAttribute<int>('post_id') ?? super.postId;
 
