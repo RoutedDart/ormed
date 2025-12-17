@@ -29,10 +29,12 @@ jobs:
       - uses: dart-lang/setup-dart@v1
         with:
           sdk: stable
-      - name: Install dependencies
+      - name: Install package dependencies
+        working-directory: packages/ormed
         run: dart pub get
-      - name: Run core ORM tests
-        run: dart test packages/ormed/test
+      - name: Run SQLite driver tests
+        working-directory: packages/ormed
+        run: dart test --concurrency=1 --reporter=expanded
 
   sqlite:
     runs-on: ubuntu-latest
