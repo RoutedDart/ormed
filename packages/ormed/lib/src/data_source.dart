@@ -2,13 +2,9 @@ import 'dart:async';
 
 import 'carbon_config.dart';
 import 'connection/connection.dart';
-import 'connection/connection_manager.dart';
-import 'connection/orm_connection.dart';
-import 'driver/driver.dart';
 import 'contracts.dart';
-import 'model.dart';
-import 'model_definition.dart';
-import 'model_registry.dart';
+import 'driver/driver.dart';
+import 'model/model.dart';
 import 'query/query.dart';
 import 'repository/repository.dart';
 import 'value_codec.dart';

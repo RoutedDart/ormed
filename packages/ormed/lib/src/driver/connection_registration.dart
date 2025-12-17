@@ -8,7 +8,7 @@ import 'package:path/path.dart' as p;
 
 import '../connection/connection_handle.dart';
 import '../connection/connection_manager.dart';
-import '../model_registry.dart';
+import '../model/model_registry.dart';
 import '../orm_project_config.dart';
 import 'driver_registry.dart';
 

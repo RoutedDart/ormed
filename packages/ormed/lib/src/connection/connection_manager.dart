@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'connection.dart';
-import 'orm_connection.dart';
 
 typedef OrmConnectionBuilder = OrmConnection Function(ConnectionConfig config);
 typedef ConnectionReleaseHook =

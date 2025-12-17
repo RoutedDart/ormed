@@ -1,8 +1,8 @@
 import 'dart:async';
 
-import 'exceptions.dart';
-import 'contracts.dart';
-import 'model_definition.dart';
+import '../contracts.dart';
+import '../exceptions.dart';
+import 'model.dart';
 
 /// Simple registry to share model definitions across the app/runtime.
 class ModelRegistry {

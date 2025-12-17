@@ -6,7 +6,7 @@ import 'dart:io';
 
 import '../connection/connection_handle.dart';
 import '../connection/connection_manager.dart';
-import '../model_registry.dart';
+import '../model/model_registry.dart';
 import '../orm_project_config.dart';
 
 /// Signature used by drivers to register an `OrmConnection` for a tenant.

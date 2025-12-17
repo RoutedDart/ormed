@@ -1,7 +1,7 @@
+import 'package:ormed/src/model/model.dart';
+
 import '../contracts.dart';
 import '../driver/json_update_clause.dart';
-import '../model_definition.dart';
-import '../model_mixins/model_attributes.dart';
 import '../query/json_path.dart' as json_path;
 
 typedef JsonUpdateBuilder<T extends OrmEntity> =

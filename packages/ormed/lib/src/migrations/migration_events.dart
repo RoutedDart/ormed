@@ -3,8 +3,8 @@
 /// These events are emitted during migration operations.
 library;
 
-import '../events/event_bus.dart';
 import '../blueprint/migration.dart' show MigrationDirection;
+import '../events/event_bus.dart';
 
 // Re-export MigrationDirection for convenience
 export '../blueprint/migration.dart' show MigrationDirection;

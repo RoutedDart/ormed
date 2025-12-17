@@ -1,4 +1,4 @@
-import '../model_definition.dart';
+import '../model.dart';
 
 /// Mirrors Laravel-style attribute guards, hidden lists, and casts.
 ///

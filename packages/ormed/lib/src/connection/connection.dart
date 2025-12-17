@@ -1,5 +1,9 @@
 import 'dart:math';
 
+export 'connection_manager.dart';
+export 'connection_resolver.dart';
+export 'orm_connection.dart';
+
 /// Indicates which connection role should be established.
 enum ConnectionRole { primary, read, write }
 

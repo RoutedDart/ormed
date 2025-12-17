@@ -3,11 +3,10 @@ import 'dart:math';
 
 import 'package:carbonized/carbonized.dart';
 
+import '../contracts.dart';
+import '../query/query.dart';
+import '../value_codec.dart';
 import 'model.dart';
-import 'model_definition.dart';
-import 'contracts.dart';
-import 'query/query.dart';
-import 'value_codec.dart';
 
 /// Signature for state transformation closures.
 typedef StateTransformer<TModel extends OrmEntity> =

@@ -1,10 +1,8 @@
 import 'package:carbonized/carbonized.dart' show Carbon;
-
 import 'package:carbonized/carbonized.dart';
+import 'package:ormed/src/model/model.dart';
 
 import '../contracts.dart';
-import '../model_definition.dart';
-import '../model_mixins/model_attributes.dart';
 import '../value_codec.dart';
 
 /// Shared helper for normalizing mutation inputs (values/where) across

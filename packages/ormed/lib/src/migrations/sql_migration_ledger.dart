@@ -1,9 +1,8 @@
 import 'package:ormed/migrations.dart';
 
 import '../connection/connection.dart';
-import '../connection/connection_manager.dart';
 import '../driver/driver.dart';
-import '../model_registry.dart';
+import '../model/model_registry.dart';
 import '../query/query.dart';
 
 /// Generic SQL ledger that persists migrations inside a driver-managed table.

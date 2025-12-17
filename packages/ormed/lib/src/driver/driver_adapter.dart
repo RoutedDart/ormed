@@ -2,15 +2,13 @@
 /// executor abstractions.
 library;
 
+import 'package:ormed/src/driver/compiler/plan_compiler.dart';
 import 'package:ormed/src/driver/driver_metadata.dart';
-import 'package:ormed/src/driver/mutation_plan.dart';
-import 'package:ormed/src/driver/mutation_result.dart';
-import 'package:ormed/src/driver/plan_compiler.dart';
-import 'package:ormed/src/driver/statement_preview.dart';
-
-import 'package:ormed/src/value_codec.dart';
+import 'package:ormed/src/driver/mutation/mutation_plan.dart';
+import 'package:ormed/src/driver/mutation/mutation_result.dart';
+import 'package:ormed/src/driver/statement/statement_preview.dart';
 import 'package:ormed/src/query/query.dart';
-import 'package:ormed/src/query/query_plan.dart';
+import 'package:ormed/src/value_codec.dart';
 
 /// Handles the lifecycle of connections and query execution for a specific
 /// backend.

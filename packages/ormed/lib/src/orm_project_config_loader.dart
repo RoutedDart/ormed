@@ -3,9 +3,9 @@ library;
 
 import 'dart:io';
 
-import 'package:yaml/yaml.dart';
-import 'package:meta/meta.dart';
 import 'package:dotenv/dotenv.dart' as dotenv;
+import 'package:meta/meta.dart';
+import 'package:yaml/yaml.dart';
 
 import 'orm_project_config.dart';
 

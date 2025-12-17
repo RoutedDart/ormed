@@ -1,8 +1,8 @@
-import 'package:analyzer/dart/element/type.dart';
-import 'package:analyzer/dart/element/nullability_suffix.dart';
 import 'package:analyzer/dart/element/element.dart';
+import 'package:analyzer/dart/element/nullability_suffix.dart';
+import 'package:analyzer/dart/element/type.dart';
 import 'package:ormed/src/annotations.dart';
-import 'package:ormed/src/model_definition.dart';
+import 'package:ormed/src/model/model_definition.dart';
 
 import 'helpers.dart';
 

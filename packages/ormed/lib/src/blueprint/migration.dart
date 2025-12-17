@@ -15,6 +15,7 @@ abstract class Migration {
   const Migration();
 
   FutureOr<void> up(SchemaBuilder schema);
+
   FutureOr<void> down(SchemaBuilder schema);
 
   /// Builds a plan for the requested direction.

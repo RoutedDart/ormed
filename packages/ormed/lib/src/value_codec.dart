@@ -1,15 +1,16 @@
 import 'dart:convert';
 
 import 'package:carbonized/carbonized.dart';
+import 'package:ormed/src/model/model.dart';
 
 import 'exceptions.dart';
-import 'model_definition.dart';
 
 /// Converts between backend driver payloads and Dart values.
 abstract class ValueCodec<TDart> {
   const ValueCodec();
 
   Object? encode(TDart? value);
+
   TDart? decode(Object? value);
 }
 

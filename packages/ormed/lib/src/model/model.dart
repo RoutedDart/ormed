@@ -6,24 +6,25 @@ import 'dart:convert';
 import 'package:carbonized/carbonized.dart';
 import 'package:ormed/src/annotations.dart';
 
-import 'connection/connection.dart';
-import 'connection/connection_manager.dart';
-import 'connection/connection_resolver.dart';
-import 'connection/orm_connection.dart';
-import 'driver/driver.dart';
-import 'contracts.dart';
+import '../connection/connection.dart';
+import '../contracts.dart';
+import '../driver/driver.dart';
+import '../query/query.dart';
+import '../repository/repository.dart';
+import '../value_codec.dart';
+import 'model.dart';
 import 'model_definition.dart';
 import 'model_factory.dart';
-import 'model_mixins/model_attributes.dart';
-import 'model_mixins/model_connection.dart';
-import 'model_mixins/model_relations.dart';
 import 'model_registry.dart';
-import 'query/query.dart';
-import 'query/query_plan.dart';
-import 'query/relation_loader.dart';
-import 'query/relation_resolver.dart';
-import 'repository/repository.dart';
-import 'value_codec.dart';
+
+export 'model_mixins/model_mixins.dart';
+export 'model_companion.dart';
+export 'model_definition.dart';
+export 'model_events.dart';
+export 'model_extensions.dart';
+export 'model_factory.dart';
+export 'model_factory_connection.dart';
+export 'model_registry.dart';
 
 typedef ConnectionResolverFactory =
     ConnectionResolver Function(String connectionName);
@@ -68,6 +69,7 @@ abstract class Model<TModel extends Model<TModel>>
 
   // ignore: unused_element
   bool get _exists => _modelExists[this] ?? false;
+
   set _exists(bool value) => _modelExists[this] = value;
 
   /// Check if the model exists in the database.

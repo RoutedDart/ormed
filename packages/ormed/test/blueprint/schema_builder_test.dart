@@ -1,5 +1,5 @@
 import 'package:ormed/migrations.dart';
-import 'package:ormed/src/model_definition.dart';
+import 'package:ormed/src/model/model.dart';
 import 'package:ormed/src/value_codec.dart';
 import 'package:test/test.dart';
 

@@ -1,5 +1,5 @@
-import 'package:ormed/src/driver/sql_statement_payload.dart';
-import 'package:ormed/src/driver/statement_payload.dart';
+import 'package:ormed/src/driver/statement/sql_statement_payload.dart';
+import 'package:ormed/src/driver/statement/statement_payload.dart';
 
 /// Preview of a statement produced by a plan compiler.
 class StatementPreview {

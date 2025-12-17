@@ -13,6 +13,7 @@ import 'timestamps.dart';
 /// apply this implementation to the generated tracked model class.
 mixin TimestampsImpl on ModelAttributes {
   String get _createdAtColumn => Timestamps.defaultCreatedAtColumn;
+
   String get _updatedAtColumn => Timestamps.defaultUpdatedAtColumn;
 
   /// Timestamp when the model was created.
@@ -61,6 +62,7 @@ mixin TimestampsImpl on ModelAttributes {
 /// apply this implementation to the generated tracked model class.
 mixin TimestampsTZImpl on ModelAttributes {
   String get _createdAtColumn => TimestampsTZ.defaultCreatedAtColumn;
+
   String get _updatedAtColumn => TimestampsTZ.defaultUpdatedAtColumn;
 
   /// Timestamp when the model was created (UTC).

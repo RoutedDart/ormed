@@ -1,20 +1,16 @@
 import 'dart:async';
 
-import '../driver/driver.dart';
+import 'package:ormed/src/model/model.dart';
+
 import '../contracts.dart';
-import '../model_definition.dart';
-import '../model_registry.dart';
-import '../query/query.dart';
-import '../query/query_plan.dart';
-import '../repository/repository.dart';
-import '../value_codec.dart';
-import '../migrations/sql_migration_ledger.dart';
+import '../driver/driver.dart';
 import '../migrations/migration_runner.dart';
 import '../migrations/migration_status.dart';
+import '../migrations/sql_migration_ledger.dart';
+import '../query/query.dart';
+import '../repository/repository.dart';
+import '../value_codec.dart';
 import 'connection.dart';
-import 'connection_events.dart';
-import 'connection_manager.dart';
-import 'connection_resolver.dart';
 
 export 'connection_events.dart';
 

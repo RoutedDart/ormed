@@ -30,8 +30,11 @@ class ExecutingStatement {
   final String? connectionTablePrefix;
 
   String get sql => preview.sql;
+
   List<Object?> get parameters => preview.parameters;
+
   List<List<Object?>> get parameterSets => preview.parameterSets;
+
   String get sqlWithBindings => preview.sqlWithBindings;
 }
 

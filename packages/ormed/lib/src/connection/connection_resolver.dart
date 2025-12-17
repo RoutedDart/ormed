@@ -1,8 +1,8 @@
 import 'package:ormed/src/driver/driver.dart'
     show DriverAdapter, MutationPlan, MutationResult, StatementPreview;
-import 'package:ormed/src/model_registry.dart' show ModelRegistry;
-import 'package:ormed/src/value_codec.dart' show ValueCodecRegistry;
+import 'package:ormed/src/model/model_registry.dart' show ModelRegistry;
 import 'package:ormed/src/query/query_plan.dart' show QueryPlan;
+import 'package:ormed/src/value_codec.dart' show ValueCodecRegistry;
 
 /// Describes a runtime context capable of executing ORM queries.
 abstract class ConnectionResolver {

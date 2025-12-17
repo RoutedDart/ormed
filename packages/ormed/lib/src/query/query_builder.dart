@@ -6,18 +6,12 @@ import 'package:meta/meta.dart' show visibleForTesting;
 import 'package:ormed/src/query/plan/join_definition.dart';
 import 'package:ormed/src/query/plan/join_target.dart';
 import 'package:ormed/src/query/plan/join_type.dart';
-import 'package:ormed/src/query/query_plan.dart';
-import 'package:ormed/src/query/relation_loader.dart';
-import 'package:ormed/src/query/relation_resolver.dart';
 
 import '../core/orm_config.dart';
 import '../events/event_bus.dart';
 import '../driver/driver.dart';
 import '../exceptions.dart';
-import '../model_definition.dart';
-import '../model/model_events.dart';
-import '../model_mixins/model_attributes.dart';
-import '../model_mixins/model_connection.dart';
+import 'package:ormed/src/model/model.dart';
 import '../mutation/mutation_input_helper.dart';
 import '../mutation/json_update.dart';
 import '../contracts.dart';
@@ -25,30 +19,55 @@ import 'json_path.dart' as json_path;
 import 'query.dart';
 
 part 'builder/aggregate.dart';
+
 part 'builder/batch.dart';
+
 part 'builder/caching.dart';
+
 part 'builder/crud.dart';
+
 part 'builder/distinct.dart';
+
 part 'builder/grouping.dart';
+
 part 'builder/helper.dart';
+
 part 'builder/index.dart';
+
 part 'builder/join.dart';
+
 part 'builder/json.dart';
+
 part 'builder/json_builder.dart';
+
 part 'builder/lock.dart';
+
 part 'builder/models.dart';
+
 part 'builder/order.dart';
+
 part 'builder/paginate.dart';
+
 part 'builder/predicate.dart';
+
 part 'builder/raw.dart';
+
 part 'builder/relation.dart';
+
 part 'builder/scope.dart';
+
 part 'builder/select.dart';
+
 part 'builder/soft_delete.dart';
+
 part 'builder/streaming.dart';
+
 part 'builder/subquery.dart';
+
 part 'builder/union.dart';
+
 part 'builder/utility.dart';
+
 part 'builder/where.dart';
 
 /// Fluent builder for filtering, ordering, paginating, and eager-loading

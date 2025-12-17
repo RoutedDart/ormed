@@ -1,6 +1,6 @@
+import 'package:ormed/src/model/model.dart';
 import 'package:ormed/src/query/plan/join_definition.dart';
 
-import '../model_definition.dart';
 import '../contracts.dart';
 import 'json_path.dart';
 
@@ -335,7 +335,9 @@ class JoinCondition {
 
   bool get isColumnComparison =>
       left != null && right != null && rawSql == null && value == null;
+
   bool get isValueComparison => left != null && value != null && rawSql == null;
+
   bool get isRaw => rawSql != null;
 }
 
@@ -590,6 +592,7 @@ class RelationSegment {
   final bool expectSingleResult;
 
   bool get usesPivot => pivotTable != null;
+
   bool get usesMorph => morphTypeColumn != null;
 }
 

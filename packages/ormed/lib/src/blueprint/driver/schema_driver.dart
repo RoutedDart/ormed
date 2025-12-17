@@ -1,5 +1,4 @@
 import '../schema_plan.dart';
-
 import 'schema_column.dart';
 import 'schema_foreign_key.dart';
 import 'schema_index.dart';

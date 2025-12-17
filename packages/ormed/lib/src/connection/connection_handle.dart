@@ -1,8 +1,6 @@
 import 'dart:async';
 
 import 'connection.dart';
-import 'connection_manager.dart';
-import 'orm_connection.dart';
 
 /// Lightweight handle returned when registering a named [OrmConnection].
 class OrmConnectionHandle {

@@ -184,6 +184,7 @@ class OrmMigrationRecordModelFactory {
 
 class _$OrmMigrationRecordCodec extends ModelCodec<$OrmMigrationRecord> {
   const _$OrmMigrationRecordCodec();
+
   @override
   Map<String, Object?> encode(
     $OrmMigrationRecord model,
@@ -262,6 +263,7 @@ class OrmMigrationRecordInsertDto implements InsertDto<$OrmMigrationRecord> {
     this.appliedAt,
     this.batch,
   });
+
   final String? id;
   final String? checksum;
   final DateTime? appliedAt;
@@ -288,6 +290,7 @@ class OrmMigrationRecordUpdateDto implements UpdateDto<$OrmMigrationRecord> {
     this.appliedAt,
     this.batch,
   });
+
   final String? id;
   final String? checksum;
   final DateTime? appliedAt;

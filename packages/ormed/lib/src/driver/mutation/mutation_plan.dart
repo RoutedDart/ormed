@@ -1,8 +1,8 @@
-import 'package:ormed/src/driver/json_update_clause.dart';
-import 'package:ormed/src/driver/mutation_operation.dart';
-import 'package:ormed/src/driver/mutation_row.dart';
 import 'package:ormed/src/contracts.dart';
-import 'package:ormed/src/model_definition.dart';
+import 'package:ormed/src/driver/json_update_clause.dart';
+import 'package:ormed/src/driver/mutation/mutation_operation.dart';
+import 'package:ormed/src/driver/mutation/mutation_row.dart';
+import 'package:ormed/src/model/model.dart';
 import 'package:ormed/src/query/query_plan.dart';
 
 /// Description of a write operation to execute against a driver.

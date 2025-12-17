@@ -2,27 +2,25 @@
 library;
 
 import 'package:carbonized/carbonized.dart';
+import 'package:ormed/src/model/model.dart';
 
-import '../driver/driver.dart';
 import '../contracts.dart';
-import '../model_definition.dart';
-import '../model_mixins/model_attributes.dart';
-import '../model/model_events.dart';
+import '../driver/driver.dart';
+import '../events/event_bus.dart';
 import '../mutation/json_update.dart';
 import '../mutation/mutation_input_helper.dart';
-import '../events/event_bus.dart';
-import '../value_codec.dart';
 import '../query/query.dart';
+import '../value_codec.dart';
 
-// Part files for repository mixins
-part 'repository_insert_mixin.dart';
-part 'repository_update_mixin.dart';
-part 'repository_upsert_mixin.dart';
 part 'repository_delete_mixin.dart';
-part 'repository_preview_mixin.dart';
 part 'repository_helpers_mixin.dart';
 part 'repository_input_handler.dart';
+// Part files for repository mixins
+part 'repository_insert_mixin.dart';
+part 'repository_preview_mixin.dart';
 part 'repository_read_mixin.dart';
+part 'repository_update_mixin.dart';
+part 'repository_upsert_mixin.dart';
 
 /// Base class for repositories.
 ///
@@ -30,11 +28,17 @@ part 'repository_read_mixin.dart';
 /// repository mixins require.
 abstract class RepositoryBase<T extends OrmEntity> {
   ModelDefinition<T> get definition;
+
   String get driverName;
+
   ValueCodecRegistry get codecs;
+
   Future<MutationResult> Function(MutationPlan plan) get runMutation;
+
   StatementPreview Function(MutationPlan plan) get describeMutation;
+
   void Function(Object? model) get attachRuntimeMetadata;
+
   QueryContext? get queryContext;
 }
 

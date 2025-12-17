@@ -3,8 +3,8 @@ import 'dart:async';
 import '../../migrations.dart';
 import '../connection/orm_connection.dart';
 import '../data_source.dart';
-import '../query/query.dart';
 import '../driver/driver_adapter.dart';
+import '../query/query.dart';
 import 'test_schema_manager.dart';
 
 /// Strategy for database isolation in tests
@@ -61,12 +61,18 @@ class TestDatabaseManager {
        _adapterFactory = adapterFactory;
 
   DatabaseIsolationStrategy get strategy => _strategy;
+
   DataSource get baseDataSource => _baseDataSource;
+
   List<Migration>? get migrations => _migrations;
+
   List<MigrationDescriptor>? get migrationDescriptors => _migrationDescriptors;
+
   List<DatabaseSeeder Function(OrmConnection)>? get seeders => _seeders;
+
   DriverAdapter Function(String testDbName)? get adapterFactory =>
       _adapterFactory;
+
   Future<void> Function(DataSource)? get runMigrations => _runMigrations;
 
   /// Initialize the test database manager

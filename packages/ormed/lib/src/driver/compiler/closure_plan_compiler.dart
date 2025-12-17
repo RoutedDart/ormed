@@ -1,6 +1,7 @@
-import 'package:ormed/src/driver/mutation_plan.dart' show MutationPlan;
-import 'package:ormed/src/driver/plan_compiler.dart' show PlanCompiler;
-import 'package:ormed/src/driver/statement_preview.dart' show StatementPreview;
+import 'package:ormed/src/driver/compiler/plan_compiler.dart' show PlanCompiler;
+import 'package:ormed/src/driver/mutation/mutation_plan.dart' show MutationPlan;
+import 'package:ormed/src/driver/statement/statement_preview.dart'
+    show StatementPreview;
 import 'package:ormed/src/query/query_plan.dart';
 
 class ClosurePlanCompiler implements PlanCompiler {

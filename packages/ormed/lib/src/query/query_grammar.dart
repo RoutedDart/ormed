@@ -1,12 +1,12 @@
 import 'dart:typed_data';
 
 import 'package:meta/meta.dart';
+import 'package:ormed/src/model/model.dart';
 import 'package:ormed/src/query/plan/join_definition.dart';
 import 'package:ormed/src/query/plan/join_type.dart';
 
 import '../contracts.dart';
 import '../driver/driver.dart';
-import '../model_definition.dart';
 import 'json_path.dart';
 import 'query_plan.dart';
 

@@ -16,11 +16,8 @@ library;
 
 import 'dart:collection';
 
-import '../exceptions.dart';
-import '../model_definition.dart';
-import '../contracts.dart';
-import '../query/json_path.dart' as json_path;
-import '../value_codec.dart';
+import '../../../ormed.dart';
+import '../../query/json_path.dart' as json_path;
 import 'model_attribute_inspector.dart';
 
 mixin ModelAttributes {

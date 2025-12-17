@@ -1,4 +1,4 @@
-import '../connection/orm_connection.dart';
+import '../../connection/orm_connection.dart';
 import 'schema_state.dart';
 
 /// Optional interface drivers can implement to expose schema dump helpers.

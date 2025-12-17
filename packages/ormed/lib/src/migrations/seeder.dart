@@ -3,7 +3,7 @@ import 'dart:async';
 import '../connection/orm_connection.dart';
 import '../data_source.dart';
 import '../events/event_bus.dart';
-import '../model.dart';
+import '../model/model.dart';
 import '../seeding/seeder_events.dart';
 
 /// Base class for database seeders

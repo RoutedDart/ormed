@@ -68,6 +68,7 @@ class SchemaDiff {
   final List<SchemaDiffEntry> entries;
 
   bool get isEmpty => entries.isEmpty;
+
   Iterable<SchemaDiffEntry> get warnings =>
       entries.where((entry) => entry.severity == SchemaDiffSeverity.warning);
 }
@@ -425,6 +426,7 @@ class TableRef {
   final String name;
 
   String get key => tableKey(schema, name);
+
   String get displayName => schema == null ? name : '$schema.$name';
 
   static TableRef parse(String input) {

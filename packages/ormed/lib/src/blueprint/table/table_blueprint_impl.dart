@@ -1,7 +1,7 @@
 import 'column_command.dart';
+import 'column_default.dart';
 import 'column_definition.dart';
 import 'column_driver_override.dart';
-import 'column_default.dart';
 import 'column_rename.dart';
 import 'column_type.dart';
 import 'enums.dart';
@@ -1374,6 +1374,7 @@ class _ColumnEntry {
       _ColumnEntry(name: name, kind: ColumnCommandKind.drop);
 
   final String name;
+
   ColumnCommandKind get kind => _kind;
   ColumnCommandKind _kind;
   ColumnDefinition? _definition;

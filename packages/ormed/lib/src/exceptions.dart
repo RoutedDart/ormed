@@ -1,4 +1,4 @@
-import 'model_definition.dart';
+import 'package:ormed/src/model/model.dart';
 
 /// Thrown when a requested codec type is missing from the registry.
 class CodecNotFound implements Exception {

@@ -1,11 +1,9 @@
+import 'package:ormed/src/model/model.dart';
+
 import '../annotations.dart';
 import '../contracts.dart';
-import '../model_definition.dart';
-import '../model_mixins/model_relations.dart';
-import '../model_registry.dart';
 import '../value_codec.dart';
 import 'query.dart';
-import 'query_plan.dart';
 
 /// Hydrates eager-loaded relations after the base query executes.
 class RelationLoader {
@@ -16,7 +14,9 @@ class RelationLoader {
   final QueryContext context;
 
   ModelRegistry get _registry => context.registry;
+
   ValueCodecRegistry get _codecRegistry => context.codecRegistry;
+
   String get _driverName => context.driver.metadata.name;
 
   /// Populates [parents] with the relations declared in [relations].

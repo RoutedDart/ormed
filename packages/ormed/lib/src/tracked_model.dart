@@ -7,9 +7,8 @@
 /// The code generator creates tracked variants that extend this class.
 library;
 
-import 'model_mixins/model_attributes.dart';
-import 'model_mixins/model_connection.dart';
-import 'model_mixins/model_relations.dart';
+import 'model/model.dart';
+
 
 /// Base class for ORM-tracked model instances.
 ///

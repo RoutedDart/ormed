@@ -1,15 +1,9 @@
 import 'package:carbonized/carbonized.dart';
 
-import 'driver/mutation_plan.dart';
-import 'driver/mutation_row.dart';
+import '../driver/mutation/mutation_plan.dart';
+import '../driver/mutation/mutation_row.dart';
+import '../value_codec.dart';
 import 'model.dart';
-import 'model_definition.dart';
-import 'model_mixins/model_attributes.dart';
-import 'model_mixins/model_connection.dart';
-import 'model_mixins/model_relations.dart';
-import 'model_mixins/soft_deletes_impl.dart';
-import 'model_mixins/timestamps_impl.dart';
-import 'value_codec.dart';
 
 /// Extensions on Model to provide convenient access to attribute and relation
 /// tracking features when working with tracked model instances.

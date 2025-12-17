@@ -1,6 +1,5 @@
 import 'package:analyzer/dart/element/element.dart';
 import 'package:collection/collection.dart';
-
 import 'package:ormed/src/annotations.dart';
 
 import '../descriptors.dart';

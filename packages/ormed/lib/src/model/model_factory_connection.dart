@@ -1,8 +1,8 @@
-import 'package:ormed/src/model_definition.dart';
 import 'package:ormed/src/query/query.dart';
 import 'package:ormed/src/repository/repository.dart';
 
-import 'contracts.dart';
+import '../contracts.dart';
+import 'model.dart';
 
 /// Helper that binds a generated model definition to a query context.
 class ModelFactoryConnection<T extends OrmEntity> {

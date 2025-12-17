@@ -1,7 +1,8 @@
+import 'package:ormed/src/model/model.dart';
+
 import '../blueprint/schema_driver.dart';
 import '../blueprint/schema_plan.dart';
 import '../contracts.dart';
-import '../model_definition.dart';
 import '../query/query.dart';
 import '../repository/repository.dart';
 

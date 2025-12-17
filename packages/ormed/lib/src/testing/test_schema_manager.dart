@@ -1,11 +1,11 @@
 import 'dart:async';
 
+import 'package:ormed/src/model/model.dart';
 import 'package:ormed/src/query/query.dart';
 
 import '../../migrations.dart';
 import '../connection/orm_connection.dart';
 import '../driver/driver.dart';
-import '../model_definition.dart';
 import '../seeding/seeder_runner.dart';
 
 /// Manages test schema setup with migrations and seeding support

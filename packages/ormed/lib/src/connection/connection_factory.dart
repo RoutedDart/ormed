@@ -1,6 +1,5 @@
 import 'connection.dart';
 import 'connection_handle.dart';
-import 'connection_manager.dart';
 
 /// Registers named ORM connections and returns disposable handles.
 class OrmConnectionFactory {

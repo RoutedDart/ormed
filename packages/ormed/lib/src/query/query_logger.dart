@@ -1,8 +1,9 @@
 import 'dart:convert';
 
-import '../driver/driver.dart';
+import 'package:ormed/src/model/model.dart';
+
 import '../contracts.dart';
-import '../model_definition.dart';
+import '../driver/driver.dart';
 import 'query.dart';
 
 /// Serializes query + mutation events into structured log entries.

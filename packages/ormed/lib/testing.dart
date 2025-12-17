@@ -7,6 +7,6 @@
 library;
 
 export 'src/migrations/seeder.dart';
+export 'src/testing/ormed_test.dart';
 export 'src/testing/test_database_manager.dart';
 export 'src/testing/test_schema_manager.dart';
-export 'src/testing/ormed_test.dart';

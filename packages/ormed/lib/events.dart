@@ -17,17 +17,13 @@
 /// ```
 library;
 
-// Core event bus infrastructure
-export 'src/events/event_bus.dart';
-
-// Model events
-export 'src/model/model_events.dart';
-
-// Migration events
-export 'src/migrations/migration_events.dart';
-
-// Seeder events
-export 'src/seeding/seeder_events.dart';
-
 // Connection events (these are co-located with connection logic)
 export 'src/connection/connection_events.dart';
+// Core event bus infrastructure
+export 'src/events/event_bus.dart';
+// Migration events
+export 'src/migrations/migration_events.dart';
+// Model events
+export 'src/model/model_events.dart';
+// Seeder events
+export 'src/seeding/seeder_events.dart';

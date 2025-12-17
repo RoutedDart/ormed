@@ -1,10 +1,10 @@
 library;
 
-import '../connection/connection_resolver.dart';
-import '../driver/driver.dart';
-import '../model_registry.dart';
-import '../query/query_plan.dart';
-import '../value_codec.dart';
+import '../../connection/connection.dart';
+import '../../driver/driver.dart';
+import '../../query/query.dart';
+import '../../value_codec.dart';
+import '../model.dart';
 
 /// Provides access to the connection context that hydrated a model instance.
 mixin ModelConnection {

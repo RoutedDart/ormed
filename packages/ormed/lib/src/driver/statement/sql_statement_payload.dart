@@ -1,4 +1,4 @@
-import 'package:ormed/src/driver/statement_payload.dart';
+import 'package:ormed/src/driver/statement/statement_payload.dart';
 
 /// SQL statement emitted by relational drivers.
 class SqlStatementPayload extends StatementPayload {

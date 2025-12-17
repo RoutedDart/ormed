@@ -3,9 +3,9 @@ library;
 
 import 'package:collection/collection.dart';
 
-import '../exceptions.dart';
-import '../model_definition.dart';
-import '../value_codec.dart';
+import '../../exceptions.dart';
+import '../../value_codec.dart';
+import '../model.dart';
 import 'model_attribute_inspector.dart';
 
 extension ModelAttributeMapExtensions on Map<String, Object?> {

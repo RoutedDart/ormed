@@ -1,11 +1,10 @@
 library;
 
 import 'package:ormed/src/annotations.dart';
+import 'package:ormed/src/model/model.dart';
 import 'package:ormed/src/query/query.dart';
-import 'package:ormed/src/query/query_plan.dart';
 
 import '../contracts.dart';
-import '../model_definition.dart';
 
 /// Utility class for resolving and building relation metadata.
 ///

@@ -22,18 +22,21 @@ sealed class InsertInput<T extends OrmEntity> {
 /// Insert input wrapper for model instances.
 final class ModelInsertInput<T extends OrmEntity> extends InsertInput<T> {
   const ModelInsertInput(this.model);
+
   final T model;
 }
 
 /// Insert input wrapper for insert DTOs.
 final class DtoInsertInput<T extends OrmEntity> extends InsertInput<T> {
   const DtoInsertInput(this.dto);
+
   final InsertDto<T> dto;
 }
 
 /// Insert input wrapper for raw maps.
 final class MapInsertInput<T extends OrmEntity> extends InsertInput<T> {
   const MapInsertInput(this.data);
+
   final Map<String, Object?> data;
 }
 
@@ -59,18 +62,21 @@ sealed class UpdateInput<T extends OrmEntity> {
 /// Update input wrapper for model instances.
 final class ModelUpdateInput<T extends OrmEntity> extends UpdateInput<T> {
   const ModelUpdateInput(this.model);
+
   final T model;
 }
 
 /// Update input wrapper for update DTOs.
 final class DtoUpdateInput<T extends OrmEntity> extends UpdateInput<T> {
   const DtoUpdateInput(this.dto);
+
   final UpdateDto<T> dto;
 }
 
 /// Update input wrapper for raw maps.
 final class MapUpdateInput<T extends OrmEntity> extends UpdateInput<T> {
   const MapUpdateInput(this.data);
+
   final Map<String, Object?> data;
 }
 

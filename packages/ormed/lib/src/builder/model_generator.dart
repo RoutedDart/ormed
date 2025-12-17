@@ -9,15 +9,14 @@ import 'package:source_gen/source_gen.dart';
 import 'emitters/companion_class_emitter.dart';
 import 'emitters/model_codec_emitter.dart';
 import 'emitters/model_definition_emitter.dart';
-import 'emitters/model_factory_emitter.dart';
 import 'emitters/model_dto_emitter.dart';
+import 'emitters/model_event_handler_emitter.dart';
+import 'emitters/model_factory_emitter.dart';
 import 'emitters/model_partial_emitter.dart';
 import 'emitters/model_subclass_emitter.dart';
-import 'emitters/model_event_handler_emitter.dart';
-
+import 'factory_extension.dart';
 import 'model_context.dart';
 import 'model_helper.dart';
-import 'factory_extension.dart';
 
 class OrmModelGenerator extends GeneratorForAnnotation<OrmModel> {
   final BuilderOptions options;
