@@ -124,6 +124,111 @@ extension PostgresTableBlueprintExtensions on TableBlueprint {
     );
   }
 
+  ColumnBuilder bit(
+    String name, {
+    ColumnMutation mutation = ColumnMutation.add,
+    int? length,
+  }) {
+    final sql = length == null ? 'bit' : 'bit($length)';
+    return column(name, ColumnType.custom(sql), mutation: mutation);
+  }
+
+  ColumnBuilder varbit(
+    String name, {
+    ColumnMutation mutation = ColumnMutation.add,
+    int? length,
+  }) {
+    final sql = length == null ? 'varbit' : 'varbit($length)';
+    return column(name, ColumnType.custom(sql), mutation: mutation);
+  }
+
+  ColumnBuilder timetz(
+    String name, {
+    ColumnMutation mutation = ColumnMutation.add,
+    int? precision,
+  }) {
+    final sql = precision == null ? 'timetz' : 'timetz($precision)';
+    return column(name, ColumnType.custom(sql), mutation: mutation);
+  }
+
+  ColumnBuilder money(
+    String name, {
+    ColumnMutation mutation = ColumnMutation.add,
+  }) {
+    return column(name, const ColumnType.custom('money'), mutation: mutation);
+  }
+
+  ColumnBuilder xml(
+    String name, {
+    ColumnMutation mutation = ColumnMutation.add,
+  }) {
+    return column(name, const ColumnType.custom('xml'), mutation: mutation);
+  }
+
+  ColumnBuilder pgLsn(
+    String name, {
+    ColumnMutation mutation = ColumnMutation.add,
+  }) {
+    return column(name, const ColumnType.custom('pg_lsn'), mutation: mutation);
+  }
+
+  ColumnBuilder pgSnapshot(
+    String name, {
+    ColumnMutation mutation = ColumnMutation.add,
+  }) {
+    return column(
+      name,
+      const ColumnType.custom('pg_snapshot'),
+      mutation: mutation,
+    );
+  }
+
+  ColumnBuilder txidSnapshot(
+    String name, {
+    ColumnMutation mutation = ColumnMutation.add,
+  }) {
+    return column(
+      name,
+      const ColumnType.custom('txid_snapshot'),
+      mutation: mutation,
+    );
+  }
+
+  ColumnBuilder line(
+    String name, {
+    ColumnMutation mutation = ColumnMutation.add,
+  }) {
+    return column(name, const ColumnType.custom('line'), mutation: mutation);
+  }
+
+  ColumnBuilder lseg(
+    String name, {
+    ColumnMutation mutation = ColumnMutation.add,
+  }) {
+    return column(name, const ColumnType.custom('lseg'), mutation: mutation);
+  }
+
+  ColumnBuilder box(
+    String name, {
+    ColumnMutation mutation = ColumnMutation.add,
+  }) {
+    return column(name, const ColumnType.custom('box'), mutation: mutation);
+  }
+
+  ColumnBuilder path(
+    String name, {
+    ColumnMutation mutation = ColumnMutation.add,
+  }) {
+    return column(name, const ColumnType.custom('path'), mutation: mutation);
+  }
+
+  ColumnBuilder circle(
+    String name, {
+    ColumnMutation mutation = ColumnMutation.add,
+  }) {
+    return column(name, const ColumnType.custom('circle'), mutation: mutation);
+  }
+
   ColumnBuilder pgArray(
     String name,
     String elementType, {

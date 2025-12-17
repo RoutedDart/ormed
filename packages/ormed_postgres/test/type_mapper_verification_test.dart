@@ -1,9 +1,10 @@
+import 'dart:typed_data';
+
+import 'package:decimal/decimal.dart';
 import 'package:ormed/ormed.dart';
 import 'package:ormed_postgres/ormed_postgres.dart';
 import 'package:test/test.dart';
 import 'package:uuid/uuid_value.dart';
-import 'package:decimal/decimal.dart';
-import 'dart:typed_data';
 
 void main() {
   group('PostgreSQL TypeMapper Verification', () {
@@ -44,6 +45,21 @@ void main() {
       expect(mapper.sqlTypeToDart('BYTEA'), equals(Uint8List));
       expect(mapper.sqlTypeToDart('UUID'), equals(UuidValue));
       expect(mapper.sqlTypeToDart('NUMERIC'), equals(Decimal));
+      expect(mapper.sqlTypeToDart('TIME'), equals(Time));
+      expect(mapper.sqlTypeToDart('TIMETZ'), equals(PgTimeTz));
+      expect(mapper.sqlTypeToDart('BIT'), equals(PgBitString));
+      expect(mapper.sqlTypeToDart('VARBIT'), equals(PgBitString));
+      expect(mapper.sqlTypeToDart('MONEY'), equals(PgMoney));
+      expect(mapper.sqlTypeToDart('PG_LSN'), equals(LSN));
+      expect(mapper.sqlTypeToDart('PG_SNAPSHOT'), equals(PgSnapshot));
+      expect(mapper.sqlTypeToDart('TXID_SNAPSHOT'), equals(PgSnapshot));
+      expect(mapper.sqlTypeToDart('POINT'), equals(Point));
+      expect(mapper.sqlTypeToDart('LINE'), equals(Line));
+      expect(mapper.sqlTypeToDart('LSEG'), equals(LineSegment));
+      expect(mapper.sqlTypeToDart('BOX'), equals(Box));
+      expect(mapper.sqlTypeToDart('PATH'), equals(Path));
+      expect(mapper.sqlTypeToDart('POLYGON'), equals(Polygon));
+      expect(mapper.sqlTypeToDart('CIRCLE'), equals(Circle));
     });
 
     test('SQL type normalization', () {
@@ -55,9 +71,12 @@ void main() {
         mapper.normalizeSqlType('TIMESTAMP WITH TIME ZONE'),
         equals('TIMESTAMP'),
       );
+      expect(mapper.normalizeSqlType('TIME WITH TIME ZONE'), equals('TIMETZ'));
+      expect(mapper.normalizeSqlType('TIME WITHOUT TIME ZONE'), equals('TIME'));
       expect(mapper.normalizeSqlType('DOUBLE'), equals('DOUBLE PRECISION'));
       expect(mapper.normalizeSqlType('REAL'), equals('DOUBLE PRECISION'));
       expect(mapper.normalizeSqlType('uuid[]'), equals('UUID[]'));
+      expect(mapper.normalizeSqlType('bit varying(8)'), equals('VARBIT'));
     });
 
     test('SQL type aliases', () {
@@ -69,6 +88,8 @@ void main() {
       expect(mapper.sqlTypeToDart('CHAR'), equals(String));
       expect(mapper.sqlTypeToDart('BOOL'), equals(bool));
       expect(mapper.sqlTypeToDart('TIMESTAMPTZ'), equals(DateTime));
+      expect(mapper.sqlTypeToDart('BIT VARYING'), equals(PgBitString));
+      expect(mapper.sqlTypeToDart('CASH'), equals(PgMoney));
     });
 
     test('Has multiple type mappings', () {

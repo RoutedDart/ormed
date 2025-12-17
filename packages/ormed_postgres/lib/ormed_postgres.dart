@@ -13,6 +13,7 @@ export 'src/postgres_grammar.dart';
 export 'src/postgres_schema_dialect.dart';
 export 'src/postgres_type_mapper.dart';
 export 'src/postgres_value_types.dart';
+export 'package:postgres/postgres.dart';
 
 OrmConnectionHandle registerPostgresOrmConnection({
   required String name,

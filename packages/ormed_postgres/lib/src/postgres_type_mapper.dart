@@ -97,11 +97,21 @@ class PostgresTypeMapper extends DriverTypeMapper {
         'TIMESTAMP WITH TIME ZONE',
         'TIMESTAMP WITHOUT TIME ZONE',
         'DATE',
-        'TIME',
-        'TIMETZ',
-        'TIME WITH TIME ZONE',
-        'TIME WITHOUT TIME ZONE',
       ],
+    ),
+
+    // TIME (without time zone)
+    TypeMapping(
+      dartType: Time,
+      defaultSqlType: 'TIME',
+      acceptedSqlTypes: ['TIME WITHOUT TIME ZONE'],
+    ),
+
+    // TIME WITH TIME ZONE (timetz)
+    TypeMapping(
+      dartType: PgTimeTz,
+      defaultSqlType: 'TIMETZ',
+      acceptedSqlTypes: ['TIME WITH TIME ZONE'],
     ),
 
     // TIMESTAMP arrays
@@ -140,6 +150,35 @@ class PostgresTypeMapper extends DriverTypeMapper {
       acceptedSqlTypes: ['MACADDR8'],
     ),
 
+    // BIT/VARBIT
+    TypeMapping(
+      dartType: PgBitString,
+      defaultSqlType: 'VARBIT',
+      acceptedSqlTypes: ['BIT', 'BIT VARYING'],
+    ),
+
+    // MONEY
+    TypeMapping(dartType: PgMoney, defaultSqlType: 'MONEY'),
+
+    // pg_lsn
+    TypeMapping(dartType: LSN, defaultSqlType: 'PG_LSN'),
+
+    // pg_snapshot / txid_snapshot
+    TypeMapping(
+      dartType: PgSnapshot,
+      defaultSqlType: 'PG_SNAPSHOT',
+      acceptedSqlTypes: ['TXID_SNAPSHOT'],
+    ),
+
+    // Geometric types
+    TypeMapping(dartType: Point, defaultSqlType: 'POINT'),
+    TypeMapping(dartType: Line, defaultSqlType: 'LINE'),
+    TypeMapping(dartType: LineSegment, defaultSqlType: 'LSEG'),
+    TypeMapping(dartType: Box, defaultSqlType: 'BOX'),
+    TypeMapping(dartType: Path, defaultSqlType: 'PATH'),
+    TypeMapping(dartType: Polygon, defaultSqlType: 'POLYGON'),
+    TypeMapping(dartType: Circle, defaultSqlType: 'CIRCLE'),
+
     // pgvector (extension-backed)
     TypeMapping(dartType: PgVector, defaultSqlType: 'VECTOR'),
 
@@ -166,13 +205,27 @@ class PostgresTypeMapper extends DriverTypeMapper {
       return '$normalizedElement[]';
     }
 
+    if (cleaned.startsWith('TIMESTAMPTZ') ||
+        cleaned.startsWith('TIMESTAMP WITH TIME ZONE') ||
+        cleaned.startsWith('TIMESTAMP WITHOUT TIME ZONE') ||
+        cleaned.startsWith('TIMESTAMP')) {
+      return 'TIMESTAMP';
+    }
+    if (cleaned.startsWith('TIME WITH TIME ZONE') ||
+        cleaned.startsWith('TIMETZ')) {
+      return 'TIMETZ';
+    }
+    if (cleaned.startsWith('TIME')) {
+      return 'TIME';
+    }
+
     final baseType = cleaned.split(RegExp(r'[\s(]'))[0];
 
     // Map PostgreSQL type aliases
     if (_integerTypes.contains(baseType)) return 'INTEGER';
     if (_floatTypes.contains(baseType)) return 'DOUBLE PRECISION';
     if (_textTypes.contains(baseType)) return 'TEXT';
-    if (_timestampTypes.contains(baseType)) return 'TIMESTAMP';
+    if (_dateTypes.contains(baseType)) return 'DATE';
     if (_binaryTypes.contains(baseType)) return 'BYTEA';
     if (_jsonTypes.contains(baseType)) return 'JSONB';
     if (_boolTypes.contains(baseType)) return 'BOOLEAN';
@@ -182,6 +235,15 @@ class PostgresTypeMapper extends DriverTypeMapper {
     if (_fullTextTypes.contains(baseType)) return baseType;
     if (_rangeTypes.contains(baseType)) return baseType;
     if (_networkTypes.contains(baseType)) return baseType;
+    if (_bitTypes.contains(baseType)) {
+      if (cleaned.startsWith('BIT VARYING') || baseType == 'VARBIT') {
+        return 'VARBIT';
+      }
+      return 'BIT';
+    }
+    if (_moneyTypes.contains(baseType)) return 'MONEY';
+    if (_pgLsnTypes.contains(baseType)) return 'PG_LSN';
+    if (_snapshotTypes.contains(baseType)) return baseType;
     if (_vectorTypes.contains(baseType)) return 'VECTOR';
 
     return baseType;
@@ -220,17 +282,7 @@ class PostgresTypeMapper extends DriverTypeMapper {
     'NAME',
   };
 
-  static const _timestampTypes = {
-    'TIMESTAMP',
-    'TIMESTAMPTZ',
-    'TIMESTAMP WITH TIME ZONE',
-    'TIMESTAMP WITHOUT TIME ZONE',
-    'DATE',
-    'TIME',
-    'TIMETZ',
-    'TIME WITH TIME ZONE',
-    'TIME WITHOUT TIME ZONE',
-  };
+  static const _dateTypes = {'DATE'};
 
   static const _binaryTypes = {'BYTEA'};
 
@@ -254,6 +306,14 @@ class PostgresTypeMapper extends DriverTypeMapper {
   };
 
   static const _networkTypes = {'INET', 'CIDR', 'MACADDR', 'MACADDR8'};
+
+  static const _bitTypes = {'BIT', 'VARBIT'};
+
+  static const _moneyTypes = {'MONEY', 'CASH'};
+
+  static const _pgLsnTypes = {'PG_LSN'};
+
+  static const _snapshotTypes = {'PG_SNAPSHOT', 'TXID_SNAPSHOT'};
 
   static const _vectorTypes = {'VECTOR'};
 

@@ -11,6 +11,7 @@ import 'postgres_value_types.dart';
 /// Registers PostgreSQL-specific codecs with the global codec registry.
 void registerPostgresCodecs() {
   const timestampCodec = _PostgresTimestampCodec();
+  const timeCodec = _PostgresTimeCodec();
   const intervalCodec = _PostgresIntervalCodec();
   const intervalValueCodec = _PostgresIntervalValueCodec();
   const jsonMapCodec = _PostgresJsonMapCodec();
@@ -24,15 +25,31 @@ void registerPostgresCodecs() {
   const cidrCodec = _PostgresCidrCodec();
   const macaddrCodec = _PostgresMacaddrCodec();
   const vectorCodec = _PostgresVectorCodec();
+  const bitStringCodec = _PostgresBitStringCodec();
+  const moneyCodec = _PostgresMoneyCodec();
+  const timeTzCodec = _PostgresTimeTzCodec();
+  const lsnCodec = _PostgresLsnCodec();
+  const snapshotCodec = _PostgresSnapshotCodec();
   const intRangeCodec = _PostgresIntRangeCodec();
   const dateRangeCodec = _PostgresDateRangeCodec();
   const dateTimeRangeCodec = _PostgresDateTimeRangeCodec();
   const carbonCodec = PostgresCarbonCodec();
   const carbonInterfaceCodec = PostgresCarbonInterfaceCodec();
+  const pointCodec = _PostgresTypedValueCodec<Point>(Type.point);
+  const lineCodec = _PostgresTypedValueCodec<Line>(Type.line);
+  const lineSegmentCodec = _PostgresTypedValueCodec<LineSegment>(
+    Type.lineSegment,
+  );
+  const boxCodec = _PostgresTypedValueCodec<Box>(Type.box);
+  const pathCodec = _PostgresTypedValueCodec<Path>(Type.path);
+  const polygonCodec = _PostgresTypedValueCodec<Polygon>(Type.polygon);
+  const circleCodec = _PostgresTypedValueCodec<Circle>(Type.circle);
 
   ValueCodecRegistry.instance.registerDriver('postgres', {
     'DateTime': timestampCodec,
     'DateTime?': timestampCodec,
+    'Time': timeCodec,
+    'Time?': timeCodec,
     'Duration': intervalCodec,
     'Duration?': intervalCodec,
     'Interval': intervalValueCodec,
@@ -67,6 +84,30 @@ void registerPostgresCodecs() {
     'PgMacAddress?': macaddrCodec,
     'PgVector': vectorCodec,
     'PgVector?': vectorCodec,
+    'PgBitString': bitStringCodec,
+    'PgBitString?': bitStringCodec,
+    'PgMoney': moneyCodec,
+    'PgMoney?': moneyCodec,
+    'PgTimeTz': timeTzCodec,
+    'PgTimeTz?': timeTzCodec,
+    'LSN': lsnCodec,
+    'LSN?': lsnCodec,
+    'PgSnapshot': snapshotCodec,
+    'PgSnapshot?': snapshotCodec,
+    'Point': pointCodec,
+    'Point?': pointCodec,
+    'Line': lineCodec,
+    'Line?': lineCodec,
+    'LineSegment': lineSegmentCodec,
+    'LineSegment?': lineSegmentCodec,
+    'Box': boxCodec,
+    'Box?': boxCodec,
+    'Path': pathCodec,
+    'Path?': pathCodec,
+    'Polygon': polygonCodec,
+    'Polygon?': polygonCodec,
+    'Circle': circleCodec,
+    'Circle?': circleCodec,
     'Map<String, Object?>': jsonMapCodec,
     'Map<String, Object?>?': jsonMapCodec,
     'Map<String, dynamic>': jsonDynamicMapCodec,
@@ -83,6 +124,27 @@ void registerPostgresCodecs() {
       Type.timestampTzArray,
     ),
   });
+}
+
+final class _PostgresTypedValueCodec<T extends Object> extends ValueCodec<T> {
+  const _PostgresTypedValueCodec(this.type);
+
+  final Type<T> type;
+
+  @override
+  Object? encode(T? value) {
+    if (value == null) {
+      return TypedValue<T>(type, null, isSqlNull: true);
+    }
+    return TypedValue<T>(type, value);
+  }
+
+  @override
+  T? decode(Object? value) {
+    if (value == null) return null;
+    if (value is T) return value;
+    throw StateError('Unsupported ${type.runtimeType} value "$value".');
+  }
 }
 
 class _PostgresTimestampCodec extends ValueCodec<DateTime> {
@@ -104,6 +166,43 @@ class _PostgresTimestampCodec extends ValueCodec<DateTime> {
       return DateTime.parse(value);
     }
     throw StateError('Unsupported timestamp value "$value".');
+  }
+}
+
+class _PostgresTimeCodec extends ValueCodec<Time> {
+  const _PostgresTimeCodec();
+
+  @override
+  Object? encode(Time? value) {
+    if (value == null) {
+      return TypedValue<Time>(Type.time, null, isSqlNull: true);
+    }
+    return TypedValue<Time>(Type.time, value);
+  }
+
+  @override
+  Time? decode(Object? value) {
+    if (value == null) return null;
+    if (value is Time) return value;
+    if (value is String && value.isNotEmpty) {
+      final parts = value.split(':');
+      if (parts.length < 2) {
+        throw FormatException('Invalid time "$value".');
+      }
+      final hour = int.parse(parts[0]);
+      final minute = int.parse(parts[1]);
+      final secondsPart = parts.length > 2 ? parts[2] : '0';
+      final secondsParts = secondsPart.split('.');
+      final second = int.parse(secondsParts[0]);
+      final micros = secondsParts.length > 1
+          ? int.parse(secondsParts[1].padRight(6, '0').substring(0, 6))
+          : 0;
+      return Time(hour, minute, second, 0, micros);
+    }
+    if (value is UndecodedBytes) {
+      return decode(value.asString);
+    }
+    throw StateError('Unsupported time value "$value".');
   }
 }
 
@@ -290,6 +389,87 @@ class _PostgresMacaddrCodec extends ValueCodec<PgMacAddress> {
     if (value is String) return PgMacAddress.parse(value);
     if (value is UndecodedBytes) return PgMacAddress.parse(value.asString);
     throw StateError('Unsupported macaddr value "$value".');
+  }
+}
+
+class _PostgresBitStringCodec extends ValueCodec<PgBitString> {
+  const _PostgresBitStringCodec();
+
+  @override
+  Object? encode(PgBitString? value) => value?.bits;
+
+  @override
+  PgBitString? decode(Object? value) {
+    if (value == null) return null;
+    if (value is PgBitString) return value;
+    if (value is String) return PgBitString.parse(value);
+    if (value is UndecodedBytes) return PgBitString.parse(value.asString);
+    throw StateError('Unsupported bit string value "$value".');
+  }
+}
+
+class _PostgresMoneyCodec extends ValueCodec<PgMoney> {
+  const _PostgresMoneyCodec();
+
+  @override
+  Object? encode(PgMoney? value) => value?.toDecimalString();
+
+  @override
+  PgMoney? decode(Object? value) {
+    if (value == null) return null;
+    if (value is PgMoney) return value;
+    if (value is String) return PgMoney.parse(value);
+    if (value is num) return PgMoney.fromCents(value.toInt());
+    if (value is UndecodedBytes) return PgMoney.parse(value.asString);
+    throw StateError('Unsupported money value "$value".');
+  }
+}
+
+class _PostgresTimeTzCodec extends ValueCodec<PgTimeTz> {
+  const _PostgresTimeTzCodec();
+
+  @override
+  Object? encode(PgTimeTz? value) => value?.toPgString();
+
+  @override
+  PgTimeTz? decode(Object? value) {
+    if (value == null) return null;
+    if (value is PgTimeTz) return value;
+    if (value is String) return PgTimeTz.parse(value);
+    if (value is UndecodedBytes) return PgTimeTz.parse(value.asString);
+    throw StateError('Unsupported timetz value "$value".');
+  }
+}
+
+class _PostgresLsnCodec extends ValueCodec<LSN> {
+  const _PostgresLsnCodec();
+
+  @override
+  Object? encode(LSN? value) => value?.toString();
+
+  @override
+  LSN? decode(Object? value) {
+    if (value == null) return null;
+    if (value is LSN) return value;
+    if (value is String) return LSN.fromString(value);
+    if (value is UndecodedBytes) return LSN.fromString(value.asString);
+    throw StateError('Unsupported pg_lsn value "$value".');
+  }
+}
+
+class _PostgresSnapshotCodec extends ValueCodec<PgSnapshot> {
+  const _PostgresSnapshotCodec();
+
+  @override
+  Object? encode(PgSnapshot? value) => value?.toString();
+
+  @override
+  PgSnapshot? decode(Object? value) {
+    if (value == null) return null;
+    if (value is PgSnapshot) return value;
+    if (value is String) return PgSnapshot.parse(value);
+    if (value is UndecodedBytes) return PgSnapshot.parse(value.asString);
+    throw StateError('Unsupported snapshot value "$value".');
   }
 }
 
