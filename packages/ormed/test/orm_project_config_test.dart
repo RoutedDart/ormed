@@ -13,6 +13,7 @@ void main() {
         'directory': 'database/migrations',
         'registry': 'database/migrations.dart',
         'ledger_table': 'orm_migrations',
+        'format': 'sql',
       },
       'seeds': {
         'directory': 'database/seeders',
@@ -25,6 +26,7 @@ void main() {
     expect(config.connectionName, 'default');
     expect(config.driver.option('database'), 'default.sqlite');
     expect(config.migrations.directory, 'database/migrations');
+    expect(config.migrations.format, MigrationFormat.sql);
     expect(config.seeds, isNotNull);
     expect(config.toMap(), containsPair('driver', payload['driver']));
   });
@@ -61,6 +63,7 @@ void main() {
     final config = OrmProjectConfig.fromMap(payload);
     expect(config.connections.keys, containsAll(['default', 'analytics']));
     expect(config.connectionName, 'analytics');
+    expect(config.migrations.format, MigrationFormat.dart);
     final primary = config.withConnection('default');
     expect(primary.connectionName, 'default');
   });

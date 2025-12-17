@@ -4,19 +4,23 @@ on:
   push:
     paths:
       - 'packages/ormed/**'
+      - 'packages/ormed_cli/**'
       - 'packages/ormed_sqlite/**'
       - 'packages/ormed_postgres/**'
       - 'packages/ormed_mysql/**'
       - 'packages/driver_tests/**'
       - 'pubspec.yaml'
+      - '.github/workflows/database-tests.yaml'
   pull_request:
     paths:
       - 'packages/ormed/**'
+      - 'packages/ormed_cli/**'
       - 'packages/ormed_sqlite/**'
       - 'packages/ormed_postgres/**'
       - 'packages/ormed_mysql/**'
       - 'packages/driver_tests/**'
       - 'pubspec.yaml'
+      - '.github/workflows/database-tests.yaml'
   workflow_dispatch:
 
 jobs:
@@ -34,6 +38,24 @@ jobs:
         run: dart pub get
       - name: Run SQLite driver tests
         working-directory: packages/ormed
+        run: dart test --concurrency=1 --reporter=expanded
+
+  ormed_cli:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install SQLite3
+        run: sudo apt-get update && sudo apt-get install -y sqlite3 libsqlite3-dev
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+      - name: Install dependencies
+        run: dart pub get
+      - name: Install CLI package dependencies
+        working-directory: packages/ormed_cli
+        run: dart pub get
+      - name: Run CLI tests
+        working-directory: packages/ormed_cli
         run: dart test --concurrency=1 --reporter=expanded
 
   sqlite:

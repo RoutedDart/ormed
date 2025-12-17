@@ -12,6 +12,11 @@ class MakeCommand extends ArtisanCommand<void> {
     argParser
       ..addOption('name', abbr: 'n', help: 'Slug for the migration/seeder.')
       ..addOption(
+        'format',
+        help: 'Migration authoring format (dart|sql). Defaults from orm.yaml.',
+        allowed: const ['dart', 'sql'],
+      )
+      ..addOption(
         'table',
         help:
             'Table to modify or create (defaults to guesses when --create is used).',
@@ -87,6 +92,7 @@ class MakeCommand extends ArtisanCommand<void> {
 
     final tableOption = (argResults?['table'] as String?)?.trim();
     final createFlag = argResults?['create'] == true;
+    final formatOption = (argResults?['format'] as String?)?.trim();
 
     // If not a seeder, and we didn't specify table/create, ask intent
     // Or just rely on reasonable defaults (guess table from slug).
@@ -113,6 +119,11 @@ class MakeCommand extends ArtisanCommand<void> {
       return;
     }
 
+    final migrationFormat = _resolveMigrationFormat(
+      formatOption,
+      config.migrations.format,
+      usage: usage,
+    );
     final tableName =
         tableOption ?? (createFlag ? _guessTableFromSlug(slug) : null);
     if (createFlag && tableName == null) {
@@ -129,6 +140,7 @@ class MakeCommand extends ArtisanCommand<void> {
       tableName: tableName,
       createTable: createFlag,
       fullPath: argResults?['fullpath'] == true,
+      format: migrationFormat,
       usage: usage,
     );
   }
@@ -303,32 +315,61 @@ void _createMigration({
   String? tableName,
   required bool createTable,
   required bool fullPath,
+  required MigrationFormat format,
   required String usage,
 }) {
-  final existing = migrationsDir
+  final timestamp = _formatTimestamp(DateTime.now().toUtc());
+  final migrationId = '${timestamp}_$slug';
+  final className = _toPascalCase(slug);
+
+  final conflict = migrationsDir
       .listSync()
-      .whereType<File>()
-      .map((file) => p.basename(file.path))
-      .where((name) => name.endsWith('_$slug.dart'))
-      .isNotEmpty;
-  if (existing) {
+      .map((entry) => p.basename(entry.path))
+      .any((name) {
+        if (name.endsWith('_$slug.dart')) return true;
+        if (name.endsWith('_$slug') &&
+            Directory(p.join(migrationsDir.path, name)).existsSync()) {
+          return true;
+        }
+        return false;
+      });
+  if (conflict) {
     throw UsageException('Migration with slug $slug already exists.', usage);
   }
 
-  final timestamp = _formatTimestamp(DateTime.now().toUtc());
-  final fileName = '${timestamp}_$slug.dart';
-  final className = _toPascalCase(slug);
-  final file = File(p.join(migrationsDir.path, fileName));
-  if (file.existsSync()) {
-    throw UsageException('Migration file $fileName already exists.', usage);
+  String? createdDisplayPath;
+  if (format == MigrationFormat.dart) {
+    final fileName = '$migrationId.dart';
+    final file = File(p.join(migrationsDir.path, fileName));
+    if (file.existsSync()) {
+      throw UsageException('Migration file $fileName already exists.', usage);
+    }
+    file.writeAsStringSync(_migrationFileTemplate(className));
+    createdDisplayPath = fullPath
+        ? file.path
+        : p.relative(file.path, from: root.path);
+    cliIO.success('Created migration');
+    cliIO.twoColumnDetail('File', createdDisplayPath);
+    cliIO.twoColumnDetail('Class', className);
+  } else {
+    final dir = Directory(p.join(migrationsDir.path, migrationId));
+    if (dir.existsSync()) {
+      throw UsageException(
+        'Migration directory $migrationId already exists.',
+        usage,
+      );
+    }
+    dir.createSync(recursive: true);
+    File(p.join(dir.path, 'up.sql')).writeAsStringSync('');
+    File(p.join(dir.path, 'down.sql')).writeAsStringSync('');
+    createdDisplayPath = fullPath
+        ? dir.path
+        : p.relative(dir.path, from: root.path);
+    cliIO.success('Created SQL migration');
+    cliIO.twoColumnDetail('Directory', createdDisplayPath);
+    cliIO.twoColumnDetail('Files', 'up.sql, down.sql');
   }
-  file.writeAsStringSync(_migrationFileTemplate(className));
-  final displayPath = fullPath
-      ? file.path
-      : p.relative(file.path, from: root.path);
-  cliIO.success('Created migration');
-  cliIO.twoColumnDetail('File', displayPath);
-  cliIO.twoColumnDetail('Class', className);
+
   if (createTable || tableName != null) {
     final tableInfo = tableName ?? 'guessing from slug';
     cliIO.twoColumnDetail('Table', tableInfo);
@@ -341,32 +382,71 @@ void _createMigration({
   }
   var content = registry.readAsStringSync();
 
-  // Calculate relative import path from registry to migration file
   final registryDir = p.dirname(registryPath);
-  final relativeImportPath = p
-      .relative(file.path, from: registryDir)
-      .replaceAll(r'\', '/'); // Normalize for Dart imports
+  if (format == MigrationFormat.dart) {
+    final filePath = p.join(migrationsDir.path, '$migrationId.dart');
+    final relativeImportPath = p
+        .relative(filePath, from: registryDir)
+        .replaceAll(r'\', '/'); // Normalize for Dart imports
 
-  final importLine = "import '$relativeImportPath';";
-  content = insertBetweenMarkers(
-    content,
-    importsMarkerStart,
-    importsMarkerEnd,
-    importLine,
-    indent: '',
-  );
-  final descriptor =
-      '''MigrationEntry(
+    final importLine = "import '$relativeImportPath';";
+    content = insertBetweenMarkers(
+      content,
+      importsMarkerStart,
+      importsMarkerEnd,
+      importLine,
+      indent: '',
+    );
+  }
+
+  final entry = format == MigrationFormat.dart
+      ? '''MigrationEntry(
     id: MigrationId.parse('${timestamp}_$slug'),
     migration: const $className(),
+  ),'''
+      : (() {
+          final sqlDirPath = p.join(migrationsDir.path, migrationId);
+          final relativeDir = p
+              .relative(sqlDirPath, from: registryDir)
+              .replaceAll(r'\', '/');
+          return '''MigrationEntry(
+    id: MigrationId.parse('${timestamp}_$slug'),
+    migration: SqlFileMigration(
+      upPath: '$relativeDir/up.sql',
+      downPath: '$relativeDir/down.sql',
+    ),
   ),''';
+        })();
+
   content = insertBetweenMarkers(
     content,
     registryMarkerStart,
     registryMarkerEnd,
-    descriptor,
+    entry,
     indent: '  ',
   );
   registry.writeAsStringSync(content);
   cliIO.success('Registered migration ${timestamp}_$slug');
+}
+
+MigrationFormat _resolveMigrationFormat(
+  String? optionValue,
+  MigrationFormat defaultFormat, {
+  required String usage,
+}) {
+  final normalized = optionValue?.toLowerCase();
+  switch (normalized) {
+    case null:
+    case '':
+      return defaultFormat;
+    case 'dart':
+      return MigrationFormat.dart;
+    case 'sql':
+      return MigrationFormat.sql;
+    default:
+      throw UsageException(
+        'Invalid --format "$optionValue". Expected "dart" or "sql".',
+        usage,
+      );
+  }
 }

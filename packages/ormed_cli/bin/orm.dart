@@ -7,6 +7,7 @@ Future<void> main(List<String> args) async {
     ..addCommand(InitCommand())
     ..addCommand(MakeCommand())
     ..addCommand(ApplyCommand())
+    ..addCommand(ExportCommand())
     ..addCommand(RollbackCommand())
     ..addCommand(ResetCommand())
     ..addCommand(RefreshCommand())

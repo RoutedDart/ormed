@@ -7,6 +7,7 @@ import 'package:path/path.dart' as p;
 
 export 'package:ormed/ormed.dart'
     show
+        MigrationFormat,
         OrmProjectConfig,
         DriverConfig,
         MigrationSection,

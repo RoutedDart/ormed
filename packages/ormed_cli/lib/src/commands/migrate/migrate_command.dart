@@ -30,6 +30,17 @@ class ApplyCommand extends RunnerCommand {
       negatable: false,
       help: 'Preview the SQL that would run without mutating the database.',
     );
+    argParser.addFlag(
+      'write-sql',
+      negatable: false,
+      help:
+          'Write up.sql/down.sql files for the migrations being previewed (requires --pretend).',
+    );
+    argParser.addOption(
+      'sql-out',
+      help:
+          'Output directory for --write-sql (defaults to migrations.directory).',
+    );
     argParser.addOption(
       'schema-path',
       help:
@@ -68,22 +79,14 @@ class ApplyCommand extends RunnerCommand {
     final limit = limitRaw == null ? null : int.tryParse(limitRaw);
     final step = argResults?['step'] == true;
     final pretend = argResults?['pretend'] == true;
+    final writeSql = argResults?['write-sql'] == true;
+    final sqlOut = argResults?['sql-out'] as String?;
     final force = argResults?['force'] == true;
     final graceful = argResults?['graceful'] == true;
     final schemaPath = argResults?['schema-path'] as String?;
 
     final driver = connection.driver;
     final schemaDriver = driver as SchemaDriver;
-    await _prepareLedger(
-      project: project,
-      config: config,
-      ledger: ledger,
-      driver: driver,
-      schemaDriver: schemaDriver,
-      schemaPathOverride: schemaPath,
-      connection: connection,
-    );
-
     if (pretend) {
       final registryPath = resolveRegistryFilePath(
         project.root,
@@ -94,13 +97,29 @@ class ApplyCommand extends RunnerCommand {
       await _previewMigrations(
         root: project.root,
         config: config,
-        runner: runner,
+        ledger: ledger,
         schemaDriver: schemaDriver,
         limit: step ? 1 : limit,
         registryPath: registryPath,
+        writeSql: writeSql,
+        sqlOut: sqlOut,
       );
       return;
     }
+
+    if (writeSql) {
+      usageException('--write-sql requires --pretend (or use migrate:export).');
+    }
+
+    await _prepareLedger(
+      project: project,
+      config: config,
+      ledger: ledger,
+      driver: driver,
+      schemaDriver: schemaDriver,
+      schemaPathOverride: schemaPath,
+      connection: connection,
+    );
 
     if (!confirmToProceed(force: force)) {
       cliIO.warning('Migration cancelled.');
@@ -223,13 +242,32 @@ File _resolveSchemaDumpFile(
 Future<void> _previewMigrations({
   required Directory root,
   required OrmProjectConfig config,
-  required MigrationRunner runner,
+  required SqlMigrationLedger ledger,
   required SchemaDriver schemaDriver,
   int? limit,
   required String registryPath,
+  required bool writeSql,
+  required String? sqlOut,
 }) async {
-  final statuses = await runner.status();
-  final pending = statuses.where((status) => !status.applied).toList();
+  final migrations = await loadMigrations(
+    root,
+    config,
+    registryPath: registryPath,
+  );
+  if (migrations.isEmpty) {
+    cliIO.warning('No migrations found in registry.');
+    return;
+  }
+
+  final appliedIds = await _readAppliedIdsIfLedgerExists(
+    schemaDriver: schemaDriver,
+    ledger: ledger,
+    ledgerTable: config.migrations.ledgerTable,
+  );
+
+  final pending = migrations
+      .where((descriptor) => !appliedIds.contains(descriptor.id.toString()))
+      .toList(growable: false);
   if (pending.isEmpty) {
     cliIO.info('No pending migrations.');
     return;
@@ -238,8 +276,16 @@ Future<void> _previewMigrations({
   final count = limit == null || limit > pending.length
       ? pending.length
       : limit;
+
+  final Directory? outputRoot = writeSql
+      ? (Directory(
+          _resolveOutPath(root: root, config: config, override: sqlOut),
+        )..createSync(recursive: true))
+      : null;
+  final exporter = writeSql ? MigrationSqlExporter(schemaDriver) : null;
+
   for (var i = 0; i < count; i++) {
-    final descriptor = pending[i].descriptor;
+    final descriptor = pending[i];
     final plan = await buildRuntimePlan(
       root: root,
       config: config,
@@ -257,5 +303,59 @@ Future<void> _previewMigrations({
       preview: preview,
       includeStatements: true,
     );
+
+    if (writeSql) {
+      final downPlan = await buildRuntimePlan(
+        root: root,
+        config: config,
+        id: descriptor.id,
+        direction: MigrationDirection.down,
+        snapshot: snapshot,
+        registryPath: registryPath,
+      );
+      await exporter!.exportDescriptor(
+        descriptor,
+        outputRoot: outputRoot!,
+        upPlan: plan,
+        downPlan: downPlan,
+      );
+    }
+  }
+
+  if (writeSql) {
+    cliIO.success('Wrote SQL export for $count migration(s).');
+    cliIO.twoColumnDetail(
+      'Output',
+      p.relative(outputRoot!.path, from: root.path),
+    );
+  }
+}
+
+String _resolveOutPath({
+  required Directory root,
+  required OrmProjectConfig config,
+  String? override,
+}) {
+  final candidate = (override == null || override.trim().isEmpty)
+      ? config.migrations.directory
+      : override.trim();
+  final path = p.isAbsolute(candidate)
+      ? p.normalize(candidate)
+      : resolvePath(root, candidate);
+  return path;
+}
+
+Future<Set<String>> _readAppliedIdsIfLedgerExists({
+  required SchemaDriver schemaDriver,
+  required SqlMigrationLedger ledger,
+  required String ledgerTable,
+}) async {
+  final exists = await SchemaInspector(schemaDriver).hasTable(ledgerTable);
+  if (!exists) return <String>{};
+  try {
+    final applied = await ledger.readApplied();
+    return applied.map((record) => record.id.toString()).toSet();
+  } catch (_) {
+    return <String>{};
   }
 }

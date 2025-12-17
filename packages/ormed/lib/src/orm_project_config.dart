@@ -3,6 +3,9 @@ library;
 
 import 'package:yaml/yaml.dart';
 
+/// Default authoring format used by CLI migration generation.
+enum MigrationFormat { dart, sql }
+
 class DriverConfig {
   /// Creates a driver descriptor with a [type] (e.g., `sqlite`) and [options].
   DriverConfig({required this.type, required this.options});
@@ -44,6 +47,7 @@ class MigrationSection {
     required this.registry,
     required this.ledgerTable,
     required this.schemaDump,
+    this.format = MigrationFormat.dart,
   });
 
   /// Directory where migration sources live.
@@ -58,6 +62,9 @@ class MigrationSection {
   /// Schema dump directory path for `schema_dump`. Files are named `<connection>-schema.sql`.
   final String schemaDump;
 
+  /// Default authoring format used by CLI generators.
+  final MigrationFormat format;
+
   /// Reconstructs the section from YAML.
   factory MigrationSection.fromMap(Map<String, Object?> map) =>
       MigrationSection(
@@ -65,6 +72,7 @@ class MigrationSection {
         registry: map['registry']?.toString() ?? '',
         ledgerTable: map['ledger_table']?.toString() ?? 'orm_migrations',
         schemaDump: map['schema_dump']?.toString() ?? 'database/schema',
+        format: _parseMigrationFormat(map['format']),
       );
 
   /// Serializes the section back to a map.
@@ -73,6 +81,7 @@ class MigrationSection {
     'registry': registry,
     'ledger_table': ledgerTable,
     'schema_dump': schemaDump,
+    if (format != MigrationFormat.dart) 'format': format.name,
   };
 
   /// Clones the section with optional overrides.
@@ -81,13 +90,31 @@ class MigrationSection {
     String? registry,
     String? ledgerTable,
     String? schemaDump,
+    MigrationFormat? format,
   }) {
     return MigrationSection(
       directory: directory ?? this.directory,
       registry: registry ?? this.registry,
       ledgerTable: ledgerTable ?? this.ledgerTable,
       schemaDump: schemaDump ?? this.schemaDump,
+      format: format ?? this.format,
     );
+  }
+}
+
+MigrationFormat _parseMigrationFormat(Object? value) {
+  final normalized = value?.toString().trim().toLowerCase();
+  switch (normalized) {
+    case null:
+    case '':
+    case 'dart':
+      return MigrationFormat.dart;
+    case 'sql':
+      return MigrationFormat.sql;
+    default:
+      throw StateError(
+        'Invalid migrations.format "$value". Expected "dart" or "sql".',
+      );
   }
 }
 
