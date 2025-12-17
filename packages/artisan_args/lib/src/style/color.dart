@@ -22,12 +22,19 @@
 /// ```
 library;
 
-import 'package:chalkdart/chalk.dart';
+import '../colorprofile/convert.dart' as cp;
+import '../colorprofile/profile.dart' as cp;
 
 /// Color profile indicating terminal color capabilities.
 enum ColorProfile {
-  /// No color support (plain text).
+  /// No ANSI support (plain text, no decoration).
   ascii,
+
+  /// ANSI SGR supported, but colors are disabled.
+  ///
+  /// This corresponds to the `NO_COLOR` convention: keep text decoration
+  /// (bold/italic/etc.) but drop colors.
+  noColor,
 
   /// Basic 16-color ANSI support.
   ansi,
@@ -108,31 +115,34 @@ class BasicColor extends Color {
     bool background = false,
     bool hasDarkBackground = true,
   }) {
-    if (profile == ColorProfile.ascii) return '';
-
-    final chalk = Chalk();
-
     if (isHex) {
-      // Use hex color - chalkdart handles degradation
-      final hex = _normalizedHex;
-      if (background) {
-        return _extractAnsi(chalk.bgHex(hex)(' '));
-      } else {
-        return _extractAnsi(chalk.hex(hex)(' '));
+      if (profile == ColorProfile.ascii || profile == ColorProfile.noColor) {
+        return '';
       }
+
+      final rgb = _parseHexRgb(_normalizedHex);
+      return cp.sgrColor(
+        profile: _toInternalProfile(profile),
+        background: background,
+        rgb: cp.Rgb(rgb.$1, rgb.$2, rgb.$3),
+      );
     } else {
       // ANSI code
-      final code = int.tryParse(value) ?? 0;
-      if (background) {
-        return '\x1B[48;5;${code}m';
-      } else {
-        return '\x1B[38;5;${code}m';
+      if (profile == ColorProfile.ascii || profile == ColorProfile.noColor) {
+        return '';
       }
+
+      final code = int.tryParse(value) ?? 0;
+      return cp.sgrColor(
+        profile: _toInternalProfile(profile),
+        background: background,
+        ansi256: code.clamp(0, 255),
+      );
     }
   }
 
   @override
-  Color get dim => BasicColor(_dimHex(_normalizedHex));
+  Color get dim => isHex ? BasicColor(_dimHex(_normalizedHex)) : this;
 
   static String _dimHex(String hex) {
     // Reduce brightness by 40%
@@ -179,16 +189,17 @@ class AnsiColor extends Color {
     bool background = false,
     bool hasDarkBackground = true,
   }) {
-    if (profile == ColorProfile.ascii) return '';
+    if (profile == ColorProfile.ascii || profile == ColorProfile.noColor) {
+      return '';
+    }
 
     if (profile == ColorProfile.ansi && code >= 16) {
-      // Degrade to basic 16 colors
-      final basic = _degradeToBasic(code);
-      if (background) {
-        return '\x1B[${40 + basic}m';
-      } else {
-        return '\x1B[${30 + basic}m';
-      }
+      // Degrade to ANSI-16.
+      return cp.sgrColor(
+        profile: cp.Profile.ansi,
+        background: background,
+        ansi16: cp.ansi256ToAnsi16(code),
+      );
     }
 
     if (background) {
@@ -196,26 +207,6 @@ class AnsiColor extends Color {
     } else {
       return '\x1B[38;5;${code}m';
     }
-  }
-
-  /// Degrades a 256-color code to basic 8 colors.
-  static int _degradeToBasic(int code) {
-    if (code < 16) return code % 8;
-    if (code >= 232) {
-      // Grayscale - map to white or black
-      return code >= 244 ? 7 : 0;
-    }
-    // 6x6x6 color cube - simplified mapping
-    final idx = code - 16;
-    final r = (idx ~/ 36) % 6;
-    final g = (idx ~/ 6) % 6;
-    final b = idx % 6;
-    // Simple threshold mapping
-    var result = 0;
-    if (r >= 3) result |= 1;
-    if (g >= 3) result |= 2;
-    if (b >= 3) result |= 4;
-    return result;
   }
 
   @override
@@ -312,6 +303,7 @@ class CompleteColor extends Color {
   }) {
     switch (profile) {
       case ColorProfile.ascii:
+      case ColorProfile.noColor:
         return '';
       case ColorProfile.ansi:
         if (ansi != null) {
@@ -408,21 +400,21 @@ class CompleteAdaptiveColor extends Color {
 
   @override
   Color get dim => CompleteAdaptiveColor(
-        light: CompleteColor(
-          trueColor: BasicColor(light.trueColor).dim is BasicColor
-              ? (BasicColor(light.trueColor).dim as BasicColor).value
-              : light.trueColor,
-          ansi256: light.ansi256,
-          ansi: light.ansi,
-        ),
-        dark: CompleteColor(
-          trueColor: BasicColor(dark.trueColor).dim is BasicColor
-              ? (BasicColor(dark.trueColor).dim as BasicColor).value
-              : dark.trueColor,
-          ansi256: dark.ansi256,
-          ansi: dark.ansi,
-        ),
-      );
+    light: CompleteColor(
+      trueColor: BasicColor(light.trueColor).dim is BasicColor
+          ? (BasicColor(light.trueColor).dim as BasicColor).value
+          : light.trueColor,
+      ansi256: light.ansi256,
+      ansi: light.ansi,
+    ),
+    dark: CompleteColor(
+      trueColor: BasicColor(dark.trueColor).dim is BasicColor
+          ? (BasicColor(dark.trueColor).dim as BasicColor).value
+          : dark.trueColor,
+      ansi256: dark.ansi256,
+      ansi: dark.ansi,
+    ),
+  );
 
   @override
   bool operator ==(Object other) =>
@@ -435,8 +427,7 @@ class CompleteAdaptiveColor extends Color {
   int get hashCode => Object.hash(light, dark);
 
   @override
-  String toString() =>
-      'CompleteAdaptiveColor(light: $light, dark: $dark)';
+  String toString() => 'CompleteAdaptiveColor(light: $light, dark: $dark)';
 }
 
 /// No color (absence of color styling).
@@ -643,10 +634,20 @@ class Colors {
 // Helper Functions
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Extracts just the ANSI escape code from a chalkdart-wrapped string.
-String _extractAnsi(String chalkedText) {
-  // Chalk wraps text as: \x1B[...m<text>\x1B[0m
-  // We want just the opening escape sequence
-  final match = RegExp(r'\x1B\[[0-9;]+m').firstMatch(chalkedText);
-  return match?.group(0) ?? '';
+cp.Profile _toInternalProfile(ColorProfile profile) {
+  return switch (profile) {
+    ColorProfile.trueColor => cp.Profile.trueColor,
+    ColorProfile.ansi256 => cp.Profile.ansi256,
+    ColorProfile.ansi => cp.Profile.ansi,
+    ColorProfile.noColor => cp.Profile.ascii,
+    ColorProfile.ascii => cp.Profile.noTty,
+  };
+}
+
+(int, int, int) _parseHexRgb(String hex) {
+  final normalized = hex.startsWith('#') ? hex.substring(1) : hex;
+  final r = int.parse(normalized.substring(0, 2), radix: 16);
+  final g = int.parse(normalized.substring(2, 4), radix: 16);
+  final b = int.parse(normalized.substring(4, 6), radix: 16);
+  return (r, g, b);
 }

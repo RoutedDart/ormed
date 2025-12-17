@@ -384,7 +384,7 @@ void main() {
           horizontal: HorizontalAlign.center,
           vertical: VerticalAlign.center,
           content: 'X',
-          fillChar: '.',
+          whitespace: WhitespaceOptions(chars: '.'),
         );
 
         expect(result, contains('.'));

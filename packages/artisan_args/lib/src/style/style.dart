@@ -19,6 +19,8 @@
 library;
 
 import 'package:chalkdart/chalk.dart';
+import 'package:html/dom.dart' as dom;
+import 'package:html/parser.dart' as html;
 
 import 'border.dart';
 import 'color.dart';
@@ -999,7 +1001,8 @@ class Style {
     _borderBottomForeground = null;
     _borderLeftForeground = null;
     _clearFlag(_PropBits.borderForeground);
-    _borderProps &= ~(_borderTopFg | _borderRightFg | _borderBottomFg | _borderLeftFg);
+    _borderProps &=
+        ~(_borderTopFg | _borderRightFg | _borderBottomFg | _borderLeftFg);
     return this;
   }
 
@@ -1011,7 +1014,8 @@ class Style {
     _borderBottomBackground = null;
     _borderLeftBackground = null;
     _clearFlag(_PropBits.borderBackground);
-    _borderProps &= ~(_borderTopBg | _borderRightBg | _borderBottomBg | _borderLeftBg);
+    _borderProps &=
+        ~(_borderTopBg | _borderRightBg | _borderBottomBg | _borderLeftBg);
     return this;
   }
 
@@ -1210,7 +1214,6 @@ class Style {
 
   /// Gets the border style (alias for getBorder).
   Border? get getBorderStyle => getBorder;
-
 
   /// Gets the border sides.
   BorderSides get getBorderSides => _borderSides;
@@ -1587,6 +1590,9 @@ class Style {
   ///
   /// This produces an ANSI-escaped string ready for terminal output.
   String render(String text) {
+    text = _applyConsoleTags(text);
+    text = _applyConsoleTags(text);
+
     // Check if any styling or layout is needed
     final hasLayout =
         _hasFlag(_PropBits.width) ||
@@ -1643,13 +1649,13 @@ class Style {
     // Apply alignment to reach target width
     // Like lipgloss, this runs when there are multiple lines OR when width is set
     // The target width is the full _width (including padding), or the widest line if no width set
-    final alignWidth = _hasFlag(_PropBits.width) && _width > 0 
-        ? _width 
+    final alignWidth = _hasFlag(_PropBits.width) && _width > 0
+        ? _width
         : _getMaxLineWidth(lines);
     if ((lines.length > 1 || _hasFlag(_PropBits.width)) && alignWidth > 0) {
       lines = _alignLines(lines, alignWidth);
     }
-    
+
     // Update contentWidth after alignment for border
     contentWidth = alignWidth;
 
@@ -1750,7 +1756,7 @@ class Style {
 
   /// Strips ANSI escape sequences from a string.
   static String stripAnsi(String text) {
-    return text.replaceAll(RegExp(r'\x1B\[[0-9;]*m'), '');
+    return text.replaceAll(RegExp(r'\x1B\[[0-9;:]*m'), '');
   }
 
   /// Gets the visible length of a string (ignoring ANSI codes).
@@ -1796,9 +1802,12 @@ class Style {
   /// Checks if a code point is a combining character (zero width).
   static bool _isCombining(int cp) {
     return (cp >= 0x0300 && cp <= 0x036F) || // Combining Diacritical Marks
-        (cp >= 0x1AB0 && cp <= 0x1AFF) || // Combining Diacritical Marks Extended
-        (cp >= 0x1DC0 && cp <= 0x1DFF) || // Combining Diacritical Marks Supplement
-        (cp >= 0x20D0 && cp <= 0x20FF) || // Combining Diacritical Marks for Symbols
+        (cp >= 0x1AB0 &&
+            cp <= 0x1AFF) || // Combining Diacritical Marks Extended
+        (cp >= 0x1DC0 &&
+            cp <= 0x1DFF) || // Combining Diacritical Marks Supplement
+        (cp >= 0x20D0 &&
+            cp <= 0x20FF) || // Combining Diacritical Marks for Symbols
         (cp >= 0xFE20 && cp <= 0xFE2F); // Combining Half Marks
   }
 
@@ -1806,17 +1815,22 @@ class Style {
   static bool _isFullWidth(int cp) {
     // CJK Unified Ideographs and related blocks
     return (cp >= 0x1100 && cp <= 0x115F) || // Hangul Jamo
-        (cp >= 0x2E80 && cp <= 0x9FFF) || // CJK Radicals through CJK Unified Ideographs
+        (cp >= 0x2E80 &&
+            cp <= 0x9FFF) || // CJK Radicals through CJK Unified Ideographs
         (cp >= 0xAC00 && cp <= 0xD7A3) || // Hangul Syllables
         (cp >= 0xF900 && cp <= 0xFAFF) || // CJK Compatibility Ideographs
         (cp >= 0xFE10 && cp <= 0xFE1F) || // Vertical Forms
         (cp >= 0xFE30 && cp <= 0xFE6F) || // CJK Compatibility Forms
         (cp >= 0xFF00 && cp <= 0xFF60) || // Fullwidth ASCII variants
         (cp >= 0xFFE0 && cp <= 0xFFE6) || // Fullwidth symbol variants
-        (cp >= 0x20000 && cp <= 0x2FFFF) || // CJK Unified Ideographs Extension B-F
-        (cp >= 0x30000 && cp <= 0x3FFFF) || // CJK Unified Ideographs Extension G-H
+        (cp >= 0x20000 &&
+            cp <= 0x2FFFF) || // CJK Unified Ideographs Extension B-F
+        (cp >= 0x30000 &&
+            cp <= 0x3FFFF) || // CJK Unified Ideographs Extension G-H
         // Common emoji ranges (simplified - many emoji are double-width)
-        (cp >= 0x1F300 && cp <= 0x1F9FF) || // Miscellaneous Symbols and Pictographs, Emoticons, etc.
+        (cp >= 0x1F300 &&
+            cp <=
+                0x1F9FF) || // Miscellaneous Symbols and Pictographs, Emoticons, etc.
         (cp >= 0x1FA00 && cp <= 0x1FAFF); // Chess, symbols, extended-A
   }
 
@@ -2001,7 +2015,7 @@ class Style {
   }
 
   /// Aligns lines horizontally, like lipgloss's alignTextHorizontal.
-  /// 
+  ///
   /// For each line:
   /// 1. Calculate shortAmount = widestLine - lineWidth (to match widest line)
   /// 2. Add additional space if width > (shortAmount + lineWidth)
@@ -2010,14 +2024,12 @@ class Style {
     if (lines.isEmpty) return lines;
 
     // Find the widest line
-    final widestLine = lines
-        .map(visibleLength)
-        .reduce((a, b) => a > b ? a : b);
+    final widestLine = lines.map(visibleLength).reduce((a, b) => a > b ? a : b);
 
     return lines.map((line) {
       final lineWidth = visibleLength(line);
       var shortAmount = widestLine - lineWidth; // difference from widest line
-      
+
       // Add more if we need to reach target width
       final neededForWidth = targetWidth - (shortAmount + lineWidth);
       if (neededForWidth > 0) {
@@ -2037,6 +2049,211 @@ class Style {
           return '${' ' * shortAmount}$line';
       }
     }).toList();
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Console-style tag parsing (Symfony/Laravel)
+  // ─────────────────────────────────────────────────────────────────────────
+
+  static const _resetAnsi = '\x1B[0m';
+
+  String _applyConsoleTags(String text) {
+    // Quick exit if no tags
+    if (!text.contains('<')) return text;
+
+    final wrapped = _wrapConsoleTags(text);
+    if (wrapped == null) return text;
+
+    final normalized = wrapped.replaceAll('</>', '</span>');
+    final fragment = html.parseFragment(normalized);
+    final buf = StringBuffer();
+    final stack = <String>[];
+
+    void walk(dom.Node node) {
+      if (node.nodeType == dom.Node.TEXT_NODE) {
+        buf.write(node.text);
+        return;
+      }
+      if (node is dom.Element) {
+        String? applied;
+        if (node.localName == 'span') {
+          final data = node.attributes['data-console'];
+          if (data != null) {
+            applied = _consoleToAnsi(data);
+            if (applied.isNotEmpty) {
+              buf.write(applied);
+              stack.add(applied);
+            }
+          }
+        }
+        for (final child in node.nodes) {
+          walk(child);
+        }
+        if (applied != null && stack.isNotEmpty) {
+          // restore previous style or reset
+          stack.removeLast();
+          final prev = stack.isNotEmpty ? stack.last : null;
+          buf.write(prev ?? _resetAnsi);
+        }
+      }
+    }
+
+    for (final node in fragment.nodes) {
+      walk(node);
+    }
+
+    buf.write(_resetAnsi);
+    return buf.toString();
+  }
+
+  String _consoleToAnsi(String tag) {
+    var fg = '';
+    var bg = '';
+    var opts = '';
+    var href = '';
+
+    for (final part in tag.split(';')) {
+      final kv = part.split('=');
+      if (kv.length != 2) continue;
+      switch (kv[0].toLowerCase()) {
+        case 'fg':
+          fg = kv[1];
+          break;
+        case 'bg':
+          bg = kv[1];
+          break;
+        case 'options':
+          opts = kv[1];
+          break;
+        case 'href':
+          href = kv[1];
+          break;
+      }
+    }
+
+    final buf = StringBuffer();
+    if (fg.isNotEmpty) buf.write(_colorAnsi(fg, true));
+    if (bg.isNotEmpty) buf.write(_colorAnsi(bg, false));
+    if (opts.isNotEmpty) buf.write(_optionsAnsi(opts));
+    if (href.isNotEmpty) {
+      buf.write('\u001b]8;;$href\u0007');
+    }
+
+    return buf.toString();
+  }
+
+  String _colorAnsi(String color, bool foreground) {
+    final map = <String, int>{
+      'black': 0,
+      'red': 1,
+      'green': 2,
+      'yellow': 3,
+      'blue': 4,
+      'magenta': 5,
+      'cyan': 6,
+      'white': 7,
+      'default': 9,
+      'gray': 7,
+      'grey': 7,
+    };
+    final lower = color.toLowerCase();
+    final bright = lower.startsWith('bright-');
+    final name = bright ? lower.substring(7) : lower;
+    final code = map[name];
+    if (code == null) return '';
+    final base = foreground ? 30 : 40;
+    final value = bright ? base + 60 + code : base + code;
+    return '\x1B[${value}m';
+  }
+
+  String _optionsAnsi(String opts) {
+    final parts = opts.split(',').map((s) => s.trim().toLowerCase());
+    final codes = <int>[];
+    for (final p in parts) {
+      switch (p) {
+        case 'bold':
+          codes.add(1);
+          break;
+        case 'underscore':
+        case 'underline':
+          codes.add(4);
+          break;
+        case 'blink':
+          codes.add(5);
+          break;
+        case 'reverse':
+          codes.add(7);
+          break;
+        case 'conceal':
+          codes.add(8);
+          break;
+      }
+    }
+    if (codes.isEmpty) return '';
+    return '\x1B[${codes.join(';')}m';
+  }
+
+  /// Wrap console tags into spans for HTML parsing without regex usage.
+  /// Returns null if no wrapping was needed.
+  String? _wrapConsoleTags(String text) {
+    final buf = StringBuffer();
+    var i = 0;
+    var changed = false;
+    var appliedAny = false;
+
+    while (i < text.length) {
+      final ch = text[i];
+      if (ch != '<') {
+        buf.write(ch);
+        i++;
+        continue;
+      }
+
+      final end = text.indexOf('>', i + 1);
+      if (end == -1) {
+        buf.write(text.substring(i));
+        break;
+      }
+
+      final token = text.substring(i + 1, end);
+
+      // Handle reset </>
+      if (token == '/') {
+        if (appliedAny) {
+          buf.write('</span>');
+          changed = true;
+        } else {
+          buf.write('</>');
+        }
+        i = end + 1;
+        continue;
+      }
+
+      // Closing tags pass through
+      if (token.startsWith('/')) {
+        buf.write('<$token>');
+        i = end + 1;
+        continue;
+      }
+
+      final lower = token.toLowerCase();
+      final hasSupported =
+          lower.contains('fg=') ||
+          lower.contains('bg=') ||
+          lower.contains('options=') ||
+          lower.contains('href=');
+
+      if (hasSupported) {
+        buf.write('<span data-console="$token">');
+        appliedAny = true;
+        changed = true;
+      } else {
+        buf.write('<$token>');
+      }
+      i = end + 1;
+    }
+
+    return changed ? buf.toString() : null;
   }
 
   /// Applies padding (fixed spaces, not filling to width).

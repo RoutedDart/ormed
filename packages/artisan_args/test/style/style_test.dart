@@ -218,7 +218,9 @@ void main() {
       });
 
       test('unsetMarginBackground clears margin background', () {
-        final style = Style().marginBackground(Colors.red).unsetMarginBackground();
+        final style = Style()
+            .marginBackground(Colors.red)
+            .unsetMarginBackground();
         expect(style.getMarginBackground, isNull);
       });
 
@@ -770,65 +772,32 @@ void main() {
   group('CompleteAdaptiveColor', () {
     test('uses dark variant on dark backgrounds', () {
       final color = CompleteAdaptiveColor(
-        light: CompleteColor(
-          trueColor: '#000000',
-          ansi256: '0',
-          ansi: '0',
-        ),
-        dark: CompleteColor(
-          trueColor: '#ffffff',
-          ansi256: '255',
-          ansi: '7',
-        ),
+        light: CompleteColor(trueColor: '#000000', ansi256: '0', ansi: '0'),
+        dark: CompleteColor(trueColor: '#ffffff', ansi256: '255', ansi: '7'),
       );
 
-      final ansi = color.toAnsi(
-        ColorProfile.ansi256,
-        hasDarkBackground: true,
-      );
+      final ansi = color.toAnsi(ColorProfile.ansi256, hasDarkBackground: true);
       expect(ansi, contains('255')); // Dark variant
     });
 
     test('uses light variant on light backgrounds', () {
       final color = CompleteAdaptiveColor(
-        light: CompleteColor(
-          trueColor: '#000000',
-          ansi256: '0',
-          ansi: '0',
-        ),
-        dark: CompleteColor(
-          trueColor: '#ffffff',
-          ansi256: '255',
-          ansi: '7',
-        ),
+        light: CompleteColor(trueColor: '#000000', ansi256: '0', ansi: '0'),
+        dark: CompleteColor(trueColor: '#ffffff', ansi256: '255', ansi: '7'),
       );
 
-      final ansi = color.toAnsi(
-        ColorProfile.ansi256,
-        hasDarkBackground: false,
-      );
+      final ansi = color.toAnsi(ColorProfile.ansi256, hasDarkBackground: false);
       expect(ansi, contains(';5;0')); // Light variant
     });
 
     test('respects color profile', () {
       final color = CompleteAdaptiveColor(
-        light: CompleteColor(
-          trueColor: '#ff0000',
-          ansi256: '196',
-          ansi: '1',
-        ),
-        dark: CompleteColor(
-          trueColor: '#00ff00',
-          ansi256: '46',
-          ansi: '2',
-        ),
+        light: CompleteColor(trueColor: '#ff0000', ansi256: '196', ansi: '1'),
+        dark: CompleteColor(trueColor: '#00ff00', ansi256: '46', ansi: '2'),
       );
 
       // ANSI profile on dark bg
-      final ansi = color.toAnsi(
-        ColorProfile.ansi,
-        hasDarkBackground: true,
-      );
+      final ansi = color.toAnsi(ColorProfile.ansi, hasDarkBackground: true);
       expect(ansi, contains('32')); // 30 + 2 = green in ANSI
     });
 
@@ -932,7 +901,9 @@ void main() {
 
     test('border without sides does not reset existing sides', () {
       final style = Style()
-          .borderSides(BorderSides(top: true, right: true, bottom: true, left: true))
+          .borderSides(
+            BorderSides(top: true, right: true, bottom: true, left: true),
+          )
           .border(Border.rounded);
       // Should keep the existing sides
       expect(style.getBorderSides.top, isTrue);

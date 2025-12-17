@@ -433,5 +433,6 @@ class ListIndenters {
   static String arrow(ListItems items, int index) => '→ ';
 
   /// Creates a fixed indenter.
-  static ListIndenterFunc fixed(String indent) => (_, __) => indent;
+  static ListIndenterFunc fixed(String indent) =>
+      (_, __) => indent;
 }
