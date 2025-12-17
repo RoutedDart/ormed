@@ -1,330 +1,111 @@
 ---
-sidebar_position: 1
+sidebar_position: 10
 ---
 
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
-# CLI Commands
+# CLI Command Reference
 
-The Ormed CLI provides commands for managing migrations, generating code, and working with your database.
+This page is a quick command index. For guides, start with:
+- [CLI Overview](./overview)
+- [Migrations](./migrations)
+- [Seeding](./seeding)
+- [Schema tooling](./schema)
 
-## Installation
+## Global patterns
 
-```bash
-# Run via dart
-dart run orm <command>
+- The CLI reads `orm.yaml` (auto-discovered, or use `--config`).
+- Use `--connection <name>` to select a connection block.
+- Many commands support `--database` to override the driver database option.
 
-# Or add to PATH and run directly
-orm <command>
-```
+## Commands
 
-## Configuration
+### `init`
 
-The CLI uses `orm.yaml` for configuration (see [Getting Started → Configuration](../getting-started/configuration) for the full reference). Minimal shapes:
-
-<Tabs groupId="cli-orm-yaml" defaultValue="single">
-  <TabItem value="single" label="Single (default)">
-
-```yaml
-driver:
-  type: sqlite
-  options:
-    database: database.sqlite
-migrations:
-  registry: lib/src/database/migrations.dart
-seeds:
-  registry: lib/src/database/seeders.dart
-```
-
-  </TabItem>
-  <TabItem value="multiple" label="Multiple">
-
-```yaml
-default_connection: primary
-connections:
-  primary:
-    driver:
-      type: sqlite
-      options:
-        database: data/app.sqlite
-  analytics:
-    driver:
-      type: postgres
-      options:
-        url: ${ANALYTICS_URL}
-```
-
-  </TabItem>
-</Tabs>
-
-The CLI automatically finds the nearest `orm.yaml` walking up from the current directory.
-
-## Global Options
-
-| Option | Description |
-|--------|-------------|
-| `--config`, `-c` | Path to orm.yaml file |
-| `--connection` | Target database connection |
-| `--help`, `-h` | Show command help |
-| `--verbose`, `-v` | Verbose output |
-
----
-
-## Initialization
-
-### `orm init`
-
-Initialize Ormed in a new project:
+Scaffolds `orm.yaml` plus migration/seeder registries:
 
 ```bash
-dart run orm init
+dart run ormed_cli:orm init
 ```
 
-Creates:
-- `orm.yaml` configuration file
-- `database/migrations/` directory
-- `database/migrations.dart` registry file
+### `make`
 
----
-
-## Migration Commands
-
-### `orm migrate:apply`
-
-Apply pending migrations:
+Generates migrations or seeders:
 
 ```bash
-# Apply all pending
-dart run orm migrate:apply
-
-# Apply with limit
-dart run orm migrate:apply --limit 5
-
-# Apply to specific connection
-dart run orm migrate:apply --connection analytics
+dart run ormed_cli:orm make --name create_users_table
+dart run ormed_cli:orm make --name create_users_table --format sql
+dart run ormed_cli:orm make --name UserSeeder --seeder
 ```
 
-**Change Set Preview:** Each apply shows a preview of schema changes before execution:
+### `migrate`
 
-```
-Migration m_20241201000000_create_users_table (up) change set:
-  + Create table users
-      - columns: id, email, name, created_at
-  SQL statements: 1
-```
-
-### `orm migrate:rollback`
-
-Rollback applied migrations:
+Applies pending migrations:
 
 ```bash
-# Rollback last batch
-dart run orm migrate:rollback
-
-# Rollback multiple batches
-dart run orm migrate:rollback --steps 3
-
-# Target specific connection
-dart run orm migrate:rollback --connection analytics
+dart run ormed_cli:orm migrate
+dart run ormed_cli:orm migrate --limit 5
+dart run ormed_cli:orm migrate --pretend
 ```
 
-### `orm migrate:status`
+### `migrate:export`
 
-Check migration status:
+Exports `up.sql` and `down.sql` for migrations:
 
 ```bash
-dart run orm migrate:status
+dart run ormed_cli:orm migrate:export --out database/migration_sql
+dart run ormed_cli:orm migrate:export --out database/migration_sql --all
 ```
 
-Output:
-```
-Migration                                      | Status
-----------------------------------------------|--------
-m_20241201000000_create_users_table           | Applied
-m_20241201000100_create_posts_table           | Applied
-m_20241201000200_add_slug_to_posts            | Pending
-```
-
-### `orm migrate:fresh`
-
-Drop all tables and re-run all migrations:
+### `migrate:status`
 
 ```bash
-dart run orm migrate:fresh
-
-# With seeding
-dart run orm migrate:fresh --seed
+dart run ormed_cli:orm migrate:status
+dart run ormed_cli:orm migrate:status --pending
 ```
 
-:::caution
-This command drops all tables in the database. Only use in development!
-:::
-
-### `orm migrate:reset`
-
-Rollback all migrations and re-run:
+### `migrate:rollback`
 
 ```bash
-dart run orm migrate:reset
+dart run ormed_cli:orm migrate:rollback
+dart run ormed_cli:orm migrate:rollback --steps 3
 ```
 
-### `orm migrate:refresh`
-
-Rollback and re-apply migrations:
+### `migrate:fresh` / `migrate:reset` / `migrate:refresh`
 
 ```bash
-# Refresh all
-dart run orm migrate:refresh
-
-# Refresh last N batches
-dart run orm migrate:refresh --steps 5
+dart run ormed_cli:orm migrate:fresh
+dart run ormed_cli:orm migrate:reset
+dart run ormed_cli:orm migrate:refresh
 ```
 
----
-
-## Generator Commands
-
-### `orm make:migration`
-
-Generate a new migration file:
+### `seed`
 
 ```bash
-# Basic migration
-dart run orm make:migration --name create_users_table
-
-# Create table migration (with boilerplate)
-dart run orm make:migration --name create_posts_table --create
-
-# Alter table migration
-dart run orm make:migration --name add_slug_to_posts --table posts
+dart run ormed_cli:orm seed
+dart run ormed_cli:orm seed --class UserSeeder
+dart run ormed_cli:orm seed --pretend
 ```
 
-Generated file: `m_20241201143052_create_users_table.dart`
-
-The migration is automatically registered in `database/migrations.dart`.
-
-### `orm make:model`
-
-Generate a new model:
+### `schema:dump`
 
 ```bash
-dart run orm make:model --name User
-
-# With migration
-dart run orm make:model --name Post --migration
+dart run ormed_cli:orm schema:dump
+dart run ormed_cli:orm schema:dump --prune
 ```
 
-### `orm make:seeder`
-
-Generate a database seeder:
+### `schema:describe`
 
 ```bash
-dart run orm make:seeder --name UserSeeder
+dart run ormed_cli:orm schema:describe
+dart run ormed_cli:orm schema:describe --json
 ```
 
----
-
-## Schema Commands
-
-### `orm schema:dump`
-
-Dump the current schema to a SQL file for squashing migrations:
+### `db:wipe`
 
 ```bash
-# Create dump
-dart run orm schema:dump
-
-# Create dump and delete migration files
-dart run orm schema:dump --prune
-
-# Custom output path
-dart run orm schema:dump --path database/schema.sql
-
-# Target specific connection
-dart run orm schema:dump --database testing
+dart run ormed_cli:orm db:wipe
+dart run ormed_cli:orm db:wipe --drop-views
 ```
 
-**How schema dumps work:**
-1. Fresh databases load the dump first (if ledger is empty)
-2. Then apply any migrations created after the dump
-3. Speeds up test database setup and onboarding
-
-:::tip
-Commit schema dumps to version control so CI/CD can quickly create databases.
-:::
-
-### `orm schema:diff`
-
-Show differences between migrations and current database:
-
-```bash
-dart run orm schema:diff
-```
-
----
-
-## Database Commands
-
-### `orm db:seed`
-
-Run database seeders:
-
-```bash
-# Run default seeder
-dart run orm db:seed
-
-# Run specific seeder
-dart run orm db:seed --class UserSeeder
-```
-
-### `orm db:wipe`
-
-Drop all tables (without running migrations):
-
-```bash
-dart run orm db:wipe
-```
-
----
-
-## CI/CD Usage
-
-Run migrations in CI/CD pipelines:
-
-```bash
-# For SQLite - works out of the box
-dart run orm migrate:apply
-
-# For Postgres - set connection URL
-export POSTGRES_URL=postgres://user:pass@db.internal/app
-dart run orm migrate:apply --limit 10
-```
-
----
-
-## Examples
-
-```bash
-# Initialize new project
-dart run orm init
-
-# Create a migration
-dart run orm make:migration --name create_users_table --create
-
-# Apply migrations
-dart run orm migrate:apply
-
-# Check status
-dart run orm migrate:status
-
-# Create and run a seeder
-dart run orm make:seeder --name UserSeeder
-dart run orm db:seed --class UserSeeder
-
-# Fresh database with seeds
-dart run orm migrate:fresh --seed
-
-# Multi-tenant: apply to analytics database
-dart run orm migrate:apply --connection analytics
-```

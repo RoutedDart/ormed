@@ -178,3 +178,18 @@ If you prefer manual control, you can still register models individually:
 - [Defining Models](../models/defining-models) — create your first models
 - [CLI Commands](../cli/commands) — learn all available CLI commands
 - [Migrations](../migrations/overview) — set up database migrations
+
+## Migration authoring format
+
+The CLI can scaffold migrations as either:
+- Dart migrations (default)
+- SQL folder migrations (`up.sql` / `down.sql`)
+
+To change the default authoring format for the active connection:
+
+```yaml
+migrations:
+  format: sql # dart | sql
+```
+
+This only affects generation defaults (what `orm make` produces). The migration registry can still contain both styles.

@@ -1,0 +1,60 @@
+---
+sidebar_position: 1
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# CLI Overview
+
+The Ormed CLI manages migrations, seeds, and schema tooling for projects configured with `orm.yaml`.
+
+## Running the CLI
+
+<Tabs groupId="cli-run" defaultValue="dart-run">
+  <TabItem value="dart-run" label="dart run">
+
+```bash
+dart run ormed_cli:orm --help
+dart run ormed_cli:orm init
+dart run ormed_cli:orm migrate
+```
+
+  </TabItem>
+  <TabItem value="global" label="Global (optional)">
+
+If you install the CLI globally, you can run:
+
+```bash
+orm --help
+orm migrate
+```
+
+  </TabItem>
+</Tabs>
+
+## Config discovery
+
+By default the CLI finds the nearest `orm.yaml` by walking up from the current directory.
+
+Override the config path explicitly:
+
+```bash
+dart run ormed_cli:orm migrate --config path/to/orm.yaml
+```
+
+## Targeting connections
+
+If your `orm.yaml` contains multiple connections, target one with:
+
+```bash
+dart run ormed_cli:orm migrate --connection analytics
+dart run ormed_cli:orm seed --connection analytics
+```
+
+## Production guard
+
+Commands that mutate schema/data prompt for confirmation when the process environment indicates production (`ORM_ENV`, `DART_ENV`, `FLUTTER_ENV`, or `ENV` equals `production`).
+
+Use `--force` (when supported) to skip the prompt.
+

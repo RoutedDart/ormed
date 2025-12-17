@@ -77,6 +77,10 @@ const sidebars: SidebarsConfig = {
       type: 'category',
       label: 'CLI',
       items: [
+        'cli/overview',
+        'cli/migrations',
+        'cli/seeding',
+        'cli/schema',
         'cli/commands',
       ],
     },
