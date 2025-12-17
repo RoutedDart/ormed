@@ -1511,23 +1511,65 @@ class PostgresDriverAdapter
       columns,
       uniqueColumns,
     );
+    final jsonTemplates = _jsonUpsertUpdateTemplates(firstRow, table);
+    final jsonColumns = jsonTemplates.map((t) => t.column).toSet();
     final returning = plan.returning
         ? ' RETURNING ${_returningColumns(plan.definition)}'
         : '';
     final sql = StringBuffer(
       'INSERT INTO $table ($columnSql) VALUES ($placeholders) ',
     )..write('ON CONFLICT(${uniqueColumns.map(_quote).join(', ')}) ');
-    if (updateColumns.isEmpty) {
+    final updateAssignments = <String>[];
+    updateAssignments.addAll(
+      updateColumns
+          .where((c) => !jsonColumns.contains(c))
+          .map((c) => '${_quote(c)} = EXCLUDED.${_quote(c)}'),
+    );
+    updateAssignments.addAll(jsonTemplates.map((t) => t.sql));
+    if (updateAssignments.isEmpty) {
       sql.write('DO NOTHING');
     } else {
-      final updateClause = updateColumns
-          .map((c) => '${_quote(c)} = EXCLUDED.${_quote(c)}')
-          .join(', ');
-      sql.write('DO UPDATE SET $updateClause');
+      sql.write('DO UPDATE SET ${updateAssignments.join(', ')}');
     }
     sql.write(returning);
     final parameterSets = rows
-        .map((row) => columns.map((column) => row.values[column]).toList())
+        .map((row) {
+          final parameters =
+              columns.map((column) => row.values[column]).toList(growable: true);
+          if (jsonTemplates.isNotEmpty) {
+            final clauses = row.jsonUpdates;
+            _validateJsonUpdateShape(jsonTemplates, clauses);
+
+            final grouped = <String, List<JsonUpdateClause>>{};
+            for (final clause in clauses) {
+              grouped
+                  .putIfAbsent(clause.column, () => <JsonUpdateClause>[])
+                  .add(clause);
+            }
+
+            for (final template in jsonTemplates) {
+              final columnClauses = grouped[template.column]!;
+              var expression = template.resolvedColumn;
+              for (final clause in columnClauses) {
+                final compiled = clause.patch
+                    ? _grammar.compileJsonPatch(
+                        clause.column,
+                        expression,
+                        clause.value,
+                      )
+                    : _grammar.compileJsonUpdate(
+                        clause.column,
+                        expression,
+                        clause.path,
+                        clause.value,
+                      );
+                expression = _assignmentRhs(compiled.sql);
+                parameters.addAll(compiled.bindings);
+              }
+            }
+          }
+          return parameters;
+        })
         .toList(growable: false);
     return _PostgresMutationShape(
       sql: sql.toString(),
@@ -1575,6 +1617,52 @@ class PostgresDriverAdapter
               .map((c) => c.path)
               .join(','), // Combined path for validation
           sql: '$resolved = $expression',
+          resolvedColumn: resolved,
+          patch: clauses.any((c) => c.patch),
+        ),
+      );
+    });
+
+    return templates;
+  }
+
+  List<_JsonUpdateTemplate> _jsonUpsertUpdateTemplates(
+    MutationRow row,
+    String tableReference,
+  ) {
+    if (row.jsonUpdates.isEmpty) {
+      return const <_JsonUpdateTemplate>[];
+    }
+
+    final grouped = <String, List<JsonUpdateClause>>{};
+    for (final clause in row.jsonUpdates) {
+      grouped
+          .putIfAbsent(clause.column, () => <JsonUpdateClause>[])
+          .add(clause);
+    }
+
+    final templates = <_JsonUpdateTemplate>[];
+    grouped.forEach((column, clauses) {
+      final resolved = '$tableReference.${_quote(column)}';
+      var expression = resolved;
+
+      for (final clause in clauses) {
+        final compiled = clause.patch
+            ? _grammar.compileJsonPatch(clause.column, expression, clause.value)
+            : _grammar.compileJsonUpdate(
+                clause.column,
+                expression,
+                clause.path,
+                clause.value,
+              );
+        expression = _assignmentRhs(compiled.sql);
+      }
+
+      templates.add(
+        _JsonUpdateTemplate(
+          column: column,
+          path: clauses.map((c) => c.path).join(','),
+          sql: '${_quote(column)} = $expression',
           resolvedColumn: resolved,
           patch: clauses.any((c) => c.patch),
         ),

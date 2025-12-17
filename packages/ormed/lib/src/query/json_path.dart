@@ -63,6 +63,14 @@ List<_JsonPathToken> _tokenizeJsonPath(String rawPath) {
   }
   final tokens = <_JsonPathToken>[];
 
+  bool isDotIndexToken(String value) {
+    final cleaned = value.trim();
+    if (cleaned.isEmpty) return false;
+    if (cleaned == '0') return true;
+    if (cleaned.startsWith('0')) return false;
+    return int.tryParse(cleaned) != null;
+  }
+
   void addProperty(String value, {bool quoted = false}) {
     final cleaned = value.trim();
     if (cleaned.isEmpty) return;
@@ -94,7 +102,12 @@ List<_JsonPathToken> _tokenizeJsonPath(String rawPath) {
         buffer.write(input[index]);
         index += 1;
       }
-      addProperty(buffer.toString());
+      final segment = buffer.toString().trim();
+      if (isDotIndexToken(segment)) {
+        addIndex(segment);
+      } else {
+        addProperty(segment);
+      }
       continue;
     }
     if (char == '[') {

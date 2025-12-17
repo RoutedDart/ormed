@@ -1396,8 +1396,31 @@ class SqliteDriverAdapter
           if (jsonTemplates.isNotEmpty) {
             final clauses = row.jsonUpdates;
             _validateJsonUpdateShape(jsonTemplates, clauses);
+            final grouped = <String, List<JsonUpdateClause>>{};
+            for (final clause in clauses) {
+              grouped
+                  .putIfAbsent(clause.column, () => <JsonUpdateClause>[])
+                  .add(clause);
+            }
             for (final template in jsonTemplates) {
-              values.addAll(template.bindings);
+              final columnClauses = grouped[template.column]!;
+              var expression = _quote(template.column);
+              for (final clause in columnClauses) {
+                final compiled = clause.patch
+                    ? _grammar.compileJsonPatch(
+                        clause.column,
+                        expression,
+                        clause.value,
+                      )
+                    : _grammar.compileJsonUpdate(
+                        clause.column,
+                        expression,
+                        clause.path,
+                        clause.value,
+                      );
+                expression = _assignmentRhs(compiled.sql);
+                values.addAll(compiled.bindings);
+              }
             }
           }
           values.addAll(
@@ -1611,9 +1634,16 @@ class SqliteDriverAdapter
       columns,
       uniqueColumns,
     );
-    final updateClause = updateColumns
-        .map((c) => '${_quote(c)} = excluded.${_quote(c)}')
-        .join(', ');
+    final jsonTemplates = _jsonUpdateTemplates(firstRow);
+    final jsonColumns = jsonTemplates.map((t) => t.column).toSet();
+    final updateAssignments = <String>[];
+    updateAssignments.addAll(
+      updateColumns
+          .where((c) => !jsonColumns.contains(c))
+          .map((c) => '${_quote(c)} = excluded.${_quote(c)}'),
+    );
+    updateAssignments.addAll(jsonTemplates.map((template) => template.sql));
+    final updateClause = updateAssignments.join(', ');
     final sql =
         StringBuffer('INSERT INTO $table ($columnSql) VALUES ($placeholders) ')
           ..write('ON CONFLICT(${uniqueColumns.map(_quote).join(', ')}) DO ')
@@ -1630,7 +1660,48 @@ class SqliteDriverAdapter
       sql.write(' RETURNING $allColumns');
     }
     final parameters = plan.rows
-        .map((row) => columns.map((column) => row.values[column]).toList())
+        .map((row) {
+          final values = columns
+              .map(
+                (column) => _encodeValueForColumn(
+                  definition: plan.definition,
+                  column: column,
+                  value: row.values[column],
+                ),
+              )
+              .toList(growable: true);
+          if (jsonTemplates.isNotEmpty) {
+            final clauses = row.jsonUpdates;
+            _validateJsonUpdateShape(jsonTemplates, clauses);
+            final grouped = <String, List<JsonUpdateClause>>{};
+            for (final clause in clauses) {
+              grouped
+                  .putIfAbsent(clause.column, () => <JsonUpdateClause>[])
+                  .add(clause);
+            }
+            for (final template in jsonTemplates) {
+              final columnClauses = grouped[template.column]!;
+              var expression = _quote(template.column);
+              for (final clause in columnClauses) {
+                final compiled = clause.patch
+                    ? _grammar.compileJsonPatch(
+                        clause.column,
+                        expression,
+                        clause.value,
+                      )
+                    : _grammar.compileJsonUpdate(
+                        clause.column,
+                        expression,
+                        clause.path,
+                        clause.value,
+                      );
+                expression = _assignmentRhs(compiled.sql);
+                values.addAll(compiled.bindings);
+              }
+            }
+          }
+          return values;
+        })
         .toList(growable: false);
     return _SqliteMutationShape(sql: sql.toString(), parameterSets: parameters);
   }

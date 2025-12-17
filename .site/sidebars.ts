@@ -41,6 +41,7 @@ const sidebars: SidebarsConfig = {
         'queries/relations',
         'queries/data-source',
         'queries/caching',
+        'queries/json',
       ],
     },
     {

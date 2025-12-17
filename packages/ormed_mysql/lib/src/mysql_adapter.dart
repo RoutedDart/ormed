@@ -1602,11 +1602,18 @@ class MySqlDriverAdapter
       columns,
       uniqueColumns,
     );
+    final jsonTemplates = _jsonUpdateTemplates(firstRow);
+    final jsonColumns = jsonTemplates.map((t) => t.column).toSet();
     final columnSql = columns.map(_quote).join(', ');
     final placeholders = List.filled(columns.length, '?').join(', ');
-    final updateClause = updateColumns
-        .map((c) => '${_quote(c)} = VALUES(${_quote(c)})')
-        .join(', ');
+    final assignments = <String>[];
+    assignments.addAll(
+      updateColumns
+          .where((c) => !jsonColumns.contains(c))
+          .map((c) => '${_quote(c)} = VALUES(${_quote(c)})'),
+    );
+    assignments.addAll(jsonTemplates.map((template) => template.sql));
+    final updateClause = assignments.join(', ');
     final buffer = StringBuffer(
       'INSERT INTO $table ($columnSql) VALUES ($placeholders) ON DUPLICATE KEY UPDATE ',
     );
@@ -1619,7 +1626,38 @@ class MySqlDriverAdapter
       buffer.write(updateClause);
     }
     final parameterSets = plan.rows
-        .map((row) => columns.map((column) => row.values[column]).toList())
+        .map((row) {
+          final parameters = columns
+              .map((column) => row.values[column])
+              .toList(growable: true);
+          if (jsonTemplates.isNotEmpty) {
+            final clauses = row.jsonUpdates;
+            _validateJsonUpdateShape(jsonTemplates, clauses);
+            for (var i = 0; i < jsonTemplates.length; i++) {
+              final template = jsonTemplates[i];
+              final clause = clauses[i];
+              final compiled = template.patch
+                  ? _grammar.compileJsonPatch(
+                      clause.column,
+                      template.resolvedColumn,
+                      clause.value,
+                    )
+                  : _grammar.compileJsonUpdate(
+                      clause.column,
+                      template.resolvedColumn,
+                      clause.path,
+                      clause.value,
+                    );
+              if (compiled.sql != template.sql) {
+                throw StateError(
+                  'JSON update clause mismatch for ${clause.column} ${clause.path}.',
+                );
+              }
+              parameters.addAll(compiled.bindings);
+            }
+          }
+          return parameters;
+        })
         .toList(growable: false);
     return _MySqlMutationShape(
       sql: buffer.toString(),

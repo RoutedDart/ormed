@@ -348,6 +348,7 @@ export 'src/model/model_extensions.dart';
 export 'src/model/model_factory_connection.dart';
 export 'src/model/model_registry.dart';
 export 'src/mutation/json_update.dart';
+export 'json_path.dart';
 export 'src/orm_project_config.dart';
 export 'src/orm_project_config_loader.dart';
 export 'src/query/plan/join_definition.dart';

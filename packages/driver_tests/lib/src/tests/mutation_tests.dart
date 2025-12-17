@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:ormed/ormed.dart';
 import 'package:test/test.dart';
 
@@ -663,19 +661,15 @@ void runDriverMutationTests() {
     });
 
     test('json updates patch nested payload columns', () async {
-      if (!metadata.supportsCapability(DriverCapability.rawSQL)) {
-        return; // Skip for non-SQL drivers
-      }
       final docId = 9001;
-      await dataSource.connection.driver.executeRaw(
-        'INSERT INTO driver_override_entries (id, payload) VALUES (?, ?)',
-        [
-          docId,
-          jsonEncode({
+      await dataSource.context.repository<DriverOverrideEntry>().insert(
+        DriverOverrideEntry(
+          id: docId,
+          payload: const {
             'mode': 'dark',
             'meta': {'count': 1},
-          }),
-        ],
+          },
+        ),
       );
 
       final repo = dataSource.context.repository<DriverOverrideEntry>();
@@ -695,12 +689,11 @@ void runDriverMutationTests() {
         ],
       );
 
-      final rows = await dataSource.connection.driver.queryRaw(
-        'SELECT payload FROM driver_override_entries WHERE id = ?',
-        [docId],
-      );
-      expect(rows, hasLength(1));
-      final payload = _normalizeJsonPayload(rows.single['payload']);
+      final refreshed = await dataSource.context
+          .query<DriverOverrideEntry>()
+          .whereEquals('id', docId)
+          .firstOrFail();
+      final payload = refreshed.payload;
       expect(payload['mode'], equals('light'));
       final meta = payload['meta'] as Map<String, Object?>?;
       expect(meta, isNotNull);
@@ -797,21 +790,3 @@ void runDriverMutationTests() {
 //     ValueCodecRegistry registry,
 //   ) => Map<String, Object?>.from(data);
 // }
-
-Map<String, Object?> _normalizeJsonPayload(Object? value) {
-  if (value == null) {
-    return const {};
-  }
-  if (value is String) {
-    final decoded = jsonDecode(value) as Map<String, dynamic>;
-    return Map<String, Object?>.from(decoded);
-  }
-  if (value is List<int>) {
-    final decoded = jsonDecode(utf8.decode(value)) as Map<String, dynamic>;
-    return Map<String, Object?>.from(decoded);
-  }
-  if (value is Map) {
-    return Map<String, Object?>.from(value.cast<String, Object?>());
-  }
-  throw StateError('Unsupported JSON payload type: ${value.runtimeType}.');
-}
