@@ -2,6 +2,9 @@
 sidebar_position: 1
 ---
 
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 # Migrations Overview
 
 Migrations are version-controlled database schema changes. Each migration defines changes to apply in the `up` method and reverse operations in the `down` method.
@@ -26,11 +29,21 @@ The `up` method runs when applying migrations, `down` runs during rollbacks. Alw
 
 Use `schema.create()` to define a new table:
 
+<Tabs groupId="migrations-create-table" defaultValue="notes">
+<TabItem value="notes" label="Notes">
+
+- Create parent tables before child tables when using foreign keys.
+- Keep `up` and `down` symmetric so rollbacks stay reliable.
+
+</TabItem>
+<TabItem value="code" label="Code">
+
 ```dart file=../../examples/lib/migrations/basic.dart#migration-create-table
 
 ```
 
-**Note:** Foreign key constraints require referenced tables to exist first. Create parent tables before child tables.
+</TabItem>
+</Tabs>
 
 ## Modifying Tables
 

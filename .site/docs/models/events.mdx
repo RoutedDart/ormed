@@ -34,8 +34,38 @@ Rules:
 
 Attach listeners once when your app boots:
 
-```dart file=../../examples/lib/events/model_events.dart#model-event-listeners
+<Tabs groupId="model-events-listeners" defaultValue="notes">
+<TabItem value="notes" label="Notes">
+
+- Register listeners once during app startup.
+- Global listeners receive events from every `DataSource`.
+
+</TabItem>
+<TabItem value="code" label="Code">
+
+<Tabs groupId="model-events-global-listeners" defaultValue="save-create">
+  <TabItem value="save-create" label="saving / created">
+
+```dart file=../../examples/lib/events/model_events.dart#model-event-listeners-saving-created
 ```
+
+  </TabItem>
+  <TabItem value="update-delete" label="updated / deleted">
+
+```dart file=../../examples/lib/events/model_events.dart#model-event-listeners-updated-deleted
+```
+
+  </TabItem>
+  <TabItem value="retrieved" label="retrieved">
+
+```dart file=../../examples/lib/events/model_events.dart#model-event-listeners-retrieved
+```
+
+  </TabItem>
+</Tabs>
+
+</TabItem>
+</Tabs>
 
 ## Guard operations (cancel)
 
@@ -79,4 +109,3 @@ Hard deletes emit `deleting` → `deleted` → `forceDeleted`.
 ## Replication
 
 `ModelReplicatingEvent` fires before `Repository.replicate` returns the copy. Cancel it to block replication or attach metadata to the new instance.
-

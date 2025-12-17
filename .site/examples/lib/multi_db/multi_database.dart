@@ -30,22 +30,12 @@ Future<void> multiDatabaseSetup() async {
       entities: generatedOrmModelDefinitions,
     ),
   );
-
-  // Testing database
-  final testingDs = DataSource(
-    DataSourceOptions(
-      name: 'testing',
-      driver: SqliteDriverAdapter.inMemory(),
-      entities: generatedOrmModelDefinitions,
-    ),
-  );
   // #endregion multi-db-setup-sources
 
   // #region multi-db-setup-init
   await Future.wait([
     primaryDs.init(),
     analyticsDs.init(),
-    testingDs.init(),
   ]);
   // #endregion multi-db-setup-init
 }
@@ -53,6 +43,7 @@ Future<void> multiDatabaseSetup() async {
 
 // #region multi-db-named
 Future<void> namedConnectionsExample() async {
+  // #region multi-db-named-setup
   final primaryDs = DataSource(
     DataSourceOptions(
       name: 'primary',
@@ -70,10 +61,13 @@ Future<void> namedConnectionsExample() async {
     ),
   );
   await analyticsDs.init();
+  // #endregion multi-db-named-setup
 
+  // #region multi-db-named-queries
   // Query from specific connection
   final users = await primaryDs.query<$User>().get();
   final analyticsData = await analyticsDs.query<$User>().get();
+  // #endregion multi-db-named-queries
 }
 // #endregion multi-db-named
 
@@ -97,6 +91,7 @@ Future<void> transactionCaveatExample() async {
   );
   await analyticsDs.init();
 
+  // #region multi-db-transaction-caveat-core
   // Transactions are per-datasource
   await primaryDs.transaction(() async {
     await primaryDs.repo<$User>().insert(
@@ -106,6 +101,7 @@ Future<void> transactionCaveatExample() async {
     // This is NOT in the same transaction!
     // analyticsDs.repo<$Analytics>().insert(...)
   });
+  // #endregion multi-db-transaction-caveat-core
 }
 // #endregion multi-db-transaction-caveat
 

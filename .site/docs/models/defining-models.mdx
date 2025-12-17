@@ -2,6 +2,9 @@
 sidebar_position: 1
 ---
 
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 # Defining Models
 
 Models in Ormed are Dart classes annotated with `@OrmModel` that map to database tables.
@@ -25,17 +28,39 @@ After running `dart run build_runner build`, this generates:
 
 ## Model Annotation Options
 
+<Tabs groupId="model-annotation-options" defaultValue="notes">
+  <TabItem value="notes" label="Notes">
+
+Use options to control table naming, timestamps, soft deletes, and other model-level behavior.
+
+  </TabItem>
+  <TabItem value="example" label="Example">
+
 ```dart file=../../examples/lib/models/admin.dart#model-with-options
 
 ```
+
+  </TabItem>
+</Tabs>
 
 ## Field Annotations
 
 ### Primary Key
 
+<Tabs groupId="model-primary-keys" defaultValue="notes">
+  <TabItem value="notes" label="Notes">
+
+Primary key configuration affects inserts, updates, and how models are identified when syncing relations.
+
+  </TabItem>
+  <TabItem value="examples" label="Examples">
+
 ```dart file=../../examples/lib/models/field_examples.dart#primary-key-examples
 
 ```
+
+  </TabItem>
+</Tabs>
 
 ### Column Options
 

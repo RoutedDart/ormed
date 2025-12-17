@@ -2,6 +2,9 @@
 sidebar_position: 3
 ---
 
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 # Timestamps
 
 Ormed provides automatic timestamp management for `created_at` and `updated_at` columns.
@@ -36,9 +39,20 @@ This ensures:
 
 Add timestamp columns in your migration:
 
+<Tabs groupId="timestamps-migration" defaultValue="notes">
+  <TabItem value="notes" label="Notes">
+
+If you use `Timestamps`/`TimestampsTZ`, keep the schema column names aligned with your model configuration.
+
+  </TabItem>
+  <TabItem value="code" label="Code">
+
 ```dart file=../../examples/lib/migrations/basic.dart#timestamps-migration
 
 ```
+
+  </TabItem>
+</Tabs>
 
 ## Custom Column Names
 

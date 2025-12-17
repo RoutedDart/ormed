@@ -2,42 +2,57 @@
 sidebar_position: 1
 ---
 
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 # Testing
 
 Ormed provides comprehensive testing facilities for isolated, reliable database tests.
 
-## Basic Test Setup
+## Core Setup
 
-Create a fresh DataSource for each test suite:
+<Tabs groupId="testing-core" defaultValue="basic">
+  <TabItem value="basic" label="Basic">
+
+Create a fresh DataSource for each test suite.
 
 ```dart file=../../examples/lib/testing/testing.dart#testing-basic-setup
 ```
 
-## Using SQLite In-Memory
+  </TabItem>
+  <TabItem value="in-memory" label="SQLite in-memory">
 
-For fast, isolated tests:
+Fast, isolated tests.
 
 ```dart file=../../examples/lib/testing/testing.dart#testing-in-memory
 ```
 
-## Test Data with Seeders
+  </TabItem>
+  <TabItem value="seeders" label="Seeders">
 
-Define a seeder class for consistent test data:
+Define a seeder class for consistent test data.
 
 ```dart file=../../examples/lib/testing/testing.dart#testing-seeder
 ```
 
-## Testing with Real Databases
+  </TabItem>
+  <TabItem value="real-db" label="Real DB">
 
-For integration tests with SQLite:
+Integration tests with SQLite on disk.
 
 ```dart file=../../examples/lib/testing/testing.dart#testing-real-db
 ```
 
-## Migration-Aware Test Harness
+  </TabItem>
+  <TabItem value="migration-harness" label="Migrations">
+
+Migration-aware test harness.
 
 ```dart file=../../examples/lib/testing/testing.dart#testing-migration-harness
 ```
+
+  </TabItem>
+</Tabs>
 
 ## Static Helpers in Tests
 
@@ -89,17 +104,23 @@ For parallel test execution without conflicts:
 
 ## Example Test Suite
 
-### Setup
+<Tabs groupId="testing-suite" defaultValue="setup">
+  <TabItem value="setup" label="Setup">
 
 ```dart file=../../examples/lib/testing/testing.dart#testing-example-suite-setup
 ```
 
-### Tests
+  </TabItem>
+  <TabItem value="tests" label="Tests">
 
 ```dart file=../../examples/lib/testing/testing.dart#testing-example-suite-tests
 ```
 
-### Tear Down
+  </TabItem>
+  <TabItem value="teardown" label="Tear Down">
 
 ```dart file=../../examples/lib/testing/testing.dart#testing-example-suite-teardown
 ```
+
+  </TabItem>
+</Tabs>

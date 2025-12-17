@@ -2,6 +2,9 @@
 sidebar_position: 3
 ---
 
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 # Configuration
 
 Ormed uses `orm.yaml` for CLI + runtime configuration. Two shapes are supported: a single top-level connection (scaffold default) or a `connections:` map for multi-db setups.
@@ -11,7 +14,12 @@ Ormed uses `orm.yaml` for CLI + runtime configuration. Two shapes are supported:
 - Dart snippets show only the relevant registry/setup pieces; full app bootstrapping is covered in Quick Start.
 :::
 
-## Single Connection (default)
+## Connection Shape
+
+<Tabs groupId="orm-yaml-shape" defaultValue="single">
+  <TabItem value="single" label="Single (default)">
+
+CLI commands read these top-level blocks as the single active connection.
 
 Create `orm.yaml` in your project root:
 
@@ -30,9 +38,10 @@ seeds:
   registry: lib/src/database/seeders.dart
 ```
 
-CLI commands read these top-level blocks as the single active connection.
+  </TabItem>
+  <TabItem value="multiple" label="Multiple">
 
-## Multiple Connections (multi-tenant or multi-env)
+Use this shape for multi-tenant or multi-environment setups. Target a specific connection with `--connection <name>`.
 
 ```yaml
 default_connection: primary
@@ -47,7 +56,6 @@ connections:
       directory: lib/src/database/migrations
       registry: lib/src/database/migrations.dart
       ledger_table: orm_migrations
-      schema_dump: database/schema.sql
     seeds:
       directory: lib/src/database/seeders
       registry: lib/src/database/seeders.dart
@@ -57,13 +65,13 @@ connections:
       type: postgres
       options:
         url: ${ANALYTICS_URL}
-        schema: analytics
     migrations:
       directory: lib/src/database/migrations/analytics
       registry: lib/src/database/analytics_migrations.dart
 ```
 
-Use `--connection <name>` on any CLI command to target a specific entry.
+  </TabItem>
+</Tabs>
 
 ## Configuration Blocks (what each section means)
 
@@ -145,17 +153,24 @@ dart run orm migrate:apply --connection production
 
 ## Programmatic Configuration
 
-You can also configure Ormed programmatically using the generated registry:
+You can also configure Ormed programmatically. The recommended approach is to use the generated registry.
+
+<Tabs groupId="programmatic-config" defaultValue="generated">
+  <TabItem value="generated" label="Generated (recommended)">
 
 ```dart file=../../examples/lib/setup.dart#programmatic-config
 ```
 
-### Manual Registration
+  </TabItem>
+  <TabItem value="manual" label="Manual (advanced)">
 
 If you prefer manual control, you can still register models individually:
 
 ```dart file=../../examples/lib/setup.dart#manual-registration
 ```
+
+  </TabItem>
+</Tabs>
 
 ## Next Steps
 

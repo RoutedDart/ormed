@@ -2,6 +2,9 @@
 sidebar_position: 3
 ---
 
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 # Observability
 
 The ORM exposes structured hooks for every query and mutation so you can ship metrics, traces, and logs without patching driver code.
@@ -10,8 +13,20 @@ The ORM exposes structured hooks for every query and mutation so you can ship me
 
 The simplest way to observe queries is via the built-in query log on `OrmConnection` or `DataSource`:
 
+<Tabs groupId="observability-query-logging" defaultValue="notes">
+<TabItem value="notes" label="Notes">
+
+- Use this for development or simple production diagnostics.
+- Disable parameter capture for sensitive fields by setting `includeParameters: false`.
+
+</TabItem>
+<TabItem value="code" label="Code">
+
 ```dart file=../../examples/lib/observability/observability.dart#query-logging
 ```
+
+</TabItem>
+</Tabs>
 
 ### API Reference
 
@@ -156,9 +171,21 @@ During pretend mode, `connection.pretending` returns `true`.
 
 Use event hooks to create tracing spans:
 
+<Tabs groupId="observability-tracing" defaultValue="notes">
+<TabItem value="notes" label="Notes">
+
+- Use `event.preview.sql` / `event.duration` to label spans consistently.
+- Prefer a low-cardinality span name (e.g. `db.query`) and put SQL in attributes.
+
+</TabItem>
+<TabItem value="code" label="Code">
+
 ```dart file=../../examples/lib/observability/observability.dart#tracing-integration
 
 ```
+
+</TabItem>
+</Tabs>
 
 ## Metrics Integration
 

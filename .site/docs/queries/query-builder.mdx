@@ -2,6 +2,9 @@
 sidebar_position: 1
 ---
 
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 # Query Builder
 
 The Query Builder provides a fluent, type-safe API for building database queries.
@@ -47,9 +50,22 @@ Access the query builder through a `DataSource`:
 
 ## Where Clauses
 
+<Tabs groupId="query-where-clauses" defaultValue="common">
+<TabItem value="common" label="Common patterns">
+
+- Prefer `whereEquals('id', id)` for primary key lookups.
+- Use `whereIn` for sets, and `whereBetween` for ranges.
+- Group complex logic with `where((q) => ...)` so operator precedence is explicit.
+
+</TabItem>
+<TabItem value="examples" label="Examples">
+
 ```dart file=../../examples/lib/queries.dart#where-clauses
 
 ```
+
+</TabItem>
+</Tabs>
 
 ### Comparison Operators
 

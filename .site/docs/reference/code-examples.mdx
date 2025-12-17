@@ -3,6 +3,9 @@ sidebar_position: 99
 title: Documentation Examples
 ---
 
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 # Documentation Code Examples
 
 This page demonstrates how code examples are embedded from the `examples/` package.
@@ -15,9 +18,20 @@ This page demonstrates how code examples are embedded from the `examples/` packa
 
 ## Model with Options
 
+<Tabs groupId="code-examples-model-options" defaultValue="code">
+  <TabItem value="code" label="Code">
+
 ```dart file=../../examples/lib/models/admin.dart#model-with-options
 
 ```
+
+  </TabItem>
+  <TabItem value="notes" label="Notes">
+
+This snippet shows model-level options configured via `@OrmModel(...)`.
+
+  </TabItem>
+</Tabs>
 
 ## Basic Queries
 
@@ -27,9 +41,20 @@ This page demonstrates how code examples are embedded from the `examples/` packa
 
 ## Where Clauses
 
+<Tabs groupId="code-examples-where-clauses" defaultValue="code">
+  <TabItem value="code" label="Code">
+
 ```dart file=../../examples/lib/queries.dart#where-clauses
 
 ```
+
+  </TabItem>
+  <TabItem value="notes" label="Notes">
+
+This snippet demonstrates common `where...` patterns and grouping.
+
+  </TabItem>
+</Tabs>
 
 ## Ordering and Limiting
 

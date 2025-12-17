@@ -224,6 +224,7 @@ void executionHooksExample(DataSource ds) {
 
 // #region datasource-multiple
 Future<void> multipleDataSourcesExample() async {
+  // #region datasource-multiple-setup
   final mainDs = DataSource(DataSourceOptions(
     name: 'main',
     driver: SqliteDriverAdapter.inMemory(),
@@ -238,16 +239,21 @@ Future<void> multipleDataSourcesExample() async {
 
   await mainDs.init();
   await analyticsDs.init();
+  // #endregion datasource-multiple-setup
 
+  // #region datasource-multiple-default
   // Set main as default
   mainDs.setAsDefault();
+  // #endregion datasource-multiple-default
 
+  // #region datasource-multiple-query
   // Query specific databases
   final users = await mainDs.query<$User>().get();
   final events = await analyticsDs.query<$Post>().get();
 
   // Use static helpers with connection parameter
   final analyticsUsers = await User.query(connection: 'analytics').get();
+  // #endregion datasource-multiple-query
 }
 // #endregion datasource-multiple
 

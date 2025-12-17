@@ -2,6 +2,9 @@
 sidebar_position: 2
 ---
 
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 # Schema Builder
 
 The Schema Builder provides a fluent API for defining table structures in a database-agnostic way.
@@ -19,35 +22,44 @@ Use `schema.create()` to define a new table:
 
 ## Column Types
 
-### Primary Keys
+<Tabs groupId="schema-column-types" defaultValue="primary-keys">
+  <TabItem value="primary-keys" label="Primary Keys">
 
 ```dart file=../../examples/lib/schema/schema_builder.dart#schema-primary-keys
 ```
 
-### Strings
+  </TabItem>
+  <TabItem value="strings" label="Strings">
 
 ```dart file=../../examples/lib/schema/schema_builder.dart#schema-strings
 ```
 
-### Numbers
+  </TabItem>
+  <TabItem value="numbers" label="Numbers">
 
 ```dart file=../../examples/lib/schema/schema_builder.dart#schema-numbers
 ```
 
-### Dates & Times
+  </TabItem>
+  <TabItem value="dates" label="Dates & Times">
 
 ```dart file=../../examples/lib/schema/schema_builder.dart#schema-dates
 ```
 
-### Boolean & Binary
+  </TabItem>
+  <TabItem value="bool-binary" label="Boolean & Binary">
 
 ```dart file=../../examples/lib/schema/schema_builder.dart#schema-bool-binary
 ```
 
-### JSON
+  </TabItem>
+  <TabItem value="json" label="JSON">
 
 ```dart file=../../examples/lib/schema/schema_builder.dart#schema-json
 ```
+
+  </TabItem>
+</Tabs>
 
 ## Column Modifiers
 
@@ -68,8 +80,8 @@ Chain modifiers to customize column behavior:
 
 ## Foreign Keys
 
-```dart file=../../examples/lib/schema/schema_builder.dart#schema-foreign-keys
-```
+<Tabs groupId="schema-foreign-keys" defaultValue="reference">
+<TabItem value="reference" label="Reference actions">
 
 ### Reference Actions
 
@@ -78,17 +90,33 @@ Chain modifiers to customize column behavior:
 - `ReferenceAction.setNull` - Set foreign key to NULL
 - `ReferenceAction.noAction` - No action (check deferred)
 
+</TabItem>
+<TabItem value="code" label="Code">
+
+```dart file=../../examples/lib/schema/schema_builder.dart#schema-foreign-keys
+```
+
+</TabItem>
+</Tabs>
+
 ## Altering Tables
 
 Use `schema.table()` to modify existing tables:
 
+<Tabs groupId="schema-alter" defaultValue="up">
+  <TabItem value="up" label="Up">
+
 ```dart file=../../examples/lib/schema/schema_builder.dart#schema-alter-up
 ```
 
-Rollback example:
+  </TabItem>
+  <TabItem value="down" label="Down (rollback)">
 
 ```dart file=../../examples/lib/schema/schema_builder.dart#schema-alter-down
 ```
+
+  </TabItem>
+</Tabs>
 
 ## Dropping Tables
 
@@ -99,5 +127,16 @@ Rollback example:
 
 Customize schema for different databases:
 
+<Tabs groupId="schema-driver-overrides" defaultValue="notes">
+<TabItem value="notes" label="Notes">
+
+Use this to conditionally apply types or modifiers that vary by database.
+
+</TabItem>
+<TabItem value="code" label="Code">
+
 ```dart file=../../examples/lib/schema/schema_builder.dart#schema-driver-overrides
 ```
+
+</TabItem>
+</Tabs>

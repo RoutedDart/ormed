@@ -3,6 +3,9 @@ sidebar_position: 1
 slug: /
 ---
 
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 # Introduction
 
 Ormed is a **strongly-typed ORM for Dart** inspired by Eloquent, GORM, SQLAlchemy, and ActiveRecord. It combines compile-time code generation with runtime flexibility to deliver type-safe database operations.
@@ -21,21 +24,27 @@ Ormed is a **strongly-typed ORM for Dart** inspired by Eloquent, GORM, SQLAlchem
 
 ## Quick Example
 
-Model:
+<Tabs groupId="intro-quick-example" defaultValue="model">
+<TabItem value="model" label="Model">
 
 ```dart file=../examples/lib/models/user.dart#intro-model
-
 ```
 
-Query:
+</TabItem>
+<TabItem value="query" label="Query">
 
 ```dart file=../examples/lib/queries.dart#intro-query
-
 ```
+
+</TabItem>
+</Tabs>
 
 ## Installation
 
 Add Ormed to your `pubspec.yaml`:
+
+<Tabs groupId="intro-install" defaultValue="pubspec">
+<TabItem value="pubspec" label="pubspec.yaml">
 
 ```yaml
 dependencies:
@@ -46,12 +55,18 @@ dev_dependencies:
   build_runner: ^2.4.0
 ```
 
+</TabItem>
+<TabItem value="commands" label="Commands">
+
 Then run:
 
 ```bash
 dart pub get
 dart run build_runner build
 ```
+
+</TabItem>
+</Tabs>
 
 ## Next Steps
 

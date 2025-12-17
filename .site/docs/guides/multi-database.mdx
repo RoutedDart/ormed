@@ -2,52 +2,97 @@
 sidebar_position: 4
 ---
 
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 # Multi-Database Support
 
 Ormed supports connecting to multiple databases simultaneously for read replicas, tenant databases, or different database systems.
 
 ## Configuring Multiple Connections
 
-### Define Multiple DataSources
+<Tabs groupId="multi-db-setup" defaultValue="define">
+  <TabItem value="define" label="Define DataSources">
 
 ```dart file=../../examples/lib/multi_db/multi_database.dart#multi-db-setup-sources
 ```
 
-Initialize them (can be in parallel):
+  </TabItem>
+  <TabItem value="init" label="Initialize">
+
+Initialize them (can be in parallel).
 
 ```dart file=../../examples/lib/multi_db/multi_database.dart#multi-db-setup-init
 ```
 
+  </TabItem>
+</Tabs>
+
 ## Using Named Connections
 
-```dart file=../../examples/lib/multi_db/multi_database.dart#multi-db-named
+<Tabs groupId="multi-db-named" defaultValue="setup">
+  <TabItem value="setup" label="Setup">
+
+Create and initialize multiple named `DataSource`s:
+
+```dart file=../../examples/lib/multi_db/multi_database.dart#multi-db-named-setup
 ```
+
+  </TabItem>
+  <TabItem value="queries" label="Queries">
+
+Use the connection instance you want to target:
+
+```dart file=../../examples/lib/multi_db/multi_database.dart#multi-db-named-queries
+```
+
+  </TabItem>
+</Tabs>
 
 ## Transaction Caveat
 
 Transactions cannot span multiple databases:
 
-```dart file=../../examples/lib/multi_db/multi_database.dart#multi-db-transaction-caveat
-```
-
 ### Coordinating Across Databases
 
 Use compensating transactions for cross-database operations:
 
+<Tabs groupId="multi-db-transactions" defaultValue="why">
+  <TabItem value="why" label="Why">
+
+Transactions cannot span multiple databases. If you need cross-database workflows, coordinate explicitly and design for retries.
+
+  </TabItem>
+  <TabItem value="caveat" label="Caveat (code)">
+
+```dart file=../../examples/lib/multi_db/multi_database.dart#multi-db-transaction-caveat-core
+```
+
+  </TabItem>
+  <TabItem value="pattern" label="Pattern (code)">
+
 ```dart file=../../examples/lib/multi_db/multi_database.dart#multi-db-coordinating-operations
 ```
 
+  </TabItem>
+</Tabs>
+
 ## Multi-Tenant Architecture
 
-### Separate Databases per Tenant
+<Tabs groupId="multi-db-tenancy" defaultValue="tenant-db">
+  <TabItem value="tenant-db" label="Tenant DB">
 
 ```dart file=../../examples/lib/multi_db/multi_database.dart#multi-db-tenant
 ```
 
-### Using Tenant Scopes
+  </TabItem>
+  <TabItem value="tenant-scope" label="Tenant scope">
 
 ```dart file=../../examples/lib/multi_db/multi_database.dart#multi-db-tenant-scope
 ```
+
+  </TabItem>
+</Tabs>
 
 ## Connection Factory
 

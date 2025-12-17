@@ -2,17 +2,23 @@ import 'dart:convert';
 
 import 'package:ormed/migrations.dart';
 
+// #region migrations-registry-imports
 // <ORM-MIGRATION-IMPORTS>
 // </ORM-MIGRATION-IMPORTS>
+// #endregion migrations-registry-imports
 
+// #region migrations-registry-entries
 final List<MigrationEntry> _entries = [
   // <ORM-MIGRATION-REGISTRY>
   // </ORM-MIGRATION-REGISTRY>
 ];
+// #endregion migrations-registry-entries
 
+// #region migrations-registry-build
 /// Build migration descriptors sorted by timestamp.
 List<MigrationDescriptor> buildMigrations() =>
     MigrationEntry.buildDescriptors(_entries);
+// #endregion migrations-registry-build
 
 MigrationEntry? _findEntry(String rawId) {
   for (final entry in _entries) {

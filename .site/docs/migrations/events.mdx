@@ -2,6 +2,9 @@
 sidebar_position: 5
 ---
 
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 # Migration & Seeding Events
 
 Migrations and seeders emit structured events through the shared `EventBus`. Subscribe once to stream progress to logs, metrics, or tracing.
@@ -19,15 +22,20 @@ Events (all emitted by `MigrationRunner`):
 
 Example listener + runner setup:
 
-### Subscribe
+<Tabs groupId="migration-events" defaultValue="subscribe">
+  <TabItem value="subscribe" label="Subscribe">
 
 ```dart file=../../examples/lib/events/migration_events.dart#migration-event-subscribe
 ```
 
-### Run
+  </TabItem>
+  <TabItem value="run" label="Run">
 
 ```dart file=../../examples/lib/events/migration_events.dart#migration-event-runner
 ```
+
+  </TabItem>
+</Tabs>
 
 ## Seeding Lifecycle
 
@@ -43,15 +51,20 @@ Example with a custom seeder and event hooks:
 ```dart file=../../examples/lib/events/migration_events.dart#seeding-seeder-class
 ```
 
-### Subscribe
+<Tabs groupId="seeding-events" defaultValue="subscribe">
+  <TabItem value="subscribe" label="Subscribe">
 
 ```dart file=../../examples/lib/events/migration_events.dart#seeding-event-subscribe
 ```
 
-### Run
+  </TabItem>
+  <TabItem value="run" label="Run">
 
 ```dart file=../../examples/lib/events/migration_events.dart#seeding-event-runner
 ```
+
+  </TabItem>
+</Tabs>
 
 Tips:
 - Use the same `EventBus` for migrations, seeders, and runtime queries to correlate logs.

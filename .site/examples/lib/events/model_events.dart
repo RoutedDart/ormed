@@ -14,6 +14,7 @@ bool _forUser(Type modelType) => modelType == User || modelType == $User;
 
 // #region model-event-listeners
 void registerModelEventListeners(EventBus bus) {
+  // #region model-event-listeners-saving-created
   bus.on<ModelSavingEvent>((event) {
     if (!_forUser(event.modelType)) return;
     modelEventLog.add('saving ${event.attributes['email']}');
@@ -23,7 +24,9 @@ void registerModelEventListeners(EventBus bus) {
     if (!_forUser(event.modelType)) return;
     modelEventLog.add('created ${event.model.id}');
   });
+  // #endregion model-event-listeners-saving-created
 
+  // #region model-event-listeners-updated-deleted
   bus.on<ModelUpdatedEvent>((event) {
     if (!_forUser(event.modelType)) return;
     modelEventLog.add('updated ${event.model.id}');
@@ -34,11 +37,14 @@ void registerModelEventListeners(EventBus bus) {
     final mode = event.forceDelete ? 'forceDelete' : 'trash';
     modelEventLog.add('$mode ${event.model.id}');
   });
+  // #endregion model-event-listeners-updated-deleted
 
+  // #region model-event-listeners-retrieved
   bus.on<ModelRetrievedEvent>((event) {
     if (!_forUser(event.modelType)) return;
     modelEventLog.add('retrieved ${event.model.id}');
   });
+  // #endregion model-event-listeners-retrieved
 }
 // #endregion model-event-listeners
 

@@ -2,11 +2,14 @@
 sidebar_position: 2
 ---
 
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 # Quick Start
 
 This guide will walk you through creating a simple Ormed application with a User model.
 
-## 0. Scaffold the Project (CLI)
+## Scaffold the Project (CLI)
 
 From your app root:
 
@@ -19,25 +22,56 @@ This creates:
 - `lib/src/database/migrations.dart` (registry)  
 - `lib/src/database/seeders.dart` and `seeders/database_seeder.dart`
 
-See the generated starter files:
+Generated starter files:
+
+<Tabs groupId="quickstart-generated-files" defaultValue="orm-yaml">
+  <TabItem value="orm-yaml" label="orm.yaml">
 
 ```yaml file=../../examples/orm.yaml
 ```
 
-```dart file=../../examples/lib/src/database/migrations.dart
+  </TabItem>
+  <TabItem value="migrations" label="migrations.dart">
+
+These are the three pieces the CLI maintains: imports, the entry list, and `buildMigrations()`.
+
+```dart file=../../examples/lib/src/database/migrations.dart#migrations-registry-imports
 ```
 
-```dart file=../../examples/lib/src/database/seeders.dart
+```dart file=../../examples/lib/src/database/migrations.dart#migrations-registry-entries
 ```
 
-## 1. Create Your Model
+```dart file=../../examples/lib/src/database/migrations.dart#migrations-registry-build
+```
+
+  </TabItem>
+  <TabItem value="seeders" label="seeders.dart">
+
+Seed registries follow the same pattern: imports + registrations + a runnable entrypoint.
+
+```dart file=../../examples/lib/src/database/seeders.dart#seed-registry-imports
+```
+
+```dart file=../../examples/lib/src/database/seeders.dart#seed-registry-entries
+```
+
+```dart file=../../examples/lib/src/database/seeders.dart#seed-registry-run
+```
+
+```dart file=../../examples/lib/src/database/seeders.dart#seed-registry-main
+```
+
+  </TabItem>
+</Tabs>
+
+## Create Your Model
 
 Create `lib/src/models/user.dart`:
 
 ```dart file=../../examples/lib/models/user.dart#basic-model
 ```
 
-## 2. Generate ORM Code
+## Generate ORM Code
 
 Run the build runner:
 
@@ -47,26 +81,35 @@ dart run build_runner build
 
 This creates `user.orm.dart` with the generated `$User` class and helpers.
 
-## 3. Create a Migration
+## Create a Migration
 
 Create `lib/src/database/migrations/m_20241201000000_create_users_table.dart`:
 
 ```dart file=../../examples/lib/migrations/basic.dart#create-users-migration
 ```
 
-## 4. Set Up the Database (SQLite)
+## Set Up the Database (SQLite)
 
-This shows the minimal setup: driver + generated registry + `DataSourceOptions`.
+<Tabs groupId="quickstart-sqlite" defaultValue="setup">
+  <TabItem value="setup" label="Setup">
+
+Minimal setup: driver + generated registry + `DataSourceOptions`.
 
 ```dart file=../../examples/lib/setup.dart#quickstart-setup
 ```
 
-Then use the generated tracked model (`$User`) with the repository and query builder:
+  </TabItem>
+  <TabItem value="crud" label="CRUD">
+
+Use the generated tracked model (`$User`) with the repository and query builder:
 
 ```dart file=../../examples/lib/setup.dart#quickstart-crud
 ```
 
-## 5. Run Your App
+  </TabItem>
+</Tabs>
+
+## Run Your App
 
 ```bash
 dart run lib/main.dart

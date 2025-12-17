@@ -2,46 +2,65 @@
 sidebar_position: 3
 ---
 
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 # PostgreSQL
 
 Use PostgreSQL for production‑grade features (JSONB, window functions, robust constraints). Configure via URL or discrete fields.
 
 ## orm.yaml
 
+<Tabs groupId="postgres-orm-yaml" defaultValue="url">
+<TabItem value="url" label="URL">
+
 ```yaml
 driver:
   type: postgres
   options:
     url: postgres://postgres:postgres@localhost:6543/orm_test
-    sslmode: disable        # disable | require | verify-full
-    timezone: UTC
-    connectTimeout: 5000    # milliseconds
-    statementTimeout: 30000 # milliseconds
-    applicationName: my-app
-migrations:
-  directory: lib/src/database/migrations
-  registry: lib/src/database/migrations.dart
-seeds:
-  directory: lib/src/database/seeders
-  registry: lib/src/database/seeders.dart
+    sslmode: disable # disable | require | verify-full
+    schema: public
 ```
+
+</TabItem>
+<TabItem value="fields" label="Fields">
+
+```yaml
+driver:
+  type: postgres
+  options:
+    host: localhost
+    port: 5432
+    database: orm_test
+    username: postgres
+    password: postgres
+    sslmode: disable # disable | require | verify-full
+    schema: public
+```
+
+</TabItem>
+</Tabs>
 
 ### Options
 
-- `url` / `uri` / `dsn` — full connection string; overrides individual fields.
-- `host` (default `localhost`)
-- `port` (default `5432`)
-- `database` (defaults to path segment or `postgres`)
-- `username` (default `postgres`)
-- `password` (optional)
-- `sslmode` (`disable`, `require`, `verify-full`)
-- `connectTimeout` (ms) — socket connect timeout.
-- `statementTimeout` (ms) — server‑side statement timeout.
-- `timezone` (default `UTC`)
-- `applicationName` — tags sessions for monitoring.
-- `schema` — default schema name for migrations/queries (defaults to `public`).
+| Option | Type | Default | Description |
+| --- | --- | --- | --- |
+| `url` | `String?` | — | Full connection string. Aliases: `uri`, `dsn`. When set, it becomes the primary source for host/port/database/user/password and may also read `sslmode`, `timezone`, and `application_name` from the URL query parameters. |
+| `host` | `String` | `localhost` | Database host (ignored when `url`/`uri`/`dsn` is set). |
+| `port` | `int` | `5432` | Database port (ignored when `url`/`uri`/`dsn` is set). |
+| `database` | `String` | connection name or `postgres` | Database name (ignored when `url`/`uri`/`dsn` is set). |
+| `username` | `String` | `postgres` | Database username (ignored when `url`/`uri`/`dsn` is set). |
+| `password` | `String?` | — | Database password. |
+| `sslmode` | `String` | `disable` | TLS mode: `disable`, `require`, `verify-full`. |
+| `connectTimeout` | `int?` (ms) | driver default | Socket connect timeout in milliseconds. |
+| `statementTimeout` | `int?` (ms) | driver default | Server-side query timeout in milliseconds. |
+| `timezone` | `String` | `UTC` | Session timezone. |
+| `applicationName` | `String?` | — | Tags sessions for monitoring (`application_name` in URL query is also supported). |
+| `schema` | `String` | `public` | Default schema used when qualifying tables for migrations/queries. |
 
 ### Notes
 
 - Supports `RETURNING`, JSON/JSONB operators, window functions, and schema introspection.
 - Use `POSTGRES_URL` to point tests or CLI commands at ephemeral containers.
+- Migrations and seeds are configured separately in `orm.yaml`. See Getting Started → Configuration.

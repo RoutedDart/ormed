@@ -120,8 +120,14 @@ Benefits: Thread-safe, predictable, easy to test.
 
 ### Validate Before Save
 
-```dart file=../../examples/lib/best_practices/best_practices.dart#error-validate-before-save
+Define validation rules on your model:
 
+```dart file=../../examples/lib/best_practices/best_practices.dart#error-validate-before-save-model
+```
+
+Call validation before persistence:
+
+```dart file=../../examples/lib/best_practices/best_practices.dart#error-validate-before-save-usage
 ```
 
 ### Use Transactions for Critical Operations

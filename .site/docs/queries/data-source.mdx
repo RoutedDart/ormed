@@ -2,6 +2,9 @@
 sidebar_position: 4
 ---
 
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 # DataSource
 
 The `DataSource` class provides a modern, declarative API for configuring and using the ORM. It bundles driver configuration, entity registration, and connection management into a single interface.
@@ -79,11 +82,20 @@ Query tables without a model definition:
 
 ## Query Logging & Debugging
 
+<Tabs groupId="datasource-logging" defaultValue="basic">
+  <TabItem value="basic" label="Basic">
+
 ```dart file=../../examples/lib/datasource.dart#datasource-logging
 ```
 
+  </TabItem>
+  <TabItem value="options" label="Options">
+
 ```dart file=../../examples/lib/datasource.dart#datasource-logging-options
 ```
+
+  </TabItem>
+</Tabs>
 
 ### Access Query Log
 
@@ -106,8 +118,43 @@ Preview SQL without executing:
 
 Create separate data sources for different databases:
 
-```dart file=../../examples/lib/datasource.dart#datasource-multiple
+<Tabs groupId="datasource-multiple" defaultValue="notes">
+  <TabItem value="notes" label="Notes">
+
+Use multiple data sources when you need separate databases (tenants, analytics, read/write split, etc.). Keep them named and dispose them on shutdown.
+
+  </TabItem>
+  <TabItem value="code" label="Code">
+
+<Tabs groupId="datasource-multiple-code" defaultValue="setup">
+  <TabItem value="setup" label="Setup">
+
+Define and initialize two `DataSource`s (each has its own connection).
+
+```dart file=../../examples/lib/datasource.dart#datasource-multiple-setup
 ```
+
+  </TabItem>
+  <TabItem value="default" label="Default">
+
+Optionally set a default connection for static helpers:
+
+```dart file=../../examples/lib/datasource.dart#datasource-multiple-default
+```
+
+  </TabItem>
+  <TabItem value="query" label="Query">
+
+Query through the `DataSource` you want (or pass `connection:` to static helpers).
+
+```dart file=../../examples/lib/datasource.dart#datasource-multiple-query
+```
+
+  </TabItem>
+</Tabs>
+
+  </TabItem>
+</Tabs>
 
 ## Lifecycle Management
 

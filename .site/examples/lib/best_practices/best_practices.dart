@@ -207,7 +207,7 @@ Future<void> typedExceptionsExample(DataSource dataSource, String email) async {
 }
 // #endregion error-typed-exceptions
 
-// #region error-validate-before-save
+// #region error-validate-before-save-model
 @OrmModel(table: 'validated_users')
 class ValidatedUser extends Model<ValidatedUser> {
   const ValidatedUser({required this.id, required this.email, required this.age});
@@ -226,13 +226,15 @@ class ValidatedUser extends Model<ValidatedUser> {
     }
   }
 }
+// #endregion error-validate-before-save-model
 
+// #region error-validate-before-save-usage
 Future<void> validateBeforeSaveExample(DataSource dataSource, ValidatedUser user) async {
   // Before inserting
   user.validate();
   await dataSource.repo<$ValidatedUser>().insert(user);
 }
-// #endregion error-validate-before-save
+// #endregion error-validate-before-save-usage
 
 // #region error-transactions
 Future<void> transactionExample(

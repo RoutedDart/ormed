@@ -13,20 +13,15 @@ driver:
   type: sqlite
   options:
     database: database.sqlite   # relative to project root
-migrations:
-  directory: lib/src/database/migrations
-  registry: lib/src/database/migrations.dart
-seeds:
-  directory: lib/src/database/seeders
-  registry: lib/src/database/seeders.dart
 ```
 
 ### Options
 
-- `database` (string) — path to the `.sqlite` file (relative or absolute). If omitted, defaults to `database.sqlite`.
-- `memory` (bool, default: false) — set to `true` to run entirely in memory (overrides `database`).
+| Option | Type | Default | Description |
+| --- | --- | --- | --- |
+| `database` | `String` | `database.sqlite` | Path to the `.sqlite` file (relative to project root or absolute). |
 
 ### Notes
 
 - The adapter automatically enables `RETURNING` support and schema inspection.
-- Schema dumps use the same paths as other drivers; `orm migrate --seed` works without changes.
+- Migrations and seeds are configured separately in `orm.yaml`. See Getting Started → Configuration.

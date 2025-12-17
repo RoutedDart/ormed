@@ -2,6 +2,9 @@
 sidebar_position: 6
 ---
 
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 # Model Factories
 
 Model factories provide a convenient way to generate test data for your ORM models with deterministic seeding, field overrides, and persistence integration.
@@ -96,9 +99,32 @@ Cycle through attribute values when creating multiple models:
 
 Execute code after models are made or created:
 
-```dart file=../../examples/lib/factories/basic.dart#factory-callbacks
+<Tabs groupId="factory-callbacks" defaultValue="afterMaking">
+  <TabItem value="afterMaking" label="afterMaking">
 
+Runs after `make()` (sync).
+
+```dart file=../../examples/lib/factories/basic.dart#factory-callbacks-afterMaking
 ```
+
+  </TabItem>
+  <TabItem value="afterCreating" label="afterCreating">
+
+Runs after `create()` (async).
+
+```dart file=../../examples/lib/factories/basic.dart#factory-callbacks-afterCreating
+```
+
+  </TabItem>
+  <TabItem value="chain" label="Chaining">
+
+Callbacks can be chained and run in registration order.
+
+```dart file=../../examples/lib/factories/basic.dart#factory-callbacks-chain
+```
+
+  </TabItem>
+</Tabs>
 
 ## Soft-Deleted Models
 
@@ -146,9 +172,20 @@ Auto-increment fields and fields with `defaultValueSql` are skipped unless expli
 
 Create a custom provider for specialized data generation:
 
+<Tabs groupId="factory-custom-provider" defaultValue="notes">
+  <TabItem value="notes" label="Notes">
+
+Use custom providers when a field needs deterministic or domain-specific behavior (hashing, UUIDs, time, etc.).
+
+  </TabItem>
+  <TabItem value="code" label="Code">
+
 ```dart file=../../examples/lib/factories/basic.dart#factory-custom-provider
 
 ```
+
+  </TabItem>
+</Tabs>
 
 ## Testing Patterns
 

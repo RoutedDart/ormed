@@ -2,6 +2,9 @@
 sidebar_position: 3
 ---
 
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 # Running Migrations
 
 :::note Snippet context
@@ -51,8 +54,32 @@ The ledger tracks which migrations have been applied:
 
 The CLI maintains a registry file to track available migrations:
 
-```dart file=../../examples/lib/migrations/runner.dart#migration-registry
+<Tabs groupId="migration-registry" defaultValue="registry">
+  <TabItem value="imports" label="Imports marker">
+
+New migrations are inserted between the import tags:
+
+```dart file=../../examples/lib/src/database/migrations.dart#migrations-registry-imports
 ```
+
+  </TabItem>
+  <TabItem value="registry" label="Registry marker">
+
+Each migration registers an id + migration instance:
+
+```dart file=../../examples/lib/src/database/migrations.dart#migrations-registry-entries
+```
+
+  </TabItem>
+  <TabItem value="build" label="buildMigrations()">
+
+The CLI (and your code) asks the registry for descriptors:
+
+```dart file=../../examples/lib/src/database/migrations.dart#migrations-registry-build
+```
+
+  </TabItem>
+</Tabs>
 
 The marker comments allow the CLI to automatically insert new migrations.
 

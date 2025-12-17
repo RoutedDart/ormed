@@ -2,6 +2,9 @@
 sidebar_position: 5
 ---
 
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 # Examples & Recipes
 
 End-to-end walkthroughs demonstrating how Ormed pieces work together.
@@ -50,8 +53,19 @@ dart run ormed_cli:orm migrate
 
 ### 6. Query
 
+<Tabs groupId="examples-sqlite-query" defaultValue="notes">
+  <TabItem value="notes" label="Notes">
+
+This is the “put it together” step: initialize the data source, run a query, then map results.
+
+  </TabItem>
+  <TabItem value="code" label="Code">
+
 ```dart file=../../examples/lib/examples/workflows.dart#sqlite-query
 ```
+
+  </TabItem>
+</Tabs>
 
 ## Static Helpers Pattern
 

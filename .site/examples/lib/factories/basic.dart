@@ -114,27 +114,33 @@ void sequenceExamples() {
 
 // #region factory-callbacks
 Future<void> callbackExamples(QueryContext context) async {
+  // #region factory-callbacks-afterMaking
   // Run code after make()
-  final user = Model.factory<$User>()
+  Model.factory<$User>()
       .afterMaking((user) {
         print('Created user: ${user.email}');
       })
       .make();
+  // #endregion factory-callbacks-afterMaking
 
+  // #region factory-callbacks-afterCreating
   // Run async code after create()
-  final savedUser = await Model.factory<$User>()
+  await Model.factory<$User>()
       .afterCreating((user) async {
         // await sendWelcomeEmail(user);
         print('Persisted user: ${user.id}');
       })
       .create(context: context);
+  // #endregion factory-callbacks-afterCreating
 
+  // #region factory-callbacks-chain
   // Chain multiple callbacks
   await Model.factory<$User>()
       .afterMaking((u) => print('Made: ${u.email}'))
       .afterMaking((u) => print('Validated'))
       .afterCreating((u) => print('Saved: ${u.id}'))
       .create(context: context);
+  // #endregion factory-callbacks-chain
 }
 // #endregion factory-callbacks
 

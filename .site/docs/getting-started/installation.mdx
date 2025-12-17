@@ -2,6 +2,9 @@
 sidebar_position: 1
 ---
 
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 # Installation
 
 ## Requirements
@@ -13,18 +16,47 @@ sidebar_position: 1
 
 Add Ormed, the CLI, and at least one database driver to your `pubspec.yaml`:
 
+<Tabs groupId="install-driver" defaultValue="sqlite">
+  <TabItem value="sqlite" label="SQLite (recommended)">
+
 ```yaml
 dependencies:
   ormed: ^0.1.0
-  # Choose your database driver(s):
-  ormed_sqlite: ^0.1.0    # SQLite (local dev / tests / embedded)
-  # ormed_postgres: ^0.1.0 # PostgreSQL
-  # ormed_mysql: ^0.1.0    # MySQL / MariaDB
+  ormed_sqlite: ^0.1.0
 
 dev_dependencies:
   ormed_cli: ^0.1.0
   build_runner: ^2.4.0
 ```
+
+  </TabItem>
+  <TabItem value="postgres" label="PostgreSQL">
+
+```yaml
+dependencies:
+  ormed: ^0.1.0
+  ormed_postgres: ^0.1.0
+
+dev_dependencies:
+  ormed_cli: ^0.1.0
+  build_runner: ^2.4.0
+```
+
+  </TabItem>
+  <TabItem value="mysql" label="MySQL / MariaDB">
+
+```yaml
+dependencies:
+  ormed: ^0.1.0
+  ormed_mysql: ^0.1.0
+
+dev_dependencies:
+  ormed_cli: ^0.1.0
+  build_runner: ^2.4.0
+```
+
+  </TabItem>
+</Tabs>
 
 Then run:
 

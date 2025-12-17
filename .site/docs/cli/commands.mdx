@@ -2,6 +2,9 @@
 sidebar_position: 1
 ---
 
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 # CLI Commands
 
 The Ormed CLI provides commands for managing migrations, generating code, and working with your database.
@@ -18,7 +21,24 @@ orm <command>
 
 ## Configuration
 
-The CLI uses `orm.yaml` for configuration:
+The CLI uses `orm.yaml` for configuration (see [Getting Started → Configuration](../getting-started/configuration) for the full reference). Minimal shapes:
+
+<Tabs groupId="cli-orm-yaml" defaultValue="single">
+  <TabItem value="single" label="Single (default)">
+
+```yaml
+driver:
+  type: sqlite
+  options:
+    database: database.sqlite
+migrations:
+  registry: lib/src/database/migrations.dart
+seeds:
+  registry: lib/src/database/seeders.dart
+```
+
+  </TabItem>
+  <TabItem value="multiple" label="Multiple">
 
 ```yaml
 default_connection: primary
@@ -27,25 +47,16 @@ connections:
     driver:
       type: sqlite
       options:
-        database: database.sqlite
-    migrations:
-      directory: database/migrations
-      registry: database/migrations.dart
-      ledger_table: orm_migrations
-      schema_dump: database/schema.sql
-    seeds:
-      directory: database/seeders
-      registry: database/seeders.dart
+        database: data/app.sqlite
   analytics:
     driver:
       type: postgres
       options:
-        url: ${POSTGRES_URL}
-    migrations:
-      directory: database/migrations
-      registry: database/migrations.dart
-      ledger_table: orm_migrations
+        url: ${ANALYTICS_URL}
 ```
+
+  </TabItem>
+</Tabs>
 
 The CLI automatically finds the nearest `orm.yaml` walking up from the current directory.
 
