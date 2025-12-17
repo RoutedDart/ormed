@@ -19,6 +19,14 @@ class InitCommand extends ArtisanCommand<void> {
         'paths',
         negatable: false,
         help: 'Print the canonical path for each scaffolded artifact.',
+      )
+      // New: populate existing migrations/seeders into registries if present
+      ..addFlag(
+        'populate-existing',
+        abbr: 'p',
+        negatable: true,
+        help:
+            'Scan existing migrations/seeders and populate registries accordingly.',
       );
   }
 
@@ -26,32 +34,28 @@ class InitCommand extends ArtisanCommand<void> {
   String get name => 'init';
 
   @override
-  String get description => 'Initialize orm.yaml and migration registry.';
+  String get description => 'Initialize orm.yaml and migration/seed registries.';
 
   @override
   Future<void> run() async {
     final force = argResults?['force'] == true;
     final showPaths = argResults?['paths'] == true;
+    final populateExisting = argResults?['populate-existing'] == true;
     final root = findProjectRoot();
     final tracker = _ArtifactTracker(root);
 
-    // Add wizard if running without specific flags, or explicit wizard mode?
-    // Usually 'init' just does default.
-    // Let's make it interactive by default if config file doesn't exist?
-    // Or just ask "Do you want to initialize now?"
-    // The previous implementation was purely scaffold.
-    // We can add a simple interactive confirmation.
-
+    // If config exists, offer re-initialize
     if (!force) {
       final configFile = File(p.join(root.path, 'orm.yaml'));
       if (configFile.existsSync()) {
-        stdout.writeln('Project already initialized.');
+        cliIO.writeln(cliIO.style.info('Project already initialized.'));
+        // Ask whether to re-initialize
         if (!io.confirm('Do you want to re-initialize (overwrite files)?')) {
-          return;
+          // Continue with population flow if requested, otherwise exit
+          if (!populateExisting) {
+            return;
+          }
         }
-        // If confirmed, proceed with overwrite (simulate force behavior for this run)
-        // But we need to pass force=true technically.
-        // We'll handle force logic in _writeFile.
       }
     }
 
@@ -60,18 +64,15 @@ class InitCommand extends ArtisanCommand<void> {
       file: configFile,
       content: defaultOrmYaml,
       label: 'orm.yaml',
-      force:
-          force, // If interactive override, we might need variable update. But simpler to rely on _writeFile logic? No, _writeFile takes 'force'.
+      force: force,
       tracker: tracker,
-      interactive: true, // Let _writeFile ask if force not set?
+      interactive: true,
     );
 
-    // ... (rest is same but passed interactive context)
-    // Actually, refactoring _writeFile to handle interactive confirm is cleaner.
-
-    // Load config to get paths from defaultOrmYaml
+    // Load config
     final config = loadOrmProjectConfig(configFile);
 
+    // Directories
     final migrationsDir = Directory(
       resolvePath(root, config.migrations.directory),
     );
@@ -109,6 +110,7 @@ class InitCommand extends ArtisanCommand<void> {
       tracker: tracker,
       interactive: true,
     );
+
     // Create schema dump directory
     final schemaDumpDir = Directory(
       resolvePath(root, config.migrations.schemaDump),
@@ -117,11 +119,55 @@ class InitCommand extends ArtisanCommand<void> {
       schemaDumpDir.createSync(recursive: true);
       tracker.paths['schema'] = schemaDumpDir.path;
     }
-
-    // Create a .gitkeep to ensure directory is tracked
     final gitkeep = File(p.join(schemaDumpDir.path, '.gitkeep'));
     if (!gitkeep.existsSync()) {
       gitkeep.writeAsStringSync('');
+    }
+
+    // Populate existing artifacts into registries
+    if (populateExisting) {
+      await _populateExisting(
+        io: cliIO,
+        root: root,
+        config: config,
+        migrationsDir: migrationsDir,
+        seedersDir: seedersDir,
+        registryFile: registry,
+        seedRegistryFile: seedRegistry,
+      );
+    } else {
+      // If not explicitly requested, check whether dirs contain files and prompt
+      final hasExistingMigrations = _hasDartFiles(migrationsDir);
+      final hasExistingSeeders = _hasDartFiles(seedersDir);
+      if (hasExistingMigrations || hasExistingSeeders) {
+        cliIO.section('Existing artifacts detected');
+        if (hasExistingMigrations) {
+          cliIO.writeln(
+            '• Found existing migrations in ${tracker.relative(migrationsDir.path)}',
+          );
+        }
+        if (hasExistingSeeders) {
+          cliIO.writeln(
+            '• Found existing seeders in ${tracker.relative(seedersDir.path)}',
+          );
+        }
+        // When forcing scaffold recreation, do not auto-populate unless
+        // explicitly requested via --populate-existing.
+        final shouldPopulate = force
+            ? false
+            : io.confirm('Do you want to populate registries from existing files?');
+        if (shouldPopulate) {
+          await _populateExisting(
+            io: cliIO,
+            root: root,
+            config: config,
+            migrationsDir: migrationsDir,
+            seedersDir: seedersDir,
+            registryFile: registry,
+            seedRegistryFile: seedRegistry,
+          );
+        }
+      }
     }
 
     cliIO.twoColumnDetail('Ledger table', config.migrations.ledgerTable);
@@ -216,4 +262,170 @@ class _ArtifactTracker {
   }
 
   String relative(String path) => p.relative(path, from: root.path);
+}
+
+// --- Helpers for populating existing migrations/seeders ---
+
+bool _hasDartFiles(Directory dir) {
+  if (!dir.existsSync()) return false;
+  return dir
+      .listSync(recursive: true)
+      .whereType<File>()
+      .any((f) => f.path.endsWith('.dart'));
+}
+
+Future<void> _populateExisting({
+  required ArtisanIO io,
+  required Directory root,
+  required OrmProjectConfig config,
+  required Directory migrationsDir,
+  required Directory seedersDir,
+  required File registryFile,
+  required File seedRegistryFile,
+}) async {
+  io.section('Populating registries from existing files');
+
+  // Migrations: gather files like migrations/m_*.dart and rebuild registry
+  final migrationFiles = migrationsDir
+      .listSync(recursive: true)
+      .whereType<File>()
+      .where((f) => f.path.endsWith('.dart'))
+      .toList()
+    ..sort((a, b) => a.path.compareTo(b.path));
+
+  // Seeders: gather files in seeders dir
+  final seederFiles = seedersDir
+      .listSync(recursive: true)
+      .whereType<File>()
+      .where((f) => f.path.endsWith('.dart'))
+      .toList()
+    ..sort((a, b) => a.path.compareTo(b.path));
+
+  // Build migration registry content skeleton by importing and registering
+  final migrationImports = <String>[];
+  final migrationEntries = <String>[];
+  for (final f in migrationFiles) {
+    final rel = p.relative(f.path, from: p.dirname(registryFile.path));
+    final importPath = rel.replaceAll('\\', '/');
+    // Guess class name from filename, keep a conservative fallback
+    final base = p.basenameWithoutExtension(f.path);
+    // Expected pattern: m_YYYY..._name.dart => class CreateUsersTable or similar
+    // We cannot reliably infer class – we import and leave a TODO entry
+    migrationImports.add("import '$importPath';");
+    migrationEntries.add(
+      "  // TODO: Add entry for $base (imported above)",
+    );
+  }
+
+  final registryContent = [
+    "import 'dart:convert';",
+    "",
+    "import 'package:ormed/migrations.dart';",
+    "",
+    ...migrationImports,
+    "",
+    "final List<MigrationEntry> _entries = [",
+    ...migrationEntries,
+    "];",
+    "",
+    "/// Build migration descriptors sorted by timestamp.",
+    "List<MigrationDescriptor> buildMigrations() =>",
+    "    MigrationEntry.buildDescriptors(_entries);",
+    "",
+    "MigrationEntry? _findEntry(String rawId) {",
+    "  for (final entry in _entries) {",
+    "    if (entry.id.toString() == rawId) return entry;",
+    "  }",
+    "  return null;",
+    "}",
+    "",
+    "void main(List<String> args) {",
+    "  if (args.contains('--dump-json')) {",
+    "    final payload = buildMigrations().map((m) => m.toJson()).toList();",
+    "    print(jsonEncode(payload));",
+    "    return;",
+    "  }",
+    "",
+    "  final planIndex = args.indexOf('--plan-json');",
+    "  if (planIndex != -1) {",
+    "    final id = args[planIndex + 1];",
+    "    final entry = _findEntry(id);",
+    "    if (entry == null) {",
+    "      throw StateError('Unknown migration id ' + id + '.');",
+    "    }",
+    "    final directionName = args[args.indexOf('--direction') + 1];",
+    "    final direction = MigrationDirection.values.byName(directionName);",
+    "    final snapshotIndex = args.indexOf('--schema-snapshot');",
+    "    SchemaSnapshot? snapshot;",
+    "    if (snapshotIndex != -1) {",
+    "      final decoded = utf8.decode(base64.decode(args[snapshotIndex + 1]));",
+    "      final payload = jsonDecode(decoded) as Map<String, Object?>;",
+    "      snapshot = SchemaSnapshot.fromJson(payload);",
+    "    }",
+    "    final plan = entry.migration.plan(direction, snapshot: snapshot);",
+    "    print(jsonEncode(plan.toJson()));",
+    "  }",
+    "}",
+  ].join('\n');
+
+  if (migrationFiles.isNotEmpty) {
+    registryFile.writeAsStringSync(registryContent);
+    io.success(
+      'Populated migrations registry with ${migrationFiles.length} imports (manual entry TODOs left).',
+    );
+  } else {
+    io.writeln(io.style.muted('No migration files found.'));
+  }
+
+  // Build seed registry
+  final seedImports = <String>[];
+  final seedRegistrations = <String>[];
+  for (final f in seederFiles) {
+    final rel = p.relative(f.path, from: p.dirname(seedRegistryFile.path));
+    final importPath = rel.replaceAll('\\', '/');
+    final base = p.basenameWithoutExtension(f.path);
+    seedImports.add("import '$importPath';");
+    seedRegistrations.add(
+      "  // TODO: Register seeder for $base",
+    );
+  }
+
+  final seedRegistryContent = [
+    "import 'package:ormed_cli/runtime.dart';",
+    "import 'package:ormed/ormed.dart';",
+    "",
+    ...seedImports,
+    "",
+    "final List<SeederRegistration> _seeders = <SeederRegistration>[",
+    ...seedRegistrations,
+    "];",
+    "",
+    "Future<void> seedPlayground(",
+    "  OrmConnection connection, {",
+    "  List<String>? names,",
+    "  bool pretend = false,",
+    "}) => runSeedRegistryOnConnection(",
+    "  connection,",
+    "  _seeders,",
+    "  names: names,",
+    "  pretend: pretend,",
+    "  beforeRun: (conn) => conn.context.registry.registerGeneratedModels(),",
+    ");",
+    "",
+    "Future<void> main(List<String> args) => runSeedRegistryEntrypoint(",
+    "  args: args,",
+    "  seeds: _seeders,",
+    "  beforeRun: (connection) =>",
+    "      connection.context.registry.registerGeneratedModels(),",
+    ");",
+  ].join('\n');
+
+  if (seederFiles.isNotEmpty) {
+    seedRegistryFile.writeAsStringSync(seedRegistryContent);
+    io.success(
+      'Populated seed registry with ${seederFiles.length} imports (manual registration TODOs left).',
+    );
+  } else {
+    io.writeln(io.style.muted('No seeder files found.'));
+  }
 }
