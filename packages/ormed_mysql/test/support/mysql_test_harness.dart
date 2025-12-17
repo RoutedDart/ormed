@@ -4,62 +4,6 @@ import 'package:driver_tests/driver_tests.dart';
 import 'package:ormed/ormed.dart';
 import 'package:ormed_mysql/ormed_mysql.dart';
 
-/// Parses a MySQL connection URL and returns its components.
-class MySqlConnectionInfo {
-  final String host;
-  final int port;
-  final String database;
-  final String? username;
-  final String? password;
-  final bool secure;
-
-  MySqlConnectionInfo({
-    required this.host,
-    required this.port,
-    required this.database,
-    this.username,
-    this.password,
-    this.secure = true, // Default to true for caching_sha2_password auth
-  });
-
-  /// Parse a mysql:// URL into connection components.
-  factory MySqlConnectionInfo.fromUrl(String url) {
-    final uri = Uri.parse(url);
-    // Check for ssl or secure query parameter
-    final hasSecure =
-        uri.queryParameters['ssl'] == 'true' ||
-        uri.queryParameters['secure'] == 'true' ||
-        // Default to true for MySQL 8+ which uses caching_sha2_password
-        !uri.queryParameters.containsKey('ssl') &&
-            !uri.queryParameters.containsKey('secure');
-    return MySqlConnectionInfo(
-      host: uri.host.isEmpty ? 'localhost' : uri.host,
-      port: uri.port == 0 ? 3306 : uri.port,
-      database: uri.pathSegments.isNotEmpty ? uri.pathSegments.first : 'mysql',
-      username: uri.userInfo.contains(':')
-          ? uri.userInfo.split(':').first
-          : uri.userInfo.isEmpty
-          ? null
-          : uri.userInfo,
-      password: uri.userInfo.contains(':')
-          ? uri.userInfo.split(':').last
-          : null,
-      secure: hasSecure,
-    );
-  }
-
-  /// Reconstruct the URL, optionally with a different database.
-  String toUrl({String? database, bool? secure}) {
-    final db = database ?? this.database;
-    final useSsl = secure ?? this.secure;
-    final auth = username != null
-        ? (password != null ? '$username:$password@' : '$username@')
-        : '';
-    final sslQuery = useSsl ? '?secure=true' : '';
-    return 'mysql://$auth$host:$port/$db$sslQuery';
-  }
-}
-
 /// Reusable MySQL test harness for driver packages.
 ///
 /// This sets up a DataSource with the driver test registry, registers
@@ -147,7 +91,10 @@ Future<MySqlTestHarness> createMySqlTestHarness({
       'mysql://root:secret@localhost:6605/orm_test';
 
   // Parse the connection URL for later use
-  final connectionInfo = MySqlConnectionInfo.fromUrl(resolvedUrl);
+  final connectionInfo = MySqlConnectionInfo.fromUrl(
+    resolvedUrl,
+    secureByDefault: true,
+  );
 
   final adapter = MySqlDriverAdapter.custom(
     config: DatabaseConfig(

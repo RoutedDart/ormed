@@ -10,6 +10,7 @@ import 'src/mysql_adapter.dart';
 
 export 'src/mysql_adapter.dart';
 export 'src/mysql_codecs.dart';
+export 'src/mysql_connection_info.dart';
 export 'src/mysql_connector.dart';
 export 'src/mysql_grammar.dart';
 export 'src/mysql_schema_dialect.dart';

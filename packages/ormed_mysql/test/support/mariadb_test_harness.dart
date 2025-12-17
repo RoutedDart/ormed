@@ -4,62 +4,6 @@ import 'package:driver_tests/driver_tests.dart';
 import 'package:ormed/ormed.dart';
 import 'package:ormed_mysql/ormed_mysql.dart';
 
-/// Parses a MariaDB connection URL and returns its components.
-class MariaDbConnectionInfo {
-  final String host;
-  final int port;
-  final String database;
-  final String? username;
-  final String? password;
-  final bool secure;
-
-  MariaDbConnectionInfo({
-    required this.host,
-    required this.port,
-    required this.database,
-    this.username,
-    this.password,
-    this.secure = true, // Default to true for caching_sha2_password auth
-  });
-
-  /// Parse a mariadb:// URL into connection components.
-  factory MariaDbConnectionInfo.fromUrl(String url) {
-    final uri = Uri.parse(url);
-    // Check for ssl or secure query parameter
-    final hasSecure =
-        uri.queryParameters['ssl'] == 'true' ||
-        uri.queryParameters['secure'] == 'true' ||
-        // Default to true for MariaDB to match MySQL behavior
-        !uri.queryParameters.containsKey('ssl') &&
-            !uri.queryParameters.containsKey('secure');
-    return MariaDbConnectionInfo(
-      host: uri.host.isEmpty ? 'localhost' : uri.host,
-      port: uri.port == 0 ? 3306 : uri.port,
-      database: uri.pathSegments.isNotEmpty ? uri.pathSegments.first : 'mysql',
-      username: uri.userInfo.contains(':')
-          ? uri.userInfo.split(':').first
-          : uri.userInfo.isEmpty
-          ? null
-          : uri.userInfo,
-      password: uri.userInfo.contains(':')
-          ? uri.userInfo.split(':').last
-          : null,
-      secure: hasSecure,
-    );
-  }
-
-  /// Reconstruct the URL, optionally with a different database.
-  String toUrl({String? database, bool? secure}) {
-    final db = database ?? this.database;
-    final useSsl = secure ?? this.secure;
-    final auth = username != null
-        ? (password != null ? '$username:$password@' : '$username@')
-        : '';
-    final sslQuery = useSsl ? '?secure=true' : '';
-    return 'mariadb://$auth$host:$port/$db$sslQuery';
-  }
-}
-
 /// Reusable MariaDB test harness for driver packages.
 ///
 /// This sets up a DataSource with the driver test registry, registers
@@ -147,7 +91,10 @@ Future<MariaDbTestHarness> createMariaDbTestHarness({
       'mariadb://root:secret@localhost:6604/orm_test';
 
   // Parse the connection URL for later use
-  final connectionInfo = MariaDbConnectionInfo.fromUrl(resolvedUrl);
+  final connectionInfo = MariaDbConnectionInfo.fromUrl(
+    resolvedUrl,
+    secureByDefault: true,
+  );
 
   final adapter = MariaDbDriverAdapter.custom(
     config: DatabaseConfig(

@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:mysql_client_plus/mysql_client_plus.dart';
 import 'package:ormed/ormed.dart';
 
+import 'mysql_connection_info.dart';
+
 typedef MySqlConnectionBuilder =
     Future<MySQLConnection> Function(MySqlConnectionSettings settings);
 
@@ -122,23 +124,18 @@ class MySqlConnectionSettings {
 
     if (uriString != null && uriString.isNotEmpty) {
       final uri = Uri.parse(uriString);
-      if (uri.host.isNotEmpty) {
-        host = uri.host;
-      }
-      if (uri.hasPort) {
-        port = uri.port;
-      }
-      if (uri.pathSegments.isNotEmpty && uri.pathSegments.first.isNotEmpty) {
-        database = uri.pathSegments.first;
-      }
-      if (uri.userInfo.isNotEmpty) {
-        final parts = uri.userInfo.split(':');
-        username = Uri.decodeComponent(parts.first);
-        if (parts.length > 1) {
-          password = Uri.decodeComponent(parts.sublist(1).join(':'));
-        }
-      }
-      secure = secure || _schemeRequiresTls(uri.scheme);
+      final info = MySqlConnectionInfo.fromUrl(
+        uriString,
+        secureByDefault: secure,
+      );
+
+      host = info.host;
+      port = info.port;
+      database = info.database;
+      username = info.username ?? username;
+      password = info.password ?? password;
+      secure = info.secure;
+
       charset = uri.queryParameters['charset'] ?? charset;
       collation = uri.queryParameters['collation'] ?? collation;
       timezone = uri.queryParameters['timezone'] ?? timezone;
@@ -154,12 +151,6 @@ class MySqlConnectionSettings {
         if (parsed != null) {
           timeout = Duration(milliseconds: parsed);
         }
-      }
-      if (uri.queryParameters.containsKey('ssl')) {
-        secure = uri.queryParameters['ssl']!.toLowerCase() == 'true';
-      }
-      if (uri.queryParameters.containsKey('secure')) {
-        secure = uri.queryParameters['secure']!.toLowerCase() == 'true';
       }
       if (uri.queryParameters.containsKey('password') && password == null) {
         password = uri.queryParameters['password'];
@@ -210,12 +201,6 @@ class MySqlConnectionSettings {
   final List<String> initStatements;
 
   String get description => '$host:$port/$database';
-}
-
-bool _schemeRequiresTls(String scheme) {
-  final normalized = scheme.toLowerCase();
-  if (normalized.contains('+ssl')) return true;
-  return normalized == 'mysqls' || normalized == 'mariadbs';
 }
 
 String _quote(String value) => '\'${value.replaceAll('\'', "''")}\'';

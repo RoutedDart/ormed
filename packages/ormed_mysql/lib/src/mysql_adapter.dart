@@ -5,6 +5,7 @@ import 'package:mysql_client_plus/mysql_client_plus.dart';
 import 'package:ormed/ormed.dart';
 
 import 'mysql_codecs.dart';
+import 'mysql_connection_info.dart';
 import 'mysql_connector.dart';
 import 'mysql_grammar.dart';
 import 'mysql_schema_dialect.dart';
@@ -725,10 +726,7 @@ class MySqlDriverAdapter
     // Try to get from URL first
     final url = _config.options['url'] as String?;
     if (url != null) {
-      final uri = Uri.parse(url);
-      if (uri.pathSegments.isNotEmpty) {
-        return uri.pathSegments.first;
-      }
+      return MySqlConnectionInfo.fromUrl(url).database;
     }
     // Fallback to 'database' option
     return _config.options['database'] as String?;
