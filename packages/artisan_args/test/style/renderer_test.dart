@@ -252,13 +252,14 @@ void main() {
   group('ColorProfile', () {
     test('enum values exist', () {
       expect(ColorProfile.values, contains(ColorProfile.ascii));
+      expect(ColorProfile.values, contains(ColorProfile.noColor));
       expect(ColorProfile.values, contains(ColorProfile.ansi));
       expect(ColorProfile.values, contains(ColorProfile.ansi256));
       expect(ColorProfile.values, contains(ColorProfile.trueColor));
     });
 
-    test('enum has 4 values', () {
-      expect(ColorProfile.values.length, equals(4));
+    test('enum has 5 values', () {
+      expect(ColorProfile.values.length, equals(5));
     });
   });
 
@@ -266,10 +267,15 @@ void main() {
     test('Style respects renderer colorProfile', () {
       final style = Style().bold().foreground(Colors.red);
 
-      // ASCII profile - no colors
+      // ASCII profile - no ANSI output
       style.colorProfile = ColorProfile.ascii;
       final asciiResult = style.render('Hello');
       expect(asciiResult, isNot(contains('\x1B[')));
+
+      // noColor profile - no colors but decoration is allowed
+      style.colorProfile = ColorProfile.noColor;
+      final noColorResult = style.render('Hello');
+      expect(noColorResult, contains('\x1B['));
 
       // TrueColor profile - has colors
       style.colorProfile = ColorProfile.trueColor;
