@@ -116,11 +116,13 @@ Future<void> inlineScopeExample() async {
   );
   // #endregion model-scopes-inline-register
 
+  // #region model-scopes-inline-usage
   final admins = await context.query<$ScopedUser>().scope('byRole', ['admin']).get();
   final allWithInactive = await context
       .query<$ScopedUser>()
       .withoutGlobalScope('activeOnly')
       .get();
+  // #endregion model-scopes-inline-usage
 
   print([admins.length, allWithInactive.length]);
 }

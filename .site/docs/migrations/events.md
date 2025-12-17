@@ -6,6 +6,10 @@ sidebar_position: 5
 
 Migrations and seeders emit structured events through the shared `EventBus`. Subscribe once to stream progress to logs, metrics, or tracing.
 
+:::note Snippet context
+The snippets below are split into “subscribe” and “run” pieces so you can reuse the listener wiring in your own bootstrap code.
+:::
+
 ## Migration Lifecycle
 
 Events (all emitted by `MigrationRunner`):

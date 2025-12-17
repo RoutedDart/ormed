@@ -4,6 +4,10 @@ sidebar_position: 3
 
 # Running Migrations
 
+:::note Snippet context
+These snippets are split by step (entries → ledger → runner → apply/rollback) so you can copy just the part you need.
+:::
+
 ## Programmatic Usage
 
 Use `MigrationRunner` to run migrations in code:

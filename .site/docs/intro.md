@@ -21,9 +21,13 @@ Ormed is a **strongly-typed ORM for Dart** inspired by Eloquent, GORM, SQLAlchem
 
 ## Quick Example
 
+Model:
+
 ```dart file=../examples/lib/models/user.dart#intro-model
 
 ```
+
+Query:
 
 ```dart file=../examples/lib/queries.dart#intro-query
 

@@ -6,6 +6,11 @@ sidebar_position: 2
 
 Repositories provide CRUD operations with flexible input handling, accepting tracked models, DTOs, or raw maps.
 
+:::note Snippet context
+- Snippets focus on repository calls and omit full setup.
+- Unless shown otherwise, assume you already have a `DataSource` named `dataSource` and you’re using generated tracked models (e.g., `$User`).
+:::
+
 ## Getting a Repository
 
 ```dart file=../../examples/lib/repository.dart#repo-get

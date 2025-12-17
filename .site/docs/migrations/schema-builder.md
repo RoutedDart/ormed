@@ -6,6 +6,10 @@ sidebar_position: 2
 
 The Schema Builder provides a fluent API for defining table structures in a database-agnostic way.
 
+:::note Snippet context
+Snippets show only the Schema Builder calls. Driver selection and migration execution are covered in the migrations guides.
+:::
+
 ## Creating Tables
 
 Use `schema.create()` to define a new table:

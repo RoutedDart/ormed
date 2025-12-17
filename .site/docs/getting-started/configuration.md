@@ -6,6 +6,11 @@ sidebar_position: 3
 
 Ormed uses `orm.yaml` for CLI + runtime configuration. Two shapes are supported: a single top-level connection (scaffold default) or a `connections:` map for multi-db setups.
 
+:::note Snippet context
+- YAML blocks show CLI/runtime config.
+- Dart snippets show only the relevant registry/setup pieces; full app bootstrapping is covered in Quick Start.
+:::
+
 ## Single Connection (default)
 
 Create `orm.yaml` in your project root:

@@ -56,6 +56,8 @@ Create `lib/src/database/migrations/m_20241201000000_create_users_table.dart`:
 
 ## 4. Set Up the Database (SQLite)
 
+This shows the minimal setup: driver + generated registry + `DataSourceOptions`.
+
 ```dart file=../../examples/lib/setup.dart#quickstart-setup
 ```
 

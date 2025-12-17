@@ -6,6 +6,11 @@ sidebar_position: 1
 
 The Query Builder provides a fluent, type-safe API for building database queries.
 
+:::note Snippet context
+- Snippets focus on the query builder calls and omit full setup.
+- Unless shown otherwise, assume you already have a `DataSource` named `dataSource` (see Getting Started → Quick Start).
+:::
+
 ## Getting Started
 
 Access the query builder through a `DataSource`:

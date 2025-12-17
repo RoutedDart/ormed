@@ -6,6 +6,11 @@ sidebar_position: 1
 
 Models in Ormed are Dart classes annotated with `@OrmModel` that map to database tables.
 
+:::note Snippet context
+- Snippets show model definitions and generated usage in isolation.
+- Run `dart run build_runner build` after creating/updating models to generate `$Model`, `OrmDefinition`, and DTOs.
+:::
+
 ## Basic Model
 
 ```dart file=../../examples/lib/models/user.dart#basic-model

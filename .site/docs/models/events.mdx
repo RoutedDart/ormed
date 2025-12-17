@@ -2,17 +2,25 @@
 sidebar_position: 4
 ---
 
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 # Model Events
 
-Ormed emits rich lifecycle events for every model: `saving`, `saved`, `creating`, `created`, `updating`, `updated`, `deleting`, `deleted`, `trashed`, `forceDeleted`, `restoring`, `restored`, `retrieved`, and `replicating`.
+Ormed emits lifecycle events for every model operation:
+`saving`, `saved`, `creating`, `created`, `updating`, `updated`, `deleting`, `deleted`, `trashed`, `forceDeleted`, `restoring`, `restored`, `retrieved`, and `replicating`.
 
 - Cancellable: `saving`, `creating`, `updating`, `deleting`, `restoring`, `replicating`
 - Soft delete aware: `trashed` (soft delete), `forceDeleted` (hard delete)
 - Global listeners: subscribe on the shared `EventBus.instance`
 
-## Handler Requirements
+:::note Snippet context
+These snippets focus on event wiring and handlers. They assume you already have a `DataSource` or `QueryContext` unless the snippet explicitly shows setup.
+:::
 
-Handlers are **static** methods that take the event type you annotate with `@OrmEvent`. Instance methods are not supported because models are immutable and generated tracked instances are created by the ORM; static handlers keep the signature predictable for codegen.
+## Handler requirements
+
+Handlers are **static** methods that take the event type you annotate with `@OrmEvent`.
 
 Rules:
 - Signature: `static void onXyz(ModelXyzEvent event)`
@@ -22,48 +30,42 @@ Rules:
 ```dart file=../../examples/lib/events/model_events.dart#model-event-annotation
 ```
 
-If you need per-request state, capture it via closures on the `EventBus` instead of instance fields.
-
-## Listen Globally
+## Listen globally
 
 Attach listeners once when your app boots:
 
 ```dart file=../../examples/lib/events/model_events.dart#model-event-listeners
 ```
 
-Use the global bus (default for `QueryContext`/`DataSource`) so every query/repository call emits into the same stream.
-
-## Guard Operations (cancel)
+## Guard operations (cancel)
 
 Cancel dangerous deletes or updates in a listener by calling `event.cancel()`:
 
 ```dart file=../../examples/lib/events/model_events.dart#model-delete-guard
 ```
 
-## Annotation-Based Handlers
+## Full lifecycle walkthrough
 
-You can register handlers directly on the model with `@OrmEvent`:
+<Tabs groupId="model-events-walkthrough" defaultValue="setup">
+  <TabItem value="setup" label="Setup">
 
-```dart file=../../examples/lib/events/model_events.dart#model-event-annotation
-```
-
-The generator wires these static handlers into `registerModelEventHandlers`, which is invoked by `bootstrapOrm`.
-
-## Full Lifecycle Walkthrough
-
-This example logs every phase for a `User` insert, update, delete, and retrieval.
-
-### Setup
+This wires listeners and creates a demo `DataSource`.
 
 ```dart file=../../examples/lib/events/model_events.dart#model-events-setup
 ```
 
-### Mutations
+  </TabItem>
+  <TabItem value="mutations" label="Use / Verify">
+
+This performs insert/update/delete operations so you can observe event ordering.
 
 ```dart file=../../examples/lib/events/model_events.dart#model-events-mutations
 ```
 
-## Event Ordering
+  </TabItem>
+</Tabs>
+
+## Event ordering
 
 For a create + update + soft delete + restore flow, events fire in this order:
 
@@ -78,6 +80,3 @@ Hard deletes emit `deleting` → `deleted` → `forceDeleted`.
 
 `ModelReplicatingEvent` fires before `Repository.replicate` returns the copy. Cancel it to block replication or attach metadata to the new instance.
 
-## Compatibility Notes
-
-Event names follow familiar patterns from popular ORMs, so existing observer logic typically translates directly. Ormed adds `forceDeleted`/`trashed` flags to distinguish delete modes on drivers that lack “returning” support.

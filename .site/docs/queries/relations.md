@@ -6,6 +6,11 @@ sidebar_position: 3
 
 Ormed provides multiple ways to load relationships between models.
 
+:::note Snippet context
+- Snippets focus on relation APIs and omit full setup.
+- Unless shown otherwise, assume you already have a `DataSource` named `dataSource` and your relations were generated via `build_runner`.
+:::
+
 ## Eager Loading
 
 Load relations upfront with your query to avoid N+1 problems.
