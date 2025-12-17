@@ -24,6 +24,15 @@ class CarbonConfig {
   static String _defaultLocale = 'en_US';
   static bool _isTimeMachineConfigured = false;
 
+  static bool _isFixedOffsetTimezone(String timezone) {
+    final tz = timezone.trim();
+    if (tz == 'UTC' || tz == 'Z') {
+      return true;
+    }
+    // Supports: +05, +0530, +05:30, -04, -0400, -04:00
+    return RegExp(r'^[+-]\d{2}(?::?\d{2})?$').hasMatch(tz);
+  }
+
   /// Gets the default timezone for Carbon instances.
   ///
   /// Defaults to 'UTC' unless changed via [configure].
@@ -126,11 +135,13 @@ class CarbonConfig {
     String? locale,
   }) {
     final dt = dateTime ?? DateTime.now();
-    final carbon = Carbon.fromDateTime(dt);
+    final tz = timezone ?? _defaultTimezone;
+    final resolvedLocale = locale ?? _defaultLocale;
 
     // Apply timezone if specified or use default
-    final tz = timezone ?? _defaultTimezone;
-    if (tz != 'UTC' && !_isTimeMachineConfigured) {
+    if (tz != 'UTC' &&
+        !_isTimeMachineConfigured &&
+        !_isFixedOffsetTimezone(tz)) {
       throw StateError(
         'Named timezone "$tz" requires calling '
         'CarbonConfig.configureWithTimeMachine() first. '
@@ -138,8 +149,19 @@ class CarbonConfig {
       );
     }
 
-    // Apply timezone and locale
-    return carbon.tz(tz).locale(locale ?? _defaultLocale) as Carbon;
+    // If the caller passed a "local" DateTime and the configured timezone is
+    // non-UTC, interpret the wall-clock components in that configured timezone.
+    // This avoids reliance on the host machine's local timezone (e.g. CI in UTC).
+    if (tz != 'UTC' && !dt.isUtc) {
+      return Carbon.parse(
+        dt.toIso8601String(),
+        timeZone: tz,
+        locale: resolvedLocale,
+      );
+    }
+
+    final carbon = Carbon.fromDateTime(dt, locale: resolvedLocale);
+    return carbon.tz(tz) as Carbon;
   }
 
   /// Parses a date string into a Carbon instance with configured defaults.
@@ -162,11 +184,13 @@ class CarbonConfig {
     String? timezone,
     String? locale,
   }) {
-    final carbon = Carbon.parse(dateString);
+    final tz = timezone ?? _defaultTimezone;
+    final resolvedLocale = locale ?? _defaultLocale;
 
     // Apply timezone if specified or use default
-    final tz = timezone ?? _defaultTimezone;
-    if (tz != 'UTC' && !_isTimeMachineConfigured) {
+    if (tz != 'UTC' &&
+        !_isTimeMachineConfigured &&
+        !_isFixedOffsetTimezone(tz)) {
       throw StateError(
         'Named timezone "$tz" requires calling '
         'CarbonConfig.configureWithTimeMachine() first. '
@@ -174,7 +198,6 @@ class CarbonConfig {
       );
     }
 
-    // Apply timezone and locale
-    return carbon.tz(tz).locale(locale ?? _defaultLocale) as Carbon;
+    return Carbon.parse(dateString, timeZone: tz, locale: resolvedLocale);
   }
 }
