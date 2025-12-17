@@ -40,7 +40,15 @@ mixin TimestampsImpl on ModelAttributes {
 
   /// Updates the updatedAt timestamp to the current time.
   void touch() {
-    final now = Carbon.now().toDateTime();
+    var now = Carbon.now().toDateTime();
+    final previous = getAttribute<DateTime?>(_updatedAtColumn);
+    if (previous != null &&
+        now.millisecondsSinceEpoch <= previous.millisecondsSinceEpoch) {
+      now = DateTime.fromMillisecondsSinceEpoch(
+        previous.millisecondsSinceEpoch + 1,
+        isUtc: previous.isUtc,
+      );
+    }
     updatedAt = now;
   }
 }
@@ -111,10 +119,16 @@ mixin TimestampsTZImpl on ModelAttributes {
 
   /// Updates the updatedAt timestamp to the current time in UTC.
   void touch() {
-    final now = Carbon.now().toUtc().toDateTime();
+    var now = Carbon.now().toUtc().toDateTime();
+    final previous = getAttribute<DateTime?>(_updatedAtColumn);
+    if (previous != null &&
+        now.millisecondsSinceEpoch <= previous.millisecondsSinceEpoch) {
+      now = DateTime.fromMillisecondsSinceEpoch(
+        previous.millisecondsSinceEpoch + 1,
+        isUtc: true,
+      );
+    }
     updatedAt = now;
-    // Also update the attribute store so save() picks up the change
-    setAttribute('updated_at', now);
   }
 }
 

@@ -5,7 +5,6 @@ import 'package:decimal/decimal.dart';
 import 'package:ormed/ormed.dart';
 import 'package:ormed_postgres/migrations.dart';
 import 'package:ormed_postgres/ormed_postgres.dart';
-import 'package:postgres/postgres.dart';
 import 'package:test/test.dart';
 import 'package:uuid/uuid.dart';
 

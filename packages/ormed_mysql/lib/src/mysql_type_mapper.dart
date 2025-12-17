@@ -1,6 +1,12 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
+import 'package:decimal/decimal.dart';
 import 'package:ormed/ormed.dart';
+import 'package:uuid/uuid_value.dart';
+
+import 'mysql_codecs.dart';
+import 'mysql_value_types.dart';
 
 /// MySQL/MariaDB-specific type mapper
 ///
@@ -20,8 +26,10 @@ class MysqlTypeMapper extends DriverTypeMapper {
         'TINYINT',
         'SMALLINT',
         'MEDIUMINT',
+        'INT',
         'INTEGER',
         'BIGINT',
+        'YEAR',
       ],
     ),
 
@@ -30,29 +38,94 @@ class MysqlTypeMapper extends DriverTypeMapper {
       dartType: bool,
       defaultSqlType: 'TINYINT',
       acceptedSqlTypes: ['BOOLEAN', 'BOOL'],
-      codec: _BoolCodec(),
+      codec: MySqlBoolCodec(),
     ),
 
     // FLOAT types
     TypeMapping(
       dartType: double,
       defaultSqlType: 'DOUBLE',
-      acceptedSqlTypes: ['FLOAT', 'DECIMAL', 'NUMERIC'],
+      acceptedSqlTypes: ['FLOAT', 'REAL'],
+    ),
+
+    // NUMERIC/DECIMAL (exact)
+    TypeMapping(
+      dartType: Decimal,
+      defaultSqlType: 'DECIMAL',
+      acceptedSqlTypes: ['DECIMAL', 'NUMERIC', 'FIXED'],
+      codec: MySqlDecimalCodec(),
     ),
 
     // TEXT types
     TypeMapping(
       dartType: String,
       defaultSqlType: 'VARCHAR',
-      acceptedSqlTypes: ['CHAR', 'TEXT', 'TINYTEXT', 'MEDIUMTEXT', 'LONGTEXT'],
+      acceptedSqlTypes: [
+        'CHAR',
+        'VARCHAR',
+        'TEXT',
+        'TINYTEXT',
+        'MEDIUMTEXT',
+        'LONGTEXT',
+        'ENUM',
+      ],
     ),
 
-    // DATETIME types (may be returned as String from MySQL)
+    // DATETIME/DATE types
     TypeMapping(
       dartType: DateTime,
       defaultSqlType: 'DATETIME',
-      acceptedSqlTypes: ['TIMESTAMP', 'DATE', 'TIME'],
-      codec: _DateTimeCodec(),
+      acceptedSqlTypes: ['TIMESTAMP', 'DATE'],
+      codec: MySqlDateTimeCodec(),
+    ),
+
+    // TIME (duration)
+    TypeMapping(
+      dartType: Duration,
+      defaultSqlType: 'TIME',
+      acceptedSqlTypes: ['TIME'],
+      codec: MySqlDurationCodec(),
+    ),
+
+    // UUID (MariaDB supports UUID; migrations default to CHAR(36) on MySQL)
+    TypeMapping(
+      dartType: UuidValue,
+      defaultSqlType: 'CHAR(36)',
+      acceptedSqlTypes: ['UUID'],
+      codec: MySqlUuidValueCodec(),
+    ),
+
+    // SET (stored as comma-separated values)
+    TypeMapping(
+      dartType: Set<String>,
+      defaultSqlType: 'SET',
+      acceptedSqlTypes: ['SET'],
+      codec: MySqlStringSetCodec(),
+    ),
+
+    // BIT
+    TypeMapping(
+      dartType: MySqlBitString,
+      defaultSqlType: 'BIT',
+      acceptedSqlTypes: ['BIT'],
+      codec: MySqlBitStringCodec(),
+    ),
+
+    // GEOMETRY + common spatial aliases
+    TypeMapping(
+      dartType: MySqlGeometry,
+      defaultSqlType: 'GEOMETRY',
+      acceptedSqlTypes: [
+        'GEOMETRY',
+        'POINT',
+        'LINESTRING',
+        'POLYGON',
+        'MULTIPOINT',
+        'MULTILINESTRING',
+        'MULTIPOLYGON',
+        'GEOMETRYCOLLECTION',
+      ],
+      codec: MySqlGeometryCodec(),
     ),
 
     // BINARY types
@@ -62,10 +135,20 @@ class MysqlTypeMapper extends DriverTypeMapper {
       acceptedSqlTypes: [
         'BINARY',
         'VARBINARY',
+        'BLOB',
         'TINYBLOB',
         'MEDIUMBLOB',
         'LONGBLOB',
+        'GEOMETRY',
+        'BIT',
       ],
+    ),
+
+    // BINARY types (mysql_client_plus returns Uint8List)
+    TypeMapping(
+      dartType: Uint8List,
+      defaultSqlType: 'BLOB',
+      acceptedSqlTypes: ['BLOB', 'TINYBLOB', 'MEDIUMBLOB', 'LONGBLOB'],
     ),
 
     // JSON type
@@ -88,9 +171,12 @@ class MysqlTypeMapper extends DriverTypeMapper {
     // Map MySQL type aliases
     if (_integerTypes.contains(baseType)) return 'INT';
     if (_floatTypes.contains(baseType)) return 'DOUBLE';
+    if (_decimalTypes.contains(baseType)) return 'DECIMAL';
     if (_textTypes.contains(baseType)) return 'VARCHAR';
-    if (_dateTimeTypes.contains(baseType)) return 'DATETIME';
+    if (_dateTimeTypes.contains(baseType)) return baseType;
     if (_binaryTypes.contains(baseType)) return 'BLOB';
+    if (_bitTypes.contains(baseType)) return 'BIT';
+    if (_geometryTypes.contains(baseType)) return 'GEOMETRY';
     if (_jsonTypes.contains(baseType)) return 'JSON';
 
     return baseType;
@@ -103,9 +189,12 @@ class MysqlTypeMapper extends DriverTypeMapper {
     'INT',
     'INTEGER',
     'BIGINT',
+    'YEAR',
   };
 
-  static const _floatTypes = {'FLOAT', 'DOUBLE', 'DECIMAL', 'NUMERIC'};
+  static const _floatTypes = {'FLOAT', 'DOUBLE', 'REAL'};
+
+  static const _decimalTypes = {'DECIMAL', 'NUMERIC', 'FIXED'};
 
   static const _textTypes = {
     'CHAR',
@@ -116,13 +205,7 @@ class MysqlTypeMapper extends DriverTypeMapper {
     'LONGTEXT',
   };
 
-  static const _dateTimeTypes = {
-    'DATE',
-    'DATETIME',
-    'TIMESTAMP',
-    'TIME',
-    'YEAR',
-  };
+  static const _dateTimeTypes = {'DATE', 'DATETIME', 'TIMESTAMP', 'TIME'};
 
   static const _binaryTypes = {
     'BINARY',
@@ -131,6 +214,19 @@ class MysqlTypeMapper extends DriverTypeMapper {
     'TINYBLOB',
     'MEDIUMBLOB',
     'LONGBLOB',
+  };
+
+  static const _bitTypes = {'BIT'};
+
+  static const _geometryTypes = {
+    'GEOMETRY',
+    'POINT',
+    'LINESTRING',
+    'POLYGON',
+    'MULTIPOINT',
+    'MULTILINESTRING',
+    'MULTIPOLYGON',
+    'GEOMETRYCOLLECTION',
   };
 
   static const _jsonTypes = {'JSON'};
@@ -162,43 +258,6 @@ class MysqlTypeMapper extends DriverTypeMapper {
 
     return result;
   }
-}
-
-// MySQL-specific codecs
-
-class _BoolCodec extends ValueCodec<bool> {
-  @override
-  bool? decode(dynamic value) {
-    if (value == null) return null;
-    if (value is bool) return value;
-    if (value is int) return value != 0;
-    if (value is String) {
-      final lower = value.toLowerCase();
-      if (lower == 'true' || lower == '1') return true;
-      if (lower == 'false' || lower == '0') return false;
-    }
-    return null;
-  }
-
-  @override
-  dynamic encode(bool? value) => value == null ? null : (value ? 1 : 0);
-}
-
-class _DateTimeCodec extends ValueCodec<DateTime> {
-  @override
-  DateTime? decode(dynamic value) {
-    if (value == null) return null;
-    if (value is DateTime) return value;
-    if (value is String) return DateTime.tryParse(value);
-    if (value is int) {
-      // Unix timestamp in milliseconds
-      return DateTime.fromMillisecondsSinceEpoch(value);
-    }
-    return null;
-  }
-
-  @override
-  dynamic encode(DateTime? value) => value?.toIso8601String();
 }
 
 class _JsonCodec extends ValueCodec<Map> {

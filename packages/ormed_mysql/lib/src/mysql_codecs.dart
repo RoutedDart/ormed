@@ -1,6 +1,11 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
+import 'package:decimal/decimal.dart';
 import 'package:ormed/ormed.dart';
+import 'package:uuid/uuid_value.dart';
+
+import 'mysql_value_types.dart';
 
 /// Registers MySQL-specific codecs with the global codec registry.
 /// Also registers for MariaDB since it uses the same codecs.
@@ -16,6 +21,16 @@ void registerMySqlCodecs() {
     'CarbonInterface?': MySqlCarbonInterfaceCodec(),
     'Duration': MySqlDurationCodec(),
     'Duration?': MySqlDurationCodec(),
+    'Decimal': MySqlDecimalCodec(),
+    'Decimal?': MySqlDecimalCodec(),
+    'UuidValue': MySqlUuidValueCodec(),
+    'UuidValue?': MySqlUuidValueCodec(),
+    'Set<String>': MySqlStringSetCodec(),
+    'Set<String>?': MySqlStringSetCodec(),
+    'MySqlBitString': MySqlBitStringCodec(),
+    'MySqlBitString?': MySqlBitStringCodec(),
+    'MySqlGeometry': MySqlGeometryCodec(),
+    'MySqlGeometry?': MySqlGeometryCodec(),
     'Map<String, Object?>': MySqlJsonMapCodec(),
     'Map<String, Object?>?': MySqlJsonMapCodec(),
     'Map<String, dynamic>': MySqlJsonDynamicMapCodec(),
@@ -99,7 +114,9 @@ class MySqlDurationCodec extends ValueCodec<Duration> {
   const MySqlDurationCodec();
 
   @override
-  Object? encode(Duration? value) => value?.inMicroseconds;
+  Object? encode(Duration? value) => value == null
+      ? null
+      : _formatDurationAsTime(value);
 
   @override
   Duration? decode(Object? value) {
@@ -107,12 +124,106 @@ class MySqlDurationCodec extends ValueCodec<Duration> {
     if (value is Duration) return value;
     if (value is num) return Duration(microseconds: value.toInt());
     if (value is String) {
-      final parsed = num.tryParse(value);
-      if (parsed != null) {
-        return Duration(microseconds: parsed.toInt());
-      }
+      return _parseMySqlTime(value);
     }
     throw StateError('Unsupported duration value "$value".');
+  }
+}
+
+class MySqlDecimalCodec extends ValueCodec<Decimal> {
+  const MySqlDecimalCodec();
+
+  @override
+  Object? encode(Decimal? value) => value?.toString();
+
+  @override
+  Decimal? decode(Object? value) {
+    if (value == null) return null;
+    if (value is Decimal) return value;
+    if (value is num) return Decimal.parse(value.toString());
+    if (value is String) return Decimal.parse(value.trim());
+    throw StateError('Unsupported Decimal value "$value".');
+  }
+}
+
+class MySqlUuidValueCodec extends ValueCodec<UuidValue> {
+  const MySqlUuidValueCodec();
+
+  @override
+  Object? encode(UuidValue? value) => value?.toString();
+
+  @override
+  UuidValue? decode(Object? value) {
+    if (value == null) return null;
+    if (value is UuidValue) return value;
+    if (value is String) return UuidValue.fromString(value.trim());
+    throw StateError('Unsupported UUID value "$value".');
+  }
+}
+
+class MySqlStringSetCodec extends ValueCodec<Set<String>> {
+  const MySqlStringSetCodec();
+
+  @override
+  Object? encode(Set<String>? value) =>
+      value?.join(',');
+
+  @override
+  Set<String>? decode(Object? value) {
+    if (value == null) return null;
+    if (value is Set<String>) return Set<String>.from(value);
+    if (value is Iterable) {
+      return value.map((e) => e.toString()).toSet();
+    }
+    final raw = value.toString();
+    if (raw.isEmpty) return <String>{};
+    return raw.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toSet();
+  }
+}
+
+class MySqlBitStringCodec extends ValueCodec<MySqlBitString> {
+  const MySqlBitStringCodec();
+
+  @override
+  Object? encode(MySqlBitString? value) => value?.bytes;
+
+  @override
+  MySqlBitString? decode(Object? value) {
+    if (value == null) return null;
+    if (value is MySqlBitString) return value;
+    if (value is Uint8List) return MySqlBitString(value);
+    if (value is List<int>) return MySqlBitString(Uint8List.fromList(value));
+    if (value is String) {
+      final trimmed = value.trim();
+      final isBitString =
+          trimmed.isNotEmpty && RegExp(r'^[01]+$').hasMatch(trimmed);
+      if (isBitString) {
+        return MySqlBitString.parse(trimmed);
+      }
+
+      // mysql_client_plus may decode BIT columns through utf8, producing control
+      // characters for small integers (e.g. '\n' == 0x0A). Preserve raw bytes
+      // by using the string's code units.
+      return MySqlBitString(Uint8List.fromList(value.codeUnits));
+    }
+    throw StateError('Unsupported BIT value "$value".');
+  }
+}
+
+class MySqlGeometryCodec extends ValueCodec<MySqlGeometry> {
+  const MySqlGeometryCodec();
+
+  @override
+  Object? encode(MySqlGeometry? value) => value?.bytes;
+
+  @override
+  MySqlGeometry? decode(Object? value) {
+    if (value == null) return null;
+    if (value is MySqlGeometry) return value;
+    if (value is Uint8List) return MySqlGeometry(value);
+    if (value is List<int>) return MySqlGeometry(Uint8List.fromList(value));
+    if (value is String) return MySqlGeometry.fromHex(value);
+    throw StateError('Unsupported geometry value "$value".');
   }
 }
 
@@ -325,3 +436,53 @@ String _formatDateTime(DateTime value) {
 }
 
 String _padNumber(int value, int width) => value.toString().padLeft(width, '0');
+
+Duration _parseMySqlTime(String raw) {
+  final trimmed = raw.trim();
+  final match = RegExp(
+    r'^([+-])?(\d+):(\d{2}):(\d{2})(?:\.(\d{1,6}))?$',
+  ).firstMatch(trimmed);
+  if (match == null) {
+    // Some connectors send TIME as an integer microsecond count.
+    final numeric = num.tryParse(trimmed);
+    if (numeric != null) return Duration(microseconds: numeric.toInt());
+    throw FormatException('Invalid MySQL TIME "$raw".');
+  }
+
+  final sign = match.group(1) == '-' ? -1 : 1;
+  final hours = int.parse(match.group(2)!);
+  final minutes = int.parse(match.group(3)!);
+  final seconds = int.parse(match.group(4)!);
+  final fraction = match.group(5);
+  final micros = fraction == null
+      ? 0
+      : int.parse(fraction.padRight(6, '0').substring(0, 6));
+
+  final totalMicros =
+      ((hours * 3600 + minutes * 60 + seconds) * 1000000) + micros;
+  return Duration(microseconds: sign * totalMicros);
+}
+
+String _formatDurationAsTime(Duration value) {
+  final negative = value.isNegative;
+  final microsTotal = value.inMicroseconds.abs();
+  final secondsTotal = microsTotal ~/ 1000000;
+  final micros = microsTotal % 1000000;
+
+  final hours = secondsTotal ~/ 3600;
+  final minutes = (secondsTotal % 3600) ~/ 60;
+  final seconds = secondsTotal % 60;
+
+  final buffer = StringBuffer();
+  if (negative) buffer.write('-');
+  buffer
+    ..write(hours.toString().padLeft(2, '0'))
+    ..write(':')
+    ..write(minutes.toString().padLeft(2, '0'))
+    ..write(':')
+    ..write(seconds.toString().padLeft(2, '0'));
+  if (micros != 0) {
+    buffer..write('.')..write(micros.toString().padLeft(6, '0'));
+  }
+  return buffer.toString();
+}

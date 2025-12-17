@@ -1,6 +1,8 @@
 import 'package:ormed/ormed.dart';
 import 'package:ormed_mysql/ormed_mysql.dart';
 import 'package:test/test.dart';
+import 'package:decimal/decimal.dart';
+import 'package:uuid/uuid_value.dart';
 
 void main() {
   group('MySQL TypeMapper Verification', () {
@@ -53,18 +55,74 @@ void main() {
       expect(decoded, isA<DateTime>());
     });
 
+    test('Duration → TIME with codec', () {
+      expect(mapper.dartTypeToSql(Duration), equals('TIME'));
+
+      final codec = mapper.getCodecForDartType(Duration);
+      expect(codec, isNotNull);
+
+      final encoded = codec?.encode(const Duration(hours: 1, minutes: 2));
+      expect(encoded, equals('01:02:00'));
+
+      final decoded = codec?.decode('12:34:56.123456');
+      expect(
+        decoded,
+        equals(
+          const Duration(
+            hours: 12,
+            minutes: 34,
+            seconds: 56,
+            microseconds: 123456,
+          ),
+        ),
+      );
+    });
+
+    test('Decimal → DECIMAL with codec', () {
+      expect(mapper.dartTypeToSql(Decimal), equals('DECIMAL'));
+
+      final codec = mapper.getCodecForDartType(Decimal);
+      expect(codec, isNotNull);
+
+      final value = Decimal.parse('123.4500');
+      final encoded = codec?.encode(value);
+      expect(encoded, isA<String>());
+      expect(Decimal.parse(encoded as String), equals(value));
+
+      final decoded = codec?.decode('123.4500');
+      expect(decoded, equals(value));
+    });
+
+    test('UuidValue → CHAR(36) with codec', () {
+      expect(mapper.dartTypeToSql(UuidValue), equals('CHAR(36)'));
+
+      final codec = mapper.getCodecForDartType(UuidValue);
+      expect(codec, isNotNull);
+
+      final uuid = UuidValue.fromString('00000000-0000-0000-0000-000000000000');
+      final encoded = codec?.encode(uuid);
+      expect(encoded, equals('00000000-0000-0000-0000-000000000000'));
+
+      final decoded = codec?.decode('00000000-0000-0000-0000-000000000000');
+      expect(decoded, equals(uuid));
+    });
+
     test('All basic type mappings', () {
       expect(mapper.dartTypeToSql(int), equals('INT'));
       expect(mapper.dartTypeToSql(double), equals('DOUBLE'));
       expect(mapper.dartTypeToSql(String), equals('VARCHAR'));
       expect(mapper.dartTypeToSql(bool), equals('TINYINT'));
       expect(mapper.dartTypeToSql(DateTime), equals('DATETIME'));
+      expect(mapper.dartTypeToSql(Duration), equals('TIME'));
+      expect(mapper.dartTypeToSql(Decimal), equals('DECIMAL'));
     });
 
     test('Reverse SQL → Dart mappings', () {
       expect(mapper.sqlTypeToDart('INT'), equals(int));
       expect(mapper.sqlTypeToDart('INTEGER'), equals(int));
       expect(mapper.sqlTypeToDart('DOUBLE'), equals(double));
+      expect(mapper.sqlTypeToDart('DECIMAL'), equals(Decimal));
+      expect(mapper.sqlTypeToDart('NUMERIC'), equals(Decimal));
       expect(mapper.sqlTypeToDart('VARCHAR'), equals(String));
       expect(mapper.sqlTypeToDart('TEXT'), equals(String));
       expect(
@@ -73,6 +131,7 @@ void main() {
       ); // Without (1), it's int
       expect(mapper.sqlTypeToDart('DATETIME'), equals(DateTime));
       expect(mapper.sqlTypeToDart('TIMESTAMP'), equals(DateTime));
+      expect(mapper.sqlTypeToDart('TIME'), equals(Duration));
       expect(mapper.sqlTypeToDart('BLOB'), equals(List<int>));
     });
 
@@ -96,6 +155,13 @@ void main() {
       expect(mapper.normalizeSqlType('BIGINT'), equals('INT'));
       expect(mapper.normalizeSqlType('TINYINT'), equals('INT'));
       expect(mapper.normalizeSqlType('SMALLINT'), equals('INT'));
+
+      // Decimal types normalize to DECIMAL
+      expect(mapper.normalizeSqlType('numeric(18,6)'), equals('DECIMAL'));
+      expect(mapper.normalizeSqlType('decimal(18,6)'), equals('DECIMAL'));
+
+      // TIME stays TIME
+      expect(mapper.normalizeSqlType('time(6)'), equals('TIME'));
     });
 
     test('SQL type aliases', () {
@@ -106,6 +172,7 @@ void main() {
       expect(mapper.sqlTypeToDart('TEXT'), equals(String));
       expect(mapper.sqlTypeToDart('FLOAT'), equals(double));
       expect(mapper.sqlTypeToDart('DATE'), equals(DateTime));
+      expect(mapper.sqlTypeToDart('TIME'), equals(Duration));
     });
 
     test('Has multiple type mappings', () {

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:mysql_client_plus/mysql_client_plus.dart';
 import 'package:ormed/ormed.dart';
@@ -36,15 +37,30 @@ class MySqlConnector extends Connector<MySQLConnection> {
   static Future<MySQLConnection> _defaultBuilder(
     MySqlConnectionSettings settings,
   ) async {
-    final connection = await MySQLConnection.createConnection(
-      host: settings.host,
-      port: settings.port,
-      userName: settings.username,
-      password: settings.password ?? '',
-      databaseName: settings.database,
-      secure: settings.secure,
-      collation: settings.collation ?? 'utf8mb4_general_ci',
-    );
+    Future<MySQLConnection> connectWithHost(String host) {
+      return MySQLConnection.createConnection(
+        host: host,
+        port: settings.port,
+        userName: settings.username,
+        password: settings.password ?? '',
+        databaseName: settings.database,
+        secure: settings.secure,
+        collation: settings.collation ?? 'utf8mb4_general_ci',
+      );
+    }
+
+    late final MySQLConnection connection;
+    try {
+      connection = await connectWithHost(settings.host);
+    } on SocketException catch (_) {
+      // Some environments resolve `localhost` to IPv6 only, while docker port
+      // bindings may only listen on IPv4. Retry with IPv4 loopback.
+      if (settings.host == 'localhost') {
+        connection = await connectWithHost('127.0.0.1');
+      } else {
+        rethrow;
+      }
+    }
     await connection.connect(timeoutMs: settings.timeout.inMilliseconds);
 
     if (settings.charset != null && settings.charset!.isNotEmpty) {

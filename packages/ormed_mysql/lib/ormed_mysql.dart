@@ -15,6 +15,7 @@ export 'src/mysql_connector.dart';
 export 'src/mysql_grammar.dart';
 export 'src/mysql_schema_dialect.dart';
 export 'src/mysql_type_mapper.dart';
+export 'src/mysql_value_types.dart';
 
 OrmConnectionHandle registerMySqlOrmConnection({
   required String name,

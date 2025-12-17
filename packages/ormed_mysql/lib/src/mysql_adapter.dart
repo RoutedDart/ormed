@@ -1,8 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 
+import 'package:decimal/decimal.dart';
 import 'package:mysql_client_plus/mysql_client_plus.dart';
 import 'package:ormed/ormed.dart';
+import 'package:uuid/uuid_value.dart';
 
 import 'mysql_codecs.dart';
 import 'mysql_connection_info.dart';
@@ -10,6 +13,7 @@ import 'mysql_connector.dart';
 import 'mysql_grammar.dart';
 import 'mysql_schema_dialect.dart';
 import 'mysql_type_mapper.dart';
+import 'mysql_value_types.dart';
 import 'schema_state.dart';
 
 /// Shared MySQL/MariaDB implementation of the routed ORM driver adapter.
@@ -22,17 +26,8 @@ class MySqlDriverAdapter
     TypeMapperRegistry.register('mysql', mapper);
     TypeMapperRegistry.register('mariadb', mapper);
 
-    // Register codecs from TypeMapper to eliminate duplication
-    final codecs = <String, ValueCodec<dynamic>>{};
-    for (final mapping in mapper.typeMappings) {
-      if (mapping.codec != null) {
-        final typeKey = mapping.dartType.toString();
-        codecs[typeKey] = mapping.codec!;
-        codecs['$typeKey?'] = mapping.codec!; // Nullable variant
-      }
-    }
-    ValueCodecRegistry.instance.registerDriver('mysql', codecs);
-    ValueCodecRegistry.instance.registerDriver('mariadb', codecs);
+    // Register MySQL/MariaDB codecs.
+    registerMySqlCodecs();
   }
 
   MySqlDriverAdapter.custom({
@@ -1286,52 +1281,53 @@ class MySqlDriverAdapter
     var affected = 0;
     final returnedRows = <Map<String, Object?>>[];
 
-    for (int i = 0; i < shape.parameterSets.length; i++) {
-      final parameters = shape.parameterSets[i];
-      final statement = _prepareStatement(shape.sql, parameters);
-      final result = await connection.execute(
-        statement.sql,
-        statement.parameters.isEmpty ? null : statement.parameters,
-      );
-      affected += result.affectedRows.toInt();
+    final stmt = await connection.prepare(shape.sql);
+    try {
+      for (int i = 0; i < shape.parameterSets.length; i++) {
+        final parameters = shape.parameterSets[i];
+        final result = await stmt.execute(normalizeMySqlParameters(parameters));
+        affected += result.affectedRows.toInt();
 
-      // For INSERTs with RETURNING, capture the last insert ID as a returned row
-      // MySQL doesn't support native RETURNING, so we simulate it for INSERTs only
-      if (shape.isInsert &&
-          shape.returning &&
-          result.lastInsertID.toInt() > 0 &&
-          shape.definition != null) {
-        // Find the primary key field name from the plan
-        try {
-          final pkField = shape.definition!.fields.firstWhere(
-            (f) => f.isPrimaryKey,
-          );
-          returnedRows.add({pkField.columnName: result.lastInsertID.toInt()});
-        } catch (_) {
-          // No primary key found, skip
+        // For INSERTs with RETURNING, capture the last insert ID as a returned row
+        // MySQL doesn't support native RETURNING, so we simulate it for INSERTs only
+        if (shape.isInsert &&
+            shape.returning &&
+            result.lastInsertID.toInt() > 0 &&
+            shape.definition != null) {
+          // Find the primary key field name from the plan
+          try {
+            final pkField = shape.definition!.fields.firstWhere(
+              (f) => f.isPrimaryKey,
+            );
+            returnedRows.add({pkField.columnName: result.lastInsertID.toInt()});
+          } catch (_) {
+            // No primary key found, skip
+          }
         }
-      }
 
-      // For UPSERTs with RETURNING, we need to re-query to get the actual row data
-      // since MySQL doesn't support RETURNING and we need accurate post-update values
-      if (shape.isUpsert && shape.returning && shape.definition != null) {
-        final pkValue = await _extractPrimaryKeyForUpsert(
-          shape,
-          result,
-          parameters,
-          i,
-        );
-        if (pkValue != null) {
-          final row = await _fetchRowByPrimaryKey(
-            shape.definition!,
-            pkValue,
-            connection,
+        // For UPSERTs with RETURNING, we need to re-query to get the actual row data
+        // since MySQL doesn't support RETURNING and we need accurate post-update values
+        if (shape.isUpsert && shape.returning && shape.definition != null) {
+          final pkValue = await _extractPrimaryKeyForUpsert(
+            shape,
+            result,
+            parameters,
+            i,
           );
-          if (row != null) {
-            returnedRows.add(row);
+          if (pkValue != null) {
+            final row = await _fetchRowByPrimaryKey(
+              shape.definition!,
+              pkValue,
+              connection,
+            );
+            if (row != null) {
+              returnedRows.add(row);
+            }
           }
         }
       }
+    } finally {
+      await stmt.deallocate();
     }
 
     return MutationResult(
@@ -1779,41 +1775,13 @@ class MySqlDriverAdapter
           .join(' AND ');
 
       final sql = 'SELECT * FROM $table WHERE $whereClause LIMIT 1';
-      final statement = _prepareStatement(sql, values);
-
-      final result = await connection.execute(
-        statement.sql,
-        statement.parameters.isEmpty ? null : statement.parameters,
-      );
+      final stmt = await connection.prepare(sql);
+      final result = await stmt.execute(normalizeMySqlParameters(values));
+      await stmt.deallocate();
 
       if (result.rows.isEmpty) return null;
-
-      final row = result.rows.first;
-      final map = <String, Object?>{};
-
-      final colsList = result.cols.toList();
-      for (var i = 0; i < colsList.length; i++) {
-        final col = colsList[i];
-        final columnName = col.name;
-        final rawValue = row.colAt(i);
-
-        if (rawValue != null && rawValue is String && rawValue.isNotEmpty) {
-          final intValue = int.tryParse(rawValue);
-          if (intValue != null) {
-            map[columnName] = intValue;
-            continue;
-          }
-          final doubleValue = double.tryParse(rawValue);
-          if (doubleValue != null) {
-            map[columnName] = doubleValue;
-            continue;
-          }
-        }
-
-        map[columnName] = rawValue;
-      }
-
-      return map;
+      final columns = result.cols.toList(growable: false);
+      return _decodeRow(result.rows.first, columns);
     } catch (_) {
       return null;
     }
@@ -1963,44 +1931,13 @@ class MySqlDriverAdapter
       final pkColumn = _quote(pkField.columnName);
 
       final sql = 'SELECT * FROM $table WHERE $pkColumn = ? LIMIT 1';
-      final statement = _prepareStatement(sql, [pkValue]);
-
-      final result = await connection.execute(
-        statement.sql,
-        statement.parameters.isEmpty ? null : statement.parameters,
-      );
+      final stmt = await connection.prepare(sql);
+      final result = await stmt.execute(normalizeMySqlParameters([pkValue]));
+      await stmt.deallocate();
 
       if (result.rows.isEmpty) return null;
-
-      final row = result.rows.first;
-      final map = <String, Object?>{};
-
-      // MySQL returns values that need proper type conversion
-      final colsList = result.cols.toList();
-      for (var i = 0; i < colsList.length; i++) {
-        final col = colsList[i];
-        final columnName = col.name;
-        final rawValue = row.colAt(i);
-
-        // Debug: check what type we're getting
-        if (rawValue != null && rawValue is String && rawValue.isNotEmpty) {
-          // Try to parse numeric strings
-          final intValue = int.tryParse(rawValue);
-          if (intValue != null) {
-            map[columnName] = intValue;
-            continue;
-          }
-          final doubleValue = double.tryParse(rawValue);
-          if (doubleValue != null) {
-            map[columnName] = doubleValue;
-            continue;
-          }
-        }
-
-        map[columnName] = rawValue;
-      }
-
-      return map;
+      final columns = result.cols.toList(growable: false);
+      return _decodeRow(result.rows.first, columns);
     } catch (_) {
       return null;
     }
@@ -2023,40 +1960,17 @@ class MySqlDriverAdapter
     List<Object?> parameters,
   ) async {
     final connection = await _connection();
-    final statement = _prepareStatement(sql, parameters);
-    return connection.execute(
-      statement.sql,
-      statement.parameters.isEmpty ? null : statement.parameters,
-    );
-  }
+    if (parameters.isEmpty) {
+      return connection.execute(sql);
+    }
 
-  _MySqlStatement _prepareStatement(String sql, List<Object?> values) {
-    if (values.isEmpty) {
-      return _MySqlStatement(sql: sql, parameters: const {});
+    final normalized = normalizeMySqlParameters(parameters);
+    final stmt = await connection.prepare(sql);
+    try {
+      return await stmt.execute(normalized);
+    } finally {
+      await stmt.deallocate();
     }
-    final normalized = normalizeMySqlParameters(values);
-    final buffer = StringBuffer();
-    final params = <String, Object?>{};
-    var index = 0;
-    for (var i = 0; i < sql.length; i++) {
-      final char = sql[i];
-      if (char == '?') {
-        index++;
-        final name = 'p$index';
-        buffer
-          ..write(':')
-          ..write(name);
-        params[name] = normalized[index - 1];
-      } else {
-        buffer.write(char);
-      }
-    }
-    if (index != normalized.length) {
-      throw StateError(
-        'Expected $index placeholders but got ${normalized.length}.',
-      );
-    }
-    return _MySqlStatement(sql: buffer.toString(), parameters: params);
   }
 
   List<Map<String, Object?>> _collectRows(IResultSet result) =>
@@ -2065,19 +1979,29 @@ class MySqlDriverAdapter
   Iterable<Map<String, Object?>> _rowIterable(IResultSet result) sync* {
     IResultSet? current = result;
     while (current != null) {
+      final columns = current.cols.toList(growable: false);
       for (final row in current.rows) {
-        yield _decodeRow(row);
+        yield _decodeRow(row, columns);
       }
       current = current.next;
     }
   }
 
-  Map<String, Object?> _decodeRow(dynamic row) {
+  Map<String, Object?> _decodeRow(
+    ResultSetRow row,
+    List<ResultSetColumn> columns,
+  ) {
     final typed = Map<String, Object?>.from(row.typedAssoc());
-    // Preserve column casing from the driver so fields map correctly
-    return typed.map(
-      (key, value) => MapEntry(key.toString(), _decodeResultValue(value)),
-    );
+    final types = <String, int>{
+      for (final column in columns) column.name: column.type.intVal,
+    };
+    // Preserve column casing from the driver so fields map correctly.
+    return typed.map((key, value) {
+      return MapEntry(
+        key.toString(),
+        _decodeResultValue(value, types[key.toString()]),
+      );
+    });
   }
 
   String _tableIdentifier(ModelDefinition<OrmEntity> definition) {
@@ -2242,13 +2166,6 @@ class MariaDbDriverAdapter extends MySqlDriverAdapter {
   );
 }
 
-class _MySqlStatement {
-  const _MySqlStatement({required this.sql, required this.parameters});
-
-  final String sql;
-  final Map<String, Object?> parameters;
-}
-
 class _MySqlMutationShape {
   const _MySqlMutationShape({
     required this.sql,
@@ -2287,8 +2204,13 @@ Object? _normalizeMySqlValue(Object? value) {
   if (value == null) return null;
   if (value is bool) return value ? 1 : 0;
   if (value is DateTime) return _formatDateTime(value);
-  if (value is Duration) return value.inMicroseconds;
+  if (value is Duration) return _formatDurationAsTime(value);
   if (value is BigInt) return value.toInt();
+  if (value is Decimal) return value.toString();
+  if (value is UuidValue) return value.toString();
+  if (value is MySqlGeometry) return value.bytes;
+  if (value is MySqlBitString) return value.bytes;
+  if (value is Uint8List) return value;
   if (value is Iterable) {
     return value.map(_normalizeMySqlValue).toList();
   }
@@ -2316,26 +2238,100 @@ String _formatDateTime(DateTime value) {
 
 String _padNumber(int value, int width) => value.toString().padLeft(width, '0');
 
-Object? _decodeResultValue(Object? value) {
+final _integerStringPattern = RegExp(r'^[+-]?\d+$');
+final _zeroFractionPattern = RegExp(r'^[+-]?\d+\.0+$');
+
+const int _mysqlColumnTypeDecimal = 0;
+const int _mysqlColumnTypeTinyBlob = 249;
+const int _mysqlColumnTypeMediumBlob = 250;
+const int _mysqlColumnTypeLongBlob = 251;
+const int _mysqlColumnTypeBlob = 252;
+const int _mysqlColumnTypeJson = 245;
+const int _mysqlColumnTypeNewDecimal = 246;
+
+Object? _decodeResultValue(Object? value, [int? columnType]) {
   if (value == null) return null;
   if (value is String) {
-    final intValue = int.tryParse(value);
-    if (intValue != null) return intValue;
-    final doubleValue = double.tryParse(value);
-    if (doubleValue != null) return doubleValue;
+    if (columnType == _mysqlColumnTypeJson) {
+      final trimmed = value.trim();
+      final looksLikeJson =
+          trimmed.startsWith('{') ||
+          trimmed.startsWith('[');
+      if (looksLikeJson) {
+        try {
+          final decoded = jsonDecode(trimmed);
+          if (decoded is Map || decoded is List) {
+            return decoded;
+          }
+        } catch (_) {
+          // Fall back to the raw string.
+        }
+      }
+    }
+    if (columnType == _mysqlColumnTypeDecimal ||
+        columnType == _mysqlColumnTypeNewDecimal) {
+      final trimmed = value.trim();
+      if (_integerStringPattern.hasMatch(trimmed)) {
+        return int.tryParse(trimmed) ?? value;
+      }
+      if (_zeroFractionPattern.hasMatch(trimmed)) {
+        final integerPart = trimmed.split('.').first;
+        return int.tryParse(integerPart) ?? value;
+      }
+    }
+    return value;
+  }
+  if (value is Uint8List) {
+    final canContainJson =
+        columnType == _mysqlColumnTypeJson ||
+        columnType == _mysqlColumnTypeBlob ||
+        columnType == _mysqlColumnTypeLongBlob ||
+        columnType == _mysqlColumnTypeMediumBlob ||
+        columnType == _mysqlColumnTypeTinyBlob;
+    if (canContainJson) {
+      try {
+        final decodedText = utf8.decode(value).trim();
+        final looksLikeJson =
+            decodedText.startsWith('{') ||
+            decodedText.startsWith('[');
+        if (looksLikeJson) {
+          final decoded = jsonDecode(decodedText);
+          if (decoded is Map || decoded is List) {
+            return decoded;
+          }
+        }
+      } catch (_) {
+        // Fall back to raw bytes.
+      }
+    }
     return value;
   }
   if (value is List<int>) {
-    try {
-      final decoded = utf8.decode(value);
-      final trimmed = decoded.trimLeft();
-      if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
-        return jsonDecode(decoded);
-      }
-      return decoded;
-    } catch (_) {
-      return value;
-    }
+    return _decodeResultValue(Uint8List.fromList(value), columnType);
   }
   return value;
+}
+
+String _formatDurationAsTime(Duration value) {
+  final negative = value.isNegative;
+  final microsTotal = value.inMicroseconds.abs();
+  final secondsTotal = microsTotal ~/ 1000000;
+  final micros = microsTotal % 1000000;
+
+  final hours = secondsTotal ~/ 3600;
+  final minutes = (secondsTotal % 3600) ~/ 60;
+  final seconds = secondsTotal % 60;
+
+  final buffer = StringBuffer();
+  if (negative) buffer.write('-');
+  buffer
+    ..write(hours.toString().padLeft(2, '0'))
+    ..write(':')
+    ..write(minutes.toString().padLeft(2, '0'))
+    ..write(':')
+    ..write(seconds.toString().padLeft(2, '0'));
+  if (micros != 0) {
+    buffer..write('.')..write(micros.toString().padLeft(6, '0'));
+  }
+  return buffer.toString();
 }

@@ -101,6 +101,38 @@ driver:
 | `init` | `List<String>` | `[]` | SQL statements executed after connecting and applying charset/timezone/sqlMode/session. |
 | `schema` | `String?` | — | Optional schema/database qualifier used when compiling fully-qualified table names. |
 
+## Data types
+
+Ormed uses driver codecs to map some MySQL/MariaDB column types to richer Dart types when they appear as model fields.
+
+<Tabs groupId="mysql-builtins" defaultValue="values">
+  <TabItem value="values" label="Values">
+
+```dart file=../../examples/lib/drivers/mysql_builtins.dart#mysql-builtins-values
+```
+
+  </TabItem>
+  <TabItem value="migration" label="Migration">
+
+```dart file=../../examples/lib/drivers/mysql_builtins.dart#mysql-builtins-migration
+```
+
+  </TabItem>
+</Tabs>
+
+### Supported mappings
+
+| Column type | Dart type | Notes |
+| --- | --- | --- |
+| `DECIMAL` / `NUMERIC` | `Decimal` | Preserves precision (avoid `double` when you need exact values). |
+| `TIME` | `Duration` | Encoded as `[-]HH:MM:SS[.ffffff]`. |
+| `UUID` | `UuidValue` | Stored as `CHAR(36)` by default. |
+| `SET(...)` | `Set<String>` | Encoded/decoded as the comma-separated value returned by MySQL. |
+| `BIT(n)` | `MySqlBitString` | Use when you need bit-level data rather than booleans. |
+| `GEOMETRY` | `MySqlGeometry` | Raw bytes wrapper; decode/encode without lossy conversions. |
+| `JSON` | `Map<String, Object?>` / `List<Object?>` | Stored as JSON strings, decoded into Dart collections. |
+| `BLOB` / `BINARY` | `Uint8List` | Binary data (no string coercion). |
+
 ### Notes
 
 - Uses `ON DUPLICATE KEY UPDATE` for upserts and supports JSON columns on MySQL 8+/MariaDB 10.5+.
