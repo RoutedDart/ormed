@@ -69,6 +69,52 @@ driver:
   </TabItem>
 </Tabs>
 
+## Type support
+
+Most PostgreSQL column types map to plain Dart types (`int`, `double`, `String`, `bool`, `DateTime`). For richer Postgres-specific types, `ormed_postgres` ships codecs and value types you can use directly in model fields.
+
+### Common Postgres-specific mappings
+
+| PostgreSQL type | Dart type | Notes |
+| --- | --- | --- |
+| `uuid` | `UuidValue` | Exact UUID value (from `package:uuid`). |
+| `numeric` / `decimal` | `Decimal` | Exact decimal math (from `package:decimal`). |
+| `bytea` | `Uint8List` | Binary payloads. |
+| `interval` | `Interval` | Months/days/microseconds. |
+| `tsvector` | `TsVector` | Full‑text search document. |
+| `tsquery` | `TsQuery` | Full‑text search query. |
+| `int4range` / `int8range` | `IntRange` | Integer ranges. |
+| `daterange` | `DateRange` | Date ranges. |
+| `tsrange` / `tstzrange` | `DateTimeRange` | Timestamp ranges. |
+| `inet` | `PgInet` | IP host address wrapper. |
+| `cidr` | `PgCidr` | Network address wrapper. |
+| `macaddr` / `macaddr8` | `PgMacAddress` | MAC address wrapper. |
+| `bit` / `varbit` | `PgBitString` | Bit strings (`0`/`1`). |
+| `money` | `PgMoney` | Stored as integer cents (avoid locale-dependent formatting). |
+| `time` | `Time` | Time of day (no date). |
+| `timetz` | `PgTimeTz` | Time of day + UTC offset. |
+| `pg_lsn` | `LSN` | Log sequence number. |
+| `pg_snapshot` / `txid_snapshot` | `PgSnapshot` | Transaction snapshot (`xmin`, `xmax`, `xip`). |
+| `point` / `line` / `lseg` / `box` / `path` / `polygon` / `circle` | `Point`, `Line`, `LineSegment`, `Box`, `Path`, `Polygon`, `Circle` | Geometric types (re-exported by `ormed_postgres`). |
+| `json` / `jsonb` | `Map<String, Object?>` / `List<Object?>` | Encoded/decoded as JSON. |
+
+<Tabs groupId="postgres-builtins" defaultValue="values">
+  <TabItem value="values" label="Values">
+
+```dart file=../../examples/lib/drivers/postgres_builtins.dart#postgres-builtins-values
+```
+
+  </TabItem>
+  <TabItem value="migrations" label="Migrations">
+
+Use `package:ormed_postgres/migrations.dart` when you want Postgres-specific schema helpers.
+
+```dart file=../../examples/lib/drivers/postgres_builtins.dart#postgres-builtins-migration
+```
+
+  </TabItem>
+</Tabs>
+
 ### Options
 
 | Option | Type | Default | Description |
