@@ -90,6 +90,9 @@ extension PhotoOrmDefinition on Photo {
 class Photos {
   const Photos._();
 
+  /// Starts building a query for [$Photo].
+  ///
+  /// {@macro ormed.query}
   static Query<$Photo> query([String? connection]) =>
       Model.query<$Photo>(connection: connection);
 
@@ -134,6 +137,9 @@ class Photos {
   static Query<$Photo> limit(int count, {String? connection}) =>
       Model.limit<$Photo>(count, connection: connection);
 
+  /// Creates a [Repository] for [$Photo].
+  ///
+  /// {@macro ormed.repository}
   static Repository<$Photo> repo([String? connection]) =>
       Model.repository<$Photo>(connection: connection);
 }

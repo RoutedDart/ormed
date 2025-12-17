@@ -91,6 +91,9 @@ extension MutationTargetOrmDefinition on MutationTarget {
 class MutationTargets {
   const MutationTargets._();
 
+  /// Starts building a query for [$MutationTarget].
+  ///
+  /// {@macro ormed.query}
   static Query<$MutationTarget> query([String? connection]) =>
       Model.query<$MutationTarget>(connection: connection);
 
@@ -140,6 +143,9 @@ class MutationTargets {
   static Query<$MutationTarget> limit(int count, {String? connection}) =>
       Model.limit<$MutationTarget>(count, connection: connection);
 
+  /// Creates a [Repository] for [$MutationTarget].
+  ///
+  /// {@macro ormed.repository}
   static Repository<$MutationTarget> repo([String? connection]) =>
       Model.repository<$MutationTarget>(connection: connection);
 }

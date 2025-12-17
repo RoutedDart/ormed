@@ -100,6 +100,9 @@ extension DerivedForFactoryOrmDefinition on DerivedForFactory {
 class DerivedForFactorys {
   const DerivedForFactorys._();
 
+  /// Starts building a query for [$DerivedForFactory].
+  ///
+  /// {@macro ormed.query}
   static Query<$DerivedForFactory> query([String? connection]) =>
       Model.query<$DerivedForFactory>(connection: connection);
 
@@ -152,6 +155,9 @@ class DerivedForFactorys {
   static Query<$DerivedForFactory> limit(int count, {String? connection}) =>
       Model.limit<$DerivedForFactory>(count, connection: connection);
 
+  /// Creates a [Repository] for [$DerivedForFactory].
+  ///
+  /// {@macro ormed.repository}
   static Repository<$DerivedForFactory> repo([String? connection]) =>
       Model.repository<$DerivedForFactory>(connection: connection);
 }

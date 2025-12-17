@@ -70,6 +70,9 @@ extension ImageOrmDefinition on Image {
 class Images {
   const Images._();
 
+  /// Starts building a query for [$Image].
+  ///
+  /// {@macro ormed.query}
   static Query<$Image> query([String? connection]) =>
       Model.query<$Image>(connection: connection);
 
@@ -114,6 +117,9 @@ class Images {
   static Query<$Image> limit(int count, {String? connection}) =>
       Model.limit<$Image>(count, connection: connection);
 
+  /// Creates a [Repository] for [$Image].
+  ///
+  /// {@macro ormed.repository}
   static Repository<$Image> repo([String? connection]) =>
       Model.repository<$Image>(connection: connection);
 }

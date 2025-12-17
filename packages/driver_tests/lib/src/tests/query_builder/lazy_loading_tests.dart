@@ -311,7 +311,10 @@ void runLazyLoadingTests() {
       });
 
       test('applies constraint callback for belongsTo relations', () async {
-        final rows = await dataSource.context.query<Post>().where('id', 1).get();
+        final rows = await dataSource.context
+            .query<Post>()
+            .where('id', 1)
+            .get();
         final post = rows.first;
 
         await post.load('author', (q) => q.where('id', 2));
@@ -321,7 +324,10 @@ void runLazyLoadingTests() {
       });
 
       test('applies constraint callback for hasOne relations', () async {
-        final rows = await dataSource.context.query<User>().where('id', 1).get();
+        final rows = await dataSource.context
+            .query<User>()
+            .where('id', 1)
+            .get();
         final user = rows.first;
 
         await user.load('userProfile', (q) => q.where('bio', 'Bio for Bob'));
@@ -331,7 +337,10 @@ void runLazyLoadingTests() {
       });
 
       test('applies constraint callback for manyToMany relations', () async {
-        final rows = await dataSource.context.query<Post>().where('id', 1).get();
+        final rows = await dataSource.context
+            .query<Post>()
+            .where('id', 1)
+            .get();
         final post = rows.first;
 
         await post.load('tags', (q) => q.where('label', 'dart'));
@@ -341,7 +350,10 @@ void runLazyLoadingTests() {
       });
 
       test('applies constraint callback for morphMany relations', () async {
-        final rows = await dataSource.context.query<Post>().where('id', 1).get();
+        final rows = await dataSource.context
+            .query<Post>()
+            .where('id', 1)
+            .get();
         final post = rows.first;
 
         await post.load('photos', (q) => q.where('path', 'hero.jpg'));
@@ -351,7 +363,10 @@ void runLazyLoadingTests() {
       });
 
       test('applies constraint callback for morphOne relations', () async {
-        final rows = await dataSource.context.query<Image>().where('id', 101).get();
+        final rows = await dataSource.context
+            .query<Image>()
+            .where('id', 101)
+            .get();
         final image = rows.first;
 
         await image.load('primaryPhoto', (q) => q.where('path', 'alt.jpg'));
@@ -427,14 +442,16 @@ void runLazyLoadingTests() {
           Image(id: 102, label: 'No Primary Photo'),
         ]);
 
-        final author = (await dataSource.context.query<Author>().where('id', 99).get())
-            .first;
+        final author =
+            (await dataSource.context.query<Author>().where('id', 99).get())
+                .first;
         await author.load('posts');
         expect(author.relationLoaded('posts'), isTrue);
         expect(author.posts, isEmpty);
 
         final orphanPost =
-            (await dataSource.context.query<Post>().where('id', 99).get()).first;
+            (await dataSource.context.query<Post>().where('id', 99).get())
+                .first;
         await orphanPost.load('author');
         expect(orphanPost.relationLoaded('author'), isTrue);
         expect(orphanPost.author, isNull);
@@ -446,19 +463,22 @@ void runLazyLoadingTests() {
         expect(user.userProfile, isNull);
 
         final noTagsPost =
-            (await dataSource.context.query<Post>().where('id', 100).get()).first;
+            (await dataSource.context.query<Post>().where('id', 100).get())
+                .first;
         await noTagsPost.load('tags');
         expect(noTagsPost.relationLoaded('tags'), isTrue);
         expect(noTagsPost.tags, isEmpty);
 
         final noPhotosPost =
-            (await dataSource.context.query<Post>().where('id', 101).get()).first;
+            (await dataSource.context.query<Post>().where('id', 101).get())
+                .first;
         await noPhotosPost.load('photos');
         expect(noPhotosPost.relationLoaded('photos'), isTrue);
         expect(noPhotosPost.photos, isEmpty);
 
         final image =
-            (await dataSource.context.query<Image>().where('id', 102).get()).first;
+            (await dataSource.context.query<Image>().where('id', 102).get())
+                .first;
         await image.load('primaryPhoto');
         expect(image.relationLoaded('primaryPhoto'), isTrue);
         expect(image.primaryPhoto, isNull);

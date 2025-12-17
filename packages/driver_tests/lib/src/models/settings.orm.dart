@@ -62,6 +62,9 @@ extension SettingOrmDefinition on Setting {
 class Settings {
   const Settings._();
 
+  /// Starts building a query for [$Setting].
+  ///
+  /// {@macro ormed.query}
   static Query<$Setting> query([String? connection]) =>
       Model.query<$Setting>(connection: connection);
 
@@ -106,6 +109,9 @@ class Settings {
   static Query<$Setting> limit(int count, {String? connection}) =>
       Model.limit<$Setting>(count, connection: connection);
 
+  /// Creates a [Repository] for [$Setting].
+  ///
+  /// {@macro ormed.repository}
   static Repository<$Setting> repo([String? connection]) =>
       Model.repository<$Setting>(connection: connection);
 }

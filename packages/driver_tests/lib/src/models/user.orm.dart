@@ -154,6 +154,9 @@ extension UserOrmDefinition on User {
 class Users {
   const Users._();
 
+  /// Starts building a query for [$User].
+  ///
+  /// {@macro ormed.query}
   static Query<$User> query([String? connection]) =>
       Model.query<$User>(connection: connection);
 
@@ -198,6 +201,9 @@ class Users {
   static Query<$User> limit(int count, {String? connection}) =>
       Model.limit<$User>(count, connection: connection);
 
+  /// Creates a [Repository] for [$User].
+  ///
+  /// {@macro ormed.repository}
   static Repository<$User> repo([String? connection]) =>
       Model.repository<$User>(connection: connection);
 }

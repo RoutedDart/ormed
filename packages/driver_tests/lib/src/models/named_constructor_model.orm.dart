@@ -80,6 +80,9 @@ extension NamedConstructorModelOrmDefinition on NamedConstructorModel {
 class NamedConstructorModels {
   const NamedConstructorModels._();
 
+  /// Starts building a query for [$NamedConstructorModel].
+  ///
+  /// {@macro ormed.query}
   static Query<$NamedConstructorModel> query([String? connection]) =>
       Model.query<$NamedConstructorModel>(connection: connection);
 
@@ -137,6 +140,9 @@ class NamedConstructorModels {
   static Query<$NamedConstructorModel> limit(int count, {String? connection}) =>
       Model.limit<$NamedConstructorModel>(count, connection: connection);
 
+  /// Creates a [Repository] for [$NamedConstructorModel].
+  ///
+  /// {@macro ormed.repository}
   static Repository<$NamedConstructorModel> repo([String? connection]) =>
       Model.repository<$NamedConstructorModel>(connection: connection);
 }

@@ -80,6 +80,9 @@ extension CustomSoftDeleteOrmDefinition on CustomSoftDelete {
 class CustomSoftDeletes {
   const CustomSoftDeletes._();
 
+  /// Starts building a query for [$CustomSoftDelete].
+  ///
+  /// {@macro ormed.query}
   static Query<$CustomSoftDelete> query([String? connection]) =>
       Model.query<$CustomSoftDelete>(connection: connection);
 
@@ -132,6 +135,9 @@ class CustomSoftDeletes {
   static Query<$CustomSoftDelete> limit(int count, {String? connection}) =>
       Model.limit<$CustomSoftDelete>(count, connection: connection);
 
+  /// Creates a [Repository] for [$CustomSoftDelete].
+  ///
+  /// {@macro ormed.repository}
   static Repository<$CustomSoftDelete> repo([String? connection]) =>
       Model.repository<$CustomSoftDelete>(connection: connection);
 }

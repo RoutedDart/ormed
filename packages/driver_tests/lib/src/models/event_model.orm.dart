@@ -89,6 +89,9 @@ extension EventModelOrmDefinition on EventModel {
 class EventModels {
   const EventModels._();
 
+  /// Starts building a query for [$EventModel].
+  ///
+  /// {@macro ormed.query}
   static Query<$EventModel> query([String? connection]) =>
       Model.query<$EventModel>(connection: connection);
 
@@ -134,6 +137,9 @@ class EventModels {
   static Query<$EventModel> limit(int count, {String? connection}) =>
       Model.limit<$EventModel>(count, connection: connection);
 
+  /// Creates a [Repository] for [$EventModel].
+  ///
+  /// {@macro ormed.repository}
   static Repository<$EventModel> repo([String? connection]) =>
       Model.repository<$EventModel>(connection: connection);
 }

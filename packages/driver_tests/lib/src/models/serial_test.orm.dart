@@ -60,6 +60,9 @@ extension SerialTestOrmDefinition on SerialTest {
 class SerialTests {
   const SerialTests._();
 
+  /// Starts building a query for [$SerialTest].
+  ///
+  /// {@macro ormed.query}
   static Query<$SerialTest> query([String? connection]) =>
       Model.query<$SerialTest>(connection: connection);
 
@@ -105,6 +108,9 @@ class SerialTests {
   static Query<$SerialTest> limit(int count, {String? connection}) =>
       Model.limit<$SerialTest>(count, connection: connection);
 
+  /// Creates a [Repository] for [$SerialTest].
+  ///
+  /// {@macro ormed.repository}
   static Repository<$SerialTest> repo([String? connection]) =>
       Model.repository<$SerialTest>(connection: connection);
 }

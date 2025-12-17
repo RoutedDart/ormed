@@ -77,6 +77,9 @@ extension UserProfileOrmDefinition on UserProfile {
 class UserProfiles {
   const UserProfiles._();
 
+  /// Starts building a query for [$UserProfile].
+  ///
+  /// {@macro ormed.query}
   static Query<$UserProfile> query([String? connection]) =>
       Model.query<$UserProfile>(connection: connection);
 
@@ -126,6 +129,9 @@ class UserProfiles {
   static Query<$UserProfile> limit(int count, {String? connection}) =>
       Model.limit<$UserProfile>(count, connection: connection);
 
+  /// Creates a [Repository] for [$UserProfile].
+  ///
+  /// {@macro ormed.repository}
   static Repository<$UserProfile> repo([String? connection]) =>
       Model.repository<$UserProfile>(connection: connection);
 }

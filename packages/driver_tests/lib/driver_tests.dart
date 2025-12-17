@@ -17,6 +17,7 @@ export 'src/tests/factory_inheritance_tests.dart'
     show runDriverFactoryInheritanceTests;
 export 'src/tests/join_tests.dart' show runDriverJoinTests;
 export 'src/tests/mutation_tests.dart' show runDriverMutationTests;
+export 'src/tests/model_event_cancel_tests.dart' show runModelEventCancelTests;
 export 'src/tests/partial_entity_tests.dart' show runPartialEntityTests;
 export 'src/tests/query_builder_tests.dart' show runDriverQueryBuilderTests;
 export 'src/tests/query_tests.dart' show runDriverQueryTests;

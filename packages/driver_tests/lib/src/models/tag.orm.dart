@@ -70,6 +70,9 @@ extension TagOrmDefinition on Tag {
 class Tags {
   const Tags._();
 
+  /// Starts building a query for [$Tag].
+  ///
+  /// {@macro ormed.query}
   static Query<$Tag> query([String? connection]) =>
       Model.query<$Tag>(connection: connection);
 
@@ -111,6 +114,9 @@ class Tags {
   static Query<$Tag> limit(int count, {String? connection}) =>
       Model.limit<$Tag>(count, connection: connection);
 
+  /// Creates a [Repository] for [$Tag].
+  ///
+  /// {@macro ormed.repository}
   static Repository<$Tag> repo([String? connection]) =>
       Model.repository<$Tag>(connection: connection);
 }

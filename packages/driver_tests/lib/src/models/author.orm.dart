@@ -110,6 +110,9 @@ extension AuthorOrmDefinition on Author {
 class Authors {
   const Authors._();
 
+  /// Starts building a query for [$Author].
+  ///
+  /// {@macro ormed.query}
   static Query<$Author> query([String? connection]) =>
       Model.query<$Author>(connection: connection);
 
@@ -154,6 +157,9 @@ class Authors {
   static Query<$Author> limit(int count, {String? connection}) =>
       Model.limit<$Author>(count, connection: connection);
 
+  /// Creates a [Repository] for [$Author].
+  ///
+  /// {@macro ormed.repository}
   static Repository<$Author> repo([String? connection]) =>
       Model.repository<$Author>(connection: connection);
 }

@@ -86,6 +86,9 @@ extension DriverOverrideEntryOrmDefinition on DriverOverrideEntry {
 class DriverOverrideEntrys {
   const DriverOverrideEntrys._();
 
+  /// Starts building a query for [$DriverOverrideEntry].
+  ///
+  /// {@macro ormed.query}
   static Query<$DriverOverrideEntry> query([String? connection]) =>
       Model.query<$DriverOverrideEntry>(connection: connection);
 
@@ -141,6 +144,9 @@ class DriverOverrideEntrys {
   static Query<$DriverOverrideEntry> limit(int count, {String? connection}) =>
       Model.limit<$DriverOverrideEntry>(count, connection: connection);
 
+  /// Creates a [Repository] for [$DriverOverrideEntry].
+  ///
+  /// {@macro ormed.repository}
   static Repository<$DriverOverrideEntry> repo([String? connection]) =>
       Model.repository<$DriverOverrideEntry>(connection: connection);
 }

@@ -104,6 +104,9 @@ extension ActiveUserOrmDefinition on ActiveUser {
 class ActiveUsers {
   const ActiveUsers._();
 
+  /// Starts building a query for [$ActiveUser].
+  ///
+  /// {@macro ormed.query}
   static Query<$ActiveUser> query([String? connection]) =>
       Model.query<$ActiveUser>(connection: connection);
 
@@ -149,6 +152,9 @@ class ActiveUsers {
   static Query<$ActiveUser> limit(int count, {String? connection}) =>
       Model.limit<$ActiveUser>(count, connection: connection);
 
+  /// Creates a [Repository] for [$ActiveUser].
+  ///
+  /// {@macro ormed.repository}
   static Repository<$ActiveUser> repo([String? connection]) =>
       Model.repository<$ActiveUser>(connection: connection);
 }

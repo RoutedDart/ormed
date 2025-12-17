@@ -111,6 +111,9 @@ extension AttributeUserOrmDefinition on AttributeUser {
 class AttributeUsers {
   const AttributeUsers._();
 
+  /// Starts building a query for [$AttributeUser].
+  ///
+  /// {@macro ormed.query}
   static Query<$AttributeUser> query([String? connection]) =>
       Model.query<$AttributeUser>(connection: connection);
 
@@ -160,6 +163,9 @@ class AttributeUsers {
   static Query<$AttributeUser> limit(int count, {String? connection}) =>
       Model.limit<$AttributeUser>(count, connection: connection);
 
+  /// Creates a [Repository] for [$AttributeUser].
+  ///
+  /// {@macro ormed.repository}
   static Repository<$AttributeUser> repo([String? connection]) =>
       Model.repository<$AttributeUser>(connection: connection);
 }

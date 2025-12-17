@@ -7,6 +7,35 @@ import '../../models.dart';
 
 void runDriverOverrideTests() {
   ormedGroup('driver overrides', (dataSource) {
+    test('model definition exposes driver-specific override metadata', () {
+      final definition = DriverOverrideEntryOrmDefinition.definition;
+      final payload = definition.fieldByName('payload');
+      expect(payload, isNotNull);
+
+      final field = payload!;
+      expect(field.columnTypeForDriver('postgres'), equals('jsonb'));
+      expect(
+        field.codecTypeForDriver('postgres'),
+        equals('PostgresPayloadCodec'),
+      );
+
+      expect(field.columnTypeForDriver('sqlite'), equals('TEXT'));
+      expect(field.codecTypeForDriver('sqlite'), equals('SqlitePayloadCodec'));
+
+      expect(field.columnTypeForDriver('mysql'), equals('JSON'));
+      expect(
+        field.codecTypeForDriver('mariadb'),
+        equals('MariaDbPayloadCodec'),
+      );
+
+      // Keys are normalized before lookup.
+      expect(field.columnTypeForDriver(' Postgres '), equals('jsonb'));
+      expect(
+        field.codecTypeForDriver(' SQLITE '),
+        equals('SqlitePayloadCodec'),
+      );
+    });
+
     test(
       'repository encodes payload using driver-specific codec',
       () async {

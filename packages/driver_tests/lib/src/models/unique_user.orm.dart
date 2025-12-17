@@ -76,6 +76,9 @@ extension UniqueUserOrmDefinition on UniqueUser {
 class UniqueUsers {
   const UniqueUsers._();
 
+  /// Starts building a query for [$UniqueUser].
+  ///
+  /// {@macro ormed.query}
   static Query<$UniqueUser> query([String? connection]) =>
       Model.query<$UniqueUser>(connection: connection);
 
@@ -121,6 +124,9 @@ class UniqueUsers {
   static Query<$UniqueUser> limit(int count, {String? connection}) =>
       Model.limit<$UniqueUser>(count, connection: connection);
 
+  /// Creates a [Repository] for [$UniqueUser].
+  ///
+  /// {@macro ormed.repository}
   static Repository<$UniqueUser> repo([String? connection]) =>
       Model.repository<$UniqueUser>(connection: connection);
 }

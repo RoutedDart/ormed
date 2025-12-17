@@ -3,6 +3,7 @@ import 'driver_override_tests.dart';
 import 'factory_inheritance_tests.dart';
 import 'join_tests.dart';
 import 'mutation_tests.dart';
+import 'model_event_cancel_tests.dart';
 import 'partial_entity_tests.dart';
 import 'query_builder_tests.dart';
 import 'query_tests.dart';
@@ -17,6 +18,7 @@ void runAllDriverTests() {
   runDriverAdvancedQueryTests();
   runDriverMutationTests();
   runDriverOverrideTests();
+  runModelEventCancelTests();
   runDriverTransactionTests();
   runDriverJoinTests();
   runDriverOverrideTests();

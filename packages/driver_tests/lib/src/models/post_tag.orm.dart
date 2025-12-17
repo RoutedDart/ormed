@@ -60,6 +60,9 @@ extension PostTagOrmDefinition on PostTag {
 class PostTags {
   const PostTags._();
 
+  /// Starts building a query for [$PostTag].
+  ///
+  /// {@macro ormed.query}
   static Query<$PostTag> query([String? connection]) =>
       Model.query<$PostTag>(connection: connection);
 
@@ -104,6 +107,9 @@ class PostTags {
   static Query<$PostTag> limit(int count, {String? connection}) =>
       Model.limit<$PostTag>(count, connection: connection);
 
+  /// Creates a [Repository] for [$PostTag].
+  ///
+  /// {@macro ormed.repository}
   static Repository<$PostTag> repo([String? connection]) =>
       Model.repository<$PostTag>(connection: connection);
 }

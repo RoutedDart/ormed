@@ -154,6 +154,9 @@ extension ArticleOrmDefinition on Article {
 class Articles {
   const Articles._();
 
+  /// Starts building a query for [$Article].
+  ///
+  /// {@macro ormed.query}
   static Query<$Article> query([String? connection]) =>
       Model.query<$Article>(connection: connection);
 
@@ -198,6 +201,9 @@ class Articles {
   static Query<$Article> limit(int count, {String? connection}) =>
       Model.limit<$Article>(count, connection: connection);
 
+  /// Creates a [Repository] for [$Article].
+  ///
+  /// {@macro ormed.repository}
   static Repository<$Article> repo([String? connection]) =>
       Model.repository<$Article>(connection: connection);
 }

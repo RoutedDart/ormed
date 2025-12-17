@@ -85,6 +85,9 @@ extension ScopedUserOrmDefinition on ScopedUser {
 class ScopedUsers {
   const ScopedUsers._();
 
+  /// Starts building a query for [$ScopedUser].
+  ///
+  /// {@macro ormed.query}
   static Query<$ScopedUser> query([String? connection]) =>
       Model.query<$ScopedUser>(connection: connection);
 
@@ -130,6 +133,9 @@ class ScopedUsers {
   static Query<$ScopedUser> limit(int count, {String? connection}) =>
       Model.limit<$ScopedUser>(count, connection: connection);
 
+  /// Creates a [Repository] for [$ScopedUser].
+  ///
+  /// {@macro ormed.repository}
   static Repository<$ScopedUser> repo([String? connection]) =>
       Model.repository<$ScopedUser>(connection: connection);
 }

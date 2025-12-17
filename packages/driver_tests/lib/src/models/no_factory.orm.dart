@@ -57,6 +57,9 @@ extension NoFactoryOrmDefinition on NoFactory {
 class NoFactorys {
   const NoFactorys._();
 
+  /// Starts building a query for [$NoFactory].
+  ///
+  /// {@macro ormed.query}
   static Query<$NoFactory> query([String? connection]) =>
       Model.query<$NoFactory>(connection: connection);
 
@@ -102,6 +105,9 @@ class NoFactorys {
   static Query<$NoFactory> limit(int count, {String? connection}) =>
       Model.limit<$NoFactory>(count, connection: connection);
 
+  /// Creates a [Repository] for [$NoFactory].
+  ///
+  /// {@macro ormed.repository}
   static Repository<$NoFactory> repo([String? connection]) =>
       Model.repository<$NoFactory>(connection: connection);
 }

@@ -172,6 +172,9 @@ extension PostOrmDefinition on Post {
 class Posts {
   const Posts._();
 
+  /// Starts building a query for [$Post].
+  ///
+  /// {@macro ormed.query}
   static Query<$Post> query([String? connection]) =>
       Model.query<$Post>(connection: connection);
 
@@ -216,6 +219,9 @@ class Posts {
   static Query<$Post> limit(int count, {String? connection}) =>
       Model.limit<$Post>(count, connection: connection);
 
+  /// Creates a [Repository] for [$Post].
+  ///
+  /// {@macro ormed.repository}
   static Repository<$Post> repo([String? connection]) =>
       Model.repository<$Post>(connection: connection);
 }
