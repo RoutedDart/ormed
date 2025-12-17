@@ -1,6 +1,45 @@
+/// Annotations and metadata declarations for Ormed.
+///
+/// Ormed's generator reads these annotations and emits model metadata, codecs,
+/// relationships, scopes, and event-handler wiring.
+library;
+
 import 'package:meta/meta.dart';
 
-/// Declares a Dart class that should receive ORM metadata/codegen.
+/// Marks a Dart class as an Ormed model.
+///
+/// The code generator reads `final` public fields from the annotated class and
+/// emits a tracked model plus metadata helpers.
+///
+/// See also: [OrmField], [OrmRelation], [OrmScope], and [OrmEvent].
+///
+/// ```dart
+/// import 'package:ormed/ormed.dart';
+///
+/// part 'user.orm.dart';
+///
+/// @OrmModel(
+///   table: 'users',
+///   // These lists use column names (which usually match field names).
+///   hidden: ['password_hash'],
+///   casts: {'profile': 'json'},
+/// )
+/// class User extends Model<User> {
+///   const User({
+///     required this.id,
+///     required this.email,
+///     this.profile,
+///   });
+///
+///   @OrmField(isPrimaryKey: true, autoIncrement: true)
+///   final int id;
+///
+///   final String email;
+///
+///   @OrmField(cast: 'json')
+///   final Map<String, Object?>? profile;
+/// }
+/// ```
 @immutable
 class OrmModel {
   const OrmModel({
@@ -20,31 +59,37 @@ class OrmModel {
     this.constructor,
   });
 
-  /// Database table/collection name.
+  /// The database table/collection name.
   final String table;
 
-  /// Optional schema or namespace qualifier.
+  /// An optional schema or namespace qualifier.
   final String? schema;
 
   /// Whether the generator should emit codec helpers for this model.
   final bool generateCodec;
 
-  /// Columns that should be hidden when serializing.
+  /// Column names that should be hidden when serializing.
   final List<String> hidden;
 
-  /// Columns explicitly visible when a hidden list is defined.
+  /// Column names explicitly visible when a hidden list is defined.
   final List<String> visible;
 
-  /// Columns that can be mass assigned.
+  /// Column names that can be mass assigned.
   final List<String> fillable;
 
-  /// Columns guarded from mass assignment.
+  /// Column names guarded from mass assignment.
   final List<String> guarded;
 
-  /// Column cast hints (e.g., {'profile':'json'}).
+  /// Cast hints keyed by column name (for example, `{'profile': 'json'}`).
+  ///
+  /// Cast keys are resolved via Ormed's codec registry and are used when
+  /// serializing/deserializing the model's attribute map.
+  ///
+  /// If you override [OrmField.columnName], prefer setting [OrmField.cast] on
+  /// that field so the cast follows the effective column name.
   final Map<String, String> casts;
 
-  /// Connection/driver name override.
+  /// A connection/driver name override.
   final String? connection;
 
   /// Whether the model tracks soft deletes.
@@ -56,15 +101,36 @@ class OrmModel {
   /// Driver names that should take control of this model.
   final List<String> driverAnnotations;
 
-  /// Column names that define the primary key.
+  /// Column or field names that define the primary key.
+  ///
+  /// This is a convenience alternative to annotating fields with
+  /// `@OrmField(isPrimaryKey: true)`.
   final List<String> primaryKey;
 
-  /// Optional constructor name to use for code generation.
-  /// If null, uses the default (unnamed) constructor.
+  /// An optional named constructor to use for code generation.
+  ///
+  /// If `null`, the generator uses the first generative (non-factory)
+  /// constructor it finds.
   final String? constructor;
 }
 
-/// Additional metadata for a field/column.
+/// Additional metadata for a model field/column.
+///
+/// Apply this to a model field when you need to override the column name, mark
+/// constraints, customize codecs, or tweak attribute rules.
+///
+/// ```dart
+/// @OrmModel(table: 'users')
+/// class User extends Model<User> {
+///   const User({required this.id, required this.email});
+///
+///   @OrmField(isPrimaryKey: true, autoIncrement: true)
+///   final int id;
+///
+///   @OrmField(columnName: 'email_address', isUnique: true, isIndexed: true)
+///   final String email;
+/// }
+/// ```
 @immutable
 class OrmField {
   const OrmField({
@@ -86,13 +152,13 @@ class OrmField {
     this.cast,
   });
 
-  /// Explicit column name override.
+  /// An explicit database column name override.
   final String? columnName;
 
   /// Whether this column acts as the primary key.
   final bool isPrimaryKey;
 
-  /// Force nullable metadata (defaults to Dart type nullability).
+  /// A nullable override for schema generation (defaults to Dart nullability).
   final bool? isNullable;
 
   /// Marks the column as unique.
@@ -107,7 +173,9 @@ class OrmField {
   /// Skip this field entirely.
   final bool ignore;
 
-  /// Optional codec type used for serialization.
+  /// An optional codec type used for value transformations.
+  ///
+  /// The value must be a `Type` literal (for example, `UuidCodec`).
   final Type? codec;
 
   /// Database column type override (e.g., jsonb, uuid).
@@ -119,14 +187,40 @@ class OrmField {
   /// Driver-specific overrides keyed by adapter metadata name (e.g., 'postgres').
   final Map<String, OrmDriverFieldOverride> driverOverrides;
 
+  /// Whether this column is considered fillable (overrides [OrmModel.fillable]).
   final bool? fillable;
+
+  /// Whether this column is considered guarded (overrides [OrmModel.guarded]).
   final bool? guarded;
+
+  /// Whether this column is hidden when serializing (overrides [OrmModel.hidden]).
   final bool? hidden;
+
+  /// Whether this column is explicitly visible (overrides [OrmModel.visible]).
   final bool? visible;
+
+  /// A cast key to apply to this column (overrides [OrmModel.casts]).
+  ///
+  /// This is the preferred way to attach casts to a field when the column name
+  /// differs from the Dart field name.
   final String? cast;
 }
 
 /// Describes driver-specific overrides for a model field.
+///
+/// This is typically used via [OrmField.driverOverrides] to customize schema or
+/// codecs per driver:
+///
+/// ```dart
+/// @OrmField(
+///   columnType: 'json',
+///   driverOverrides: {
+///     // Keys are normalized to lowercase.
+///     'postgres': OrmDriverFieldOverride(columnType: 'jsonb'),
+///   },
+/// )
+/// final Map<String, Object?> payload;
+/// ```
 @immutable
 class OrmDriverFieldOverride {
   const OrmDriverFieldOverride({
@@ -147,6 +241,9 @@ class OrmDriverFieldOverride {
 
 /// Marks a model method as a handler for a specific event type.
 ///
+/// The annotated method must be `static` and accept exactly one required
+/// positional parameter whose type matches [eventType].
+///
 /// Usage:
 /// ```dart
 /// @OrmEvent(ModelCreatedEvent)
@@ -154,6 +251,7 @@ class OrmDriverFieldOverride {
 ///   // handle creation
 /// }
 /// ```
+@immutable
 class OrmEvent {
   const OrmEvent(this.eventType);
 
@@ -162,8 +260,26 @@ class OrmEvent {
 }
 
 /// Relationship descriptor applied to fields referencing other models.
+///
+/// Prefer the named constructors (like [OrmRelation.hasMany]) so the relation
+/// kind is explicit at the call site.
+///
+/// ```dart
+/// @OrmModel(table: 'posts')
+/// class Post extends Model<Post> {
+///   @OrmRelation.belongsTo(User, foreignKey: 'author_id')
+///   final User? author;
+///
+///   @OrmRelation.hasMany(Comment, foreignKey: 'post_id')
+///   final List<Comment> comments;
+/// }
+/// ```
 @immutable
 class OrmRelation {
+  /// Creates a relation descriptor.
+  ///
+  /// Most code should use a named constructor such as [OrmRelation.hasOne] or
+  /// [OrmRelation.belongsTo].
   const OrmRelation({
     required this.kind,
     required this.target,
@@ -176,14 +292,114 @@ class OrmRelation {
     this.morphClass,
   });
 
+  /// Creates a `hasOne` relation.
+  const OrmRelation.hasOne(Type target, {String? foreignKey, String? localKey})
+    : this(
+        kind: RelationKind.hasOne,
+        target: target,
+        foreignKey: foreignKey,
+        localKey: localKey,
+      );
+
+  /// Creates a `hasMany` relation.
+  const OrmRelation.hasMany(Type target, {String? foreignKey, String? localKey})
+    : this(
+        kind: RelationKind.hasMany,
+        target: target,
+        foreignKey: foreignKey,
+        localKey: localKey,
+      );
+
+  /// Creates a `belongsTo` relation.
+  const OrmRelation.belongsTo(
+    Type target, {
+    String? foreignKey,
+    String? localKey,
+  }) : this(
+         kind: RelationKind.belongsTo,
+         target: target,
+         foreignKey: foreignKey,
+         localKey: localKey,
+       );
+
+  /// Creates a `manyToMany` relation.
+  ///
+  /// Use [through] for the pivot/join table and provide pivot key overrides as
+  /// needed.
+  const OrmRelation.manyToMany(
+    Type target, {
+    String? through,
+    String? pivotForeignKey,
+    String? pivotRelatedKey,
+    String? foreignKey,
+    String? localKey,
+  }) : this(
+         kind: RelationKind.manyToMany,
+         target: target,
+         through: through,
+         pivotForeignKey: pivotForeignKey,
+         pivotRelatedKey: pivotRelatedKey,
+         foreignKey: foreignKey,
+         localKey: localKey,
+       );
+
+  /// Creates a `morphOne` relation.
+  const OrmRelation.morphOne(
+    Type target, {
+    String? morphType,
+    String? morphClass,
+    String? foreignKey,
+    String? localKey,
+  }) : this(
+         kind: RelationKind.morphOne,
+         target: target,
+         morphType: morphType,
+         morphClass: morphClass,
+         foreignKey: foreignKey,
+         localKey: localKey,
+       );
+
+  /// Creates a `morphMany` relation.
+  const OrmRelation.morphMany(
+    Type target, {
+    String? morphType,
+    String? morphClass,
+    String? foreignKey,
+    String? localKey,
+  }) : this(
+         kind: RelationKind.morphMany,
+         target: target,
+         morphType: morphType,
+         morphClass: morphClass,
+         foreignKey: foreignKey,
+         localKey: localKey,
+       );
+
+  /// The relationship kind (for example, [RelationKind.hasMany]).
   final RelationKind kind;
+
+  /// The related model type (for example, `User`).
   final Type target;
+
+  /// The foreign key column name used by this relation.
   final String? foreignKey;
+
+  /// The local key column name used by this relation.
   final String? localKey;
+
+  /// The join/pivot table for many-to-many relations.
   final String? through;
+
+  /// The owner key column name on the pivot table.
   final String? pivotForeignKey;
+
+  /// The related key column name on the pivot table.
   final String? pivotRelatedKey;
+
+  /// The discriminator/type column name for polymorphic relations.
   final String? morphType;
+
+  /// The discriminator/class value for polymorphic relations.
   final String? morphClass;
 }
 
@@ -193,6 +409,12 @@ class OrmRelation {
 /// Set [global] to `true` to have the scope applied automatically to all
 /// queries for the model; otherwise it is registered as a local scope that can
 /// be invoked explicitly.
+///
+/// ```dart
+/// @OrmScope(global: true)
+/// static Query<$User> active(Query<$User> query) =>
+///     query.whereEquals('active', true);
+/// ```
 @immutable
 class OrmScope {
   const OrmScope({this.identifier, this.global = false});
@@ -207,15 +429,40 @@ class OrmScope {
 
 /// Supported relationship kinds mirrored after Eloquent/GORM semantics.
 enum RelationKind {
+  /// One-to-one relation where the related model holds the foreign key.
   hasOne,
+
+  /// One-to-many relation where the related model holds the foreign key.
   hasMany,
+
+  /// Inverse relation where this model holds the foreign key.
   belongsTo,
+
+  /// Many-to-many relation through a pivot/join table.
   manyToMany,
+
+  /// Polymorphic one-to-one relation.
   morphOne,
+
+  /// Polymorphic one-to-many relation.
   morphMany,
 }
 
 /// Marks a field as the soft-delete column for a model.
+///
+/// Only a single field may be annotated with [OrmSoftDelete] per model.
+///
+/// ```dart
+/// @OrmModel(table: 'posts')
+/// class Post extends Model<Post> with SoftDeletes {
+///   const Post({required this.id, this.deletedAt});
+///
+///   final int id;
+///
+///   @OrmSoftDelete(columnName: 'deleted_at')
+///   final DateTime? deletedAt;
+/// }
+/// ```
 @immutable
 class OrmSoftDelete {
   const OrmSoftDelete({this.columnName = 'deleted_at'});
@@ -229,6 +476,7 @@ class OrmSoftDelete {
 class DriverModel {
   const DriverModel(this.driverName);
 
+  /// The driver name (for example, `'sqlite'`).
   final String driverName;
 }
 
@@ -243,4 +491,13 @@ class HasFactory {
 }
 
 /// Convenience constant for `@HasFactory()`.
+///
+/// ```dart
+/// @hasFactory
+/// @OrmModel(table: 'users')
+/// class User extends Model<User> {
+///   const User({required this.id});
+///   final int id;
+/// }
+/// ```
 const hasFactory = HasFactory();

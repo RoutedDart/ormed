@@ -1,4 +1,7 @@
-/// Write-side helpers for inserting models via driver adapters.
+/// Repository APIs for querying and mutating Ormed models.
+///
+/// The [Repository] type provides a model-centric façade over Ormed's [Query]
+/// builder and mutation planning APIs.
 library;
 
 import 'package:ormed/src/model/model.dart';
@@ -42,6 +45,33 @@ abstract class RepositoryBase<T extends OrmEntity> {
 }
 
 /// A repository for a model of type [T].
+///
+/// {@template ormed.repository}
+/// CRUD helpers for a single model type.
+///
+/// Reads delegate to the [Query] builder. Writes build [MutationPlan] objects
+/// that are executed by the active driver.
+///
+/// Obtain a repository from `DataSource.repo<T>()`,
+/// `QueryContext.repository<T>()`, or `Model.repository<T>()`.
+///
+/// ```dart
+/// final repo = dataSource.repo<$User>();
+///
+/// final inserted = await repo.insert(
+///   $UserInsertDto(email: 'john@example.com'),
+/// );
+///
+/// final updated = await repo.update(
+///   $UserUpdateDto(name: 'John'),
+///   where: {'id': inserted.id},
+/// );
+///
+/// final exists = await repo.exists(where: {'email': 'john@example.com'});
+/// ```
+/// {@endtemplate}
+///
+/// {@macro ormed.repository}
 ///
 /// Provides methods for inserting, updating, upserting and deleting models.
 /// The repository is composed of several mixins, each providing a specific

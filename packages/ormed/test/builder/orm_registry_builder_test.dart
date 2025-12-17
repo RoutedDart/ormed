@@ -79,7 +79,8 @@ void main() {
     ]);
 
     expect(content, contains('void registerModelScopes'));
-    expect(content, contains('registerUserScopes(_registry);'));
+    expect(content, contains('ScopeRegistry.instance'));
+    expect(content, contains('registerUserScopes(scopeRegistryInstance);'));
     expect(content, contains('registerModelScopes(scopeRegistry: scopes);'));
   });
 }

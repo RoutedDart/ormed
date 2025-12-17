@@ -9,7 +9,6 @@ library;
 
 import 'model/model.dart';
 
-
 /// Base class for ORM-tracked model instances.
 ///
 /// Tracked models are created by the ORM when loading data from the database

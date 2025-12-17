@@ -8,12 +8,23 @@
 /// import 'package:ormed/events.dart';
 ///
 /// // Subscribe to events
-/// EventBus.instance.on<ModelCreatedEvent>((event) {
+/// final unsubscribe = EventBus.instance.on<ModelCreatedEvent>((event) {
 ///   print('Created: ${event.model}');
 /// });
 ///
 /// // Emit events
-/// EventBus.instance.emit(MigrationStartedEvent(...));
+/// EventBus.instance.emit(
+///   MigrationStartedEvent(
+///     migrationId: 'm_20250101000000_create_users_table',
+///     migrationName: 'create_users_table',
+///     direction: MigrationDirection.up,
+///     index: 1,
+///     total: 1,
+///   ),
+/// );
+///
+/// // Cleanup
+/// unsubscribe();
 /// ```
 library;
 

@@ -7,8 +7,22 @@ import '../../exceptions.dart';
 import '../../value_codec.dart';
 import '../model.dart';
 
+/// Extensions for applying model attribute metadata to a raw map.
 extension ModelAttributeMapExtensions on Map<String, Object?> {
-  /// Returns inputs filtered to what the model would accept via fillable/guarded.
+  /// Returns a new map containing only inputs accepted by [metadata].
+  ///
+  /// {@macro ormed.model.mass_assignment}
+  ///
+  /// [fields] should come from the model definition so casting and column
+  /// detection can be applied.
+  ///
+  /// When [unguarded] is `true`, mass-assignment guards are bypassed.
+  /// When [strict] is `true`, guarded keys throw [MassAssignmentException].
+  ///
+  /// Values are decoded using [registry] (or [ValueCodecRegistry.instance]).
+  ///
+  /// Keys are matched against known field column names; unknown keys are
+  /// included as-is when allowed.
   Map<String, Object?> filteredByAttributes(
     ModelAttributesMetadata metadata,
     Iterable<FieldDefinition> fields, {

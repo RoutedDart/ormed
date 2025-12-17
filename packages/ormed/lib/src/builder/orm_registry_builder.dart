@@ -30,35 +30,42 @@ class _OrmRegistryBuilder implements Builder {
 
   @override
   Future<void> build(BuildStep buildStep) async {
-    final summaries = <ModelSummary>[];
+    final summariesByKey = <String, ModelSummary>{};
     await for (final asset in buildStep.findAssets(_summaryGlob)) {
       final content = await buildStep.readAsString(asset);
-      final data = jsonDecode(content) as Map<String, dynamic>;
-      final importPath = data['import'] as String?;
-      final className = data['className'] as String?;
-      final definition = data['definition'] as String?;
-      final hasFactory = data['hasFactory'] as bool? ?? false;
-      final hasEventHandlers = data['hasEventHandlers'] as bool? ?? false;
-      final hasScopes = data['hasScopes'] as bool? ?? false;
-      if (importPath == null ||
-          className == null ||
-          definition == null ||
-          importPath.isEmpty) {
-        continue;
+      final decoded = jsonDecode(content);
+      final entries = decoded is List ? decoded : [decoded];
+      for (final entry in entries) {
+        if (entry is! Map) continue;
+        final data = entry.cast<String, dynamic>();
+        final importPath = data['import'] as String?;
+        final className = data['className'] as String?;
+        final definition = data['definition'] as String?;
+        final hasFactory = data['hasFactory'] as bool? ?? false;
+        final hasEventHandlers = data['hasEventHandlers'] as bool? ?? false;
+        final hasScopes = data['hasScopes'] as bool? ?? false;
+        if (importPath == null ||
+            className == null ||
+            definition == null ||
+            importPath.isEmpty) {
+          continue;
+        }
+        final key = '$importPath::$className';
+        summariesByKey.putIfAbsent(
+          key,
+          () => ModelSummary(
+            className: className,
+            importPath: importPath,
+            definition: definition,
+            hasFactory: hasFactory,
+            hasEventHandlers: hasEventHandlers,
+            hasScopes: hasScopes,
+          ),
+        );
       }
-      summaries.add(
-        ModelSummary(
-          className: className,
-          importPath: importPath,
-          definition: definition,
-          hasFactory: hasFactory,
-          hasEventHandlers: hasEventHandlers,
-          hasScopes: hasScopes,
-        ),
-      );
     }
 
-    final content = renderRegistryContent(summaries);
+    final content = renderRegistryContent(summariesByKey.values.toList());
     final outputId = AssetId(
       buildStep.inputId.package,
       'lib/orm_registry.g.dart',
@@ -179,7 +186,9 @@ String renderRegistryContent(List<ModelSummary> models) {
   } else {
     buffer.writeln('  final busInstance = bus ?? EventBus.instance;');
     for (final summary in handlerModels) {
-      buffer.writeln('  register${summary.className}EventHandlers(busInstance);');
+      buffer.writeln(
+        '  register${summary.className}EventHandlers(busInstance);',
+      );
     }
   }
   buffer.writeln('}');
@@ -198,7 +207,9 @@ String renderRegistryContent(List<ModelSummary> models) {
       '  final scopeRegistryInstance = scopeRegistry ?? ScopeRegistry.instance;',
     );
     for (final summary in scopeModels) {
-      buffer.writeln('  register${summary.className}Scopes(scopeRegistryInstance);');
+      buffer.writeln(
+        '  register${summary.className}Scopes(scopeRegistryInstance);',
+      );
     }
   }
   buffer.writeln('}');

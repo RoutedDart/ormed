@@ -8,6 +8,28 @@ import '../query/query.dart';
 import '../value_codec.dart';
 import 'model.dart';
 
+/// Model factories for generating test data and seed records.
+///
+/// Generated model helpers typically expose a `factory()` method that returns a
+/// [ModelFactoryBuilder]. Use it to configure and build models with predictable
+/// data.
+///
+/// ```dart
+/// // Create an in-memory model instance.
+/// final user = User.factory().make();
+///
+/// // Persist a model (requires a QueryContext).
+/// final saved = await User.factory().create(context: ctx);
+///
+/// // Create multiple records with overrides.
+/// final users = await User.factory()
+///     .count(3)
+///     .withField('is_active', true)
+///     .createMany(context: ctx);
+/// ```
+///
+/// {@macro ormed.model.connection_setup}
+///
 /// Signature for state transformation closures.
 typedef StateTransformer<TModel extends OrmEntity> =
     Map<String, Object?> Function(Map<String, Object?> attributes);
@@ -24,9 +46,16 @@ class ModelFactoryGenerationContext<TModel extends OrmEntity> {
     this.seed,
   });
 
+  /// The model definition being generated.
   final ModelDefinition<TModel> definition;
+
+  /// RNG used for this generation pass.
   final Random random;
+
+  /// Canonicalized field overrides applied before generating defaults.
   final Map<String, Object?> overrides;
+
+  /// Seed used for deterministic output, when set.
   final int? seed;
 }
 
@@ -41,13 +70,19 @@ typedef FieldValueGenerator<TModel extends OrmEntity> =
 abstract class GeneratorProvider {
   const GeneratorProvider();
 
+  /// Generates a default value for [field].
+  ///
+  /// Return `null` to omit a value (for example, to let the database apply a
+  /// default).
   Object? generate<TModel extends OrmEntity>(
     FieldDefinition field,
     ModelFactoryGenerationContext<TModel> context,
   );
 }
 
-/// Default generator that returns simple primitives for scalar fields.
+/// Default generator that returns simple primitives for common scalar fields.
+///
+/// This is used when no per-field generator is provided.
 class DefaultFieldGeneratorProvider extends GeneratorProvider {
   const DefaultFieldGeneratorProvider();
 
@@ -96,6 +131,12 @@ class DefaultFieldGeneratorProvider extends GeneratorProvider {
 }
 
 /// Builder used by generated factory helpers.
+///
+/// Configure the builder using [state], [sequence], and [withOverrides], then
+/// call [make] / [makeMany] to instantiate models or [create] / [createMany] to
+/// persist them.
+///
+/// {@macro ormed.model.connection_setup}
 class ModelFactoryBuilder<TModel extends OrmEntity> {
   ModelFactoryBuilder({
     required this.definition,
@@ -135,6 +176,7 @@ class ModelFactoryBuilder<TModel extends OrmEntity> {
   }
 
   /// Sets the number of models to create.
+  ///
   /// When count > 1, use [makeMany] or [createMany] to get a list.
   ModelFactoryBuilder<TModel> count(int count) {
     if (count < 1) {
@@ -145,6 +187,7 @@ class ModelFactoryBuilder<TModel extends OrmEntity> {
   }
 
   /// Applies a state transformation using a map of attributes.
+  ///
   /// Multiple states can be chained and will be applied in order.
   ModelFactoryBuilder<TModel> state(Map<String, Object?> attributes) {
     _stateTransformers.add((_) => attributes);
@@ -153,6 +196,7 @@ class ModelFactoryBuilder<TModel extends OrmEntity> {
   }
 
   /// Applies a state transformation using a closure.
+  ///
   /// The closure receives the current attributes and returns modifications.
   ModelFactoryBuilder<TModel> stateUsing(StateTransformer<TModel> transformer) {
     _stateTransformers.add(transformer);
@@ -161,6 +205,7 @@ class ModelFactoryBuilder<TModel extends OrmEntity> {
   }
 
   /// Defines a sequence of attribute sets to cycle through when creating multiple models.
+  ///
   /// Each model will use the next set in the sequence (wrapping around).
   ModelFactoryBuilder<TModel> sequence(List<Map<String, Object?>> states) {
     if (states.isEmpty) {
@@ -172,6 +217,7 @@ class ModelFactoryBuilder<TModel extends OrmEntity> {
   }
 
   /// Defines a sequence using a generator function.
+  ///
   /// The function receives the index (0-based) and returns attributes.
   ModelFactoryBuilder<TModel> sequenceUsing(SequenceGenerator generator) {
     _sequenceGenerator = generator;
@@ -196,6 +242,7 @@ class ModelFactoryBuilder<TModel extends OrmEntity> {
   }
 
   /// Marks the model as soft-deleted.
+  ///
   /// Only works for models with soft delete support.
   ModelFactoryBuilder<TModel> trashed([DateTime? deletedAt]) {
     _trashed = true;
@@ -231,8 +278,9 @@ class ModelFactoryBuilder<TModel extends OrmEntity> {
   }
 
   /// Builds the column map the factory would use for a new model.
-  /// This returns the values for index 0 (first model) including all
-  /// state transformations and trashed status.
+  ///
+  /// This returns the values for index 0 (first model) including all state
+  /// transformations and trashed status.
   Map<String, Object?> values() {
     return _valuesForIndex(0);
   }
@@ -244,8 +292,9 @@ class ModelFactoryBuilder<TModel extends OrmEntity> {
   }
 
   /// Instantiates a single model without persisting it.
-  /// If [count] was set, this returns the first model only.
-  /// Use [makeMany] to get all models when count > 1.
+  ///
+  /// If [count] was set, this returns the first model only. Use [makeMany] to
+  /// get all models when count > 1.
   TModel make({ValueCodecRegistry? registry}) {
     final payload = values();
     final model = definition.fromMap(payload, registry: registry);
@@ -254,6 +303,7 @@ class ModelFactoryBuilder<TModel extends OrmEntity> {
   }
 
   /// Instantiates multiple models without persisting them.
+  ///
   /// Returns a list with [count] models (defaults to 1 if count not set).
   List<TModel> makeMany({ValueCodecRegistry? registry}) {
     final total = _count ?? 1;
@@ -268,8 +318,9 @@ class ModelFactoryBuilder<TModel extends OrmEntity> {
   }
 
   /// Persists a single generated model through the ORM.
-  /// If [count] was set, this creates and returns only the first model.
-  /// Use [createMany] to persist all models when count > 1.
+  ///
+  /// If [count] was set, this creates and returns only the first model. Use
+  /// [createMany] to persist all models when count > 1.
   Future<TModel> create({
     QueryContext? context,
     bool returning = true,
@@ -290,6 +341,7 @@ class ModelFactoryBuilder<TModel extends OrmEntity> {
   }
 
   /// Persists multiple generated models through the ORM.
+  ///
   /// Returns a list with [count] persisted models (defaults to 1 if count not set).
   Future<List<TModel>> createMany({
     QueryContext? context,
@@ -332,6 +384,7 @@ class ModelFactoryBuilder<TModel extends OrmEntity> {
   }
 
   /// Generates values for a specific index (used for sequences and batch creation).
+  ///
   /// For index 0, uses cached values. For index > 0, generates fresh values.
   Map<String, Object?> _valuesForIndex(int index) {
     // For batch creation (index > 0), we need fresh random values
@@ -448,6 +501,9 @@ class ModelFactoryRegistry {
 
   static final Map<Type, ModelDefinition<OrmEntity>> _definitions = {};
 
+  /// Registers [definition] for `TModel`.
+  ///
+  /// Generated code calls this during initialization.
   static ModelDefinition<TModel> register<TModel extends OrmEntity>(
     ModelDefinition<TModel> definition,
   ) {
@@ -464,6 +520,9 @@ class ModelFactoryRegistry {
         as ModelDefinition<TModel>;
   }
 
+  /// Returns the registered definition for `TModel`.
+  ///
+  /// Throws a [StateError] if the factory definition has not been registered.
   static ModelDefinition<TModel> definitionFor<TModel extends Model<TModel>>() {
     final definition = _definitions[TModel];
     if (definition == null) {

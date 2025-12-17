@@ -22,9 +22,7 @@ mixin TimestampsImpl on ModelAttributes {
   CarbonInterface? get createdAt {
     final value = getAttribute<DateTime?>(_createdAtColumn);
     if (value == null) return null;
-    // Create Carbon with explicit UTC timezone since all timestamps are stored in UTC
-    final utcDateTime = value.isUtc ? value : value.toUtc();
-    return Carbon.fromDateTime(utcDateTime).tz('UTC');
+    return Carbon.fromDateTime(value);
   }
 
   set createdAt(DateTime? value) => setAttribute(_createdAtColumn, value);
@@ -35,9 +33,7 @@ mixin TimestampsImpl on ModelAttributes {
   CarbonInterface? get updatedAt {
     final value = getAttribute<DateTime?>(_updatedAtColumn);
     if (value == null) return null;
-    // Create Carbon with explicit UTC timezone since all timestamps are stored in UTC
-    final utcDateTime = value.isUtc ? value : value.toUtc();
-    return Carbon.fromDateTime(utcDateTime).tz('UTC');
+    return Carbon.fromDateTime(value);
   }
 
   set updatedAt(DateTime? value) => setAttribute(_updatedAtColumn, value);
@@ -46,8 +42,6 @@ mixin TimestampsImpl on ModelAttributes {
   void touch() {
     final now = Carbon.now().toDateTime();
     updatedAt = now;
-    // Also update the attribute store so save() picks up the change
-    setAttribute('updated_at', now);
   }
 }
 

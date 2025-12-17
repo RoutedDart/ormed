@@ -1,6 +1,21 @@
 /// Model lifecycle events for ormed.
 ///
-/// These events are emitted during model CRUD operations.
+/// These events are emitted during model CRUD operations (query and repository
+/// mutations).
+///
+/// Listen for events using [EventBus]:
+/// ```dart
+/// final unsubscribe = EventBus.instance.on<ModelCreatedEvent>((event) {
+///   print('Created ${event.modelType} in ${event.tableName}');
+/// });
+///
+/// // Later:
+/// unsubscribe();
+/// ```
+///
+/// You can also mark static handlers with `@OrmEvent(...)` or the convenience
+/// annotations (for example, [OnCreated]) and let generated wiring register
+/// them with the event bus.
 library;
 
 import '../events/event_bus.dart';

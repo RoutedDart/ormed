@@ -8,17 +8,7 @@ mixin RepositoryDeleteMixin<T extends OrmEntity>
         RepositoryInputHandlerMixin<T> {
   /// Deletes records that match the provided [where] clause.
   ///
-  /// The [where] parameter accepts:
-  /// - `Map<String, Object?>` - Raw column/value pairs
-  /// - `PartialEntity<$T>` - Partial entity with fields to match
-  /// - `InsertDto<$T>` / `UpdateDto<$T>` - DTO with fields to match
-  /// - Tracked model (`$T`) - Uses primary key for matching
-  /// - `Query<T>` - A pre-built query with where conditions
-  /// - `Query<T> Function(Query<T>)` - A callback that builds a query
-  ///
-  /// **Important**: When using a callback function, you must explicitly type
-  /// the parameter (e.g., `(Query<$User> q) => ...`) because Dart extension
-  /// methods are not accessible on dynamically-typed parameters.
+  /// {@macro ormed.query.where_input}
   ///
   /// Returns the number of affected rows.
   ///
@@ -42,14 +32,7 @@ mixin RepositoryDeleteMixin<T extends OrmEntity>
 
   /// Deletes multiple records using a list of [wheres].
   ///
-  /// Each entry can be any supported where input:
-  /// - `Map<String, Object?>` - Raw column/value pairs
-  /// - `PartialEntity<$T>` - Partial entity with fields to match
-  /// - `InsertDto<$T>` / `UpdateDto<$T>` - DTO with fields to match
-  /// - Tracked model (`$T`) - Uses primary key for matching
-  /// - Primary key value (int, String, etc.)
-  /// - `Query<T>` - A pre-built query with where conditions
-  /// - `Query<T> Function(Query<T>)` - A callback that builds a query
+  /// Each entry in [wheres] accepts the same inputs as [delete].
   ///
   /// Returns the number of affected rows.
   ///

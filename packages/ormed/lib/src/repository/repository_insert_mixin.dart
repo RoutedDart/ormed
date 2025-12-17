@@ -2,10 +2,7 @@ part of 'repository.dart';
 
 /// Mixin that provides insert operations for repositories.
 ///
-/// This mixin supports inserting data using:
-/// - Tracked models (`$Model`)
-/// - Insert DTOs (`$ModelInsertDto`)
-/// - Raw maps (`Map<String, Object?>`)
+/// {@macro ormed.query.insert_inputs}
 mixin RepositoryInsertMixin<T extends OrmEntity>
     on
         RepositoryBase<T>,
@@ -13,7 +10,7 @@ mixin RepositoryInsertMixin<T extends OrmEntity>
         RepositoryInputHandlerMixin<T> {
   /// Inserts a single [model] into the database and returns the inserted record.
   ///
-  /// Accepts tracked models, insert DTOs, or raw maps.
+  /// {@macro ormed.query.insert_inputs}
   ///
   /// The returned model contains the actual values from the database,
   /// including any auto-generated fields (like primary keys).
@@ -49,8 +46,7 @@ mixin RepositoryInsertMixin<T extends OrmEntity>
 
   /// Inserts multiple items into the database and returns the inserted records.
   ///
-  /// Accepts a list of tracked models, insert DTOs, or raw maps.
-  /// All items in the list should be of the same type.
+  /// {@macro ormed.query.insert_inputs}
   ///
   /// The returned models contain the actual values from the database,
   /// including any auto-generated fields (like primary keys).
@@ -79,7 +75,7 @@ mixin RepositoryInsertMixin<T extends OrmEntity>
 
   /// Inserts a single item into the database, ignoring any conflicts.
   ///
-  /// Accepts tracked models, insert DTOs, or raw maps.
+  /// {@macro ormed.query.insert_inputs}
   /// Returns the number of affected rows.
   ///
   /// Example:
@@ -92,7 +88,7 @@ mixin RepositoryInsertMixin<T extends OrmEntity>
 
   /// Inserts multiple items into the database, ignoring any conflicts.
   ///
-  /// Accepts a list of tracked models, insert DTOs, or raw maps.
+  /// {@macro ormed.query.insert_inputs}
   /// Returns the number of affected rows.
   ///
   /// Example:

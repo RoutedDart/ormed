@@ -288,9 +288,7 @@ class ModelSubclassEmitter {
         receiver: className,
         firstArgument: 'this',
       );
-      buffer.writeln(
-        '  Query<$trackedName> ${scope.name}$signature => $call;',
-      );
+      buffer.writeln('  Query<$trackedName> ${scope.name}$signature => $call;');
     }
     buffer.writeln('}');
     buffer.writeln();
@@ -318,9 +316,7 @@ class ModelSubclassEmitter {
         final call = StringBuffer('      return query.${scope.name}(');
         int index = 0;
         for (final param in tail.where((p) => !p.isNamed)) {
-          call.write(
-            'args[$index] as ${param.type.getDisplayString()}, ',
-          );
+          call.write('args[$index] as ${param.type.getDisplayString()}, ');
           index++;
         }
         for (final param in tail.where((p) => p.isNamed)) {
@@ -357,17 +353,13 @@ class ModelSubclassEmitter {
     final buffer = StringBuffer('(');
     // required positional
     for (final param in requiredPos) {
-      buffer.write(
-        '${param.type.getDisplayString()} ${param.displayName}, ',
-      );
+      buffer.write('${param.type.getDisplayString()} ${param.displayName}, ');
     }
     // optional positional
     if (optionalPos.isNotEmpty) {
       buffer.write('[');
       for (final param in optionalPos) {
-        buffer.write(
-          '${param.type.getDisplayString()} ${param.displayName}',
-        );
+        buffer.write('${param.type.getDisplayString()} ${param.displayName}');
         if (param.defaultValueCode != null) {
           buffer.write(' = ${param.defaultValueCode}');
         }
@@ -382,9 +374,7 @@ class ModelSubclassEmitter {
         if (param.isRequiredNamed) {
           buffer.write('required ');
         }
-        buffer.write(
-          '${param.type.getDisplayString()} ${param.displayName}',
-        );
+        buffer.write('${param.type.getDisplayString()} ${param.displayName}');
         if (param.defaultValueCode != null) {
           buffer.write(' = ${param.defaultValueCode}');
         }
@@ -432,9 +422,7 @@ class ModelSubclassEmitter {
       final valueExpr = param.isOptionalPositional
           ? '($hasArg ? $argsSource[$index] : $defaultExpr)'
           : '$argsSource[$index]';
-      call.write(
-        ', $valueExpr as ${param.type.getDisplayString()}',
-      );
+      call.write(', $valueExpr as ${param.type.getDisplayString()}');
       index++;
     }
     final named = tail.where((p) => p.isNamed).toList();

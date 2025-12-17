@@ -117,7 +117,11 @@ class OrmConnection implements ConnectionResolver {
   final List<void Function(ConnectionEvent)> _eventListeners = [];
   final List<_QueryDurationHandler> _queryDurationHandlers = [];
 
-  /// Underlying QueryContext for advanced operations.
+  /// Underlying [QueryContext] for advanced operations.
+  ///
+  /// This is the lower-level API that powers `connection.query<T>()`,
+  /// `connection.repository<T>()`, and helpers like `Model.query()`.
+  /// {@macro ormed.query.query_context}
   QueryContext get context => _context;
 
   /// Current pretend-mode flag.
@@ -300,6 +304,8 @@ class OrmConnection implements ConnectionResolver {
       _context.beforeExecuting(callback);
 
   /// Creates a typed query builder.
+  ///
+  /// {@macro ormed.query}
   Query<T> query<T extends OrmEntity>() => _context.query<T>();
 
   /// Ensures the migrations ledger table exists for this connection.

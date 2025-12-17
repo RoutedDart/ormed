@@ -1,5 +1,81 @@
 part of '../query_builder.dart';
 
+/// {@template ormed.query.where_input}
+/// The [where] parameter accepts:
+/// - A primary key value (for example, `1` or `'uuid'`).
+/// - `Map<String, Object?>` containing column/value pairs.
+/// - A generated [PartialEntity] (for example, `$UserPartial`).
+/// - An [InsertDto] or [UpdateDto] instance (for example, `$UserUpdateDto`).
+/// - A tracked model instance (`T` / `$User`), which matches on mapped columns.
+/// - A pre-built `Query<T>` (which must use the same [QueryContext]).
+/// - A `Query<T> Function(Query<T>)` callback that builds a query.
+///
+/// When passing a callback, explicitly type its parameter (for example,
+/// `(Query<$User> q) => q.whereEquals('email', 'john@example.com')`) so
+/// extension methods are available.
+/// {@endtemplate}
+///
+/// {@template ormed.query.insert_inputs}
+/// Insert inputs may be:
+/// - A tracked model instance (`T` / `$User`).
+/// - An [InsertDto] or [UpdateDto] instance.
+/// - A `Map<String, Object?>` containing field/column values.
+///
+/// Map keys may use either Dart field names or database column names. Ormed
+/// normalizes them to column names using the model definition.
+/// {@endtemplate}
+///
+/// {@template ormed.query.update_inputs}
+/// Update inputs may be:
+/// - A tracked model instance (`T` / `$User`).
+/// - An [UpdateDto] or [InsertDto] instance.
+/// - A `Map<String, Object?>` containing field/column values.
+///
+/// Map keys may use either Dart field names or database column names. Ormed
+/// normalizes them to column names using the model definition.
+/// {@endtemplate}
+///
+/// {@template ormed.query.upsert_options}
+/// [uniqueBy] controls the conflict target (defaults to the primary key, when
+/// available).
+///
+/// [updateColumns] controls which columns are updated on conflict. When
+/// omitted, the driver chooses its default update set.
+/// {@endtemplate}
+///
+/// {@template ormed.mutation.json_updates}
+/// [jsonUpdates] defines JSON-path updates to apply alongside the regular
+/// mutation values.
+///
+/// This callback is applied per tracked model input (`T` / `$User`). It is not
+/// invoked for DTO/map inputs.
+///
+/// Tracked models may also accumulate JSON updates via runtime helpers; those
+/// pending updates are automatically included.
+///
+/// ```dart
+/// final updated = await context.query<$User>().updateInputs(
+///   [user],
+///   jsonUpdates: (u) => [
+///     JsonUpdateDefinition.path('profile', r'$.settings.theme', 'dark'),
+///     JsonUpdateDefinition.patch('profile', {'lastSeen': DateTime.now()}),
+///   ],
+/// );
+/// ```
+/// {@endtemplate}
+///
+/// {@template ormed.mutation.hydration}
+/// When the driver returns row data (for example, via SQL `RETURNING`), Ormed
+/// hydrates models by merging returned data with the original inputs.
+///
+/// Merge priority: returned data > original model data > input map data.
+///
+/// Some drivers only return generated keys (for example, a last-insert ID)
+/// rather than full rows. In those cases, hydrated models may include a mix of
+/// database-returned values and input-provided values.
+/// {@endtemplate}
+///
+/// Private anchor for shared dartdoc templates.
 final class _UpdateInputBuildResult<T extends OrmEntity> {
   _UpdateInputBuildResult({
     required this.rows,
@@ -61,7 +137,10 @@ extension CrudExtension<T extends OrmEntity> on Query<T> {
     return insertManyInputs(records);
   }
 
-  /// Inserts flexible inputs (maps/DTOs/tracked models) and returns hydrated models.
+  /// Inserts flexible inputs and returns hydrated models.
+  ///
+  /// {@macro ormed.query.insert_inputs}
+  /// {@macro ormed.mutation.hydration}
   Future<List<T>> insertManyInputs(
     List<Object> inputs, {
     bool ignoreConflicts = false,
@@ -126,6 +205,8 @@ extension CrudExtension<T extends OrmEntity> on Query<T> {
   /// Inserts flexible inputs and returns the raw [MutationResult].
   ///
   /// Use when only affected row counts are needed (e.g., insertOrIgnore).
+  ///
+  /// {@macro ormed.query.insert_inputs}
   Future<MutationResult> insertManyInputsRaw(
     List<Object> inputs, {
     bool ignoreConflicts = false,
@@ -329,7 +410,9 @@ extension CrudExtension<T extends OrmEntity> on Query<T> {
   Future<List<T>> get() async =>
       (await rows()).map((row) => row.model).toList(growable: false);
 
-  /// Updates matching records using flexible inputs (tracked model, DTO, map).
+  /// Updates matching records using flexible inputs.
+  ///
+  /// {@macro ormed.query.update_inputs}
   ///
   /// This overload matches Repository ergonomics.
   Future<int> updateValues(Object values) async {
@@ -588,9 +671,9 @@ extension CrudExtension<T extends OrmEntity> on Query<T> {
 
   /// Updates rows and returns hydrated models using driver RETURNING when available.
   ///
-  /// Accepts the same flexible inputs as [updateValues] (tracked model, DTO, map).
-  /// Returned models are merged using the same rules as Repository:
-  /// returned data > original model data > input map data.
+  /// {@macro ormed.query.update_inputs}
+  ///
+  /// {@macro ormed.mutation.hydration}
   Future<List<T>> updateReturning(Object values) async {
     final helper = MutationInputHelper<T>(
       definition: definition,
@@ -613,23 +696,16 @@ extension CrudExtension<T extends OrmEntity> on Query<T> {
     return _hydrateMutationResults(result, canCreateFromInputs: false);
   }
 
-  /// Updates rows using flexible inputs (tracked models, DTOs, or raw maps).
+  /// Updates rows using flexible inputs.
+  ///
+  /// {@macro ormed.query.update_inputs}
   ///
   /// Matches repository semantics: keys are inferred from tracked models,
   /// explicit `where` input, or primary key values embedded in DTO/map data.
   /// Returns hydrated models when the driver supports RETURNING.
   ///
-  /// The [where] parameter accepts:
-  /// - `Map<String, Object?>` - Raw column/value pairs
-  /// - `PartialEntity<T>` - Partial entity with fields to match
-  /// - `InsertDto<T>` / `UpdateDto<T>` - DTO with fields to match
-  /// - Tracked model (`T`) - Uses primary key for matching
-  /// - `Query<T>` - A pre-built query with where conditions
-  /// - `Query<T> Function(Query<T>)` - A callback that builds a query
-  ///
-  /// **Important**: When using a callback function, the parameter must be
-  /// explicitly typed (e.g., `(Query<$User> q) => q.whereEquals(...)`)
-  /// because Dart extension methods are not accessible on dynamic parameters.
+  /// {@macro ormed.query.where_input}
+  /// {@macro ormed.mutation.json_updates}
   Future<List<T>> updateInputs(
     List<Object> inputs, {
     Object? where,
@@ -707,8 +783,9 @@ extension CrudExtension<T extends OrmEntity> on Query<T> {
   /// Mirrors [updateInputs] but skips hydration when RETURNING is unsupported
   /// or unnecessary.
   ///
-  /// The [where] parameter accepts the same inputs as [updateInputs], including
-  /// `Query<T>` and `Query<T> Function(Query<T>)` callbacks.
+  /// {@macro ormed.query.update_inputs}
+  /// {@macro ormed.query.where_input}
+  /// {@macro ormed.mutation.json_updates}
   Future<MutationResult> updateInputsRaw(
     List<Object> inputs, {
     Object? where,
@@ -1210,11 +1287,15 @@ extension CrudExtension<T extends OrmEntity> on Query<T> {
     return null;
   }
 
-  List<MutationRow> _buildUpsertRows(List<Object> inputs) {
+  List<MutationRow> _buildUpsertRows(
+    List<Object> inputs, {
+    JsonUpdateBuilder<T>? jsonUpdates,
+  }) {
     final helper = MutationInputHelper<T>(
       definition: definition,
       codecs: context.codecRegistry,
     );
+    final jsonSupport = JsonUpdateSupport<T>(definition);
 
     return inputs
         .map((input) {
@@ -1228,27 +1309,14 @@ extension CrudExtension<T extends OrmEntity> on Query<T> {
           final normalized = _normalizeAttributeKeys(baseValues);
 
           Map<String, Object?> values;
-          List<JsonUpdateClause> jsonUpdates = const [];
+          final List<JsonUpdateClause> jsonClauses = input is T
+              ? jsonSupport.buildJsonUpdates(input, jsonUpdates)
+              : const <JsonUpdateClause>[];
 
           if (input is T) {
             values = normalized;
             if (input is! ModelAttributes) {
               helper.ensureTimestampsInMap(values, isInsert: true);
-            }
-            // Extract JSON updates from tracked models
-            if (input is ModelAttributes) {
-              final attrs = input as ModelAttributes;
-              final pending = attrs.takeJsonAttributeUpdates();
-              if (pending.isNotEmpty) {
-                jsonUpdates = pending.map((update) {
-                  final column = _resolveColumnName(update.fieldOrColumn);
-                  return JsonUpdateClause(
-                    column: column,
-                    path: update.path,
-                    value: update.value,
-                  );
-                }).toList();
-              }
             }
           } else {
             final model = definition.codec.decode(
@@ -1280,20 +1348,10 @@ extension CrudExtension<T extends OrmEntity> on Query<T> {
           return MutationRow(
             values: values,
             keys: const {},
-            jsonUpdates: jsonUpdates,
+            jsonUpdates: jsonClauses,
           );
         })
         .toList(growable: false);
-  }
-
-  /// Resolves a field name or column name to its column name.
-  String _resolveColumnName(String nameOrColumn) {
-    for (final field in definition.fields) {
-      if (field.name == nameOrColumn || field.columnName == nameOrColumn) {
-        return field.columnName;
-      }
-    }
-    return nameOrColumn;
   }
 
   MutationPlan _buildUpsertPlan(
@@ -1479,18 +1537,7 @@ extension CrudExtension<T extends OrmEntity> on Query<T> {
   ///
   /// This provides the same input ergonomics as Repository.delete().
   ///
-  /// The [where] parameter accepts:
-  /// - Primary key value (int, String, etc.)
-  /// - `Map<String, Object?>` - Raw column/value pairs
-  /// - `PartialEntity<T>` - Partial entity with fields to match
-  /// - `InsertDto<T>` / `UpdateDto<T>` - DTO with fields to match
-  /// - Tracked model (`T`) - Uses primary key for matching
-  /// - `Query<T>` - A pre-built query with where conditions
-  /// - `Query<T> Function(Query<T>)` - A callback that builds a query
-  ///
-  /// **Important**: When using a callback function, the parameter must be
-  /// explicitly typed (e.g., `(Query<$User> q) => q.whereEquals(...)`)
-  /// because Dart extension methods are not accessible on dynamic parameters.
+  /// {@macro ormed.query.where_input}
   Future<int> deleteWhere(Object where) => deleteWhereMany([where]);
 
   /// Deletes multiple records using flexible where inputs.
@@ -1726,15 +1773,20 @@ extension CrudExtension<T extends OrmEntity> on Query<T> {
     );
   }
 
-  /// Upserts flexible inputs (maps/DTOs/tracked models) and returns hydrated models.
+  /// Upserts flexible inputs and returns hydrated models.
+  ///
+  /// {@macro ormed.query.insert_inputs}
+  /// {@macro ormed.query.upsert_options}
+  /// {@macro ormed.mutation.json_updates}
   Future<List<T>> upsertInputs(
     List<Object> inputs, {
     List<String>? uniqueBy,
     List<String>? updateColumns,
+    JsonUpdateBuilder<T>? jsonUpdates,
   }) async {
     if (inputs.isEmpty) return const [];
 
-    final rows = _buildUpsertRows(inputs);
+    final rows = _buildUpsertRows(inputs, jsonUpdates: jsonUpdates);
     final readyRows = <MutationRow>[];
     final filteredInputMaps = <Map<String, Object?>>[];
     final filteredOriginalModels = <T>[];
@@ -1786,9 +1838,10 @@ extension CrudExtension<T extends OrmEntity> on Query<T> {
     List<Object> inputs, {
     List<String>? uniqueBy,
     List<String>? updateColumns,
+    JsonUpdateBuilder<T>? jsonUpdates,
     bool returning = false,
   }) {
-    final rows = _buildUpsertRows(inputs);
+    final rows = _buildUpsertRows(inputs, jsonUpdates: jsonUpdates);
     return _buildUpsertPlan(
       rows,
       uniqueBy: uniqueBy,

@@ -4,7 +4,22 @@ import '../contracts.dart';
 import '../exceptions.dart';
 import 'model.dart';
 
-/// Simple registry to share model definitions across the app/runtime.
+/// Registry that stores [ModelDefinition] objects by model type and name.
+///
+/// A [ModelRegistry] is used by [QueryContext] and [DataSource] to resolve
+/// model metadata at runtime.
+///
+/// Generated `.orm.dart` files typically register definitions on startup,
+/// and [DataSource.init] registers the definitions provided in
+/// [DataSourceOptions.entities].
+///
+/// ```dart
+/// final registry = ModelRegistry();
+/// registry.register<$User>($UserOrmDefinition.definition);
+///
+/// final userDef = registry.expect<$User>();
+/// print(userDef.tableName);
+/// ```
 class ModelRegistry {
   final Map<Type, ModelDefinition<OrmEntity>> _definitions = {};
   final Map<String, ModelDefinition<OrmEntity>> _definitionsByName = {};
@@ -14,14 +29,19 @@ class ModelRegistry {
   final List<void Function(ModelDefinition<OrmEntity>)> _onRegisteredCallbacks =
       [];
 
+  /// Stream of definitions as they are registered.
   Stream<ModelDefinition<OrmEntity>> get onRegistered => _onRegistered.stream;
 
+  /// Registers a callback that is invoked when a definition is registered.
   void addOnRegisteredCallback(
     void Function(ModelDefinition<OrmEntity>) callback,
   ) {
     _onRegisteredCallbacks.add(callback);
   }
 
+  /// Registers [definition] for type [T].
+  ///
+  /// This is a no-op when a definition is already registered for the model type.
   void register<T extends OrmEntity>(ModelDefinition<T> definition) {
     if (_definitions.containsKey(definition.modelType)) {
       return; // Skip already registered types
@@ -35,6 +55,9 @@ class ModelRegistry {
     }
   }
 
+  /// Registers many model definitions.
+  ///
+  /// Definitions are deduplicated by model type.
   void registerAll(Iterable<ModelDefinition<OrmEntity>> definitions) {
     for (final definition in definitions) {
       if (_definitions.containsKey(definition.modelType)) {
@@ -50,7 +73,10 @@ class ModelRegistry {
     }
   }
 
-  /// Register a type alias that maps to an existing definition
+  /// Registers a type alias that points to an existing definition.
+  ///
+  /// This is useful when you have multiple Dart types that share the same
+  /// runtime definition (for example, a base type and a generated tracked type).
   void registerTypeAlias<T extends OrmEntity>(
     ModelDefinition<OrmEntity> existingDefinition,
   ) {
@@ -60,7 +86,7 @@ class ModelRegistry {
     _definitions[T] = existingDefinition;
   }
 
-  /// Returns all registered model definitions (deduplicated)
+  /// Returns all registered model definitions, deduplicated by model name.
   List<ModelDefinition<OrmEntity>> get allDefinitions {
     final seen = <String>{};
     final result = <ModelDefinition<OrmEntity>>[];
@@ -72,6 +98,10 @@ class ModelRegistry {
     return result;
   }
 
+  /// Creates and registers an alias definition for [base] under [aliasModelName].
+  ///
+  /// This does not change type registration; it adds a name-based alias used by
+  /// lookups like [expectByName].
   ModelDefinition<T> registerAlias<T extends OrmEntity>(
     ModelDefinition<T> base, {
     required String aliasModelName,
@@ -87,6 +117,7 @@ class ModelRegistry {
     return aliased;
   }
 
+  /// Returns the registered [ModelDefinition] for [T] or throws.
   ModelDefinition<T> expect<T extends OrmEntity>() {
     final definition = _definitions[T];
     if (definition == null) {
@@ -118,7 +149,9 @@ class ModelRegistry {
     return definition;
   }
 
+  /// Whether a definition is registered for [T].
   bool contains<T>() => _definitions.containsKey(T);
 
+  /// Iterable view of the registered definitions keyed by type.
   Iterable<ModelDefinition<OrmEntity>> get values => _definitions.values;
 }

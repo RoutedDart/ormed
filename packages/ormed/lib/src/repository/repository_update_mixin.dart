@@ -2,10 +2,7 @@ part of 'repository.dart';
 
 /// Mixin that provides update operations for repositories.
 ///
-/// This mixin supports updating data using:
-/// - Tracked models (`$Model`)
-/// - Update DTOs (`$ModelUpdateDto`)
-/// - Raw maps (`Map<String, Object?>`)
+/// {@macro ormed.query.update_inputs}
 mixin RepositoryUpdateMixin<T extends OrmEntity>
     on
         RepositoryBase<T>,
@@ -13,23 +10,13 @@ mixin RepositoryUpdateMixin<T extends OrmEntity>
         RepositoryInputHandlerMixin<T> {
   /// Updates a single [model] in the database and returns the updated record.
   ///
-  /// Accepts tracked models, update DTOs, or raw maps.
+  /// {@macro ormed.query.update_inputs}
   ///
   /// When using a DTO or map, a [where] clause must be provided to identify
   /// which row(s) to update. When using a tracked model, the primary key is
   /// extracted automatically.
   ///
-  /// The [where] parameter accepts:
-  /// - `Map<String, Object?>` - Raw column/value pairs
-  /// - `$ModelPartial` - Partial entity with the fields to match
-  /// - `$ModelUpdateDto` or `$ModelInsertDto` - DTO with fields to match
-  /// - Tracked model (`$Model`) - Uses all column values for matching
-  /// - `Query<T>` - A pre-built query with where conditions
-  /// - `Query<T> Function(Query<T>)` - A callback that builds a query
-  ///
-  /// **Important**: When using a callback function, you must explicitly type
-  /// the parameter (e.g., `(Query<$User> q) => ...`) because Dart extension
-  /// methods are not accessible on dynamically-typed parameters.
+  /// {@macro ormed.query.where_input}
   ///
   /// Example with tracked model:
   /// ```dart
@@ -79,7 +66,7 @@ mixin RepositoryUpdateMixin<T extends OrmEntity>
 
   /// Updates multiple items in the database and returns the updated records.
   ///
-  /// Accepts a list of tracked models, update DTOs, or raw maps.
+  /// {@macro ormed.query.update_inputs}
   ///
   /// When using DTOs or maps, a [where] clause must be provided to identify
   /// which row(s) to update. When using tracked models, the primary key is
@@ -91,7 +78,7 @@ mixin RepositoryUpdateMixin<T extends OrmEntity>
   /// only a single input is allowed. Passing multiple inputs with a Query where
   /// will throw an [ArgumentError].
   ///
-  /// An optional [jsonUpdates] builder can be provided to update JSON fields.
+  /// {@macro ormed.mutation.json_updates}
   ///
   /// Example:
   /// ```dart

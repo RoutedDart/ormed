@@ -223,6 +223,10 @@ class DataSource {
 
   /// The underlying query context.
   ///
+  /// This is the lower-level API that powers [query] and [repo]. Use it when
+  /// you need advanced hooks, caching, or to construct queries/repositories
+  /// from a shared runtime context.
+  ///
   /// Throws [StateError] if the data source has not been initialized.
   QueryContext get context {
     _ensureInitialized();
@@ -366,19 +370,15 @@ class DataSource {
 
   /// Creates a typed query builder for the specified model type.
   ///
-  /// ```dart
-  /// final users = await ds.query<User>()
-  ///     .whereEquals('active', true)
-  ///     .orderBy('createdAt', descending: true)
-  ///     .limit(10)
-  ///     .get();
-  /// ```
+  /// {@macro ormed.query}
   Query<T> query<T extends OrmEntity>() {
     _ensureInitialized();
     return _connection!.query<T>();
   }
 
   /// Returns a repository for performing CRUD operations on the specified model type.
+  ///
+  /// {@macro ormed.repository}
   ///
   /// ```dart
   /// final userRepo = ds.repo<User>();

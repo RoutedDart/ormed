@@ -2,10 +2,10 @@ part of 'repository.dart';
 
 /// Mixin that provides preview methods for repository operations.
 ///
-/// This mixin supports previewing operations with:
-/// - Tracked models (`$Model`)
-/// - Insert/Update DTOs
-/// - Raw maps (`Map<String, Object?>`)
+/// Preview methods accept the same inputs as the corresponding write methods.
+///
+/// {@macro ormed.query.insert_inputs}
+/// {@macro ormed.query.update_inputs}
 mixin RepositoryPreviewMixin<T extends OrmEntity>
     on
         RepositoryBase<T>,
@@ -17,7 +17,7 @@ mixin RepositoryPreviewMixin<T extends OrmEntity>
         RepositoryDeleteMixin<T> {
   /// Returns the statement preview for inserting a single item.
   ///
-  /// Accepts tracked models, insert DTOs, or raw maps.
+  /// {@macro ormed.query.insert_inputs}
   ///
   /// Example:
   /// ```dart
@@ -29,7 +29,7 @@ mixin RepositoryPreviewMixin<T extends OrmEntity>
 
   /// Returns the statement preview for inserting multiple items.
   ///
-  /// Accepts a list of tracked models, insert DTOs, or raw maps.
+  /// {@macro ormed.query.insert_inputs}
   ///
   /// Example:
   /// ```dart
@@ -54,7 +54,7 @@ mixin RepositoryPreviewMixin<T extends OrmEntity>
 
   /// Returns the statement preview for inserting items while ignoring conflicts.
   ///
-  /// Accepts a list of tracked models, insert DTOs, or raw maps.
+  /// {@macro ormed.query.insert_inputs}
   StatementPreview previewInsertOrIgnoreMany(List<Object> inputs) {
     if (inputs.isEmpty) {
       throw ArgumentError.value(
@@ -70,7 +70,8 @@ mixin RepositoryPreviewMixin<T extends OrmEntity>
 
   /// Returns the statement preview for updating items.
   ///
-  /// Accepts a list of tracked models, update DTOs, or raw maps.
+  /// {@macro ormed.query.update_inputs}
+  /// {@macro ormed.mutation.json_updates}
   ///
   /// Example:
   /// ```dart
@@ -100,7 +101,9 @@ mixin RepositoryPreviewMixin<T extends OrmEntity>
 
   /// Returns the statement preview for upserting items.
   ///
-  /// Accepts a list of tracked models, insert DTOs, or raw maps.
+  /// {@macro ormed.query.insert_inputs}
+  /// {@macro ormed.query.upsert_options}
+  /// {@macro ormed.mutation.json_updates}
   ///
   /// Example:
   /// ```dart
@@ -128,6 +131,7 @@ mixin RepositoryPreviewMixin<T extends OrmEntity>
       inputs,
       uniqueBy: uniqueBy,
       updateColumns: updateColumns,
+      jsonUpdates: jsonUpdates,
       returning: false,
     );
     return describeMutation(plan);
@@ -161,7 +165,7 @@ mixin RepositoryPreviewMixin<T extends OrmEntity>
 
   /// Returns the statement preview for deleting using flexible where inputs.
   ///
-  /// Accepts the same inputs as [RepositoryDeleteMixin.delete].
+  /// {@macro ormed.query.where_input}
   StatementPreview previewDeleteMany(List<Object> wheres) {
     if (wheres.isEmpty) {
       throw ArgumentError.value(

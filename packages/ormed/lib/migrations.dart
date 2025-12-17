@@ -233,13 +233,13 @@
 ///
 /// ```dart
 /// final runner = MigrationRunner(
-///   driver: myDriver,
+///   schemaDriver: schemaDriver,
 ///   migrations: descriptors,
-///   ledger: SqlMigrationLedger(driver: myDriver),
+///   ledger: SqlMigrationLedger(driver: schemaDriver),
 /// );
 ///
 /// // Run all pending migrations
-/// await runner.migrate();
+/// await runner.applyAll();
 ///
 /// // Rollback last batch
 /// await runner.rollback();

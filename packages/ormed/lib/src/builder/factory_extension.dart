@@ -12,6 +12,9 @@ String modelFactoryExtension(String className) {
   );
   buffer.writeln();
   buffer.writeln('  // Query builder');
+  buffer.writeln('  /// Starts building a query for [$className].');
+  buffer.writeln('  ///');
+  buffer.writeln('  /// {@macro ormed.query}');
   buffer.writeln('  static Query<$className> query([String? connection]) =>');
   buffer.writeln('      $factoryName.query(connection);');
   buffer.writeln();

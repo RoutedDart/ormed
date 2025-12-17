@@ -6,8 +6,9 @@ import 'package:driver_tests/driver_tests.dart';
 
 void main() {
   group('FieldDefinition driver overrides', () {
-    final field =
-        DriverOverrideModelOrmDefinition.definition.fieldByName('payload')!;
+    final field = DriverOverrideModelOrmDefinition.definition.fieldByName(
+      'payload',
+    )!;
 
     test('resolves column type per driver', () {
       expect(field.columnTypeForDriver('postgres'), equals('jsonb'));

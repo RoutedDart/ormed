@@ -5,6 +5,12 @@ mixin RepositoryHelpersMixin<T extends OrmEntity> on RepositoryBase<T> {
   Query<T>? get _queryOrNull =>
       queryContext?.queryFromDefinition<T>(definition);
 
+  /// Applies a repository-style [where] input to [query].
+  ///
+  /// {@macro ormed.query.where_input}
+  ///
+  /// This helper is used by repository read/update/delete methods that accept a
+  /// flexible `where` parameter.
   Query<T> applyWhere(
     Query<T> query,
     Object? where, {
@@ -29,6 +35,24 @@ mixin RepositoryHelpersMixin<T extends OrmEntity> on RepositoryBase<T> {
       definition: definition,
       codecs: query.context.codecRegistry,
     );
+
+    // When a tracked model instance is provided, treat it as a primary-key
+    // lookup rather than attempting to match all columns (which can include
+    // nullable fields and would require SQL `IS NULL` semantics).
+    if (where is T) {
+      final pkField = definition.primaryKeyField;
+      if (pkField == null) {
+        throw StateError(
+          '$feature requires ${definition.modelName} to declare a primary key.',
+        );
+      }
+      final pk = helper.extractPrimaryKey(where);
+      if (pk == null) {
+        throw StateError('Primary key cannot be null for $feature().');
+      }
+      return query.where(pkField.columnName, pk);
+    }
+
     final map = helper.whereInputToMap(where);
     if (map == null || map.isEmpty) {
       throw StateError(
@@ -38,7 +62,7 @@ mixin RepositoryHelpersMixin<T extends OrmEntity> on RepositoryBase<T> {
 
     var q = query;
     map.forEach((key, value) {
-      q = q.where(key, value);
+      q = value == null ? q.whereNull(key) : q.where(key, value);
     });
     return q;
   }
@@ -90,12 +114,7 @@ mixin RepositoryHelpersMixin<T extends OrmEntity> on RepositoryBase<T> {
 
   /// Maps mutation results back to model instances.
   ///
-  /// This method handles merging returned data (e.g., auto-generated PKs) with
-  /// the original input data. It supports:
-  /// - Tracked models in [original] list
-  /// - Input maps from DTOs/Maps in [inputMaps] list
-  ///
-  /// The merge priority is: returned data > original model data > input map data
+  /// {@macro ormed.mutation.hydration}
   ///
   /// [canCreateFromInputs] indicates whether [inputMaps] contain complete data
   /// that can be used to create model instances when no returned data is available.

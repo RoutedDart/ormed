@@ -5,6 +5,15 @@ import 'package:collection/collection.dart';
 import 'package:ormed/ormed.dart';
 
 /// Runtime description of a generated ORM model.
+///
+/// Generated code registers a [ModelDefinition] for each `@OrmModel()` type.
+/// Queries and repositories use the definition to:
+/// - Resolve table/schema metadata.
+/// - Encode models into column maps for mutations.
+/// - Decode result rows into tracked model instances.
+///
+/// Most applications never create definitions manually; they are emitted by the
+/// code generator and stored in [ModelRegistry].
 class ModelDefinition<TModel extends OrmEntity> {
   const ModelDefinition({
     required this.modelName,
@@ -71,9 +80,18 @@ class ModelDefinition<TModel extends OrmEntity> {
 
   /// Encodes a model instance to a map using the model's codec.
   ///
-  /// Accepts both the user-defined model and the generated tracked model.
-  /// Automatically converts user-defined models to tracked models if needed.
-  /// For ad-hoc queries where TModel is [Map<String, Object?>], returns the map directly.
+  /// Accepts both user-defined models and generated tracked models.
+  ///
+  /// If [model] is a tracked instance (it mixes in [ModelAttributes]), encoding
+  /// uses the generated codec and [registry] for type conversions.
+  ///
+  /// If [model] is not tracked, this method falls back to `dart:mirrors` to read
+  /// field values by name. This fallback is VM-only and should be avoided in
+  /// production code. Prefer working with tracked instances returned from the
+  /// ORM.
+  ///
+  /// For ad-hoc queries where [model] is already a `Map<String, Object?>`, this
+  /// returns the map directly.
   Map<String, Object?> toMap(
     covariant dynamic model, {
     ValueCodecRegistry? registry,

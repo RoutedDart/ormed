@@ -4,7 +4,24 @@ import 'package:ormed/src/repository/repository.dart';
 import '../contracts.dart';
 import 'model.dart';
 
-/// Helper that binds a generated model definition to a query context.
+/// Helper that binds a generated model definition to a [QueryContext].
+///
+/// Generated model helpers typically expose this as `YourModel.withConnection`,
+/// making it easy to build queries and repositories against a specific
+/// connection/context.
+///
+/// {@macro ormed.model.connection_setup}
+///
+/// ```dart
+/// final ctx = /* obtain a QueryContext */;
+///
+/// // Query builder.
+/// final active = await User.withConnection(ctx).query().where('active', true).get();
+///
+/// // Repository.
+/// final repo = User.withConnection(ctx).repository();
+/// final saved = await repo.saveMany([User(name: 'Ada')]);
+/// ```
 class ModelFactoryConnection<T extends OrmEntity> {
   const ModelFactoryConnection({
     required ModelDefinition<T> definition,

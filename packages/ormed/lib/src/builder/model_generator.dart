@@ -23,6 +23,10 @@ class OrmModelGenerator extends GeneratorForAnnotation<OrmModel> {
 
   OrmModelGenerator(this.options);
 
+  static const _modelChecker = TypeChecker.fromUrl(
+    'package:ormed/src/annotations.dart#OrmModel',
+  );
+
   @override
   Future<String> generateForAnnotatedElement(
     Element element,
@@ -67,16 +71,47 @@ class OrmModelGenerator extends GeneratorForAnnotation<OrmModel> {
   ) async {
     final inputId = buildStep.inputId;
     if (!inputId.path.startsWith('lib/')) return;
-    final relativeImport = inputId.path.substring('lib/'.length);
-    final summary = jsonEncode({
-      'className': context.className,
-      'import': relativeImport.replaceAll(r'\', '/'),
-      'definition': '${context.className}OrmDefinition.definition',
-      'hasFactory': context.hasFactory,
-      'hasEventHandlers': context.hasEventHandlers,
-      'hasScopes': context.scopes.isNotEmpty,
-    });
+    final library = context.element.library;
+    final annotatedModels =
+        library.classes.where(_modelChecker.hasAnnotationOfExact).toList()
+          ..sort((a, b) {
+            final aFragment = a.firstFragment;
+            final bFragment = b.firstFragment;
+            final aUri = aFragment.libraryFragment.source.uri.toString();
+            final bUri = bFragment.libraryFragment.source.uri.toString();
+            final byUri = aUri.compareTo(bUri);
+            if (byUri != 0) return byUri;
+            return aFragment.offset.compareTo(bFragment.offset);
+          });
+
+    // Write one summary file per library to avoid duplicate output writes when a
+    // library contains multiple @OrmModel classes.
+    if (annotatedModels.isEmpty || annotatedModels.first != context.element) {
+      return;
+    }
+
+    final relativeImport = inputId.path
+        .substring('lib/'.length)
+        .replaceAll(r'\', '/');
+    final summaries = <Map<String, Object?>>[];
+
+    for (final model in annotatedModels) {
+      final annotation = _modelChecker.firstAnnotationOfExact(model);
+      if (annotation == null) {
+        continue;
+      }
+      final modelContext = ModelContext(model, ConstantReader(annotation));
+      summaries.add({
+        'className': modelContext.className,
+        'import': relativeImport,
+        'definition': '${modelContext.className}OrmDefinition.definition',
+        'hasFactory': modelContext.hasFactory,
+        'hasEventHandlers': modelContext.hasEventHandlers,
+        'hasScopes': modelContext.scopes.isNotEmpty,
+      });
+    }
+
     final outputId = inputId.changeExtension('.orm_model.json');
-    await buildStep.writeAsString(outputId, summary);
+    await buildStep.writeAsString(outputId, jsonEncode(summaries));
   }
 }

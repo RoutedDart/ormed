@@ -2,11 +2,9 @@ part of 'repository.dart';
 
 /// Mixin that provides upsert operations for repositories.
 ///
-/// This mixin supports upserting data using:
-/// - Tracked models (`$Model`)
-/// - Insert DTOs (`$ModelInsertDto`)
-/// - Update DTOs (`$ModelUpdateDto`)
-/// - Raw maps (`Map<String, Object?>`)
+/// {@macro ormed.query.insert_inputs}
+///
+/// {@macro ormed.query.upsert_options}
 mixin RepositoryUpsertMixin<T extends OrmEntity>
     on
         RepositoryBase<T>,
@@ -14,16 +12,12 @@ mixin RepositoryUpsertMixin<T extends OrmEntity>
         RepositoryInputHandlerMixin<T> {
   /// Upserts a single item in the database and returns the result.
   ///
-  /// Accepts tracked models, insert DTOs, update DTOs, or raw maps.
+  /// {@macro ormed.query.insert_inputs}
   ///
   /// If an item with the same unique key already exists, it is updated.
   /// Otherwise, a new item is inserted.
   ///
-  /// The [uniqueBy] parameter specifies the fields that make up the unique key.
-  /// If not provided, the primary key is used.
-  ///
-  /// The [updateColumns] parameter specifies which columns to update if a
-  /// conflict occurs. If not provided, all columns are updated.
+  /// {@macro ormed.query.upsert_options}
   ///
   /// Example with tracked model:
   /// ```dart
@@ -53,18 +47,14 @@ mixin RepositoryUpsertMixin<T extends OrmEntity>
 
   /// Upserts multiple items in the database and returns the results.
   ///
-  /// Accepts a list of tracked models, insert DTOs, update DTOs, or raw maps.
+  /// {@macro ormed.query.insert_inputs}
   ///
   /// If an item with the same unique key already exists, it is updated.
   /// Otherwise, a new item is inserted.
   ///
-  /// The [uniqueBy] parameter specifies the fields that make up the unique key.
-  /// If not provided, the primary key is used.
+  /// {@macro ormed.query.upsert_options}
   ///
-  /// The [updateColumns] parameter specifies which columns to update if a
-  /// conflict occurs. If not provided, all columns are updated.
-  ///
-  /// An optional [jsonUpdates] builder can be provided to update JSON fields.
+  /// {@macro ormed.mutation.json_updates}
   ///
   /// Example:
   /// ```dart
@@ -90,6 +80,7 @@ mixin RepositoryUpsertMixin<T extends OrmEntity>
       inputs,
       uniqueBy: uniqueBy,
       updateColumns: updateColumns,
+      jsonUpdates: jsonUpdates,
     );
   }
 

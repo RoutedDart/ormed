@@ -26,35 +26,28 @@ export 'model_factory.dart';
 export 'model_factory_connection.dart';
 export 'model_registry.dart';
 
+/// Function that resolves a [ConnectionResolver] for a given connection name.
 typedef ConnectionResolverFactory =
     ConnectionResolver Function(String connectionName);
 
-/// Base class for ORM models.
+/// Base class for Ormed models.
 ///
-/// User-defined model classes extend this as immutable data classes with
-/// final fields and const constructors. The ORM generates tracked wrapper
-/// classes (prefixed with _$) that override property getters/setters to use
-/// the attribute tracking system.
+/// {@macro ormed.model.tracked_instances}
 ///
-/// **Best Practice**: Define your model classes with:
-/// - `final` fields for all properties
-/// - `const` constructors
-/// - No mutable state
+/// User-defined model classes are usually immutable value objects:
+/// ```dart
+/// @OrmModel(table: 'users')
+/// class User extends Model<User> {
+///   const User({this.id, required this.email});
+///   final int? id;
+///   final String email;
+/// }
+/// ```
 ///
-/// The generated `_$ModelName` class will handle attribute tracking,
-/// change detection, and relationship management automatically.
+/// {@macro ormed.model.connection_setup}
 ///
-/// **Important**: User-defined model classes are immutable. Only the generated
-/// tracked model classes (returned from queries/repositories) have the attribute
-/// system, change tracking, and relationship loading capabilities.
-///
-/// **Instance Methods**: Many instance methods in this class (like `save()`,
-/// `delete()`, `refresh()`, `load()`, etc.) internally depend on the attribute
-/// and relation tracking systems provided by the ModelAttributes and ModelRelations
-/// mixins. These methods will only work correctly on instances returned from
-/// queries or repositories, which are of the generated tracked model type.
-/// Attempting to call these methods on manually instantiated model objects will
-/// result in runtime errors.
+/// Many instance helpers (such as `save()`, `delete()`, and relation loaders)
+/// require a tracked instance with an attached connection context.
 abstract class Model<TModel extends Model<TModel>>
     with ModelConnection, ModelRelations
     implements OrmEntity {
@@ -72,33 +65,15 @@ abstract class Model<TModel extends Model<TModel>>
 
   set _exists(bool value) => _modelExists[this] = value;
 
-  /// Check if the model exists in the database.
+  /// Whether this model has been persisted (loaded or saved).
   ///
-  /// Returns true if the model has been persisted (saved/fetched from database).
-  /// Returns false for new model instances that haven't been saved yet.
-  ///
-  /// Example:
-  /// ```dart
-  /// final user = User(name: 'John', email: 'john@example.com');
-  /// print(user.exists); // false
-  /// await user.save();
-  /// print(user.exists); // true
-  /// ```
+  /// This flag is managed by Ormed when hydrating models from queries and when
+  /// persisting via repositories/model helpers.
   bool get exists => _exists;
 
   /// Marks this model as existing in the database.
   ///
-  /// This is typically called internally when a model is loaded from the database
-  /// or after a successful save operation. You generally don't need to call this
-  /// method directly.
-  ///
-  /// Example:
-  /// ```dart
-  /// final user = User(name: 'John');
-  /// print(user.exists); // false
-  /// user.markAsExisting();
-  /// print(user.exists); // true
-  /// ```
+  /// This is used internally after hydration/persistence.
   void markAsExisting() {
     _exists = true;
   }
@@ -151,6 +126,13 @@ abstract class Model<TModel extends Model<TModel>>
   }
 
   /// Starts a [Query] for [TModel], honoring the model's preferred connection.
+  ///
+  /// {@macro ormed.query}
+  ///
+  /// Model helpers require a bound resolver (see [bindConnectionResolver]) or a
+  /// registered connection in [ConnectionManager]. In most apps, calling
+  /// `DataSource.init()` is sufficient because it registers a default data
+  /// source for you.
   static Query<TModel> query<TModel extends OrmEntity>({String? connection}) {
     // Try to resolve and get definition
     final initialResolver = _resolveBoundResolverFlexible<TModel>(connection);
@@ -171,6 +153,8 @@ abstract class Model<TModel extends Model<TModel>>
   }
 
   /// Creates a [Repository] for [TModel], honoring the model's preferred connection.
+  ///
+  /// {@macro ormed.repository}
   static Repository<TModel> repository<TModel extends OrmEntity>({
     String? connection,
   }) {

@@ -43,6 +43,9 @@ String modelHelperClass(String className) {
     '      ModelFactoryConnection<$className>(definition: definition, context: context);',
   );
   buffer.writeln();
+  buffer.writeln('  /// Starts building a query for [$className].');
+  buffer.writeln('  ///');
+  buffer.writeln('  /// {@macro ormed.query}');
   buffer.writeln('  static Query<$className> query([String? connection]) {');
   buffer.writeln(
     '    final connName = connection ?? definition.metadata.connection;',

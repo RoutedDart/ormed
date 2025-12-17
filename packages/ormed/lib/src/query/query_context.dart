@@ -111,12 +111,7 @@ class QueryContext implements ConnectionResolver {
 
   /// Returns a [Query] bound to the registered [ModelDefinition] for [T].
   ///
-  /// This is the primary way to start building a query for a specific model.
-  ///
-  /// Example:
-  /// ```dart
-  /// final users = await context.query<User>().get();
-  /// ```
+  /// {@macro ormed.query}
   Query<T> query<T extends OrmEntity>() {
     final definition = registry.expect<T>();
     final defaultQuery = Query(definition: definition, context: this);
@@ -334,10 +329,14 @@ class QueryContext implements ConnectionResolver {
   /// This method provides a repository instance for a given model type,
   /// allowing for common CRUD operations.
   ///
+  /// {@macro ormed.repository}
+  ///
   /// Example:
   /// ```dart
-  /// final userRepository = context.repository<User>();
-  /// final newUser = await userRepository.create({'name': 'John Doe'});
+  /// final userRepository = context.repository<$User>();
+  /// final newUser = await userRepository.insert(
+  ///   $UserInsertDto(email: 'john@example.com'),
+  /// );
   /// ```
   Repository<T> repository<T extends OrmEntity>() {
     final definition = registry.expect<T>();

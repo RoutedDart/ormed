@@ -17,6 +17,9 @@ class CompanionClassEmitter {
     buffer.writeln('  const $companionName._();');
     buffer.writeln();
 
+    buffer.writeln('  /// Starts building a query for [$generatedClassName].');
+    buffer.writeln('  ///');
+    buffer.writeln('  /// {@macro ormed.query}');
     buffer.writeln(
       '  static Query<$generatedClassName> query([String? connection]) =>',
     );
@@ -97,6 +100,9 @@ class CompanionClassEmitter {
     );
     buffer.writeln();
 
+    buffer.writeln('  /// Creates a [Repository] for [$generatedClassName].');
+    buffer.writeln('  ///');
+    buffer.writeln('  /// {@macro ormed.repository}');
     buffer.writeln(
       '  static Repository<$generatedClassName> repo([String? connection]) =>',
     );

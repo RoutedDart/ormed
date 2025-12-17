@@ -1,8 +1,10 @@
 /// Provides per-instance attribute storage for ORM models.
 ///
-/// **Important**: This mixin is designed to work on ORM-managed tracked instances
-/// (those returned by queries or created via ORM methods like `Model.create()`).
-/// It will not work as expected on manually instantiated user model classes.
+/// {@macro ormed.model.tracked_instances}
+///
+/// {@macro ormed.model.mass_assignment}
+///
+/// {@macro ormed.model.json_attribute_updates}
 ///
 /// User-defined model classes should be immutable with `final` fields. The
 /// generated `_$ModelName` classes extend user models and use this mixin to
@@ -10,8 +12,6 @@
 ///
 /// Attributes are guarded/encoded through the decorators defined on the
 /// attached [ModelDefinition].
-///
-/// See: docs/immutable_models.md for detailed design philosophy.
 library;
 
 import 'dart:collection';
@@ -19,6 +19,10 @@ import 'dart:collection';
 import '../../../ormed.dart';
 import '../../query/json_path.dart' as json_path;
 
+/// Attribute storage and change tracking for a model instance.
+///
+/// This mixin is applied to generated tracked models (the `$Model` types).
+/// It is not intended for user-defined model classes.
 mixin ModelAttributes {
   static int _unguardedCount = 0;
 

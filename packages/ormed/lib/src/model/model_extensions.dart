@@ -5,18 +5,18 @@ import '../driver/mutation/mutation_row.dart';
 import '../value_codec.dart';
 import 'model.dart';
 
-/// Extensions on Model to provide convenient access to attribute and relation
-/// tracking features when working with tracked model instances.
+/// Extensions on [Model] that provide convenient access to attribute and
+/// relation tracking features.
 ///
-/// These extensions check if the model instance is a tracked model (returned
-/// from queries/repositories) before accessing the attribute/relation systems.
-/// This allows tests and user code to safely call these methods on any Model
-/// instance, even though the functionality only works on tracked models.
+/// These helpers are designed to be safe to call on any [Model] instance. For
+/// APIs that depend on attribute tracking, methods return conservative defaults
+/// (for example, `false` or `{}`) when called on an untracked model.
+///
+/// {@macro ormed.model.tracked_instances}
 extension ModelAttributeExtensions<T extends Model<T>> on Model<T> {
-  /// Check if an attribute exists in the attribute store.
+  /// Returns `true` if an attribute exists in the attribute store.
   ///
-  /// Returns true only if this is a tracked model instance (from a query/repository)
-  /// and the attribute has been set. Returns false for directly instantiated models.
+  /// Returns `false` for untracked models.
   bool hasAttribute(String key) {
     if (this is ModelAttributes) {
       return (this as ModelAttributes).hasAttribute(key);
@@ -24,10 +24,9 @@ extension ModelAttributeExtensions<T extends Model<T>> on Model<T> {
     return false;
   }
 
-  /// Get an attribute value from the attribute store.
+  /// Returns an attribute value from the attribute store.
   ///
-  /// Returns the attribute value if this is a tracked model instance and the
-  /// attribute exists. Returns null for directly instantiated models.
+  /// Returns `null` for untracked models.
   TValue? getAttribute<TValue>(String key) {
     if (this is ModelAttributes) {
       return (this as ModelAttributes).getAttribute<TValue>(key);
@@ -35,19 +34,18 @@ extension ModelAttributeExtensions<T extends Model<T>> on Model<T> {
     return null;
   }
 
-  /// Set an attribute value in the attribute store.
+  /// Sets an attribute value in the attribute store.
   ///
-  /// Only works if this is a tracked model instance or if the model has
-  /// ModelAttributes mixed in. Does nothing for plain user model instances.
+  /// Does nothing for untracked models.
   void setAttribute(String key, Object? value) {
     if (this is ModelAttributes) {
       (this as ModelAttributes).setAttribute(key, value);
     }
   }
 
-  /// Get all attributes as a map.
+  /// Returns all tracked attributes as a map.
   ///
-  /// Returns an empty map for directly instantiated models.
+  /// Returns an empty map for untracked models.
   Map<String, Object?> getAttributes() {
     if (this is ModelAttributes) {
       return (this as ModelAttributes).getAttributes();
@@ -55,19 +53,18 @@ extension ModelAttributeExtensions<T extends Model<T>> on Model<T> {
     return {};
   }
 
-  /// Set multiple attributes at once.
+  /// Sets multiple attributes at once.
   ///
-  /// Only works if this is a tracked model instance. Does nothing for plain
-  /// user model instances.
+  /// Does nothing for untracked models.
   void setAttributes(Map<String, Object?> attributes) {
     if (this is ModelAttributes) {
       (this as ModelAttributes).setAttributes(attributes);
     }
   }
 
-  /// Check if the model has been modified since it was loaded.
+  /// Returns `true` if this model has been modified since it was loaded.
   ///
-  /// Returns false for directly instantiated models.
+  /// Returns `false` for untracked models.
   bool isDirty([String? key]) {
     if (this is ModelAttributes) {
       return (this as ModelAttributes).isDirty(key);
@@ -75,9 +72,9 @@ extension ModelAttributeExtensions<T extends Model<T>> on Model<T> {
     return false;
   }
 
-  /// Get the original (unmodified) value of an attribute.
+  /// Returns the original (unmodified) value of an attribute.
   ///
-  /// Returns null for directly instantiated models.
+  /// Returns `null` for untracked models.
   Object? getOriginal([String? key]) {
     if (this is ModelAttributes) {
       return (this as ModelAttributes).getOriginal(key);
@@ -85,9 +82,9 @@ extension ModelAttributeExtensions<T extends Model<T>> on Model<T> {
     return null;
   }
 
-  /// Check if a specific attribute has been modified.
+  /// Returns `true` if a specific attribute has been modified.
   ///
-  /// Returns false for directly instantiated models.
+  /// Returns `false` for untracked models.
   bool wasChanged(String key) {
     if (this is ModelAttributes) {
       return (this as ModelAttributes).wasChanged(key);
@@ -95,9 +92,9 @@ extension ModelAttributeExtensions<T extends Model<T>> on Model<T> {
     return false;
   }
 
-  /// Get all changed attributes as a map.
+  /// Returns all changed attributes as a map.
   ///
-  /// Returns an empty map for directly instantiated models.
+  /// Returns an empty map for untracked models.
   Map<String, Object?> getDirty() {
     if (this is ModelAttributes) {
       return (this as ModelAttributes).getDirty();
@@ -105,18 +102,18 @@ extension ModelAttributeExtensions<T extends Model<T>> on Model<T> {
     return {};
   }
 
-  /// Sync the original state to match current attributes.
+  /// Syncs the original state to match current attributes.
   ///
-  /// Only works if this is a tracked model instance.
+  /// Does nothing for untracked models.
   void syncOriginal() {
     if (this is ModelAttributes) {
       (this as ModelAttributes).syncOriginal();
     }
   }
 
-  /// Get the raw attributes map.
+  /// Returns the raw tracked attributes map.
   ///
-  /// Returns an empty map for directly instantiated models.
+  /// Returns an empty map for untracked models.
   Map<String, Object?> get attributes {
     if (this is ModelAttributes) {
       return (this as ModelAttributes).attributes;
@@ -124,34 +121,36 @@ extension ModelAttributeExtensions<T extends Model<T>> on Model<T> {
     return {};
   }
 
-  /// Replace all attributes with new values.
+  /// Replaces all attributes with new values.
   ///
-  /// Only works if this is a tracked model instance.
+  /// Does nothing for untracked models.
   void replaceAttributes(Map<String, Object?> attributes) {
     if (this is ModelAttributes) {
       (this as ModelAttributes).replaceAttributes(attributes);
     }
   }
 
-  /// Attach a model definition to this model instance.
+  /// Attaches a model definition to this model instance.
   ///
-  /// Only works if this is a tracked model instance.
+  /// Does nothing for untracked models.
   void attachModelDefinition(ModelDefinition<T> definition) {
     if (this is ModelAttributes) {
       (this as ModelAttributes).attachModelDefinition(definition);
     }
   }
 
-  /// Get all changed attributes with their new values (alias for getDirty).
+  /// Returns all changed attributes with their new values (alias for [getDirty]).
   ///
-  /// Returns an empty map for directly instantiated models.
+  /// Returns an empty map for untracked models.
   Map<String, Object?> getChanges() {
     return getDirty();
   }
 
-  /// Fill attributes from payload, respecting fillable/guarded metadata.
+  /// Fills attributes from [payload], respecting fillable/guarded metadata.
   ///
-  /// Returns a map of filled attributes. Only works if this is a tracked model instance.
+  /// {@macro ormed.model.mass_assignment}
+  ///
+  /// Returns a map of filled attributes. Returns an empty map for untracked models.
   Map<String, Object?> fillAttributes(
     Map<String, Object?> payload, {
     bool strict = true,
@@ -167,88 +166,87 @@ extension ModelAttributeExtensions<T extends Model<T>> on Model<T> {
     return {};
   }
 
-  /// Check if a relation has been loaded.
+  /// Returns `true` if a relation has been loaded in this instance.
   ///
-  /// Returns false for directly instantiated models.
+  /// Relations are cached on the instance and may be populated by eager loading
+  /// or manual calls to [setRelation].
   bool relationLoaded(String relation) {
     return (this as ModelRelations).relationLoaded(relation);
   }
 
-  /// Get a loaded relation value.
+  /// Returns a loaded relation value.
   ///
-  /// Returns null for directly instantiated models or if the relation
-  /// hasn't been loaded.
+  /// Returns `null` if the relation hasn't been loaded or is explicitly null.
   TRelation? getRelation<TRelation>(String relation) {
     return (this as ModelRelations).getRelation<TRelation>(relation);
   }
 
-  /// Get a loaded relation list.
+  /// Returns a loaded relation list.
   ///
-  /// Returns an empty list for directly instantiated models or if the
-  /// relation hasn't been loaded.
+  /// Returns an empty list if the relation hasn't been loaded.
   List<TRelation> getRelationList<TRelation>(String relation) {
     return (this as ModelRelations).getRelationList<TRelation>(relation);
   }
 
-  /// Set a relation value.
+  /// Sets a relation value and marks it as loaded.
   ///
-  /// Only works if this is a tracked model instance.
+  /// This is commonly used internally when eager loading results.
   void setRelation(String relation, dynamic value) {
     (this as ModelRelations).setRelation(relation, value);
   }
 
-  /// Unload a relation.
+  /// Unloads a relation.
   ///
-  /// Only works if this is a tracked model instance.
+  /// This removes any cached value and marks it as not loaded.
   void unsetRelation(String relation) {
     (this as ModelRelations).unsetRelation(relation);
   }
 
-  /// Get all loaded relations as a map.
+  /// Returns all loaded relations as a map.
   ///
-  /// Returns an empty map for directly instantiated models.
+  /// The returned map is a snapshot; modifying it won't affect the cache.
   Map<String, dynamic> getLoadedRelations() {
     return (this as ModelRelations).loadedRelations;
   }
 
-  /// Get all loaded relations as a map (shorthand for getLoadedRelations).
+  /// Returns all loaded relations as a map (shorthand for [getLoadedRelations]).
   ///
-  /// Returns an empty map for directly instantiated models.
+  /// The returned map is a snapshot; modifying it won't affect the cache.
   Map<String, dynamic> get relations {
     return (this as ModelRelations).loadedRelations;
   }
 
-  /// Get names of all loaded relations.
+  /// Returns names of all loaded relations.
   ///
-  /// Returns an empty set for directly instantiated models.
+  /// This can be used to inspect eager-loaded state.
   Set<String> get loadedRelationNames {
     return (this as ModelRelations).loadedRelationNames;
   }
 
-  /// Get all loaded relations as a map (property alias).
+  /// Returns all loaded relations as a map (property alias).
   ///
-  /// Returns an empty map for directly instantiated models.
+  /// The returned map is a snapshot; modifying it won't affect the cache.
   Map<String, dynamic> get loadedRelations {
     return (this as ModelRelations).loadedRelations;
   }
 
-  /// Set multiple relations at once.
+  /// Sets multiple relations at once.
   ///
-  /// Only works if this is a tracked model instance.
+  /// This marks each relation as loaded.
   void setRelations(Map<String, dynamic> relations) {
     (this as ModelRelations).setRelations(relations);
   }
 
-  /// Clear all loaded relations.
+  /// Clears all loaded relations.
   ///
-  /// Only works if this is a tracked model instance.
+  /// This removes cached relation values and loaded markers.
   void clearRelations() {
     (this as ModelRelations).clearRelations();
   }
 
-  /// Sync relations from a query row map.
+  /// Syncs relations from a query row map.
   ///
-  /// Only works if this is a tracked model instance.
+  /// This is used internally to hydrate eager-loaded relations.
   void syncRelationsFromQueryRow(Map<String, dynamic> row) {
     (this as ModelRelations).syncRelationsFromQueryRow(row);
   }
@@ -280,13 +278,21 @@ extension ModelTimestampExtensions<T extends Model<T>> on Model<T> {
     return null;
   }
 
-  /// Set the creation timestamp.
+  /// Sets the creation timestamp.
   ///
-  /// Accepts DateTime or Carbon instance. Only works if this is a tracked
-  /// model instance with timestamp support.
-  set createdAt(DateTime? value) {
+  /// Accepts [DateTime] or [CarbonInterface]. Only works when the model mixes in
+  /// a timestamp implementation.
+  set createdAt(Object? value) {
     if (this is TimestampsImpl) {
-      (this as TimestampsImpl).createdAt = value;
+      if (value == null) {
+        (this as TimestampsImpl).createdAt = null;
+      } else if (value is DateTime) {
+        (this as TimestampsImpl).createdAt = value;
+      } else if (value is CarbonInterface) {
+        (this as TimestampsImpl).createdAt = value.toDateTime();
+      } else {
+        throw ArgumentError.value(value, 'createdAt');
+      }
     } else if (this is TimestampsTZImpl) {
       (this as TimestampsTZImpl).createdAt = value;
     }
@@ -311,13 +317,21 @@ extension ModelTimestampExtensions<T extends Model<T>> on Model<T> {
     return null;
   }
 
-  /// Set the last update timestamp.
+  /// Sets the last update timestamp.
   ///
-  /// Accepts DateTime or Carbon instance. Only works if this is a tracked
-  /// model instance with timestamp support.
-  set updatedAt(DateTime? value) {
+  /// Accepts [DateTime] or [CarbonInterface]. Only works when the model mixes in
+  /// a timestamp implementation.
+  set updatedAt(Object? value) {
     if (this is TimestampsImpl) {
-      (this as TimestampsImpl).updatedAt = value;
+      if (value == null) {
+        (this as TimestampsImpl).updatedAt = null;
+      } else if (value is DateTime) {
+        (this as TimestampsImpl).updatedAt = value;
+      } else if (value is CarbonInterface) {
+        (this as TimestampsImpl).updatedAt = value.toDateTime();
+      } else {
+        throw ArgumentError.value(value, 'updatedAt');
+      }
     } else if (this is TimestampsTZImpl) {
       (this as TimestampsTZImpl).updatedAt = value;
     }
@@ -337,13 +351,9 @@ extension ModelTimestampExtensions<T extends Model<T>> on Model<T> {
 
   /// Saves the current model instance to the database.
   ///
-  /// This method persists any changes made to the model attributes back to
-  /// the database. It requires that the model was hydrated via a QueryContext
-  /// or Repository (i.e., it has a connection resolver attached).
-  ///
-  /// Returns a Future that completes when the save operation is done.
-  ///
-  /// Throws [StateError] if the model doesn't have a connection resolver attached.
+  /// Deprecated: prefer `Model.save(...)`. This helper remains for older code
+  /// that explicitly applies [ModelTimestampExtensions].
+  @Deprecated('Use Model.save(...) instead.')
   Future<void> save() async {
     final conn = this as ModelConnection;
     if (!conn.hasConnection) {
@@ -379,7 +389,7 @@ extension ModelTimestampExtensions<T extends Model<T>> on Model<T> {
     }
 
     // Get the primary key value
-    final pkValue = getAttribute(pkField.name);
+    final pkValue = getAttribute(pkField.columnName);
     if (pkValue == null) {
       throw StateError('Cannot save: Model does not have a primary key value.');
     }
