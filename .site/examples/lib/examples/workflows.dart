@@ -27,8 +27,8 @@ Future<void> sqliteQueryExample() async {
 
   // Insert a user
   final user = await dataSource.repo<$User>().insert(
-        $User(id: 0, email: 'john@example.com', name: 'John'),
-      );
+    $User(id: 0, email: 'john@example.com', name: 'John'),
+  );
 
   // Query users
   final users = await dataSource
@@ -57,8 +57,8 @@ Future<void> staticHelpersPattern() async {
   await dataSource.init();
 
   // Now static helpers work automatically!
-  final users = await User.query().get();
-  final post = await Post.find(1);
+  final users = await Users.query().get();
+  final post = await Posts.find(1);
 }
 // #endregion static-helpers-pattern
 
@@ -165,8 +165,10 @@ Future<void> relationMutationsExample(DataSource dataSource) async {
   final post = await dataSource.query<$Post>().firstOrFail();
 
   // BelongsTo: Associate & Dissociate
-  final author =
-      await dataSource.query<$User>().whereEquals('email', 'john@example.com').firstOrFail();
+  final author = await dataSource
+      .query<$User>()
+      .whereEquals('email', 'john@example.com')
+      .firstOrFail();
   post.associate('author', author);
   await post.save();
 
@@ -179,10 +181,11 @@ Future<void> relationMutationsExample(DataSource dataSource) async {
   await post.sync('tags', [4, 5, 6]);
 
   // With pivot data
-  await post.attach('tags', [7], pivotData: {
-    'created_at': DateTime.now(),
-    'priority': 'high',
-  });
+  await post.attach(
+    'tags',
+    [7],
+    pivotData: {'created_at': DateTime.now(), 'priority': 'high'},
+  );
 }
 // #endregion relation-mutations
 
@@ -249,12 +252,13 @@ Future<void> seedingDataExample(DataSource dataSource) async {
   await dataSource.repo<$User>().query().delete();
 
   final admin = await dataSource.repo<$User>().insert(
-        $User(id: 0, email: 'admin@example.com', name: 'Admin'),
-      );
+    $User(id: 0, email: 'admin@example.com', name: 'Admin'),
+  );
 
   await dataSource.repo<$Post>().insertMany([
     $Post(id: 0, userId: admin.id, title: 'Hello', content: '...'),
     $Post(id: 0, userId: admin.id, title: 'Another', content: '...'),
   ]);
 }
+
 // #endregion seeding-data

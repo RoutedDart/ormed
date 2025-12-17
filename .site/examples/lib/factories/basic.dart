@@ -22,12 +22,10 @@ Future<void> factoryQuickStart(QueryContext context) async {
 
 // #region factory-field-overrides
 void fieldOverridesExample() {
-  final user = Model.factory<$User>()
-      .withOverrides({
-        'email': 'admin@example.com',
-        'role': 'admin',
-      })
-      .make();
+  final user = Model.factory<$User>().withOverrides({
+    'email': 'admin@example.com',
+    'role': 'admin',
+  }).make();
 
   // Or override a single field
   final user2 = Model.factory<$User>()
@@ -52,9 +50,7 @@ void seedingExample() {
 // #region factory-batch
 Future<void> batchCreationExample(QueryContext context) async {
   // Create 3 users without persisting
-  final users = Model.factory<$User>()
-      .count(3)
-      .makeMany();
+  final users = Model.factory<$User>().count(3).makeMany();
 
   // Create and persist 5 users
   final savedUsers = await Model.factory<$User>()
@@ -62,31 +58,30 @@ Future<void> batchCreationExample(QueryContext context) async {
       .createMany(context: context);
 
   // Combine with seed for reproducibility
-  final seededUsers = Model.factory<$User>()
-      .seed(42)
-      .count(10)
-      .makeMany();
+  final seededUsers = Model.factory<$User>().seed(42).count(10).makeMany();
 }
 // #endregion factory-batch
 
 // #region factory-states
 void stateTransformationsExample() {
   // Apply attribute overrides via state
-  final admin = Model.factory<$User>()
-      .state({'role': 'admin', 'active': true})
-      .make();
+  final admin = Model.factory<$User>().state({
+    'role': 'admin',
+    'active': true,
+  }).make();
 
   // Chain multiple states (applied in order)
-  final suspendedAdmin = Model.factory<$User>()
-      .state({'role': 'admin'})
-      .state({'suspended': true})
-      .make();
+  final suspendedAdmin = Model.factory<$User>().state({'role': 'admin'}).state({
+    'suspended': true,
+  }).make();
 
   // Use closure for computed states
   final user = Model.factory<$User>()
-      .stateUsing((attrs) => {
-        'email': '${attrs['name']}@example.com'.toString().toLowerCase(),
-      })
+      .stateUsing(
+        (attrs) => {
+          'email': '${attrs['name']}@example.com'.toString().toLowerCase(),
+        },
+      )
       .make();
 }
 // #endregion factory-states
@@ -94,13 +89,10 @@ void stateTransformationsExample() {
 // #region factory-sequences
 void sequenceExamples() {
   // Alternate between roles
-  final users = Model.factory<$User>()
-      .count(4)
-      .sequence([
-        {'role': 'admin'},
-        {'role': 'user'},
-      ])
-      .makeMany();
+  final users = Model.factory<$User>().count(4).sequence([
+    {'role': 'admin'},
+    {'role': 'user'},
+  ]).makeMany();
   // Results: admin, user, admin, user
 
   // Use generator for index-based values
@@ -116,11 +108,9 @@ void sequenceExamples() {
 Future<void> callbackExamples(QueryContext context) async {
   // #region factory-callbacks-afterMaking
   // Run code after make()
-  Model.factory<$User>()
-      .afterMaking((user) {
-        print('Created user: ${user.email}');
-      })
-      .make();
+  Model.factory<$User>().afterMaking((user) {
+    print('Created user: ${user.email}');
+  }).make();
   // #endregion factory-callbacks-afterMaking
 
   // #region factory-callbacks-afterCreating
@@ -147,9 +137,7 @@ Future<void> callbackExamples(QueryContext context) async {
 // #region factory-trashed
 void trashedExamples() {
   // Create a trashed model (uses current timestamp)
-  final deletedUser = Model.factory<$User>()
-      .trashed()
-      .make();
+  final deletedUser = Model.factory<$User>().trashed().make();
 
   // With custom deletion timestamp
   final customTrashed = Model.factory<$User>()
@@ -166,9 +154,11 @@ void customGeneratorExamples() {
         return 'user_$suffix@test.example.com';
       })
       .withGenerator('createdAt', (field, context) {
-        return DateTime(2024, 1, 1).add(
-          Duration(days: context.random.nextInt(365)),
-        );
+        return DateTime(
+          2024,
+          1,
+          1,
+        ).add(Duration(days: context.random.nextInt(365)));
       });
 
   final user = factory.make();
@@ -185,9 +175,11 @@ class FakerGeneratorProvider extends GeneratorProvider {
     ModelFactoryGenerationContext<TModel> context,
   ) {
     // Custom logic based on field name
-    if (field.name == 'email') return 'faker_${context.random.nextInt(1000)}@test.com';
+    if (field.name == 'email')
+      return 'faker_${context.random.nextInt(1000)}@test.com';
     if (field.name == 'name') return 'User ${context.random.nextInt(100)}';
-    if (field.name == 'phone') return '+1-555-${context.random.nextInt(10000).toString().padLeft(4, '0')}';
+    if (field.name == 'phone')
+      return '+1-555-${context.random.nextInt(10000).toString().padLeft(4, '0')}';
 
     // Fall back to default
     return const DefaultFieldGeneratorProvider().generate(field, context);
@@ -207,23 +199,17 @@ void customProviderExample() {
 void testingPatterns() {
   // Seeded test for reproducibility
   const testSeed = 12345;
-  final user = Model.factory<$User>()
-      .seed(testSeed)
-      .withOverrides({'role': 'admin'})
-      .make();
+  final user = Model.factory<$User>().seed(testSeed).withOverrides({
+    'role': 'admin',
+  }).make();
   // Can assert on deterministic values
 
   // Factory helpers for common scenarios
   ModelFactoryBuilder<$User> adminUser() =>
-      Model.factory<$User>().withOverrides({
-        'role': 'admin',
-        'active': true,
-      });
+      Model.factory<$User>().withOverrides({'role': 'admin', 'active': true});
 
   ModelFactoryBuilder<$User> inactiveUser() =>
-      Model.factory<$User>().withOverrides({
-        'active': false,
-      });
+      Model.factory<$User>().withOverrides({'active': false});
 
   // Use factory helpers
   final admin = adminUser().make();
@@ -255,10 +241,9 @@ void carbonFieldsExample() {
 void seededTestExample() {
   const testSeed = 12345;
 
-  final user = Model.factory<$User>()
-      .seed(testSeed)
-      .withOverrides({'role': 'admin'})
-      .make();
+  final user = Model.factory<$User>().seed(testSeed).withOverrides({
+    'role': 'admin',
+  }).make();
 
   // expect(processUser(user), expectedResult);
 }
@@ -266,15 +251,10 @@ void seededTestExample() {
 
 // #region factory-helpers
 ModelFactoryBuilder<$User> adminUser() =>
-    Model.factory<$User>().withOverrides({
-      'role': 'admin',
-      'active': true,
-    });
+    Model.factory<$User>().withOverrides({'role': 'admin', 'active': true});
 
 ModelFactoryBuilder<$User> inactiveUser() =>
-    Model.factory<$User>().withOverrides({
-      'active': false,
-    });
+    Model.factory<$User>().withOverrides({'active': false});
 
 // In tests:
 void useFactoryHelpers() {

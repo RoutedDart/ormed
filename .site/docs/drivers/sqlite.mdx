@@ -6,13 +6,33 @@ sidebar_position: 2
 
 SQLite is the default scaffold for new projects. It runs without external services and is great for local development, CLI tools, and fast integration tests.
 
-## orm.yaml
+## Install
+
+Add the driver package:
+
+```yaml
+dependencies:
+  ormed: ^latest
+  ormed_sqlite: ^latest
+```
+
+## Configure (orm.yaml)
 
 ```yaml
 driver:
   type: sqlite
   options:
     database: database.sqlite   # relative to project root
+```
+
+## Use in code (DataSource)
+
+```dart file=../../examples/lib/drivers/sqlite.dart#sqlite-datasource
+```
+
+### In-memory (tests)
+
+```dart file=../../examples/lib/drivers/sqlite.dart#sqlite-inmemory
 ```
 
 ### Options

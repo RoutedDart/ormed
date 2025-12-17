@@ -160,8 +160,10 @@ class CacheMonitor {
 
   void startMonitoring(QueryContext context) {
     context.queryCache.listen((event) {
-      if (event is CacheHitEvent) hits++;
-      else if (event is CacheMissEvent) misses++;
+      if (event is CacheHitEvent)
+        hits++;
+      else if (event is CacheMissEvent)
+        misses++;
     });
   }
 
@@ -202,14 +204,16 @@ abstract class Metrics {
 // #region cache-best-practices-ttl
 Future<void> cacheBestPracticesTtl(DataSource dataSource) async {
   // Short TTL for frequently changing data
-  final recentPosts = await dataSource.query<$Post>()
+  final recentPosts = await dataSource
+      .query<$Post>()
       .orderBy('createdAt', descending: true)
       .limit(10)
       .remember(Duration(minutes: 1))
       .get();
 
   // Longer TTL for stable data
-  final users = await dataSource.query<$User>()
+  final users = await dataSource
+      .query<$User>()
       .remember(Duration(hours: 24))
       .get();
 }
@@ -218,7 +222,8 @@ Future<void> cacheBestPracticesTtl(DataSource dataSource) async {
 // #region cache-expensive-queries
 Future<void> cacheExpensiveQueries(DataSource dataSource) async {
   // Complex aggregations
-  final stats = await dataSource.query<$User>()
+  final stats = await dataSource
+      .query<$User>()
       .selectRaw("DATE(created_at) as date, COUNT(*) as count")
       .groupBy('date')
       .remember(Duration(hours: 1))
@@ -234,9 +239,13 @@ Future<void> cacheClearOnSchema(DataSource dataSource) async {
 // #endregion cache-clear-on-schema
 
 // #region cache-user-specific-bad
-Future<void> cacheUserSpecificBad(DataSource dataSource, int currentUserId) async {
+Future<void> cacheUserSpecificBad(
+  DataSource dataSource,
+  int currentUserId,
+) async {
   // BAD - caches for all users!
-  final userPosts = await dataSource.query<$Post>()
+  final userPosts = await dataSource
+      .query<$Post>()
       .whereEquals('user_id', currentUserId)
       .remember(Duration(minutes: 5))
       .get();
@@ -244,9 +253,13 @@ Future<void> cacheUserSpecificBad(DataSource dataSource, int currentUserId) asyn
 // #endregion cache-user-specific-bad
 
 // #region cache-user-specific-good
-Future<void> cacheUserSpecificGood(DataSource dataSource, int currentUserId) async {
+Future<void> cacheUserSpecificGood(
+  DataSource dataSource,
+  int currentUserId,
+) async {
   // BETTER - don't cache user-specific data
-  final userPosts = await dataSource.query<$Post>()
+  final userPosts = await dataSource
+      .query<$Post>()
       .whereEquals('user_id', currentUserId)
       .get();
 }
@@ -264,7 +277,8 @@ void cachePerformanceMonitor(DataSource dataSource) {
 
 // #region cache-ttl-invalidation
 Future<void> cacheTtlInvalidation(DataSource dataSource) async {
-  final data = await dataSource.query<$User>()
+  final data = await dataSource
+      .query<$User>()
       .remember(Duration(minutes: 5))
       .get();
 }
@@ -285,4 +299,5 @@ void cacheEventDrivenInvalidation(DataSource dataSource) {
     }
   });
 }
+
 // #endregion cache-event-driven-invalidation

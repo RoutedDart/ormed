@@ -17,8 +17,6 @@ const FieldDefinition _$AdminIdField = FieldDefinition(
   isUnique: false,
   isIndexed: false,
   autoIncrement: true,
-  insertable: false,
-  defaultDartValue: 0,
 );
 
 const FieldDefinition _$AdminEmailField = FieldDefinition(
@@ -88,6 +86,9 @@ extension AdminOrmDefinition on Admin {
 class Admins {
   const Admins._();
 
+  /// Starts building a query for [$Admin].
+  ///
+  /// {@macro ormed.query}
   static Query<$Admin> query([String? connection]) =>
       Model.query<$Admin>(connection: connection);
 
@@ -132,6 +133,9 @@ class Admins {
   static Query<$Admin> limit(int count, {String? connection}) =>
       Model.limit<$Admin>(count, connection: connection);
 
+  /// Creates a [Repository] for [$Admin].
+  ///
+  /// {@macro ormed.repository}
   static Repository<$Admin> repo([String? connection]) =>
       Model.repository<$Admin>(connection: connection);
 }

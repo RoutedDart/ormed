@@ -29,7 +29,8 @@ Future<void> basicQueryExample(QueryContext context) async {
 // #region intro-query
 Future<void> introQueryExample(DataSource dataSource) async {
   // Query with fluent API
-  final users = await dataSource.query<$User>()
+  final users = await dataSource
+      .query<$User>()
       .whereEquals('active', true)
       .orderBy('createdAt', descending: true)
       .limit(10)
@@ -82,10 +83,7 @@ Future<void> orderingLimitingExamples(QueryContext context) async {
   await context.query<$User>().orderBy('createdAt', descending: true).get();
 
   // Multiple order by
-  await context.query<$User>()
-      .orderBy('lastName')
-      .orderBy('firstName')
-      .get();
+  await context.query<$User>().orderBy('lastName').orderBy('firstName').get();
 
   // Limit and offset
   await context.query<$User>().limit(10).get();
@@ -102,7 +100,8 @@ Future<void> aggregateExamples(QueryContext context) async {
   final userCount = await context.query<$User>().count();
 
   // Exists check
-  final hasAdmins = await context.query<$User>()
+  final hasAdmins = await context
+      .query<$User>()
       .whereEquals('role', 'admin')
       .exists();
 
@@ -119,22 +118,23 @@ Future<void> aggregateExamples(QueryContext context) async {
 // #region relations
 Future<void> relationExamples(QueryContext context) async {
   // Eager load a relation
-  final posts = await context.query<$Post>()
-      .with_(['author'])
-      .get();
+  final posts = await context.query<$Post>().with_(['author']).get();
 
   // Load multiple relations
-  final postsWithComments = await context.query<$Post>()
-      .with_(['author', 'comments'])
-      .get();
+  final postsWithComments = await context.query<$Post>().with_([
+    'author',
+    'comments',
+  ]).get();
 
   // Nested relation loading
-  final postsDeep = await context.query<$Post>()
-      .with_(['author.profile', 'comments.user'])
-      .get();
+  final postsDeep = await context.query<$Post>().with_([
+    'author.profile',
+    'comments.user',
+  ]).get();
 
   // Join relation for filtering without loading
-  final userPosts = await context.query<$User>()
+  final userPosts = await context
+      .query<$User>()
       .joinRelation('posts')
       .whereEquals('posts.published', true)
       .get();
@@ -147,6 +147,13 @@ Future<void> queryGettingStarted(DataSource dataSource) async {
 }
 // #endregion query-getting-started
 
+// #region query-getting-started-static
+Future<void> queryGettingStartedStatic() async {
+  // Assumes a default connection is configured (see DataSource docs).
+  final users = await Users.query().get();
+}
+// #endregion query-getting-started-static
+
 // #region query-get-all
 Future<void> queryGetAll(DataSource dataSource) async {
   final users = await dataSource.query<$User>().get();
@@ -155,9 +162,11 @@ Future<void> queryGetAll(DataSource dataSource) async {
 
 // #region query-select
 Future<void> querySelect(DataSource dataSource) async {
-  final users = await dataSource.query<$User>()
-      .select(['id', 'email', 'name'])
-      .get();
+  final users = await dataSource.query<$User>().select([
+    'id',
+    'email',
+    'name',
+  ]).get();
 }
 // #endregion query-select
 
@@ -180,7 +189,8 @@ Future<void> queryFind(DataSource dataSource) async {
 
 // #region where-comparison
 Future<void> whereComparison(DataSource dataSource) async {
-  final users = await dataSource.query<$User>()
+  final users = await dataSource
+      .query<$User>()
       .where('age', '>', 18)
       .where('age', '<=', 65)
       .get();
@@ -189,23 +199,24 @@ Future<void> whereComparison(DataSource dataSource) async {
 
 // #region where-in
 Future<void> whereIn(DataSource dataSource) async {
-  final users = await dataSource.query<$User>()
-      .whereIn('role', ['admin', 'moderator'])
-      .get();
+  final users = await dataSource.query<$User>().whereIn('role', [
+    'admin',
+    'moderator',
+  ]).get();
 
-  final bannedUsers = await dataSource.query<$User>()
-      .whereNotIn('status', ['banned', 'suspended'])
-      .get();
+  final bannedUsers = await dataSource.query<$User>().whereNotIn('status', [
+    'banned',
+    'suspended',
+  ]).get();
 }
 // #endregion where-in
 
 // #region where-null
 Future<void> whereNull(DataSource dataSource) async {
-  final users = await dataSource.query<$User>()
-      .whereNull('deleted_at')
-      .get();
+  final users = await dataSource.query<$User>().whereNull('deleted_at').get();
 
-  final verifiedUsers = await dataSource.query<$User>()
+  final verifiedUsers = await dataSource
+      .query<$User>()
       .whereNotNull('verified_at')
       .get();
 }
@@ -213,7 +224,8 @@ Future<void> whereNull(DataSource dataSource) async {
 
 // #region where-between
 Future<void> whereBetween(DataSource dataSource) async {
-  final users = await dataSource.query<$User>()
+  final users = await dataSource
+      .query<$User>()
       .whereBetween('age', 18, 65)
       .get();
 }
@@ -221,7 +233,8 @@ Future<void> whereBetween(DataSource dataSource) async {
 
 // #region where-like
 Future<void> whereLike(DataSource dataSource) async {
-  final users = await dataSource.query<$User>()
+  final users = await dataSource
+      .query<$User>()
       .whereLike('email', '%@example.com')
       .get();
 }
@@ -229,7 +242,8 @@ Future<void> whereLike(DataSource dataSource) async {
 
 // #region where-or
 Future<void> whereOr(DataSource dataSource) async {
-  final users = await dataSource.query<$User>()
+  final users = await dataSource
+      .query<$User>()
       .whereEquals('role', 'admin')
       .orWhere('role', '=', 'moderator')
       .get();
@@ -238,11 +252,12 @@ Future<void> whereOr(DataSource dataSource) async {
 
 // #region where-grouped
 Future<void> whereGrouped(DataSource dataSource) async {
-  final users = await dataSource.query<$User>()
+  final users = await dataSource
+      .query<$User>()
       .where('active', '=', true)
-      .whereGroup((q) => q
-          .where('role', '=', 'admin')
-          .orWhere('role', '=', 'moderator'))
+      .whereGroup(
+        (q) => q.where('role', '=', 'admin').orWhere('role', '=', 'moderator'),
+      )
       .get();
 
   // SQL: WHERE active = 1 AND (role = 'admin' OR role = 'moderator')
@@ -251,20 +266,20 @@ Future<void> whereGrouped(DataSource dataSource) async {
 
 // #region distinct
 Future<void> distinctExample(DataSource dataSource) async {
-  final roles = await dataSource.query<$User>()
-      .distinct()
-      .select(['role'])
-      .get();
+  final roles = await dataSource.query<$User>().distinct().select([
+    'role',
+  ]).get();
 }
 // #endregion distinct
 
 // #region raw-expressions
 Future<void> rawExpressions(DataSource dataSource) async {
-  final users = await dataSource.query<$User>()
-      .whereRaw("LOWER(email) = ?", ['john@example.com'])
-      .get();
+  final users = await dataSource.query<$User>().whereRaw("LOWER(email) = ?", [
+    'john@example.com',
+  ]).get();
 
-  final usersWithFullName = await dataSource.query<$User>()
+  final usersWithFullName = await dataSource
+      .query<$User>()
       .selectRaw("*, CONCAT(first_name, ' ', last_name) AS full_name")
       .get();
 }
@@ -272,11 +287,12 @@ Future<void> rawExpressions(DataSource dataSource) async {
 
 // #region partial-projections
 Future<void> partialProjections(DataSource dataSource) async {
-  final partial = await dataSource.query<$User>()
-      .select(['id', 'email'])
-      .firstPartial();
+  final partial = await dataSource.query<$User>().select([
+    'id',
+    'email',
+  ]).firstPartial();
 
-  print(partial?.id);    // Available
+  print(partial?.id); // Available
   print(partial?.email); // Available
   // partial?.name is not available (not selected)
 }
@@ -288,35 +304,29 @@ Future<void> softDeleteScopes(DataSource dataSource) async {
   final posts = await dataSource.query<$Post>().get();
 
   // Include soft-deleted
-  final allPosts = await dataSource.query<$Post>()
-      .withTrashed()
-      .get();
+  final allPosts = await dataSource.query<$Post>().withTrashed().get();
 
   // Only soft-deleted
-  final trashedPosts = await dataSource.query<$Post>()
-      .onlyTrashed()
-      .get();
+  final trashedPosts = await dataSource.query<$Post>().onlyTrashed().get();
 }
 // #endregion soft-delete-scopes
 
 // #region query-caching
 Future<void> queryCaching(DataSource dataSource) async {
   // Cache for 5 minutes
-  final users = await dataSource.query<$User>()
+  final users = await dataSource
+      .query<$User>()
       .remember(Duration(minutes: 5))
       .get();
 
   // Cache forever (until manually cleared)
-  final settings = await dataSource.query<$User>()
-      .rememberForever()
-      .get();
+  final settings = await dataSource.query<$User>().rememberForever().get();
 
   // Disable caching for specific query
-  final freshData = await dataSource.query<$User>()
-      .dontRemember()
-      .get();
+  final freshData = await dataSource.query<$User>().dontRemember().get();
 
   // Clear query cache
   await dataSource.flushQueryCache();
 }
+
 // #endregion query-caching

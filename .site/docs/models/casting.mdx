@@ -1,0 +1,77 @@
+---
+sidebar_position: 3
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# Casting
+
+Casting lets you map a model field to a **codec key** (a string) so Ormed can consistently encode values **to the database** and decode values **back into Dart**.
+
+You can define casts:
+- Per-model with `@OrmModel(casts: {...})`
+- Per-field with `@OrmField(cast: '...')`
+
+## Built-in cast keys
+
+These keys are available out of the box:
+
+| Cast key | Dart type to use | Stored as | Notes |
+|---|---|---|---|
+| `datetime` | `DateTime` / `DateTime?` | `DateTime` or ISO-8601 string (driver-dependent) | Use when your driver returns strings for datetime columns |
+| `json` | `Map<String, Object?>` / `Map<String, Object?>?` | JSON string | For JSON objects |
+| `object` | `Map<String, Object?>` / `Map<String, Object?>?` | JSON string | Alias for `json` |
+| `array` | `List<Object?>` / `List<Object?>?` | JSON string | For JSON arrays |
+
+## Defining casts
+
+<Tabs groupId="casts-definition" defaultValue="model">
+  <TabItem value="model" label="Model-level casts">
+
+```dart file=../../examples/lib/models/casting_examples.dart#casts-model-level
+```
+
+  </TabItem>
+  <TabItem value="field" label="Field-level casts">
+
+```dart file=../../examples/lib/models/casting_examples.dart#casts-field-level
+```
+
+  </TabItem>
+</Tabs>
+
+### Precedence
+
+When multiple options are present, Ormed resolves the codec in this order:
+
+1. `@OrmField(codec: SomeCodecType)` (explicit codec type)
+2. `@OrmField(cast: 'someKey')`
+3. `@OrmModel(casts: {'fieldName': 'someKey'})`
+4. Default based on the field Dart type (e.g. `DateTime`)
+
+## Custom cast keys (custom codecs)
+
+You can define your own cast keys by registering a codec under that key, then referencing the key from `casts` / `cast`.
+
+<Tabs groupId="casts-custom" defaultValue="codec">
+  <TabItem value="codec" label="Codec">
+
+```dart file=../../examples/lib/models/casting_examples.dart#casts-custom-codec
+```
+
+  </TabItem>
+  <TabItem value="register" label="Register">
+
+```dart file=../../examples/lib/models/casting_examples.dart#casts-custom-register
+```
+
+  </TabItem>
+  <TabItem value="use" label="Use in model">
+
+```dart file=../../examples/lib/models/casting_examples.dart#casts-custom-use
+```
+
+  </TabItem>
+</Tabs>
+

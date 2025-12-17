@@ -47,7 +47,7 @@ class Contact extends Model<Contact> {
   final int id;
 
   // Custom column name
-  @OrmField(column: 'user_email')
+  @OrmField(columnName: 'user_email')
   final String email;
 
   // Default value in SQL
@@ -57,5 +57,5 @@ class Contact extends Model<Contact> {
   // Nullable field
   final String? name; // Automatically nullable in DB
 }
-// #endregion column-options
 
+// #endregion column-options

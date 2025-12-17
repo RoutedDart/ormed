@@ -5,6 +5,8 @@ import 'package:ormed/ormed.dart';
 import 'package:ormed_sqlite/ormed_sqlite.dart';
 import '../orm_registry.g.dart';
 
+part 'model_scopes.orm.dart';
+
 // #region model-scopes-model
 @OrmModel(table: 'scoped_users')
 class ScopedUser extends Model<ScopedUser> {
@@ -34,8 +36,7 @@ class ScopedUser extends Model<ScopedUser> {
   static Query<$ScopedUser> withDomain(
     Query<$ScopedUser> query,
     String domain,
-  ) =>
-      query.whereLike('email', '%@$domain');
+  ) => query.whereLike('email', '%@$domain');
   // #endregion model-scopes-local-positional
 
   // #region model-scopes-local-named
@@ -43,8 +44,7 @@ class ScopedUser extends Model<ScopedUser> {
   static Query<$ScopedUser> roleIs(
     Query<$ScopedUser> query, {
     required String role,
-  }) =>
-      query.whereEquals('role', role);
+  }) => query.whereEquals('role', role);
   // #endregion model-scopes-local-named
 }
 // #endregion model-scopes-model
@@ -66,9 +66,19 @@ Future<void> scopeUsageExample() async {
   await dataSource.init();
 
   await dataSource.repo<$ScopedUser>().insertMany([
-    const $ScopedUser(id: 0, email: 'a@example.com', active: true, role: 'admin'),
+    const $ScopedUser(
+      id: 0,
+      email: 'a@example.com',
+      active: true,
+      role: 'admin',
+    ),
     const $ScopedUser(id: 0, email: 'b@test.com', active: true, role: 'user'),
-    const $ScopedUser(id: 0, email: 'c@example.com', active: false, role: 'user'),
+    const $ScopedUser(
+      id: 0,
+      email: 'c@example.com',
+      active: false,
+      role: 'user',
+    ),
   ]);
 
   // #region model-scopes-query-global
@@ -98,7 +108,8 @@ Future<void> scopeUsageExample() async {
 
 // #region model-scopes-inline
 Future<void> inlineScopeExample() async {
-  final registry = ModelRegistry()..register(ScopedUserOrmDefinition.definition);
+  final registry = ModelRegistry()
+    ..register(ScopedUserOrmDefinition.definition);
   final context = QueryContext(
     registry: registry,
     driver: SqliteDriverAdapter.inMemory(),
@@ -117,7 +128,9 @@ Future<void> inlineScopeExample() async {
   // #endregion model-scopes-inline-register
 
   // #region model-scopes-inline-usage
-  final admins = await context.query<$ScopedUser>().scope('byRole', ['admin']).get();
+  final admins = await context.query<$ScopedUser>().scope('byRole', [
+    'admin',
+  ]).get();
   final allWithInactive = await context
       .query<$ScopedUser>()
       .withoutGlobalScope('activeOnly')
@@ -126,4 +139,5 @@ Future<void> inlineScopeExample() async {
 
   print([admins.length, allWithInactive.length]);
 }
+
 // #endregion model-scopes-inline

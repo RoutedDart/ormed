@@ -17,8 +17,6 @@ const FieldDefinition _$CommentIdField = FieldDefinition(
   isUnique: false,
   isIndexed: false,
   autoIncrement: true,
-  insertable: false,
-  defaultDartValue: 0,
 );
 
 const FieldDefinition _$CommentBodyField = FieldDefinition(
@@ -70,6 +68,9 @@ extension CommentOrmDefinition on Comment {
 class Comments {
   const Comments._();
 
+  /// Starts building a query for [$Comment].
+  ///
+  /// {@macro ormed.query}
   static Query<$Comment> query([String? connection]) =>
       Model.query<$Comment>(connection: connection);
 
@@ -114,6 +115,9 @@ class Comments {
   static Query<$Comment> limit(int count, {String? connection}) =>
       Model.limit<$Comment>(count, connection: connection);
 
+  /// Creates a [Repository] for [$Comment].
+  ///
+  /// {@macro ormed.repository}
   static Repository<$Comment> repo([String? connection]) =>
       Model.repository<$Comment>(connection: connection);
 }

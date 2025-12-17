@@ -1,1 +1,1 @@
-{"className":"TimestampPost","import":"models/timestamp_model.dart","definition":"TimestampPostOrmDefinition.definition","hasFactory":false,"hasEventHandlers":false,"hasScopes":false}
+[{"className":"TimestampPost","import":"models/timestamp_model.dart","definition":"TimestampPostOrmDefinition.definition","hasFactory":false,"hasEventHandlers":false,"hasScopes":false},{"className":"TimestampArticleTz","import":"models/timestamp_model.dart","definition":"TimestampArticleTzOrmDefinition.definition","hasFactory":false,"hasEventHandlers":false,"hasScopes":false}]

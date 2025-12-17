@@ -4,13 +4,31 @@
 import 'package:ormed/ormed.dart';
 import 'package:ormed_sqlite/ormed_sqlite.dart';
 
-import '../models/user.dart';
-import '../models/user.orm.dart';
 import '../orm_registry.g.dart';
+
+part 'model_events.orm.dart';
 
 final List<String> modelEventLog = [];
 
-bool _forUser(Type modelType) => modelType == User || modelType == $User;
+bool _forUser(Type modelType) =>
+    modelType == EventUser || modelType == $EventUser;
+
+@OrmModel(table: 'event_users')
+class EventUser extends Model<EventUser> with SoftDeletes {
+  const EventUser({
+    required this.id,
+    required this.email,
+    required this.active,
+    this.name,
+  });
+
+  @OrmField(isPrimaryKey: true, autoIncrement: true)
+  final int id;
+
+  final String email;
+  final bool active;
+  final String? name;
+}
 
 // #region model-event-listeners
 void registerModelEventListeners(EventBus bus) {
@@ -52,7 +70,7 @@ void registerModelEventListeners(EventBus bus) {
 void enforceActiveUserDeletes(EventBus bus) {
   bus.on<ModelDeletingEvent>((event) {
     if (!_forUser(event.modelType)) return;
-    final user = event.model as $User;
+    final user = event.model as EventUser;
     if (!user.active) {
       event.cancel(); // block delete/forceDelete
       modelEventLog.add('blocked delete for inactive user ${user.id}');
@@ -60,6 +78,22 @@ void enforceActiveUserDeletes(EventBus bus) {
   });
 }
 // #endregion model-delete-guard
+
+// #region model-delete-guard-usage
+Future<void> guardedDeleteExample(DataSource dataSource) async {
+  final inactive = await dataSource.repo<$EventUser>().insert(
+    $EventUser(id: 0, email: 'inactive@example.com', active: false),
+  );
+
+  final affected = await dataSource
+      .query<$EventUser>()
+      .whereEquals('id', inactive.id)
+      .delete();
+
+  // => 0 (delete is cancelled)
+  print(affected);
+}
+// #endregion model-delete-guard-usage
 
 // #region model-event-annotation
 @OrmModel(table: 'audited_users')
@@ -103,21 +137,32 @@ Future<void> modelEventsUsageExample() async {
   // #endregion model-events-setup
 
   // #region model-events-mutations
-  final alice = await dataSource.repo<$User>().insert(
-        $User(id: 0, name: 'Alice', email: 'alice@example.com'),
-      );
+  final alice = await dataSource.repo<$EventUser>().insert(
+    $EventUser(
+      id: 0,
+      name: 'Alice',
+      email: 'alice@example.com',
+      active: true,
+    ),
+  );
+
+  await dataSource.query<$EventUser>().whereEquals('id', alice.id).update({
+    'name': 'Alice Updated',
+  });
 
   await dataSource
-      .query<$User>()
-      .whereEquals('id', alice.id)
-      .update({'name': 'Alice Updated'});
-
-  await dataSource
-      .query<$User>()
+      .query<$EventUser>()
       .whereEquals('id', alice.id)
       .deleteReturning();
+
+  await dataSource
+      .query<$EventUser>()
+      .withTrashed()
+      .whereEquals('id', alice.id)
+      .restore();
 
   print(modelEventLog);
   // #endregion model-events-mutations
 }
+
 // #endregion model-events-usage

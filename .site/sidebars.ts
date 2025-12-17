@@ -20,6 +20,9 @@ const sidebars: SidebarsConfig = {
       label: 'Models',
       items: [
         'models/defining-models',
+        'models/attributes',
+        'models/casting',
+        'models/driver-overrides',
         'models/relationships',
         'models/timestamps',
         'models/soft-deletes',

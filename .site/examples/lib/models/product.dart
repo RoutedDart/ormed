@@ -52,4 +52,5 @@ class JsonMapCodec extends ValueCodec<Map<String, Object?>> {
     return jsonDecode(value as String) as Map<String, Object?>;
   }
 }
+
 // #endregion custom-codec

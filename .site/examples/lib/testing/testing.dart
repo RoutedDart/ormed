@@ -159,7 +159,7 @@ Future<void> staticHelpersExample() async {
   dataSource.setAsDefault();
 
   // Now static helpers work
-  await User.query().get();
+  await Users.query().get();
 }
 // #endregion testing-static-helpers
 
@@ -259,8 +259,8 @@ Future<void> useFactoriesForTestData(DataSource dataSource) async {
 Future<void> testBothSuccessAndFailure(DataSource dataSource) async {
   // test success case
   await dataSource.repo<$User>().insert(
-        $User(id: 0, name: 'Test', email: 'test@example.com'),
-      );
+    $User(id: 0, name: 'Test', email: 'test@example.com'),
+  );
 
   // test failure case - throws on duplicate email
   // expect(
@@ -321,4 +321,5 @@ Future<void> exampleTestSuite() async {
   await dataSource.dispose();
   // #endregion testing-example-suite-teardown
 }
+
 // #endregion testing-example-suite

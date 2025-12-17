@@ -33,10 +33,7 @@ Future<void> multiDatabaseSetup() async {
   // #endregion multi-db-setup-sources
 
   // #region multi-db-setup-init
-  await Future.wait([
-    primaryDs.init(),
-    analyticsDs.init(),
-  ]);
+  await Future.wait([primaryDs.init(), analyticsDs.init()]);
   // #endregion multi-db-setup-init
 }
 // #endregion multi-db-setup
@@ -95,8 +92,8 @@ Future<void> transactionCaveatExample() async {
   // Transactions are per-datasource
   await primaryDs.transaction(() async {
     await primaryDs.repo<$User>().insert(
-          $User(id: 0, email: 'user@example.com'),
-        );
+      $User(id: 0, email: 'user@example.com'),
+    );
 
     // This is NOT in the same transaction!
     // analyticsDs.repo<$Analytics>().insert(...)
@@ -132,8 +129,8 @@ Future<void> coordinatingDatabasesExample() async {
   try {
     // Step 1: Primary operation
     final user = await primaryDs.repo<$User>().insert(
-          $User(id: 0, email: 'user@example.com'),
-        );
+      $User(id: 0, email: 'user@example.com'),
+    );
 
     // Step 2: Analytics operation
     // await analyticsDs.repo<$UserActivity>().insert(...)
@@ -185,9 +182,7 @@ Future<void> tenantScopeExample() async {
 
   // All queries scoped to tenant
   final users = await tenantDs.query<$User>().get();
-  await tenantDs.repo<$User>().insert(
-        $User(id: 0, email: 'user@acme.com'),
-      );
+  await tenantDs.repo<$User>().insert($User(id: 0, email: 'user@acme.com'));
 
   await manager.dispose();
 }
@@ -197,7 +192,8 @@ Future<void> tenantScopeExample() async {
 typedef DataSourceFactory = Future<DataSource> Function(String name);
 
 DataSourceFactory createDataSourceFactory(
-    List<OrmModelDefinition> definitions) {
+  List<OrmModelDefinition> definitions,
+) {
   return (String name) async {
     final ds = DataSource(
       DataSourceOptions(
@@ -235,4 +231,5 @@ class ConnectionManager {
     _connections.clear();
   }
 }
+
 // #endregion multi-db-manager

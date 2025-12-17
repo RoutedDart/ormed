@@ -11,16 +11,29 @@ The Query Builder provides a fluent, type-safe API for building database queries
 
 :::note Snippet context
 - Snippets focus on the query builder calls and omit full setup.
-- Unless shown otherwise, assume you already have a `DataSource` named `dataSource` (see Getting Started → Quick Start).
+- Unless shown otherwise, assume either:
+  - a `DataSource` named `dataSource`, or
+  - a default connection configured so static helpers like `Users.query()` work.
+
+Default connection resolution is handled through `ConnectionManager`.
 :::
 
 ## Getting Started
 
-Access the query builder through a `DataSource`:
+<Tabs groupId="query-getting-started" defaultValue="default">
+  <TabItem value="default" label="Default connection">
+
+```dart file=../../examples/lib/queries.dart#query-getting-started-static
+```
+
+  </TabItem>
+  <TabItem value="datasource" label="From DataSource">
 
 ```dart file=../../examples/lib/queries.dart#query-getting-started
-
 ```
+
+  </TabItem>
+</Tabs>
 
 ## Selecting Data
 

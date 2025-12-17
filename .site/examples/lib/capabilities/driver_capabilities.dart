@@ -52,7 +52,7 @@ void checkCapabilitiesExample(QueryContext context) async {
   // Check multiple capabilities
   final canDoComplexQuery =
       adapter.supportsCapability(DriverCapability.joins) &&
-          adapter.supportsCapability(DriverCapability.rawSQL);
+      adapter.supportsCapability(DriverCapability.rawSQL);
 
   // Get all supported capabilities
   final supported = adapter.capabilities;
@@ -61,12 +61,13 @@ void checkCapabilitiesExample(QueryContext context) async {
 // #endregion check-capabilities
 
 // #region capability-checks-strategy
-Future<List<$Post>> getTopPostsWithCapabilityCheck(
-    QueryContext context) async {
+Future<List<$Post>> getTopPostsWithCapabilityCheck(QueryContext context) async {
   var query = context.query<$Post>();
 
   if (context.driver.supportsCapability(DriverCapability.rawSQL)) {
-    query = query.selectRaw('posts.*, (SELECT COUNT(*) FROM comments WHERE post_id = posts.id) AS comment_count');
+    query = query.selectRaw(
+      'posts.*, (SELECT COUNT(*) FROM comments WHERE post_id = posts.id) AS comment_count',
+    );
   } else {
     // Prefer query builder fallbacks when raw SQL isn't supported.
     query = query.select(['id', 'title', 'views']);
@@ -148,7 +149,9 @@ class AddFullTextSearchMigration extends Migration {
   @override
   Future<void> up(SchemaBuilder schema) async {
     if (schema.driver.supportsCapability(DriverCapability.rawSQL)) {
-      await schema.rawStatement("CREATE VIRTUAL TABLE posts_fts USING fts5(title, content, content=posts);");
+      await schema.rawStatement(
+        "CREATE VIRTUAL TABLE posts_fts USING fts5(title, content, content=posts);",
+      );
     }
   }
 
@@ -179,7 +182,9 @@ void bestPracticeQueryBuilder(QueryContext context) {
 
 // #region best-practice-check-capabilities
 Future<void> bestPracticeCheckCapabilities(
-    DriverAdapter adapter, Query query) async {
+  DriverAdapter adapter,
+  Query query,
+) async {
   // ❌ Bad - assumes raw expressions work
   query.selectRaw('COUNT(*)');
 
@@ -215,8 +220,10 @@ Future<List<$Post>> getPostsWithStats(QueryContext context) async {
         .get();
   } else {
     // Fallback: compute rank in memory
-    final posts =
-        await context.query<$Post>().orderBy('views', descending: true).get();
+    final posts = await context
+        .query<$Post>()
+        .orderBy('views', descending: true)
+        .get();
 
     return posts.asMap().entries.map((entry) {
       final post = entry.value;
@@ -225,4 +232,5 @@ Future<List<$Post>> getPostsWithStats(QueryContext context) async {
     }).toList();
   }
 }
+
 // #endregion fallback-alternatives

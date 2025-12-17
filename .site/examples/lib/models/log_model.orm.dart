@@ -68,6 +68,9 @@ extension LogOrmDefinition on Log {
 class Logs {
   const Logs._();
 
+  /// Starts building a query for [$Log].
+  ///
+  /// {@macro ormed.query}
   static Query<$Log> query([String? connection]) =>
       Model.query<$Log>(connection: connection);
 
@@ -109,6 +112,9 @@ class Logs {
   static Query<$Log> limit(int count, {String? connection}) =>
       Model.limit<$Log>(count, connection: connection);
 
+  /// Creates a [Repository] for [$Log].
+  ///
+  /// {@macro ormed.repository}
   static Repository<$Log> repo([String? connection]) =>
       Model.repository<$Log>(connection: connection);
 }

@@ -69,10 +69,24 @@ Attach listeners once when your app boots:
 
 ## Guard operations (cancel)
 
-Cancel dangerous deletes or updates in a listener by calling `event.cancel()`:
+Cancel dangerous deletes or updates in a listener by calling `event.cancel()`.
+
+Cancellation requires a **model instance** (so your handler can inspect fields). Use a query-based delete (`delete()` / `deleteReturning()`) or pass a tracked model to a repository method.
+
+<Tabs groupId="model-events-guard" defaultValue="handler">
+  <TabItem value="handler" label="Handler">
 
 ```dart file=../../examples/lib/events/model_events.dart#model-delete-guard
 ```
+
+  </TabItem>
+  <TabItem value="usage" label="Usage">
+
+```dart file=../../examples/lib/events/model_events.dart#model-delete-guard-usage
+```
+
+  </TabItem>
+</Tabs>
 
 ## Full lifecycle walkthrough
 

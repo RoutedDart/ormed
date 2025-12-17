@@ -1,1 +1,1 @@
-{"className":"PostWithAuthor","import":"models/relations/belongs_to.dart","definition":"PostWithAuthorOrmDefinition.definition","hasFactory":false,"hasEventHandlers":false,"hasScopes":false}
+[{"className":"PostWithAuthor","import":"models/relations/belongs_to.dart","definition":"PostWithAuthorOrmDefinition.definition","hasFactory":false,"hasEventHandlers":false,"hasScopes":false},{"className":"PostAuthor","import":"models/relations/belongs_to.dart","definition":"PostAuthorOrmDefinition.definition","hasFactory":false,"hasEventHandlers":false,"hasScopes":false}]

@@ -2,20 +2,38 @@
 sidebar_position: 2
 ---
 
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 # Repository
 
 Repositories provide CRUD operations with flexible input handling, accepting tracked models, DTOs, or raw maps.
 
 :::note Snippet context
 - Snippets focus on repository calls and omit full setup.
-- Unless shown otherwise, assume you already have a `DataSource` named `dataSource` and you’re using generated tracked models (e.g., `$User`).
+- You can obtain a repository from either:
+  - a `DataSource`/`QueryContext` (explicit, recommended for multi-database flows), or
+  - the generated model helper class (uses the default connection).
+
+The default connection is tracked by `ConnectionManager` and is typically set when you call `await dataSource.init()` (first one auto-defaults) or `dataSource.setAsDefault()`.
 :::
 
 ## Getting a Repository
 
-```dart file=../../examples/lib/repository.dart#repo-get
+<Tabs groupId="repo-get" defaultValue="default">
+  <TabItem value="default" label="Default connection">
 
+```dart file=../../examples/lib/repository.dart#repo-get-static
 ```
+
+  </TabItem>
+  <TabItem value="datasource" label="From DataSource">
+
+```dart file=../../examples/lib/repository.dart#repo-get
+```
+
+  </TabItem>
+</Tabs>
 
 ## Insert Operations
 

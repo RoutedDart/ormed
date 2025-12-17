@@ -8,6 +8,8 @@ import '../models/user.orm.dart';
 import '../models/post.dart';
 import '../models/post.orm.dart';
 
+part 'best_practices.orm.dart';
+
 // #region n-plus-one-bad
 // BAD: N+1 problem - one query per user
 Future<void> nPlusOneBad(DataSource dataSource) async {
@@ -64,9 +66,7 @@ Future<void> selectBad(DataSource dataSource) async {
 // #region select-good
 // GOOD: Only select what you need
 Future<void> selectGood(DataSource dataSource) async {
-  final emails = await dataSource
-      .query<$User>()
-      .pluck<String>('email');
+  final emails = await dataSource.query<$User>().pluck<String>('email');
 }
 // #endregion select-good
 
@@ -101,10 +101,10 @@ Future<void> paginationExample(DataSource dataSource) async {
 // - You KNOW you need the relation data
 // - Building API responses with nested data
 Future<void> whenToUseEagerLoading(DataSource dataSource) async {
-  final posts = await dataSource
-      .query<$Post>()
-      .with_(['author', 'comments'])
-      .get();
+  final posts = await dataSource.query<$Post>().with_([
+    'author',
+    'comments',
+  ]).get();
 
   // Build response with all data already loaded
   for (final post in posts) {
@@ -175,9 +175,9 @@ Future<void> immutableModelExample(DataSource dataSource) async {
 
     // Or use update DTO
     await dataSource.repo<$User>().update(
-          UserUpdateDto(name: 'New Name'),
-          where: {'id': 1},
-        );
+      UserUpdateDto(name: 'New Name'),
+      where: {'id': 1},
+    );
   }
 }
 // #endregion immutable-model
@@ -198,7 +198,8 @@ Future<void> immutableModelExample(DataSource dataSource) async {
 // #region error-typed-exceptions
 Future<void> typedExceptionsExample(DataSource dataSource, String email) async {
   try {
-    final user = await dataSource.query<$User>()
+    final user = await dataSource
+        .query<$User>()
         .whereEquals('email', email)
         .firstOrFail();
   } on ModelNotFoundException catch (e) {
@@ -210,7 +211,11 @@ Future<void> typedExceptionsExample(DataSource dataSource, String email) async {
 // #region error-validate-before-save-model
 @OrmModel(table: 'validated_users')
 class ValidatedUser extends Model<ValidatedUser> {
-  const ValidatedUser({required this.id, required this.email, required this.age});
+  const ValidatedUser({
+    required this.id,
+    required this.email,
+    required this.age,
+  });
 
   @OrmField(isPrimaryKey: true, autoIncrement: true)
   final int id;
@@ -229,7 +234,10 @@ class ValidatedUser extends Model<ValidatedUser> {
 // #endregion error-validate-before-save-model
 
 // #region error-validate-before-save-usage
-Future<void> validateBeforeSaveExample(DataSource dataSource, ValidatedUser user) async {
+Future<void> validateBeforeSaveExample(
+  DataSource dataSource,
+  ValidatedUser user,
+) async {
   // Before inserting
   user.validate();
   await dataSource.repo<$ValidatedUser>().insert(user);
@@ -246,13 +254,13 @@ Future<void> transactionExample(
   double destBalance,
 ) async {
   await dataSource.transaction(() async {
-    await dataSource.query<$User>()
-        .whereEquals('id', fromAccountId)
-        .update({'balance': sourceBalance - amount});
+    await dataSource.query<$User>().whereEquals('id', fromAccountId).update({
+      'balance': sourceBalance - amount,
+    });
 
-    await dataSource.query<$User>()
-        .whereEquals('id', toAccountId)
-        .update({'balance': destBalance + amount});
+    await dataSource.query<$User>().whereEquals('id', toAccountId).update({
+      'balance': destBalance + amount,
+    });
   });
 }
 // #endregion error-transactions
@@ -279,7 +287,10 @@ Future<void> testFactoriesExample(DataSource dataSource) async {
 
 // #region security-sql-injection-bad
 // BAD: SQL injection risk
-Future<void> sqlInjectionBadExample(DataSource dataSource, String userInput) async {
+Future<void> sqlInjectionBadExample(
+  DataSource dataSource,
+  String userInput,
+) async {
   // DON'T DO THIS!
   // final users = await dataSource.query<$User>()
   //     .whereRaw("email = '\$userInput'")
@@ -289,16 +300,25 @@ Future<void> sqlInjectionBadExample(DataSource dataSource, String userInput) asy
 
 // #region security-sql-injection-good
 // GOOD: Parameterized queries
-Future<void> sqlInjectionGoodExample(DataSource dataSource, String userInput) async {
-  final users = await dataSource.query<$User>()
+Future<void> sqlInjectionGoodExample(
+  DataSource dataSource,
+  String userInput,
+) async {
+  final users = await dataSource
+      .query<$User>()
       .whereEquals('email', userInput)
       .get();
 }
 // #endregion security-sql-injection-good
 
 // #region security-validate-relations
-Future<void> validateRelationsExample(DataSource dataSource, Post post, User author) async {
-  final validAuthor = await dataSource.query<$User>()
+Future<void> validateRelationsExample(
+  DataSource dataSource,
+  Post post,
+  User author,
+) async {
+  final validAuthor = await dataSource
+      .query<$User>()
       .whereEquals('id', author.id)
       .whereEquals('active', true)
       .firstOrNull();
@@ -332,10 +352,8 @@ class UserDto {
 
   UserDto({required this.id, required this.email});
 
-  factory UserDto.fromModel(User user) => UserDto(
-    id: user.id,
-    email: user.email,
-  );
+  factory UserDto.fromModel(User user) =>
+      UserDto(id: user.id, email: user.email);
 }
 
 Future<List<UserDto>> getUserDtosExample(DataSource dataSource) async {
@@ -345,6 +363,8 @@ Future<List<UserDto>> getUserDtosExample(DataSource dataSource) async {
 // #endregion security-dto
 
 abstract class $ValidatedUser {}
+
 extension $ValidatedUserRepo on Repository<$User> {
-  Future<ValidatedUser> insert(ValidatedUser user) => throw UnimplementedError();
+  Future<ValidatedUser> insert(ValidatedUser user) =>
+      throw UnimplementedError();
 }

@@ -20,5 +20,6 @@ class User extends Model<User> {
   final String? name;
   final DateTime? createdAt;
 }
+
 // #endregion intro-model
 // #endregion basic-model

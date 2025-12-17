@@ -80,7 +80,8 @@ Future<void> structuredLoggerExample(DataSource dataSource) async {
 // #region sql-preview
 Future<void> sqlPreviewExample(DataSource dataSource) async {
   // Preview SQL without executing
-  final query = dataSource.query<$User>()
+  final query = dataSource
+      .query<$User>()
       .whereEquals('active', true)
       .orderBy('name');
 
@@ -134,13 +135,10 @@ void beforeExecutingExample(OrmConnection connection) {
 
 // #region slow-query-detection
 void slowQueryDetectionExample(OrmConnection connection) {
-  connection.whenQueryingForLongerThan(
-    Duration(milliseconds: 100),
-    (event) {
-      print('Slow query: ${event.statement.sql}');
-      print('Duration: ${event.duration.inMilliseconds}ms');
-    },
-  );
+  connection.whenQueryingForLongerThan(Duration(milliseconds: 100), (event) {
+    print('Slow query: ${event.statement.sql}');
+    print('Duration: ${event.duration.inMilliseconds}ms');
+  });
 }
 // #endregion slow-query-detection
 

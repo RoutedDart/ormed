@@ -2,6 +2,9 @@
 sidebar_position: 5
 ---
 
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 # Model Methods
 
 Familiar convenience methods for working with model instances.
@@ -142,14 +145,30 @@ The `save()` method uses upsert semantics:
 
 ## Static Helpers
 
-After binding a connection resolver, `Model<T>` provides convenient static helpers:
+Once a default connection is configured, Ormed provides two convenient access patterns:
+
+<Tabs groupId="model-static-helpers" defaultValue="generated">
+  <TabItem value="generated" label="Generated helper">
+
+Each model gets a generated helper class (plural) like `Users` / `Posts` that exposes typed entry points:
 
 ```dart file=../../examples/lib/usage/model_methods.dart#model-static-helpers
-
 ```
 
-Available methods:
-- `Model.query<T>()` - Query builder
-- `Model.all<T>()` - Get all records
-- `Model.create<T>(model)` - Insert a model
-- Instance: `save()`, `delete()`, `forceDelete()`, `restore()`, `refresh()`
+  </TabItem>
+  <TabItem value="generic" label="Generic Model helpers">
+
+You can also start from the generic `Model` helpers (useful when the model type is dynamic):
+
+- `Model.query<$User>(connection: 'default')`
+- `Model.repository<$User>(connection: 'default')`
+
+These resolve through the same default connection mechanism.
+
+  </TabItem>
+</Tabs>
+
+Notes:
+- Default connection is set when you `await dataSource.init()` (first one auto-defaults) or when you call `dataSource.setAsDefault()` (stored in `ConnectionManager`).
+- For multi-database / multi-tenant flows, prefer explicit `DataSource`/`QueryContext`, or pass a connection name to the helper (`Users.query('analytics')`).
+- If multiple connections register the same model type, always pass `connection:` to avoid relying on implicit resolution.

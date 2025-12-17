@@ -28,15 +28,13 @@ class PostWithAuthor extends Model<PostWithAuthor> {
 @OrmModel(table: 'users')
 // #region relation-belongs-to-author
 class PostAuthor extends Model<PostAuthor> {
-  const PostAuthor({
-    required this.id,
-    required this.name,
-  });
+  const PostAuthor({required this.id, required this.name});
 
   @OrmField(isPrimaryKey: true)
   final int id;
 
   final String name;
 }
+
 // #endregion relation-belongs-to-author
 // #endregion relation-belongs-to

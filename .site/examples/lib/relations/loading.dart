@@ -11,9 +11,7 @@ import '../models/user.orm.dart';
 // #region eager-basic
 Future<void> basicEagerLoading(DataSource dataSource) async {
   // Load a single relation
-  final posts = await dataSource.query<$Post>()
-      .with_(['author'])
-      .get();
+  final posts = await dataSource.query<$Post>().with_(['author']).get();
 
   for (final post in posts) {
     print(post.author?.name); // Already loaded, no additional query
@@ -23,23 +21,24 @@ Future<void> basicEagerLoading(DataSource dataSource) async {
 
 // #region eager-multiple
 Future<void> multipleRelationsLoading(DataSource dataSource) async {
-  final posts = await dataSource.query<$Post>()
-      .with_(['author', 'tags', 'comments'])
-      .get();
+  final posts = await dataSource.query<$Post>().with_([
+    'author',
+    'tags',
+    'comments',
+  ]).get();
 }
 // #endregion eager-multiple
 
 // #region eager-nested
 Future<void> nestedRelationsLoading(DataSource dataSource) async {
   // Load author's profile along with author
-  final posts = await dataSource.query<$Post>()
-      .with_(['author.profile'])
-      .get();
+  final posts = await dataSource.query<$Post>().with_(['author.profile']).get();
 
   // Multiple levels
-  final deepPosts = await dataSource.query<$Post>()
-      .with_(['author.profile', 'comments.user.profile'])
-      .get();
+  final deepPosts = await dataSource.query<$Post>().with_([
+    'author.profile',
+    'comments.user.profile',
+  ]).get();
 }
 // #endregion eager-nested
 
@@ -83,9 +82,10 @@ Future<void> checkLoadedExample(DataSource dataSource) async {
 
 // #region relation-access
 Future<void> relationAccessExample(DataSource dataSource) async {
-  final post = await dataSource.query<$Post>()
-      .with_(['author', 'comments'])
-      .first();
+  final post = await dataSource.query<$Post>().with_([
+    'author',
+    'comments',
+  ]).first();
 
   if (post != null) {
     // Returns the relation value (throws if not loaded)
@@ -226,12 +226,13 @@ Future<void> nPlusOneBadExample(DataSource dataSource) async {
 // #region n-plus-one-good
 Future<void> nPlusOneGoodExample(DataSource dataSource) async {
   // GOOD: Eager load author
-  final posts = await dataSource.query<$Post>()
-      .with_(['author'])  // Eager load author
+  final posts = await dataSource
+      .query<$Post>()
+      .with_(['author']) // Eager load author
       .get();
 
   for (final post in posts) {
-    print(post.author?.name);  // Works!
+    print(post.author?.name); // Works!
   }
 }
 // #endregion n-plus-one-good
@@ -246,4 +247,5 @@ Future<void> otherAggregatesExample(DataSource dataSource) async {
     await user.loadMin(['posts'], 'views');
   }
 }
+
 // #endregion relation-other-aggregates

@@ -9,7 +9,17 @@ import TabItem from '@theme/TabItem';
 
 The MySQL adapter also supports MariaDB. Configure via URL or explicit fields; common alias keys are accepted.
 
-## orm.yaml
+## Install
+
+Add the driver package:
+
+```yaml
+dependencies:
+  ormed: ^latest
+  ormed_mysql: ^latest
+```
+
+## Configure (orm.yaml)
 
 <Tabs groupId="mysql-orm-yaml" defaultValue="url">
 <TabItem value="url" label="URL">
@@ -52,6 +62,23 @@ driver:
 ```
 
 </TabItem>
+</Tabs>
+
+## Use in code (DataSource)
+
+<Tabs groupId="mysql-datasource" defaultValue="url">
+  <TabItem value="url" label="URL">
+
+```dart file=../../examples/lib/drivers/mysql.dart#mysql-datasource-url
+```
+
+  </TabItem>
+  <TabItem value="fields" label="Fields">
+
+```dart file=../../examples/lib/drivers/mysql.dart#mysql-datasource-fields
+```
+
+  </TabItem>
 </Tabs>
 
 ### Options

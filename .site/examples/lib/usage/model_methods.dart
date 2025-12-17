@@ -222,17 +222,13 @@ Future<void> saveUpsertExample(DataSource dataSource) async {
 // #endregion model-save-upsert
 
 // #region model-static-helpers
-Future<void> staticHelpersExample(OrmRegistry registry, DriverAdapter adapter) async {
-  final context = QueryContext(registry: registry, driver: adapter);
+Future<void> staticHelpersExample() async {
+  // Assumes a default connection is configured (see DataSource docs).
+  final repo = Users.repo();
+  await repo.insert($User(id: 0, email: 'hi@example.com'));
 
-  Model.bindConnectionResolver(resolveConnection: (_) => context);
-
-  // Now use static helpers
-  final user = await Model.create<User>($User(id: 0, email: 'hi@example.com'));
-  await user.refresh();
-  await user.delete();
-  await user.restore();
-
-  final emails = await Model.query<User>().orderBy('id').get();
+  final users = await Users.query().orderBy('id').get();
+  print(users.length);
 }
+
 // #endregion model-static-helpers

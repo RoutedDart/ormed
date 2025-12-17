@@ -23,10 +23,7 @@ Future<void> runMigrationsProgrammatically(DriverAdapter driver) async {
 
   // #region migration-runner-ledger
   // Create ledger to track applied migrations
-  final ledger = SqlMigrationLedger(
-    driver,
-    tableName: '_orm_migrations',
-  );
+  final ledger = SqlMigrationLedger(driver, tableName: '_orm_migrations');
   await ledger.ensureInitialized();
   // #endregion migration-runner-ledger
 

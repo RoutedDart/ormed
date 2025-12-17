@@ -8,9 +8,7 @@ part 'admin.orm.dart';
   hidden: ['password'], // Fields hidden from serialization
   fillable: ['email'], // Fields that can be mass-assigned
   guarded: ['id'], // Fields protected from mass-assignment
-  casts: {
-    'createdAt': 'datetime',
-  },
+  casts: {'createdAt': 'datetime'},
 )
 class Admin extends Model<Admin> {
   const Admin({
@@ -27,4 +25,5 @@ class Admin extends Model<Admin> {
   final String? password;
   final DateTime? createdAt;
 }
+
 // #endregion model-with-options

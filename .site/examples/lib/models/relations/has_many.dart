@@ -6,10 +6,7 @@ part 'has_many.orm.dart';
 // #region relation-has-many
 @OrmModel(table: 'users')
 class UserWithPosts extends Model<UserWithPosts> {
-  const UserWithPosts({
-    required this.id,
-    this.posts,
-  });
+  const UserWithPosts({required this.id, this.posts});
 
   @OrmField(isPrimaryKey: true)
   final int id;
@@ -33,4 +30,3 @@ class UserPost extends Model<UserPost> {
   final String title;
 }
 // #endregion relation-has-many
-

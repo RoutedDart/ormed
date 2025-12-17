@@ -12,6 +12,14 @@ Future<void> getRepositoryExample(DataSource dataSource) async {
 }
 // #endregion repo-get
 
+// #region repo-get-static
+Future<void> getRepositoryStaticHelpers() async {
+  // Assumes a default connection is configured (see DataSource docs).
+  final userRepo = Users.repo();
+  await userRepo.find(1);
+}
+// #endregion repo-get-static
+
 // #region repo-insert
 Future<void> insertExamples(DataSource dataSource) async {
   final userRepo = dataSource.repo<$User>();
@@ -168,9 +176,7 @@ Future<void> deleteExamples(DataSource dataSource) async {
   await userRepo.delete({'email': 'john@example.com'});
 
   // By Query callback
-  await userRepo.delete(
-    (Query<$User> q) => q.whereEquals('role', 'guest'),
-  );
+  await userRepo.delete((Query<$User> q) => q.whereEquals('role', 'guest'));
 }
 // #endregion repo-delete
 
@@ -234,5 +240,5 @@ Future<void> errorHandlingExample(DataSource dataSource) async {
     print('No rows were updated');
   }
 }
-// #endregion repo-errors
 
+// #endregion repo-errors

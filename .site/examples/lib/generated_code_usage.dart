@@ -1,11 +1,14 @@
 // Usage examples for generated code
 // ignore_for_file: unused_local_variable
 
-import 'package:ormed/ormed.dart';
 import 'dart:convert';
+
+import 'package:ormed/ormed.dart';
 
 import 'models/user.dart';
 import 'models/user.orm.dart';
+
+part 'generated_code_usage.orm.dart';
 
 // #region custom-codecs-field
 @OrmModel(table: 'documents')
@@ -41,8 +44,8 @@ void trackedModelUsage() {
 
   // Modify and track changes
   user.setAttribute('name', 'John Doe');
-  print(user.isDirty);  // true
-  print(user.dirtyFields);  // ['name']
+  print(user.isDirty); // true
+  print(user.dirtyFields); // ['name']
 }
 // #endregion tracked-model-usage
 
@@ -50,19 +53,20 @@ void trackedModelUsage() {
 void definitionUsage() {
   // Access the model definition
   final definition = UserOrmDefinition.definition;
-  print(definition.tableName);  // 'users'
-  print(definition.primaryKey.name);  // 'id'
+  print(definition.tableName); // 'users'
+  print(definition.primaryKey.name); // 'id'
 }
 // #endregion definition-usage
 
 // #region partial-entity-usage
 Future<void> partialEntityUsage(DataSource dataSource) async {
-  final partial = await dataSource.query<$User>()
-      .select(['id', 'email'])
-      .firstPartial();
+  final partial = await dataSource.query<$User>().select([
+    'id',
+    'email',
+  ]).firstPartial();
 
-  print(partial?.id);     // Available
-  print(partial?.email);  // Available
+  print(partial?.id); // Available
+  print(partial?.email); // Available
   // partial.name is not available (not selected)
 }
 // #endregion partial-entity-usage
@@ -77,4 +81,5 @@ Future<void> dtoUsage(DataSource dataSource) async {
   final updateDto = UserUpdateDto(name: 'New Name');
   await dataSource.repo<$User>().update(updateDto, where: {'id': 1});
 }
+
 // #endregion dto-usage

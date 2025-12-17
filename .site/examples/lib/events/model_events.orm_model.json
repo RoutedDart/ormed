@@ -1,1 +1,1 @@
-{"className":"AuditedUser","import":"events/model_events.dart","definition":"AuditedUserOrmDefinition.definition","hasFactory":false,"hasEventHandlers":true,"hasScopes":false}
+[{"className":"EventUser","import":"events/model_events.dart","definition":"EventUserOrmDefinition.definition","hasFactory":false,"hasEventHandlers":false,"hasScopes":false},{"className":"AuditedUser","import":"events/model_events.dart","definition":"AuditedUserOrmDefinition.definition","hasFactory":false,"hasEventHandlers":true,"hasScopes":false}]

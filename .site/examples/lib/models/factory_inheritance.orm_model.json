@@ -1,1 +1,1 @@
-{"className":"BaseItem","import":"models/factory_inheritance.dart","definition":"BaseItemOrmDefinition.definition","hasFactory":true,"hasEventHandlers":false,"hasScopes":false}
+[{"className":"BaseItem","import":"models/factory_inheritance.dart","definition":"BaseItemOrmDefinition.definition","hasFactory":true,"hasEventHandlers":false,"hasScopes":false},{"className":"SpecialItem","import":"models/factory_inheritance.dart","definition":"SpecialItemOrmDefinition.definition","hasFactory":true,"hasEventHandlers":false,"hasScopes":false}]

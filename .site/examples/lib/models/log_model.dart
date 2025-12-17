@@ -7,11 +7,7 @@ part 'log_model.orm.dart';
 @OrmModel(table: 'logs')
 class Log extends Model<Log> {
   // No timestamps mixin - manual control
-  const Log({
-    required this.id,
-    required this.message,
-    this.timestamp,
-  });
+  const Log({required this.id, required this.message, this.timestamp});
 
   @OrmField(isPrimaryKey: true)
   final int id;
@@ -20,4 +16,3 @@ class Log extends Model<Log> {
   final DateTime? timestamp;
 }
 // #endregion no-timestamps-model
-

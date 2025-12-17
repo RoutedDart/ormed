@@ -9,12 +9,12 @@ import 'database_seeder.dart';
 
 // #region seed-registry-entries
 final List<SeederRegistration> _seeders = <SeederRegistration>[
-// <ORM-SEED-REGISTRY>
+  // <ORM-SEED-REGISTRY>
   SeederRegistration(
     name: 'AppDatabaseSeeder',
     factory: (context) => AppDatabaseSeeder(context.connection),
   ),
-// </ORM-SEED-REGISTRY>
+  // </ORM-SEED-REGISTRY>
 ];
 // #endregion seed-registry-entries
 
@@ -24,16 +24,14 @@ Future<void> runProjectSeeds(
   List<String>? names,
   bool pretend = false,
 }) => runSeedRegistryOnConnection(
-      connection,
-      _seeders,
-      names: names,
-      pretend: pretend,
-    );
+  connection,
+  _seeders,
+  names: names,
+  pretend: pretend,
+);
 // #endregion seed-registry-run
 
 // #region seed-registry-main
-Future<void> main(List<String> args) => runSeedRegistryEntrypoint(
-      args: args,
-      seeds: _seeders,
-    );
+Future<void> main(List<String> args) =>
+    runSeedRegistryEntrypoint(args: args, seeds: _seeders);
 // #endregion seed-registry-main

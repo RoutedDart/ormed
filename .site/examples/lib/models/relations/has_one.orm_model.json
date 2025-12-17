@@ -1,1 +1,1 @@
-{"className":"UserWithProfile","import":"models/relations/has_one.dart","definition":"UserWithProfileOrmDefinition.definition","hasFactory":false,"hasEventHandlers":false,"hasScopes":false}
+[{"className":"UserWithProfile","import":"models/relations/has_one.dart","definition":"UserWithProfileOrmDefinition.definition","hasFactory":false,"hasEventHandlers":false,"hasScopes":false},{"className":"Profile","import":"models/relations/has_one.dart","definition":"ProfileOrmDefinition.definition","hasFactory":false,"hasEventHandlers":false,"hasScopes":false}]

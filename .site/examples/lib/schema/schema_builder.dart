@@ -92,11 +92,7 @@ void modifierExamples(TableBuilder table) {
       .unique() // Unique constraint
       .defaultValue('default@example.com');
 
-  table
-      .integer('id')
-      .primaryKey()
-      .autoIncrement()
-      .unsigned();
+  table.integer('id').primaryKey().autoIncrement().unsigned();
 
   table
       .timestamp('created_at')
@@ -156,11 +152,7 @@ void foreignKeyExamples(TableBuilder table) {
 
   // Foreign key with fluent builder
   table
-      .foreign(
-        ['post_id'],
-        references: 'posts',
-        referencedColumns: ['id'],
-      )
+      .foreign(['post_id'], references: 'posts', referencedColumns: ['id'])
       .onDelete(ReferenceAction.cascade);
 
   // Foreign key shortcut
@@ -237,10 +229,9 @@ class DriverOverrideExample extends Migration {
           .driverOverride('postgres', collation: '"und-x-icu"');
 
       // Driver-specific default expression
-      table.timestamp('synced_at', timezoneAware: true).driverDefault(
-            'postgres',
-            expression: "timezone('UTC', now())",
-          );
+      table
+          .timestamp('synced_at', timezoneAware: true)
+          .driverDefault('postgres', expression: "timezone('UTC', now())");
     });
   }
 
@@ -249,4 +240,5 @@ class DriverOverrideExample extends Migration {
     schema.drop('events');
   }
 }
+
 // #endregion schema-driver-overrides

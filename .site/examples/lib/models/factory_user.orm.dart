@@ -17,8 +17,6 @@ const FieldDefinition _$FactoryUserIdField = FieldDefinition(
   isUnique: false,
   isIndexed: false,
   autoIncrement: true,
-  insertable: false,
-  defaultDartValue: 0,
 );
 
 const FieldDefinition _$FactoryUserEmailField = FieldDefinition(
@@ -79,6 +77,9 @@ extension FactoryUserOrmDefinition on FactoryUser {
 class FactoryUsers {
   const FactoryUsers._();
 
+  /// Starts building a query for [$FactoryUser].
+  ///
+  /// {@macro ormed.query}
   static Query<$FactoryUser> query([String? connection]) =>
       Model.query<$FactoryUser>(connection: connection);
 
@@ -128,6 +129,9 @@ class FactoryUsers {
   static Query<$FactoryUser> limit(int count, {String? connection}) =>
       Model.limit<$FactoryUser>(count, connection: connection);
 
+  /// Creates a [Repository] for [$FactoryUser].
+  ///
+  /// {@macro ormed.repository}
   static Repository<$FactoryUser> repo([String? connection]) =>
       Model.repository<$FactoryUser>(connection: connection);
 }

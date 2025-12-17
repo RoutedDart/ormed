@@ -9,7 +9,17 @@ import TabItem from '@theme/TabItem';
 
 Use PostgreSQL for production‑grade features (JSONB, window functions, robust constraints). Configure via URL or discrete fields.
 
-## orm.yaml
+## Install
+
+Add the driver package:
+
+```yaml
+dependencies:
+  ormed: ^latest
+  ormed_postgres: ^latest
+```
+
+## Configure (orm.yaml)
 
 <Tabs groupId="postgres-orm-yaml" defaultValue="url">
 <TabItem value="url" label="URL">
@@ -42,6 +52,23 @@ driver:
 </TabItem>
 </Tabs>
 
+## Use in code (DataSource)
+
+<Tabs groupId="postgres-datasource" defaultValue="url">
+  <TabItem value="url" label="URL">
+
+```dart file=../../examples/lib/drivers/postgres.dart#postgres-datasource-url
+```
+
+  </TabItem>
+  <TabItem value="fields" label="Fields">
+
+```dart file=../../examples/lib/drivers/postgres.dart#postgres-datasource-fields
+```
+
+  </TabItem>
+</Tabs>
+
 ### Options
 
 | Option | Type | Default | Description |
@@ -62,5 +89,4 @@ driver:
 ### Notes
 
 - Supports `RETURNING`, JSON/JSONB operators, window functions, and schema introspection.
-- Use `POSTGRES_URL` to point tests or CLI commands at ephemeral containers.
 - Migrations and seeds are configured separately in `orm.yaml`. See Getting Started → Configuration.

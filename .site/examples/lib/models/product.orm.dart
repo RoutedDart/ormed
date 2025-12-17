@@ -17,8 +17,6 @@ const FieldDefinition _$ProductIdField = FieldDefinition(
   isUnique: false,
   isIndexed: false,
   autoIncrement: true,
-  insertable: false,
-  defaultDartValue: 0,
 );
 
 const FieldDefinition _$ProductSkuField = FieldDefinition(
@@ -89,6 +87,9 @@ extension ProductOrmDefinition on Product {
 class Products {
   const Products._();
 
+  /// Starts building a query for [$Product].
+  ///
+  /// {@macro ormed.query}
   static Query<$Product> query([String? connection]) =>
       Model.query<$Product>(connection: connection);
 
@@ -133,6 +134,9 @@ class Products {
   static Query<$Product> limit(int count, {String? connection}) =>
       Model.limit<$Product>(count, connection: connection);
 
+  /// Creates a [Repository] for [$Product].
+  ///
+  /// {@macro ormed.repository}
   static Repository<$Product> repo([String? connection]) =>
       Model.repository<$Product>(connection: connection);
 }

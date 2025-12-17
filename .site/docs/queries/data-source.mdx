@@ -47,7 +47,7 @@ The `init()` method:
 
 ## Using Static Model Helpers
 
-Once initialized, the first DataSource automatically becomes the default:
+Once initialized, the first `DataSource` automatically becomes the default. This enables using generated model helper classes (like `Users` / `Posts`) without threading a `DataSource` everywhere.
 
 ```dart file=../../examples/lib/datasource.dart#datasource-static-helpers
 ```

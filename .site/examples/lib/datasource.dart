@@ -1,6 +1,8 @@
 // DataSource examples for documentation
 // ignore_for_file: unused_local_variable
 
+import 'dart:convert';
+
 import 'package:ormed/ormed.dart';
 import 'package:ormed_sqlite/ormed_sqlite.dart';
 
@@ -11,10 +13,12 @@ import 'models/post.orm.dart';
 
 // #region datasource-overview
 Future<void> dataSourceOverview() async {
-  final ds = DataSource(DataSourceOptions(
-    driver: SqliteDriverAdapter.file('database.sqlite'),
-    entities: [UserOrmDefinition.definition, PostOrmDefinition.definition],
-  ));
+  final ds = DataSource(
+    DataSourceOptions(
+      driver: SqliteDriverAdapter.file('database.sqlite'),
+      entities: [UserOrmDefinition.definition, PostOrmDefinition.definition],
+    ),
+  );
 
   await ds.init();
 
@@ -49,17 +53,19 @@ Future<void> initializeDataSource(DataSource ds) async {
 
 // #region datasource-static-helpers
 Future<void> staticHelpersExample() async {
-  final ds = DataSource(DataSourceOptions(
-    name: 'myapp',
-    driver: SqliteDriverAdapter.file('database.sqlite'),
-    entities: [UserOrmDefinition.definition],
-  ));
+  final ds = DataSource(
+    DataSourceOptions(
+      name: 'myapp',
+      driver: SqliteDriverAdapter.file('database.sqlite'),
+      entities: [UserOrmDefinition.definition],
+    ),
+  );
 
   await ds.init(); // Auto-registers and sets as default
 
   // Static helpers now work automatically!
-  final users = await User.query().get();
-  final post = await Post.find(1);
+  final users = await Users.query().get();
+  final post = await Posts.find(1);
 }
 // #endregion datasource-static-helpers
 
@@ -69,16 +75,15 @@ Future<void> queryingExamples(DataSource ds) async {
   final allUsers = await ds.query<$User>().get();
 
   // With filters
-  final activeUsers = await ds.query<$User>()
+  final activeUsers = await ds
+      .query<$User>()
       .whereEquals('active', true)
       .orderBy('createdAt', descending: true)
       .limit(10)
       .get();
 
   // With relations
-  final posts = await ds.query<$Post>()
-      .with_(['author', 'comments'])
-      .get();
+  final posts = await ds.query<$Post>().with_(['author', 'comments']).get();
 }
 // #endregion datasource-querying
 
@@ -135,7 +140,8 @@ Future<void> transactionExamples(DataSource ds) async {
 
 // #region datasource-adhoc
 Future<void> adhocTableExamples(DataSource ds) async {
-  final logs = await ds.table('audit_logs')
+  final logs = await ds
+      .table('audit_logs')
       .whereEquals('action', 'login')
       .orderBy('timestamp', descending: true)
       .limit(100)
@@ -170,11 +176,13 @@ Future<void> loggingExamples(DataSource ds) async {
 
 // #region datasource-logging-options
 DataSource createDataSourceWithLogging(DriverAdapter driver) {
-  final ds = DataSource(DataSourceOptions(
-    driver: driver,
-    entities: [UserOrmDefinition.definition],
-    logging: true,
-  ));
+  final ds = DataSource(
+    DataSourceOptions(
+      driver: driver,
+      entities: [UserOrmDefinition.definition],
+      logging: true,
+    ),
+  );
 
   // Or enable at runtime
   ds.enableQueryLog(includeParameters: true);
@@ -199,9 +207,7 @@ void accessQueryLog(DataSource ds) {
 // #region datasource-pretend-mode
 Future<void> pretendModeExample(DataSource ds) async {
   final statements = await ds.pretend(() async {
-    await ds.repo<$User>().insert(
-      $User(id: 0, email: 'test@example.com'),
-    );
+    await ds.repo<$User>().insert($User(id: 0, email: 'test@example.com'));
   });
 
   for (final entry in statements) {
@@ -225,17 +231,21 @@ void executionHooksExample(DataSource ds) {
 // #region datasource-multiple
 Future<void> multipleDataSourcesExample() async {
   // #region datasource-multiple-setup
-  final mainDs = DataSource(DataSourceOptions(
-    name: 'main',
-    driver: SqliteDriverAdapter.inMemory(),
-    entities: [UserOrmDefinition.definition],
-  ));
+  final mainDs = DataSource(
+    DataSourceOptions(
+      name: 'main',
+      driver: SqliteDriverAdapter.inMemory(),
+      entities: [UserOrmDefinition.definition],
+    ),
+  );
 
-  final analyticsDs = DataSource(DataSourceOptions(
-    name: 'analytics',
-    driver: SqliteDriverAdapter.inMemory(),
-    entities: [PostOrmDefinition.definition],
-  ));
+  final analyticsDs = DataSource(
+    DataSourceOptions(
+      name: 'analytics',
+      driver: SqliteDriverAdapter.inMemory(),
+      entities: [PostOrmDefinition.definition],
+    ),
+  );
 
   await mainDs.init();
   await analyticsDs.init();
@@ -252,7 +262,7 @@ Future<void> multipleDataSourcesExample() async {
   final events = await analyticsDs.query<$Post>().get();
 
   // Use static helpers with connection parameter
-  final analyticsUsers = await User.query(connection: 'analytics').get();
+  final analyticsUsers = await Users.query('analytics').get();
   // #endregion datasource-multiple-query
 }
 // #endregion datasource-multiple
@@ -274,16 +284,14 @@ Future<void> lifecycleExample(DataSource ds) async {
 
 // #region datasource-underlying
 void accessUnderlyingComponents(DataSource ds) {
-  final conn = ds.connection;      // ORM connection
-  final ctx = ds.context;          // Query context
-  final registry = ds.registry;    // Model registry
+  final conn = ds.connection; // ORM connection
+  final ctx = ds.context; // Query context
+  final registry = ds.registry; // Model registry
   final codecs = ds.codecRegistry; // Codec registry
 }
 // #endregion datasource-underlying
 
 // #region datasource-custom-codecs
-import 'dart:convert';
-
 class JsonCodec extends ValueCodec<Map<String, dynamic>> {
   @override
   Object? encode(Map<String, dynamic>? value) =>
@@ -295,11 +303,14 @@ class JsonCodec extends ValueCodec<Map<String, dynamic>> {
 }
 
 DataSource createDataSourceWithCodecs(DriverAdapter driver) {
-  final ds = DataSource(DataSourceOptions(
-    driver: driver,
-    entities: [UserOrmDefinition.definition],
-    codecs: {'JsonMap': JsonCodec()},
-  ));
+  final ds = DataSource(
+    DataSourceOptions(
+      driver: driver,
+      entities: [UserOrmDefinition.definition],
+      codecs: {'JsonMap': JsonCodec()},
+    ),
+  );
   return ds;
 }
+
 // #endregion datasource-custom-codecs

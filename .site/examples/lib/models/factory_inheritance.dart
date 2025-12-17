@@ -21,4 +21,3 @@ class SpecialItem extends BaseItem {
   final List<String>? tags;
 }
 // #endregion factory-inheritance
-

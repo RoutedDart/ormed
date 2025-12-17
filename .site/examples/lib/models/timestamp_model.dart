@@ -6,10 +6,7 @@ part 'timestamp_model.orm.dart';
 // #region timestamps-model
 @OrmModel(table: 'posts')
 class TimestampPost extends Model<TimestampPost> with Timestamps {
-  const TimestampPost({
-    required this.id,
-    required this.title,
-  });
+  const TimestampPost({required this.id, required this.title});
 
   @OrmField(isPrimaryKey: true, autoIncrement: true)
   final int id;
@@ -21,10 +18,7 @@ class TimestampPost extends Model<TimestampPost> with Timestamps {
 // #region timestamps-tz
 @OrmModel(table: 'articles')
 class TimestampArticleTz extends Model<TimestampArticleTz> with TimestampsTZ {
-  const TimestampArticleTz({
-    required this.id,
-    required this.title,
-  });
+  const TimestampArticleTz({required this.id, required this.title});
 
   @OrmField(isPrimaryKey: true, autoIncrement: true)
   final int id;

@@ -43,6 +43,33 @@ Use options to control table naming, timestamps, soft deletes, and other model-l
   </TabItem>
 </Tabs>
 
+## Attribute metadata (fillable/guarded/hidden/visible/casts)
+
+Ormed can enforce mass-assignment rules and control what gets serialized.
+
+<Tabs groupId="attribute-metadata" defaultValue="notes">
+  <TabItem value="notes" label="Notes">
+
+<ul>
+  <li>
+    <code>fillable</code> / <code>guarded</code> are used by <code>model.fill(...)</code> and <code>model.forceFill(...)</code>.
+  </li>
+  <li>
+    <code>hidden</code> / <code>visible</code> affect <code>model.toArray()</code> / <code>model.toJson()</code>.
+  </li>
+  <li>
+    <code>casts</code> / <code>@OrmField(cast: ...)</code> pick codecs for database + serialization.
+  </li>
+</ul>
+
+  </TabItem>
+  <TabItem value="casts" label="Casts">
+
+See **Models → Model Attributes** (mass assignment + serialization) and **Models → Casting** (casts + custom codecs).
+
+  </TabItem>
+</Tabs>
+
 ## Field Annotations
 
 ### Primary Key
