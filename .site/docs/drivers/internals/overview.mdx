@@ -1,0 +1,46 @@
+---
+sidebar_position: 1
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# Driver Internals
+
+This section explains how drivers plug into Ormed and how queries/mutations are represented internally.
+
+If you are building tooling (SQL previews, migrations UI, diagnostics) or implementing a custom driver adapter, these are the core concepts you’ll interact with.
+
+## The pipeline
+
+At a high level:
+
+1. The query builder produces an immutable **plan** (`QueryPlan` or `MutationPlan`)
+2. A `QueryContext` (created by `DataSource`) asks the driver to **describe** or **execute** the plan
+3. The driver uses its compiler/dialect to produce a `StatementPreview`
+4. The driver executes the statement and returns rows / affected counts
+
+Important distinction:
+- **Describe** returns a preview (useful for logging/testing/dry-runs)
+- **Execute** performs the operation on the backend
+
+## Debugging SQL without executing
+
+<Tabs groupId="driver-internals-preview" defaultValue="select">
+  <TabItem value="select" label="Select">
+
+```dart file=../../../examples/lib/drivers/internals.dart#driver-internals-describe-query
+```
+
+  </TabItem>
+  <TabItem value="mutation" label="Mutation">
+
+```dart file=../../../examples/lib/drivers/internals.dart#driver-internals-describe-mutation
+```
+
+  </TabItem>
+</Tabs>
+
+Next:
+- “Plans & Previews” dives into what lives inside `QueryPlan` / `MutationPlan` and how previews are normalized.
+- “Schema” covers the schema interfaces used by migrations, schema dumps, and introspection.

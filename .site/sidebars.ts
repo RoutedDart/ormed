@@ -59,6 +59,15 @@ const sidebars: SidebarsConfig = {
       label: 'Drivers',
       items: [
         'drivers/overview',
+        {
+          type: 'category',
+          label: 'Internals',
+          items: [
+            'drivers/internals/overview',
+            'drivers/internals/plans',
+            'drivers/internals/schema',
+          ],
+        },
         'drivers/sqlite',
         'drivers/postgres',
         'drivers/mysql',

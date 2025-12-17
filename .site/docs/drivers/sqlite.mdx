@@ -40,8 +40,11 @@ driver:
 | Option | Type | Default | Description |
 | --- | --- | --- | --- |
 | `database` | `String` | `database.sqlite` | Path to the `.sqlite` file (relative to project root or absolute). |
+| `path` | `String?` | — | Alias for `database` used by some programmatic helpers. |
+| `memory` | `bool` | `false` | When true, connects to an in-memory database (tests / ephemeral usage). |
 
 ### Notes
 
 - The adapter automatically enables `RETURNING` support and schema inspection.
 - Migrations and seeds are configured separately in `orm.yaml`. See Getting Started → Configuration.
+- For plan/previews/schema internals, see Drivers → Internals.

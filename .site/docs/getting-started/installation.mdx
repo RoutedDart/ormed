@@ -117,10 +117,10 @@ This generates `.orm.dart` files alongside your model files containing:
 - `ModelNameInsertDto` / `ModelNameUpdateDto` - Data transfer objects
 
 It also generates a centralized `orm_registry.g.dart` file with:
-- `buildOrmRegistry()` - Creates a `ModelRegistry` with all models registered
-- `buildOrmRegistryWithFactories()` - Registry + factory registration
-- `registerOrmFactories()` - Registers factories for `Model.factory<T>()`
-- `GeneratedOrmModels` extension for fluent registration
+- `bootstrapOrm()` - One-call setup: registry + factories + generated model wiring
+- `buildOrmRegistry()` - Creates a `ModelRegistry` with all models registered (lower-level)
+- `registerOrmFactories()` - Registers factories for `Model.factory<T>()` (when enabled)
+- `registerModelEventHandlers()` / `registerModelScopes()` - Registers generated wiring into the global bus/registries
 
 ## Next Steps
 
