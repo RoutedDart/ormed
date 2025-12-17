@@ -17,8 +17,6 @@ const FieldDefinition _$ActiveUserIdField = FieldDefinition(
   isUnique: false,
   isIndexed: false,
   autoIncrement: true,
-  insertable: false,
-  defaultDartValue: 0,
 );
 
 const FieldDefinition _$ActiveUserEmailField = FieldDefinition(
@@ -355,7 +353,7 @@ class $ActiveUser extends ActiveUser
     with ModelAttributes, SoftDeletesImpl
     implements OrmEntity {
   $ActiveUser({
-    int? id = 0,
+    int? id,
     required String email,
     String? name,
     required Map<String, Object?> settings,

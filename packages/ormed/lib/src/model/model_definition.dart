@@ -260,9 +260,6 @@ class FieldDefinition {
     this.defaultValueSql,
     this.codecType,
     this.driverOverrides = const {},
-    this.insertable,
-    this.updatable,
-    this.defaultDartValue,
   });
 
   /// The Dart property name.
@@ -304,46 +301,15 @@ class FieldDefinition {
   /// Driver-specific overrides for this field.
   final Map<String, FieldDriverOverride> driverOverrides;
 
-  /// Whether this field should be included in INSERT statements.
-  ///
-  /// When `null`, computed based on:
-  /// - `false` for auto-increment fields
-  /// - `true` otherwise
-  ///
-  /// **Deprecated:** Use generated `InsertDto` types instead. This field is
-  /// retained for backward compatibility.
-  @Deprecated('Use generated InsertDto types instead')
-  final bool? insertable;
-
-  /// Whether this field should be included in UPDATE statements.
-  ///
-  /// When `null`, computed based on:
-  /// - `false` for primary key fields
-  /// - `true` otherwise
-  ///
-  /// **Deprecated:** Use generated `UpdateDto` types instead. This field is
-  /// retained for backward compatibility.
-  @Deprecated('Use generated UpdateDto types instead')
-  final bool? updatable;
-
-  /// Default Dart value for new instances (sentinel for auto-increment).
-  ///
-  /// **Deprecated:** Use generated `InsertDto` types instead of sentinel
-  /// values. This field is retained for backward compatibility.
-  @Deprecated('Use generated InsertDto types instead of sentinel values')
-  final Object? defaultDartValue;
-
   /// Returns whether this field should be included in INSERT statements.
   ///
-  /// Auto-increment fields are excluded by default unless explicitly set.
-  // ignore: deprecated_member_use_from_same_package
-  bool get isInsertable => insertable ?? !autoIncrement;
+  /// Auto-increment fields are excluded by default.
+  bool get isInsertable => !autoIncrement;
 
   /// Returns whether this field should be included in UPDATE statements.
   ///
-  /// Primary key fields are excluded by default unless explicitly set.
-  // ignore: deprecated_member_use_from_same_package
-  bool get isUpdatable => updatable ?? !isPrimaryKey;
+  /// Primary key fields are excluded by default.
+  bool get isUpdatable => !isPrimaryKey;
 
   /// Returns the driver-specific override for this field, if any.
   FieldDriverOverride? overrideFor(String? driver) {

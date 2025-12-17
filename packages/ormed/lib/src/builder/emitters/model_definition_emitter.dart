@@ -158,18 +158,6 @@ class ModelDefinitionEmitter {
       if (field.codecType != null) {
         buffer.writeln("  codecType: '${field.codecType}',");
       }
-      // Emit insertable/updatable only if explicitly set or auto-inferred
-      if (field.insertable != null) {
-        buffer.writeln('  insertable: ${field.insertable},');
-      }
-      if (field.updatable != null) {
-        buffer.writeln('  updatable: ${field.updatable},');
-      }
-      if (field.defaultDartValue != null) {
-        buffer.writeln(
-          '  defaultDartValue: ${_literalValue(field.defaultDartValue)},',
-        );
-      }
       if (field.driverOverrides.isNotEmpty) {
         buffer.writeln('  driverOverrides: {');
         field.driverOverrides.forEach((driver, override) {
@@ -193,14 +181,6 @@ class ModelDefinitionEmitter {
       }
       buffer.writeln(');\n');
     }
-  }
-
-  /// Converts a Dart value to its literal string representation.
-  String _literalValue(Object? value) {
-    if (value == null) return 'null';
-    if (value is String) return "'${escape(value)}'";
-    if (value is int || value is double || value is bool) return '$value';
-    return '$value';
   }
 
   void _writeRelations(

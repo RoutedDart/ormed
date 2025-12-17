@@ -17,8 +17,6 @@ const FieldDefinition _$NoFactoryIdField = FieldDefinition(
   isUnique: false,
   isIndexed: false,
   autoIncrement: true,
-  insertable: false,
-  defaultDartValue: 0,
 );
 
 const FieldDefinition _$NoFactoryDeletedAtField = FieldDefinition(
@@ -239,7 +237,7 @@ class NoFactoryPartial implements PartialEntity<$NoFactory> {
 class $NoFactory extends NoFactory
     with ModelAttributes, SoftDeletesImpl
     implements OrmEntity {
-  $NoFactory({int? id = 0}) : super.new(id: id) {
+  $NoFactory({int? id}) : super.new(id: id) {
     _attachOrmRuntimeMetadata({'id': id});
   }
 

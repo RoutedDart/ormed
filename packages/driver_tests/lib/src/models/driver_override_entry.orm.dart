@@ -17,8 +17,6 @@ const FieldDefinition _$DriverOverrideEntryIdField = FieldDefinition(
   isUnique: false,
   isIndexed: false,
   autoIncrement: true,
-  insertable: false,
-  defaultDartValue: 0,
 );
 
 const FieldDefinition _$DriverOverrideEntryPayloadField = FieldDefinition(
