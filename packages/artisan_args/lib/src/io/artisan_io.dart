@@ -1,16 +1,19 @@
 import 'dart:async';
 import 'dart:io' as io;
 
-import '../components/base.dart';
-import '../components/password.dart';
-import '../components/progress_bar.dart';
-import '../components/select.dart';
-import '../components/table.dart';
+import '../tui/bubbles/components/base.dart';
+import '../tui/bubbles/components/progress_bar.dart';
+import '../tui/bubbles/components/table.dart';
 import '../renderer/renderer.dart';
 import '../style/color.dart';
 import '../style/style.dart';
 import '../style/verbosity.dart';
 import 'components.dart';
+import '../tui/terminal.dart' show StdioTerminal;
+import '../tui/bubbles/password.dart' show PasswordModel;
+import '../tui/bubbles/select.dart' show MultiSelectModel, SelectModel;
+import '../tui/bubbles/prompt.dart'
+    show runMultiSelectPrompt, runPasswordPrompt, runSelectPrompt;
 
 /// Callback for writing a complete line to output.
 typedef ArtisanWriteLine = void Function(String line);
@@ -87,6 +90,10 @@ class ArtisanIO {
 
   /// Private getter for internal use (backwards compatibility).
   Style get _style => style;
+
+  /// Rendering configuration for bubble-style display components.
+  RenderConfig get renderConfig =>
+      RenderConfig.fromRenderer(_renderer, terminalWidth: terminalWidth);
 
   /// Whether interactive prompts are enabled.
   final bool interactive;
@@ -315,15 +322,16 @@ class ArtisanIO {
     required List<String> headers,
     required List<List<Object?>> rows,
   }) {
-    final context = ComponentContext(
-      stdout: _stdout ?? io.stdout,
-      stdin: _stdin ?? io.stdin,
+    final renderConfig = RenderConfig.fromRenderer(
+      _renderer,
       terminalWidth: terminalWidth,
-      renderer: _renderer,
     );
-    final component = TableComponent(headers: headers, rows: rows);
-    final result = component.build(context);
-    for (final line in result.output.split('\n')) {
+    final output = TableComponent(
+      headers: headers,
+      rows: rows,
+      renderConfig: renderConfig,
+    ).render();
+    for (final line in output.split('\n')) {
       writeln(line);
     }
     newLine();
@@ -333,13 +341,8 @@ class ArtisanIO {
   // Progress
   // ─────────────────────────────────────────────────────────────────────────────
 
-  /// Creates a component context for the current IO.
-  ComponentContext get _componentContext => ComponentContext(
-    stdout: _stdout ?? io.stdout,
-    stdin: _stdin ?? io.stdin,
-    terminalWidth: terminalWidth,
-    renderer: _renderer,
-  );
+  StdioTerminal get _promptTerminal =>
+      StdioTerminal(stdout: _stdout ?? io.stdout, stdin: _stdin ?? io.stdin);
 
   /// Creates a new progress bar.
   StatefulProgressBar createProgressBar({int max = 0}) {
@@ -350,13 +353,17 @@ class ArtisanIO {
   Iterable<T> progressIterate<T>(Iterable<T> iterable, {int? max}) sync* {
     final total = max ?? (iterable is List<T> ? iterable.length : 0);
     final bar = createProgressBar(max: total);
-    final context = _componentContext;
-    bar.start(context);
+    final terminal = _promptTerminal;
+    final renderConfig = RenderConfig.fromRenderer(
+      _renderer,
+      terminalWidth: terminalWidth,
+    );
+    bar.start(terminal, renderConfig: renderConfig);
     for (final item in iterable) {
       yield item;
-      bar.advance(context);
+      bar.advance(terminal, renderConfig: renderConfig);
     }
-    bar.finish(context);
+    bar.finish(terminal, renderConfig: renderConfig);
     newLine();
   }
 
@@ -419,10 +426,12 @@ class ArtisanIO {
       return _secretReader(question, fallback: fallback);
     }
 
-    return PasswordComponent(
-      prompt: question,
-      fallback: fallback ?? '',
-    ).interact(_componentContext);
+    final terminal = _promptTerminal;
+    final model = PasswordModel(prompt: question);
+    final result = await runPasswordPrompt(model, terminal);
+    if (result != null) return result;
+    if (fallback != null) return fallback;
+    throw StateError('Password prompt cancelled.');
   }
 
   /// Prompts for a choice from a list (basic numbered selection).
@@ -496,12 +505,14 @@ class ArtisanIO {
       throw StateError('Cannot prompt in non-interactive mode.');
     }
 
-    return Select<T>(
-      prompt: question,
-      options: choices,
-      defaultIndex: defaultIndex ?? 0,
+    final terminal = _promptTerminal;
+    final model = SelectModel<T>(
+      items: choices,
+      title: question,
+      initialIndex: defaultIndex ?? 0,
       display: display,
-    ).interact(_componentContext);
+    );
+    return await runSelectPrompt(model, terminal);
   }
 
   /// Interactive multi-select with arrow-key navigation.
@@ -515,13 +526,18 @@ class ArtisanIO {
       return defaultSelected.map((i) => choices[i]).toList();
     }
 
-    final result = await MultiSelect<T>(
-      prompt: question,
-      options: choices,
-      defaultSelected: defaultSelected,
+    final terminal = _promptTerminal;
+    final validDefaults = defaultSelected
+        .where((index) => index >= 0 && index < choices.length)
+        .toSet();
+    final model = MultiSelectModel<T>(
+      items: choices,
+      title: question,
+      initialIndex: validDefaults.isNotEmpty ? validDefaults.first : 0,
+      initialSelected: validDefaults,
       display: display,
-    ).interact(_componentContext);
-
+    );
+    final result = await runMultiSelectPrompt(model, terminal);
     return result ?? [];
   }
 

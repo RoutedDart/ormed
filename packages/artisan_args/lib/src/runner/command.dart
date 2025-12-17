@@ -84,18 +84,20 @@ abstract class ArtisanCommand<T> extends Command<T> {
     final Renderer renderer = runner is ArtisanCommandRunner<T>
         ? (runner as ArtisanCommandRunner<T>).renderer
         : StringRenderer(colorProfile: ColorProfile.ascii);
-    
-    String heading(String text) => (Style()
-        ..colorProfile = renderer.colorProfile
-        ..hasDarkBackground = renderer.hasDarkBackground)
-        .bold()
-        .foreground(Colors.yellow)
-        .render(text);
-    String command(String text) => (Style()
-        ..colorProfile = renderer.colorProfile
-        ..hasDarkBackground = renderer.hasDarkBackground)
-        .foreground(Colors.green)
-        .render(text);
+
+    String heading(String text) =>
+        (Style()
+              ..colorProfile = renderer.colorProfile
+              ..hasDarkBackground = renderer.hasDarkBackground)
+            .bold()
+            .foreground(Colors.yellow)
+            .render(text);
+    String command(String text) =>
+        (Style()
+              ..colorProfile = renderer.colorProfile
+              ..hasDarkBackground = renderer.hasDarkBackground)
+            .foreground(Colors.green)
+            .render(text);
     String formatOptionsUsage(String usage) {
       if (renderer.colorProfile == ColorProfile.ascii) return usage;
       final lines = usage.split('\n');
@@ -119,12 +121,15 @@ abstract class ArtisanCommand<T> extends Command<T> {
         }
         final option = rest.substring(0, split.start);
         final desc = rest.substring(split.end);
-        final styledOption = (Style()
-            ..colorProfile = renderer.colorProfile
-            ..hasDarkBackground = renderer.hasDarkBackground)
-            .foreground(Colors.green)
-            .render(option);
-        styled.add('$indent$styledOption${' ' * (split.end - split.start)}$desc');
+        final styledOption =
+            (Style()
+                  ..colorProfile = renderer.colorProfile
+                  ..hasDarkBackground = renderer.hasDarkBackground)
+                .foreground(Colors.green)
+                .render(option);
+        styled.add(
+          '$indent$styledOption${' ' * (split.end - split.start)}$desc',
+        );
       }
       return styled.join('\n');
     }

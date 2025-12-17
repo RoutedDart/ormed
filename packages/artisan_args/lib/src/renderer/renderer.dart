@@ -17,7 +17,11 @@ library;
 
 import 'dart:io';
 
+import '../colorprofile/detect.dart' as cp_detect;
+import '../colorprofile/downsample.dart' as cp_downsample;
+import '../colorprofile/profile.dart' as cp;
 import '../style/color.dart';
+import '../terminal/ansi.dart' show Ansi;
 
 export '../style/color.dart' show ColorProfile;
 
@@ -64,25 +68,36 @@ class TerminalRenderer implements Renderer {
   /// If [output] is not provided, defaults to [stdout].
   /// If [forceProfile] is provided, uses that instead of auto-detection.
   /// If [forceDarkBackground] is provided, uses that instead of auto-detection.
+  /// If [forceNoAnsi] is true, strips all ANSI escape sequences when writing.
+  /// If [forceIsTty] is provided, it overrides TTY detection.
   TerminalRenderer({
     IOSink? output,
     ColorProfile? forceProfile,
     bool? forceDarkBackground,
+    bool? forceNoAnsi,
+    bool? forceIsTty,
   }) : _output = output ?? stdout,
        _overrideProfile = forceProfile,
-       _overrideDarkBackground = forceDarkBackground;
+       _overrideDarkBackground = forceDarkBackground,
+       _overrideNoAnsi = forceNoAnsi,
+       _overrideIsTty = forceIsTty;
 
   IOSink _output;
   ColorProfile? _overrideProfile;
   bool? _overrideDarkBackground;
+  bool? _overrideNoAnsi;
+  bool? _overrideIsTty;
 
   ColorProfile? _cachedProfile;
   bool? _cachedDarkBackground;
+  cp.Profile? _cachedInternalProfile;
 
   @override
   ColorProfile get colorProfile {
     if (_overrideProfile != null) return _overrideProfile!;
-    return _cachedProfile ??= _detectColorProfile();
+    return _cachedProfile ??= _mapProfile(
+      _cachedInternalProfile ??= _detectInternalProfile(),
+    );
   }
 
   @override
@@ -107,86 +122,71 @@ class TerminalRenderer implements Renderer {
   /// Sets the output sink for this renderer.
   set output(IOSink sink) {
     _output = sink;
+    _cachedProfile = null;
+    _cachedInternalProfile = null;
   }
 
   @override
-  void write(String text) => _output.write(text);
+  void write(String text) {
+    _output.write(_process(text));
+  }
 
   @override
-  void writeln([String text = '']) => _output.writeln(text);
+  void writeln([String text = '']) {
+    _output.writeln(_process(text));
+  }
 
-  /// Detects the color profile from environment variables.
-  ///
-  /// Checks:
-  /// - `NO_COLOR` - If set, returns [ColorProfile.ascii]
-  /// - `COLORTERM` - If 'truecolor' or '24bit', returns [ColorProfile.trueColor]
-  /// - `TERM` - If contains '256color', returns [ColorProfile.ansi256]
-  /// - `TERM` - If set, returns [ColorProfile.ansi]
-  /// - Otherwise, returns [ColorProfile.ascii]
-  static ColorProfile _detectColorProfile() {
-    final env = Platform.environment;
+  cp.Profile _detectInternalProfile() {
+    return cp_detect.detectForSink(
+      _output,
+      env: Platform.environment,
+      forceIsTty: _overrideIsTty,
+    );
+  }
 
-    // NO_COLOR standard: https://no-color.org/
-    if (env.containsKey('NO_COLOR')) {
-      return ColorProfile.ascii;
+  String _process(String text) {
+    final p = _effectiveInternalProfile();
+
+    if (p == cp.Profile.noTty) {
+      return Ansi.stripAnsi(text);
     }
 
-    // Check for true color support
-    final colorTerm = env['COLORTERM']?.toLowerCase() ?? '';
-    if (colorTerm.contains('truecolor') || colorTerm.contains('24bit')) {
-      return ColorProfile.trueColor;
+    if (p == cp.Profile.trueColor) {
+      return text;
     }
 
-    // Check TERM for color capabilities
-    final term = env['TERM']?.toLowerCase() ?? '';
+    return cp_downsample.downsampleSgr(text, p);
+  }
 
-    // Check for 256-color support
-    if (term.contains('256color') ||
-        term.contains('256-color') ||
-        term == 'xterm-256') {
-      return ColorProfile.ansi256;
+  cp.Profile _effectiveInternalProfile() {
+    if (_overrideNoAnsi == true) return cp.Profile.noTty;
+
+    if (_overrideProfile != null) {
+      return _internalFromColorProfile(_overrideProfile!);
     }
 
-    // Common terminals that support 256 colors
-    if (term.contains('xterm') ||
-        term.contains('screen') ||
-        term.contains('tmux') ||
-        term.contains('vt100') ||
-        term.contains('linux') ||
-        term.contains('rxvt') ||
-        term.contains('konsole') ||
-        term.contains('gnome') ||
-        term.contains('alacritty') ||
-        term.contains('kitty') ||
-        term.contains('iterm')) {
-      // Modern terminals typically support 256 colors minimum
-      return ColorProfile.ansi256;
-    }
+    return _cachedInternalProfile ??= _detectInternalProfile();
+  }
 
-    // Check for basic color support
-    if (term.isNotEmpty && term != 'dumb') {
-      return ColorProfile.ansi;
-    }
+  static cp.Profile _internalFromColorProfile(ColorProfile profile) {
+    return switch (profile) {
+      ColorProfile.trueColor => cp.Profile.trueColor,
+      ColorProfile.ansi256 => cp.Profile.ansi256,
+      ColorProfile.ansi => cp.Profile.ansi,
+      ColorProfile.noColor => cp.Profile.ascii,
+      ColorProfile.ascii => cp.Profile.noTty,
+    };
+  }
 
-    // Windows terminal detection
-    if (Platform.isWindows) {
-      final wtSession = env['WT_SESSION'];
-      if (wtSession != null && wtSession.isNotEmpty) {
-        // Windows Terminal supports true color
-        return ColorProfile.trueColor;
-      }
-
-      // Check if running in ConEmu or similar
-      final conEmu = env['ConEmuANSI'];
-      if (conEmu == 'ON') {
-        return ColorProfile.trueColor;
-      }
-
-      // Modern Windows 10+ console supports ANSI
-      return ColorProfile.ansi256;
-    }
-
-    return ColorProfile.ascii;
+  static ColorProfile _mapProfile(cp.Profile profile) {
+    return switch (profile) {
+      cp.Profile.trueColor => ColorProfile.trueColor,
+      cp.Profile.ansi256 => ColorProfile.ansi256,
+      cp.Profile.ansi => ColorProfile.ansi,
+      cp.Profile.ascii => ColorProfile.noColor,
+      cp.Profile.noTty => ColorProfile.ascii,
+      cp.Profile.unknown => ColorProfile.ascii,
+    };
   }
 
   /// Detects whether the terminal has a dark background.
@@ -313,8 +313,8 @@ class NullRenderer implements Renderer {
   NullRenderer({
     ColorProfile colorProfile = ColorProfile.ascii,
     bool hasDarkBackground = true,
-  })  : _colorProfile = colorProfile,
-        _hasDarkBackground = hasDarkBackground;
+  }) : _colorProfile = colorProfile,
+       _hasDarkBackground = hasDarkBackground;
 
   ColorProfile _colorProfile;
   bool _hasDarkBackground;

@@ -2,6 +2,16 @@ import 'dart:async';
 
 import '../style/color.dart';
 import '../style/style.dart';
+import '../tui/bubbles/components/alert.dart' show Alert, AlertDisplayStyle;
+import '../tui/bubbles/components/base.dart' show RenderConfig, ViewComponent;
+import '../tui/bubbles/components/list.dart' show BulletList;
+import '../tui/bubbles/components/table.dart' show HorizontalTableComponent;
+import '../tui/bubbles/components/titled_block.dart' show TitledBlockComponent;
+import '../tui/bubbles/components/two_column_detail.dart'
+    show TwoColumnDetailComponent, TwoColumnDetailList;
+import '../tui/bubbles/components/styled_block.dart' show CommentComponent;
+import '../tui/bubbles/components/exception.dart' show ExceptionComponent;
+import '../tui/bubbles/components/text.dart' show Rule;
 import 'artisan_io.dart';
 
 /// Higher-level console UI components (Laravel-style).
@@ -27,8 +37,18 @@ class ArtisanComponents {
   /// The style configuration.
   Style get style => io.style;
 
+  RenderConfig get _renderConfig => io.renderConfig;
+
   /// Helper to apply muted styling.
   String muted(String text) => style.foreground(Colors.muted).render(text);
+
+  void _writeComponent(ViewComponent component) {
+    final output = component.render();
+    if (output.isEmpty) return;
+    for (final line in output.split('\n')) {
+      io.writeln(line);
+    }
+  }
 
   /// Displays a task with dotted fill and DONE/FAIL/SKIPPED status.
   Future<ArtisanTaskResult> task(
@@ -37,59 +57,105 @@ class ArtisanComponents {
   }) => io.task(description, run: run);
 
   /// Displays two columns aligned with proper spacing.
-  void twoColumnDetail(String first, [String? second]) =>
-      io.twoColumnDetail(first, second);
+  void twoColumnDetail(String first, [String? second]) {
+    _writeComponent(
+      TwoColumnDetailComponent(
+        left: first,
+        right: second ?? '',
+        renderConfig: _renderConfig,
+      ),
+    );
+  }
 
   /// Displays a bulleted list of items.
   void bulletList(Iterable<Object> items) {
-    for (final item in items) {
-      io.writeln('  ${muted('•')} $item');
-    }
+    final bullet = _renderConfig
+        .configureStyle(Style().foreground(Colors.muted))
+        .render('•');
+    _writeComponent(
+      BulletList(
+        items: items.map((e) => e.toString()).toList(),
+        bullet: bullet,
+        indent: 2,
+        renderConfig: _renderConfig,
+      ),
+    );
     io.newLine();
   }
 
   /// Displays a boxed alert message.
-  void alert(Object message) => io.alert(message);
+  void alert(Object message) {
+    _writeComponent(
+      Alert()
+        ..warning()
+        ..displayStyle(AlertDisplayStyle.block)
+        ..message(message.toString())
+        ..width(_renderConfig.terminalWidth)
+        ..fromRenderConfig(_renderConfig),
+    );
+    io.newLine();
+  }
 
   /// Displays an info block with a header.
   void info(String title, Object message) {
-    _titledBlock(title, message, style.foreground(Colors.info));
+    _writeComponent(
+      TitledBlockComponent.info(
+        title: title,
+        message: message,
+        renderConfig: _renderConfig,
+      ),
+    );
+    io.newLine();
   }
 
   /// Displays a success block with a header.
   void success(String title, Object message) {
-    _titledBlock(title, message, style.foreground(Colors.success));
+    _writeComponent(
+      TitledBlockComponent.success(
+        title: title,
+        message: message,
+        renderConfig: _renderConfig,
+      ),
+    );
+    io.newLine();
   }
 
   /// Displays a warning block with a header.
   void warn(String title, Object message) {
-    _titledBlock(title, message, style.foreground(Colors.warning));
+    _writeComponent(
+      TitledBlockComponent.warning(
+        title: title,
+        message: message,
+        renderConfig: _renderConfig,
+      ),
+    );
+    io.newLine();
   }
 
   /// Displays an error block with a header.
   void error(String title, Object message) {
-    _titledBlock(title, message, style.foreground(Colors.error));
+    _writeComponent(
+      TitledBlockComponent.error(
+        title: title,
+        message: message,
+        renderConfig: _renderConfig,
+      ),
+    );
+    io.newLine();
   }
 
   /// Renders a definition list (term/definition pairs).
   void definitionList(Map<String, Object?> definitions) {
     if (definitions.isEmpty) return;
 
-    final termWidth = definitions.keys
-        .map((k) => Style.visibleLength(k))
-        .fold<int>(0, (m, v) => v > m ? v : m);
-
-    final maxWidth = io.terminalWidth;
-    final dotWidth = (maxWidth ~/ 3).clamp(4, 20);
-
-    for (final entry in definitions.entries) {
-      final term = entry.key;
-      final value = entry.value?.toString() ?? '';
-      final termLen = Style.visibleLength(term);
-      final dots = dotWidth - (termLen - termWidth).abs();
-      final dotStr = muted(' ${'.' * dots.clamp(2, dotWidth)} ');
-      io.writeln('  $term$dotStr$value');
-    }
+    _writeComponent(
+      TwoColumnDetailList()
+        ..fromRenderConfig(_renderConfig)
+        ..width(_renderConfig.terminalWidth)
+        ..fillChar('.')
+        ..fillStyle(Style().dim())
+        ..rows(definitions.map((k, v) => MapEntry(k, v?.toString() ?? ''))),
+    );
     io.newLine();
   }
 
@@ -102,15 +168,13 @@ class ArtisanComponents {
   /// Displays a horizontal rule with optional centered text.
   void rule([String? text]) {
     final width = io.terminalWidth - 4;
-    if (text == null || text.isEmpty) {
-      io.writeln(muted('─' * width));
-    } else {
-      final textLen = Style.visibleLength(text);
-      final side = ((width - textLen - 2) / 2).floor();
-      final left = '─' * side.clamp(0, width);
-      final right = '─' * (width - side - textLen - 2).clamp(0, width);
-      io.writeln(muted(left) + ' $text ' + muted(right));
-    }
+    final cfg = RenderConfig(
+      terminalWidth: width,
+      colorProfile: _renderConfig.colorProfile,
+      hasDarkBackground: _renderConfig.hasDarkBackground,
+    );
+    final line = Rule(text: text, renderConfig: cfg).render();
+    io.writeln(muted(line));
     io.newLine();
   }
 
@@ -125,13 +189,15 @@ class ArtisanComponents {
       final result = await run();
       watch.stop();
       io.writeln(
-        style.foreground(Colors.success).render('✓') + muted(' ${_formatDuration(watch.elapsed)}'),
+        style.foreground(Colors.success).render('✓') +
+            muted(' ${_formatDuration(watch.elapsed)}'),
       );
       return result;
     } catch (_) {
       watch.stop();
       io.writeln(
-        style.foreground(Colors.error).render('✗') + muted(' ${_formatDuration(watch.elapsed)}'),
+        style.foreground(Colors.error).render('✗') +
+            muted(' ${_formatDuration(watch.elapsed)}'),
       );
       rethrow;
     }
@@ -139,89 +205,34 @@ class ArtisanComponents {
 
   /// Displays a comment (dimmed text with // prefix).
   void comment(Object message) {
-    final lines = message is Iterable
-        ? message.map((e) => e.toString()).toList()
-        : message.toString().split('\n');
-    for (final line in lines) {
-      io.writeln(muted('// $line'));
-    }
+    _writeComponent(
+      CommentComponent(text: message, renderConfig: _renderConfig),
+    );
   }
 
   /// Displays a horizontal table (row-as-headers layout).
   void horizontalTable(Map<String, Object?> data) {
-    if (data.isEmpty) return;
-
-    final maxKeyWidth = data.keys
-        .map((k) => Style.visibleLength(k))
-        .fold<int>(0, (m, v) => v > m ? v : m);
-
-    for (final entry in data.entries) {
-      final key = entry.key;
-      final value = entry.value?.toString() ?? '';
-      final padding = maxKeyWidth - Style.visibleLength(key);
-      io.writeln('  ${style.foreground(Colors.info).render(key)}${' ' * padding}  │  $value');
-    }
+    _writeComponent(
+      HorizontalTableComponent(
+        data: data,
+        padding: 2,
+        renderConfig: _renderConfig,
+      ),
+    );
     io.newLine();
   }
 
   /// Renders an exception with pretty formatting.
   void renderException(Object exception, [StackTrace? stackTrace]) {
-    final exceptionType = exception.runtimeType.toString();
-    final message = exception.toString();
-
     io.newLine();
-    io.writeln(style.foreground(Colors.error).render('  $exceptionType  '));
-    io.newLine();
-
-    // Exception message
-    final messageLines = message.split('\n');
-    for (final line in messageLines) {
-      io.writeln('  ${style.foreground(Colors.warning).render(line)}');
-    }
-
-    // Stack trace
-    if (stackTrace != null) {
-      io.newLine();
-      io.writeln(muted('  Stack trace:'));
-      io.newLine();
-
-      final lines = stackTrace.toString().split('\n');
-      var frameCount = 0;
-      for (final line in lines) {
-        if (line.trim().isEmpty) continue;
-        if (frameCount >= 10) {
-          io.writeln(muted('  ... and more frames'));
-          break;
-        }
-
-        // Parse and format stack frame
-        final match = RegExp(r'#(\d+)\s+(\S+)\s+\((.+)\)').firstMatch(line);
-        if (match != null) {
-          final number = match.group(1)!.padLeft(2);
-          final member = match.group(2)!;
-          final location = match.group(3)!;
-
-          io.writeln('  ${muted(number)}  ${style.foreground(Colors.info).render(member)}');
-          io.writeln('      ${muted(location)}');
-          frameCount++;
-        }
-      }
-    }
-    io.newLine();
-  }
-
-  void _titledBlock(
-    String title,
-    Object message,
-    Style titleStyle,
-  ) {
-    io.writeln(titleStyle.render('  $title  '));
-    final lines = message is Iterable
-        ? message.map((e) => e.toString()).toList()
-        : message.toString().split('\n');
-    for (final line in lines) {
-      io.writeln('  $line');
-    }
+    _writeComponent(
+      ExceptionComponent(
+        exception: exception,
+        stackTrace: stackTrace,
+        maxStackFrames: 10,
+        renderConfig: _renderConfig,
+      ),
+    );
     io.newLine();
   }
 }

@@ -68,6 +68,7 @@ class ArtisanCommandRunner<T> extends CommandRunner<T> {
          forceProfile: ansi == true
              ? null
              : (ansi == false ? ColorProfile.ascii : null),
+         forceNoAnsi: ansi == false,
        ),
        super(usageLineLength: usageLineLength) {
     _setupGlobalFlags();
@@ -294,32 +295,37 @@ class ArtisanCommandRunner<T> extends CommandRunner<T> {
   }
 
   // Helpers for styling
-  String _heading(String text) => (Style()
-      ..colorProfile = _renderer.colorProfile
-      ..hasDarkBackground = _renderer.hasDarkBackground)
-      .bold()
-      .foreground(Colors.yellow)
-      .render(text);
-  String _command(String text) => (Style()
-      ..colorProfile = _renderer.colorProfile
-      ..hasDarkBackground = _renderer.hasDarkBackground)
-      .foreground(Colors.green)
-      .render(text);
-  String _option(String text) => (Style()
-      ..colorProfile = _renderer.colorProfile
-      ..hasDarkBackground = _renderer.hasDarkBackground)
-      .foreground(Colors.green)
-      .render(text);
-  String _emphasize(String text) => (Style()
-      ..colorProfile = _renderer.colorProfile
-      ..hasDarkBackground = _renderer.hasDarkBackground)
-      .bold()
-      .render(text);
-  String _error(String text) => (Style()
-      ..colorProfile = _renderer.colorProfile
-      ..hasDarkBackground = _renderer.hasDarkBackground)
-      .foreground(Colors.red)
-      .render(text);
+  String _heading(String text) =>
+      (Style()
+            ..colorProfile = _renderer.colorProfile
+            ..hasDarkBackground = _renderer.hasDarkBackground)
+          .bold()
+          .foreground(Colors.yellow)
+          .render(text);
+  String _command(String text) =>
+      (Style()
+            ..colorProfile = _renderer.colorProfile
+            ..hasDarkBackground = _renderer.hasDarkBackground)
+          .foreground(Colors.green)
+          .render(text);
+  String _option(String text) =>
+      (Style()
+            ..colorProfile = _renderer.colorProfile
+            ..hasDarkBackground = _renderer.hasDarkBackground)
+          .foreground(Colors.green)
+          .render(text);
+  String _emphasize(String text) =>
+      (Style()
+            ..colorProfile = _renderer.colorProfile
+            ..hasDarkBackground = _renderer.hasDarkBackground)
+          .bold()
+          .render(text);
+  String _error(String text) =>
+      (Style()
+            ..colorProfile = _renderer.colorProfile
+            ..hasDarkBackground = _renderer.hasDarkBackground)
+          .foreground(Colors.red)
+          .render(text);
 
   String _formatOptionsUsage(String usage) {
     if (_renderer.colorProfile == ColorProfile.ascii) return usage;
