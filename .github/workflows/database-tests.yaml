@@ -45,8 +45,12 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y sqlite3 libsqlite3-dev
       - name: Install dependencies
         run: dart pub get
+      - name: Install SQLite package dependencies (native assets)
+        working-directory: packages/ormed_sqlite
+        run: dart pub get
       - name: Run SQLite driver tests
-        run: dart test packages/ormed_sqlite/test/sqlite_driver_shared_test.dart --concurrency=1 --reporter=expanded
+        working-directory: packages/ormed_sqlite
+        run: dart test test/sqlite_driver_shared_test.dart --concurrency=1 --reporter=expanded
 
   postgres:
     runs-on: ubuntu-latest
