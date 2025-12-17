@@ -18,8 +18,11 @@ void main() {
     });
 
     test('uses arabic enumerator', () {
-      final list = LipList.create(['A', 'B', 'C'])
-          .enumerator(ListEnumerators.arabic);
+      final list = LipList.create([
+        'A',
+        'B',
+        'C',
+      ]).enumerator(ListEnumerators.arabic);
       final output = list.render();
       expect(output, contains('1.'));
       expect(output, contains('2.'));
@@ -27,8 +30,12 @@ void main() {
     });
 
     test('uses roman enumerator', () {
-      final list = LipList.create(['A', 'B', 'C', 'D'])
-          .enumerator(ListEnumerators.roman);
+      final list = LipList.create([
+        'A',
+        'B',
+        'C',
+        'D',
+      ]).enumerator(ListEnumerators.roman);
       final output = list.render();
       expect(output, contains('I.'));
       expect(output, contains('II.'));
@@ -37,8 +44,11 @@ void main() {
     });
 
     test('uses alphabet enumerator', () {
-      final list = LipList.create(['A', 'B', 'C'])
-          .enumerator(ListEnumerators.alphabet);
+      final list = LipList.create([
+        'A',
+        'B',
+        'C',
+      ]).enumerator(ListEnumerators.alphabet);
       final output = list.render();
       expect(output, contains('a.'));
       expect(output, contains('b.'));
@@ -62,16 +72,14 @@ void main() {
     });
 
     test('applies item style', () {
-      final list = LipList.create(['Test'])
-          .itemStyle(Style().bold());
+      final list = LipList.create(['Test']).itemStyle(Style().bold());
       final output = list.render();
       // Bold ANSI codes should be present
       expect(output, contains('\x1b['));
     });
 
     test('applies enumerator style', () {
-      final list = LipList.create(['Test'])
-          .enumeratorStyle(Style().dim());
+      final list = LipList.create(['Test']).enumeratorStyle(Style().dim());
       final output = list.render();
       expect(output, contains('\x1b['));
     });
@@ -83,8 +91,13 @@ void main() {
     });
 
     test('offset skips items', () {
-      final list = LipList.create(['A', 'B', 'C', 'D', 'E'])
-          .offset(1, 1); // Skip first and last
+      final list = LipList.create([
+        'A',
+        'B',
+        'C',
+        'D',
+        'E',
+      ]).offset(1, 1); // Skip first and last
       final output = list.render();
       expect(output, isNot(contains('• A')));
       expect(output, contains('B'));

@@ -6,7 +6,11 @@ void main() {
     final out = StringBuffer();
     final err = StringBuffer();
     final renderer = StringRenderer(colorProfile: ColorProfile.ascii);
-    final io = ArtisanIO(renderer: renderer, out: out.writeln, err: err.writeln);
+    final io = ArtisanIO(
+      renderer: renderer,
+      out: out.writeln,
+      err: err.writeln,
+    );
 
     io.title('Hello');
 
@@ -106,11 +110,7 @@ void main() {
   group('components', () {
     test('provides access to ArtisanComponents facade', () {
       final renderer = StringRenderer(colorProfile: ColorProfile.ascii);
-      final io = ArtisanIO(
-        renderer: renderer,
-        out: (_) {},
-        err: (_) {},
-      );
+      final io = ArtisanIO(renderer: renderer, out: (_) {}, err: (_) {});
 
       expect(io.components, isA<ArtisanComponents>());
       // Same instance on repeated access
@@ -120,11 +120,7 @@ void main() {
     test('components.bulletList outputs formatted list', () {
       final out = StringBuffer();
       final renderer = StringRenderer(colorProfile: ColorProfile.ascii);
-      final io = ArtisanIO(
-        renderer: renderer,
-        out: out.writeln,
-        err: (_) {},
-      );
+      final io = ArtisanIO(renderer: renderer, out: out.writeln, err: (_) {});
 
       io.components.bulletList(['Item 1', 'Item 2', 'Item 3']);
 
@@ -138,11 +134,7 @@ void main() {
     test('components.definitionList outputs aligned terms', () {
       final out = StringBuffer();
       final renderer = StringRenderer(colorProfile: ColorProfile.ascii);
-      final io = ArtisanIO(
-        renderer: renderer,
-        out: out.writeln,
-        err: (_) {},
-      );
+      final io = ArtisanIO(renderer: renderer, out: out.writeln, err: (_) {});
 
       io.components.definitionList({
         'Name': 'My Application',
@@ -160,11 +152,7 @@ void main() {
     test('components.rule outputs horizontal separator', () {
       final out = StringBuffer();
       final renderer = StringRenderer(colorProfile: ColorProfile.ascii);
-      final io = ArtisanIO(
-        renderer: renderer,
-        out: out.writeln,
-        err: (_) {},
-      );
+      final io = ArtisanIO(renderer: renderer, out: out.writeln, err: (_) {});
 
       io.components.rule();
       io.components.rule('Section');
@@ -177,11 +165,7 @@ void main() {
     test('components.twoColumnDetail delegates to io', () {
       final out = StringBuffer();
       final renderer = StringRenderer(colorProfile: ColorProfile.ascii);
-      final io = ArtisanIO(
-        renderer: renderer,
-        out: out.writeln,
-        err: (_) {},
-      );
+      final io = ArtisanIO(renderer: renderer, out: out.writeln, err: (_) {});
 
       io.components.twoColumnDetail('Key', 'Value');
 

@@ -40,6 +40,19 @@
 ///   }
 /// }
 /// ```
+///
+/// ## Bubble Prompts
+///
+/// For Bubble Tea-style interactive prompts, use the bubbles in `tui.dart` or
+/// the prompt helpers exported from this library:
+///
+/// ```dart
+/// final terminal = StdioTerminal();
+/// final name = await runTextInputPrompt(
+///   TextInputModel(prompt: 'Name: '),
+///   terminal,
+/// );
+/// ```
 library artisan_args;
 
 // Runner
@@ -53,8 +66,20 @@ export 'src/io/artisan_io.dart' show ArtisanIO, ArtisanTaskResult;
 export 'src/io/components.dart' show ArtisanComponents;
 export 'src/io/validators.dart' show Validators;
 
-// Terminal utilities
-export 'src/output/terminal.dart' show Terminal, RawModeState, KeyCode;
+// Terminal utilities (unified module)
+export 'src/terminal/terminal.dart'
+    show
+        Terminal,
+        StdioTerminal,
+        StringTerminal,
+        RawModeGuard,
+        Ansi,
+        Key,
+        KeyType,
+        Keys;
+
+// TUI Runtime (Bubble Tea-style) + Bubbles
+export 'tui.dart' hide Renderer, ListItem, PasteMsg;
 
 // Style - Verbosity
 export 'src/style/verbosity.dart' show ArtisanVerbosity;
@@ -97,24 +122,18 @@ export 'src/renderer/renderer.dart'
 export 'src/layout/layout.dart' show Layout, WhitespaceOptions;
 
 // Component System - Base
-export 'src/components/base.dart'
-    show
-        CliComponent,
-        InteractiveComponent,
-        ComponentContext,
-        RenderResult,
-        StyledComponent,
-        FluentComponent;
+export 'src/tui/bubbles/components/base.dart'
+    show RenderConfig, ViewComponent, FluentComponent;
 
 // Component System - Layout
-export 'src/components/layout.dart'
+export 'src/tui/bubbles/components/layout.dart'
     show CompositeComponent, ColumnComponent, RowComponent;
 
 // Component System - Text
-export 'src/components/text.dart' show Text, StyledText, Rule;
+export 'src/tui/bubbles/components/text.dart' show Text, StyledText, Rule;
 
 // Component System - List
-export 'src/components/list.dart'
+export 'src/tui/bubbles/components/list.dart'
     show BulletList, NumberedList, ListEnumerator, ListStyleFunc;
 
 // Component System - List (Fluent/Lipgloss-style)
@@ -129,7 +148,7 @@ export 'src/style/list.dart'
         ListIndenterFunc;
 
 // Component System - Box (Legacy + Fluent)
-export 'src/components/box.dart'
+export 'src/tui/bubbles/components/box.dart'
     show
         KeyValue,
         Box,
@@ -141,23 +160,16 @@ export 'src/components/box.dart'
         BoxPresets;
 
 // Component System - Progress
-export 'src/components/progress.dart' show ProgressBar, SpinnerFrame;
-export 'src/components/progress_bar.dart'
+export 'src/tui/bubbles/components/progress.dart'
+    show ProgressBar, SpinnerFrame;
+export 'src/tui/bubbles/components/progress_bar.dart'
     show ProgressBarComponent, StatefulProgressBar;
 
-// Component System - Input
-export 'src/components/input.dart'
-    show TextInput, Confirm, SecretInputComponent;
-
-// Component System - Select
-export 'src/components/select.dart' show Select, MultiSelect;
-
-// Component System - Spinner
-export 'src/components/spinner.dart'
-    show SpinnerComponent, SpinnerFrames, StatefulSpinner, withSpinner;
+// Interactive components now live under `src/tui/bubbles/` and are exposed via
+// `package:artisan_args/tui.dart` + `package:artisan_args/artisan_args.dart`.
 
 // Component System - Alert (Legacy + Fluent)
-export 'src/components/alert.dart'
+export 'src/tui/bubbles/components/alert.dart'
     show
         AlertComponent,
         AlertType,
@@ -167,10 +179,10 @@ export 'src/components/alert.dart'
         AlertFactory;
 
 // Component System - Columns
-export 'src/components/columns.dart' show ColumnsComponent;
+export 'src/tui/bubbles/components/columns.dart' show ColumnsComponent;
 
 // Component System - Definition List (Legacy + Fluent)
-export 'src/components/definition_list.dart'
+export 'src/tui/bubbles/components/definition_list.dart'
     show
         DefinitionListComponent,
         DefinitionList,
@@ -179,24 +191,31 @@ export 'src/components/definition_list.dart'
         DefinitionListFactory;
 
 // Component System - Panel (Legacy + Fluent)
-export 'src/components/panel.dart'
+export 'src/tui/bubbles/components/panel.dart'
     show
         PanelComponent,
         PanelAlignment,
         Panel,
         PanelContentStyleFunc,
         PanelPresets;
-export 'src/components/panel_chars.dart' show PanelBoxChars, PanelBoxCharSet;
+export 'src/tui/bubbles/components/panel_chars.dart'
+    show PanelBoxChars, PanelBoxCharSet;
 
 // Component System - Task
-export 'src/components/task.dart' show TaskComponent, TaskStatus;
+export 'src/tui/bubbles/components/task.dart' show TaskComponent, TaskStatus;
 
 // Component System - Tree (Legacy + Fluent)
-export 'src/components/tree.dart'
-    show TreeComponent, Tree, TreeEnumerator, TreeStyleFunc, TreeEnumeratorStyleFunc, TreeFactory;
+export 'src/tui/bubbles/components/tree.dart'
+    show
+        TreeComponent,
+        Tree,
+        TreeEnumerator,
+        TreeStyleFunc,
+        TreeEnumeratorStyleFunc,
+        TreeFactory;
 
 // Component System - Two Column Detail (Legacy + Fluent)
-export 'src/components/two_column_detail.dart'
+export 'src/tui/bubbles/components/two_column_detail.dart'
     show
         TwoColumnDetailComponent,
         TwoColumnDetail,
@@ -205,7 +224,7 @@ export 'src/components/two_column_detail.dart'
         TwoColumnDetailFactory;
 
 // Component System - Table (Legacy + Fluent)
-export 'src/components/table.dart'
+export 'src/tui/bubbles/components/table.dart'
     show
         TableComponent,
         HorizontalTableComponent,
@@ -214,7 +233,7 @@ export 'src/components/table.dart'
         TableFactory;
 
 // Component System - Styled Block (Legacy + Fluent)
-export 'src/components/styled_block.dart'
+export 'src/tui/bubbles/components/styled_block.dart'
     show
         StyledBlockComponent,
         BlockStyleType,
@@ -226,30 +245,12 @@ export 'src/components/styled_block.dart'
         Comment;
 
 // Component System - Exception
-export 'src/components/exception.dart'
+export 'src/tui/bubbles/components/exception.dart'
     show ExceptionComponent, SimpleExceptionComponent;
 
 // Component System - Link
-export 'src/components/link.dart' show LinkComponent, LinkGroupComponent;
+export 'src/tui/bubbles/components/link.dart'
+    show LinkComponent, LinkGroupComponent;
 
-// Component System - Search & Interactive
-export 'src/components/search.dart'
-    show
-        SearchComponent,
-        SearchComponentConfig,
-        PauseComponent,
-        CountdownComponent;
-
-// Component System - Anticipate/Autocomplete
-export 'src/components/anticipate.dart'
-    show AnticipateComponent, AnticipateComponentConfig;
-
-// Component System - Password
-export 'src/components/password.dart' show PasswordComponent;
-
-// Component System - Textarea
-export 'src/components/textarea.dart' show TextareaComponent;
-
-// Component System - Wizard
-export 'src/components/wizard.dart'
-    show WizardComponent, WizardStep, WizardStepResult;
+// Component System - Artisan Facade Helpers
+export 'src/tui/bubbles/components/titled_block.dart' show TitledBlockComponent;
