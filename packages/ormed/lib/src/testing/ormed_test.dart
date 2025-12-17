@@ -35,6 +35,9 @@ class OrmedTestConfig {
     required String configHash,
   }) : _configHash = configHash;
 
+  /// Hash of the configuration used to create this test environment.
+  String get configHash => _configHash;
+
   /// Get the manager for this configuration
   TestDatabaseManager get manager {
     final m = _managers[configKey];

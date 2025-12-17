@@ -63,49 +63,51 @@ bool isSoftDeletesMixin(InterfaceType type) {
   final element = type.element;
   final libraryUri = element.library.identifier;
   return element.name == 'SoftDeletes' &&
-      libraryUri == 'package:ormed/src/model_mixins/soft_deletes.dart';
+      libraryUri == 'package:ormed/src/model/model_mixins/soft_deletes.dart';
 }
 
 bool isSoftDeletesTZMixin(InterfaceType type) {
   final element = type.element;
   final libraryUri = element.library.identifier;
   return element.name == 'SoftDeletesTZ' &&
-      libraryUri == 'package:ormed/src/model_mixins/timestamps.dart';
+      libraryUri == 'package:ormed/src/model/model_mixins/timestamps.dart';
 }
 
 bool isTimestampsMixin(InterfaceType type) {
   final element = type.element;
   final libraryUri = element.library.identifier;
   return element.name == 'Timestamps' &&
-      libraryUri == 'package:ormed/src/model_mixins/timestamps.dart';
+      libraryUri == 'package:ormed/src/model/model_mixins/timestamps.dart';
 }
 
 bool isTimestampsTZMixin(InterfaceType type) {
   final element = type.element;
   final libraryUri = element.library.identifier;
   return element.name == 'TimestampsTZ' &&
-      libraryUri == 'package:ormed/src/model_mixins/timestamps.dart';
+      libraryUri == 'package:ormed/src/model/model_mixins/timestamps.dart';
 }
 
 bool isModelAttributesMixin(InterfaceType type) {
   final element = type.element;
   final libraryUri = element.library.identifier;
   return element.name == 'ModelAttributes' &&
-      libraryUri == 'package:ormed/src/model_mixins/model_attributes.dart';
+      libraryUri ==
+          'package:ormed/src/model/model_mixins/model_attributes.dart';
 }
 
 bool isModelConnectionMixin(InterfaceType type) {
   final element = type.element;
   final libraryUri = element.library.identifier;
   return element.name == 'ModelConnection' &&
-      libraryUri == 'package:ormed/src/model_mixins/model_connection.dart';
+      libraryUri ==
+          'package:ormed/src/model/model_mixins/model_connection.dart';
 }
 
 bool isModelFactoryMixin(InterfaceType type) {
   final element = type.element;
   final libraryUri = element.library.identifier;
   return element.name == 'ModelFactoryCapable' &&
-      libraryUri == 'package:ormed/src/model_mixins/model_factory.dart';
+      libraryUri == 'package:ormed/src/model/model_mixins/model_factory.dart';
 }
 
 bool classOrSuperHasMixin(

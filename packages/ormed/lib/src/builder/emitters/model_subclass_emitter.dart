@@ -289,7 +289,7 @@ class ModelSubclassEmitter {
         firstArgument: 'this',
       );
       buffer.writeln(
-        '  Query<$trackedName> ${scope.name}$signature => ($call) as Query<$trackedName>;',
+        '  Query<$trackedName> ${scope.name}$signature => $call;',
       );
     }
     buffer.writeln('}');
@@ -319,12 +319,12 @@ class ModelSubclassEmitter {
         int index = 0;
         for (final param in tail.where((p) => !p.isNamed)) {
           call.write(
-            'args[$index] as ${param.type.getDisplayString(withNullability: true)}, ',
+            'args[$index] as ${param.type.getDisplayString()}, ',
           );
           index++;
         }
         for (final param in tail.where((p) => p.isNamed)) {
-          final typeStr = param.type.getDisplayString(withNullability: true);
+          final typeStr = param.type.getDisplayString();
           if (param.isRequiredNamed) {
             call.write('${param.displayName}: args[$index] as $typeStr, ');
           } else {
@@ -358,7 +358,7 @@ class ModelSubclassEmitter {
     // required positional
     for (final param in requiredPos) {
       buffer.write(
-        '${param.type.getDisplayString(withNullability: true)} ${param.displayName}, ',
+        '${param.type.getDisplayString()} ${param.displayName}, ',
       );
     }
     // optional positional
@@ -366,7 +366,7 @@ class ModelSubclassEmitter {
       buffer.write('[');
       for (final param in optionalPos) {
         buffer.write(
-          '${param.type.getDisplayString(withNullability: true)} ${param.displayName}',
+          '${param.type.getDisplayString()} ${param.displayName}',
         );
         if (param.defaultValueCode != null) {
           buffer.write(' = ${param.defaultValueCode}');
@@ -383,7 +383,7 @@ class ModelSubclassEmitter {
           buffer.write('required ');
         }
         buffer.write(
-          '${param.type.getDisplayString(withNullability: true)} ${param.displayName}',
+          '${param.type.getDisplayString()} ${param.displayName}',
         );
         if (param.defaultValueCode != null) {
           buffer.write(' = ${param.defaultValueCode}');
@@ -433,7 +433,7 @@ class ModelSubclassEmitter {
           ? '($hasArg ? $argsSource[$index] : $defaultExpr)'
           : '$argsSource[$index]';
       call.write(
-        ', $valueExpr as ${param.type.getDisplayString(withNullability: true)}',
+        ', $valueExpr as ${param.type.getDisplayString()}',
       );
       index++;
     }
@@ -445,7 +445,7 @@ class ModelSubclassEmitter {
           ? '$argsSource[$index]'
           : '($hasArg ? $argsSource[$index] : $defaultExpr)';
       call.write(
-        ', ${param.displayName}: $valueExpr as ${param.type.getDisplayString(withNullability: true)}',
+        ', ${param.displayName}: $valueExpr as ${param.type.getDisplayString()}',
       );
       index++;
     }

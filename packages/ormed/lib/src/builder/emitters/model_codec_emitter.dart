@@ -21,7 +21,6 @@ class ModelCodecEmitter {
     ConstructorElement constructor,
     List<FieldDescriptor> fields,
   ) {
-    final className = context.className;
     final generatedClassName = context.trackedModelClassName;
     final codecName = '_${generatedClassName}Codec';
     final buffer = StringBuffer();

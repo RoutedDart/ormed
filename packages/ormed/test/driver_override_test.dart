@@ -6,8 +6,8 @@ import 'package:driver_tests/driver_tests.dart';
 
 void main() {
   group('FieldDefinition driver overrides', () {
-    final definition = DriverOverrideModelOrmDefinition.definition;
-    final field = definition.fieldByName('payload')!;
+    final field =
+        DriverOverrideModelOrmDefinition.definition.fieldByName('payload')!;
 
     test('resolves column type per driver', () {
       expect(field.columnTypeForDriver('postgres'), equals('jsonb'));
@@ -19,7 +19,6 @@ void main() {
 
   group('Mutation plans capture driver name', () {
     test('repository insert uses driver metadata name', () async {
-      final definition = DriverOverrideModelOrmDefinition.definition;
       late MutationPlan captured;
 
       // Create a mock driver that captures mutation plans

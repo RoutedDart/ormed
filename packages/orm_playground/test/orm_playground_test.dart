@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:ormed/ormed.dart';
 import 'package:orm_playground/orm_playground.dart';
-import 'package:orm_playground/orm_registry.g.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 

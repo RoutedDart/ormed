@@ -118,37 +118,6 @@ mixin RepositoryInputHandlerMixin<T extends OrmEntity> on RepositoryBase<T> {
   Map<String, Object?> updateInputToMap(Object input) =>
       _inputHelper.updateInputToMap(input);
 
-  /// Normalizes field names to column names if needed.
-  ///
-  /// DTOs and maps may use either field names or column names.
-  /// This ensures all keys are column names.
-  Map<String, Object?> _normalizeColumnNames(Map<String, Object?> input) {
-    final result = <String, Object?>{};
-    for (final entry in input.entries) {
-      final columnName = _fieldToColumnName(entry.key);
-      result[columnName] = entry.value;
-    }
-    return result;
-  }
-
-  /// Converts a field name to its corresponding column name.
-  String _fieldToColumnName(String fieldOrColumn) {
-    // First check if it's already a column name
-    for (final field in definition.fields) {
-      if (field.columnName == fieldOrColumn) {
-        return fieldOrColumn;
-      }
-    }
-    // Try to find by field name
-    for (final field in definition.fields) {
-      if (field.name == fieldOrColumn) {
-        return field.columnName;
-      }
-    }
-    // Return as-is if not found (could be a custom column)
-    return fieldOrColumn;
-  }
-
   /// Extracts the primary key value from an input.
   ///
   /// Works with models, DTOs, and maps.

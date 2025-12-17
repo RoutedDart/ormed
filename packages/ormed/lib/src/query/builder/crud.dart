@@ -1092,7 +1092,6 @@ extension CrudExtension<T extends OrmEntity> on Query<T> {
       definition: definition,
       codecs: context.codecRegistry,
     );
-    final jsonSupport = JsonUpdateSupport<T>(definition);
 
     final rows = <Map<String, Object?>>[];
     final originalModels = <T>[];

@@ -177,9 +177,9 @@ String renderRegistryContent(List<ModelSummary> models) {
   if (handlerModels.isEmpty) {
     buffer.writeln('  // No model event handlers were generated.');
   } else {
-    buffer.writeln('  final _bus = bus ?? EventBus.instance;');
+    buffer.writeln('  final busInstance = bus ?? EventBus.instance;');
     for (final summary in handlerModels) {
-      buffer.writeln('  register${summary.className}EventHandlers(_bus);');
+      buffer.writeln('  register${summary.className}EventHandlers(busInstance);');
     }
   }
   buffer.writeln('}');
@@ -195,10 +195,10 @@ String renderRegistryContent(List<ModelSummary> models) {
     buffer.writeln('  // No model scopes were generated.');
   } else {
     buffer.writeln(
-      '  final _registry = scopeRegistry ?? ScopeRegistry.instance;',
+      '  final scopeRegistryInstance = scopeRegistry ?? ScopeRegistry.instance;',
     );
     for (final summary in scopeModels) {
-      buffer.writeln('  register${summary.className}Scopes(_registry);');
+      buffer.writeln('  register${summary.className}Scopes(scopeRegistryInstance);');
     }
   }
   buffer.writeln('}');

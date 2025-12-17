@@ -1,7 +1,6 @@
 /// Write-side helpers for inserting models via driver adapters.
 library;
 
-import 'package:carbonized/carbonized.dart';
 import 'package:ormed/src/model/model.dart';
 
 import '../contracts.dart';

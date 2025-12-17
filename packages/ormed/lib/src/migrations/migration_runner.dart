@@ -49,6 +49,11 @@ class MigrationRunner {
       throw ArgumentError.value(limit, 'limit', 'Must be >= 1');
     }
 
+    final schema = _defaultSchema;
+    if (schema != null) {
+      await _schemaDriver.setCurrentSchema(schema);
+    }
+
     await _ledger.ensureInitialized();
     final applied = await _ledger.readApplied();
     final appliedById = {
@@ -182,6 +187,12 @@ class MigrationRunner {
     if (steps < 1) {
       throw ArgumentError.value(steps, 'steps', 'Must be >= 1');
     }
+
+    final schema = _defaultSchema;
+    if (schema != null) {
+      await _schemaDriver.setCurrentSchema(schema);
+    }
+
     await _ledger.ensureInitialized();
     final applied = await _ledger.readApplied();
     if (applied.isEmpty) {

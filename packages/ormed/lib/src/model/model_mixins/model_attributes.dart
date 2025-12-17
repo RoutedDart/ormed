@@ -18,7 +18,6 @@ import 'dart:collection';
 
 import '../../../ormed.dart';
 import '../../query/json_path.dart' as json_path;
-import 'model_attribute_inspector.dart';
 
 mixin ModelAttributes {
   static int _unguardedCount = 0;

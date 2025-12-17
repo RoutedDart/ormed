@@ -19,8 +19,10 @@ class ModelEventHandlerEmitter {
         buffer.writeln('  bus.on<$eventType>((event) {');
         if (handler.isModelEvent) {
           buffer.writeln(
-            '    if (event is ModelEvent && event.modelType != ${context.className} && event.modelType != ${context.trackedModelClassName}) return;',
+            '    if (event.modelType != ${context.className} && event.modelType != ${context.trackedModelClassName}) {',
           );
+          buffer.writeln('      return;');
+          buffer.writeln('    }');
         }
         // Static handlers only (instance handlers require a model instance we
         // do not construct here).

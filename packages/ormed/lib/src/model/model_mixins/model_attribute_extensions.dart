@@ -6,7 +6,6 @@ import 'package:collection/collection.dart';
 import '../../exceptions.dart';
 import '../../value_codec.dart';
 import '../model.dart';
-import 'model_attribute_inspector.dart';
 
 extension ModelAttributeMapExtensions on Map<String, Object?> {
   /// Returns inputs filtered to what the model would accept via fillable/guarded.

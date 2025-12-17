@@ -91,7 +91,7 @@ extension BatchOperationsExtension<T extends OrmEntity> on Query<T> {
     }).toList();
 
     // Create the records
-    final created = await createMany(attributeMaps);
+    await createMany(attributeMaps);
 
     // Extract IDs from created records if possible
     // This would require access to the model's primary key field

@@ -336,11 +336,13 @@ class FieldDefinition {
   /// Returns whether this field should be included in INSERT statements.
   ///
   /// Auto-increment fields are excluded by default unless explicitly set.
+  // ignore: deprecated_member_use_from_same_package
   bool get isInsertable => insertable ?? !autoIncrement;
 
   /// Returns whether this field should be included in UPDATE statements.
   ///
   /// Primary key fields are excluded by default unless explicitly set.
+  // ignore: deprecated_member_use_from_same_package
   bool get isUpdatable => updatable ?? !isPrimaryKey;
 
   /// Returns the driver-specific override for this field, if any.

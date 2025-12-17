@@ -58,7 +58,7 @@ class RefreshCommand extends RunnerCommand {
 
     if (appliedCount > 0) {
       cliIO.section('Rolling back $appliedCount migration(s)');
-      final report = await runner.rollback(steps: appliedCount);
+      await runner.rollback(steps: appliedCount);
     } else {
       cliIO.info('Nothing to rollback.');
     }

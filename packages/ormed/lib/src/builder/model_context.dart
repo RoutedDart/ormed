@@ -10,7 +10,9 @@ import 'package:source_gen/source_gen.dart';
 import 'descriptors.dart';
 import 'helpers.dart';
 
-final _modelChecker = TypeChecker.fromUrl('package:ormed/src/model.dart#Model');
+final _modelChecker = TypeChecker.fromUrl(
+  'package:ormed/src/model/model.dart#Model',
+);
 final _hasFactoryChecker = TypeChecker.fromUrl(
   'package:ormed/src/annotations.dart#HasFactory',
 );

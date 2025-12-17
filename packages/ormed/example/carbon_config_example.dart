@@ -8,23 +8,23 @@ import 'package:ormed/ormed.dart';
 /// No manual configuration is required unless you want to override the defaults.
 void main() async {
   // Example 1: Basic setup (UTC, no named timezones)
-  await example1_BasicSetup();
+  await example1BasicSetup();
 
   // Example 2: Named timezone support
-  await example2_NamedTimezones();
+  await example2NamedTimezones();
 
   // Example 3: Custom locale
-  await example3_CustomLocale();
+  await example3CustomLocale();
 
   // Example 4: Manual configuration override
-  await example4_ManualOverride();
+  await example4ManualOverride();
 }
 
 /// Example 1: Basic automatic configuration
 ///
 /// Carbon is automatically configured with UTC timezone.
 /// Named timezones are not available, but UTC and fixed offsets work.
-Future<void> example1_BasicSetup() async {
+Future<void> example1BasicSetup() async {
   print('\n=== Example 1: Basic Setup ===');
 
   final ds = DataSource(
@@ -48,7 +48,7 @@ Future<void> example1_BasicSetup() async {
 /// Example 2: Named timezone support
 ///
 /// Enable named timezones like 'America/New_York', 'Europe/London', etc.
-Future<void> example2_NamedTimezones() async {
+Future<void> example2NamedTimezones() async {
   print('\n=== Example 2: Named Timezone Support ===');
 
   // Reset Carbon to demonstrate fresh configuration
@@ -80,7 +80,7 @@ Future<void> example2_NamedTimezones() async {
 /// Example 3: Custom locale
 ///
 /// Configure Carbon with a different locale for date formatting.
-Future<void> example3_CustomLocale() async {
+Future<void> example3CustomLocale() async {
   print('\n=== Example 3: Custom Locale ===');
 
   CarbonConfig.reset();
@@ -112,7 +112,7 @@ Future<void> example3_CustomLocale() async {
 ///
 /// You can manually configure Carbon before initializing DataSource.
 /// Manual configuration takes precedence.
-Future<void> example4_ManualOverride() async {
+Future<void> example4ManualOverride() async {
   print('\n=== Example 4: Manual Override ===');
 
   CarbonConfig.reset();

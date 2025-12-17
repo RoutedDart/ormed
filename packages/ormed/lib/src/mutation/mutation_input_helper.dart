@@ -232,6 +232,7 @@ class MutationInputHelper<T extends OrmEntity> {
       if (value == 0 || value == -1) return true;
     }
     if (value == '') return true;
+    // ignore: deprecated_member_use_from_same_package
     if (field.defaultDartValue != null && value == field.defaultDartValue) {
       return true;
     }

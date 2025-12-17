@@ -30,8 +30,6 @@ part 'builder/distinct.dart';
 
 part 'builder/grouping.dart';
 
-part 'builder/helper.dart';
-
 part 'builder/index.dart';
 
 part 'builder/join.dart';
@@ -733,28 +731,6 @@ class Query<T extends OrmEntity> {
     }
   }
 
-  Future<List<Map<String, Object?>>> _collectPrimaryKeyConditions(
-    Query<T> target,
-  ) async {
-    final pkField = definition.primaryKeyField;
-    if (pkField == null) {
-      throw StateError(
-        'Model ${definition.modelName} does not define a primary key.',
-      );
-    }
-    final scoped = target.select([pkField.name]);
-    final plan = scoped._buildPlan();
-    final rawRows = await scoped.context.runSelect(plan);
-    final keys = <Map<String, Object?>>[];
-    for (final row in rawRows) {
-      final value = row[pkField.columnName];
-      if (value != null) {
-        keys.add({pkField.columnName: value});
-      }
-    }
-    return keys;
-  }
-
   Query<T> applySoftDeleteFilter(FieldDefinition field) {
     final predicate = FieldPredicate(
       field: field.columnName,
@@ -769,23 +745,6 @@ class Query<T extends OrmEntity> {
         compile: false,
       ),
     );
-  }
-
-  Future<int> _forceDeleteByKeys() async {
-    final keys = await _collectPrimaryKeyConditions(withTrashed());
-    if (keys.isEmpty) {
-      return 0;
-    }
-    final rows = keys
-        .map((key) => MutationRow(values: const {}, keys: key))
-        .toList(growable: false);
-    final plan = MutationPlan.delete(
-      definition: definition,
-      rows: rows,
-      driverName: context.driver.metadata.name,
-    );
-    final result = await context.runMutation(plan);
-    return result.affectedRows;
   }
 
   bool get _supportsQueryDeletes =>
@@ -1193,16 +1152,6 @@ class Query<T extends OrmEntity> {
       return input;
     }
     return input.substring(0, index);
-  }
-
-  String _resolveGroupLimitColumn(String input) {
-    final field = definition.fields.firstWhereOrNull(
-      (f) => f.name == input || f.columnName == input,
-    );
-    if (field != null) {
-      return field.columnName;
-    }
-    return input;
   }
 
   String _normalizeLengthOperator(String operator) =>
