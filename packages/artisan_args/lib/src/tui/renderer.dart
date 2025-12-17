@@ -1,0 +1,437 @@
+import 'terminal.dart';
+
+/// Abstract renderer interface for TUI output.
+///
+/// Renderers are responsible for displaying the view string
+/// to the terminal efficiently.
+abstract class Renderer {
+  /// Renders the view to the terminal.
+  ///
+  /// [view] is the string representation of the current UI state.
+  void render(String view);
+
+  /// Clears the rendered content.
+  void clear();
+
+  /// Flushes any buffered output.
+  Future<void> flush();
+
+  /// Disposes of renderer resources.
+  void dispose();
+}
+
+/// Options for configuring the renderer.
+class RendererOptions {
+  const RendererOptions({
+    this.fps = 60,
+    this.altScreen = true,
+    this.hideCursor = true,
+    this.ansiCompress = false,
+  });
+
+  /// Maximum frames per second for rendering.
+  ///
+  /// Limits how often the screen can be redrawn to prevent
+  /// excessive CPU usage and flickering.
+  final int fps;
+
+  /// Whether to use the alternate screen buffer.
+  ///
+  /// When true, the application runs in fullscreen mode and
+  /// the original terminal content is restored on exit.
+  final bool altScreen;
+
+  /// Whether to hide the cursor during rendering.
+  final bool hideCursor;
+
+  /// Whether to compress redundant ANSI sequences.
+  final bool ansiCompress;
+
+  /// The minimum time between renders.
+  Duration get frameTime => Duration(milliseconds: 1000 ~/ fps);
+}
+
+/// Full-screen renderer using the alternate screen buffer.
+///
+/// This renderer clears the entire screen and redraws from
+/// position (0,0) on each render. Best for fullscreen applications.
+class FullScreenRenderer implements Renderer {
+  FullScreenRenderer({
+    required this.terminal,
+    RendererOptions options = const RendererOptions(),
+  }) : _options = options;
+
+  /// The terminal to render to.
+  final TuiTerminal terminal;
+
+  final RendererOptions _options;
+
+  /// The last rendered view (for skip-if-unchanged optimization).
+  String? _lastView;
+
+  /// The last render time (for frame limiting).
+  DateTime? _lastRenderTime;
+
+  /// Whether the renderer has been initialized.
+  bool _initialized = false;
+
+  /// Initializes the renderer.
+  ///
+  /// Sets up the terminal for fullscreen rendering.
+  void initialize() {
+    if (_initialized) return;
+
+    if (_options.altScreen) {
+      terminal.enterAltScreen();
+    }
+    if (_options.hideCursor) {
+      terminal.hideCursor();
+    }
+    terminal.clearScreen();
+    _initialized = true;
+  }
+
+  @override
+  void render(String view) {
+    if (!_initialized) {
+      initialize();
+    }
+
+    // Frame rate limiting
+    if (_lastRenderTime != null) {
+      final elapsed = DateTime.now().difference(_lastRenderTime!);
+      if (elapsed < _options.frameTime) {
+        // Skip this frame
+        return;
+      }
+    }
+
+    // Skip if view hasn't changed
+    if (view == _lastView) {
+      return;
+    }
+
+    // Full redraw (future: diff with _lastView and update only changed lines)
+    terminal.cursorHome();
+    final output = _options.ansiCompress ? _compressAnsi(view) : view;
+    terminal.write(output);
+
+    // Clear any remaining content from previous render
+    _clearToEndOfScreen(view);
+
+    _lastView = view;
+    _lastRenderTime = DateTime.now();
+  }
+
+  /// Clears remaining content after the view.
+  void _clearToEndOfScreen(String view) {
+    if (!terminal.supportsAnsi) return;
+
+    // Count lines in the view
+    final viewLines = view.split('\n').length;
+    final termHeight = terminal.size.height;
+
+    // Clear remaining lines
+    if (viewLines < termHeight) {
+      final clearLine = '\x1b[2K'; // Clear entire line
+      final buffer = StringBuffer();
+      for (var i = viewLines; i < termHeight; i++) {
+        buffer.write('$clearLine\n');
+      }
+      terminal.write(buffer.toString());
+    }
+  }
+
+  @override
+  void clear() {
+    terminal.clearScreen();
+    _lastView = null;
+  }
+
+  @override
+  Future<void> flush() async {
+    await terminal.flush();
+  }
+
+  @override
+  void dispose() {
+    if (!_initialized) return;
+
+    if (_options.hideCursor) {
+      terminal.showCursor();
+    }
+    if (_options.altScreen) {
+      terminal.exitAltScreen();
+    }
+    _initialized = false;
+  }
+}
+
+/// Inline renderer that renders below the current cursor position.
+///
+/// This renderer doesn't use the alternate screen buffer, so
+/// output accumulates in the terminal history. Best for
+/// tools that should leave output visible after exit.
+class InlineRenderer implements Renderer {
+  InlineRenderer({
+    required this.terminal,
+    RendererOptions options = const RendererOptions(
+      altScreen: false,
+      hideCursor: false,
+    ),
+  }) : _options = options;
+
+  /// The terminal to render to.
+  final TuiTerminal terminal;
+
+  final RendererOptions _options;
+
+  /// Number of lines in the last render.
+  int _lastLineCount = 0;
+
+  /// The last render time (for frame limiting).
+  DateTime? _lastRenderTime;
+
+  /// Whether we've rendered at least once.
+  bool _hasRendered = false;
+
+  @override
+  void render(String view) {
+    // Frame rate limiting
+    if (_lastRenderTime != null) {
+      final elapsed = DateTime.now().difference(_lastRenderTime!);
+      if (elapsed < _options.frameTime) {
+        return;
+      }
+    }
+
+    // Clear previous output
+    if (_hasRendered && _lastLineCount > 0) {
+      _clearPreviousLines(_lastLineCount);
+    }
+
+    // Hide cursor during render if configured
+    if (_options.hideCursor) {
+      terminal.hideCursor();
+    }
+
+    // Write the new view
+    final output = _options.ansiCompress ? _compressAnsi(view) : view;
+    terminal.write(output);
+    if (!output.endsWith('\n')) {
+      terminal.writeln();
+    }
+
+    // Show cursor after render
+    if (_options.hideCursor) {
+      terminal.showCursor();
+    }
+
+    _lastLineCount = view.split('\n').length;
+    _lastRenderTime = DateTime.now();
+    _hasRendered = true;
+  }
+
+  /// Clears the previous output by moving up and clearing lines.
+  void _clearPreviousLines(int lines) {
+    if (!terminal.supportsAnsi) return;
+
+    final buffer = StringBuffer();
+    for (var i = 0; i < lines; i++) {
+      buffer.write('\x1b[A'); // Move up
+      buffer.write('\x1b[2K'); // Clear line
+    }
+    buffer.write('\r'); // Return to start of line
+    terminal.write(buffer.toString());
+  }
+
+  @override
+  void clear() {
+    if (_hasRendered && _lastLineCount > 0) {
+      _clearPreviousLines(_lastLineCount);
+    }
+    _lastLineCount = 0;
+  }
+
+  @override
+  Future<void> flush() async {
+    await terminal.flush();
+  }
+
+  @override
+  void dispose() {
+    // Inline renderer doesn't need cleanup
+  }
+}
+
+/// A renderer that buffers output for efficient writes.
+///
+/// Collects all output in a buffer and writes it in a single
+/// operation to reduce flickering.
+class BufferedRenderer implements Renderer {
+  BufferedRenderer({required this.inner});
+
+  /// The underlying renderer.
+  final Renderer inner;
+
+  /// Output buffer.
+  final StringBuffer _buffer = StringBuffer();
+
+  /// Whether we have pending output.
+  bool _dirty = false;
+
+  @override
+  void render(String view) {
+    _buffer.clear();
+    _buffer.write(view);
+    _dirty = true;
+  }
+
+  @override
+  void clear() {
+    _buffer.clear();
+    inner.clear();
+    _dirty = false;
+  }
+
+  @override
+  Future<void> flush() async {
+    if (_dirty) {
+      inner.render(_buffer.toString());
+      _dirty = false;
+    }
+    await inner.flush();
+  }
+
+  @override
+  void dispose() {
+    inner.dispose();
+  }
+}
+
+/// A renderer that does nothing (for testing).
+class NullTuiRenderer implements Renderer {
+  /// The last view that was rendered.
+  String? lastView;
+
+  /// All views that have been rendered.
+  final List<String> views = [];
+
+  @override
+  void render(String view) {
+    lastView = view;
+    views.add(view);
+  }
+
+  @override
+  void clear() {
+    lastView = null;
+  }
+
+  @override
+  Future<void> flush() async {}
+
+  @override
+  void dispose() {}
+}
+
+/// Renderer that writes output without diffing or clearing (nil renderer mode).
+class NullRenderer implements Renderer {
+  NullRenderer({
+    required this.terminal,
+    RendererOptions options = const RendererOptions(),
+  }) : _options = options;
+
+  final TuiTerminal terminal;
+  final RendererOptions _options;
+
+  @override
+  void render(String view) {
+    final output = _options.ansiCompress ? _compressAnsi(view) : view;
+    terminal.writeln(output);
+  }
+
+  @override
+  void clear() {}
+
+  @override
+  Future<void> flush() async {
+    await terminal.flush();
+  }
+
+  @override
+  void dispose() {}
+}
+
+String _compressAnsi(String input) {
+  // Remove redundant SGR sequences to reduce output size.
+  //
+  // This intentionally removes *repeated* SGR sequences even when separated by
+  // text (e.g. "\x1b[31mred\x1b[31mred" -> "\x1b[31mredred").
+  final sgr = RegExp(r'\x1B\[[0-9;:]*m');
+  final out = StringBuffer();
+  var lastEnd = 0;
+  String? lastSgr;
+
+  for (final m in sgr.allMatches(input)) {
+    out.write(input.substring(lastEnd, m.start));
+    final seq = m.group(0)!;
+
+    // Normalize the empty-param reset to a stable form.
+    final normalized = seq == '\x1B[m' ? '\x1B[0m' : seq;
+
+    if (normalized != lastSgr) {
+      out.write(seq);
+      lastSgr = normalized;
+    }
+
+    lastEnd = m.end;
+  }
+
+  out.write(input.substring(lastEnd));
+  return out.toString();
+}
+
+/// A renderer that writes to a StringSink (for testing).
+class StringSinkRenderer implements Renderer {
+  StringSinkRenderer(this.sink);
+
+  /// The sink to write to.
+  final StringSink sink;
+
+  @override
+  void render(String view) {
+    sink.write(view);
+  }
+
+  @override
+  void clear() {
+    // Can't clear a StringSink
+  }
+
+  @override
+  Future<void> flush() async {}
+
+  @override
+  void dispose() {}
+}
+
+/// Extension to create renderers from terminals.
+extension TerminalRendererExtension on TuiTerminal {
+  /// Creates a fullscreen renderer for this terminal.
+  FullScreenRenderer fullScreenRenderer({
+    RendererOptions options = const RendererOptions(),
+  }) {
+    return FullScreenRenderer(terminal: this, options: options);
+  }
+
+  /// Creates an inline renderer for this terminal.
+  InlineRenderer inlineRenderer({
+    RendererOptions options = const RendererOptions(
+      altScreen: false,
+      hideCursor: false,
+    ),
+  }) {
+    return InlineRenderer(terminal: this, options: options);
+  }
+}

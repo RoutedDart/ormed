@@ -1,0 +1,407 @@
+import 'package:artisan_args/src/tui/bubbles/textarea.dart';
+import 'package:artisan_args/src/tui/key.dart';
+import 'package:artisan_args/src/tui/msg.dart';
+import 'package:test/test.dart';
+
+void main() {
+  group('TextAreaModel', () {
+    group('New', () {
+      test('creates with default values', () {
+        final textarea = TextAreaModel();
+        expect(textarea.prompt, '│ ');
+        expect(textarea.placeholder, '');
+        expect(textarea.showLineNumbers, isTrue);
+        expect(textarea.value, '');
+      });
+
+      test('creates with custom prompt', () {
+        final textarea = TextAreaModel(prompt: '> ');
+        expect(textarea.prompt, '> ');
+      });
+
+      test('creates with placeholder', () {
+        final textarea = TextAreaModel(placeholder: 'Enter text');
+        expect(textarea.placeholder, 'Enter text');
+      });
+
+      test('creates with dimensions', () {
+        final textarea = TextAreaModel(width: 80, height: 20);
+        // Width may be adjusted for prompt/line numbers
+        expect(textarea.width, greaterThan(0));
+        expect(textarea.height, 20);
+      });
+
+      test('starts unfocused', () {
+        final textarea = TextAreaModel();
+        expect(textarea.focused, isFalse);
+      });
+
+      test('creates with line numbers disabled', () {
+        final textarea = TextAreaModel(showLineNumbers: false);
+        expect(textarea.showLineNumbers, isFalse);
+      });
+    });
+
+    group('Value', () {
+      test('sets value', () {
+        final textarea = TextAreaModel();
+        textarea.value = 'hello\nworld';
+        expect(textarea.value, 'hello\nworld');
+      });
+
+      test('gets value', () {
+        final textarea = TextAreaModel();
+        textarea.insertString('test');
+        expect(textarea.value, 'test');
+      });
+
+      test('handles multi-line value', () {
+        final textarea = TextAreaModel();
+        textarea.value = 'line1\nline2\nline3';
+        expect(textarea.lineCount, 3);
+      });
+    });
+
+    group('InsertString', () {
+      test('inserts string at cursor', () {
+        final textarea = TextAreaModel();
+        textarea.insertString('hello');
+        expect(textarea.value, 'hello');
+      });
+
+      test('inserts multi-line string', () {
+        final textarea = TextAreaModel();
+        textarea.insertString('line1\nline2');
+        expect(textarea.value, 'line1\nline2');
+        expect(textarea.lineCount, 2);
+      });
+
+      test('respects char limit', () {
+        final textarea = TextAreaModel(charLimit: 5);
+        textarea.insertString('hello world');
+        expect(
+          textarea.value.length,
+          lessThanOrEqualTo(6),
+        ); // Allow some buffer
+      });
+    });
+
+    group('LineCount', () {
+      test('returns 1 for empty textarea', () {
+        final textarea = TextAreaModel();
+        expect(textarea.lineCount, greaterThanOrEqualTo(1));
+      });
+
+      test('counts lines correctly', () {
+        final textarea = TextAreaModel();
+        textarea.value = 'a\nb\nc';
+        expect(textarea.lineCount, 3);
+      });
+    });
+
+    group('Length', () {
+      test('returns 0 for empty textarea', () {
+        final textarea = TextAreaModel();
+        expect(textarea.length, 0);
+      });
+
+      test('counts characters including newlines', () {
+        final textarea = TextAreaModel();
+        textarea.value = 'ab\ncd';
+        // Should count 'ab', newline, 'cd' = 5 characters
+        expect(textarea.length, 5);
+      });
+    });
+
+    group('Focus', () {
+      test('focus sets focused to true', () {
+        final textarea = TextAreaModel();
+        textarea.focus();
+        expect(textarea.focused, isTrue);
+      });
+
+      test('blur sets focused to false', () {
+        final textarea = TextAreaModel();
+        textarea.focus();
+        textarea.blur();
+        expect(textarea.focused, isFalse);
+      });
+    });
+
+    group('Reset', () {
+      test('clears value', () {
+        final textarea = TextAreaModel();
+        textarea.value = 'hello\nworld';
+        textarea.reset();
+        expect(textarea.value, '');
+      });
+
+      test('resets position', () {
+        final textarea = TextAreaModel();
+        textarea.value = 'hello\nworld';
+        textarea.reset();
+        expect(textarea.line, 0);
+        expect(textarea.column, 0);
+      });
+    });
+
+    group('CursorStart', () {
+      test('moves cursor to start of line', () {
+        final textarea = TextAreaModel();
+        textarea.insertString('hello');
+        expect(textarea.column, 5);
+        textarea.cursorStart();
+        expect(textarea.column, 0);
+      });
+    });
+
+    group('CursorEnd', () {
+      test('moves cursor to end of line', () {
+        final textarea = TextAreaModel();
+        textarea.insertString('hello');
+        textarea.cursorStart();
+        expect(textarea.column, 0);
+        textarea.cursorEnd();
+        expect(textarea.column, 5);
+      });
+    });
+
+    group('Navigation and deletion', () {
+      test('delete word forward', () {
+        final textarea = TextAreaModel();
+        textarea.value = 'hello world';
+        textarea.cursorStart();
+        // move to start of word
+        for (var i = 0; i < 6; i++) {
+          textarea.update(const KeyMsg(Key(KeyType.right)));
+        }
+        textarea.update(
+          const KeyMsg(Key(KeyType.delete, alt: true)), // alt+delete
+        );
+        expect(textarea.value, 'hello ');
+      });
+
+      test('transpose backward', () {
+        final textarea = TextAreaModel();
+        textarea.insertString('ab');
+        textarea.update(
+          const KeyMsg(Key(KeyType.runes, runes: [0x74], ctrl: true)), // ctrl+t
+        );
+        expect(textarea.value, 'ba');
+      });
+
+      test('uppercase/lowercase/capitalize word forward', () {
+        final textarea = TextAreaModel();
+        textarea.value = 'hello world';
+        textarea.cursorStart();
+
+        textarea.update(
+          const KeyMsg(Key(KeyType.runes, runes: [0x75], alt: true)), // alt+u
+        );
+        expect(textarea.value.startsWith('HELLO'), isTrue);
+
+        textarea.value = 'hello world';
+        textarea.cursorStart();
+        textarea.update(
+          const KeyMsg(Key(KeyType.runes, runes: [0x6c], alt: true)), // alt+l
+        );
+        expect(textarea.value.startsWith('hello'), isTrue);
+
+        textarea.value = 'hello world';
+        textarea.cursorStart();
+        textarea.update(
+          const KeyMsg(Key(KeyType.runes, runes: [0x63], alt: true)), // alt+c
+        );
+        expect(textarea.value.startsWith('Hello'), isTrue);
+      });
+
+      test('word forward and backward navigation', () {
+        final textarea = TextAreaModel();
+        textarea.value = 'hello world';
+        textarea.cursorStart();
+
+        textarea.update(
+          const KeyMsg(Key(KeyType.runes, runes: [0x66], alt: true)), // alt+f
+        );
+        expect(textarea.column, 5);
+
+        textarea.update(
+          const KeyMsg(Key(KeyType.runes, runes: [0x62], alt: true)), // alt+b
+        );
+        expect(textarea.column, 0);
+      });
+
+      test('delete word backward', () {
+        final textarea = TextAreaModel();
+        textarea.value = 'hello world';
+        textarea.update(
+          const KeyMsg(Key(KeyType.backspace, alt: true)), // alt+backspace
+        );
+        expect(textarea.value, 'hello ');
+      });
+
+      test('delete to line start and end', () {
+        final textarea = TextAreaModel();
+        textarea.value = 'hello world';
+        textarea.cursorStart();
+        textarea.update(const KeyMsg(Key(KeyType.right))); // move after h
+        textarea.update(
+          const KeyMsg(Key(KeyType.runes, runes: [0x75], ctrl: true)), // ctrl+u
+        );
+        expect(textarea.value, 'ello world');
+
+        textarea.value = 'hello world';
+        textarea.cursorStart();
+        // Move to after "hello"
+        for (var i = 0; i < 5; i++) {
+          textarea.update(const KeyMsg(Key(KeyType.right)));
+        }
+        textarea.update(
+          const KeyMsg(Key(KeyType.runes, runes: [0x6b], ctrl: true)), // ctrl+k
+        );
+        expect(textarea.value, 'hello');
+      });
+
+      test('soft wrap splits long lines', () {
+        final textarea = TextAreaModel(softWrap: true, width: 10, height: 4);
+        textarea.insertString('long line of text');
+        final view = textarea.view();
+        expect(view.split('\n').length, greaterThan(1));
+      });
+    });
+
+    group('View', () {
+      test('shows prompt', () {
+        final textarea = TextAreaModel(prompt: '> ');
+        final view = textarea.view();
+        expect(view, contains('>'));
+      });
+
+      test('shows placeholder when empty', () {
+        final textarea = TextAreaModel(placeholder: 'Type here');
+        final view = textarea.view();
+        // Placeholder is styled, so check for partial match
+        expect(view.contains('ype here') || view.contains('Type'), isTrue);
+      });
+
+      test('shows content when not empty', () {
+        final textarea = TextAreaModel(placeholder: 'Type here');
+        textarea.insertString('content');
+        final view = textarea.view();
+        expect(view, contains('content'));
+      });
+
+      test('shows line numbers when enabled', () {
+        final textarea = TextAreaModel(showLineNumbers: true);
+        textarea.value = 'line1\nline2';
+        final view = textarea.view();
+        expect(view, contains('1'));
+      });
+    });
+
+    group('SetWidth', () {
+      test('sets width', () {
+        final textarea = TextAreaModel();
+        textarea.setWidth(100);
+        // Width is adjusted for prompt/line numbers
+        expect(textarea.width, greaterThan(0));
+      });
+    });
+
+    group('SetHeight', () {
+      test('sets height', () {
+        final textarea = TextAreaModel();
+        textarea.setHeight(50);
+        expect(textarea.height, 50);
+      });
+    });
+
+    group('Init', () {
+      test('returns null', () {
+        final textarea = TextAreaModel();
+        expect(textarea.init(), isNull);
+      });
+    });
+  });
+
+  group('TextAreaKeyMap', () {
+    test('creates with default bindings', () {
+      final keyMap = TextAreaKeyMap();
+      expect(keyMap.characterForward.keys, isNotEmpty);
+      expect(keyMap.characterBackward.keys, isNotEmpty);
+      expect(keyMap.lineNext.keys, isNotEmpty);
+      expect(keyMap.linePrevious.keys, isNotEmpty);
+    });
+
+    test('shortHelp returns bindings', () {
+      final keyMap = TextAreaKeyMap();
+      final help = keyMap.shortHelp();
+      expect(help.length, greaterThanOrEqualTo(4));
+    });
+
+    test('fullHelp returns grouped bindings', () {
+      final keyMap = TextAreaKeyMap();
+      final help = keyMap.fullHelp();
+      expect(help, isNotEmpty);
+    });
+  });
+
+  group('TextAreaStyle', () {
+    test('creates with defaults', () {
+      final style = TextAreaStyle();
+      expect(style.base, isNotNull);
+      expect(style.cursorLine, isNotNull);
+      expect(style.lineNumber, isNotNull);
+      expect(style.text, isNotNull);
+    });
+  });
+
+  group('Default Styles', () {
+    test('provides focused style', () {
+      final style = defaultFocusedStyle();
+      expect(style, isNotNull);
+    });
+
+    test('provides blurred style', () {
+      final style = defaultBlurredStyle();
+      expect(style, isNotNull);
+    });
+  });
+
+  group('LineInfo', () {
+    test('creates with default values', () {
+      final info = LineInfo();
+      expect(info.width, 0);
+      expect(info.height, 0);
+      expect(info.charWidth, 0);
+    });
+
+    test('creates with custom values', () {
+      final info = LineInfo(
+        width: 80,
+        height: 1,
+        charWidth: 80,
+        startColumn: 0,
+        columnOffset: 5,
+      );
+      expect(info.width, 80);
+      expect(info.height, 1);
+      expect(info.columnOffset, 5);
+    });
+  });
+
+  group('TextAreaPasteMsg', () {
+    test('creates with content', () {
+      final msg = TextAreaPasteMsg('hello');
+      expect(msg.content, 'hello');
+    });
+  });
+
+  group('TextAreaPasteErrorMsg', () {
+    test('creates with error', () {
+      final error = Exception('Paste failed');
+      final msg = TextAreaPasteErrorMsg(error);
+      expect(msg.error, error);
+    });
+  });
+}

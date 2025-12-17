@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:artisan_args/artisan_args.dart';
 import 'package:test/test.dart';
 
@@ -288,17 +287,13 @@ void main() {
   });
 
   group('TableComponent (legacy)', () {
-    ComponentContext createContext({
+    RenderConfig createRenderConfig({
       ColorProfile profile = ColorProfile.ascii,
       bool darkBackground = true,
     }) {
-      return ComponentContext(
-        stdout: stdout,
-        stdin: stdin,
-        renderer: StringRenderer(
-          colorProfile: profile,
-          hasDarkBackground: darkBackground,
-        ),
+      return RenderConfig(
+        colorProfile: profile,
+        hasDarkBackground: darkBackground,
       );
     }
 
@@ -327,14 +322,13 @@ void main() {
           if (data == 'Active') return Style().foreground(Colors.green);
           return null;
         },
+        renderConfig: createRenderConfig(profile: ColorProfile.trueColor),
       );
 
-      final result = table.build(
-        createContext(profile: ColorProfile.trueColor),
-      );
+      final result = table.render();
 
-      expect(result.output, contains('\x1B['));
-      expect(result.output, contains('Active'));
+      expect(result, contains('\x1B['));
+      expect(result, contains('Active'));
     });
 
     test('passes correct row/col usage', () {
@@ -349,9 +343,10 @@ void main() {
           calls.add('$row:$col:$data');
           return null;
         },
+        renderConfig: createRenderConfig(),
       );
 
-      table.build(createContext());
+      table.render();
 
       expect(calls, contains('0:0:R0'));
       expect(calls, contains('1:0:R1'));
@@ -430,9 +425,11 @@ void main() {
     });
 
     test('borderRow(true) shows row separators', () {
-      final table = Table().headers(['X']).row(['Y']).row(['Z']).borderRow(
-        true,
-      );
+      final table = Table()
+          .headers(['X'])
+          .row(['Y'])
+          .row(['Z'])
+          .borderRow(true);
       final result = table.render();
 
       // With row separators, there should be a horizontal line between rows
@@ -462,7 +459,9 @@ void main() {
           .row(['B'])
           .row(['C'])
           .row(['D'])
-          .height(5); // Top border + header + header sep + 1 data row + bottom = 5 lines
+          .height(
+            5,
+          ); // Top border + header + header sep + 1 data row + bottom = 5 lines
 
       final result = table.render();
       final lines = result.split('\n').where((l) => l.isNotEmpty).toList();

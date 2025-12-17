@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:artisan_args/artisan_args.dart';
 import 'package:test/test.dart';
 
@@ -382,17 +381,13 @@ void main() {
   });
 
   group('TreeComponent', () {
-    ComponentContext createContext({
+    RenderConfig createRenderConfig({
       ColorProfile profile = ColorProfile.ascii,
       bool darkBackground = true,
     }) {
-      return ComponentContext(
-        stdout: stdout,
-        stdin: stdin,
-        renderer: StringRenderer(
-          colorProfile: profile,
-          hasDarkBackground: darkBackground,
-        ),
+      return RenderConfig(
+        colorProfile: profile,
+        hasDarkBackground: darkBackground,
       );
     }
 
@@ -416,11 +411,10 @@ void main() {
       final component = TreeComponent(
         data: {'item': null},
         itemStyleFunc: (item, depth, isDir) => Style().bold(),
+        renderConfig: createRenderConfig(profile: ColorProfile.trueColor),
       );
-      final result = component.build(
-        createContext(profile: ColorProfile.trueColor),
-      );
-      expect(result.output, contains('\x1B['));
+      final result = component.render();
+      expect(result, contains('\x1B['));
     });
   });
 
@@ -466,9 +460,12 @@ void main() {
     });
 
     test('offset skips first N children', () {
-      final tree = Tree().root('Root').child('A').child('B').child('C').offset(
-        1,
-      );
+      final tree = Tree()
+          .root('Root')
+          .child('A')
+          .child('B')
+          .child('C')
+          .offset(1);
       final result = tree.render();
 
       expect(result, contains('B'));
@@ -514,11 +511,11 @@ void main() {
           .child('B')
           .child('C')
           .enumeratorStyleFunc((children, index) {
-        callCount++;
-        indices.add(index);
-        // Return null to use default styling
-        return null;
-      });
+            callCount++;
+            indices.add(index);
+            // Return null to use default styling
+            return null;
+          });
 
       tree.render();
 
@@ -535,9 +532,9 @@ void main() {
           .child('A')
           .child('B')
           .enumeratorStyleFunc((children, index) {
-        receivedChildren.add(List.from(children));
-        return null;
-      });
+            receivedChildren.add(List.from(children));
+            return null;
+          });
 
       tree.render();
 
@@ -553,9 +550,9 @@ void main() {
           .child('A')
           .child('B')
           .enumeratorStyleFunc((children, index) {
-        // Apply bold style to all branches
-        return Style().bold();
-      });
+            // Apply bold style to all branches
+            return Style().bold();
+          });
 
       final result = tree.render();
 
@@ -570,9 +567,9 @@ void main() {
           .child('B')
           .branchStyle(Style().italic())
           .enumeratorStyleFunc((children, index) {
-        // Return null to fall through to branchStyle
-        return null;
-      });
+            // Return null to fall through to branchStyle
+            return null;
+          });
 
       final result = tree.render();
 
@@ -588,9 +585,9 @@ void main() {
           .child('A')
           .branchStyle(Style().italic())
           .enumeratorStyleFunc((children, index) {
-        styleApplied = true;
-        return Style().bold();
-      });
+            styleApplied = true;
+            return Style().bold();
+          });
 
       final result = tree.render();
 
@@ -608,14 +605,14 @@ void main() {
           .child('B')
           .child('C')
           .enumeratorStyleFunc((children, index) {
-        // Only style the second item (index 1)
-        if (index == 1) {
-          stylesReturned[index] = true;
-          return Style().bold();
-        }
-        stylesReturned[index] = false;
-        return null;
-      });
+            // Only style the second item (index 1)
+            if (index == 1) {
+              stylesReturned[index] = true;
+              return Style().bold();
+            }
+            stylesReturned[index] = false;
+            return null;
+          });
 
       tree.render();
 
@@ -638,9 +635,9 @@ void main() {
           .child(innerTree)
           .child('B')
           .enumeratorStyleFunc((children, index) {
-        allCalls.add(index);
-        return null;
-      });
+            allCalls.add(index);
+            return null;
+          });
 
       tree.render();
 

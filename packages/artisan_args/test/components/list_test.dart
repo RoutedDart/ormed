@@ -1,19 +1,14 @@
-import 'dart:io';
 import 'package:artisan_args/artisan_args.dart';
 import 'package:test/test.dart';
 
 void main() {
-  ComponentContext createContext({
+  RenderConfig createRenderConfig({
     ColorProfile profile = ColorProfile.ascii,
     bool darkBackground = true,
   }) {
-    return ComponentContext(
-      stdout: stdout,
-      stdin: stdin,
-      renderer: StringRenderer(
-        colorProfile: profile,
-        hasDarkBackground: darkBackground,
-      ),
+    return RenderConfig(
+      colorProfile: profile,
+      hasDarkBackground: darkBackground,
     );
   }
 
@@ -51,30 +46,38 @@ void main() {
 
   group('BulletList', () {
     test('renders default bullets', () {
-      const list = BulletList(items: ['Item 1', 'Item 2']);
-      final result = list.build(createContext());
+      final list = BulletList(
+        items: const ['Item 1', 'Item 2'],
+        renderConfig: createRenderConfig(),
+      );
+      final result = list.render();
 
-      expect(result.output, contains('• Item 1'));
-      expect(result.output, contains('• Item 2'));
+      expect(result, contains('• Item 1'));
+      expect(result, contains('• Item 2'));
     });
 
     test('respects custom bullet', () {
-      const list = BulletList(items: ['Item 1'], bullet: '*');
-      final result = list.build(createContext());
+      final list = BulletList(
+        items: const ['Item 1'],
+        bullet: '*',
+        renderConfig: createRenderConfig(),
+      );
+      final result = list.render();
 
-      expect(result.output, contains('* Item 1'));
+      expect(result, contains('* Item 1'));
     });
 
     test('respects custom enumerator', () {
       final list = BulletList(
         items: ['Item 1'],
         enumerator: ListEnumerator.fixed('>'),
+        renderConfig: createRenderConfig(),
       );
-      final result = list.build(createContext());
+      final result = list.render();
 
-      expect(result.output, contains('> Item 1'));
+      expect(result, contains('> Item 1'));
       // Custom enumerator should override bullet parameter if used logic correctly
-      expect(result.output, isNot(contains('•')));
+      expect(result, isNot(contains('•')));
     });
 
     test('itemStyleFunc applies styles', () {
@@ -84,60 +87,73 @@ void main() {
           if (item == 'Bold') return Style().bold();
           return null;
         },
+        renderConfig: createRenderConfig(profile: ColorProfile.trueColor),
       );
-      final result = list.build(createContext(profile: ColorProfile.trueColor));
+      final result = list.render();
 
-      expect(result.output, contains('Normal'));
-      expect(result.output, contains('\x1B[1mBold\x1B[22m'));
+      expect(result, contains('Normal'));
+      expect(result, contains('\x1B[1mBold\x1B[22m'));
     });
   });
 
   group('NumberedList', () {
     test('renders arabic numbers by default', () {
-      const list = NumberedList(items: ['Item 1', 'Item 2']);
-      final result = list.build(createContext());
+      final list = NumberedList(
+        items: const ['Item 1', 'Item 2'],
+        renderConfig: createRenderConfig(),
+      );
+      final result = list.render();
 
-      expect(result.output, contains('1. Item 1'));
-      expect(result.output, contains('2. Item 2'));
+      expect(result, contains('1. Item 1'));
+      expect(result, contains('2. Item 2'));
     });
 
     test('respects startAt', () {
-      const list = NumberedList(items: ['Item 1'], startAt: 5);
-      final result = list.build(createContext());
+      final list = NumberedList(
+        items: const ['Item 1'],
+        startAt: 5,
+        renderConfig: createRenderConfig(),
+      );
+      final result = list.render();
 
-      expect(result.output, contains('5. Item 1'));
+      expect(result, contains('5. Item 1'));
     });
 
     test('respects custom enumerator (roman)', () {
       final list = NumberedList(
         items: ['Item 1', 'Item 2'],
         enumerator: ListEnumerator.roman,
+        renderConfig: createRenderConfig(),
       );
-      final result = list.build(createContext());
+      final result = list.render();
 
-      expect(result.output, contains('I. Item 1'));
-      expect(result.output, contains('II. Item 2'));
+      expect(result, contains('I. Item 1'));
+      expect(result, contains('II. Item 2'));
     });
 
     test('pads symbols correctly', () {
       // 10 items, last one is 10. (length 3). First is 1. (length 2).
       // Should pad 1. to " 1." (length 3)
       final items = List.generate(10, (i) => 'Item ${i + 1}');
-      final list = NumberedList(items: items);
-      final result = list.build(createContext());
+      final list = NumberedList(
+        items: items,
+        renderConfig: createRenderConfig(),
+      );
+      final result = list.render();
 
-      expect(result.output, contains(' 1. Item 1'));
-      expect(result.output, contains('10. Item 10'));
+      expect(result, contains(' 1. Item 1'));
+      expect(result, contains('10. Item 10'));
     });
 
     test('itemStyleFunc applies styles', () {
       final list = NumberedList(
         items: ['Italic'],
         itemStyleFunc: (index, item) => Style().italic(),
+        renderConfig: createRenderConfig(profile: ColorProfile.trueColor),
       );
-      final result = list.build(createContext(profile: ColorProfile.trueColor));
+      final result = list.render();
 
-      expect(result.output, contains('\x1B[3mItalic\x1B[23m'));
+      expect(result, contains('\x1B[3mItalic\x1B[23m'));
     });
   });
 }
