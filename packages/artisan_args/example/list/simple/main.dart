@@ -8,11 +8,7 @@ void main() {
     'A',
     'B',
     'C',
-    LipList.create([
-      'D',
-      'E',
-      'F',
-    ]).enumerator(ListEnumerators.roman),
+    LipList.create(['D', 'E', 'F']).enumerator(ListEnumerators.roman),
     'G',
   ]);
 

@@ -5,8 +5,6 @@
 /// Run with: dart run example/lipgloss_list.dart
 library;
 
-import 'dart:io';
-
 import 'package:artisan_args/artisan_args.dart';
 
 void main() {
@@ -28,12 +26,7 @@ void _simpleList() {
   final list = BulletList(
     items: ['Apple', 'Banana', 'Cherry', 'Date', 'Elderberry'],
   );
-  final context = ComponentContext(
-    stdout: stdout,
-    stdin: stdin,
-    terminalWidth: 80,
-  );
-  list.renderln(context);
+  print(list.render());
 }
 
 /// Nested list with different enumerators.
@@ -41,13 +34,7 @@ void _nestedList() {
   final tree = Tree()
       .root('Fruits')
       .enumerator(TreeEnumerator.rounded)
-      .child(
-        Tree()
-            .root('Citrus')
-            .child('Orange')
-            .child('Lemon')
-            .child('Lime'),
-      )
+      .child(Tree().root('Citrus').child('Orange').child('Lemon').child('Lime'))
       .child(
         Tree()
             .root('Berries')

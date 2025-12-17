@@ -13,20 +13,11 @@ class Styles {
   late final Style file;
 
   Styles() {
-    base = Style()
-        .background(AnsiColor(57))
-        .foreground(AnsiColor(225));
-    block = base.copy()
-        .padding(1, 3)
-        .margin(1, 3)
-        .width(40);
-    enumerator = base.copy()
-        .foreground(AnsiColor(212))
-        .paddingRight(1);
+    base = Style().background(AnsiColor(57)).foreground(AnsiColor(225));
+    block = base.copy().padding(1, 3).margin(1, 3).width(40);
+    enumerator = base.copy().foreground(AnsiColor(212)).paddingRight(1);
     dir = base.copy().inline();
-    toggle = base.copy()
-        .foreground(AnsiColor(207))
-        .paddingRight(1);
+    toggle = base.copy().foreground(AnsiColor(207)).paddingRight(1);
     file = base.copy();
   }
 }
@@ -73,22 +64,18 @@ void main() {
         Tree()
             .root(Dir('bash', true, s).toString())
             .child(
-              Tree()
-                  .root(Dir('tools', true, s).toString())
-                  .children([
-                    FileNode('zsh', s).toString(),
-                    FileNode('doom-emacs', s).toString(),
-                  ]),
+              Tree().root(Dir('tools', true, s).toString()).children([
+                FileNode('zsh', s).toString(),
+                FileNode('doom-emacs', s).toString(),
+              ]),
             ),
         Tree()
             .root(Dir('carlos', true, s).toString())
             .child(
-              Tree()
-                  .root(Dir('emotes', true, s).toString())
-                  .children([
-                    FileNode('chefkiss.png', s).toString(),
-                    FileNode('kekw.png', s).toString(),
-                  ]),
+              Tree().root(Dir('emotes', true, s).toString()).children([
+                FileNode('chefkiss.png', s).toString(),
+                FileNode('kekw.png', s).toString(),
+              ]),
             ),
         Dir('maas', false, s).toString(),
       ]);

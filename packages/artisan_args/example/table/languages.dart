@@ -11,7 +11,10 @@ const lightGray = AnsiColor(241);
 
 void main() {
   // Style definitions
-  final headerStyle = Style().foreground(purple).bold().align(HorizontalAlign.center);
+  final headerStyle = Style()
+      .foreground(purple)
+      .bold()
+      .align(HorizontalAlign.center);
   final cellStyle = Style().padding(0, 1).width(14);
   final oddRowStyle = cellStyle.copy().foreground(gray);
   final evenRowStyle = cellStyle.copy().foreground(lightGray);

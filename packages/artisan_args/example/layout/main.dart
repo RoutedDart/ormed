@@ -145,10 +145,12 @@ String listDone(String s) =>
     checkMark +
     Style()
         .strikethrough()
-        .foreground(AdaptiveColor(
-          light: BasicColor('#969B86'),
-          dark: BasicColor('#696969'),
-        ))
+        .foreground(
+          AdaptiveColor(
+            light: BasicColor('#969B86'),
+            dark: BasicColor('#696969'),
+          ),
+        )
         .render(s);
 
 // History style
@@ -165,14 +167,12 @@ final historyStyle = Style()
 final statusNugget = Style().foreground(BasicColor('#FFFDF5')).padding(0, 1);
 
 final statusBarStyle = Style()
-    .foreground(AdaptiveColor(
-      light: BasicColor('#343433'),
-      dark: BasicColor('#C1C6B2'),
-    ))
-    .background(AdaptiveColor(
-      light: BasicColor('#D9DCCF'),
-      dark: BasicColor('#353533'),
-    ));
+    .foreground(
+      AdaptiveColor(light: BasicColor('#343433'), dark: BasicColor('#C1C6B2')),
+    )
+    .background(
+      AdaptiveColor(light: BasicColor('#D9DCCF'), dark: BasicColor('#353533')),
+    );
 
 final statusStyle = Style()
     .inherit(statusBarStyle)
@@ -182,12 +182,14 @@ final statusStyle = Style()
     .marginRight(1);
 
 Style get encodingStyle =>
-    (statusNugget.copy()..background(BasicColor('#A550DF')))
-        .align(HorizontalAlign.right);
+    (statusNugget.copy()..background(BasicColor('#A550DF'))).align(
+      HorizontalAlign.right,
+    );
 
 final statusText = Style().inherit(statusBarStyle);
 
-Style get fishCakeStyle => statusNugget.copy()..background(BasicColor('#6124DF'));
+Style get fishCakeStyle =>
+    statusNugget.copy()..background(BasicColor('#6124DF'));
 
 // Page style
 Style get docStyle => Style().padding(1, 2, 1, 2);
@@ -197,16 +199,13 @@ void main() {
 
   // Tabs
   {
-    var row = Layout.joinHorizontal(
-      VerticalAlign.top,
-      [
-        activeTab.render('Lip Gloss'),
-        tab.render('Blush'),
-        tab.render('Eye Shadow'),
-        tab.render('Mascara'),
-        tab.render('Foundation'),
-      ],
-    );
+    var row = Layout.joinHorizontal(VerticalAlign.top, [
+      activeTab.render('Lip Gloss'),
+      tab.render('Blush'),
+      tab.render('Eye Shadow'),
+      tab.render('Mascara'),
+      tab.render('Foundation'),
+    ]);
     final gapWidth = math.max(0, width - Layout.getWidth(row) - 2);
     final gap = tabGap.render(' ' * gapWidth);
     row = Layout.joinHorizontal(VerticalAlign.bottom, [row, gap]);
@@ -231,19 +230,17 @@ void main() {
       }
     }
 
-    final desc = Layout.joinVertical(
-      HorizontalAlign.left,
-      [
-        descStyle.render('Style Definitions for Nice Terminal Layouts'),
-        infoStyle.render(
-            'From Charm$divider${url("https://github.com/charmbracelet/lipgloss")}'),
-      ],
-    );
+    final desc = Layout.joinVertical(HorizontalAlign.left, [
+      descStyle.render('Style Definitions for Nice Terminal Layouts'),
+      infoStyle.render(
+        'From Charm$divider${url("https://github.com/charmbracelet/lipgloss")}',
+      ),
+    ]);
 
-    final row = Layout.joinHorizontal(
-      VerticalAlign.top,
-      [title.toString(), desc],
-    );
+    final row = Layout.joinHorizontal(VerticalAlign.top, [
+      title.toString(),
+      desc,
+    ]);
     doc.writeln(row);
     doc.writeln();
   }
@@ -253,12 +250,15 @@ void main() {
     final okButton = activeButtonStyle.render('Yes');
     final cancelButton = buttonStyle.render('Maybe');
 
-    final question = Style().width(50).align(HorizontalAlign.center).render(
-        rainbow('Are you sure you want to eat marmalade?'));
-    final buttons =
-        Layout.joinHorizontal(VerticalAlign.top, [okButton, cancelButton]);
-    final ui =
-        Layout.joinVertical(HorizontalAlign.center, [question, buttons]);
+    final question = Style()
+        .width(50)
+        .align(HorizontalAlign.center)
+        .render(rainbow('Are you sure you want to eat marmalade?'));
+    final buttons = Layout.joinHorizontal(VerticalAlign.top, [
+      okButton,
+      cancelButton,
+    ]);
+    final ui = Layout.joinVertical(HorizontalAlign.center, [question, buttons]);
 
     final dialog = Layout.place(
       width: width,
@@ -291,37 +291,28 @@ void main() {
   }();
 
   // Lists
-  final lists = Layout.joinHorizontal(
-    VerticalAlign.top,
-    [
-      list.render(
-        Layout.joinVertical(
-          HorizontalAlign.left,
-          [
-            listHeader('Citrus Fruits to Try'),
-            listDone('Grapefruit'),
-            listDone('Yuzu'),
-            listItem('Citron'),
-            listItem('Kumquat'),
-            listItem('Pomelo'),
-          ],
-        ),
-      ),
-      (list.copy()..width(columnWidth)).render(
-        Layout.joinVertical(
-          HorizontalAlign.left,
-          [
-            listHeader('Actual Lip Gloss Vendors'),
-            listItem('Glossier'),
-            listItem("Claire's Boutique"),
-            listDone('Nyx'),
-            listItem('Mac'),
-            listDone('Milk'),
-          ],
-        ),
-      ),
-    ],
-  );
+  final lists = Layout.joinHorizontal(VerticalAlign.top, [
+    list.render(
+      Layout.joinVertical(HorizontalAlign.left, [
+        listHeader('Citrus Fruits to Try'),
+        listDone('Grapefruit'),
+        listDone('Yuzu'),
+        listItem('Citron'),
+        listItem('Kumquat'),
+        listItem('Pomelo'),
+      ]),
+    ),
+    (list.copy()..width(columnWidth)).render(
+      Layout.joinVertical(HorizontalAlign.left, [
+        listHeader('Actual Lip Gloss Vendors'),
+        listItem('Glossier'),
+        listItem("Claire's Boutique"),
+        listDone('Nyx'),
+        listItem('Mac'),
+        listDone('Milk'),
+      ]),
+    ),
+  ]);
 
   doc.writeln(Layout.joinHorizontal(VerticalAlign.top, [lists, colors]));
 
@@ -334,14 +325,13 @@ void main() {
     const historyC =
         'In 1524, Henry VIII, King of England, received a "box of marmalade" from Mr. Hull of Exeter. This was probably marmelada, a solid quince paste from Portugal, still made and sold in southern Europe today. It became a favourite treat of Anne Boleyn and her ladies in waiting.';
 
-    doc.writeln(Layout.joinHorizontal(
-      VerticalAlign.top,
-      [
+    doc.writeln(
+      Layout.joinHorizontal(VerticalAlign.top, [
         (historyStyle.copy()..align(HorizontalAlign.right)).render(historyA),
         (historyStyle.copy()..align(HorizontalAlign.center)).render(historyB),
         (historyStyle.copy()..marginRight(0)).render(historyC),
-      ],
-    ));
+      ]),
+    );
     doc.writeln();
   }
 
@@ -350,17 +340,21 @@ void main() {
     final statusKey = statusStyle.render('STATUS');
     final encoding = encodingStyle.render('UTF-8');
     final fishCake = fishCakeStyle.render('🍥 Fish Cake');
-    final availableWidth = width -
+    final availableWidth =
+        width -
         Layout.getWidth(statusKey) -
         Layout.getWidth(encoding) -
         Layout.getWidth(fishCake);
-    final statusVal =
-        (statusText.copy()..width(availableWidth)).render('Ravishing');
-
-    final bar = Layout.joinHorizontal(
-      VerticalAlign.top,
-      [statusKey, statusVal, encoding, fishCake],
+    final statusVal = (statusText.copy()..width(availableWidth)).render(
+      'Ravishing',
     );
+
+    final bar = Layout.joinHorizontal(VerticalAlign.top, [
+      statusKey,
+      statusVal,
+      encoding,
+      fishCake,
+    ]);
 
     doc.writeln((statusBarStyle.copy()..width(width)).render(bar));
   }
@@ -425,9 +419,7 @@ String rainbow(String s) {
   final colors = colorGrid(s.length, 1)[0];
   final buffer = StringBuffer();
   for (var i = 0; i < s.length; i++) {
-    buffer.write(
-      Style().foreground(BasicColor(colors[i])).render(s[i]),
-    );
+    buffer.write(Style().foreground(BasicColor(colors[i])).render(s[i]));
   }
   return buffer.toString();
 }

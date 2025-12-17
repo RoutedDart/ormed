@@ -30,9 +30,7 @@ void _simpleTree() {
             .child('Arch Linux (btw)')
             .child('Void Linux'),
       )
-      .child(
-        Tree().root('BSD').child('FreeBSD').child('OpenBSD'),
-      );
+      .child(Tree().root('BSD').child('FreeBSD').child('OpenBSD'));
 
   print(tree.render());
 }
@@ -61,9 +59,7 @@ void _styledTree() {
             .child('📦 ormed')
             .child('📦 ormed_cli'),
       )
-      .child(
-        Tree().root('📁 web_apps').child('🌐 portfolio').child('🌐 blog'),
-      )
+      .child(Tree().root('📁 web_apps').child('🌐 portfolio').child('🌐 blog'))
       .child(
         Tree()
             .root('📁 experiments')

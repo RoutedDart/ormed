@@ -44,32 +44,33 @@ Style itemStyleFunc(ListItems items, int i) {
 }
 
 void main() {
-  final l = LipList.create([
-    'Artichoke',
-    'Baking Flour',
-    'Bananas',
-    'Barley',
-    'Bean Sprouts',
-    'Cashew Apple',
-    'Cashews',
-    'Coconut Milk',
-    'Curry Paste',
-    'Currywurst',
-    'Dill',
-    'Dragonfruit',
-    'Dried Shrimp',
-    'Eggs',
-    'Fish Cake',
-    'Furikake',
-    'Jicama',
-    'Kohlrabi',
-    'Leeks',
-    'Lentils',
-    'Licorice Root',
-  ])
-      .enumerator(groceryEnumerator)
-      .enumeratorStyleFunc(enumStyleFunc)
-      .itemStyleFunc(itemStyleFunc);
+  final l =
+      LipList.create([
+            'Artichoke',
+            'Baking Flour',
+            'Bananas',
+            'Barley',
+            'Bean Sprouts',
+            'Cashew Apple',
+            'Cashews',
+            'Coconut Milk',
+            'Curry Paste',
+            'Currywurst',
+            'Dill',
+            'Dragonfruit',
+            'Dried Shrimp',
+            'Eggs',
+            'Fish Cake',
+            'Furikake',
+            'Jicama',
+            'Kohlrabi',
+            'Leeks',
+            'Lentils',
+            'Licorice Root',
+          ])
+          .enumerator(groceryEnumerator)
+          .enumeratorStyleFunc(enumStyleFunc)
+          .itemStyleFunc(itemStyleFunc);
 
   print(l);
 }

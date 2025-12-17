@@ -36,8 +36,10 @@ void _languagesTable() {
   const gray = AnsiColor(245);
   const lightGray = AnsiColor(241);
 
-  final headerStyle =
-      Style().foreground(purple).bold().align(HorizontalAlign.center);
+  final headerStyle = Style()
+      .foreground(purple)
+      .bold()
+      .align(HorizontalAlign.center);
 
   final cellStyle = Style().padding(0, 1).width(14);
 
@@ -103,8 +105,10 @@ void _pokemonTable() {
 
   final baseStyle = Style().padding(0, 1);
   final headerStyle = baseStyle.copy().foreground(AnsiColor(252)).bold();
-  final selectedStyle =
-      baseStyle.copy().foreground(BasicColor('#01BE85')).background(BasicColor('#00432F'));
+  final selectedStyle = baseStyle
+      .copy()
+      .foreground(BasicColor('#01BE85'))
+      .background(BasicColor('#00432F'));
 
   final rows = [
     ['1', 'Bulbasaur', 'Grass', 'Poison', 'フシギダネ', 'Fushigidane'],
@@ -130,7 +134,8 @@ void _pokemonTable() {
         }
 
         final rowData = (row >= 0 && row < rows.length) ? rows[row] : null;
-        final isPikachuRow = rowData != null && rowData.length > 1 && rowData[1] == 'Pikachu';
+        final isPikachuRow =
+            rowData != null && rowData.length > 1 && rowData[1] == 'Pikachu';
 
         // Highlight Pikachu row
         if (isPikachuRow) {

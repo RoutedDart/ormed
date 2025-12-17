@@ -23,9 +23,18 @@ const columnWidth = 30;
 // ─────────────────────────────────────────────────────────────────────────────
 
 const normal = BasicColor('#EEEEEE');
-final subtle = AdaptiveColor(light: BasicColor('#D9DCCF'), dark: BasicColor('#383838'));
-final highlight = AdaptiveColor(light: BasicColor('#874BFD'), dark: BasicColor('#7D56F4'));
-final special = AdaptiveColor(light: BasicColor('#43BF6D'), dark: BasicColor('#73F59F'));
+final subtle = AdaptiveColor(
+  light: BasicColor('#D9DCCF'),
+  dark: BasicColor('#383838'),
+);
+final highlight = AdaptiveColor(
+  light: BasicColor('#874BFD'),
+  dark: BasicColor('#7D56F4'),
+);
+final special = AdaptiveColor(
+  light: BasicColor('#43BF6D'),
+  dark: BasicColor('#73F59F'),
+);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Style Definitions
@@ -65,18 +74,14 @@ final tabBorder = Border(
   bottomRight: '┴',
 );
 
-Style tabStyle() => Style()
-    .border(tabBorder)
-    .borderForeground(highlight)
-    .padding(0, 1);
+Style tabStyle() =>
+    Style().border(tabBorder).borderForeground(highlight).padding(0, 1);
 
 Style activeTabStyle() => tabStyle().border(activeTabBorder);
 
 // Tab gap - uses borderTop(false) etc. like lipgloss
-Style tabGapStyle() => tabStyle()
-    .borderTop(false)
-    .borderLeft(false)
-    .borderRight(false);
+Style tabGapStyle() =>
+    tabStyle().borderTop(false).borderLeft(false).borderRight(false);
 
 // Title style - using individual margin setters like lipgloss
 Style titleStyle() => Style()
@@ -147,40 +152,36 @@ String listHeader(String text) => baseStyle()
 String listItem(String text) => baseStyle().paddingLeft(2).render(text);
 
 // checkMark using setString and toString() like lipgloss
-final checkMark = Style()
-    .foreground(special)
-    .paddingRight(1)
-    .setString('✓');
+final checkMark = Style().foreground(special).paddingRight(1).setString('✓');
 
 // listDone now uses checkMark with setString
 String listDone(String s) =>
-    '$checkMark${Style()
-        .strikethrough()
-        .foreground(AdaptiveColor(light: BasicColor('#969B86'), dark: BasicColor('#696969')))
-        .render(s)}';
+    '$checkMark${Style().strikethrough().foreground(AdaptiveColor(light: BasicColor('#969B86'), dark: BasicColor('#696969'))).render(s)}';
 
 // History/paragraph style - using individual setters
 Style historyStyle() => Style()
     .align(HorizontalAlign.left)
     .foreground(BasicColor('#FAFAFA'))
     .background(highlight)
-  .margin(1, 3, 0, 0)
+    .margin(1, 3, 0, 0)
     .paddingTop(1)
     .paddingBottom(1)
     .paddingLeft(2)
     .paddingRight(2)
-  .height(19)
-  .width(columnWidth);
+    .height(19)
+    .width(columnWidth);
 
 // Status bar styles
-Style statusNuggetStyle() => Style()
-    .foreground(BasicColor('#FFFDF5'))
-    .paddingLeft(1)
-    .paddingRight(1);
+Style statusNuggetStyle() =>
+    Style().foreground(BasicColor('#FFFDF5')).paddingLeft(1).paddingRight(1);
 
 Style statusBarStyle() => Style()
-    .foreground(AdaptiveColor(light: BasicColor('#343433'), dark: BasicColor('#C1C6B2')))
-    .background(AdaptiveColor(light: BasicColor('#D9DCCF'), dark: BasicColor('#353533')));
+    .foreground(
+      AdaptiveColor(light: BasicColor('#343433'), dark: BasicColor('#C1C6B2')),
+    )
+    .background(
+      AdaptiveColor(light: BasicColor('#D9DCCF'), dark: BasicColor('#353533')),
+    );
 
 Style statusStyle() => statusBarStyle()
     .foreground(BasicColor('#FFFDF5'))
@@ -197,11 +198,8 @@ Style statusTextStyle() => statusBarStyle();
 Style fishCakeStyle() => statusNuggetStyle().background(BasicColor('#6124DF'));
 
 // Page style
-Style docStyle() => Style()
-    .paddingTop(1)
-    .paddingBottom(1)
-    .paddingLeft(2)
-    .paddingRight(2);
+Style docStyle() =>
+    Style().paddingTop(1).paddingBottom(1).paddingLeft(2).paddingRight(2);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Main
@@ -279,15 +277,12 @@ void _buildTitle(StringBuffer doc) {
 
   final title = titleParts.join('\n');
 
-  final desc = Layout.joinVertical(
-    HorizontalAlign.left,
-    [
-      descStyle().render('Style Definitions for Nice Terminal Layouts'),
-      infoStyle().render(
-        'From Charm$divider${urlStyle("https://github.com/charmbracelet/lipgloss")}',
-      ),
-    ],
-  );
+  final desc = Layout.joinVertical(HorizontalAlign.left, [
+    descStyle().render('Style Definitions for Nice Terminal Layouts'),
+    infoStyle().render(
+      'From Charm$divider${urlStyle("https://github.com/charmbracelet/lipgloss")}',
+    ),
+  ]);
 
   final row = Layout.joinHorizontal(VerticalAlign.top, [title, desc]);
   doc.writeln(row);
@@ -303,7 +298,10 @@ void _buildDialog(StringBuffer doc) {
       .align(HorizontalAlign.center)
       .render(_rainbow('Are you sure you want to eat marmalade?'));
 
-  final buttons = Layout.joinHorizontal(VerticalAlign.top, [okButton, cancelButton]);
+  final buttons = Layout.joinHorizontal(VerticalAlign.top, [
+    okButton,
+    cancelButton,
+  ]);
   final ui = Layout.joinVertical(HorizontalAlign.center, [question, buttons]);
 
   final dialog = Layout.place(
@@ -312,10 +310,7 @@ void _buildDialog(StringBuffer doc) {
     horizontal: HorizontalAlign.center,
     vertical: VerticalAlign.center,
     content: dialogBoxStyle().render(ui),
-    whitespace: WhitespaceOptions(
-      chars: '猫咪',
-      foreground: subtle,
-    ),
+    whitespace: WhitespaceOptions(chars: '猫咪', foreground: subtle),
   );
 
   doc.writeln(dialog);
@@ -328,32 +323,28 @@ void _buildListsAndColors(StringBuffer doc) {
 
   // Lists
   final list1 = listStyle().render(
-    Layout.joinVertical(
-      HorizontalAlign.left,
-      [
-        listHeader('Citrus Fruits to Try'),
-        listDone('Grapefruit'),
-        listDone('Yuzu'),
-        listItem('Citron'),
-        listItem('Kumquat'),
-        listItem('Pomelo'),
-      ],
-    ),
+    Layout.joinVertical(HorizontalAlign.left, [
+      listHeader('Citrus Fruits to Try'),
+      listDone('Grapefruit'),
+      listDone('Yuzu'),
+      listItem('Citron'),
+      listItem('Kumquat'),
+      listItem('Pomelo'),
+    ]),
   );
 
-  final list2 = listStyle().width(columnWidth).render(
-    Layout.joinVertical(
-      HorizontalAlign.left,
-      [
-        listHeader('Actual Lip Gloss Vendors'),
-        listItem('Glossier'),
-        listItem("Claire's Boutique"),
-        listDone('Nyx'),
-        listItem('Mac'),
-        listDone('Milk'),
-      ],
-    ),
-  );
+  final list2 = listStyle()
+      .width(columnWidth)
+      .render(
+        Layout.joinVertical(HorizontalAlign.left, [
+          listHeader('Actual Lip Gloss Vendors'),
+          listItem('Glossier'),
+          listItem("Claire's Boutique"),
+          listDone('Nyx'),
+          listItem('Mac'),
+          listDone('Milk'),
+        ]),
+      );
 
   final lists = Layout.joinHorizontal(VerticalAlign.top, [list1, list2]);
   final combined = Layout.joinHorizontal(VerticalAlign.top, [lists, colorGrid]);
@@ -374,9 +365,7 @@ String _buildColorGrid() {
   }
 
   // Pad the grid to align with list column widths
-  return Style()
-      .width(columnWidth + 1)
-      .render(buffer.toString().trimRight());
+  return Style().width(columnWidth + 1).render(buffer.toString().trimRight());
 }
 
 void _buildHistory(StringBuffer doc) {
@@ -409,10 +398,12 @@ void _buildStatusBar(StringBuffer doc) {
       .width(width - statusKeyWidth - encodingWidth - fishCakeWidth)
       .render('Ravishing');
 
-  final bar = Layout.joinHorizontal(
-    VerticalAlign.top,
-    [statusKey, statusVal, encoding, fishCake],
-  );
+  final bar = Layout.joinHorizontal(VerticalAlign.top, [
+    statusKey,
+    statusVal,
+    encoding,
+    fishCake,
+  ]);
 
   doc.write(statusBarStyle().width(width).render(bar));
 }

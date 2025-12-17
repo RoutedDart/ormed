@@ -28,10 +28,8 @@ void addBranches(Tree root, String path) {
 }
 
 void main() {
-  final enumeratorStyle =
-      Style().foreground(AnsiColor(240)).paddingRight(1);
-  final itemStyle =
-      Style().foreground(AnsiColor(99)).bold().paddingRight(1);
+  final enumeratorStyle = Style().foreground(AnsiColor(240)).paddingRight(1);
+  final itemStyle = Style().foreground(AnsiColor(99)).bold().paddingRight(1);
 
   final pwd = Directory.current.path;
 

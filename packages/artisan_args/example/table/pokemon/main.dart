@@ -6,7 +6,8 @@ import 'package:artisan_args/artisan_args.dart';
 void main() {
   final baseStyle = Style().padding(0, 1);
   final headerStyle = baseStyle.copy().foreground(AnsiColor(252)).bold();
-  final selectedStyle = baseStyle.copy()
+  final selectedStyle = baseStyle
+      .copy()
       .foreground(BasicColor('#01BE85'))
       .background(BasicColor('#00432F'));
 
@@ -34,7 +35,14 @@ void main() {
     'Water': BasicColor('#439F8E'),
   };
 
-  final headers = ['#', 'Name', 'Type 1', 'Type 2', 'Japanese', 'Official Rom.'];
+  final headers = [
+    '#',
+    'Name',
+    'Type 1',
+    'Type 2',
+    'Japanese',
+    'Official Rom.',
+  ];
   final data = [
     ['1', 'Bulbasaur', 'Grass', 'Poison', 'フシギダネ', 'Fushigidane'],
     ['2', 'Ivysaur', 'Grass', 'Poison', 'フシギソウ', 'Fushigisou'],

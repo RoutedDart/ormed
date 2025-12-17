@@ -16,9 +16,7 @@ void main() {
             .child('Arch Linux (btw)')
             .child('Void Linux'),
       )
-      .child(
-        Tree().root('BSD').child('FreeBSD').child('OpenBSD'),
-      );
+      .child(Tree().root('BSD').child('FreeBSD').child('OpenBSD'));
 
   print(t.render());
 }

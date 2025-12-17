@@ -9,6 +9,29 @@ Provides a polished CLI experience with:
 - Interactive prompts (confirm, ask, choice, secret)
 - ANSI color support with graceful fallback
 
+## Components vs. Bubbles
+
+- `lib/src/components/` contains **display-only** building blocks (`CliComponent`).
+- `lib/src/tui/bubbles/` contains **interactive** components implemented as Bubble
+  Tea-style `Model`s.
+
+For migration details, see `doc/migration_guide.md`.
+
+### Bubble Quick Start
+
+```dart
+import 'package:artisan_args/artisan_args.dart';
+
+Future<void> main() async {
+  final terminal = StdioTerminal();
+  final name = await runTextInputPrompt(
+    TextInputModel(prompt: 'Name: '),
+    terminal,
+  );
+  print('Hello, $name');
+}
+```
+
 ## Installation
 
 Add to your `pubspec.yaml`:
@@ -146,6 +169,9 @@ final features = await io.multiSelectChoice(
 );
 ```
 
+The artisan-style prompt APIs remain supported; interactive prompts run bubbles
+under the hood.
+
 ### Components Facade
 
 Access higher-level components via `io.components`:
@@ -247,4 +273,3 @@ dart run packages/artisan_args/example/main.dart ui:components --ansi
 ## License
 
 MIT
-

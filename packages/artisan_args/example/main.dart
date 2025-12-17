@@ -3,6 +3,14 @@ import 'dart:io' as dartio;
 
 import 'package:artisan_args/artisan_args.dart';
 
+extension ViewComponentPrinter on ViewComponent {
+  void writelnTo(ArtisanIO io) {
+    for (final line in render().split('\n')) {
+      io.writeln(line);
+    }
+  }
+}
+
 Future<void> main(List<String> args) async {
   final runner =
       ArtisanCommandRunner<void>('artisan-demo', 'artisan_args demo CLI')
@@ -124,8 +132,16 @@ class UiTableCommand extends ArtisanCommand<void> {
     io.table(
       headers: ['id', 'name', 'status'],
       rows: [
-        [1, 'create_users_table', io.style.foreground(Colors.success).render('DONE')],
-        [2, 'add_posts_table', io.style.foreground(Colors.warning).render('PENDING')],
+        [
+          1,
+          'create_users_table',
+          io.style.foreground(Colors.success).render('DONE'),
+        ],
+        [
+          2,
+          'add_posts_table',
+          io.style.foreground(Colors.warning).render('PENDING'),
+        ],
       ],
     );
   }
@@ -192,19 +208,19 @@ class UiProgressCommand extends ArtisanCommand<void> {
     final countRaw = argResults?['count'] as String? ?? '25';
     final count = int.tryParse(countRaw) ?? 25;
 
-    final context = ComponentContext(
-      stdout: dartio.stdout,
-      stdin: dartio.stdin,
+    final terminal = StdioTerminal(stdout: dartio.stdout, stdin: dartio.stdin);
+    final renderConfig = RenderConfig.fromRenderer(
+      defaultRenderer,
       terminalWidth: io.terminalWidth,
     );
 
     final bar = io.createProgressBar(max: count);
-    bar.start(context);
+    bar.start(terminal, renderConfig: renderConfig);
     for (var i = 0; i < count; i++) {
       await Future<void>.delayed(const Duration(milliseconds: 20));
-      bar.advance(context);
+      bar.advance(terminal, renderConfig: renderConfig);
     }
-    bar.finish(context);
+    bar.finish(terminal, renderConfig: renderConfig);
     io.newLine();
   }
 }
@@ -491,28 +507,23 @@ class UiSpinnerCommand extends ArtisanCommand<void> {
   Future<void> run() async {
     final frameStyle = argResults?['frames'] as String? ?? 'dots';
 
-    final frames = switch (frameStyle) {
-      'line' => SpinnerFrames.line,
-      'circle' => SpinnerFrames.circle,
-      'arc' => SpinnerFrames.arc,
-      'arrows' => SpinnerFrames.arrows,
-      _ => SpinnerFrames.dots,
+    final spinner = switch (frameStyle) {
+      'line' => Spinners.line,
+      'circle' => Spinners.circle,
+      'arc' => Spinners.arc,
+      'arrows' => Spinners.arrows,
+      _ => Spinners.miniDot,
     };
 
     io.title('Animated Spinner');
     io.text('This demonstrates a real animated spinner.');
     io.newLine();
 
-    final context = ComponentContext(
-      stdout: dartio.stdout,
-      stdin: dartio.stdin,
-      terminalWidth: io.terminalWidth,
-    );
-
-    final result = await withSpinner(
+    final terminal = StdioTerminal(stdout: dartio.stdout, stdin: dartio.stdin);
+    final result = await runSpinnerTask(
       message: 'Processing your request...',
-      context: context,
-      frames: frames,
+      spinner: spinner,
+      terminal: terminal,
       task: () async {
         await Future<void>.delayed(const Duration(seconds: 2));
         return 'Completed successfully!';
@@ -552,9 +563,8 @@ class UiPanelCommand extends ArtisanCommand<void> {
       _ => PanelBoxChars.rounded,
     };
 
-    final context = ComponentContext(
-      stdout: dartio.stdout,
-      stdin: dartio.stdin,
+    final renderConfig = RenderConfig.fromRenderer(
+      defaultRenderer,
       terminalWidth: io.terminalWidth,
     );
 
@@ -566,7 +576,8 @@ class UiPanelCommand extends ArtisanCommand<void> {
           'This is a simple panel with some content.\nIt can have multiple lines.',
       title: 'Info',
       chars: chars,
-    ).renderln(context);
+      renderConfig: renderConfig,
+    ).writelnTo(io);
     io.newLine();
 
     // Success panel
@@ -574,7 +585,8 @@ class UiPanelCommand extends ArtisanCommand<void> {
       content: 'Your operation completed successfully!',
       title: 'Success',
       chars: chars,
-    ).renderln(context);
+      renderConfig: renderConfig,
+    ).writelnTo(io);
     io.newLine();
 
     // Warning panel
@@ -583,7 +595,8 @@ class UiPanelCommand extends ArtisanCommand<void> {
       title: 'Warning',
       titleAlign: PanelAlignment.center,
       chars: chars,
-    ).renderln(context);
+      renderConfig: renderConfig,
+    ).writelnTo(io);
     io.newLine();
 
     // Columns demo
@@ -604,7 +617,8 @@ class UiPanelCommand extends ArtisanCommand<void> {
         'nectarine',
       ],
       columnCount: 4,
-    ).renderln(context);
+      renderConfig: renderConfig,
+    ).writelnTo(io);
   }
 }
 
@@ -620,9 +634,8 @@ class UiTreeCommand extends ArtisanCommand<void> {
   Future<void> run() async {
     io.title('Tree Structure');
 
-    final context = ComponentContext(
-      stdout: dartio.stdout,
-      stdin: dartio.stdin,
+    final renderConfig = RenderConfig.fromRenderer(
+      defaultRenderer,
       terminalWidth: io.terminalWidth,
     );
 
@@ -642,7 +655,8 @@ class UiTreeCommand extends ArtisanCommand<void> {
         'pubspec.yaml': null,
         'README.md': null,
       },
-    ).renderln(context);
+      renderConfig: renderConfig,
+    ).writelnTo(io);
   }
 }
 
@@ -689,16 +703,11 @@ class UiSearchCommand extends ArtisanCommand<void> {
       'drift',
     ];
 
-    final context = ComponentContext(
-      stdout: dartio.stdout,
-      stdin: dartio.stdin,
-      terminalWidth: io.terminalWidth,
+    final terminal = StdioTerminal(stdout: dartio.stdout, stdin: dartio.stdin);
+    final selected = await runSearchPrompt<String>(
+      SearchModel<String>(items: packages, title: 'Select a package'),
+      terminal,
     );
-
-    final selected = await SearchComponent<String>(
-      question: 'Select a package',
-      choices: packages,
-    ).interact(context);
 
     io.newLine();
     if (selected != null) {
@@ -732,30 +741,30 @@ class UiPauseCommand extends ArtisanCommand<void> {
 
     io.title('Pause & Countdown');
 
-    final context = ComponentContext(
-      stdout: dartio.stdout,
-      stdin: dartio.stdin,
-      terminalWidth: io.terminalWidth,
-    );
+    final terminal = StdioTerminal(stdout: dartio.stdout, stdin: dartio.stdin);
 
     if (showCountdown) {
       io.text('Starting countdown...');
       io.newLine();
 
-      await CountdownComponent(
-        seconds: 5,
-        message: 'Continuing in',
-        onComplete: () {
-          io.success('Countdown complete!');
-        },
-      ).interact(context);
+      await Program(
+        CountdownModel(
+          duration: const Duration(seconds: 5),
+          message: 'Continuing in',
+        ),
+        options: promptProgramOptions,
+        terminal: terminal,
+      ).run();
+      io.success('Countdown complete!');
     } else {
       io.text('Press any key to continue after this message.');
       io.newLine();
 
-      await PauseComponent(
-        message: 'Press any key to continue...',
-      ).interact(context);
+      await Program(
+        PauseModel(message: 'Press any key to continue...'),
+        options: promptProgramOptions,
+        terminal: terminal,
+      ).run();
 
       io.success('You pressed a key!');
     }
@@ -805,17 +814,25 @@ class UiChalkCommand extends ArtisanCommand<void> {
 
     io.section('Hex Colors');
     io.writeln('  ${style.foreground(BasicColor('#ff6b6b')).render('Coral')}');
-    io.writeln('  ${style.foreground(BasicColor('#4ecdc4')).render('Turquoise')}');
+    io.writeln(
+      '  ${style.foreground(BasicColor('#4ecdc4')).render('Turquoise')}',
+    );
     io.writeln('  ${style.foreground(BasicColor('#ffe66d')).render('Lemon')}');
     io.newLine();
 
     io.section('Semantic Styles');
-    io.writeln('  ${style.foreground(Colors.success).render('Success message')}');
+    io.writeln(
+      '  ${style.foreground(Colors.success).render('Success message')}',
+    );
     io.writeln('  ${style.foreground(Colors.error).render('Error message')}');
-    io.writeln('  ${style.foreground(Colors.warning).render('Warning message')}');
+    io.writeln(
+      '  ${style.foreground(Colors.warning).render('Warning message')}',
+    );
     io.writeln('  ${style.foreground(Colors.info).render('Info message')}');
     io.writeln('  ${style.foreground(Colors.muted).render('Muted message')}');
-    io.writeln('  ${style.bold().foreground(Colors.yellow).render('Highlighted text')}');
+    io.writeln(
+      '  ${style.bold().foreground(Colors.yellow).render('Highlighted text')}',
+    );
   }
 }
 
@@ -960,9 +977,8 @@ class UiExceptionCommand extends ArtisanCommand<void> {
     }
 
     io.section('Using ExceptionComponent directly');
-    final context = ComponentContext(
-      stdout: dartio.stdout,
-      stdin: dartio.stdin,
+    final renderConfig = RenderConfig.fromRenderer(
+      defaultRenderer,
       terminalWidth: io.terminalWidth,
     );
     try {
@@ -972,7 +988,8 @@ class UiExceptionCommand extends ArtisanCommand<void> {
         exception: e,
         stackTrace: stack,
         maxStackFrames: 5,
-      ).renderln(context);
+        renderConfig: renderConfig,
+      ).writelnTo(io);
     }
   }
 }
@@ -1009,9 +1026,8 @@ class UiHorizontalTableCommand extends ArtisanCommand<void> {
     });
 
     io.section('Using HorizontalTableComponent directly');
-    final context = ComponentContext(
-      stdout: dartio.stdout,
-      stdin: dartio.stdin,
+    final renderConfig = RenderConfig.fromRenderer(
+      defaultRenderer,
       terminalWidth: io.terminalWidth,
     );
     HorizontalTableComponent(
@@ -1021,7 +1037,8 @@ class UiHorizontalTableCommand extends ArtisanCommand<void> {
         'Memory': '256 MB / 1 GB',
         'CPU': '12%',
       },
-    ).renderln(context);
+      renderConfig: renderConfig,
+    ).writelnTo(io);
   }
 }
 
@@ -1059,18 +1076,26 @@ class UiPasswordCommand extends ArtisanCommand<void> {
     );
     io.newLine();
 
-    final context = ComponentContext(
-      stdout: dartio.stdout,
-      stdin: dartio.stdin,
-      terminalWidth: io.terminalWidth,
-    );
+    final terminal = StdioTerminal(stdout: dartio.stdout, stdin: dartio.stdin);
 
     try {
-      final password = await PasswordComponent(
-        prompt: 'Password',
-        confirm: confirm,
-        confirmPrompt: 'Confirm password',
-      ).interact(context);
+      final password = confirm
+          ? await runPasswordConfirmPrompt(
+              PasswordConfirmModel(
+                prompt: 'Password',
+                confirmPrompt: 'Confirm password',
+              ),
+              terminal,
+            )
+          : await runPasswordPrompt(
+              PasswordModel(prompt: 'Password'),
+              terminal,
+            );
+
+      if (password == null) {
+        io.warning('Password prompt cancelled');
+        return;
+      }
       io.newLine();
       io.success('Password set successfully!');
       io.twoColumnDetail('Length', '${password.length} characters');
@@ -1103,10 +1128,8 @@ class UiBlockCommand extends ArtisanCommand<void> {
     final large = argResults?['large'] == true;
 
     io.title('Styled Blocks');
-
-    final context = ComponentContext(
-      stdout: dartio.stdout,
-      stdin: dartio.stdin,
+    final renderConfig = RenderConfig.fromRenderer(
+      defaultRenderer,
       terminalWidth: io.terminalWidth,
     );
 
@@ -1115,7 +1138,8 @@ class UiBlockCommand extends ArtisanCommand<void> {
       message: 'This is an informational message that provides context.',
       blockStyle: BlockStyleType.info,
       large: large,
-    ).renderln(context);
+      renderConfig: renderConfig,
+    ).writelnTo(io);
 
     io.section('Success Block');
     StyledBlockComponent(
@@ -1123,28 +1147,32 @@ class UiBlockCommand extends ArtisanCommand<void> {
           'Operation completed successfully!\nAll tasks finished without errors.',
       blockStyle: BlockStyleType.success,
       large: large,
-    ).renderln(context);
+      renderConfig: renderConfig,
+    ).writelnTo(io);
 
     io.section('Warning Block');
     StyledBlockComponent(
       message: 'Please review the configuration before proceeding.',
       blockStyle: BlockStyleType.warning,
       large: large,
-    ).renderln(context);
+      renderConfig: renderConfig,
+    ).writelnTo(io);
 
     io.section('Error Block');
     StyledBlockComponent(
       message: 'An error occurred during the operation.',
       blockStyle: BlockStyleType.error,
       large: large,
-    ).renderln(context);
+      renderConfig: renderConfig,
+    ).writelnTo(io);
 
     io.section('Note Block');
     StyledBlockComponent(
       message: 'This is a note with additional information.',
       blockStyle: BlockStyleType.note,
       large: large,
-    ).renderln(context);
+      renderConfig: renderConfig,
+    ).writelnTo(io);
 
     io.section('Comment Style');
     CommentComponent(
@@ -1153,7 +1181,8 @@ class UiBlockCommand extends ArtisanCommand<void> {
         'It displays text in a dimmed, code-comment style.',
         'Useful for showing hints or secondary information.',
       ],
-    ).renderln(context);
+      renderConfig: renderConfig,
+    ).writelnTo(io);
   }
 }
 
@@ -1179,10 +1208,8 @@ class UiColumnsCommand extends ArtisanCommand<void> {
     final colCount = int.tryParse(argResults?['cols'] as String? ?? '4') ?? 4;
 
     io.title('Multi-Column Layout');
-
-    final context = ComponentContext(
-      stdout: dartio.stdout,
-      stdin: dartio.stdin,
+    final renderConfig = RenderConfig.fromRenderer(
+      defaultRenderer,
       terminalWidth: io.terminalWidth,
     );
 
@@ -1207,7 +1234,8 @@ class UiColumnsCommand extends ArtisanCommand<void> {
         'Raspberry',
       ],
       columnCount: colCount,
-    ).renderln(context);
+      renderConfig: renderConfig,
+    ).writelnTo(io);
     io.newLine();
 
     io.section('Commands (auto columns)');
@@ -1230,7 +1258,8 @@ class UiColumnsCommand extends ArtisanCommand<void> {
         'route:list',
         'queue:work',
       ],
-    ).renderln(context);
+      renderConfig: renderConfig,
+    ).writelnTo(io);
     io.newLine();
 
     io.section('Status Items');
@@ -1244,7 +1273,8 @@ class UiColumnsCommand extends ArtisanCommand<void> {
         '${io.style.foreground(Colors.error).render("●")} Critical',
       ],
       columnCount: 3,
-    ).renderln(context);
+      renderConfig: renderConfig,
+    ).writelnTo(io);
   }
 }
 
@@ -1258,7 +1288,7 @@ class UiTerminalCommand extends ArtisanCommand<void> {
 
   @override
   Future<void> run() async {
-    final terminal = Terminal(stdout: dartio.stdout, stdin: dartio.stdin);
+    final terminal = StdioTerminal(stdout: dartio.stdout, stdin: dartio.stdin);
 
     io.title('Terminal Utilities');
 
@@ -1347,7 +1377,11 @@ class UiAllCommand extends ArtisanCommand<void> {
       rows: [
         ['1', 'users', io.style.foreground(Colors.success).render('migrated')],
         ['2', 'posts', io.style.foreground(Colors.success).render('migrated')],
-        ['3', 'comments', io.style.foreground(Colors.warning).render('pending')],
+        [
+          '3',
+          'comments',
+          io.style.foreground(Colors.warning).render('pending'),
+        ],
       ],
     );
 
@@ -1380,15 +1414,16 @@ class UiAllCommand extends ArtisanCommand<void> {
 
     // Panel
     io.section('7. Panel');
-    final context = ComponentContext(
-      stdout: dartio.stdout,
-      stdin: dartio.stdin,
+    final terminal = StdioTerminal(stdout: dartio.stdout, stdin: dartio.stdin);
+    final renderConfig = RenderConfig.fromRenderer(
+      defaultRenderer,
       terminalWidth: io.terminalWidth,
     );
     PanelComponent(
       content: 'This is a boxed panel with a title.',
       title: 'Panel Title',
-    ).renderln(context);
+      renderConfig: renderConfig,
+    ).writelnTo(io);
     io.newLine();
 
     // Tree
@@ -1401,7 +1436,8 @@ class UiAllCommand extends ArtisanCommand<void> {
         },
         'pubspec.yaml': null,
       },
-    ).renderln(context);
+      renderConfig: renderConfig,
+    ).writelnTo(io);
     io.newLine();
 
     // Columns
@@ -1409,18 +1445,19 @@ class UiAllCommand extends ArtisanCommand<void> {
     ColumnsComponent(
       items: ['one', 'two', 'three', 'four', 'five', 'six'],
       columnCount: 3,
-    ).renderln(context);
+      renderConfig: renderConfig,
+    ).writelnTo(io);
     io.newLine();
 
     // Progress bar
     io.section('10. Progress Bar');
     final bar = io.createProgressBar(max: 20);
-    bar.start(context);
+    bar.start(terminal, renderConfig: renderConfig);
     for (var i = 0; i < 20; i++) {
       await Future<void>.delayed(const Duration(milliseconds: 30));
-      bar.advance(context);
+      bar.advance(terminal, renderConfig: renderConfig);
     }
-    bar.finish(context);
+    bar.finish(terminal, renderConfig: renderConfig);
     io.newLine();
 
     // Task
@@ -1460,9 +1497,9 @@ class UiAllCommand extends ArtisanCommand<void> {
 
     // Terminal info
     io.section('14. Terminal Info');
-    final terminal = Terminal(stdout: dartio.stdout);
-    io.twoColumnDetail('Size', '${terminal.width}x${terminal.height}');
-    io.twoColumnDetail('ANSI', terminal.supportsAnsi ? 'Yes' : 'No');
+    final terminalInfo = StdioTerminal(stdout: dartio.stdout);
+    io.twoColumnDetail('Size', '${terminalInfo.width}x${terminalInfo.height}');
+    io.twoColumnDetail('ANSI', terminalInfo.supportsAnsi ? 'Yes' : 'No');
     io.newLine();
 
     // Summary
@@ -1502,11 +1539,7 @@ class UiAnticipateCommand extends ArtisanCommand<void> {
     io.text('Type to see matching suggestions. Use arrow keys to navigate.');
     io.newLine();
 
-    final context = ComponentContext(
-      stdout: dartio.stdout,
-      stdin: dartio.stdin,
-      terminalWidth: io.terminalWidth,
-    );
+    final terminal = StdioTerminal(stdout: dartio.stdout, stdin: dartio.stdin);
 
     // Country selection
     final countries = [
@@ -1532,11 +1565,14 @@ class UiAnticipateCommand extends ArtisanCommand<void> {
       'Austria',
     ];
 
-    final country = await AnticipateComponent(
-      question: 'Select your country',
-      suggestions: countries,
-      defaultValue: 'United States',
-    ).interact(context);
+    final country = await runAnticipatePrompt(
+      AnticipateModel(
+        prompt: 'Select your country: ',
+        suggestions: countries,
+        defaultValue: 'United States',
+      ),
+      terminal,
+    );
 
     io.newLine();
     if (country != null) {
@@ -1566,10 +1602,10 @@ class UiAnticipateCommand extends ArtisanCommand<void> {
       'stream_transform',
     ];
 
-    final package = await AnticipateComponent(
-      question: 'Select a package',
-      suggestions: packages,
-    ).interact(context);
+    final package = await runAnticipatePrompt(
+      AnticipateModel(prompt: 'Select a package: ', suggestions: packages),
+      terminal,
+    );
 
     io.newLine();
     if (package != null) {
@@ -1592,23 +1628,16 @@ class UiTextareaCommand extends ArtisanCommand<void> {
   @override
   Future<void> run() async {
     io.title('Textarea / Editor Input');
-    io.text('Opens your default editor for multi-line input.');
+    io.text('Multi-line input bubble (Ctrl+S to submit, Esc to cancel).');
     io.newLine();
 
-    final context = ComponentContext(
-      stdout: dartio.stdout,
-      stdin: dartio.stdin,
-      terminalWidth: io.terminalWidth,
-    );
+    final terminal = StdioTerminal(stdout: dartio.stdout, stdin: dartio.stdin);
 
     io.section('Simple Text Input');
     try {
-      final text = await TextareaComponent(
-        prompt: 'Enter a description',
-        helpText:
-            'Enter your description below.\nLines starting with # are ignored.',
-        initialContent: 'This is the default content.\nYou can edit it.',
-      ).interact(context);
+      final model = TextAreaModel()
+        ..value = 'This is the default content.\nYou can edit it.';
+      final text = await runTextAreaPrompt(model, terminal);
 
       if (text != null && text.isNotEmpty) {
         io.success('Received ${text.split('\n').length} line(s):');
@@ -1648,65 +1677,73 @@ class UiWizardCommand extends ArtisanCommand<void> {
     final nonInteractive = argResults?['non-interactive'] == true;
 
     io.title('Wizard / Multi-Step Flow');
+    if (nonInteractive || !io.interactive) {
+      io.note('Wizard prompt skipped in non-interactive mode.');
+      return;
+    }
 
-    final context = ComponentContext(
-      stdout: dartio.stdout,
-      stdin: dartio.stdin,
-      terminalWidth: io.terminalWidth,
+    final terminal = StdioTerminal(stdout: dartio.stdout, stdin: dartio.stdin);
+    final results = await runWizardPrompt(
+      WizardModel(
+        title: 'Create New Project',
+        steps: [
+          WizardStep.textInput(
+            key: 'name',
+            prompt: 'Project name',
+            defaultValue: 'my_project',
+            validate: (value) {
+              if (value.isEmpty) return 'Name is required';
+              if (!RegExp(r'^[a-z_][a-z0-9_]*$').hasMatch(value)) {
+                return 'Name must be a valid Dart identifier';
+              }
+              return null;
+            },
+          ),
+          WizardStep.select(
+            key: 'template',
+            prompt: 'Project template',
+            options: ['console', 'package', 'server', 'flutter'],
+            defaultIndex: 0,
+          ),
+          WizardStep.confirm(
+            key: 'git',
+            prompt: 'Initialize Git repository?',
+            defaultValue: true,
+          ),
+          WizardStep.conditional(
+            step: WizardStep.textInput(
+              key: 'git_remote',
+              prompt: 'Git remote URL (optional)',
+            ),
+            condition: (answers) => answers['git'] == true,
+          ),
+          WizardStep.multiSelect(
+            key: 'features',
+            prompt: 'Select features to include',
+            options: ['Testing', 'CI/CD', 'Documentation', 'Linting', 'Docker'],
+            defaultSelected: [0, 3],
+          ),
+          WizardStep.group(
+            key: 'author',
+            title: 'Author Information',
+            steps: [
+              WizardStep.textInput(
+                key: 'author_name',
+                prompt: 'Author name',
+                defaultValue: 'Anonymous',
+              ),
+              WizardStep.textInput(key: 'author_email', prompt: 'Author email'),
+            ],
+          ),
+        ],
+      ),
+      terminal,
     );
 
-    final results = await WizardComponent(
-      title: 'Create New Project',
-      description: 'This wizard will guide you through creating a new project.',
-      noInteraction: nonInteractive,
-      steps: [
-        WizardStep.ask(
-          'name',
-          'Project name',
-          defaultValue: 'my_project',
-          validator: (value) {
-            if (value.isEmpty) return 'Name is required';
-            if (!RegExp(r'^[a-z_][a-z0-9_]*$').hasMatch(value)) {
-              return 'Name must be a valid Dart identifier';
-            }
-            return null;
-          },
-        ),
-        WizardStep.select(
-          'template',
-          'Project template',
-          choices: ['console', 'package', 'server', 'flutter'],
-          defaultIndex: 0,
-        ),
-        WizardStep.confirm(
-          'git',
-          'Initialize Git repository?',
-          defaultValue: true,
-        ),
-        WizardStep.conditional(
-          WizardStep.ask('git_remote', 'Git remote URL (optional)'),
-          condition: (answers) => answers['git'] == true,
-        ),
-        WizardStep.multiSelect(
-          'features',
-          'Select features to include',
-          choices: ['Testing', 'CI/CD', 'Documentation', 'Linting', 'Docker'],
-          defaultSelected: [0, 3],
-        ),
-        WizardStep.group(
-          'author',
-          'Author Information',
-          steps: [
-            WizardStep.ask(
-              'author_name',
-              'Author name',
-              defaultValue: 'Anonymous',
-            ),
-            WizardStep.ask('author_email', 'Author email'),
-          ],
-        ),
-      ],
-    ).interact(context);
+    if (results == null) {
+      io.warning('Wizard cancelled');
+      return;
+    }
 
     io.section('Wizard Results');
     io.components.horizontalTable({
@@ -1736,9 +1773,8 @@ class UiLinkCommand extends ArtisanCommand<void> {
     io.text('Modern terminals support clickable links.');
     io.newLine();
 
-    final context = ComponentContext(
-      stdout: dartio.stdout,
-      stdin: dartio.stdin,
+    final renderConfig = RenderConfig.fromRenderer(
+      defaultRenderer,
       terminalWidth: io.terminalWidth,
     );
 
@@ -1751,39 +1787,49 @@ class UiLinkCommand extends ArtisanCommand<void> {
 
     io.section('Basic Links');
     io.write('  Visit ');
-    LinkComponent(url: 'https://dart.dev', text: 'Dart').render(context);
+    io.write(
+      LinkComponent(
+        url: 'https://dart.dev',
+        text: 'Dart',
+        renderConfig: renderConfig,
+      ).render(),
+    );
     io.writeln(' for more information.');
 
     io.write('  Check out ');
-    LinkComponent(url: 'https://flutter.dev', text: 'Flutter').render(context);
+    io.write(
+      LinkComponent(
+        url: 'https://flutter.dev',
+        text: 'Flutter',
+        renderConfig: renderConfig,
+      ).render(),
+    );
     io.writeln(' for mobile development.');
 
     io.write('  Read the ');
-    LinkComponent(
-      url: 'https://pub.dev/packages/artisan_args',
-      text: 'artisan_args docs',
-    ).render(context);
+    io.write(
+      LinkComponent(
+        url: 'https://pub.dev/packages/artisan_args',
+        text: 'artisan_args docs',
+        renderConfig: renderConfig,
+      ).render(),
+    );
     io.writeln('.');
     io.newLine();
 
     io.section('Styled Links');
-    io.write('  ');
-    LinkComponent(
-      url: 'https://github.com',
-      text: 'GitHub (underlined & blue)',
-      styled: true,
-    ).renderln(context);
+    io.writeln(
+      '  ${LinkComponent(url: 'https://github.com', text: 'GitHub (underlined & blue)', styled: true, renderConfig: renderConfig).render()}',
+    );
     io.newLine();
 
     io.section('Using LinkComponent');
-    io.write('  ');
-    LinkComponent(url: 'https://google.com', text: 'Google').renderln(context);
-    io.write('  ');
-    LinkComponent(
-      url: 'https://dart.dev/guides',
-      text: 'Dart Guides',
-      styled: true,
-    ).renderln(context);
+    io.writeln(
+      '  ${LinkComponent(url: 'https://google.com', text: 'Google', renderConfig: renderConfig).render()}',
+    );
+    io.writeln(
+      '  ${LinkComponent(url: 'https://dart.dev/guides', text: 'Dart Guides', styled: true, renderConfig: renderConfig).render()}',
+    );
     io.newLine();
 
     io.section('Link Group (for footnotes)');
@@ -1796,7 +1842,7 @@ class UiLinkCommand extends ArtisanCommand<void> {
     );
     io.newLine();
     io.writeln('  References:');
-    links.renderln(context);
+    links.writelnTo(io);
     io.newLine();
 
     io.note('Links may not be clickable in all terminals.');
@@ -1815,10 +1861,8 @@ class UiComponentSystemCommand extends ArtisanCommand<void> {
 
   @override
   Future<void> run() async {
-    // Create a component context
-    final context = ComponentContext(
-      stdout: dartio.stdout,
-      stdin: dartio.stdin,
+    final renderConfig = RenderConfig.fromRenderer(
+      defaultRenderer,
       terminalWidth: io.terminalWidth,
     );
 
@@ -1831,31 +1875,61 @@ class UiComponentSystemCommand extends ArtisanCommand<void> {
 
     // Text components
     io.writeln('Text components:');
-    Text('  Plain text').renderln(context);
-    StyledText.info('  Info styled text').renderln(context);
-    StyledText.success('  Success styled text').renderln(context);
-    StyledText.warning('  Warning styled text').renderln(context);
-    StyledText.error('  Error styled text').renderln(context);
+    Text('  Plain text').writelnTo(io);
+    StyledText.info(
+      '  Info styled text',
+      renderConfig: renderConfig,
+    ).writelnTo(io);
+    StyledText.success(
+      '  Success styled text',
+      renderConfig: renderConfig,
+    ).writelnTo(io);
+    StyledText.warning(
+      '  Warning styled text',
+      renderConfig: renderConfig,
+    ).writelnTo(io);
+    StyledText.error(
+      '  Error styled text',
+      renderConfig: renderConfig,
+    ).writelnTo(io);
     io.newLine();
 
     // Rule component
     io.writeln('Rule component:');
-    Rule().renderln(context);
-    Rule(text: 'Section').renderln(context);
+    Rule(renderConfig: renderConfig).writelnTo(io);
+    Rule(text: 'Section', renderConfig: renderConfig).writelnTo(io);
     io.newLine();
 
     // Lists
     io.writeln('List components:');
-    BulletList(items: ['Apple', 'Banana', 'Cherry']).renderln(context);
+    BulletList(
+      items: ['Apple', 'Banana', 'Cherry'],
+      renderConfig: renderConfig,
+    ).writelnTo(io);
     io.newLine();
-    NumberedList(items: ['First', 'Second', 'Third']).renderln(context);
+    NumberedList(
+      items: ['First', 'Second', 'Third'],
+      renderConfig: renderConfig,
+    ).writelnTo(io);
     io.newLine();
 
     // Key-value
     io.writeln('KeyValue component:');
-    KeyValue(key: 'Name', value: 'artisan_args').renderln(context);
-    KeyValue(key: 'Version', value: '1.0.0').renderln(context);
-    KeyValue(key: 'Author', value: 'You').renderln(context);
+    KeyValue(
+      key: 'Name',
+      value: 'artisan_args',
+      renderConfig: renderConfig,
+    ).writelnTo(io);
+    KeyValue(
+      key: 'Version',
+      value: '1.0.0',
+      renderConfig: renderConfig,
+    ).writelnTo(io);
+    KeyValue(
+      key: 'Author',
+      value: 'You',
+      renderConfig: renderConfig,
+    ).writelnTo(io);
     io.newLine();
 
     // Box
@@ -1864,18 +1938,19 @@ class UiComponentSystemCommand extends ArtisanCommand<void> {
       content: 'This is a boxed message.\nIt can have multiple lines.',
       title: 'Notice',
       borderStyle: BorderStyle.rounded,
-    ).renderln(context);
+      renderConfig: renderConfig,
+    ).writelnTo(io);
     io.newLine();
 
     // Progress bar
     io.writeln('ProgressBar component:');
-    ProgressBar(current: 7, total: 10).renderln(context);
+    ProgressBar(current: 7, total: 10).writelnTo(io);
     ProgressBar(
       current: 3,
       total: 10,
       fillChar: '▓',
       emptyChar: '░',
-    ).renderln(context);
+    ).writelnTo(io);
     io.newLine();
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -1886,27 +1961,28 @@ class UiComponentSystemCommand extends ArtisanCommand<void> {
 
     ColumnComponent(
       children: [
-        StyledText.heading('  My Application'),
-        Rule(char: '─'),
+        StyledText.heading('  My Application', renderConfig: renderConfig),
+        Rule(char: '─', renderConfig: renderConfig),
         BulletList(
           items: ['Feature 1: Fast', 'Feature 2: Easy', 'Feature 3: Beautiful'],
           indent: 4,
+          renderConfig: renderConfig,
         ),
       ],
-    ).renderln(context);
+    ).writelnTo(io);
     io.newLine();
 
     // Row composition
     io.writeln('Row composition:');
     RowComponent(
       children: [
-        StyledText.success('✓ Pass'),
+        StyledText.success('✓ Pass', renderConfig: renderConfig),
         Text(' | '),
-        StyledText.error('✗ Fail'),
+        StyledText.error('✗ Fail', renderConfig: renderConfig),
         Text(' | '),
-        StyledText.warning('⚠ Warn'),
+        StyledText.warning('⚠ Warn', renderConfig: renderConfig),
       ],
-    ).renderln(context);
+    ).writelnTo(io);
     io.newLine();
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -1917,50 +1993,67 @@ class UiComponentSystemCommand extends ArtisanCommand<void> {
       content:
           'This is a panel using the component system.\nIt supports titles and alignment.',
       title: 'Panel Demo',
-    ).renderln(context);
+      renderConfig: renderConfig,
+    ).writelnTo(io);
     io.newLine();
 
     io.writeln('TaskComponent:');
     TaskComponent(
       description: 'Compiling assets',
       status: TaskStatus.success,
-    ).renderln(context);
+      renderConfig: renderConfig,
+    ).writelnTo(io);
     TaskComponent(
       description: 'Running tests',
       status: TaskStatus.failure,
-    ).renderln(context);
+      renderConfig: renderConfig,
+    ).writelnTo(io);
     TaskComponent(
       description: 'Deploying',
       status: TaskStatus.skipped,
-    ).renderln(context);
+      renderConfig: renderConfig,
+    ).writelnTo(io);
     io.newLine();
 
     io.writeln('AlertComponent:');
     AlertComponent(
       message: 'This is informational',
       type: AlertType.info,
-    ).renderln(context);
+      renderConfig: renderConfig,
+    ).writelnTo(io);
     AlertComponent(
       message: 'Operation succeeded',
       type: AlertType.success,
-    ).renderln(context);
+      renderConfig: renderConfig,
+    ).writelnTo(io);
     AlertComponent(
       message: 'Be careful!',
       type: AlertType.warning,
-    ).renderln(context);
+      renderConfig: renderConfig,
+    ).writelnTo(io);
     AlertComponent(
       message: 'Something went wrong',
       type: AlertType.error,
-    ).renderln(context);
+      renderConfig: renderConfig,
+    ).writelnTo(io);
     io.newLine();
 
     io.writeln('TwoColumnDetailComponent:');
     TwoColumnDetailComponent(
       left: 'Name',
       right: 'artisan_args',
-    ).renderln(context);
-    TwoColumnDetailComponent(left: 'Version', right: '1.0.0').renderln(context);
-    TwoColumnDetailComponent(left: 'Status', right: 'Active').renderln(context);
+      renderConfig: renderConfig,
+    ).writelnTo(io);
+    TwoColumnDetailComponent(
+      left: 'Version',
+      right: '1.0.0',
+      renderConfig: renderConfig,
+    ).writelnTo(io);
+    TwoColumnDetailComponent(
+      left: 'Status',
+      right: 'Active',
+      renderConfig: renderConfig,
+    ).writelnTo(io);
     io.newLine();
 
     io.writeln('TreeComponent:');
@@ -1973,7 +2066,8 @@ class UiComponentSystemCommand extends ArtisanCommand<void> {
         'pubspec.yaml': null,
         'README.md': null,
       },
-    ).renderln(context);
+      renderConfig: renderConfig,
+    ).writelnTo(io);
     io.newLine();
 
     io.writeln('ColumnsComponent:');
@@ -1989,7 +2083,8 @@ class UiComponentSystemCommand extends ArtisanCommand<void> {
         'honeydew',
       ],
       columnCount: 4,
-    ).renderln(context);
+      renderConfig: renderConfig,
+    ).writelnTo(io);
     io.newLine();
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -2010,53 +2105,50 @@ class UiComponentSystemCommand extends ArtisanCommand<void> {
     io.newLine();
 
     // Demo interactive components
-    io.writeln('Demo: Select component');
-    final color = await Select<String>(
-      prompt: 'Pick your favorite color',
-      options: ['Red', 'Green', 'Blue', 'Yellow'],
-    ).interact(context);
-
-    if (color != null) {
-      io.success('You selected: $color');
-    }
+    io.writeln('Demo: Select prompt');
+    final terminal = StdioTerminal(stdout: dartio.stdout, stdin: dartio.stdin);
+    final color = await runSelectPrompt<String>(
+      SelectModel<String>(
+        items: ['Red', 'Green', 'Blue', 'Yellow'],
+        title: 'Pick your favorite color',
+      ),
+      terminal,
+    );
+    if (color != null) io.success('You selected: $color');
     io.newLine();
 
     // ─────────────────────────────────────────────────────────────────────────
     io.section('Custom Components');
 
-    io.text('Create custom components by extending CliComponent:');
+    io.text('Create custom components by extending ViewComponent:');
     io.newLine();
 
     io.writeln('''
-    class MyBanner extends CliComponent {
+    class MyBanner extends ViewComponent {
       final String title;
       MyBanner(this.title);
 
       @override
-      RenderResult build(ComponentContext context) {
-        return RenderResult(
-          output: context.newStyle().bold().foreground(Colors.yellow).render('★ \$title ★'),
-          lineCount: 1,
-        );
-      }
+      String render() => Style().bold().foreground(Colors.yellow).render('★ \$title ★');
     }
     ''');
 
     // Demo custom component
-    _CustomBanner('artisan_args').renderln(context);
+    _CustomBanner('artisan_args', renderConfig: renderConfig).writelnTo(io);
   }
 }
 
 /// Example custom component.
-class _CustomBanner extends CliComponent {
-  const _CustomBanner(this.title);
+class _CustomBanner extends ViewComponent {
+  const _CustomBanner(this.title, {this.renderConfig = const RenderConfig()});
 
   final String title;
+  final RenderConfig renderConfig;
 
   @override
-  RenderResult build(ComponentContext context) {
+  String render() {
     final stars = '★ ' * 3;
-    final output = context.newStyle().bold().foreground(Colors.yellow).render('$stars$title$stars');
-    return RenderResult(output: output, lineCount: 1);
+    final style = renderConfig.configureStyle(Style());
+    return style.bold().foreground(Colors.yellow).render('$stars$title$stars');
   }
 }

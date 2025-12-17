@@ -13,7 +13,8 @@ void main() {
         "Claire's Boutique",
         Tree()
             .root('Nyx')
-            .children(['Lip Gloss', 'Foundation']).branchStyle(pink),
+            .children(['Lip Gloss', 'Foundation'])
+            .branchStyle(pink),
         'Mac',
         'Milk',
       ])

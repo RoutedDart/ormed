@@ -12,9 +12,11 @@ void main() {
       .root('⁜ Makeup')
       .child('Glossier')
       .child('Fenty Beauty')
-      .child(Tree()
-          .child('Gloss Bomb Universal Lip Luminizer')
-          .child('Hot Cheeks Velour Blushlighter'))
+      .child(
+        Tree()
+            .child('Gloss Bomb Universal Lip Luminizer')
+            .child('Hot Cheeks Velour Blushlighter'),
+      )
       .child('Nyx')
       .child('Mac')
       .child('Milk')

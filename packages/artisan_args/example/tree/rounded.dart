@@ -26,12 +26,7 @@ void main() {
           'Powdered Sugar',
         ]),
       )
-      .child(
-        Tree().root('Veggies').children([
-          'Leek',
-          'Artichoke',
-        ]),
-      )
+      .child(Tree().root('Veggies').children(['Leek', 'Artichoke']))
       .fileStyle(itemStyle)
       .branchStyle(enumeratorStyle)
       .enumerator(TreeEnumerator.rounded);

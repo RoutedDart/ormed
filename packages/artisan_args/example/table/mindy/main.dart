@@ -32,25 +32,22 @@ void main() {
     data.add(makeRow(i, i + 5));
   }
 
-  final t = Table()
-      .border(Border.hidden)
-      .rows(data)
-      .styleFunc((row, col, _) {
-        if (row < 0 || row >= data.length) return null;
-        final colorIndex = col - col % 2;
-        if (colorIndex >= data[row].length) return null;
-        final colorStr = data[row][colorIndex];
-        if (colorStr.isEmpty) return null;
-        final colorNum = int.tryParse(colorStr);
-        if (colorNum == null) return null;
-        final color = AnsiColor(colorNum);
+  final t = Table().border(Border.hidden).rows(data).styleFunc((row, col, _) {
+    if (row < 0 || row >= data.length) return null;
+    final colorIndex = col - col % 2;
+    if (colorIndex >= data[row].length) return null;
+    final colorStr = data[row][colorIndex];
+    if (colorStr.isEmpty) return null;
+    final colorNum = int.tryParse(colorStr);
+    if (colorNum == null) return null;
+    final color = AnsiColor(colorNum);
 
-        if (col % 2 == 0) {
-          return labelStyle.foreground(color);
-        } else {
-          return swatchStyle.background(color);
-        }
-      });
+    if (col % 2 == 0) {
+      return labelStyle.foreground(color);
+    } else {
+      return swatchStyle.background(color);
+    }
+  });
 
   print(t);
 }
