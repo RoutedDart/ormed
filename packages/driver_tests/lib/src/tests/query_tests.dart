@@ -21,6 +21,10 @@ void runDriverQueryTests() {
       seededUsers = buildDefaultUsers(suffix: 'fixed');
       // Seed data directly via repository
       await dataSource.repo<User>().insertMany(seededUsers);
+      await dataSource.repo<UserProfile>().insertMany(const [
+        UserProfile(id: 1, userId: 1, bio: 'Bio for Alice'),
+        UserProfile(id: 2, userId: 2, bio: 'Bio for Bob'),
+      ]);
       await dataSource.repo<Author>().insertMany(defaultAuthors.toList());
       await dataSource.repo<Post>().insertMany(buildDefaultPosts());
       await dataSource.repo<Tag>().insertMany(defaultTags.toList());
@@ -206,6 +210,178 @@ void runDriverQueryTests() {
       expect(image?.relation<Photo>('primaryPhoto')?.path, 'cover.jpg');
     });
 
+    test('eager loads hasOne relations', () async {
+      final user = await dataSource.context
+          .query<User>()
+          .whereEquals('id', 1)
+          .withRelation('userProfile')
+          .firstRow();
+
+      expect(user?.relation<UserProfile>('userProfile')?.bio, 'Bio for Alice');
+    });
+
+    group('eager loading constraints', () {
+      test('applies constraint callback for hasMany relations', () async {
+        final row = await dataSource.context
+            .query<Author>()
+            .whereEquals('id', 1)
+            .withRelation('posts', (q) => q.where('id', 2))
+            .firstRow();
+
+        final posts = row!.relationList<Post>('posts');
+        expect(posts.map((p) => p.id), equals([2]));
+      });
+
+      test('applies constraint callback for belongsTo relations', () async {
+        final row = await dataSource.context
+            .query<Post>()
+            .whereEquals('id', 1)
+            .withRelation('author', (q) => q.where('name', 'Bob'))
+            .firstRow();
+
+        expect(row!.relation<Author>('author'), isNull);
+      });
+
+      test('applies constraint callback for hasOne relations', () async {
+        final row = await dataSource.context
+            .query<User>()
+            .whereEquals('id', 1)
+            .withRelation('userProfile', (q) => q.where('bio', 'Bio for Bob'))
+            .firstRow();
+
+        expect(row!.relation<UserProfile>('userProfile'), isNull);
+      });
+
+      test('applies constraint callback for manyToMany relations', () async {
+        final row = await dataSource.context
+            .query<Post>()
+            .whereEquals('id', 1)
+            .withRelation('tags', (q) => q.where('label', 'draft'))
+            .firstRow();
+
+        final tags = row!.relationList<Tag>('tags');
+        expect(tags.map((t) => t.label), equals(['draft']));
+      });
+
+      test('applies constraint callback for morphMany relations', () async {
+        final row = await dataSource.context
+            .query<Post>()
+            .whereEquals('id', 1)
+            .withRelation('photos', (q) => q.where('path', 'hero.jpg'))
+            .firstRow();
+
+        final photos = row!.relationList<Photo>('photos');
+        expect(photos.map((p) => p.path), equals(['hero.jpg']));
+      });
+
+      test('applies constraint callback for morphOne relations', () async {
+        final row = await dataSource.context
+            .query<Image>()
+            .whereEquals('id', 101)
+            .withRelation('primaryPhoto', (q) => q.where('path', 'alt.jpg'))
+            .firstRow();
+
+        expect(row!.relation<Photo>('primaryPhoto'), isNull);
+      });
+    });
+
+    group('eager loading missing relations', () {
+      test('returns empty list when hasMany has no matches', () async {
+        await dataSource.repo<Author>().insertMany(const [
+          Author(id: 99, name: 'NoPosts'),
+        ]);
+
+        final row = await dataSource.context
+            .query<Author>()
+            .whereEquals('id', 99)
+            .withRelation('posts')
+            .firstRow();
+
+        expect(row!.relationList<Post>('posts'), isEmpty);
+      });
+
+      test('returns null when belongsTo has no match', () async {
+        await dataSource.repo<Post>().insertMany([
+          Post(
+            id: 99,
+            authorId: 999,
+            title: 'Orphan',
+            publishedAt: DateTime.utc(2024, 5, 1),
+          ),
+        ]);
+
+        final row = await dataSource.context
+            .query<Post>()
+            .whereEquals('id', 99)
+            .withRelation('author')
+            .firstRow();
+
+        expect(row!.relation<Author>('author'), isNull);
+      });
+
+      test('returns null when hasOne has no match', () async {
+        final row = await dataSource.context
+            .query<User>()
+            .whereEquals('id', 3)
+            .withRelation('userProfile')
+            .firstRow();
+
+        expect(row!.relation<UserProfile>('userProfile'), isNull);
+      });
+
+      test('returns empty list when manyToMany has no matches', () async {
+        await dataSource.repo<Post>().insertMany([
+          Post(
+            id: 100,
+            authorId: 1,
+            title: 'No Tags',
+            publishedAt: DateTime.utc(2024, 5, 2),
+          ),
+        ]);
+
+        final row = await dataSource.context
+            .query<Post>()
+            .whereEquals('id', 100)
+            .withRelation('tags')
+            .firstRow();
+
+        expect(row!.relationList<Tag>('tags'), isEmpty);
+      });
+
+      test('returns empty list when morphMany has no matches', () async {
+        await dataSource.repo<Post>().insertMany([
+          Post(
+            id: 101,
+            authorId: 1,
+            title: 'No Photos',
+            publishedAt: DateTime.utc(2024, 5, 3),
+          ),
+        ]);
+
+        final row = await dataSource.context
+            .query<Post>()
+            .whereEquals('id', 101)
+            .withRelation('photos')
+            .firstRow();
+
+        expect(row!.relationList<Photo>('photos'), isEmpty);
+      });
+
+      test('returns null when morphOne has no match', () async {
+        await dataSource.repo<Image>().insertMany(const [
+          Image(id: 999, label: 'No Primary Photo'),
+        ]);
+
+        final row = await dataSource.context
+            .query<Image>()
+            .whereEquals('id', 999)
+            .withRelation('primaryPhoto')
+            .firstRow();
+
+        expect(row!.relation<Photo>('primaryPhoto'), isNull);
+      });
+    });
+
     test('describes nested orderByRelation preview for morph paths', () {
       final preview = dataSource.context
           .query<Author>()
@@ -316,6 +492,20 @@ void runDriverQueryTests() {
           expect(ids, equals([1]));
         });
 
+        test('filters parents via hasOne whereHas constraints', () async {
+          final ids = await dataSource.context
+              .query<User>()
+              .whereHas(
+                'userProfile',
+                (profiles) => profiles.where('bio', 'Bio for Alice'),
+              )
+              .orderBy('id')
+              .get()
+              .then((users) => users.map((u) => u.id).toList());
+
+          expect(ids, equals([1]));
+        });
+
         test('supports withCount and exposes alias in rows', () async {
           final rows = await dataSource.context
               .query<Author>()
@@ -325,6 +515,18 @@ void runDriverQueryTests() {
 
           expect(rows[0].row['posts_count'], 2);
           expect(rows[1].row['posts_count'], 1);
+        });
+
+        test('supports withCount for hasOne relations', () async {
+          final rows = await dataSource.context
+              .query<User>()
+              .withCount('userProfile')
+              .orderBy('id')
+              .rows();
+
+          expect(rows[0].row['userProfile_count'], 1);
+          expect(rows[1].row['userProfile_count'], 1);
+          expect(rows[2].row['userProfile_count'], 0);
         });
 
         test('supports nested withCount over morph relations', () async {

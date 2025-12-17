@@ -12,9 +12,9 @@ import '../driver/driver.dart';
 import '../query/query.dart';
 import '../repository/repository.dart';
 import '../value_codec.dart';
-import 'model.dart';
 import 'model_definition.dart';
 import 'model_factory.dart';
+import 'model_mixins/model_mixins.dart';
 import 'model_registry.dart';
 
 export 'model_mixins/model_mixins.dart';
@@ -1239,6 +1239,11 @@ abstract class Model<TModel extends Model<TModel>>
       // Determine the constraint to pass (only for the final segment)
       final isLastSegment = !remainingPath.contains('.');
       final nextConstraint = isLastSegment ? constraint : null;
+
+      if (loadedValue is Model) {
+        await loadedValue.load(remainingPath, nextConstraint);
+        return;
+      }
 
       if (loadedValue is List) {
         // Load nested relations on each item in the list

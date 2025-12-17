@@ -11,6 +11,15 @@ void runLazyLoadingTests() {
       );
 
       // Seed test data
+      await dataSource.repo<User>().insertMany([
+        const User(id: 1, email: 'alice@example.com', active: true),
+        const User(id: 2, email: 'bob@example.com', active: true),
+        const User(id: 3, email: 'carol@example.com', active: false),
+      ]);
+      await dataSource.repo<UserProfile>().insertMany(const [
+        UserProfile(id: 1, userId: 1, bio: 'Bio for Alice'),
+        UserProfile(id: 2, userId: 2, bio: 'Bio for Bob'),
+      ]);
       await dataSource.repo<Author>().insertMany([
         const Author(id: 1, name: 'Alice'),
         const Author(id: 2, name: 'Bob'),
@@ -37,6 +46,19 @@ void runLazyLoadingTests() {
       await dataSource.repo<PostTag>().insertMany([
         const PostTag(postId: 1, tagId: 1),
         const PostTag(postId: 1, tagId: 2),
+      ]);
+      await dataSource.repo<Image>().insertMany(const [
+        Image(id: 101, label: 'Landing'),
+      ]);
+      await dataSource.repo<Photo>().insertMany(const [
+        Photo(id: 1, imageableId: 1, imageableType: 'Post', path: 'hero.jpg'),
+        Photo(id: 2, imageableId: 1, imageableType: 'Post', path: 'thumb.jpg'),
+        Photo(
+          id: 3,
+          imageableId: 101,
+          imageableType: 'Image',
+          path: 'cover.jpg',
+        ),
       ]);
     });
 
@@ -181,6 +203,87 @@ void runLazyLoadingTests() {
         expect(post.author, isNotNull);
       });
 
+      test('loads hasOne relation', () async {
+        final rows = await dataSource.context
+            .query<User>()
+            .where('id', 1)
+            .get();
+        final user = rows.first;
+
+        expect(user.relationLoaded('userProfile'), isFalse);
+        expect(user.userProfile, isNull);
+
+        await user.load('userProfile');
+
+        expect(user.relationLoaded('userProfile'), isTrue);
+        expect(user.userProfile?.bio, 'Bio for Alice');
+      });
+
+      test('loads manyToMany relation', () async {
+        final rows = await dataSource.context
+            .query<Post>()
+            .where('id', 1)
+            .get();
+        final post = rows.first;
+
+        expect(post.relationLoaded('tags'), isFalse);
+        expect(post.tags, isEmpty);
+
+        await post.load('tags');
+
+        expect(post.relationLoaded('tags'), isTrue);
+        expect(post.tags.map((t) => t.label), containsAll(['dart', 'flutter']));
+      });
+
+      test('loads morphMany relation', () async {
+        final rows = await dataSource.context
+            .query<Post>()
+            .where('id', 1)
+            .get();
+        final post = rows.first;
+
+        expect(post.relationLoaded('photos'), isFalse);
+        expect(post.photos, isEmpty);
+
+        await post.load('photos');
+
+        expect(post.relationLoaded('photos'), isTrue);
+        expect(
+          post.photos.map((p) => p.path),
+          containsAll(['hero.jpg', 'thumb.jpg']),
+        );
+      });
+
+      test('loads morphOne relation', () async {
+        final rows = await dataSource.context
+            .query<Image>()
+            .where('id', 101)
+            .get();
+        final image = rows.first;
+
+        expect(image.relationLoaded('primaryPhoto'), isFalse);
+        expect(image.primaryPhoto, isNull);
+
+        await image.load('primaryPhoto');
+
+        expect(image.relationLoaded('primaryPhoto'), isTrue);
+        expect(image.primaryPhoto?.path, 'cover.jpg');
+      });
+
+      test('loads nested relations via dot notation', () async {
+        final rows = await dataSource.context
+            .query<Post>()
+            .where('id', 1)
+            .get();
+        final post = rows.first;
+
+        await post.load('author.posts', (q) => q.where('id', 2));
+
+        expect(post.author, isNotNull);
+        expect(post.author!.relationLoaded('posts'), isTrue);
+        expect(post.author!.posts.map((p) => p.id), equals([2]));
+      });
+
       test('loads relation with constraint callback', () async {
         final rows = await dataSource.context
             .query<Author>()
@@ -205,6 +308,56 @@ void runLazyLoadingTests() {
           lessThan(totalPosts),
           reason: 'Constrained load should return fewer results',
         );
+      });
+
+      test('applies constraint callback for belongsTo relations', () async {
+        final rows = await dataSource.context.query<Post>().where('id', 1).get();
+        final post = rows.first;
+
+        await post.load('author', (q) => q.where('id', 2));
+
+        expect(post.relationLoaded('author'), isTrue);
+        expect(post.author, isNull);
+      });
+
+      test('applies constraint callback for hasOne relations', () async {
+        final rows = await dataSource.context.query<User>().where('id', 1).get();
+        final user = rows.first;
+
+        await user.load('userProfile', (q) => q.where('bio', 'Bio for Bob'));
+
+        expect(user.relationLoaded('userProfile'), isTrue);
+        expect(user.userProfile, isNull);
+      });
+
+      test('applies constraint callback for manyToMany relations', () async {
+        final rows = await dataSource.context.query<Post>().where('id', 1).get();
+        final post = rows.first;
+
+        await post.load('tags', (q) => q.where('label', 'dart'));
+
+        expect(post.relationLoaded('tags'), isTrue);
+        expect(post.tags.map((t) => t.label), equals(['dart']));
+      });
+
+      test('applies constraint callback for morphMany relations', () async {
+        final rows = await dataSource.context.query<Post>().where('id', 1).get();
+        final post = rows.first;
+
+        await post.load('photos', (q) => q.where('path', 'hero.jpg'));
+
+        expect(post.relationLoaded('photos'), isTrue);
+        expect(post.photos.map((p) => p.path), equals(['hero.jpg']));
+      });
+
+      test('applies constraint callback for morphOne relations', () async {
+        final rows = await dataSource.context.query<Image>().where('id', 101).get();
+        final image = rows.first;
+
+        await image.load('primaryPhoto', (q) => q.where('path', 'alt.jpg'));
+
+        expect(image.relationLoaded('primaryPhoto'), isTrue);
+        expect(image.primaryPhoto, isNull);
       });
 
       test('loads relation multiple times (replaces previous)', () async {
@@ -244,6 +397,71 @@ void runLazyLoadingTests() {
             ),
           ),
         );
+      });
+
+      test('loads missing relations as null/empty and marks loaded', () async {
+        await dataSource.repo<Author>().insertMany(const [
+          Author(id: 99, name: 'NoPosts'),
+        ]);
+        await dataSource.repo<Post>().insertMany([
+          Post(
+            id: 99,
+            authorId: 999,
+            title: 'Orphan',
+            publishedAt: DateTime(2024, 5),
+          ),
+          Post(
+            id: 100,
+            authorId: 1,
+            title: 'No Tags',
+            publishedAt: DateTime(2024, 6),
+          ),
+          Post(
+            id: 101,
+            authorId: 1,
+            title: 'No Photos',
+            publishedAt: DateTime(2024, 7),
+          ),
+        ]);
+        await dataSource.repo<Image>().insertMany(const [
+          Image(id: 102, label: 'No Primary Photo'),
+        ]);
+
+        final author = (await dataSource.context.query<Author>().where('id', 99).get())
+            .first;
+        await author.load('posts');
+        expect(author.relationLoaded('posts'), isTrue);
+        expect(author.posts, isEmpty);
+
+        final orphanPost =
+            (await dataSource.context.query<Post>().where('id', 99).get()).first;
+        await orphanPost.load('author');
+        expect(orphanPost.relationLoaded('author'), isTrue);
+        expect(orphanPost.author, isNull);
+
+        final user =
+            (await dataSource.context.query<User>().where('id', 3).get()).first;
+        await user.load('userProfile');
+        expect(user.relationLoaded('userProfile'), isTrue);
+        expect(user.userProfile, isNull);
+
+        final noTagsPost =
+            (await dataSource.context.query<Post>().where('id', 100).get()).first;
+        await noTagsPost.load('tags');
+        expect(noTagsPost.relationLoaded('tags'), isTrue);
+        expect(noTagsPost.tags, isEmpty);
+
+        final noPhotosPost =
+            (await dataSource.context.query<Post>().where('id', 101).get()).first;
+        await noPhotosPost.load('photos');
+        expect(noPhotosPost.relationLoaded('photos'), isTrue);
+        expect(noPhotosPost.photos, isEmpty);
+
+        final image =
+            (await dataSource.context.query<Image>().where('id', 102).get()).first;
+        await image.load('primaryPhoto');
+        expect(image.relationLoaded('primaryPhoto'), isTrue);
+        expect(image.primaryPhoto, isNull);
       });
 
       test('respects preventsLazyLoading flag', () async {

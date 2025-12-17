@@ -5,6 +5,8 @@ import 'dart:convert';
 
 import 'package:ormed/ormed.dart';
 
+import 'user_profile.dart';
+
 part 'user.orm.dart';
 
 @OrmModel(
@@ -24,7 +26,7 @@ class User extends Model<User> with ModelFactoryCapable {
     this.profile,
     this.metadata,
     this.createdAt,
-  });
+  }) : userProfile = null;
 
   @OrmField(isPrimaryKey: true, autoIncrement: true)
   final int id;
@@ -45,6 +47,15 @@ class User extends Model<User> with ModelFactoryCapable {
 
   @OrmField(codec: JsonMapCodec)
   final Map<String, Object?>? metadata;
+
+  @OrmField(ignore: true)
+  @OrmRelation(
+    kind: RelationKind.hasOne,
+    target: UserProfile,
+    foreignKey: 'user_id',
+    localKey: 'id',
+  )
+  final UserProfile? userProfile;
 }
 
 class JsonMapCodec extends ValueCodec<Map<String, Object?>> {

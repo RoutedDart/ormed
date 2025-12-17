@@ -394,11 +394,11 @@ extension ScopedUserOrmExtension on ScopedUser {
 }
 
 extension $ScopedUserScopes on Query<$ScopedUser> {
-  Query<$ScopedUser> activeOnly() => (ScopedUser.activeOnly(this));
+  Query<$ScopedUser> activeOnly() => ScopedUser.activeOnly(this);
   Query<$ScopedUser> emailDomain(String domain) =>
-      (ScopedUser.emailDomain(this, domain));
+      ScopedUser.emailDomain(this, domain);
   Query<$ScopedUser> named({required String name}) =>
-      (ScopedUser.named(this, name: name));
+      ScopedUser.named(this, name: name);
 }
 
 void registerScopedUserScopes(ScopeRegistry registry) {

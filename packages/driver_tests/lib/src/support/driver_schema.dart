@@ -12,85 +12,95 @@ final List<MigrationEntry> driverTestMigrationEntries = [
     migration: const CreateUsersTable(),
   ),
   MigrationEntry(
-    id: MigrationId(DateTime.utc(2023, 1, 1, 0, 0, 2), 'create_authors_table'),
+    id: MigrationId(
+      DateTime.utc(2023, 1, 1, 0, 0, 2),
+      'create_user_profiles_table',
+    ),
+    migration: const CreateUserProfilesTable(),
+  ),
+  MigrationEntry(
+    id: MigrationId(DateTime.utc(2023, 1, 1, 0, 0, 3), 'create_authors_table'),
     migration: const CreateAuthorsTable(),
   ),
   MigrationEntry(
-    id: MigrationId(DateTime.utc(2023, 1, 1, 0, 0, 3), 'create_posts_table'),
+    id: MigrationId(DateTime.utc(2023, 1, 1, 0, 0, 4), 'create_posts_table'),
     migration: const CreatePostsTable(),
   ),
   MigrationEntry(
-    id: MigrationId(DateTime.utc(2023, 1, 1, 0, 0, 4), 'create_tags_table'),
+    id: MigrationId(DateTime.utc(2023, 1, 1, 0, 0, 5), 'create_tags_table'),
     migration: const CreateTagsTable(),
   ),
   MigrationEntry(
     id: MigrationId(
-      DateTime.utc(2023, 1, 1, 0, 0, 5),
+      DateTime.utc(2023, 1, 1, 0, 0, 6),
       'create_post_tags_table',
     ),
     migration: const CreatePostTagsTable(),
   ),
   MigrationEntry(
-    id: MigrationId(DateTime.utc(2023, 1, 1, 0, 0, 6), 'create_articles_table'),
+    id: MigrationId(DateTime.utc(2023, 1, 1, 0, 0, 7), 'create_articles_table'),
     migration: const CreateArticlesTable(),
   ),
   MigrationEntry(
-    id: MigrationId(DateTime.utc(2023, 1, 1, 0, 0, 7), 'create_photos_table'),
+    id: MigrationId(DateTime.utc(2023, 1, 1, 0, 0, 8), 'create_photos_table'),
     migration: const CreatePhotosTable(),
   ),
   MigrationEntry(
-    id: MigrationId(DateTime.utc(2023, 1, 1, 0, 0, 8), 'create_images_table'),
+    id: MigrationId(DateTime.utc(2023, 1, 1, 0, 0, 9), 'create_images_table'),
     migration: const CreateImagesTable(),
-  ),
-  MigrationEntry(
-    id: MigrationId(DateTime.utc(2023, 1, 1, 0, 0, 9), 'create_comments_table'),
-    migration: const CreateCommentsTable(),
   ),
   MigrationEntry(
     id: MigrationId(
       DateTime.utc(2023, 1, 1, 0, 0, 10),
+      'create_comments_table',
+    ),
+    migration: const CreateCommentsTable(),
+  ),
+  MigrationEntry(
+    id: MigrationId(
+      DateTime.utc(2023, 1, 1, 0, 0, 11),
       'create_driver_override_entries_table',
     ),
     migration: const CreateDriverOverrideEntriesTable(),
   ),
   MigrationEntry(
     id: MigrationId(
-      DateTime.utc(2023, 1, 1, 0, 0, 11),
+      DateTime.utc(2023, 1, 1, 0, 0, 12),
       'create_settings_table',
     ),
     migration: const CreateSettingsTable(),
   ),
   MigrationEntry(
     id: MigrationId(
-      DateTime.utc(2023, 1, 1, 0, 0, 12),
+      DateTime.utc(2023, 1, 1, 0, 0, 13),
       'create_serial_tests_table',
     ),
     migration: const CreateSerialTestsTable(),
   ),
   MigrationEntry(
     id: MigrationId(
-      DateTime.utc(2023, 1, 1, 0, 0, 13),
+      DateTime.utc(2023, 1, 1, 0, 0, 14),
       'create_mutation_targets_table',
     ),
     migration: const CreateMutationTargetsTable(),
   ),
   MigrationEntry(
     id: MigrationId(
-      DateTime.utc(2023, 1, 1, 0, 0, 14),
+      DateTime.utc(2023, 1, 1, 0, 0, 15),
       'create_derived_for_factories_table',
     ),
     migration: const CreateDerivedForFactoriesTable(),
   ),
   MigrationEntry(
     id: MigrationId(
-      DateTime.utc(2023, 1, 1, 0, 0, 15),
+      DateTime.utc(2023, 1, 1, 0, 0, 16),
       'create_custom_soft_delete_models_table',
     ),
     migration: const CreateCustomSoftDeleteModelsTable(),
   ),
   MigrationEntry(
     id: MigrationId(
-      DateTime.utc(2023, 1, 1, 0, 0, 16),
+      DateTime.utc(2023, 1, 1, 0, 0, 17),
       'create_scoped_users_table',
     ),
     migration: const CreateScopedUsersTable(),

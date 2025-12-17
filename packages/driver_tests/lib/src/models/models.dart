@@ -18,6 +18,7 @@ export 'settings.dart';
 export 'unique_user.dart';
 export 'tag.dart';
 export 'user.dart';
+export 'user_profile.dart';
 export 'post_tag.dart';
 export 'article.dart';
 export 'driver_override_entry.dart';

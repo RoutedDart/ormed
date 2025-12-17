@@ -109,6 +109,14 @@ const FieldDefinition _$UserMetadataField = FieldDefinition(
   codecType: 'JsonMapCodec',
 );
 
+const RelationDefinition _$UserUserProfileRelation = RelationDefinition(
+  name: 'userProfile',
+  kind: RelationKind.hasOne,
+  targetModel: 'UserProfile',
+  foreignKey: 'user_id',
+  localKey: 'id',
+);
+
 final ModelDefinition<$User> _$UserDefinition = ModelDefinition(
   modelName: 'User',
   tableName: 'users',
@@ -122,7 +130,7 @@ final ModelDefinition<$User> _$UserDefinition = ModelDefinition(
     _$UserProfileField,
     _$UserMetadataField,
   ],
-  relations: const [],
+  relations: const [_$UserUserProfileRelation],
   softDeleteColumn: 'deleted_at',
   metadata: ModelAttributesMetadata(
     hidden: const <String>['profile'],
@@ -576,6 +584,20 @@ class $User extends User with ModelAttributes implements OrmEntity {
   void _attachOrmRuntimeMetadata(Map<String, Object?> values) {
     replaceAttributes(values);
     attachModelDefinition(_$UserDefinition);
+  }
+
+  @override
+  UserProfile? get userProfile {
+    if (relationLoaded('userProfile')) {
+      return getRelation<UserProfile>('userProfile');
+    }
+    return super.userProfile;
+  }
+}
+
+extension UserRelationQueries on User {
+  Query<UserProfile> userProfileQuery() {
+    return Model.query<UserProfile>().where('user_id', id);
   }
 }
 

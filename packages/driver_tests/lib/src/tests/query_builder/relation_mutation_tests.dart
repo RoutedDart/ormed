@@ -321,6 +321,75 @@ void runRelationMutationTests() {
       });
     });
 
+    group('relation cache after mutations', () {
+      test('attach refreshes relation cache and loadMissing preserves cache',
+          () async {
+        await dataSource.repo<Author>().insertMany(const [
+          Author(id: 1, name: 'Alice'),
+        ]);
+        await dataSource.repo<Post>().insertMany([
+          Post(
+            id: 1,
+            authorId: 1,
+            title: 'Post 1',
+            publishedAt: DateTime(2024),
+          ),
+        ]);
+        await dataSource.repo<Tag>().insertMany(const [
+          Tag(id: 1, label: 'dart'),
+          Tag(id: 2, label: 'flutter'),
+          Tag(id: 3, label: 'ormed'),
+        ]);
+        await dataSource.repo<PostTag>().insertMany(const [
+          PostTag(postId: 1, tagId: 1),
+        ]);
+
+        final post =
+            (await dataSource.context.query<Post>().where('id', 1).get()).first;
+
+        await post.load('tags');
+        expect(post.tags.map((t) => t.id), equals([1]));
+
+        await post.attach('tags', [2, 3]);
+        expect(post.tags.map((t) => t.id).toSet(), equals({1, 2, 3}));
+
+        await post.loadMissing(['tags']);
+        expect(post.tags.map((t) => t.id).toSet(), equals({1, 2, 3}));
+
+        // If cache is cleared, loadMissing should query again.
+        post.unsetRelation('tags');
+        await post.loadMissing(['tags']);
+        expect(post.tags.map((t) => t.id).toSet(), equals({1, 2, 3}));
+      });
+
+      test('associate caches belongsTo and loadMissing preserves cache', () async {
+        await dataSource.repo<Author>().insertMany(const [
+          Author(id: 1, name: 'Alice'),
+          Author(id: 2, name: 'Bob'),
+        ]);
+        await dataSource.repo<Post>().insertMany([
+          Post(
+            id: 1,
+            authorId: 1,
+            title: 'Post 1',
+            publishedAt: DateTime(2024),
+          ),
+        ]);
+
+        final post =
+            (await dataSource.context.query<Post>().where('id', 1).get()).first;
+
+        await post.load('author');
+        expect(post.author?.id, equals(1));
+
+        await post.associate('author', const Author(id: 2, name: 'Bob'));
+        expect(post.author?.id, equals(2));
+
+        await post.loadMissing(['author']);
+        expect(post.author?.id, equals(2));
+      });
+    });
+
     group('attach() - manyToMany', () {
       test('attach creates pivot rows for many-to-many', () async {
         await dataSource.repo<Post>().insertMany([

@@ -99,6 +99,7 @@ class RelationLoader {
     RelationSegment segment,
   ) async {
     final relation = load.relation;
+    final singleResult = segment.expectSingleResult;
     final parentKey = segment.parentKey;
     final targetDefinition = segment.targetDefinition;
     final foreignKey = segment.childKey;
@@ -109,7 +110,7 @@ class RelationLoader {
         .toSet();
     if (parentKeyValues.isEmpty) {
       for (final row in parents) {
-        row.relations[relation.name] = const <dynamic>[];
+        row.relations[relation.name] = singleResult ? null : const <dynamic>[];
       }
       return;
     }
@@ -141,9 +142,12 @@ class RelationLoader {
 
     for (final row in parents) {
       final key = row.row[parentKey];
-      row.relations[relation.name] = List.unmodifiable(
-        grouped[key] ?? const <dynamic>[],
-      );
+      final models = grouped[key] ?? const <dynamic>[];
+      if (singleResult) {
+        row.relations[relation.name] = models.isEmpty ? null : models.first;
+      } else {
+        row.relations[relation.name] = List.unmodifiable(models);
+      }
     }
   }
 
