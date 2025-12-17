@@ -1,6 +1,12 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
+import 'package:decimal/decimal.dart';
 import 'package:ormed/ormed.dart';
+import 'package:postgres/postgres.dart';
+import 'package:uuid/uuid_value.dart';
+
+import 'postgres_value_types.dart';
 
 /// PostgreSQL-specific type mapper
 ///
@@ -41,7 +47,14 @@ class PostgresTypeMapper extends DriverTypeMapper {
     TypeMapping(
       dartType: double,
       defaultSqlType: 'DOUBLE PRECISION',
-      acceptedSqlTypes: ['REAL', 'FLOAT4', 'FLOAT8', 'NUMERIC', 'DECIMAL'],
+      acceptedSqlTypes: ['REAL', 'FLOAT4', 'FLOAT8', 'DOUBLE'],
+    ),
+
+    // NUMERIC/DECIMAL
+    TypeMapping(
+      dartType: Decimal,
+      defaultSqlType: 'NUMERIC',
+      acceptedSqlTypes: ['DECIMAL'],
     ),
 
     // TEXT types
@@ -56,6 +69,24 @@ class PostgresTypeMapper extends DriverTypeMapper {
         'NAME',
       ],
     ),
+
+    // UUID
+    TypeMapping(dartType: UuidValue, defaultSqlType: 'UUID'),
+
+    // UUID arrays
+    TypeMapping(dartType: List<UuidValue>, defaultSqlType: 'UUID[]'),
+
+    // TEXT arrays
+    TypeMapping(dartType: List<String>, defaultSqlType: 'TEXT[]'),
+
+    // INTEGER arrays
+    TypeMapping(dartType: List<int>, defaultSqlType: 'INTEGER[]'),
+
+    // BOOLEAN arrays
+    TypeMapping(dartType: List<bool>, defaultSqlType: 'BOOLEAN[]'),
+
+    // DOUBLE arrays
+    TypeMapping(dartType: List<double>, defaultSqlType: 'DOUBLE PRECISION[]'),
 
     // TIMESTAMP types
     TypeMapping(
@@ -73,8 +104,47 @@ class PostgresTypeMapper extends DriverTypeMapper {
       ],
     ),
 
+    // TIMESTAMP arrays
+    TypeMapping(
+      dartType: List<DateTime>,
+      defaultSqlType: 'TIMESTAMPTZ[]',
+      acceptedSqlTypes: ['TIMESTAMP[]'],
+    ),
+
+    // INTERVAL
+    TypeMapping(dartType: Interval, defaultSqlType: 'INTERVAL'),
+
+    // Full text search
+    TypeMapping(dartType: TsVector, defaultSqlType: 'TSVECTOR'),
+    TypeMapping(dartType: TsQuery, defaultSqlType: 'TSQUERY'),
+
+    // Range types
+    TypeMapping(
+      dartType: IntRange,
+      defaultSqlType: 'INT4RANGE',
+      acceptedSqlTypes: ['INT8RANGE'],
+    ),
+    TypeMapping(dartType: DateRange, defaultSqlType: 'DATERANGE'),
+    TypeMapping(
+      dartType: DateTimeRange,
+      defaultSqlType: 'TSRANGE',
+      acceptedSqlTypes: ['TSTZRANGE'],
+    ),
+
+    // Network types
+    TypeMapping(dartType: PgInet, defaultSqlType: 'INET'),
+    TypeMapping(dartType: PgCidr, defaultSqlType: 'CIDR'),
+    TypeMapping(
+      dartType: PgMacAddress,
+      defaultSqlType: 'MACADDR',
+      acceptedSqlTypes: ['MACADDR8'],
+    ),
+
+    // pgvector (extension-backed)
+    TypeMapping(dartType: PgVector, defaultSqlType: 'VECTOR'),
+
     // BYTEA (binary data)
-    TypeMapping(dartType: List<int>, defaultSqlType: 'BYTEA'),
+    TypeMapping(dartType: Uint8List, defaultSqlType: 'BYTEA'),
 
     // JSON types
     TypeMapping(
@@ -88,6 +158,14 @@ class PostgresTypeMapper extends DriverTypeMapper {
   @override
   String normalizeSqlType(String sqlType) {
     final cleaned = sqlType.trim().toUpperCase();
+    if (cleaned.isEmpty) return cleaned;
+
+    if (cleaned.endsWith('[]')) {
+      final element = cleaned.substring(0, cleaned.length - 2).trim();
+      final normalizedElement = normalizeSqlType(element);
+      return '$normalizedElement[]';
+    }
+
     final baseType = cleaned.split(RegExp(r'[\s(]'))[0];
 
     // Map PostgreSQL type aliases
@@ -98,6 +176,13 @@ class PostgresTypeMapper extends DriverTypeMapper {
     if (_binaryTypes.contains(baseType)) return 'BYTEA';
     if (_jsonTypes.contains(baseType)) return 'JSONB';
     if (_boolTypes.contains(baseType)) return 'BOOLEAN';
+    if (_numericTypes.contains(baseType)) return 'NUMERIC';
+    if (_uuidTypes.contains(baseType)) return 'UUID';
+    if (_intervalTypes.contains(baseType)) return 'INTERVAL';
+    if (_fullTextTypes.contains(baseType)) return baseType;
+    if (_rangeTypes.contains(baseType)) return baseType;
+    if (_networkTypes.contains(baseType)) return baseType;
+    if (_vectorTypes.contains(baseType)) return 'VECTOR';
 
     return baseType;
   }
@@ -120,10 +205,11 @@ class PostgresTypeMapper extends DriverTypeMapper {
     'REAL',
     'FLOAT4',
     'FLOAT8',
+    'DOUBLE',
     'DOUBLE PRECISION',
-    'NUMERIC',
-    'DECIMAL',
   };
+
+  static const _numericTypes = {'NUMERIC', 'DECIMAL'};
 
   static const _textTypes = {
     'TEXT',
@@ -151,6 +237,25 @@ class PostgresTypeMapper extends DriverTypeMapper {
   static const _jsonTypes = {'JSON', 'JSONB'};
 
   static const _boolTypes = {'BOOLEAN', 'BOOL'};
+
+  static const _uuidTypes = {'UUID'};
+
+  static const _intervalTypes = {'INTERVAL'};
+
+  static const _fullTextTypes = {'TSVECTOR', 'TSQUERY'};
+
+  static const _rangeTypes = {
+    'INT4RANGE',
+    'INT8RANGE',
+    'DATERANGE',
+    'TSRANGE',
+    'TSTZRANGE',
+    'NUMRANGE',
+  };
+
+  static const _networkTypes = {'INET', 'CIDR', 'MACADDR', 'MACADDR8'};
+
+  static const _vectorTypes = {'VECTOR'};
 
   @override
   bool supportsUnsigned(String sqlType) => false; // PostgreSQL doesn't have UNSIGNED

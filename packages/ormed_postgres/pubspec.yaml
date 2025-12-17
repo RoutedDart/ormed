@@ -11,6 +11,8 @@ dependencies:
   ormed: 0.1.0-dev
   postgres: ^3.5.9
   carbonized: ^0.1.0
+  decimal: ^3.2.4
+  uuid: ^4.5.2
   meta: ^1.17.0
 
 dev_dependencies:

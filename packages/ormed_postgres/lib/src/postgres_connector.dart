@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:ormed/ormed.dart';
 import 'package:postgres/postgres.dart';
 
+import 'postgres_type_registry.dart';
+
 /// Builds [Connection] instances for the Postgres connector.
 typedef PostgresConnectionBuilder =
     Future<Connection> Function(PostgresConnectionSettings settings);
@@ -51,6 +53,7 @@ class PostgresConnector extends Connector<Connection> {
       sslMode: settings.sslMode ?? SslMode.disable,
       connectTimeout: settings.connectTimeout,
       queryTimeout: settings.statementTimeout,
+      typeRegistry: createOrmedPostgresTypeRegistry(),
     );
     return Connection.open(endpoint, settings: connectionSettings);
   }

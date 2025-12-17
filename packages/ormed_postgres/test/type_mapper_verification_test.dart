@@ -1,6 +1,9 @@
 import 'package:ormed/ormed.dart';
 import 'package:ormed_postgres/ormed_postgres.dart';
 import 'package:test/test.dart';
+import 'package:uuid/uuid_value.dart';
+import 'package:decimal/decimal.dart';
+import 'dart:typed_data';
 
 void main() {
   group('PostgreSQL TypeMapper Verification', () {
@@ -38,7 +41,9 @@ void main() {
       expect(mapper.sqlTypeToDart('TEXT'), equals(String));
       expect(mapper.sqlTypeToDart('BOOLEAN'), equals(bool));
       expect(mapper.sqlTypeToDart('TIMESTAMP'), equals(DateTime));
-      expect(mapper.sqlTypeToDart('BYTEA'), equals(List<int>));
+      expect(mapper.sqlTypeToDart('BYTEA'), equals(Uint8List));
+      expect(mapper.sqlTypeToDart('UUID'), equals(UuidValue));
+      expect(mapper.sqlTypeToDart('NUMERIC'), equals(Decimal));
     });
 
     test('SQL type normalization', () {
@@ -50,8 +55,9 @@ void main() {
         mapper.normalizeSqlType('TIMESTAMP WITH TIME ZONE'),
         equals('TIMESTAMP'),
       );
-      expect(mapper.normalizeSqlType('DOUBLE'), equals('DOUBLE'));
+      expect(mapper.normalizeSqlType('DOUBLE'), equals('DOUBLE PRECISION'));
       expect(mapper.normalizeSqlType('REAL'), equals('DOUBLE PRECISION'));
+      expect(mapper.normalizeSqlType('uuid[]'), equals('UUID[]'));
     });
 
     test('SQL type aliases', () {

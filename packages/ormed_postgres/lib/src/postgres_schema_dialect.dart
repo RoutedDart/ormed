@@ -563,7 +563,9 @@ class PostgresSchemaDialect extends SchemaDialect {
   @override
   String? compileColumns(String table, {String? schema}) {
     final filter = schema == null ? '' : ' AND c.table_schema = ?';
-    return 'SELECT c.table_schema, c.table_name, c.column_name, c.data_type, '
+    return 'SELECT c.table_schema, c.table_name, c.column_name, '
+        'COALESCE(format_type(attr.atttypid, attr.atttypmod), c.data_type) '
+        'AS data_type, '
         'c.character_maximum_length, c.numeric_precision, c.numeric_scale, '
         'c.is_nullable, c.column_default, c.is_identity, '
         'c.is_generated, c.generation_expression, '

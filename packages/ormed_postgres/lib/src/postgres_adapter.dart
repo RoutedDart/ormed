@@ -27,6 +27,9 @@ class PostgresDriverAdapter
       }
     }
     ValueCodecRegistry.instance.registerDriver('postgres', codecs);
+
+    // Ensure postgres-specific codecs are also registered.
+    registerPostgresCodecs();
   }
 
   PostgresDriverAdapter.custom({
