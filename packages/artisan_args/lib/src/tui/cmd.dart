@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert' show base64, utf8;
 import 'dart:io' as io;
 
 import 'msg.dart';
@@ -261,6 +262,33 @@ class Cmd {
   static Cmd writeRaw(String data) {
     return Cmd(() async => WriteRawMsg(data));
   }
+
+  /// Set the terminal clipboard via OSC 52.
+  ///
+  /// Most terminals expect base64-encoded UTF-8.
+  ///
+  /// This requires ANSI escape support and may be blocked by terminal security
+  /// settings. It is safe to call even if unsupported.
+  static Cmd setClipboard(String text, {String selection = 'c'}) {
+    final sel = selection.isEmpty ? 'c' : selection[0];
+    final payload = base64.encode(utf8.encode(text));
+    return writeRaw('\x1b]52;$sel;$payload\x07');
+  }
+
+  /// Request clipboard content via OSC 52.
+  ///
+  /// Many terminals do not support clipboard reads and may ignore this request.
+  /// When supported, UV input decoding will emit a [ClipboardMsg].
+  static Cmd requestClipboard({String selection = 'c'}) {
+    final sel = selection.isEmpty ? 'c' : selection[0];
+    return writeRaw('\x1b]52;$sel;?\x07');
+  }
+
+  /// Request the terminal to report its character cell size (rows/cols).
+  ///
+  /// Terminals that support xterm window ops respond to `CSI 18 t` with
+  /// `CSI 8 ; <rows> ; <cols> t`, which UV decoding maps to [WindowSizeMsg].
+  static Cmd requestWindowSizeReport() => writeRaw('\x1b[18t');
 
   /// A command that clears the terminal screen.
   ///

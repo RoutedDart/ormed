@@ -34,5 +34,19 @@ void main() {
       expect(key.type, KeyType.home);
       expect(key.shift, isTrue);
     });
+
+    test('emits ClipboardMsg from OSC 52 clipboard response', () {
+      final p = UvTuiInputParser();
+      final msgs = [
+        ...p.parseAll('\x1b]52;c;SGVsbG8=\x07'.codeUnits),
+        ...p.parseAll(const [], expired: true),
+      ];
+
+      expect(msgs, hasLength(1));
+      expect(msgs.single, isA<ClipboardMsg>());
+      final m = msgs.single as ClipboardMsg;
+      expect(m.selection, ClipboardSelection.system);
+      expect(m.content, 'Hello');
+    });
   });
 }

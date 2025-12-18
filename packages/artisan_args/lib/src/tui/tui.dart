@@ -100,6 +100,8 @@ export 'msg.dart'
     show
         Msg,
         KeyMsg,
+        ClipboardMsg,
+        ClipboardSelection,
         MouseMsg,
         MouseButton,
         MouseAction,

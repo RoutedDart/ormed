@@ -82,6 +82,8 @@ class _LogModel implements tui.Model {
           return (this, tui.Cmd.quit());
         }
         // Convenience: press `d/b/f/c` to re-request reports.
+        // Clipboard: `y` copy demo text, `p` request clipboard read (if supported).
+        // Size: `s` request window-size report (CSI 18 t).
         if (key.type == tui.KeyType.runes && key.runes.isNotEmpty) {
           switch (key.runes.first) {
             case 0x64: // d
@@ -92,9 +94,21 @@ class _LogModel implements tui.Model {
               return (this, tui.Cmd.writeRaw('\x1b]10;?\x07'));
             case 0x63: // c
               return (this, tui.Cmd.writeRaw('\x1b]12;?\x07'));
+            case 0x79: // y
+              return (this, tui.Cmd.setClipboard('uv-input demo: hello'));
+            case 0x70: // p
+              return (this, tui.Cmd.requestClipboard());
+            case 0x73: // s
+              return (this, tui.Cmd.requestWindowSizeReport());
           }
         }
         _log('KeyMsg($key)');
+        return (this, null);
+
+      case tui.ClipboardMsg(:final selection, :final content):
+        _log(
+          'ClipboardMsg(selection: $selection, ${content.length} bytes): ${content.replaceAll('\n', r'\n')}',
+        );
         return (this, null);
 
       case tui.UvEventMsg(:final event):
@@ -111,7 +125,7 @@ class _LogModel implements tui.Model {
     final mode =
         'input=${useUvInput ? 'uv' : 'legacy'}  renderer=${useUvRenderer ? 'uv' : 'default'}';
     final help =
-        'Press `q` to quit. Try keys/mouse/paste/focus/resize. Press `d/b/f/c` to request DA/bg/fg/cursor reports.';
+        'Press `q` to quit. Try keys/mouse/paste/focus/resize. Press `d/b/f/c` reports, `y/p` clipboard, `s` size.';
 
     final header = '$title\n$mode\n$help\n';
 

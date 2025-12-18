@@ -199,6 +199,24 @@ final class UvEventMsg extends Msg {
   String toString() => 'UvEventMsg($event)';
 }
 
+/// Clipboard selection for OSC 52 operations.
+enum ClipboardSelection { system, primary, unknown }
+
+/// Clipboard content message.
+///
+/// Only emitted when UV input decoding is enabled and the terminal reports a
+/// clipboard payload (OSC 52 response).
+final class ClipboardMsg extends Msg {
+  const ClipboardMsg({required this.selection, required this.content});
+
+  final ClipboardSelection selection;
+  final String content;
+
+  @override
+  String toString() =>
+      'ClipboardMsg(selection: $selection, ${content.length} bytes)';
+}
+
 /// Mouse button identifiers.
 enum MouseButton {
   /// No button (for motion events).

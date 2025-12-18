@@ -99,6 +99,15 @@ List<Msg> _eventToMsgs(uvev.Event ev) {
 
   if (ev is uvev.PasteEvent) return [PasteMsg(ev.content)];
 
+  if (ev is uvev.ClipboardEvent) {
+    final sel = switch (ev.selection) {
+      0x63 /* 'c' */ => ClipboardSelection.system,
+      0x70 /* 'p' */ => ClipboardSelection.primary,
+      _ => ClipboardSelection.unknown,
+    };
+    return [ClipboardMsg(selection: sel, content: ev.content)];
+  }
+
   if (ev is uvev.MouseClickEvent)
     return [_mouseMsg(MouseAction.press, ev.mouse())];
   if (ev is uvev.MouseReleaseEvent)
