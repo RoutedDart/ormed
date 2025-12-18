@@ -173,8 +173,7 @@ export 'src/tui/bubbles/components/progress_bar.dart'
         ProgressBarAdvanceMsg,
         ProgressBarIterateDoneMsg,
         ProgressBarIterateErrorMsg,
-        progressIterateCmd,
-        StatefulProgressBar;
+        progressIterateCmd;
 
 // Interactive components now live under `src/tui/bubbles/` and are exposed via
 // `package:artisan_args/tui.dart` + `package:artisan_args/artisan_args.dart`.

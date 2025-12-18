@@ -1023,17 +1023,22 @@ class Program {
         return true;
 
       case PrintLineMsg(:final text):
-        // Print above the program (only works in inline mode)
-        if (!_options.altScreen) {
-          final r = _renderer;
-          if (r is UltravioletRenderer) {
-            r.printLine(text);
-            r.renderImmediate(_model?.view() ?? '');
-          } else {
-            _renderer?.clear();
-            _terminal?.writeln(text);
-            _render();
-          }
+        // Print above the program.
+        //
+        // With the UV renderer this is implemented as a renderer-owned "print
+        // line buffer" and is safe in both inline and fullscreen modes.
+        //
+        // For non-UV renderers we only support inline mode: fullscreen mode
+        // has no stable "scrollback" concept to print into without changing
+        // the view contract.
+        final r = _renderer;
+        if (r is UltravioletRenderer) {
+          r.printLine(text);
+          r.renderImmediate(_model?.view() ?? '');
+        } else if (!_options.altScreen) {
+          _renderer?.clear();
+          _terminal?.writeln(text);
+          _render();
         }
         return true;
 

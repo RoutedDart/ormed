@@ -6,17 +6,14 @@
 /// Run with: dart run example/tui_list.dart
 library;
 
+import 'dart:io' as io;
+
 import 'package:artisan_args/tui.dart';
 
 /// The list selection model.
 class ListModel implements Model {
   /// Creates a list model with the given items.
-  const ListModel({
-    required this.items,
-    this.cursor = 0,
-    this.selected,
-    this.done = false,
-  });
+  const ListModel({required this.items, this.cursor = 0, this.selected});
 
   /// The list items to choose from.
   final List<String> items;
@@ -27,21 +24,12 @@ class ListModel implements Model {
   /// The selected item (null if nothing selected yet).
   final String? selected;
 
-  /// Whether the selection step is complete.
-  final bool done;
-
   /// Creates a copy with the given fields replaced.
-  ListModel copyWith({
-    List<String>? items,
-    int? cursor,
-    String? selected,
-    bool? done,
-  }) {
+  ListModel copyWith({List<String>? items, int? cursor, String? selected}) {
     return ListModel(
       items: items ?? this.items,
       cursor: cursor ?? this.cursor,
       selected: selected ?? this.selected,
-      done: done ?? this.done,
     );
   }
 
@@ -50,85 +38,36 @@ class ListModel implements Model {
 
   @override
   (Model, Cmd?) update(Msg msg) {
-    if (done) {
-      return switch (msg) {
-        KeyMsg(key: Key(type: KeyType.runes, runes: [0x71])) || // 'q'
-        KeyMsg(key: Key(type: KeyType.escape)) ||
-        KeyMsg(key: Key(ctrl: true, runes: [0x63])) => (
-          // Ctrl+C
-          this,
-          Cmd.quit(),
-        ),
-        _ => (this, null),
-      };
-    }
-
     return switch (msg) {
-      // Move cursor up
-      KeyMsg(key: Key(type: KeyType.up)) ||
-      KeyMsg(key: Key(type: KeyType.runes, runes: [0x6b])) => (
-        // 'k'
+      KeyMsg(key: final key) when key.type == KeyType.up || key.isChar('k') => (
         copyWith(cursor: (cursor - 1).clamp(0, items.length - 1)),
         null,
       ),
 
-      // Move cursor down
-      KeyMsg(key: Key(type: KeyType.down)) ||
-      KeyMsg(key: Key(type: KeyType.runes, runes: [0x6a])) => (
-        // 'j'
-        copyWith(cursor: (cursor + 1).clamp(0, items.length - 1)),
-        null,
-      ),
+      KeyMsg(key: final key) when key.type == KeyType.down || key.isChar('j') =>
+        (copyWith(cursor: (cursor + 1).clamp(0, items.length - 1)), null),
 
-      // Select item with Enter or Space
-      KeyMsg(key: Key(type: KeyType.enter)) ||
-      KeyMsg(
-        key: Key(type: KeyType.space),
-      ) => (copyWith(selected: items[cursor], done: true), null),
-
-      // Quit without selection
-      KeyMsg(key: Key(type: KeyType.runes, runes: [0x71])) || // 'q'
-      KeyMsg(key: Key(type: KeyType.escape)) ||
-      KeyMsg(key: Key(ctrl: true, runes: [0x63])) => (
-        // Ctrl+C
-        this,
+      KeyMsg(key: final key) when key.isAccept => (
+        copyWith(selected: items[cursor]),
         Cmd.quit(),
       ),
 
-      // Jump to first item
-      KeyMsg(key: Key(type: KeyType.home)) ||
-      KeyMsg(key: Key(type: KeyType.runes, runes: [0x67])) => (
-        // 'g'
-        copyWith(cursor: 0),
-        null,
-      ),
+      KeyMsg(key: final key)
+          when key.isChar('q') || key.isEscape || key.isCtrlC =>
+        (this, Cmd.quit()),
 
-      // Jump to last item
-      KeyMsg(key: Key(type: KeyType.end)) ||
-      KeyMsg(key: Key(type: KeyType.runes, runes: [0x47])) => (
-        // 'G'
-        copyWith(cursor: items.length - 1),
-        null,
-      ),
+      KeyMsg(key: final key) when key.type == KeyType.home || key.char == 'g' =>
+        (copyWith(cursor: 0), null),
 
-      // Ignore other messages
+      KeyMsg(key: final key) when key.type == KeyType.end || key.char == 'G' =>
+        (copyWith(cursor: items.length - 1), null),
+
       _ => (this, null),
     };
   }
 
   @override
   String view() {
-    if (done) {
-      final selectedLabel = selected ?? '<none>';
-      return '''
-
-  You selected: $selectedLabel
-
-  Press q to quit.
-
-''';
-    }
-
     final buffer = StringBuffer();
 
     buffer.writeln();
@@ -172,12 +111,20 @@ void main() async {
     ],
   );
 
-  await runProgram(
-    model,
-    options: const ProgramOptions(
-      altScreen: true,
-      useUltravioletRenderer: true,
-      useUltravioletInputDecoder: true,
-    ),
+  final result =
+      await runProgramWithResult(
+            model,
+            options: const ProgramOptions(
+              altScreen: true,
+              useUltravioletRenderer: true,
+              useUltravioletInputDecoder: true,
+            ),
+          )
+          as ListModel;
+
+  io.stdout.writeln(
+    result.selected == null
+        ? 'No selection made. Maybe next time!'
+        : 'You selected: ${result.selected}',
   );
 }

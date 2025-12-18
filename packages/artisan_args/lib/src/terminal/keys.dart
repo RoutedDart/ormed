@@ -294,12 +294,57 @@ class Key {
   /// Returns the first rune if available, or -1.
   int get rune => runes.isNotEmpty ? runes.first : -1;
 
+  /// Returns whether this key represents exactly the given code point.
+  ///
+  /// If [requireNoModifiers] is true (default), Ctrl/Alt/Shift must not be set.
+  bool isRuneValue(int codePoint, {bool requireNoModifiers = true}) {
+    if (requireNoModifiers && hasModifier) return false;
+    return type == KeyType.runes &&
+        runes.length == 1 &&
+        runes.first == codePoint;
+  }
+
+  /// Returns whether this key represents the given character.
+  ///
+  /// This is intended for ergonomic checks like `key.isChar('q')` instead of
+  /// rune lists. Prefer this over `key.char == 'q'` when modifiers matter:
+  /// Ctrl+J reports as the rune `'j'`, which can conflict with vim-style `j/k`
+  /// bindings unless you require no modifiers.
+  ///
+  /// If [requireNoModifiers] is true (default), Ctrl/Alt/Shift must not be set.
+  /// If [caseSensitive] is false, performs a lowercase comparison.
+  bool isChar(
+    String c, {
+    bool requireNoModifiers = true,
+    bool caseSensitive = true,
+  }) {
+    if (c.isEmpty) return false;
+    if (requireNoModifiers && hasModifier) return false;
+    final ch = char;
+    if (ch == null) return false;
+    if (caseSensitive) return ch == c;
+    return ch.toLowerCase() == c.toLowerCase();
+  }
+
   // ─────────────────────────────────────────────────────────────────────────────
   // Common Key Checks
   // ─────────────────────────────────────────────────────────────────────────────
 
   /// Whether this is the Enter key (with or without modifiers).
   bool get isEnter => type == KeyType.enter;
+
+  /// Whether this key represents Enter/Return for input handling.
+  ///
+  /// This includes the canonical [KeyType.enter] as well as terminals/parsers
+  /// that report Enter as Ctrl+J (LF) or Ctrl+M (CR), which may appear when
+  /// using the Ultraviolet key table.
+  bool get isEnterLike =>
+      isEnter ||
+      this == Keys.ctrlJ ||
+      this == Keys.ctrlM ||
+      // Some parsers may deliver raw CR/LF as runes.
+      isRuneValue(Keys.lineFeed) ||
+      isRuneValue(Keys.carriageReturn);
 
   /// Whether this is the Tab key (with or without modifiers).
   bool get isTab => type == KeyType.tab;
@@ -312,6 +357,16 @@ class Key {
 
   /// Whether this is the Delete key.
   bool get isDelete => type == KeyType.delete;
+
+  /// Whether this key represents a space press for input handling.
+  ///
+  /// This includes [KeyType.space] as well as a plain space rune.
+  bool get isSpaceLike => type == KeyType.space || isRuneValue(0x20);
+
+  /// Whether this key should be treated as an “accept/select/confirm” action.
+  ///
+  /// Default convention: Enter or Space.
+  bool get isAccept => isEnterLike || isSpaceLike;
 
   /// Whether this is Ctrl+C.
   bool get isCtrlC =>

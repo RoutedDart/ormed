@@ -207,20 +207,9 @@ class UiProgressCommand extends ArtisanCommand<void> {
     final countRaw = argResults?['count'] as String? ?? '25';
     final count = int.tryParse(countRaw) ?? 25;
 
-    final terminal = StdioTerminal(stdout: dartio.stdout, stdin: dartio.stdin);
-    final renderConfig = RenderConfig.fromRenderer(
-      defaultRenderer,
-      terminalWidth: io.terminalWidth,
-    );
-
-    final bar = io.createProgressBar(max: count);
-    bar.start(terminal, renderConfig: renderConfig);
-    for (var i = 0; i < count; i++) {
+    for (final _ in io.progressIterate(List<int>.filled(count, 0), max: count)) {
       await Future<void>.delayed(const Duration(milliseconds: 20));
-      bar.advance(terminal, renderConfig: renderConfig);
     }
-    bar.finish(terminal, renderConfig: renderConfig);
-    io.newLine();
   }
 }
 
@@ -1413,7 +1402,6 @@ class UiAllCommand extends ArtisanCommand<void> {
 
     // Panel
     io.section('7. Panel');
-    final terminal = StdioTerminal(stdout: dartio.stdout, stdin: dartio.stdin);
     final renderConfig = RenderConfig.fromRenderer(
       defaultRenderer,
       terminalWidth: io.terminalWidth,
@@ -1450,13 +1438,9 @@ class UiAllCommand extends ArtisanCommand<void> {
 
     // Progress bar
     io.section('10. Progress Bar');
-    final bar = io.createProgressBar(max: 20);
-    bar.start(terminal, renderConfig: renderConfig);
-    for (var i = 0; i < 20; i++) {
+    for (final _ in io.progressIterate(List<int>.filled(20, 0), max: 20)) {
       await Future<void>.delayed(const Duration(milliseconds: 30));
-      bar.advance(terminal, renderConfig: renderConfig);
     }
-    bar.finish(terminal, renderConfig: renderConfig);
     io.newLine();
 
     // Task

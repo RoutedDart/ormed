@@ -1,6 +1,5 @@
 import 'package:artisan_args/src/terminal/ansi.dart' as term_ansi;
 import 'package:artisan_args/src/tui/cmd.dart';
-import 'package:artisan_args/src/tui/msg.dart';
 import 'package:test/test.dart';
 
 void main() {

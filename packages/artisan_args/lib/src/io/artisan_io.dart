@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:io' as io;
 
 import '../tui/bubbles/components/base.dart';
-import '../tui/bubbles/components/progress_bar.dart';
+import '../tui/bubbles/components/progress_bar.dart' show ProgressBarComponent;
 import '../tui/bubbles/components/table.dart';
 import '../renderer/renderer.dart';
 import '../style/color.dart';
@@ -345,25 +345,43 @@ class ArtisanIO {
       StdioTerminal(stdout: _stdout ?? io.stdout, stdin: _stdin ?? io.stdin);
 
   /// Creates a new progress bar.
-  StatefulProgressBar createProgressBar({int max = 0}) {
-    return StatefulProgressBar(max: max);
-  }
-
-  /// Iterates over items with a progress bar.
   Iterable<T> progressIterate<T>(Iterable<T> iterable, {int? max}) sync* {
     final total = max ?? (iterable is List<T> ? iterable.length : 0);
-    final bar = createProgressBar(max: total);
     final terminal = _promptTerminal;
     final renderConfig = RenderConfig.fromRenderer(
       _renderer,
       terminalWidth: terminalWidth,
     );
-    bar.start(terminal, renderConfig: renderConfig);
-    for (final item in iterable) {
-      yield item;
-      bar.advance(terminal, renderConfig: renderConfig);
+
+    terminal.hideCursor();
+    try {
+      var current = 0;
+      terminal.clearLine();
+      terminal.write(
+        ProgressBarComponent(
+          current: current,
+          total: total,
+          renderConfig: renderConfig,
+        ).render(),
+      );
+
+      for (final item in iterable) {
+        yield item;
+        current++;
+        terminal.clearLine();
+        terminal.write(
+          ProgressBarComponent(
+            current: current,
+            total: total,
+            renderConfig: renderConfig,
+          ).render(),
+        );
+      }
+
+      terminal.writeln();
+    } finally {
+      terminal.showCursor();
     }
-    bar.finish(terminal, renderConfig: renderConfig);
     newLine();
   }
 

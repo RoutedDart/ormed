@@ -14,6 +14,8 @@ void main() {
       'packages/artisan_args/example/tui/examples/tui-daemon-combo/main.dart',
       // Demonstrates non-TUI pipe behavior.
       'packages/artisan_args/example/tui/examples/pipe/main.dart',
+      // Prints selection after the program exits (safe; renderer is stopped).
+      'packages/artisan_args/example/tui/list.dart',
     };
 
     final bannedPatterns = <RegExp>[

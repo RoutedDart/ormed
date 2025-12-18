@@ -784,6 +784,7 @@ class EveryCmd extends Cmd {
   /// Optional identifier for this timer.
   final Object? id;
 
+  Timer? _starter;
   Timer? _timer;
 
   /// Starts the repeating timer.
@@ -797,7 +798,11 @@ class EveryCmd extends Cmd {
     final msUntilNext = intervalMs - msIntoInterval;
 
     // First tick at next boundary
-    Future<void>.delayed(Duration(milliseconds: msUntilNext)).then((_) {
+    _starter?.cancel();
+    _timer?.cancel();
+    _starter = Timer(Duration(milliseconds: msUntilNext), () {
+      // If stop() was called before the first tick, do nothing.
+      if (_starter == null) return;
       _tick(sendMessage);
       // Then repeat at interval
       _timer = Timer.periodic(interval, (_) => _tick(sendMessage));
@@ -811,6 +816,8 @@ class EveryCmd extends Cmd {
 
   /// Stops the repeating timer.
   void stop() {
+    _starter?.cancel();
+    _starter = null;
     _timer?.cancel();
     _timer = null;
   }

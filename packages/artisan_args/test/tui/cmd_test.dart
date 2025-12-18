@@ -432,6 +432,23 @@ void main() {
       // No new messages after stop
       expect(received.length, countBeforeStop);
     });
+
+    test('stop before first tick prevents any ticks', () async {
+      final received = <Msg>[];
+
+      final cmd = EveryCmd(
+        interval: const Duration(milliseconds: 200),
+        callback: (time) => const TestMsg('tick'),
+      );
+
+      cmd.start((msg) => received.add(msg));
+      cmd.stop();
+
+      // Wait longer than the interval boundary.
+      await Future<void>.delayed(const Duration(milliseconds: 450));
+
+      expect(received, isEmpty);
+    });
   });
 
   group('CmdExtension', () {

@@ -53,5 +53,33 @@ void main() {
     terminal.simulateInput([0x71]); // 'q'
     await runFuture;
   });
-}
 
+  test('PrintLineMsg works in fullscreen with UltravioletRenderer', () async {
+    final terminal = StringTerminal(terminalWidth: 80, terminalHeight: 24);
+    final program = Program(
+      const _QuitOnKeyModel(),
+      options: const ProgramOptions(
+        altScreen: true,
+        hideCursor: false,
+        useUltravioletRenderer: true,
+      ),
+      terminal: terminal,
+    );
+
+    final runFuture = program.run();
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+
+    // Still should not call Terminal.writeln() directly.
+    expect(
+      terminal.operations.where((op) => op.startsWith('writeln:')).toList(),
+      isEmpty,
+    );
+
+    // Printed output still shows up, even with altScreen.
+    expect(terminal.output, contains('printed'));
+    expect(terminal.output, contains('view'));
+
+    terminal.simulateInput([0x71]); // 'q'
+    await runFuture;
+  });
+}
