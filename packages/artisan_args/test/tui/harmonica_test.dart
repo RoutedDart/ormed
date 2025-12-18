@@ -19,8 +19,12 @@ void main() {
 
   group('Projectile (harmonica parity)', () {
     test('updates position with velocity and acceleration', () {
-      final projectile =
-          Projectile(1 / 60, const Point(0, 0, 0), const Vector(1, 2, 0), gravity);
+      final projectile = Projectile(
+        1 / 60,
+        const Point(0, 0, 0),
+        const Vector(1, 2, 0),
+        gravity,
+      );
       final p1 = projectile.update();
       expect(p1.x, closeTo(1 / 60, 1e-9));
       expect(p1.y, closeTo(2 / 60, 1e-9));
@@ -29,4 +33,3 @@ void main() {
     });
   });
 }
-

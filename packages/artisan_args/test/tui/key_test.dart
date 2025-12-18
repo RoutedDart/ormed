@@ -1,3 +1,5 @@
+import 'dart:convert' show utf8;
+
 import 'package:artisan_args/tui.dart';
 import 'package:test/test.dart';
 
@@ -315,6 +317,25 @@ void main() {
       expect(keys, hasLength(1));
       expect(keys[0].type, KeyType.runes);
       expect(keys[0].char, '😀');
+    });
+
+    test('parses UTF-8 grapheme cluster (ZWJ sequence)', () {
+      final s = '👨‍👩‍👧‍👦';
+      final keys = parser.parse(utf8.encode(s));
+      expect(keys, hasLength(1));
+      expect(keys[0].type, KeyType.runes);
+      expect(keys[0].char, s);
+      expect(keys[0].runes.length, greaterThan(1));
+    });
+
+    test('parses Alt+UTF-8 grapheme cluster', () {
+      final s = '👨‍👩‍👧‍👦';
+      final keys = parser.parse([0x1b, ...utf8.encode(s)]);
+      expect(keys, hasLength(1));
+      expect(keys[0].type, KeyType.runes);
+      expect(keys[0].alt, isTrue);
+      expect(keys[0].char, s);
+      expect(keys[0].runes.length, greaterThan(1));
     });
 
     test('parses space as space key', () {

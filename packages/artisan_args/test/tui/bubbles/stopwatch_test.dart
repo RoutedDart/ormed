@@ -136,7 +136,9 @@ void main() {
           final stopwatch = StopwatchModel().copyWith(
             elapsed: Duration(seconds: 10),
           );
-          final (updated, cmd) = stopwatch.update(StopwatchResetMsg(stopwatch.tag, stopwatch.id + 1));
+          final (updated, cmd) = stopwatch.update(
+            StopwatchResetMsg(stopwatch.tag, stopwatch.id + 1),
+          );
           expect((updated as StopwatchModel).elapsed, Duration(seconds: 10));
           expect(cmd, isNull);
         });

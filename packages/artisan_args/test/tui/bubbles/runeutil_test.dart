@@ -1,32 +1,33 @@
 import 'package:artisan_args/src/tui/bubbles/runeutil.dart';
+import 'package:artisan_args/src/unicode/grapheme.dart' as uni;
 import 'package:test/test.dart';
 
 void main() {
   group('Sanitizer', () {
     test('passes through normal text', () {
       final sanitizer = createSanitizer();
-      final input = 'hello world'.runes.toList();
+      final input = uni.codePoints('hello world');
       final result = sanitizer(input);
       expect(String.fromCharCodes(result), 'hello world');
     });
 
     test('replaces newlines with default replacement', () {
       final sanitizer = createSanitizer();
-      final input = 'hello\nworld'.runes.toList();
+      final input = uni.codePoints('hello\nworld');
       final result = sanitizer(input);
       expect(String.fromCharCodes(result), 'hello\nworld');
     });
 
     test('replaces carriage return with newline replacement', () {
       final sanitizer = createSanitizer();
-      final input = 'hello\rworld'.runes.toList();
+      final input = uni.codePoints('hello\rworld');
       final result = sanitizer(input);
       expect(String.fromCharCodes(result), 'hello\nworld');
     });
 
     test('replaces tabs with default replacement (4 spaces)', () {
       final sanitizer = createSanitizer();
-      final input = 'hello\tworld'.runes.toList();
+      final input = uni.codePoints('hello\tworld');
       final result = sanitizer(input);
       expect(String.fromCharCodes(result), 'hello    world');
     });
@@ -35,14 +36,14 @@ void main() {
       final sanitizer = createSanitizer(
         SanitizerOptions(newlineReplacement: ' '),
       );
-      final input = 'hello\nworld'.runes.toList();
+      final input = uni.codePoints('hello\nworld');
       final result = sanitizer(input);
       expect(String.fromCharCodes(result), 'hello world');
     });
 
     test('replaces tabs with custom replacement', () {
       final sanitizer = createSanitizer(SanitizerOptions(tabReplacement: ' '));
-      final input = 'hello\tworld'.runes.toList();
+      final input = uni.codePoints('hello\tworld');
       final result = sanitizer(input);
       expect(String.fromCharCodes(result), 'hello world');
     });
@@ -74,14 +75,14 @@ void main() {
       final sanitizer = createSanitizer(
         SanitizerOptions(newlineReplacement: ' '),
       );
-      final input = 'a\n\n\nb'.runes.toList();
+      final input = uni.codePoints('a\n\n\nb');
       final result = sanitizer(input);
       expect(String.fromCharCodes(result), 'a   b');
     });
 
     test('handles multiple tabs', () {
       final sanitizer = createSanitizer(SanitizerOptions(tabReplacement: '-'));
-      final input = 'a\t\tb'.runes.toList();
+      final input = uni.codePoints('a\t\tb');
       final result = sanitizer(input);
       expect(String.fromCharCodes(result), 'a--b');
     });
@@ -90,7 +91,7 @@ void main() {
       final sanitizer = createSanitizer(
         SanitizerOptions(newlineReplacement: '|', tabReplacement: '-'),
       );
-      final input = 'a\t\nb'.runes.toList();
+      final input = uni.codePoints('a\t\nb');
       final result = sanitizer(input);
       expect(String.fromCharCodes(result), 'a-|b');
     });
@@ -105,7 +106,7 @@ void main() {
       final sanitizer = createSanitizer(
         SanitizerOptions(newlineReplacement: ' '),
       );
-      final input = 'hello\r\nworld'.runes.toList();
+      final input = uni.codePoints('hello\r\nworld');
       final result = sanitizer(input);
       expect(String.fromCharCodes(result), 'hello  world');
     });
@@ -155,8 +156,8 @@ void main() {
     });
 
     test('returns 2 for CJK unified ideographs', () {
-      expect(runeWidth('中'.runes.first), 2);
-      expect(runeWidth('国'.runes.first), 2);
+      expect(runeWidth(uni.firstCodePoint('中')), 2);
+      expect(runeWidth(uni.firstCodePoint('国')), 2);
     });
 
     test('returns 0 for zero-width space', () {
