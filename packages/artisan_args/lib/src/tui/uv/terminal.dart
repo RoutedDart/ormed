@@ -5,6 +5,7 @@ import 'buffer.dart';
 import 'cancelreader.dart';
 import 'cell.dart';
 import 'event.dart';
+import 'environ.dart';
 import 'geometry.dart';
 import 'screen.dart';
 import 'terminal_reader.dart';
@@ -28,7 +29,7 @@ class Terminal implements Screen, FillAreaScreen, ClearableScreen, CloneableScre
     _renderer = TerminalRenderer(_output, env: _env, isTty: isTty);
     _reader = TerminalReader(
       CancelReader(_input),
-      term: _getEnv(_env, 'TERM'),
+      term: Environ(_env).getenv('TERM'),
     );
     _winch = SizeNotifier();
   }
@@ -261,13 +262,5 @@ class Terminal implements Screen, FillAreaScreen, ClearableScreen, CloneableScre
     _renderer.flush();
   }
 
-  // Helper to get environment variables.
-  static String _getEnv(List<String> env, String key) {
-    for (final e in env) {
-      if (e.startsWith('$key=')) {
-        return e.substring(key.length + 1);
-      }
-    }
-    return '';
-  }
+  // NOTE: environment variable lookups are handled by [Environ].
 }

@@ -86,6 +86,7 @@ export 'src/style/verbosity.dart' show ArtisanVerbosity;
 
 // Style - Fluent Style System
 export 'src/style/style.dart' show Style;
+export 'src/style/ranges.dart' show StyleRange, styleRanges;
 export 'src/style/color.dart'
     show
         Color,

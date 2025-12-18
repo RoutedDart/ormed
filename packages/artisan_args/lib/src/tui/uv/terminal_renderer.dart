@@ -4,6 +4,7 @@ import 'dart:io' show Platform;
 import 'ansi.dart';
 import 'buffer.dart';
 import 'cell.dart';
+import 'environ.dart';
 import 'geometry.dart';
 import 'style_ops.dart' as style_ops;
 import 'tabstop.dart';
@@ -78,8 +79,8 @@ final class TerminalRenderer {
 
   TerminalRenderer(this._writer, {List<String>? env, bool? isTty})
     : _env = env ?? const [],
-      _term = _getEnv(env ?? const [], 'TERM'),
-      _caps = _xtermCaps(_getEnv(env ?? const [], 'TERM')) {
+      _term = Environ(env ?? const []).getenv('TERM'),
+      _caps = _xtermCaps(Environ(env ?? const []).getenv('TERM')) {
     _cur = _Cursor(x: -1, y: -1);
     _saved = _cur.clone();
     _profile = _detectProfile(_env, isTty);
@@ -1184,14 +1185,7 @@ void _updateHashmap(TerminalRenderer s, Buffer newbuf) {
 
 // --- Cursor movement sequences ----------------------------------------------
 
-String _getEnv(List<String> env, String key) {
-  for (final e in env) {
-    final idx = e.indexOf('=');
-    if (idx < 0) continue;
-    if (e.substring(0, idx) == key) return e.substring(idx + 1);
-  }
-  return '';
-}
+// NOTE: environment variable lookups are handled by [Environ].
 
 int _xtermCaps(String termtype) {
   final parts = termtype.split('-');
