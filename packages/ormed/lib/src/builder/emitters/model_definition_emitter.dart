@@ -30,6 +30,22 @@ class ModelDefinitionEmitter {
     _writeFields(buffer, fields);
     _writeRelations(buffer, relations);
 
+    buffer.writeln(
+      'Map<String, Object?> _encode${className}Untracked(Object model, ValueCodecRegistry registry) {',
+    );
+    buffer.writeln('  final m = model as $className;');
+    buffer.writeln('  return <String, Object?>{');
+    for (final field in fields) {
+      if (field.isVirtual) {
+        continue;
+      }
+      buffer.writeln(
+        "    '${escape(field.columnName)}': registry.encodeField(${field.identifier}, m.${field.name}),",
+      );
+    }
+    buffer.writeln('  };');
+    buffer.writeln('}\n');
+
     final generatedClassName = context.trackedModelClassName;
     final modelVar =
         '_$generatedClassName'
@@ -107,6 +123,7 @@ class ModelDefinitionEmitter {
       "    softDeleteColumn: '${escape(metadataSoftDeleteColumn)}',",
     );
     buffer.writeln('  ),');
+    buffer.writeln('  untrackedToMap: _encode${className}Untracked,');
     if (generateCodec) {
       buffer.writeln('  codec: _${generatedClassName}Codec(),');
     } else {

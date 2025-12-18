@@ -1,8 +1,15 @@
 import 'dart:collection';
-import 'dart:mirrors';
 
 import 'package:collection/collection.dart';
 import 'package:ormed/ormed.dart';
+
+/// Encodes a user-defined (untracked) model instance to a column/value map.
+///
+/// This is generated to support encoding base model types (e.g. `User`) when
+/// the registry maps them to a generated tracked definition (e.g. `$User`) via
+/// `ModelRegistry.registerTypeAlias<User>(...)`.
+typedef UntrackedModelEncoder =
+    Map<String, Object?> Function(Object model, ValueCodecRegistry registry);
 
 /// Runtime description of a generated ORM model.
 ///
@@ -20,6 +27,7 @@ class ModelDefinition<TModel extends OrmEntity> {
     required this.tableName,
     required this.fields,
     required this.codec,
+    this.untrackedToMap,
     this.schema,
     this.relations = const [],
     this.softDeleteColumn,
@@ -43,6 +51,14 @@ class ModelDefinition<TModel extends OrmEntity> {
 
   /// Codec for encoding/decoding model instances to/from maps.
   final ModelCodec<TModel> codec;
+
+  /// Optional encoder for user-defined (untracked) model instances.
+  ///
+  /// When [TModel] is a user-defined model type (registered via
+  /// `ModelRegistry.registerTypeAlias`) but [codec] targets the generated
+  /// tracked type, this encoder provides a mirrors-free path for encoding the
+  /// user model.
+  final UntrackedModelEncoder? untrackedToMap;
 
   /// Column name used for soft deletes, if enabled.
   final String? softDeleteColumn;
@@ -85,11 +101,6 @@ class ModelDefinition<TModel extends OrmEntity> {
   /// If [model] is a tracked instance (it mixes in [ModelAttributes]), encoding
   /// uses the generated codec and [registry] for type conversions.
   ///
-  /// If [model] is not tracked, this method falls back to `dart:mirrors` to read
-  /// field values by name. This fallback is VM-only and should be avoided in
-  /// production code. Prefer working with tracked instances returned from the
-  /// ORM.
-  ///
   /// For ad-hoc queries where [model] is already a `Map<String, Object?>`, this
   /// returns the map directly.
   Map<String, Object?> toMap(
@@ -101,27 +112,23 @@ class ModelDefinition<TModel extends OrmEntity> {
       return Map<String, Object?>.from(model);
     }
 
-    // Check if already a tracked model
-    if (model is TModel && model is ModelAttributes) {
-      return codec.encode(model, registry ?? ValueCodecRegistry.instance);
-    }
-
-    // Not a tracked model - read fields using reflection
-    final Map<String, Object?> data = {};
     final reg = registry ?? ValueCodecRegistry.instance;
-    final instanceMirror = reflect(model);
 
-    for (final field in fields) {
-      try {
-        final fieldSymbol = Symbol(field.name);
-        final value = instanceMirror.getField(fieldSymbol).reflectee;
-        data[field.columnName] = reg.encodeField(field, value);
-      } catch (e) {
-        // Field not accessible or doesn't exist, skip it
-      }
+    // Tracked model: let the generated codec handle encoding (includes virtual
+    // fields like timestamps and soft delete columns).
+    if (model is ModelAttributes) {
+      return codec.encode(model as dynamic, reg);
     }
 
-    return data;
+    // Untracked model: require a generated encoder (no mirrors).
+    final encoder = untrackedToMap;
+    if (encoder == null) {
+      throw StateError(
+        'Cannot encode an untracked $modelName instance without a generated encoder. '
+        'Re-run build_runner for $modelName, or pass a tracked instance / InsertDto / UpdateDto / Map instead.',
+      );
+    }
+    return encoder(model, reg);
   }
 
   /// Decodes a map to a model instance using the model's codec.
@@ -149,6 +156,7 @@ class ModelDefinition<TModel extends OrmEntity> {
     List<FieldDefinition>? fields,
     List<RelationDefinition>? relations,
     ModelCodec<TModel>? codec,
+    UntrackedModelEncoder? untrackedToMap,
     String? softDeleteColumn,
     ModelAttributesMetadata? metadata,
   }) => ModelDefinition<TModel>(
@@ -158,6 +166,7 @@ class ModelDefinition<TModel extends OrmEntity> {
     fields: fields ?? this.fields,
     relations: relations ?? this.relations,
     codec: codec ?? this.codec,
+    untrackedToMap: untrackedToMap ?? this.untrackedToMap,
     softDeleteColumn: softDeleteColumn ?? this.softDeleteColumn,
     metadata: metadata ?? this.metadata,
   );
