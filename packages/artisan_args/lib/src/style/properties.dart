@@ -3,6 +3,20 @@
 /// Provides [Padding], [Margin], and [Align] types for controlling
 /// spacing and alignment in styled content.
 
+/// Underline style variants, inspired by lipgloss v2.
+///
+/// Notes:
+/// - Not all terminals support all underline styles.
+/// - Unsupported styles may render as a standard underline or be ignored.
+enum UnderlineStyle {
+  none,
+  single,
+  double,
+  curly,
+  dotted,
+  dashed,
+}
+
 /// Represents padding (internal spacing) for styled content.
 ///
 /// Padding adds space between the content and its border.

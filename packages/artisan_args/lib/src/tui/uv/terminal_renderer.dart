@@ -287,6 +287,14 @@ final class TerminalRenderer {
     }
   }
 
+  void setHasTab(bool v) {
+    if (v) {
+      _caps |= _Cap.ht;
+    } else {
+      _caps &= ~_Cap.ht;
+    }
+  }
+
   void setTabStops(int width) {
     if (width < 0 || _term.startsWith('linux')) {
       _caps &= ~_Cap.ht;
@@ -413,10 +421,14 @@ final class TerminalRenderer {
       _curbuf!.resize(newWidth, newHeight);
       final start = curHeight <= 0 ? 0 : curHeight - 1;
       for (var i = start; i < newHeight; i++) {
-        final src = newbuf.line(i)!.cells;
-        final dst = _curbuf!.line(i)!.cells;
-        for (var x = 0; x < dst.length && x < src.length; x++) {
-          dst[x] = src[x].clone();
+        final srcLine = newbuf.line(i);
+        final dstLine = _curbuf!.line(i);
+        if (srcLine != null && dstLine != null) {
+          final src = srcLine.cells;
+          final dst = dstLine.cells;
+          for (var x = 0; x < dst.length && x < src.length; x++) {
+            dst[x] = src[x].clone();
+          }
         }
       }
     }
@@ -713,7 +725,8 @@ final class TerminalRenderer {
     if (_curbuf == null) return;
     var firstCell = 0;
     final Line? oldLine = y < _curbuf!.height() ? _curbuf!.line(y) : null;
-    final newLine = newbuf.line(y)!;
+    final newLine = newbuf.line(y);
+    if (newLine == null) return;
 
     var blank = newLine.at(0) ?? Cell.emptyCell();
     if (_canClearWith(blank)) {
@@ -945,13 +958,20 @@ final class TerminalRenderer {
 
     final blank = _clearBlank();
     final h = newbuf.height();
+    final curHeight = _curbuf?.height() ?? 0;
+
     for (var i = 0; i < h - 1; i++) {
-      final oldLine = _curbuf!.line(i)!;
-      final newLine = newbuf.line(i)!;
-      if (_lineIsBlank(newLine, blank) && !_lineIsBlank(oldLine, blank)) {
+      final oldLine = i < curHeight ? _curbuf!.line(i) : null;
+      final newLine = newbuf.line(i);
+      if (oldLine != null &&
+          newLine != null &&
+          _lineIsBlank(newLine, blank) &&
+          !_lineIsBlank(oldLine, blank)) {
         var ok = true;
         for (var j = i; j < h - 1; j++) {
-          if (!_linesEqual(_curbuf!.line(j)!, newbuf.line(j + 1)!)) {
+          final cl = j < curHeight ? _curbuf!.line(j) : null;
+          final nl = newbuf.line(j + 1);
+          if (cl == null || nl == null || !_linesEqual(cl, nl)) {
             ok = false;
             break;
           }
@@ -1096,10 +1116,13 @@ int _hashLine(Line l) {
 
 void _updateHashmap(TerminalRenderer s, Buffer newbuf) {
   final height = newbuf.height();
+  final curHeight = s._curbuf?.height() ?? 0;
+
   if (s._oldhash.length == height && s._newhash.length == height) {
     for (var i = 0; i < height; i++) {
       if (newbuf.touched.isEmpty || newbuf.touched[i] != null) {
-        s._oldhash[i] = _hashLine(s._curbuf!.line(i)!);
+        final oldLine = i < curHeight ? s._curbuf!.line(i) : null;
+        s._oldhash[i] = oldLine != null ? _hashLine(oldLine) : 0;
         s._newhash[i] = _hashLine(newbuf.line(i)!);
       }
     }
@@ -1107,7 +1130,8 @@ void _updateHashmap(TerminalRenderer s, Buffer newbuf) {
     s._oldhash = List<int>.filled(height, 0);
     s._newhash = List<int>.filled(height, 0);
     for (var i = 0; i < height; i++) {
-      s._oldhash[i] = _hashLine(s._curbuf!.line(i)!);
+      final oldLine = i < curHeight ? s._curbuf!.line(i) : null;
+      s._oldhash[i] = oldLine != null ? _hashLine(oldLine) : 0;
       s._newhash[i] = _hashLine(newbuf.line(i)!);
     }
   }

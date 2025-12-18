@@ -1,3 +1,4 @@
+import 'dart:async' show unawaited;
 import 'dart:io' as io;
 
 import 'terminal.dart';
@@ -327,19 +328,52 @@ class UltravioletRenderer implements Renderer {
   UltravioletRenderer({
     required this.terminal,
     RendererOptions options = const RendererOptions(),
+    this.movementCapsOverride,
   }) : _options = options;
 
   final TuiTerminal terminal;
   final RendererOptions _options;
+  final ({bool useTabs, bool useBackspace})? movementCapsOverride;
 
   bool _initialized = false;
   bool _dirty = false;
   String _pendingView = '';
+  final List<String> _printLines = <String>[];
+  static const int _maxPrintLines = 2000;
 
   uv_buffer.ScreenBuffer? _screen;
   uv_term.TerminalRenderer? _renderer;
 
   DateTime? _lastRenderTime;
+
+  void printLine(String text) {
+    _initialize();
+    if (text.isEmpty) return;
+
+    final lines = text.replaceAll('\r\n', '\n').split('\n');
+    for (final line in lines) {
+      if (line.isEmpty) continue;
+      _printLines.add(line);
+      if (_printLines.length > _maxPrintLines) {
+        _printLines.removeAt(0);
+      }
+    }
+  }
+
+  String _composeView(String view) {
+    if (_printLines.isEmpty) return view;
+    if (view.isEmpty) return '${_printLines.join('\n')}\n';
+    return '${_printLines.join('\n')}\n$view';
+  }
+
+  void renderImmediate(String view) {
+    _initialize();
+    _pendingView = _composeView(view);
+    _dirty = true;
+    _lastRenderTime = null;
+    _flushInternal();
+    unawaited(terminal.flush());
+  }
 
   void _initialize() {
     if (_initialized) return;
@@ -376,7 +410,17 @@ class UltravioletRenderer implements Renderer {
     _renderer = uv_term.TerminalRenderer(sink, env: env);
     _renderer!.setFullscreen(_options.altScreen);
     _renderer!.setRelativeCursor(!_options.altScreen);
+    _renderer!.setMapNewline(!io.Platform.isWindows && terminal.isTerminal);
     _renderer!.setScrollOptim(!io.Platform.isWindows);
+
+    // Apply terminal movement optimizations. Allow a compatibility override so
+    // callers can provide capability bits without probing the terminal.
+    final caps = movementCapsOverride ?? terminal.optimizeMovements();
+    _renderer!.setHasTab(caps.useTabs);
+    _renderer!.setBackspace(caps.useBackspace);
+    if (caps.useTabs) {
+      _renderer!.setTabStops(w);
+    }
 
     if (_options.altScreen) {
       _renderer!.saveCursor();
@@ -405,14 +449,19 @@ class UltravioletRenderer implements Renderer {
       if (elapsed < _options.frameTime) return;
     }
 
-    _pendingView = view;
+    _pendingView = _composeView(view);
     _dirty = true;
     _lastRenderTime = DateTime.now();
 
     // Unlike the other renderers, the UV renderer buffers terminal output in
     // its own writer and needs a flush step to emit bytes. Do it immediately
     // so Program doesn't need to coordinate flush ordering with control writes.
+    //
+    // Also schedule a terminal flush: Program doesn't call Renderer.flush()
+    // today, and some terminals won't paint until the underlying sink is
+    // flushed.
     _flushInternal();
+    unawaited(terminal.flush());
   }
 
   @override
@@ -421,6 +470,7 @@ class UltravioletRenderer implements Renderer {
     _renderer?.erase();
     _dirty = true;
     _pendingView = '';
+    unawaited(terminal.flush());
   }
 
   @override

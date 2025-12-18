@@ -1,4 +1,8 @@
 /// Package manager demo ported from Bubble Tea.
+///
+/// Options:
+///   --uv-renderer    Use the UV cell-buffer diff renderer
+///   --uv-input       Use the UV input decoder
 library;
 
 import 'dart:math';
@@ -214,9 +218,17 @@ const _packages = [
   'libyuzu',
 ];
 
-Future<void> main() async {
+Future<void> main(List<String> args) async {
+  final useUvRenderer = args.contains('--uv-renderer');
+  final useUvInput = args.contains('--uv-input');
+
   await tui.runProgram(
     PackageManagerModel.initial(),
-    options: const tui.ProgramOptions(altScreen: false, hideCursor: false),
+    options: tui.ProgramOptions(
+      altScreen: false,
+      hideCursor: false,
+      useUltravioletRenderer: useUvRenderer,
+      useUltravioletInputDecoder: useUvInput,
+    ),
   );
 }

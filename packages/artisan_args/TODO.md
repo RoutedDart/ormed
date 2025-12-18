@@ -105,13 +105,12 @@
 - [x] `AcanthisString.toValidator()` - convert schema to validator
 
 ### Input/Prompts (newly added) ✅
-- [x] `Anticipate` - autocomplete/typeahead input with suggestions
-- [x] `Anticipate.runDynamic()` - async suggestions based on input
-- [x] `Textarea` / `editText()` - multi-line input via external editor
-- [x] `Wizard` - multi-step wizard flow with conditional steps
-- [x] `WizardStep.ask/confirm/choice/multiChoice/secret` - basic step types
-- [x] `WizardStep.select()` - interactive single-select with arrow keys
-- [x] `WizardStep.multiSelect()` - interactive multi-select with arrow keys + space
+- [x] `AnticipateModel` - autocomplete/typeahead bubble with suggestions
+- [x] `runAnticipatePrompt(...)` - prompt helper for autocomplete
+- [x] `TextAreaModel` - multi-line text bubble (external editor style)
+- [x] `runTextAreaPrompt(...)` - prompt helper for multi-line input
+- [x] `WizardModel` - multi-step wizard bubble flow with conditional steps
+- [x] `WizardStep.textInput/confirm/select/multiSelect/password` - common step types
 - [x] `WizardStep.conditional()` - conditional step based on previous answers
 - [x] `WizardStep.group()` - group related steps together
 
@@ -122,7 +121,7 @@
 
 ### Component System ✅ (Flutter-like API)
 - [x] `CliComponent` - base class for all components
-- [x] `InteractiveComponent<T>` - base for interactive components
+- [x] Interactive prompts are implemented as bubbles under `lib/src/tui/bubbles/`
 - [x] `ComponentContext` - context passed to components
 - [x] `RenderResult` - output from build()
 - [x] **Static Components:**
@@ -134,18 +133,10 @@
   - [x] `Box` - boxed message with border styles
   - [x] `ProgressBar` - progress indicator
   - [x] `SpinnerFrame` - single spinner frame
-- [x] **Interactive Components:**
-  - [x] `TextInput` - text input with validation
-  - [x] `Confirm` - yes/no confirmation
-  - [x] `SecretInputComponent` - password input
-  - [x] `Select<T>` - single select with arrow keys
-  - [x] `MultiSelect<T>` - multi select with arrow keys
-  - [x] `SpinnerComponent` - async spinner
-  - [x] `SearchComponent<T>` - fuzzy search selection
-  - [x] `AnticipateComponent` - autocomplete input
-  - [x] `PasswordComponent` - password input (no echo, confirmation)
-  - [x] `PauseComponent` - press any key to continue
-  - [x] `CountdownComponent` - countdown timer
+- [x] **Interactive Bubbles (Bubble Tea-style):**
+  - [x] `TextInputModel`, `ConfirmModel`, `PasswordModel`, `PasswordConfirmModel`
+  - [x] `SelectModel<T>`, `MultiSelectModel<T>`, `SearchModel<T>`, `AnticipateModel`
+  - [x] `WizardModel`, `PauseModel`, `CountdownModel`, `SpinnerModel`
 - [x] **Composition:**
   - [x] `CompositeComponent` - combine components
   - [x] `ColumnComponent` - vertical layout
@@ -166,8 +157,6 @@
   - [x] `SimpleExceptionComponent` - one-line exception
   - [x] `LinkComponent` - clickable terminal link (OSC 8)
   - [x] `LinkGroupComponent` - grouped links with footnotes
-  - [x] `SpinnerComponent` - animated spinner (interactive)
-  - [x] `StatefulSpinner` - manual control spinner
   - [x] `ProgressBarComponent` - static progress bar
   - [x] `StatefulProgressBar` - manual control progress bar
 
@@ -175,22 +164,14 @@
 
 ```
 lib/src/
-├── components/          # All components (29 files)
-│   ├── base.dart        # CliComponent, InteractiveComponent, ComponentContext
+├── components/          # Display-only components
+│   ├── base.dart        # CliComponent, ComponentContext
 │   ├── layout.dart      # CompositeComponent, ColumnComponent, RowComponent
 │   ├── text.dart        # Text, StyledText, Rule
 │   ├── list.dart        # BulletList, NumberedList
 │   ├── box.dart         # KeyValue, Box
 │   ├── progress.dart    # ProgressBar (static), SpinnerFrame
 │   ├── progress_bar.dart # ProgressBarComponent, StatefulProgressBar
-│   ├── spinner.dart     # SpinnerComponent, StatefulSpinner, SpinnerFrames
-│   ├── input.dart       # TextInput, Confirm, SecretInputComponent
-│   ├── select.dart      # Select, MultiSelect
-│   ├── search.dart      # SearchComponent, PauseComponent, CountdownComponent
-│   ├── anticipate.dart  # AnticipateComponent
-│   ├── password.dart    # PasswordComponent
-│   ├── textarea.dart    # TextareaComponent (external editor)
-│   ├── wizard.dart      # WizardComponent, WizardStep
 │   ├── panel.dart       # PanelComponent
 │   ├── tree.dart        # TreeComponent
 │   ├── columns.dart     # ColumnsComponent
@@ -213,6 +194,12 @@ lib/src/
 │   ├── artisan_style.dart # ArtisanStyle
 │   ├── verbosity.dart   # ArtisanVerbosity
 │   └── chalk.dart       # ArtisanChalk, ColorPresets
+│
+├── tui/                 # Bubble Tea-style runtime + interactive bubbles
+│   ├── program.dart
+│   └── bubbles/
+│       ├── bubbles.dart # Convenience exports
+│       └── ...          # TextInputModel, SelectModel, WizardModel, etc.
 │
 └── runner/              # Command runner
     ├── artisan_command.dart

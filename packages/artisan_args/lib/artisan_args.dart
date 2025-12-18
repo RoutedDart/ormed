@@ -103,6 +103,7 @@ export 'src/style/properties.dart'
         Padding,
         Margin,
         Align,
+        UnderlineStyle,
         HorizontalAlign,
         VerticalAlign,
         HorizontalAlignPosition,

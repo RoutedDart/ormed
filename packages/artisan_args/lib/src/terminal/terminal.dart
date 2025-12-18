@@ -46,4 +46,10 @@ export 'keys.dart' show Key, KeyType, Keys;
 
 // Terminal interface and implementations
 export 'terminal_base.dart'
-    show Terminal, StdioTerminal, TtyTerminal, StringTerminal, RawModeGuard;
+    show
+        Terminal,
+        SplitTerminal,
+        StdioTerminal,
+        TtyTerminal,
+        StringTerminal,
+        RawModeGuard;

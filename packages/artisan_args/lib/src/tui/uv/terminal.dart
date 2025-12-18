@@ -24,7 +24,7 @@ class Terminal implements Screen, FillAreaScreen, ClearableScreen, CloneableScre
        _output = output ?? stdout,
        _env = env ?? Platform.environment.entries.map((e) => '${e.key}=${e.value}').toList(),
        _buf = Buffer.create(0, 0) {
-    final isTty = _output is Stdout && (_output as Stdout).hasTerminal;
+    final isTty = _output is Stdout && (_output).hasTerminal;
     _renderer = TerminalRenderer(_output, env: _env, isTty: isTty);
     _reader = TerminalReader(
       CancelReader(_input),

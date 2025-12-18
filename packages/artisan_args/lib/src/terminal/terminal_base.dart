@@ -219,6 +219,11 @@ abstract class Terminal {
   /// Rings the terminal bell.
   void bell();
 
+  /// Detects terminal capabilities for movement optimizations (e.g. hard tabs).
+  ///
+  /// Returns a record of (useTabs, useBackspace).
+  ({bool useTabs, bool useBackspace}) optimizeMovements();
+
   // ─────────────────────────────────────────────────────────────────────────────
   // Input Stream (for TUI mode)
   // ─────────────────────────────────────────────────────────────────────────────
@@ -252,6 +257,244 @@ abstract class Terminal {
   /// - Mouse tracking
   /// - Bracketed paste
   void dispose();
+}
+
+/// A terminal that splits "control/input" from "display/output".
+///
+/// This is primarily used to support the Ultraviolet-style `(in/out)` vs
+/// `(inTty/outTty)` split:
+/// - **control**: raw mode, input stream, and input-reporting toggles (mouse,
+///   bracketed paste, focus) + size probing
+/// - **output**: screen drawing operations (cursor movement, clears, alt-screen,
+///   etc.) and general writes
+///
+/// This enables workflows where stdin is redirected but `/dev/tty` is still
+/// available for interactive input, while keeping output on the configured
+/// output stream.
+final class SplitTerminal implements Terminal {
+  SplitTerminal({required Terminal control, required Terminal output})
+    : _control = control,
+      _output = output;
+
+  final Terminal _control;
+  final Terminal _output;
+
+  Terminal get control => _control;
+  Terminal get output => _output;
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Terminal Information
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  @override
+  int get width => _control.width;
+
+  @override
+  int get height => _control.height;
+
+  @override
+  ({int width, int height}) get size => _control.size;
+
+  @override
+  bool get supportsAnsi => _output.supportsAnsi;
+
+  @override
+  bool get isTerminal => _output.isTerminal;
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Output Operations
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  @override
+  void write(String text) => _output.write(text);
+
+  @override
+  void writeln([String text = '']) => _output.writeln(text);
+
+  @override
+  Future<void> flush() => _output.flush();
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Cursor Visibility
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  @override
+  void hideCursor() => _output.hideCursor();
+
+  @override
+  void showCursor() => _output.showCursor();
+
+  @override
+  void saveCursor() => _output.saveCursor();
+
+  @override
+  void restoreCursor() => _output.restoreCursor();
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Cursor Movement
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  @override
+  void moveCursor(int row, int col) => _output.moveCursor(row, col);
+
+  @override
+  void cursorHome() => _output.cursorHome();
+
+  @override
+  void cursorUp([int lines = 1]) => _output.cursorUp(lines);
+
+  @override
+  void cursorDown([int lines = 1]) => _output.cursorDown(lines);
+
+  @override
+  void cursorRight([int cols = 1]) => _output.cursorRight(cols);
+
+  @override
+  void cursorLeft([int cols = 1]) => _output.cursorLeft(cols);
+
+  @override
+  void cursorToColumn(int col) => _output.cursorToColumn(col);
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Screen Control
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  @override
+  void clearScreen() => _output.clearScreen();
+
+  @override
+  void clearToEnd() => _output.clearToEnd();
+
+  @override
+  void clearToStart() => _output.clearToStart();
+
+  @override
+  void clearLine() => _output.clearLine();
+
+  @override
+  void clearLineToEnd() => _output.clearLineToEnd();
+
+  @override
+  void clearLineToStart() => _output.clearLineToStart();
+
+  @override
+  void clearPreviousLines(int lines) => _output.clearPreviousLines(lines);
+
+  @override
+  void scrollUp([int lines = 1]) => _output.scrollUp(lines);
+
+  @override
+  void scrollDown([int lines = 1]) => _output.scrollDown(lines);
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Alternate Screen Buffer
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  @override
+  void enterAltScreen() => _output.enterAltScreen();
+
+  @override
+  void exitAltScreen() => _output.exitAltScreen();
+
+  @override
+  bool get isAltScreen => _output.isAltScreen;
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Input Mode Control
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  @override
+  RawModeGuard enableRawMode() => _control.enableRawMode();
+
+  @override
+  void disableRawMode() => _control.disableRawMode();
+
+  @override
+  bool get isRawMode => _control.isRawMode;
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Mouse Tracking
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  @override
+  void enableMouse() => _control.enableMouse();
+
+  @override
+  void enableMouseCellMotion() => _control.enableMouseCellMotion();
+
+  @override
+  void enableMouseAllMotion() => _control.enableMouseAllMotion();
+
+  @override
+  void disableMouse() => _control.disableMouse();
+
+  @override
+  bool get isMouseEnabled => _control.isMouseEnabled;
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Bracketed Paste Mode
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  @override
+  void enableBracketedPaste() => _control.enableBracketedPaste();
+
+  @override
+  void disableBracketedPaste() => _control.disableBracketedPaste();
+
+  @override
+  bool get isBracketedPasteEnabled => _control.isBracketedPasteEnabled;
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Focus Reporting
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  @override
+  void enableFocusReporting() => _control.enableFocusReporting();
+
+  @override
+  void disableFocusReporting() => _control.disableFocusReporting();
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Window/Terminal Control
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  @override
+  void setTitle(String title) => _control.setTitle(title);
+
+  @override
+  void bell() => _control.bell();
+
+  @override
+  ({bool useTabs, bool useBackspace}) optimizeMovements() =>
+      _control.optimizeMovements();
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Input Stream
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  @override
+  Stream<List<int>> get input => _control.input;
+
+  @override
+  int readByte() => _control.readByte();
+
+  @override
+  String? readLine() => _control.readLine();
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Lifecycle
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  @override
+  void dispose() {
+    // Best-effort: restore output and control independently.
+    try {
+      _output.dispose();
+    } catch (_) {}
+    try {
+      _control.dispose();
+    } catch (_) {}
+  }
 }
 
 /// Guard object returned by [Terminal.enableRawMode].
@@ -402,7 +645,8 @@ class StdioTerminal implements Terminal {
   }
 
   static bool _isStdoutBoundToStream(StateError e) =>
-      e.message == 'Bad state: StreamSink is bound to a stream';
+      (e.message?.toString().contains('StreamSink is bound to a stream') ??
+      false);
 
   Future<void> _flushStdoutAll() async {
     // Keep flushing until no more writes arrived during the previous flush.
@@ -726,6 +970,12 @@ class StdioTerminal implements Terminal {
   @override
   void bell() => write(Ansi.bell);
 
+  @override
+  ({bool useTabs, bool useBackspace}) optimizeMovements() {
+    // StdioTerminal defaults to safe values.
+    return (useTabs: false, useBackspace: true);
+  }
+
   // ─────────────────────────────────────────────────────────────────────────────
   // Input Stream
   // ─────────────────────────────────────────────────────────────────────────────
@@ -789,8 +1039,8 @@ class StdioTerminal implements Terminal {
 /// - Uses `stty` to toggle raw mode and query size.
 /// - If any operation fails, it falls back to safe defaults (80x24, no-op raw).
 final class TtyTerminal implements Terminal {
-  TtyTerminal._(this._ttyPath, this._tty)
-    : _out = _tty.openWrite(),
+  TtyTerminal._(this._ttyPath, this._tty, {io.IOSink? output})
+    : _out = output ?? _tty.openWrite(),
       _supportsAnsi = _envSupportsAnsi();
 
   static const String _defaultTtyPath = '/dev/tty';
@@ -824,15 +1074,24 @@ final class TtyTerminal implements Terminal {
 
   /// Attempts to open `/dev/tty` and returns a [TtyTerminal], or `null` if not
   /// available on this platform.
-  static TtyTerminal? tryOpen({String path = _defaultTtyPath}) {
+  static TtyTerminal? tryOpen({
+    String path = _defaultTtyPath,
+    io.IOSink? output,
+  }) {
     try {
       if (io.Platform.isWindows) return null;
       final tty = io.File(path);
       if (!tty.existsSync()) return null;
-      // Verify we can open for write (throws if not).
-      final sink = tty.openWrite();
-      sink.close();
-      return TtyTerminal._(path, tty);
+
+      // If output is provided, we don't strictly need to be able to open tty
+      // for write, but we usually want to verify it's a valid TTY we can
+      // control. stty will fail if it's not a TTY.
+      if (output == null) {
+        final sink = tty.openWrite();
+        sink.close();
+      }
+
+      return TtyTerminal._(path, tty, output: output);
     } catch (_) {
       return null;
     }
@@ -911,17 +1170,44 @@ final class TtyTerminal implements Terminal {
   }
 
   static bool _isSinkBoundToStream(StateError e) =>
-      e.message == 'Bad state: StreamSink is bound to a stream';
+      (e.message?.toString().contains('StreamSink is bound to a stream') ??
+          false);
 
   Future<void> _flushAll() async {
+    // Keep flushing until no more writes arrived during the previous flush.
     while (true) {
       if (_pendingLen != 0) {
         final pending = _pending.toString();
         _pending.clear();
         _pendingLen = 0;
-        _out.write(pending);
+
+        while (true) {
+          try {
+            _out.write(pending);
+            break;
+          } on StateError catch (e) {
+            if (_isSinkBoundToStream(e)) {
+              await Future<void>.delayed(Duration.zero);
+              continue;
+            }
+            rethrow;
+          }
+        }
       }
-      await _out.flush();
+
+      while (true) {
+        try {
+          await _out.flush();
+          break;
+        } on StateError catch (e) {
+          if (_isSinkBoundToStream(e)) {
+            await Future<void>.delayed(Duration.zero);
+            continue;
+          }
+          rethrow;
+        }
+      }
+
       if (_pendingLen == 0) return;
     }
   }
@@ -1197,6 +1483,23 @@ final class TtyTerminal implements Terminal {
 
   @override
   void bell() => write(Ansi.bell);
+
+  @override
+  ({bool useTabs, bool useBackspace}) optimizeMovements() {
+    final out = _runStty(['-a']);
+    if (out == null || out.exitCode != 0) {
+      return (useTabs: false, useBackspace: true);
+    }
+
+    final s = (out.stdout ?? '').toString();
+    // tab0 means no tab expansion (hard tabs supported).
+    // tabs is often an alias for tab0 on some systems.
+    final useTabs = s.contains('tab0') || s.contains(' tabs');
+    // bs0 means no backspace expansion.
+    final useBackspace = s.contains('bs0') || !s.contains('-echoe');
+
+    return (useTabs: useTabs, useBackspace: useBackspace);
+  }
 
   // ─────────────────────────────────────────────────────────────────────────────
   // Input Stream
@@ -1578,6 +1881,11 @@ class StringTerminal implements Terminal {
 
   @override
   void bell() => operations.add('bell');
+
+  @override
+  ({bool useTabs, bool useBackspace}) optimizeMovements() {
+    return (useTabs: false, useBackspace: true);
+  }
 
   @override
   Stream<List<int>> get input => _inputController.stream;

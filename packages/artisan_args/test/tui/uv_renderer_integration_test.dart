@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:artisan_args/src/tui/program.dart';
-import 'package:artisan_args/src/tui/renderer.dart';
 import 'package:artisan_args/src/tui/terminal.dart';
 import 'package:artisan_args/src/tui/model.dart';
 import 'package:artisan_args/src/tui/msg.dart';
@@ -60,6 +59,7 @@ void main() {
     await Future.delayed(const Duration(milliseconds: 200));
 
     expect(terminal.output, contains('Hello UV'));
+    expect(terminal.operations, contains('flush'));
 
     terminal.simulateTyping('q');
     await runFuture;
@@ -80,6 +80,7 @@ void main() {
     await Future.delayed(const Duration(milliseconds: 200));
 
     expect(terminal.output, contains('Hello UV'));
+    expect(terminal.operations, contains('flush'));
 
     terminal.simulateTyping('q');
     await runFuture;
@@ -100,6 +101,7 @@ void main() {
     await Future.delayed(const Duration(milliseconds: 200));
 
     expect(terminal.output, contains('Hello UV'));
+    expect(terminal.operations, contains('flush'));
     terminal.clear();
 
     // Simulate resize
@@ -111,6 +113,7 @@ void main() {
 
     // Should have re-rendered because _ensureSize detected size change
     expect(terminal.output, contains('Hello UV'));
+    expect(terminal.operations, contains('flush'));
 
     terminal.simulateTyping('q');
     await runFuture;

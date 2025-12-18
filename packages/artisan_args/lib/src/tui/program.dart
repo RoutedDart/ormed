@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:io' as io;
 
+import 'package:artisan_args/terminal.dart';
+
 import 'cmd.dart';
 import 'key.dart' show Key, KeyParser, KeyResult, KeyType, MsgResult;
 import 'model.dart';
@@ -91,6 +93,7 @@ class ProgramOptions {
     this.cancelSignal,
     this.environment,
     this.inputTTY = false,
+    this.movementCapsOverride,
   }) : assert(fps >= 1 && fps <= 120, 'fps must be between 1 and 120');
 
   /// Whether to use the alternate screen buffer (fullscreen mode).
@@ -232,6 +235,15 @@ class ProgramOptions {
   /// `stty` to toggle raw mode for that device.
   final bool inputTTY;
 
+  /// Optional override for terminal movement optimization capabilities.
+  ///
+  /// This provides a compatibility hook for environments where probing the
+  /// terminal (e.g. via `stty`) is undesirable or unreliable.
+  ///
+  /// When set, the UV renderer uses these values instead of calling
+  /// `terminal.optimizeMovements()`.
+  final ({bool useTabs, bool useBackspace})? movementCapsOverride;
+
   /// Creates a copy with the given fields replaced.
   ProgramOptions copyWith({
     bool? altScreen,
@@ -256,6 +268,7 @@ class ProgramOptions {
     Future<void>? cancelSignal,
     List<String>? environment,
     bool? inputTTY,
+    ({bool useTabs, bool useBackspace})? movementCapsOverride,
   }) {
     return ProgramOptions(
       altScreen: altScreen ?? this.altScreen,
@@ -282,6 +295,7 @@ class ProgramOptions {
       cancelSignal: cancelSignal ?? this.cancelSignal,
       environment: environment ?? this.environment,
       inputTTY: inputTTY ?? this.inputTTY,
+      movementCapsOverride: movementCapsOverride ?? this.movementCapsOverride,
     );
   }
 
@@ -662,9 +676,18 @@ class Program {
 
   /// Sets up the terminal and renderer.
   Future<void> _setup() async {
-    // Create terminal if not provided
+    // Create terminal if not provided.
+    //
+    // If inputTTY is requested, we try to split control/input from output:
+    // - control: `/dev/tty` (raw mode, size probing, input reporting toggles)
+    // - output: stdout (may be redirected)
     if (_terminal == null && _options.inputTTY) {
-      _terminal = TtyTerminal.tryOpen() ?? StdioTerminal();
+      final control = TtyTerminal.tryOpen();
+      if (control != null) {
+        _terminal = SplitTerminal(control: control, output: StdioTerminal());
+      } else {
+        _terminal = StdioTerminal();
+      }
     } else {
       _terminal ??= StdioTerminal();
     }
@@ -772,7 +795,11 @@ class Program {
     // Use custom input stream if provided, otherwise use terminal input
     final inputStream =
         _options.input ??
-        ((_options.inputTTY && _terminal is! TtyTerminal) ? _openTtyInput() : null) ??
+        ((_options.inputTTY &&
+                    _terminal is! TtyTerminal &&
+                    _terminal is! SplitTerminal)
+                ? _openTtyInput()
+                : null) ??
         _terminal!.input;
     _inputSubscription = inputStream.listen(
       _handleInput,
@@ -977,9 +1004,15 @@ class Program {
       case PrintLineMsg(:final text):
         // Print above the program (only works in inline mode)
         if (!_options.altScreen) {
-          _renderer?.clear();
-          _terminal?.writeln(text);
-          _render();
+          final r = _renderer;
+          if (r is UltravioletRenderer) {
+            r.printLine(text);
+            r.renderImmediate(_model?.view() ?? '');
+          } else {
+            _renderer?.clear();
+            _terminal?.writeln(text);
+            _render();
+          }
         }
         return true;
 

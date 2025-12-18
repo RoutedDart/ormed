@@ -27,6 +27,7 @@
 /// ```
 library;
 
+import '../terminal/ansi.dart';
 import '../style/properties.dart';
 import '../style/color.dart';
 import '../style/style.dart';
@@ -103,8 +104,6 @@ class Layout {
   // Constants
   // ─────────────────────────────────────────────────────────────────────────────
 
-  static final _ansiRegex = RegExp(r'\x1B\[[0-9;]*m');
-
   // ─────────────────────────────────────────────────────────────────────────────
   // String Utilities
   // ─────────────────────────────────────────────────────────────────────────────
@@ -113,13 +112,13 @@ class Layout {
   ///
   /// Accounts for double-width characters (CJK, emoji, etc.).
   static int visibleLength(String text) {
-    final stripped = text.replaceAll(_ansiRegex, '');
+    final stripped = Ansi.stripAnsi(text);
     return _displayWidth(stripped);
   }
 
   /// Strips all ANSI escape codes from a string.
   static String stripAnsi(String text) {
-    return text.replaceAll(_ansiRegex, '');
+    return Ansi.stripAnsi(text);
   }
 
   /// Calculates the display width of a string, accounting for double-width characters.

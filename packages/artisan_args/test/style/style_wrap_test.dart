@@ -59,8 +59,10 @@ void main() {
       final lines = rendered.split('\n');
 
       expect(lines.length, greaterThanOrEqualTo(2));
-      // The legacy wrapper is not OSC-aware; it may corrupt OSC8 sequences.
-      expect(rendered, isNot(contains(linkStart)));
+      // Legacy wrapping is not OSC-aware: it won't re-open hyperlink state on
+      // wrapped lines. The hyperlink opener remains in the first line only.
+      expect(lines[0], contains(linkStart));
+      expect(lines[1], isNot(contains(linkStart)));
     });
   });
 }

@@ -134,7 +134,14 @@ void main() async {
     ],
   );
 
-  await runProgram(model, options: const ProgramOptions(altScreen: true));
+  await runProgram(
+    model,
+    options: const ProgramOptions(
+      altScreen: true,
+      useUltravioletRenderer: true,
+      useUltravioletInputDecoder: true,
+    ),
+  );
 
   // Show result after program exits
   if (model.selected != null) {

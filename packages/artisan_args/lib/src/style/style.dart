@@ -25,6 +25,7 @@ import 'package:html/parser.dart' as html;
 import 'border.dart';
 import 'color.dart';
 import 'properties.dart';
+import '../terminal/ansi.dart';
 import '../unicode/grapheme.dart' as uni;
 import '../tui/uv/wrap.dart' as uv_wrap;
 
@@ -78,6 +79,8 @@ class _PropBits {
   static const int borderBottom = 1 << 7;
   static const int borderLeft = 1 << 8;
   static const int wrapAnsi = 1 << 9;
+  static const int underlineStyle = 1 << 10;
+  static const int hyperlink = 1 << 11;
 }
 
 /// Fluent, chainable style builder for terminal output.
@@ -141,6 +144,7 @@ class Style {
   bool _bold = false;
   bool _italic = false;
   bool _underline = false;
+  UnderlineStyle _underlineStyle = UnderlineStyle.single;
   bool _strikethrough = false;
   bool _dim = false;
   bool _inverse = false;
@@ -239,6 +243,9 @@ class Style {
   /// Whether to strikethrough spaces.
   bool _strikethroughSpaces = false;
 
+  String? _hyperlinkUrl;
+  String _hyperlinkParams = '';
+
   /// Background color for margin areas.
   Color? _marginBackground;
 
@@ -284,6 +291,41 @@ class Style {
   Style underline([bool value = true]) {
     _underline = value;
     _setFlag(_PropBits.underline);
+    if (value && _underlineStyle == UnderlineStyle.none) {
+      _underlineStyle = UnderlineStyle.single;
+    }
+    return this;
+  }
+
+  /// Sets the underline style variant.
+  ///
+  /// This enables underline when the style is not [UnderlineStyle.none].
+  Style underlineStyle(UnderlineStyle style) {
+    _underlineStyle = style;
+    _setFlag2(_PropBits.underlineStyle);
+
+    _underline = style != UnderlineStyle.none;
+    _setFlag(_PropBits.underline);
+
+    return this;
+  }
+
+  /// Adds an OSC 8 hyperlink around rendered output.
+  ///
+  /// This is additive and works with wrapping and layout, since the hyperlink
+  /// is applied after layout (per rendered line).
+  Style hyperlink(String url, {String params = ''}) {
+    _hyperlinkUrl = url;
+    _hyperlinkParams = params;
+    _setFlag2(_PropBits.hyperlink);
+    return this;
+  }
+
+  /// Removes hyperlink styling.
+  Style unsetHyperlink() {
+    _hyperlinkUrl = null;
+    _hyperlinkParams = '';
+    _clearFlag2(_PropBits.hyperlink);
     return this;
   }
 
@@ -814,6 +856,8 @@ class Style {
   Style unsetUnderline() {
     _underline = false;
     _clearFlag(_PropBits.underline);
+    _underlineStyle = UnderlineStyle.single;
+    _clearFlag2(_PropBits.underlineStyle);
     return this;
   }
 
@@ -1102,6 +1146,25 @@ class Style {
   /// Whether underline is explicitly set.
   bool get isUnderline => _hasFlag(_PropBits.underline) && _underline;
 
+  /// Gets the underline style variant.
+  ///
+  /// If not explicitly set, defaults to [UnderlineStyle.single].
+  UnderlineStyle get getUnderlineStyle =>
+      _hasFlag2(_PropBits.underlineStyle)
+          ? _underlineStyle
+          : UnderlineStyle.single;
+
+  /// Whether a hyperlink is explicitly set.
+  bool get hasHyperlink => _hasFlag2(_PropBits.hyperlink) && _hyperlinkUrl != null;
+
+  /// Gets the hyperlink URL if set.
+  String? get getHyperlinkUrl =>
+      _hasFlag2(_PropBits.hyperlink) ? _hyperlinkUrl : null;
+
+  /// Gets the hyperlink params if set.
+  String get getHyperlinkParams =>
+      _hasFlag2(_PropBits.hyperlink) ? _hyperlinkParams : '';
+
   /// Whether strikethrough is explicitly set.
   bool get isStrikethrough =>
       _hasFlag(_PropBits.strikethrough) && _strikethrough;
@@ -1349,6 +1412,7 @@ class Style {
     s._bold = _bold;
     s._italic = _italic;
     s._underline = _underline;
+    s._underlineStyle = _underlineStyle;
     s._strikethrough = _strikethrough;
     s._dim = _dim;
     s._inverse = _inverse;
@@ -1385,6 +1449,8 @@ class Style {
     s._tabWidth = _tabWidth;
     s._underlineSpaces = _underlineSpaces;
     s._strikethroughSpaces = _strikethroughSpaces;
+    s._hyperlinkUrl = _hyperlinkUrl;
+    s._hyperlinkParams = _hyperlinkParams;
     s._marginBackground = _marginBackground;
     s._borderTopVisible = _borderTopVisible;
     s._borderRightVisible = _borderRightVisible;
@@ -1411,6 +1477,10 @@ class Style {
     if (other._hasFlag(_PropBits.underline)) {
       _underline = other._underline;
       _setFlag(_PropBits.underline);
+    }
+    if (other._hasFlag2(_PropBits.underlineStyle)) {
+      _underlineStyle = other._underlineStyle;
+      _setFlag2(_PropBits.underlineStyle);
     }
     if (other._hasFlag(_PropBits.strikethrough)) {
       _strikethrough = other._strikethrough;
@@ -1581,6 +1651,11 @@ class Style {
     if (other._hasFlag2(_PropBits.stringValue)) {
       _string = other._string;
       _setFlag2(_PropBits.stringValue);
+    }
+    if (other._hasFlag2(_PropBits.hyperlink)) {
+      _hyperlinkUrl = other._hyperlinkUrl;
+      _hyperlinkParams = other._hyperlinkParams;
+      _setFlag2(_PropBits.hyperlink);
     }
     if (other._hasFlag2(_PropBits.borderTop)) {
       _borderTopVisible = other._borderTopVisible;
@@ -1754,7 +1829,18 @@ class Style {
       styled = chalk.italic(styled);
     }
     if (_hasFlag(_PropBits.underline) && _underline) {
-      styled = chalk.underline(styled);
+      final style = getUnderlineStyle;
+      final start = switch (style) {
+        UnderlineStyle.none => '',
+        UnderlineStyle.single => '\x1b[4m',
+        UnderlineStyle.double => '\x1b[21m',
+        UnderlineStyle.curly => '\x1b[4:3m',
+        UnderlineStyle.dotted => '\x1b[4:4m',
+        UnderlineStyle.dashed => '\x1b[4:5m',
+      };
+      if (start.isNotEmpty) {
+        styled = '$start$styled\x1b[24m';
+      }
     }
     if (_hasFlag(_PropBits.strikethrough) && _strikethrough) {
       styled = chalk.strikethrough(styled);
@@ -1766,6 +1852,14 @@ class Style {
       styled = chalk.inverse(styled);
     }
 
+    if (_hasFlag2(_PropBits.hyperlink) && _hyperlinkUrl != null) {
+      final params = _hyperlinkParams;
+      final prefix = params.isEmpty
+          ? '\x1b]8;;${_hyperlinkUrl!}\x1b\\'
+          : '\x1b]8;${params};${_hyperlinkUrl!}\x1b\\';
+      styled = '$prefix$styled\x1b]8;;\x1b\\';
+    }
+
     return styled;
   }
 
@@ -1775,7 +1869,42 @@ class Style {
 
   /// Strips ANSI escape sequences from a string.
   static String stripAnsi(String text) {
-    return text.replaceAll(RegExp(r'\x1B\[[0-9;:]*m'), '');
+    return Ansi.stripAnsi(text);
+  }
+
+  /// Applies one of two styles to runes at specific rune indices.
+  ///
+  /// This mirrors lipgloss v2's `StyleRunes` helper: the string is treated as a
+  /// sequence of runes (Unicode code points), and `indices` refers to rune
+  /// positions, not bytes.
+  ///
+  /// Indices out of bounds are ignored.
+  static String styleRunes(
+    String str,
+    Iterable<int> indices,
+    Style matched,
+    Style unmatched,
+  ) {
+    final indexSet = indices.toSet();
+    final runes = str.runes.toList(growable: false);
+    if (runes.isEmpty) return '';
+
+    final out = StringBuffer();
+    var group = StringBuffer();
+
+    for (var i = 0; i < runes.length; i++) {
+      group.writeCharCode(runes[i]);
+
+      final matches = indexSet.contains(i);
+      final nextMatches = indexSet.contains(i + 1);
+
+      if (matches != nextMatches || i == runes.length - 1) {
+        out.write((matches ? matched : unmatched).render(group.toString()));
+        group = StringBuffer();
+      }
+    }
+
+    return out.toString();
   }
 
   /// Gets the visible length of a string (ignoring ANSI codes).

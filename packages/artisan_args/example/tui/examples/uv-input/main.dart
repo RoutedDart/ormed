@@ -12,7 +12,7 @@ import 'dart:io' as io;
 
 import 'package:artisan_args/artisan_args.dart' show Style;
 import 'package:artisan_args/tui.dart' as tui;
-import 'package:characters/characters.dart';
+import 'package:artisan_args/src/unicode/grapheme.dart' as uni;
 
 class _LogModel implements tui.Model {
   _LogModel({required this.useUvInput, required this.useUvRenderer});
@@ -109,7 +109,7 @@ String _clipToWidth(String s, int maxWidth) {
 
   var w = 0;
   final out = StringBuffer();
-  for (final g in s.characters) {
+  for (final g in uni.graphemes(s)) {
     final gw = Style.visibleLength(g);
     if (w + gw > maxWidth) break;
     out.write(g);

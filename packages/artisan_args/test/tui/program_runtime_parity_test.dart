@@ -199,6 +199,11 @@ class _MockTerminal implements TuiTerminal {
 
   @override
   bool get isTerminal => true;
+  
+  @override
+  ({bool useBackspace, bool useTabs}) optimizeMovements() {
+    return (useTabs: false, useBackspace: true);
+  }
 }
 
 void main() {

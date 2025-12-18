@@ -289,6 +289,10 @@ class MockTerminal implements TuiTerminal {
   }
 
   @override
+  ({bool useTabs, bool useBackspace}) optimizeMovements() =>
+      (useTabs: false, useBackspace: true);
+
+  @override
   ({int width, int height}) get size => (width: width, height: height);
 
   @override
@@ -1741,6 +1745,10 @@ class _FragileTerminal implements TuiTerminal {
 
   @override
   void bell() {}
+
+  @override
+  ({bool useTabs, bool useBackspace}) optimizeMovements() =>
+      (useTabs: false, useBackspace: true);
 
   @override
   int readByte() => -1;
