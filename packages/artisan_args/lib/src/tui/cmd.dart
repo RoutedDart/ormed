@@ -3,6 +3,7 @@ import 'dart:convert' show base64, utf8;
 import 'dart:io' as io;
 
 import 'msg.dart';
+import '../terminal/ansi.dart' as term_ansi;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Internal messages for terminal control commands
@@ -289,6 +290,24 @@ class Cmd {
   /// Terminals that support xterm window ops respond to `CSI 18 t` with
   /// `CSI 8 ; <rows> ; <cols> t`, which UV decoding maps to [WindowSizeMsg].
   static Cmd requestWindowSizeReport() => writeRaw('\x1b[18t');
+
+  /// Requests terminal foreground/background/cursor color reports (OSC 10/11/12),
+  /// plus DA1 as a follow-up.
+  ///
+  /// When UV input decoding is enabled, these are translated to
+  /// [TerminalColorMsg] instances by the UV adapter.
+  static Cmd requestTerminalColors() => writeRaw(
+    term_ansi.Ansi.requestForegroundColor +
+        term_ansi.Ansi.requestBackgroundColor +
+        term_ansi.Ansi.requestCursorColor +
+        term_ansi.Ansi.requestPrimaryDeviceAttributes,
+  );
+
+  /// Requests the terminal background color (OSC 11), plus DA1 as a follow-up.
+  static Cmd requestBackgroundColorReport() => writeRaw(
+    term_ansi.Ansi.requestBackgroundColor +
+        term_ansi.Ansi.requestPrimaryDeviceAttributes,
+  );
 
   /// A command that clears the terminal screen.
   ///

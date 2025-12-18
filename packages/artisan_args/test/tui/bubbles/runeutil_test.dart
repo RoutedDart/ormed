@@ -153,6 +153,7 @@ void main() {
       expect(runeWidth('a'.codeUnitAt(0)), 1);
       expect(runeWidth('Z'.codeUnitAt(0)), 1);
       expect(runeWidth(' '.codeUnitAt(0)), 1);
+      expect(runeWidth(0x00A0), 1, reason: 'NBSP should be normal width');
     });
 
     test('returns 2 for CJK unified ideographs', () {

@@ -102,6 +102,8 @@ export 'msg.dart'
         KeyMsg,
         ClipboardMsg,
         ClipboardSelection,
+        TerminalColorMsg,
+        TerminalColorKind,
         MouseMsg,
         MouseButton,
         MouseAction,

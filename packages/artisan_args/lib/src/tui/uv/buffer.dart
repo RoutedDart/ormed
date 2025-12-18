@@ -3,6 +3,7 @@ import 'cell.dart';
 import 'geometry.dart';
 import 'screen.dart';
 import 'style_ops.dart' as style_ops;
+import '../../terminal/ansi.dart' as term_ansi;
 import '../../unicode/width.dart';
 
 /// Metadata for a touched line.
@@ -598,7 +599,8 @@ final class ScreenBuffer
 /// Upstream: `third_party/ultraviolet/styled.go` (`StyledString.widthHeight`).
 Rectangle styledStringBounds(String text, WidthMethod method) {
   final normalized = text.replaceAll('\r\n', '\n');
-  final lines = normalized.split('\n');
+  final expanded = term_ansi.Ansi.expandTabs(normalized);
+  final lines = expanded.split('\n');
   var maxWidth = 0;
   for (final line in lines) {
     final width = _visibleStringWidth(line, method);
@@ -622,5 +624,6 @@ int _visibleStringWidth(String line, WidthMethod method) {
     ),
     '',
   );
-  return method.stringWidth(stripped);
+  final expanded = term_ansi.Ansi.expandTabs(stripped);
+  return method.stringWidth(expanded);
 }

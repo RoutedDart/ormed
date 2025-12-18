@@ -31,6 +31,50 @@ import '../unicode/grapheme.dart' as uni;
 /// - Focus reporting
 /// - Style reset
 abstract final class Ansi {
+  /// Non-breaking space (NBSP, U+00A0).
+  ///
+  /// Upstream parity: `x/ansi.NBSP`.
+  static const nbsp = '\u00A0';
+
+  /// Default tab width used by our string renderers when expanding `\t`.
+  ///
+  /// Upstream parity: lipgloss v2 default tab width is 4.
+  static const defaultTabWidth = 4;
+
+  /// Expands tab characters (`\t`) to spaces.
+  ///
+  /// Semantics:
+  /// - `tabWidth == -1`: do not expand tabs
+  /// - `tabWidth == 0`: remove tabs
+  /// - otherwise: replace each tab with `tabWidth` spaces
+  static String expandTabs(String text, {int tabWidth = defaultTabWidth}) {
+    if (tabWidth == -1) return text;
+    if (tabWidth == 0) return text.replaceAll('\t', '');
+    return text.replaceAll('\t', ' ' * tabWidth);
+  }
+
+  /// Request primary device attributes (DA1).
+  ///
+  /// Terminal responds with `ESC [ ? <attrs> c`.
+  ///
+  /// Upstream parity: `x/ansi.RequestPrimaryDeviceAttributes`.
+  static const requestPrimaryDeviceAttributes = '\x1b[?c';
+
+  /// Requests the terminal foreground color (OSC 10).
+  ///
+  /// Terminal responds with `ESC ] 10 ; <color> (BEL|ST)`.
+  static const requestForegroundColor = '\x1b]10;?\x07';
+
+  /// Requests the terminal background color (OSC 11).
+  ///
+  /// Terminal responds with `ESC ] 11 ; <color> (BEL|ST)`.
+  static const requestBackgroundColor = '\x1b]11;?\x07';
+
+  /// Requests the terminal cursor color (OSC 12).
+  ///
+  /// Terminal responds with `ESC ] 12 ; <color> (BEL|ST)`.
+  static const requestCursorColor = '\x1b]12;?\x07';
+
   // ─────────────────────────────────────────────────────────────────────────────
   // Escape Sequences
   // ─────────────────────────────────────────────────────────────────────────────

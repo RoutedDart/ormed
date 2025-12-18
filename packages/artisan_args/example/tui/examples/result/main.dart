@@ -33,7 +33,14 @@ class ResultModel implements tui.Model {
 
       // Enter -> set choice and quit
       if (key.type == tui.KeyType.enter) {
-        return (copyWith(choice: _choices[cursor]), tui.Cmd.quit());
+        final picked = _choices[cursor];
+        return (
+          copyWith(choice: picked),
+          tui.Cmd.sequence([
+            tui.Cmd.println('\n---\nYou chose $picked!'),
+            tui.Cmd.quit(),
+          ]),
+        );
       }
 
       // Down / j
@@ -67,19 +74,8 @@ class ResultModel implements tui.Model {
 }
 
 Future<void> main() async {
-  final m =
-      await tui.runProgramWithResult(
-            ResultModel(),
-            options: const tui.ProgramOptions(
-              altScreen: false,
-              hideCursor: false,
-            ),
-          )
-          as ResultModel;
-
-  if (m.choice.isNotEmpty) {
-    // Print after program exit.
-    // ignore: avoid_print
-    print('\n---\nYou chose ${m.choice}!');
-  }
+  await tui.runProgram(
+    ResultModel(),
+    options: const tui.ProgramOptions(altScreen: false, hideCursor: false),
+  );
 }

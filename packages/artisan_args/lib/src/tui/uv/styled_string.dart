@@ -3,6 +3,7 @@ import 'cell.dart';
 import 'geometry.dart';
 import 'screen.dart';
 import '../../unicode/width.dart';
+import '../../terminal/ansi.dart' as term_ansi;
 
 import '../../unicode/grapheme.dart' as uni;
 
@@ -34,6 +35,7 @@ final class StyledString {
 
     // Normalize CRLF to NL to emulate raw terminal output.
     final normalized = text.replaceAll('\r\n', '\n');
+    final expanded = term_ansi.Ansi.expandTabs(normalized);
 
     _printString(
       screen,
@@ -41,7 +43,7 @@ final class StyledString {
       area.minX,
       area.minY,
       area,
-      normalized,
+      expanded,
       truncate: !wrap,
       tail: tail,
     );

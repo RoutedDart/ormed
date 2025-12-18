@@ -11,7 +11,12 @@ import 'package:artisan_args/tui.dart';
 /// The list selection model.
 class ListModel implements Model {
   /// Creates a list model with the given items.
-  const ListModel({required this.items, this.cursor = 0, this.selected});
+  const ListModel({
+    required this.items,
+    this.cursor = 0,
+    this.selected,
+    this.done = false,
+  });
 
   /// The list items to choose from.
   final List<String> items;
@@ -22,12 +27,21 @@ class ListModel implements Model {
   /// The selected item (null if nothing selected yet).
   final String? selected;
 
+  /// Whether the selection step is complete.
+  final bool done;
+
   /// Creates a copy with the given fields replaced.
-  ListModel copyWith({List<String>? items, int? cursor, String? selected}) {
+  ListModel copyWith({
+    List<String>? items,
+    int? cursor,
+    String? selected,
+    bool? done,
+  }) {
     return ListModel(
       items: items ?? this.items,
       cursor: cursor ?? this.cursor,
       selected: selected ?? this.selected,
+      done: done ?? this.done,
     );
   }
 
@@ -36,6 +50,19 @@ class ListModel implements Model {
 
   @override
   (Model, Cmd?) update(Msg msg) {
+    if (done) {
+      return switch (msg) {
+        KeyMsg(key: Key(type: KeyType.runes, runes: [0x71])) || // 'q'
+        KeyMsg(key: Key(type: KeyType.escape)) ||
+        KeyMsg(key: Key(ctrl: true, runes: [0x63])) => (
+          // Ctrl+C
+          this,
+          Cmd.quit(),
+        ),
+        _ => (this, null),
+      };
+    }
+
     return switch (msg) {
       // Move cursor up
       KeyMsg(key: Key(type: KeyType.up)) ||
@@ -57,7 +84,7 @@ class ListModel implements Model {
       KeyMsg(key: Key(type: KeyType.enter)) ||
       KeyMsg(
         key: Key(type: KeyType.space),
-      ) => (copyWith(selected: items[cursor]), Cmd.quit()),
+      ) => (copyWith(selected: items[cursor], done: true), null),
 
       // Quit without selection
       KeyMsg(key: Key(type: KeyType.runes, runes: [0x71])) || // 'q'
@@ -91,6 +118,17 @@ class ListModel implements Model {
 
   @override
   String view() {
+    if (done) {
+      final selectedLabel = selected ?? '<none>';
+      return '''
+
+  You selected: $selectedLabel
+
+  Press q to quit.
+
+''';
+    }
+
     final buffer = StringBuffer();
 
     buffer.writeln();
@@ -142,12 +180,4 @@ void main() async {
       useUltravioletInputDecoder: true,
     ),
   );
-
-  // Show result after program exits
-  if (model.selected != null) {
-    print('You selected: ${model.selected}');
-  } else {
-    // Access the final model state from the program
-    print('No selection made. Maybe next time!');
-  }
 }

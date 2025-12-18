@@ -108,6 +108,36 @@ List<Msg> _eventToMsgs(uvev.Event ev) {
     return [ClipboardMsg(selection: sel, content: ev.content)];
   }
 
+  if (ev is uvev.ForegroundColorEvent) {
+    final hex = ev.toString();
+    return [
+      TerminalColorMsg(
+        kind: TerminalColorKind.foreground,
+        hex: hex.isEmpty ? null : hex,
+      ),
+    ];
+  }
+
+  if (ev is uvev.BackgroundColorEvent) {
+    final hex = ev.toString();
+    return [
+      TerminalColorMsg(
+        kind: TerminalColorKind.background,
+        hex: hex.isEmpty ? null : hex,
+      ),
+    ];
+  }
+
+  if (ev is uvev.CursorColorEvent) {
+    final hex = ev.toString();
+    return [
+      TerminalColorMsg(
+        kind: TerminalColorKind.cursor,
+        hex: hex.isEmpty ? null : hex,
+      ),
+    ];
+  }
+
   if (ev is uvev.MouseClickEvent)
     return [_mouseMsg(MouseAction.press, ev.mouse())];
   if (ev is uvev.MouseReleaseEvent)

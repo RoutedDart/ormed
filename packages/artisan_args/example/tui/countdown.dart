@@ -85,6 +85,4 @@ void main() async {
     const CountdownModel(10),
     options: const ProgramOptions(altScreen: true),
   );
-
-  print('Thanks for watching the countdown!');
 }

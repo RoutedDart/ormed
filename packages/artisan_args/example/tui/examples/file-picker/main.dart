@@ -48,7 +48,14 @@ class FilePickerExampleModel implements tui.Model {
 
     final (didSelect, path) = model.filepicker.didSelectFile(msg);
     if (didSelect && path != null) {
-      model = model.copyWith(selectedFile: path);
+      final selected = model.filepicker.styles.selected.render(path);
+      cmds.add(
+        tui.Cmd.sequence([
+          tui.Cmd.println('\n  You selected: $selected\n'),
+          tui.Cmd.quit(),
+        ]),
+      );
+      model = model.copyWith(selectedFile: path, quitting: true);
     }
 
     final (didSelectDisabled, disabledPath) = model.filepicker
@@ -115,18 +122,8 @@ Future<void> main() async {
     allowedTypes: const ['.mod', '.sum', '.go', '.txt', '.md'],
   );
 
-  final result =
-      await tui.runProgramWithResult(
-            FilePickerExampleModel(filepicker: picker),
-            options: const tui.ProgramOptions(
-              altScreen: false,
-              hideCursor: false,
-            ),
-          )
-          as FilePickerExampleModel;
-
-  final selected = result.selectedFile.isEmpty
-      ? '<none>'
-      : result.filepicker.styles.selected.render(result.selectedFile);
-  io.stdout.writeln('\n  You selected: $selected\n');
+  await tui.runProgram(
+    FilePickerExampleModel(filepicker: picker),
+    options: const tui.ProgramOptions(altScreen: false, hideCursor: false),
+  );
 }

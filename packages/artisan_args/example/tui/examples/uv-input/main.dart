@@ -12,6 +12,7 @@ import 'dart:io' as io;
 
 import 'package:artisan_args/artisan_args.dart' show Style;
 import 'package:artisan_args/tui.dart' as tui;
+import 'package:artisan_args/src/terminal/ansi.dart' as term_ansi;
 import 'package:artisan_args/src/unicode/grapheme.dart' as uni;
 
 class _LogModel implements tui.Model {
@@ -35,12 +36,8 @@ class _LogModel implements tui.Model {
       tui.Cmd.enableReportFocus(),
       tui.Cmd.enableBracketedPaste(),
       tui.Cmd.enableMouseCellMotion(),
-      // Request a few common terminal reports so `UvEventMsg` can be observed.
-      // Not all terminals respond to these.
-      tui.Cmd.writeRaw('\x1b[c'), // DA1
-      tui.Cmd.writeRaw('\x1b]10;?\x07'), // foreground color report
-      tui.Cmd.writeRaw('\x1b]11;?\x07'), // background color report
-      tui.Cmd.writeRaw('\x1b]12;?\x07'), // cursor color report
+      // Request a few common terminal reports. Not all terminals respond.
+      tui.Cmd.requestTerminalColors(),
     ]);
   }
 
@@ -87,13 +84,16 @@ class _LogModel implements tui.Model {
         if (key.type == tui.KeyType.runes && key.runes.isNotEmpty) {
           switch (key.runes.first) {
             case 0x64: // d
-              return (this, tui.Cmd.writeRaw('\x1b[c'));
+              return (
+                this,
+                tui.Cmd.writeRaw(term_ansi.Ansi.requestPrimaryDeviceAttributes),
+              );
             case 0x62: // b
-              return (this, tui.Cmd.writeRaw('\x1b]11;?\x07'));
+              return (this, tui.Cmd.requestBackgroundColorReport());
             case 0x66: // f
-              return (this, tui.Cmd.writeRaw('\x1b]10;?\x07'));
+              return (this, tui.Cmd.requestTerminalColors());
             case 0x63: // c
-              return (this, tui.Cmd.writeRaw('\x1b]12;?\x07'));
+              return (this, tui.Cmd.requestTerminalColors());
             case 0x79: // y
               return (this, tui.Cmd.setClipboard('uv-input demo: hello'));
             case 0x70: // p
@@ -109,6 +109,10 @@ class _LogModel implements tui.Model {
         _log(
           'ClipboardMsg(selection: $selection, ${content.length} bytes): ${content.replaceAll('\n', r'\n')}',
         );
+        return (this, null);
+
+      case tui.TerminalColorMsg(:final kind, :final hex):
+        _log('TerminalColorMsg(kind: $kind, hex: $hex)');
         return (this, null);
 
       case tui.UvEventMsg(:final event):

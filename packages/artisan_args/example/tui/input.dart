@@ -21,6 +21,7 @@ class TextInputModel implements Model {
     this.cursor = 0,
     this.placeholder = 'Type something...',
     this.submitted = false,
+    this.cancelled = false,
     this.label = 'Input',
   });
 
@@ -36,6 +37,9 @@ class TextInputModel implements Model {
   /// Whether the form has been submitted.
   final bool submitted;
 
+  /// Whether the form has been cancelled.
+  final bool cancelled;
+
   /// The label for the input field.
   final String label;
 
@@ -45,6 +49,7 @@ class TextInputModel implements Model {
     int? cursor,
     String? placeholder,
     bool? submitted,
+    bool? cancelled,
     String? label,
   }) {
     return TextInputModel(
@@ -52,6 +57,7 @@ class TextInputModel implements Model {
       cursor: cursor ?? this.cursor,
       placeholder: placeholder ?? this.placeholder,
       submitted: submitted ?? this.submitted,
+      cancelled: cancelled ?? this.cancelled,
       label: label ?? this.label,
     );
   }
@@ -107,21 +113,28 @@ class TextInputModel implements Model {
 
   @override
   (Model, Cmd?) update(Msg msg) {
-    // Don't process input if already submitted
-    if (submitted && msg is! KeyMsg) {
-      return (this, null);
+    final finished = submitted || cancelled;
+    if (finished) {
+      return switch (msg) {
+        KeyMsg(key: Key(type: KeyType.runes, runes: [0x71])) || // 'q'
+        KeyMsg(key: Key(type: KeyType.escape)) ||
+        KeyMsg(key: Key(ctrl: true, runes: [0x63])) => (this, Cmd.quit()),
+        _ => (this, null),
+      };
     }
 
     return switch (msg) {
       // Submit on Enter
       KeyMsg(key: Key(type: KeyType.enter)) => (
         copyWith(submitted: true),
-        Cmd.quit(),
+        null,
       ),
 
       // Quit without submit on Escape or Ctrl+C
       KeyMsg(key: Key(type: KeyType.escape)) ||
-      KeyMsg(key: Key(ctrl: true, runes: [0x63])) => (this, Cmd.quit()),
+      KeyMsg(
+        key: Key(ctrl: true, runes: [0x63]),
+      ) => (copyWith(cancelled: true), null),
 
       // Backspace - delete backward
       KeyMsg(key: Key(type: KeyType.backspace)) => (deleteBackward(), null),
@@ -194,6 +207,19 @@ class TextInputModel implements Model {
 
   @override
   String view() {
+    if (submitted || cancelled) {
+      final headline = submitted
+          ? (value.isEmpty ? 'No name entered.' : 'Hello, $value!')
+          : 'Input cancelled.';
+      return '''
+
+  $headline
+
+  Press q to quit.
+
+''';
+    }
+
     final buffer = StringBuffer();
 
     buffer.writeln();
@@ -291,13 +317,4 @@ void main() async {
   );
 
   await runProgram(model, options: const ProgramOptions(altScreen: true));
-
-  // Show result
-  if (model.submitted && model.value.isNotEmpty) {
-    print('Hello, ${model.value}!');
-  } else if (model.value.isEmpty) {
-    print('No name entered.');
-  } else {
-    print('Input cancelled.');
-  }
 }

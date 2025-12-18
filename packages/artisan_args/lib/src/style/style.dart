@@ -1153,13 +1153,13 @@ class Style {
   /// Gets the underline style variant.
   ///
   /// If not explicitly set, defaults to [UnderlineStyle.single].
-  UnderlineStyle get getUnderlineStyle =>
-      _hasFlag2(_PropBits.underlineStyle)
-          ? _underlineStyle
-          : UnderlineStyle.single;
+  UnderlineStyle get getUnderlineStyle => _hasFlag2(_PropBits.underlineStyle)
+      ? _underlineStyle
+      : UnderlineStyle.single;
 
   /// Whether a hyperlink is explicitly set.
-  bool get hasHyperlink => _hasFlag2(_PropBits.hyperlink) && _hyperlinkUrl != null;
+  bool get hasHyperlink =>
+      _hasFlag2(_PropBits.hyperlink) && _hyperlinkUrl != null;
 
   /// Gets the hyperlink URL if set.
   String? get getHyperlinkUrl =>
@@ -1932,7 +1932,6 @@ class Style {
     return width;
   }
 
-
   int _getMaxLineWidth(List<String> lines) {
     if (lines.isEmpty) return 0;
     return lines.map(visibleLength).reduce((a, b) => a > b ? a : b);
@@ -2162,9 +2161,7 @@ class Style {
 
   String _maybeConvertTabs(String text) {
     final tw = _hasFlag2(_PropBits.tabWidth) ? _tabWidth : 4;
-    if (tw == -1) return text;
-    if (tw == 0) return text.replaceAll('\t', '');
-    return text.replaceAll('\t', ' ' * tw);
+    return Ansi.expandTabs(text, tabWidth: tw);
   }
 
   static const _resetAnsi = '\x1B[0m';

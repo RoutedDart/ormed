@@ -217,6 +217,48 @@ final class ClipboardMsg extends Msg {
       'ClipboardMsg(selection: $selection, ${content.length} bytes)';
 }
 
+/// Terminal-reported color kinds.
+enum TerminalColorKind { foreground, background, cursor }
+
+/// Terminal color report message (OSC 10/11/12).
+///
+/// Only emitted when UV input decoding is enabled and the terminal reports a
+/// color payload (e.g. OSC 11 background report).
+final class TerminalColorMsg extends Msg {
+  const TerminalColorMsg({required this.kind, required this.hex});
+
+  final TerminalColorKind kind;
+
+  /// Hex color in `#rrggbb` form, or `null` if unavailable.
+  final String? hex;
+
+  bool get isDark {
+    final rgb = _parseHexRgb(hex);
+    if (rgb == null) return true;
+    final (:r, :g, :b) = rgb;
+    final rn = r / 255.0;
+    final gn = g / 255.0;
+    final bn = b / 255.0;
+    final max = rn > gn ? (rn > bn ? rn : bn) : (gn > bn ? gn : bn);
+    final min = rn < gn ? (rn < bn ? rn : bn) : (gn < bn ? gn : bn);
+    final l = (max + min) / 2.0;
+    return l < 0.5;
+  }
+
+  @override
+  String toString() => 'TerminalColorMsg(kind: $kind, hex: $hex)';
+}
+
+({int r, int g, int b})? _parseHexRgb(String? hex) {
+  if (hex == null) return null;
+  final s = hex.trim();
+  if (!RegExp(r'^#[0-9a-fA-F]{6}$').hasMatch(s)) return null;
+  final r = int.parse(s.substring(1, 3), radix: 16);
+  final g = int.parse(s.substring(3, 5), radix: 16);
+  final b = int.parse(s.substring(5, 7), radix: 16);
+  return (r: r, g: g, b: b);
+}
+
 /// Mouse button identifiers.
 enum MouseButton {
   /// No button (for motion events).

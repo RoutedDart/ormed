@@ -62,10 +62,7 @@ class ChatModel implements tui.Model {
         final resizedTa = newTa
           ..setWidth(vpWidth)
           ..setHeight(taHeight);
-        final resizedVp = (newVp).copyWith(
-          width: vpWidth,
-          height: vpHeight,
-        );
+        final resizedVp = (newVp).copyWith(width: vpWidth, height: vpHeight);
 
         final wrapped = Style().width(vpWidth).render(messages.join('\n'));
         final updatedVp = resizedVp.setContent(wrapped).gotoBottom();
@@ -78,9 +75,10 @@ class ChatModel implements tui.Model {
         if (key.ctrl && key.runes.isNotEmpty && key.runes.first == 0x63 ||
             key.type == tui.KeyType.escape) {
           // Print textarea contents on exit, like Bubble Tea.
-          // ignore: avoid_print
-          print(textarea.value);
-          return (this, tui.Cmd.quit());
+          return (
+            this,
+            tui.Cmd.sequence([tui.Cmd.println(textarea.value), tui.Cmd.quit()]),
+          );
         }
 
         if (key.type == tui.KeyType.enter &&
@@ -111,10 +109,7 @@ class ChatModel implements tui.Model {
     }
 
     return (
-      copyWith(
-        textarea: newTa,
-        viewport: newVp,
-      ),
+      copyWith(textarea: newTa, viewport: newVp),
       cmds.isEmpty ? null : tui.Cmd.batch(cmds),
     );
   }

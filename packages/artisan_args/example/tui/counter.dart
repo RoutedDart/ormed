@@ -102,12 +102,8 @@ class CounterModel implements Model {
 }
 
 void main() async {
-  print('Starting counter...');
-
   await runProgram(
     const CounterModel(),
     options: const ProgramOptions(altScreen: true),
   );
-
-  print('Final count displayed above. Goodbye!');
 }

@@ -5,7 +5,7 @@ import 'package:test/test.dart';
 
 void main() {
   group('UV → TUI adapter parity', () {
-    test('emits UvEventMsg for non-input report events', () {
+    test('emits TerminalColorMsg for color report events', () {
       final p = UvTuiInputParser();
       final msgs = [
         ...p.parseAll('\x1b]11;rgb:1a1a/1b1b/2c2c\x07'.codeUnits),
@@ -13,7 +13,10 @@ void main() {
       ];
 
       expect(msgs, hasLength(1));
-      expect(msgs.first, isA<UvEventMsg>());
+      expect(msgs.first, isA<TerminalColorMsg>());
+      final m = msgs.first as TerminalColorMsg;
+      expect(m.kind, TerminalColorKind.background);
+      expect(m.hex, '#1a1b2c');
     });
 
     test('maps UnknownEvent to KeyMsg via key table on timeout flush', () {
