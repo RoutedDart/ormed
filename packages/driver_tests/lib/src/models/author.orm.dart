@@ -75,6 +75,18 @@ const RelationDefinition _$AuthorPostsRelation = RelationDefinition(
   localKey: 'id',
 );
 
+Map<String, Object?> _encodeAuthorUntracked(
+  Object model,
+  ValueCodecRegistry registry,
+) {
+  final m = model as Author;
+  return <String, Object?>{
+    'id': registry.encodeField(_$AuthorIdField, m.id),
+    'name': registry.encodeField(_$AuthorNameField, m.name),
+    'active': registry.encodeField(_$AuthorActiveField, m.active),
+  };
+}
+
 final ModelDefinition<$Author> _$AuthorDefinition = ModelDefinition(
   modelName: 'Author',
   tableName: 'authors',
@@ -96,6 +108,7 @@ final ModelDefinition<$Author> _$AuthorDefinition = ModelDefinition(
     softDeletes: false,
     softDeleteColumn: 'deleted_at',
   ),
+  untrackedToMap: _encodeAuthorUntracked,
   codec: _$AuthorCodec(),
 );
 

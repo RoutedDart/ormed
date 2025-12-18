@@ -1,1 +1,0 @@
-[{"className":"UserWithPosts","import":"models/relations/has_many.dart","definition":"UserWithPostsOrmDefinition.definition","hasFactory":false,"hasEventHandlers":false,"hasScopes":false},{"className":"UserPost","import":"models/relations/has_many.dart","definition":"UserPostOrmDefinition.definition","hasFactory":false,"hasEventHandlers":false,"hasScopes":false}]

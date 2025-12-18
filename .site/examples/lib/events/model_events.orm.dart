@@ -67,6 +67,19 @@ const FieldDefinition _$EventUserDeletedAtField = FieldDefinition(
   autoIncrement: false,
 );
 
+Map<String, Object?> _encodeEventUserUntracked(
+  Object model,
+  ValueCodecRegistry registry,
+) {
+  final m = model as EventUser;
+  return <String, Object?>{
+    'id': registry.encodeField(_$EventUserIdField, m.id),
+    'email': registry.encodeField(_$EventUserEmailField, m.email),
+    'active': registry.encodeField(_$EventUserActiveField, m.active),
+    'name': registry.encodeField(_$EventUserNameField, m.name),
+  };
+}
+
 final ModelDefinition<$EventUser> _$EventUserDefinition = ModelDefinition(
   modelName: 'EventUser',
   tableName: 'event_users',
@@ -88,6 +101,7 @@ final ModelDefinition<$EventUser> _$EventUserDefinition = ModelDefinition(
     softDeletes: true,
     softDeleteColumn: 'deleted_at',
   ),
+  untrackedToMap: _encodeEventUserUntracked,
   codec: _$EventUserCodec(),
 );
 
@@ -450,6 +464,17 @@ const FieldDefinition _$AuditedUserEmailField = FieldDefinition(
   autoIncrement: false,
 );
 
+Map<String, Object?> _encodeAuditedUserUntracked(
+  Object model,
+  ValueCodecRegistry registry,
+) {
+  final m = model as AuditedUser;
+  return <String, Object?>{
+    'id': registry.encodeField(_$AuditedUserIdField, m.id),
+    'email': registry.encodeField(_$AuditedUserEmailField, m.email),
+  };
+}
+
 final ModelDefinition<$AuditedUser> _$AuditedUserDefinition = ModelDefinition(
   modelName: 'AuditedUser',
   tableName: 'audited_users',
@@ -465,6 +490,7 @@ final ModelDefinition<$AuditedUser> _$AuditedUserDefinition = ModelDefinition(
     softDeletes: false,
     softDeleteColumn: 'deleted_at',
   ),
+  untrackedToMap: _encodeAuditedUserUntracked,
   codec: _$AuditedUserCodec(),
 );
 

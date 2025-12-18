@@ -68,6 +68,20 @@ const FieldDefinition _$AttributeUserProfileField = FieldDefinition(
   codecType: 'json',
 );
 
+Map<String, Object?> _encodeAttributeUserUntracked(
+  Object model,
+  ValueCodecRegistry registry,
+) {
+  final m = model as AttributeUser;
+  return <String, Object?>{
+    'id': registry.encodeField(_$AttributeUserIdField, m.id),
+    'email': registry.encodeField(_$AttributeUserEmailField, m.email),
+    'secret': registry.encodeField(_$AttributeUserSecretField, m.secret),
+    'role': registry.encodeField(_$AttributeUserRoleField, m.role),
+    'profile': registry.encodeField(_$AttributeUserProfileField, m.profile),
+  };
+}
+
 final ModelDefinition<$AttributeUser> _$AttributeUserDefinition =
     ModelDefinition(
       modelName: 'AttributeUser',
@@ -96,6 +110,7 @@ final ModelDefinition<$AttributeUser> _$AttributeUserDefinition =
         softDeletes: false,
         softDeleteColumn: 'deleted_at',
       ),
+      untrackedToMap: _encodeAttributeUserUntracked,
       codec: _$AttributeUserCodec(),
     );
 

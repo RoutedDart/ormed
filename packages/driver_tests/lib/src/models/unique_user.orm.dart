@@ -43,6 +43,18 @@ const FieldDefinition _$UniqueUserActiveField = FieldDefinition(
   autoIncrement: false,
 );
 
+Map<String, Object?> _encodeUniqueUserUntracked(
+  Object model,
+  ValueCodecRegistry registry,
+) {
+  final m = model as UniqueUser;
+  return <String, Object?>{
+    'id': registry.encodeField(_$UniqueUserIdField, m.id),
+    'email': registry.encodeField(_$UniqueUserEmailField, m.email),
+    'active': registry.encodeField(_$UniqueUserActiveField, m.active),
+  };
+}
+
 final ModelDefinition<$UniqueUser> _$UniqueUserDefinition = ModelDefinition(
   modelName: 'UniqueUser',
   tableName: 'unique_users',
@@ -62,6 +74,7 @@ final ModelDefinition<$UniqueUser> _$UniqueUserDefinition = ModelDefinition(
     softDeletes: false,
     softDeleteColumn: 'deleted_at',
   ),
+  untrackedToMap: _encodeUniqueUserUntracked,
   codec: _$UniqueUserCodec(),
 );
 

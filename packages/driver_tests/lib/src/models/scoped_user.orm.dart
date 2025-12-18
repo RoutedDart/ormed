@@ -55,6 +55,19 @@ const FieldDefinition _$ScopedUserNameField = FieldDefinition(
   autoIncrement: false,
 );
 
+Map<String, Object?> _encodeScopedUserUntracked(
+  Object model,
+  ValueCodecRegistry registry,
+) {
+  final m = model as ScopedUser;
+  return <String, Object?>{
+    'id': registry.encodeField(_$ScopedUserIdField, m.id),
+    'email': registry.encodeField(_$ScopedUserEmailField, m.email),
+    'active': registry.encodeField(_$ScopedUserActiveField, m.active),
+    'name': registry.encodeField(_$ScopedUserNameField, m.name),
+  };
+}
+
 final ModelDefinition<$ScopedUser> _$ScopedUserDefinition = ModelDefinition(
   modelName: 'ScopedUser',
   tableName: 'scoped_users',
@@ -75,6 +88,7 @@ final ModelDefinition<$ScopedUser> _$ScopedUserDefinition = ModelDefinition(
     softDeletes: false,
     softDeleteColumn: 'deleted_at',
   ),
+  untrackedToMap: _encodeScopedUserUntracked,
   codec: _$ScopedUserCodec(),
 );
 

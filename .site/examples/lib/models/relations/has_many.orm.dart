@@ -38,6 +38,17 @@ const RelationDefinition _$UserWithPostsPostsRelation = RelationDefinition(
   foreignKey: 'author_id',
 );
 
+Map<String, Object?> _encodeUserWithPostsUntracked(
+  Object model,
+  ValueCodecRegistry registry,
+) {
+  final m = model as UserWithPosts;
+  return <String, Object?>{
+    'id': registry.encodeField(_$UserWithPostsIdField, m.id),
+    'posts': registry.encodeField(_$UserWithPostsPostsField, m.posts),
+  };
+}
+
 final ModelDefinition<$UserWithPosts> _$UserWithPostsDefinition =
     ModelDefinition(
       modelName: 'UserWithPosts',
@@ -54,6 +65,7 @@ final ModelDefinition<$UserWithPosts> _$UserWithPostsDefinition =
         softDeletes: false,
         softDeleteColumn: 'deleted_at',
       ),
+      untrackedToMap: _encodeUserWithPostsUntracked,
       codec: _$UserWithPostsCodec(),
     );
 
@@ -375,6 +387,18 @@ const FieldDefinition _$UserPostTitleField = FieldDefinition(
   autoIncrement: false,
 );
 
+Map<String, Object?> _encodeUserPostUntracked(
+  Object model,
+  ValueCodecRegistry registry,
+) {
+  final m = model as UserPost;
+  return <String, Object?>{
+    'id': registry.encodeField(_$UserPostIdField, m.id),
+    'authorId': registry.encodeField(_$UserPostAuthorIdField, m.authorId),
+    'title': registry.encodeField(_$UserPostTitleField, m.title),
+  };
+}
+
 final ModelDefinition<$UserPost> _$UserPostDefinition = ModelDefinition(
   modelName: 'UserPost',
   tableName: 'posts',
@@ -394,6 +418,7 @@ final ModelDefinition<$UserPost> _$UserPostDefinition = ModelDefinition(
     softDeletes: false,
     softDeleteColumn: 'deleted_at',
   ),
+  untrackedToMap: _encodeUserPostUntracked,
   codec: _$UserPostCodec(),
 );
 

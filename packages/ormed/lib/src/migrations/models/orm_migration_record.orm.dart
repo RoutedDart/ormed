@@ -55,6 +55,25 @@ const FieldDefinition _$OrmMigrationRecordBatchField = FieldDefinition(
   autoIncrement: false,
 );
 
+Map<String, Object?> _encodeOrmMigrationRecordUntracked(
+  Object model,
+  ValueCodecRegistry registry,
+) {
+  final m = model as OrmMigrationRecord;
+  return <String, Object?>{
+    'id': registry.encodeField(_$OrmMigrationRecordIdField, m.id),
+    'checksum': registry.encodeField(
+      _$OrmMigrationRecordChecksumField,
+      m.checksum,
+    ),
+    'applied_at': registry.encodeField(
+      _$OrmMigrationRecordAppliedAtField,
+      m.appliedAt,
+    ),
+    'batch': registry.encodeField(_$OrmMigrationRecordBatchField, m.batch),
+  };
+}
+
 final ModelDefinition<$OrmMigrationRecord> _$OrmMigrationRecordDefinition =
     ModelDefinition(
       modelName: 'OrmMigrationRecord',
@@ -76,6 +95,7 @@ final ModelDefinition<$OrmMigrationRecord> _$OrmMigrationRecordDefinition =
         softDeletes: false,
         softDeleteColumn: 'deleted_at',
       ),
+      untrackedToMap: _encodeOrmMigrationRecordUntracked,
       codec: _$OrmMigrationRecordCodec(),
     );
 
@@ -87,6 +107,9 @@ extension OrmMigrationRecordOrmDefinition on OrmMigrationRecord {
 class OrmMigrationRecords {
   const OrmMigrationRecords._();
 
+  /// Starts building a query for [$OrmMigrationRecord].
+  ///
+  /// {@macro ormed.query}
   static Query<$OrmMigrationRecord> query([String? connection]) =>
       Model.query<$OrmMigrationRecord>(connection: connection);
 
@@ -142,6 +165,9 @@ class OrmMigrationRecords {
   static Query<$OrmMigrationRecord> limit(int count, {String? connection}) =>
       Model.limit<$OrmMigrationRecord>(count, connection: connection);
 
+  /// Creates a [Repository] for [$OrmMigrationRecord].
+  ///
+  /// {@macro ormed.repository}
   static Repository<$OrmMigrationRecord> repo([String? connection]) =>
       Model.repository<$OrmMigrationRecord>(connection: connection);
 }
@@ -184,7 +210,6 @@ class OrmMigrationRecordModelFactory {
 
 class _$OrmMigrationRecordCodec extends ModelCodec<$OrmMigrationRecord> {
   const _$OrmMigrationRecordCodec();
-
   @override
   Map<String, Object?> encode(
     $OrmMigrationRecord model,
@@ -263,7 +288,6 @@ class OrmMigrationRecordInsertDto implements InsertDto<$OrmMigrationRecord> {
     this.appliedAt,
     this.batch,
   });
-
   final String? id;
   final String? checksum;
   final DateTime? appliedAt;
@@ -290,7 +314,6 @@ class OrmMigrationRecordUpdateDto implements UpdateDto<$OrmMigrationRecord> {
     this.appliedAt,
     this.batch,
   });
-
   final String? id;
   final String? checksum;
   final DateTime? appliedAt;
@@ -414,6 +437,20 @@ class $OrmMigrationRecord extends OrmMigrationRecord
     );
   }
 
+  $OrmMigrationRecord copyWith({
+    String? id,
+    String? checksum,
+    DateTime? appliedAt,
+    int? batch,
+  }) {
+    return $OrmMigrationRecord(
+      id: id ?? this.id,
+      checksum: checksum ?? this.checksum,
+      appliedAt: appliedAt ?? this.appliedAt,
+      batch: batch ?? this.batch,
+    );
+  }
+
   @override
   String get id => getAttribute<String>('id') ?? super.id;
 
@@ -453,4 +490,8 @@ extension OrmMigrationRecordOrmExtension on OrmMigrationRecord {
   $OrmMigrationRecord toTracked() {
     return $OrmMigrationRecord.fromModel(this);
   }
+}
+
+void registerOrmMigrationRecordEventHandlers(EventBus bus) {
+  // No event handlers registered for OrmMigrationRecord.
 }

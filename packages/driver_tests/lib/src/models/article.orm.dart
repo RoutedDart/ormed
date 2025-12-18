@@ -115,6 +115,27 @@ const FieldDefinition _$ArticleCategoryIdField = FieldDefinition(
   autoIncrement: false,
 );
 
+Map<String, Object?> _encodeArticleUntracked(
+  Object model,
+  ValueCodecRegistry registry,
+) {
+  final m = model as Article;
+  return <String, Object?>{
+    'id': registry.encodeField(_$ArticleIdField, m.id),
+    'title': registry.encodeField(_$ArticleTitleField, m.title),
+    'body': registry.encodeField(_$ArticleBodyField, m.body),
+    'status': registry.encodeField(_$ArticleStatusField, m.status),
+    'rating': registry.encodeField(_$ArticleRatingField, m.rating),
+    'priority': registry.encodeField(_$ArticlePriorityField, m.priority),
+    'published_at': registry.encodeField(
+      _$ArticlePublishedAtField,
+      m.publishedAt,
+    ),
+    'reviewed_at': registry.encodeField(_$ArticleReviewedAtField, m.reviewedAt),
+    'category_id': registry.encodeField(_$ArticleCategoryIdField, m.categoryId),
+  };
+}
+
 final ModelDefinition<$Article> _$ArticleDefinition = ModelDefinition(
   modelName: 'Article',
   tableName: 'articles',
@@ -140,6 +161,7 @@ final ModelDefinition<$Article> _$ArticleDefinition = ModelDefinition(
     softDeletes: false,
     softDeleteColumn: 'deleted_at',
   ),
+  untrackedToMap: _encodeArticleUntracked,
   codec: _$ArticleCodec(),
 );
 

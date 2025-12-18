@@ -45,6 +45,18 @@ const FieldDefinition _$SettingsCreatedAtField = FieldDefinition(
   codecType: 'datetime',
 );
 
+Map<String, Object?> _encodeSettingsUntracked(
+  Object model,
+  ValueCodecRegistry registry,
+) {
+  final m = model as Settings;
+  return <String, Object?>{
+    'id': registry.encodeField(_$SettingsIdField, m.id),
+    'metadata': registry.encodeField(_$SettingsMetadataField, m.metadata),
+    'createdAt': registry.encodeField(_$SettingsCreatedAtField, m.createdAt),
+  };
+}
+
 final ModelDefinition<$Settings> _$SettingsDefinition = ModelDefinition(
   modelName: 'Settings',
   tableName: 'settings',
@@ -64,6 +76,7 @@ final ModelDefinition<$Settings> _$SettingsDefinition = ModelDefinition(
     softDeletes: false,
     softDeleteColumn: 'deleted_at',
   ),
+  untrackedToMap: _encodeSettingsUntracked,
   codec: _$SettingsCodec(),
 );
 
@@ -387,6 +400,20 @@ const FieldDefinition _$FieldCastSettingsMetadataField = FieldDefinition(
   codecType: 'json',
 );
 
+Map<String, Object?> _encodeFieldCastSettingsUntracked(
+  Object model,
+  ValueCodecRegistry registry,
+) {
+  final m = model as FieldCastSettings;
+  return <String, Object?>{
+    'id': registry.encodeField(_$FieldCastSettingsIdField, m.id),
+    'metadata': registry.encodeField(
+      _$FieldCastSettingsMetadataField,
+      m.metadata,
+    ),
+  };
+}
+
 final ModelDefinition<$FieldCastSettings>
 _$FieldCastSettingsDefinition = ModelDefinition(
   modelName: 'FieldCastSettings',
@@ -404,6 +431,7 @@ _$FieldCastSettingsDefinition = ModelDefinition(
     softDeletes: false,
     softDeleteColumn: 'deleted_at',
   ),
+  untrackedToMap: _encodeFieldCastSettingsUntracked,
   codec: _$FieldCastSettingsCodec(),
 );
 
@@ -710,6 +738,17 @@ const FieldDefinition _$LinkWebsiteField = FieldDefinition(
   codecType: 'uri',
 );
 
+Map<String, Object?> _encodeLinkUntracked(
+  Object model,
+  ValueCodecRegistry registry,
+) {
+  final m = model as Link;
+  return <String, Object?>{
+    'id': registry.encodeField(_$LinkIdField, m.id),
+    'website': registry.encodeField(_$LinkWebsiteField, m.website),
+  };
+}
+
 final ModelDefinition<$Link> _$LinkDefinition = ModelDefinition(
   modelName: 'Link',
   tableName: 'links',
@@ -725,6 +764,7 @@ final ModelDefinition<$Link> _$LinkDefinition = ModelDefinition(
     softDeletes: false,
     softDeleteColumn: 'deleted_at',
   ),
+  untrackedToMap: _encodeLinkUntracked,
   codec: _$LinkCodec(),
 );
 

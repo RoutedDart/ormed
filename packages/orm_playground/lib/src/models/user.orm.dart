@@ -79,6 +79,21 @@ const FieldDefinition _$UserUpdatedAtField = FieldDefinition(
   autoIncrement: false,
 );
 
+Map<String, Object?> _encodeUserUntracked(
+  Object model,
+  ValueCodecRegistry registry,
+) {
+  final m = model as User;
+  return <String, Object?>{
+    'id': registry.encodeField(_$UserIdField, m.id),
+    'email': registry.encodeField(_$UserEmailField, m.email),
+    'name': registry.encodeField(_$UserNameField, m.name),
+    'active': registry.encodeField(_$UserActiveField, m.active),
+    'created_at': registry.encodeField(_$UserCreatedAtField, m.createdAt),
+    'updated_at': registry.encodeField(_$UserUpdatedAtField, m.updatedAt),
+  };
+}
+
 final ModelDefinition<$User> _$UserDefinition = ModelDefinition(
   modelName: 'User',
   tableName: 'users',
@@ -101,6 +116,7 @@ final ModelDefinition<$User> _$UserDefinition = ModelDefinition(
     softDeletes: false,
     softDeleteColumn: 'deleted_at',
   ),
+  untrackedToMap: _encodeUserUntracked,
   codec: _$UserCodec(),
 );
 
@@ -111,6 +127,9 @@ extension UserOrmDefinition on User {
 class Users {
   const Users._();
 
+  /// Starts building a query for [$User].
+  ///
+  /// {@macro ormed.query}
   static Query<$User> query([String? connection]) =>
       Model.query<$User>(connection: connection);
 
@@ -155,6 +174,9 @@ class Users {
   static Query<$User> limit(int count, {String? connection}) =>
       Model.limit<$User>(count, connection: connection);
 
+  /// Creates a [Repository] for [$User].
+  ///
+  /// {@macro ormed.repository}
   static Repository<$User> repo([String? connection]) =>
       Model.repository<$User>(connection: connection);
 }

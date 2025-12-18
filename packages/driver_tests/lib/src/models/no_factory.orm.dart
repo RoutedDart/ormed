@@ -31,6 +31,16 @@ const FieldDefinition _$NoFactoryDeletedAtField = FieldDefinition(
   autoIncrement: false,
 );
 
+Map<String, Object?> _encodeNoFactoryUntracked(
+  Object model,
+  ValueCodecRegistry registry,
+) {
+  final m = model as NoFactory;
+  return <String, Object?>{
+    'id': registry.encodeField(_$NoFactoryIdField, m.id),
+  };
+}
+
 final ModelDefinition<$NoFactory> _$NoFactoryDefinition = ModelDefinition(
   modelName: 'NoFactory',
   tableName: 'active_users',
@@ -47,6 +57,7 @@ final ModelDefinition<$NoFactory> _$NoFactoryDefinition = ModelDefinition(
     softDeletes: true,
     softDeleteColumn: 'deleted_at',
   ),
+  untrackedToMap: _encodeNoFactoryUntracked,
   codec: _$NoFactoryCodec(),
 );
 

@@ -55,6 +55,19 @@ const FieldDefinition _$TagUpdatedAtField = FieldDefinition(
   autoIncrement: false,
 );
 
+Map<String, Object?> _encodeTagUntracked(
+  Object model,
+  ValueCodecRegistry registry,
+) {
+  final m = model as Tag;
+  return <String, Object?>{
+    'id': registry.encodeField(_$TagIdField, m.id),
+    'name': registry.encodeField(_$TagNameField, m.name),
+    'created_at': registry.encodeField(_$TagCreatedAtField, m.createdAt),
+    'updated_at': registry.encodeField(_$TagUpdatedAtField, m.updatedAt),
+  };
+}
+
 final ModelDefinition<$Tag> _$TagDefinition = ModelDefinition(
   modelName: 'Tag',
   tableName: 'tags',
@@ -75,6 +88,7 @@ final ModelDefinition<$Tag> _$TagDefinition = ModelDefinition(
     softDeletes: false,
     softDeleteColumn: 'deleted_at',
   ),
+  untrackedToMap: _encodeTagUntracked,
   codec: _$TagCodec(),
 );
 
@@ -85,6 +99,9 @@ extension TagOrmDefinition on Tag {
 class Tags {
   const Tags._();
 
+  /// Starts building a query for [$Tag].
+  ///
+  /// {@macro ormed.query}
   static Query<$Tag> query([String? connection]) =>
       Model.query<$Tag>(connection: connection);
 
@@ -126,6 +143,9 @@ class Tags {
   static Query<$Tag> limit(int count, {String? connection}) =>
       Model.limit<$Tag>(count, connection: connection);
 
+  /// Creates a [Repository] for [$Tag].
+  ///
+  /// {@macro ormed.repository}
   static Repository<$Tag> repo([String? connection]) =>
       Model.repository<$Tag>(connection: connection);
 }

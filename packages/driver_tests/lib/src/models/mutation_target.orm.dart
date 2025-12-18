@@ -55,6 +55,19 @@ const FieldDefinition _$MutationTargetCategoryField = FieldDefinition(
   autoIncrement: false,
 );
 
+Map<String, Object?> _encodeMutationTargetUntracked(
+  Object model,
+  ValueCodecRegistry registry,
+) {
+  final m = model as MutationTarget;
+  return <String, Object?>{
+    '_id': registry.encodeField(_$MutationTargetIdField, m.id),
+    'name': registry.encodeField(_$MutationTargetNameField, m.name),
+    'active': registry.encodeField(_$MutationTargetActiveField, m.active),
+    'category': registry.encodeField(_$MutationTargetCategoryField, m.category),
+  };
+}
+
 final ModelDefinition<$MutationTarget> _$MutationTargetDefinition =
     ModelDefinition(
       modelName: 'MutationTarget',
@@ -76,6 +89,7 @@ final ModelDefinition<$MutationTarget> _$MutationTargetDefinition =
         softDeletes: false,
         softDeleteColumn: 'deleted_at',
       ),
+      untrackedToMap: _encodeMutationTargetUntracked,
       codec: _$MutationTargetCodec(),
     );
 

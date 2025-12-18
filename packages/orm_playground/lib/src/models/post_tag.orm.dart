@@ -31,6 +31,17 @@ const FieldDefinition _$PostTagTagIdField = FieldDefinition(
   autoIncrement: false,
 );
 
+Map<String, Object?> _encodePostTagUntracked(
+  Object model,
+  ValueCodecRegistry registry,
+) {
+  final m = model as PostTag;
+  return <String, Object?>{
+    'post_id': registry.encodeField(_$PostTagPostIdField, m.postId),
+    'tag_id': registry.encodeField(_$PostTagTagIdField, m.tagId),
+  };
+}
+
 final ModelDefinition<$PostTag> _$PostTagDefinition = ModelDefinition(
   modelName: 'PostTag',
   tableName: 'post_tags',
@@ -46,6 +57,7 @@ final ModelDefinition<$PostTag> _$PostTagDefinition = ModelDefinition(
     softDeletes: false,
     softDeleteColumn: 'deleted_at',
   ),
+  untrackedToMap: _encodePostTagUntracked,
   codec: _$PostTagCodec(),
 );
 
@@ -56,6 +68,9 @@ extension PostTagOrmDefinition on PostTag {
 class PostTags {
   const PostTags._();
 
+  /// Starts building a query for [$PostTag].
+  ///
+  /// {@macro ormed.query}
   static Query<$PostTag> query([String? connection]) =>
       Model.query<$PostTag>(connection: connection);
 
@@ -100,6 +115,9 @@ class PostTags {
   static Query<$PostTag> limit(int count, {String? connection}) =>
       Model.limit<$PostTag>(count, connection: connection);
 
+  /// Creates a [Repository] for [$PostTag].
+  ///
+  /// {@macro ormed.repository}
   static Repository<$PostTag> repo([String? connection]) =>
       Model.repository<$PostTag>(connection: connection);
 }

@@ -1,1 +1,0 @@
-[{"className":"PostWithTags","import":"models/relations/belongs_to_many.dart","definition":"PostWithTagsOrmDefinition.definition","hasFactory":false,"hasEventHandlers":false,"hasScopes":false},{"className":"Tag","import":"models/relations/belongs_to_many.dart","definition":"TagOrmDefinition.definition","hasFactory":false,"hasEventHandlers":false,"hasScopes":false}]

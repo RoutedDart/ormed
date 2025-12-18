@@ -56,6 +56,28 @@ const FieldDefinition _$DerivedForFactoryBaseNameField = FieldDefinition(
   autoIncrement: false,
 );
 
+Map<String, Object?> _encodeDerivedForFactoryUntracked(
+  Object model,
+  ValueCodecRegistry registry,
+) {
+  final m = model as DerivedForFactory;
+  return <String, Object?>{
+    'layerTwoFlag': registry.encodeField(
+      _$DerivedForFactoryLayerTwoFlagField,
+      m.layerTwoFlag,
+    ),
+    'layerOneNotes': registry.encodeField(
+      _$DerivedForFactoryLayerOneNotesField,
+      m.layerOneNotes,
+    ),
+    'id': registry.encodeField(_$DerivedForFactoryIdField, m.id),
+    'baseName': registry.encodeField(
+      _$DerivedForFactoryBaseNameField,
+      m.baseName,
+    ),
+  };
+}
+
 final ModelDefinition<$DerivedForFactory> _$DerivedForFactoryDefinition =
     ModelDefinition(
       modelName: 'DerivedForFactory',
@@ -83,6 +105,7 @@ final ModelDefinition<$DerivedForFactory> _$DerivedForFactoryDefinition =
         softDeletes: false,
         softDeleteColumn: 'deleted_at',
       ),
+      untrackedToMap: _encodeDerivedForFactoryUntracked,
       codec: _$DerivedForFactoryCodec(),
     );
 

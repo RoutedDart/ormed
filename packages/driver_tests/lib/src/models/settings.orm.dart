@@ -32,6 +32,17 @@ const FieldDefinition _$SettingPayloadField = FieldDefinition(
   codecType: 'json',
 );
 
+Map<String, Object?> _encodeSettingUntracked(
+  Object model,
+  ValueCodecRegistry registry,
+) {
+  final m = model as Setting;
+  return <String, Object?>{
+    'id': registry.encodeField(_$SettingIdField, m.id),
+    'payload': registry.encodeField(_$SettingPayloadField, m.payload),
+  };
+}
+
 final ModelDefinition<$Setting> _$SettingDefinition = ModelDefinition(
   modelName: 'Setting',
   tableName: 'settings',
@@ -48,6 +59,7 @@ final ModelDefinition<$Setting> _$SettingDefinition = ModelDefinition(
     softDeletes: false,
     softDeleteColumn: 'deleted_at',
   ),
+  untrackedToMap: _encodeSettingUntracked,
   codec: _$SettingCodec(),
 );
 

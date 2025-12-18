@@ -43,6 +43,18 @@ const FieldDefinition _$UserProfileBioField = FieldDefinition(
   autoIncrement: false,
 );
 
+Map<String, Object?> _encodeUserProfileUntracked(
+  Object model,
+  ValueCodecRegistry registry,
+) {
+  final m = model as UserProfile;
+  return <String, Object?>{
+    'id': registry.encodeField(_$UserProfileIdField, m.id),
+    'user_id': registry.encodeField(_$UserProfileUserIdField, m.userId),
+    'bio': registry.encodeField(_$UserProfileBioField, m.bio),
+  };
+}
+
 final ModelDefinition<$UserProfile> _$UserProfileDefinition = ModelDefinition(
   modelName: 'UserProfile',
   tableName: 'user_profiles',
@@ -62,6 +74,7 @@ final ModelDefinition<$UserProfile> _$UserProfileDefinition = ModelDefinition(
     softDeletes: false,
     softDeleteColumn: 'deleted_at',
   ),
+  untrackedToMap: _encodeUserProfileUntracked,
   codec: _$UserProfileCodec(),
 );
 

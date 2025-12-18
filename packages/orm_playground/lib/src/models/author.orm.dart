@@ -55,6 +55,19 @@ const FieldDefinition _$AuthorUpdatedAtField = FieldDefinition(
   autoIncrement: false,
 );
 
+Map<String, Object?> _encodeAuthorUntracked(
+  Object model,
+  ValueCodecRegistry registry,
+) {
+  final m = model as Author;
+  return <String, Object?>{
+    'id': registry.encodeField(_$AuthorIdField, m.id),
+    'name': registry.encodeField(_$AuthorNameField, m.name),
+    'created_at': registry.encodeField(_$AuthorCreatedAtField, m.createdAt),
+    'updated_at': registry.encodeField(_$AuthorUpdatedAtField, m.updatedAt),
+  };
+}
+
 final ModelDefinition<$Author> _$AuthorDefinition = ModelDefinition(
   modelName: 'Author',
   tableName: 'authors',
@@ -75,6 +88,7 @@ final ModelDefinition<$Author> _$AuthorDefinition = ModelDefinition(
     softDeletes: false,
     softDeleteColumn: 'deleted_at',
   ),
+  untrackedToMap: _encodeAuthorUntracked,
   codec: _$AuthorCodec(),
 );
 
@@ -85,6 +99,9 @@ extension AuthorOrmDefinition on Author {
 class Authors {
   const Authors._();
 
+  /// Starts building a query for [$Author].
+  ///
+  /// {@macro ormed.query}
   static Query<$Author> query([String? connection]) =>
       Model.query<$Author>(connection: connection);
 
@@ -129,6 +146,9 @@ class Authors {
   static Query<$Author> limit(int count, {String? connection}) =>
       Model.limit<$Author>(count, connection: connection);
 
+  /// Creates a [Repository] for [$Author].
+  ///
+  /// {@macro ormed.repository}
   static Repository<$Author> repo([String? connection]) =>
       Model.repository<$Author>(connection: connection);
 }

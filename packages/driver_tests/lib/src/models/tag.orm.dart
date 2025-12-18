@@ -40,6 +40,17 @@ const RelationDefinition _$TagPostsRelation = RelationDefinition(
   pivotRelatedKey: 'post_id',
 );
 
+Map<String, Object?> _encodeTagUntracked(
+  Object model,
+  ValueCodecRegistry registry,
+) {
+  final m = model as Tag;
+  return <String, Object?>{
+    'id': registry.encodeField(_$TagIdField, m.id),
+    'label': registry.encodeField(_$TagLabelField, m.label),
+  };
+}
+
 final ModelDefinition<$Tag> _$TagDefinition = ModelDefinition(
   modelName: 'Tag',
   tableName: 'tags',
@@ -55,6 +66,7 @@ final ModelDefinition<$Tag> _$TagDefinition = ModelDefinition(
     softDeletes: false,
     softDeleteColumn: 'deleted_at',
   ),
+  untrackedToMap: _encodeTagUntracked,
   codec: _$TagCodec(),
 );
 

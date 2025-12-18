@@ -43,6 +43,18 @@ const FieldDefinition _$NamedConstructorModelValueField = FieldDefinition(
   autoIncrement: false,
 );
 
+Map<String, Object?> _encodeNamedConstructorModelUntracked(
+  Object model,
+  ValueCodecRegistry registry,
+) {
+  final m = model as NamedConstructorModel;
+  return <String, Object?>{
+    'id': registry.encodeField(_$NamedConstructorModelIdField, m.id),
+    'name': registry.encodeField(_$NamedConstructorModelNameField, m.name),
+    'value': registry.encodeField(_$NamedConstructorModelValueField, m.value),
+  };
+}
+
 final ModelDefinition<$NamedConstructorModel>
 _$NamedConstructorModelDefinition = ModelDefinition(
   modelName: 'NamedConstructorModel',
@@ -63,6 +75,7 @@ _$NamedConstructorModelDefinition = ModelDefinition(
     softDeletes: false,
     softDeleteColumn: 'deleted_at',
   ),
+  untrackedToMap: _encodeNamedConstructorModelUntracked,
   codec: _$NamedConstructorModelCodec(),
 );
 

@@ -68,6 +68,19 @@ const FieldDefinition _$ActiveUserDeletedAtField = FieldDefinition(
   autoIncrement: false,
 );
 
+Map<String, Object?> _encodeActiveUserUntracked(
+  Object model,
+  ValueCodecRegistry registry,
+) {
+  final m = model as ActiveUser;
+  return <String, Object?>{
+    'id': registry.encodeField(_$ActiveUserIdField, m.id),
+    'email': registry.encodeField(_$ActiveUserEmailField, m.email),
+    'name': registry.encodeField(_$ActiveUserNameField, m.name),
+    'settings': registry.encodeField(_$ActiveUserSettingsField, m.settings),
+  };
+}
+
 final ModelDefinition<$ActiveUser> _$ActiveUserDefinition = ModelDefinition(
   modelName: 'ActiveUser',
   tableName: 'active_users',
@@ -90,6 +103,7 @@ final ModelDefinition<$ActiveUser> _$ActiveUserDefinition = ModelDefinition(
     softDeletes: true,
     softDeleteColumn: 'deleted_at',
   ),
+  untrackedToMap: _encodeActiveUserUntracked,
   codec: _$ActiveUserCodec(),
 );
 

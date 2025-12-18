@@ -40,6 +40,17 @@ const RelationDefinition _$ImagePrimaryPhotoRelation = RelationDefinition(
   morphClass: 'Image',
 );
 
+Map<String, Object?> _encodeImageUntracked(
+  Object model,
+  ValueCodecRegistry registry,
+) {
+  final m = model as Image;
+  return <String, Object?>{
+    'id': registry.encodeField(_$ImageIdField, m.id),
+    'label': registry.encodeField(_$ImageLabelField, m.label),
+  };
+}
+
 final ModelDefinition<$Image> _$ImageDefinition = ModelDefinition(
   modelName: 'Image',
   tableName: 'images',
@@ -55,6 +66,7 @@ final ModelDefinition<$Image> _$ImageDefinition = ModelDefinition(
     softDeletes: false,
     softDeleteColumn: 'deleted_at',
   ),
+  untrackedToMap: _encodeImageUntracked,
   codec: _$ImageCodec(),
 );
 

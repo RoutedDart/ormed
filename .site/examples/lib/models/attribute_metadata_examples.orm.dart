@@ -67,6 +67,23 @@ const FieldDefinition _$AccountIsAdminField = FieldDefinition(
   autoIncrement: false,
 );
 
+Map<String, Object?> _encodeAccountUntracked(
+  Object model,
+  ValueCodecRegistry registry,
+) {
+  final m = model as Account;
+  return <String, Object?>{
+    'id': registry.encodeField(_$AccountIdField, m.id),
+    'email': registry.encodeField(_$AccountEmailField, m.email),
+    'password_hash': registry.encodeField(
+      _$AccountPasswordHashField,
+      m.passwordHash,
+    ),
+    'name': registry.encodeField(_$AccountNameField, m.name),
+    'is_admin': registry.encodeField(_$AccountIsAdminField, m.isAdmin),
+  };
+}
+
 final ModelDefinition<$Account> _$AccountDefinition = ModelDefinition(
   modelName: 'Account',
   tableName: 'accounts',
@@ -89,6 +106,7 @@ final ModelDefinition<$Account> _$AccountDefinition = ModelDefinition(
     softDeletes: false,
     softDeleteColumn: 'deleted_at',
   ),
+  untrackedToMap: _encodeAccountUntracked,
   codec: _$AccountCodec(),
 );
 

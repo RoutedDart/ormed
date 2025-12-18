@@ -128,6 +128,23 @@ const RelationDefinition _$PostCommentsRelation = RelationDefinition(
   localKey: 'id',
 );
 
+Map<String, Object?> _encodePostUntracked(
+  Object model,
+  ValueCodecRegistry registry,
+) {
+  final m = model as Post;
+  return <String, Object?>{
+    'id': registry.encodeField(_$PostIdField, m.id),
+    'user_id': registry.encodeField(_$PostUserIdField, m.userId),
+    'title': registry.encodeField(_$PostTitleField, m.title),
+    'body': registry.encodeField(_$PostBodyField, m.body),
+    'published': registry.encodeField(_$PostPublishedField, m.published),
+    'published_at': registry.encodeField(_$PostPublishedAtField, m.publishedAt),
+    'created_at': registry.encodeField(_$PostCreatedAtField, m.createdAt),
+    'updated_at': registry.encodeField(_$PostUpdatedAtField, m.updatedAt),
+  };
+}
+
 final ModelDefinition<$Post> _$PostDefinition = ModelDefinition(
   modelName: 'Post',
   tableName: 'posts',
@@ -156,6 +173,7 @@ final ModelDefinition<$Post> _$PostDefinition = ModelDefinition(
     softDeletes: false,
     softDeleteColumn: 'deleted_at',
   ),
+  untrackedToMap: _encodePostUntracked,
   codec: _$PostCodec(),
 );
 
@@ -166,6 +184,9 @@ extension PostOrmDefinition on Post {
 class Posts {
   const Posts._();
 
+  /// Starts building a query for [$Post].
+  ///
+  /// {@macro ormed.query}
   static Query<$Post> query([String? connection]) =>
       Model.query<$Post>(connection: connection);
 
@@ -210,6 +231,9 @@ class Posts {
   static Query<$Post> limit(int count, {String? connection}) =>
       Model.limit<$Post>(count, connection: connection);
 
+  /// Creates a [Repository] for [$Post].
+  ///
+  /// {@macro ormed.repository}
   static Repository<$Post> repo([String? connection]) =>
       Model.repository<$Post>(connection: connection);
 }

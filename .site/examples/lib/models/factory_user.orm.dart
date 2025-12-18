@@ -43,6 +43,18 @@ const FieldDefinition _$FactoryUserNameField = FieldDefinition(
   autoIncrement: false,
 );
 
+Map<String, Object?> _encodeFactoryUserUntracked(
+  Object model,
+  ValueCodecRegistry registry,
+) {
+  final m = model as FactoryUser;
+  return <String, Object?>{
+    'id': registry.encodeField(_$FactoryUserIdField, m.id),
+    'email': registry.encodeField(_$FactoryUserEmailField, m.email),
+    'name': registry.encodeField(_$FactoryUserNameField, m.name),
+  };
+}
+
 final ModelDefinition<$FactoryUser> _$FactoryUserDefinition = ModelDefinition(
   modelName: 'FactoryUser',
   tableName: 'users',
@@ -62,6 +74,7 @@ final ModelDefinition<$FactoryUser> _$FactoryUserDefinition = ModelDefinition(
     softDeletes: false,
     softDeleteColumn: 'deleted_at',
   ),
+  untrackedToMap: _encodeFactoryUserUntracked,
   codec: _$FactoryUserCodec(),
 );
 

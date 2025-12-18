@@ -62,6 +62,19 @@ const RelationDefinition _$PostWithAuthorAuthorRelation = RelationDefinition(
   foreignKey: 'author_id',
 );
 
+Map<String, Object?> _encodePostWithAuthorUntracked(
+  Object model,
+  ValueCodecRegistry registry,
+) {
+  final m = model as PostWithAuthor;
+  return <String, Object?>{
+    'id': registry.encodeField(_$PostWithAuthorIdField, m.id),
+    'authorId': registry.encodeField(_$PostWithAuthorAuthorIdField, m.authorId),
+    'title': registry.encodeField(_$PostWithAuthorTitleField, m.title),
+    'author': registry.encodeField(_$PostWithAuthorAuthorField, m.author),
+  };
+}
+
 final ModelDefinition<$PostWithAuthor> _$PostWithAuthorDefinition =
     ModelDefinition(
       modelName: 'PostWithAuthor',
@@ -83,6 +96,7 @@ final ModelDefinition<$PostWithAuthor> _$PostWithAuthorDefinition =
         softDeletes: false,
         softDeleteColumn: 'deleted_at',
       ),
+      untrackedToMap: _encodePostWithAuthorUntracked,
       codec: _$PostWithAuthorCodec(),
     );
 
@@ -491,6 +505,17 @@ const FieldDefinition _$PostAuthorNameField = FieldDefinition(
   autoIncrement: false,
 );
 
+Map<String, Object?> _encodePostAuthorUntracked(
+  Object model,
+  ValueCodecRegistry registry,
+) {
+  final m = model as PostAuthor;
+  return <String, Object?>{
+    'id': registry.encodeField(_$PostAuthorIdField, m.id),
+    'name': registry.encodeField(_$PostAuthorNameField, m.name),
+  };
+}
+
 final ModelDefinition<$PostAuthor> _$PostAuthorDefinition = ModelDefinition(
   modelName: 'PostAuthor',
   tableName: 'users',
@@ -506,6 +531,7 @@ final ModelDefinition<$PostAuthor> _$PostAuthorDefinition = ModelDefinition(
     softDeletes: false,
     softDeleteColumn: 'deleted_at',
   ),
+  untrackedToMap: _encodePostAuthorUntracked,
   codec: _$PostAuthorCodec(),
 );
 

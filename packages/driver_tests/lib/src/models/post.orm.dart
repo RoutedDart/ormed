@@ -129,6 +129,21 @@ const RelationDefinition _$PostPhotosRelation = RelationDefinition(
   morphClass: 'Post',
 );
 
+Map<String, Object?> _encodePostUntracked(
+  Object model,
+  ValueCodecRegistry registry,
+) {
+  final m = model as Post;
+  return <String, Object?>{
+    'id': registry.encodeField(_$PostIdField, m.id),
+    'author_id': registry.encodeField(_$PostAuthorIdField, m.authorId),
+    'title': registry.encodeField(_$PostTitleField, m.title),
+    'content': registry.encodeField(_$PostContentField, m.content),
+    'views': registry.encodeField(_$PostViewsField, m.views),
+    'published_at': registry.encodeField(_$PostPublishedAtField, m.publishedAt),
+  };
+}
+
 final ModelDefinition<$Post> _$PostDefinition = ModelDefinition(
   modelName: 'Post',
   tableName: 'posts',
@@ -157,6 +172,7 @@ final ModelDefinition<$Post> _$PostDefinition = ModelDefinition(
     softDeletes: false,
     softDeleteColumn: 'deleted_at',
   ),
+  untrackedToMap: _encodePostUntracked,
   codec: _$PostCodec(),
 );
 

@@ -42,6 +42,20 @@ const FieldDefinition _$DriverOverrideModelPayloadField = FieldDefinition(
   },
 );
 
+Map<String, Object?> _encodeDriverOverrideModelUntracked(
+  Object model,
+  ValueCodecRegistry registry,
+) {
+  final m = model as DriverOverrideModel;
+  return <String, Object?>{
+    'id': registry.encodeField(_$DriverOverrideModelIdField, m.id),
+    'payload': registry.encodeField(
+      _$DriverOverrideModelPayloadField,
+      m.payload,
+    ),
+  };
+}
+
 final ModelDefinition<$DriverOverrideModel> _$DriverOverrideModelDefinition =
     ModelDefinition(
       modelName: 'DriverOverrideModel',
@@ -61,6 +75,7 @@ final ModelDefinition<$DriverOverrideModel> _$DriverOverrideModelDefinition =
         softDeletes: false,
         softDeleteColumn: 'deleted_at',
       ),
+      untrackedToMap: _encodeDriverOverrideModelUntracked,
       codec: _$DriverOverrideModelCodec(),
     );
 

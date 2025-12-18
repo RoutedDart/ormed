@@ -31,6 +31,17 @@ const FieldDefinition _$BaseItemNameField = FieldDefinition(
   autoIncrement: false,
 );
 
+Map<String, Object?> _encodeBaseItemUntracked(
+  Object model,
+  ValueCodecRegistry registry,
+) {
+  final m = model as BaseItem;
+  return <String, Object?>{
+    'id': registry.encodeField(_$BaseItemIdField, m.id),
+    'name': registry.encodeField(_$BaseItemNameField, m.name),
+  };
+}
+
 final ModelDefinition<$BaseItem> _$BaseItemDefinition = ModelDefinition(
   modelName: 'BaseItem',
   tableName: 'base_items',
@@ -46,6 +57,7 @@ final ModelDefinition<$BaseItem> _$BaseItemDefinition = ModelDefinition(
     softDeletes: false,
     softDeleteColumn: 'deleted_at',
   ),
+  untrackedToMap: _encodeBaseItemUntracked,
   codec: _$BaseItemCodec(),
 );
 
@@ -336,6 +348,18 @@ const FieldDefinition _$SpecialItemNameField = FieldDefinition(
   autoIncrement: false,
 );
 
+Map<String, Object?> _encodeSpecialItemUntracked(
+  Object model,
+  ValueCodecRegistry registry,
+) {
+  final m = model as SpecialItem;
+  return <String, Object?>{
+    'tags': registry.encodeField(_$SpecialItemTagsField, m.tags),
+    'id': registry.encodeField(_$SpecialItemIdField, m.id),
+    'name': registry.encodeField(_$SpecialItemNameField, m.name),
+  };
+}
+
 final ModelDefinition<$SpecialItem> _$SpecialItemDefinition = ModelDefinition(
   modelName: 'SpecialItem',
   tableName: 'special_items',
@@ -355,6 +379,7 @@ final ModelDefinition<$SpecialItem> _$SpecialItemDefinition = ModelDefinition(
     softDeletes: false,
     softDeleteColumn: 'deleted_at',
   ),
+  untrackedToMap: _encodeSpecialItemUntracked,
   codec: _$SpecialItemCodec(),
 );
 

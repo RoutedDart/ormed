@@ -19,6 +19,16 @@ const FieldDefinition _$ItemWithIntPKIdField = FieldDefinition(
   autoIncrement: false,
 );
 
+Map<String, Object?> _encodeItemWithIntPKUntracked(
+  Object model,
+  ValueCodecRegistry registry,
+) {
+  final m = model as ItemWithIntPK;
+  return <String, Object?>{
+    'id': registry.encodeField(_$ItemWithIntPKIdField, m.id),
+  };
+}
+
 final ModelDefinition<$ItemWithIntPK> _$ItemWithIntPKDefinition =
     ModelDefinition(
       modelName: 'ItemWithIntPK',
@@ -35,6 +45,7 @@ final ModelDefinition<$ItemWithIntPK> _$ItemWithIntPKDefinition =
         softDeletes: false,
         softDeleteColumn: 'deleted_at',
       ),
+      untrackedToMap: _encodeItemWithIntPKUntracked,
       codec: _$ItemWithIntPKCodec(),
     );
 
@@ -290,6 +301,16 @@ const FieldDefinition _$ItemWithAutoIncrementIdField = FieldDefinition(
   autoIncrement: true,
 );
 
+Map<String, Object?> _encodeItemWithAutoIncrementUntracked(
+  Object model,
+  ValueCodecRegistry registry,
+) {
+  final m = model as ItemWithAutoIncrement;
+  return <String, Object?>{
+    'id': registry.encodeField(_$ItemWithAutoIncrementIdField, m.id),
+  };
+}
+
 final ModelDefinition<$ItemWithAutoIncrement>
 _$ItemWithAutoIncrementDefinition = ModelDefinition(
   modelName: 'ItemWithAutoIncrement',
@@ -306,6 +327,7 @@ _$ItemWithAutoIncrementDefinition = ModelDefinition(
     softDeletes: false,
     softDeleteColumn: 'deleted_at',
   ),
+  untrackedToMap: _encodeItemWithAutoIncrementUntracked,
   codec: _$ItemWithAutoIncrementCodec(),
 );
 
@@ -571,6 +593,16 @@ const FieldDefinition _$ItemWithUuidPKIdField = FieldDefinition(
   autoIncrement: false,
 );
 
+Map<String, Object?> _encodeItemWithUuidPKUntracked(
+  Object model,
+  ValueCodecRegistry registry,
+) {
+  final m = model as ItemWithUuidPK;
+  return <String, Object?>{
+    'id': registry.encodeField(_$ItemWithUuidPKIdField, m.id),
+  };
+}
+
 final ModelDefinition<$ItemWithUuidPK> _$ItemWithUuidPKDefinition =
     ModelDefinition(
       modelName: 'ItemWithUuidPK',
@@ -587,6 +619,7 @@ final ModelDefinition<$ItemWithUuidPK> _$ItemWithUuidPKDefinition =
         softDeletes: false,
         softDeleteColumn: 'deleted_at',
       ),
+      untrackedToMap: _encodeItemWithUuidPKUntracked,
       codec: _$ItemWithUuidPKCodec(),
     );
 
@@ -879,6 +912,19 @@ const FieldDefinition _$ContactNameField = FieldDefinition(
   autoIncrement: false,
 );
 
+Map<String, Object?> _encodeContactUntracked(
+  Object model,
+  ValueCodecRegistry registry,
+) {
+  final m = model as Contact;
+  return <String, Object?>{
+    'id': registry.encodeField(_$ContactIdField, m.id),
+    'user_email': registry.encodeField(_$ContactEmailField, m.email),
+    'active': registry.encodeField(_$ContactActiveField, m.active),
+    'name': registry.encodeField(_$ContactNameField, m.name),
+  };
+}
+
 final ModelDefinition<$Contact> _$ContactDefinition = ModelDefinition(
   modelName: 'Contact',
   tableName: 'contacts',
@@ -899,6 +945,7 @@ final ModelDefinition<$Contact> _$ContactDefinition = ModelDefinition(
     softDeletes: false,
     softDeleteColumn: 'deleted_at',
   ),
+  untrackedToMap: _encodeContactUntracked,
   codec: _$ContactCodec(),
 );
 

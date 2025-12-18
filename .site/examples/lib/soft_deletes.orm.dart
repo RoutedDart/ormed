@@ -67,6 +67,17 @@ const FieldDefinition _$CombinedPostUpdatedAtField = FieldDefinition(
   autoIncrement: false,
 );
 
+Map<String, Object?> _encodeCombinedPostUntracked(
+  Object model,
+  ValueCodecRegistry registry,
+) {
+  final m = model as CombinedPost;
+  return <String, Object?>{
+    'id': registry.encodeField(_$CombinedPostIdField, m.id),
+    'title': registry.encodeField(_$CombinedPostTitleField, m.title),
+  };
+}
+
 final ModelDefinition<$CombinedPost> _$CombinedPostDefinition = ModelDefinition(
   modelName: 'CombinedPost',
   tableName: 'posts',
@@ -88,6 +99,7 @@ final ModelDefinition<$CombinedPost> _$CombinedPostDefinition = ModelDefinition(
     softDeletes: true,
     softDeleteColumn: 'deleted_at',
   ),
+  untrackedToMap: _encodeCombinedPostUntracked,
   codec: _$CombinedPostCodec(),
 );
 
@@ -446,6 +458,17 @@ const FieldDefinition _$CombinedPostTzUpdatedAtField = FieldDefinition(
   autoIncrement: false,
 );
 
+Map<String, Object?> _encodeCombinedPostTzUntracked(
+  Object model,
+  ValueCodecRegistry registry,
+) {
+  final m = model as CombinedPostTz;
+  return <String, Object?>{
+    'id': registry.encodeField(_$CombinedPostTzIdField, m.id),
+    'title': registry.encodeField(_$CombinedPostTzTitleField, m.title),
+  };
+}
+
 final ModelDefinition<$CombinedPostTz> _$CombinedPostTzDefinition =
     ModelDefinition(
       modelName: 'CombinedPostTz',
@@ -468,6 +491,7 @@ final ModelDefinition<$CombinedPostTz> _$CombinedPostTzDefinition =
         softDeletes: false,
         softDeleteColumn: 'deleted_at',
       ),
+      untrackedToMap: _encodeCombinedPostTzUntracked,
       codec: _$CombinedPostTzCodec(),
     );
 

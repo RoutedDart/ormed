@@ -115,6 +115,23 @@ const RelationDefinition _$UserUserProfileRelation = RelationDefinition(
   localKey: 'id',
 );
 
+Map<String, Object?> _encodeUserUntracked(
+  Object model,
+  ValueCodecRegistry registry,
+) {
+  final m = model as User;
+  return <String, Object?>{
+    'id': registry.encodeField(_$UserIdField, m.id),
+    'email': registry.encodeField(_$UserEmailField, m.email),
+    'active': registry.encodeField(_$UserActiveField, m.active),
+    'name': registry.encodeField(_$UserNameField, m.name),
+    'age': registry.encodeField(_$UserAgeField, m.age),
+    'createdAt': registry.encodeField(_$UserCreatedAtField, m.createdAt),
+    'profile': registry.encodeField(_$UserProfileField, m.profile),
+    'metadata': registry.encodeField(_$UserMetadataField, m.metadata),
+  };
+}
+
 final ModelDefinition<$User> _$UserDefinition = ModelDefinition(
   modelName: 'User',
   tableName: 'users',
@@ -139,6 +156,7 @@ final ModelDefinition<$User> _$UserDefinition = ModelDefinition(
     softDeletes: false,
     softDeleteColumn: 'deleted_at',
   ),
+  untrackedToMap: _encodeUserUntracked,
   codec: _$UserCodec(),
 );
 

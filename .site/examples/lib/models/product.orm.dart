@@ -57,6 +57,19 @@ const FieldDefinition _$ProductMetadataField = FieldDefinition(
   codecType: 'JsonMapCodec',
 );
 
+Map<String, Object?> _encodeProductUntracked(
+  Object model,
+  ValueCodecRegistry registry,
+) {
+  final m = model as Product;
+  return <String, Object?>{
+    'id': registry.encodeField(_$ProductIdField, m.id),
+    'sku': registry.encodeField(_$ProductSkuField, m.sku),
+    'active': registry.encodeField(_$ProductActiveField, m.active),
+    'metadata': registry.encodeField(_$ProductMetadataField, m.metadata),
+  };
+}
+
 final ModelDefinition<$Product> _$ProductDefinition = ModelDefinition(
   modelName: 'Product',
   tableName: 'products',
@@ -77,6 +90,7 @@ final ModelDefinition<$Product> _$ProductDefinition = ModelDefinition(
     softDeletes: false,
     softDeleteColumn: 'deleted_at',
   ),
+  untrackedToMap: _encodeProductUntracked,
   codec: _$ProductCodec(),
 );
 

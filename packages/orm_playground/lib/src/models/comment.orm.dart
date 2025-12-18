@@ -87,6 +87,21 @@ const RelationDefinition _$CommentAuthorRelation = RelationDefinition(
   localKey: 'id',
 );
 
+Map<String, Object?> _encodeCommentUntracked(
+  Object model,
+  ValueCodecRegistry registry,
+) {
+  final m = model as Comment;
+  return <String, Object?>{
+    'id': registry.encodeField(_$CommentIdField, m.id),
+    'post_id': registry.encodeField(_$CommentPostIdField, m.postId),
+    'user_id': registry.encodeField(_$CommentUserIdField, m.userId),
+    'body': registry.encodeField(_$CommentBodyField, m.body),
+    'created_at': registry.encodeField(_$CommentCreatedAtField, m.createdAt),
+    'updated_at': registry.encodeField(_$CommentUpdatedAtField, m.updatedAt),
+  };
+}
+
 final ModelDefinition<$Comment> _$CommentDefinition = ModelDefinition(
   modelName: 'Comment',
   tableName: 'comments',
@@ -109,6 +124,7 @@ final ModelDefinition<$Comment> _$CommentDefinition = ModelDefinition(
     softDeletes: false,
     softDeleteColumn: 'deleted_at',
   ),
+  untrackedToMap: _encodeCommentUntracked,
   codec: _$CommentCodec(),
 );
 
@@ -119,6 +135,9 @@ extension CommentOrmDefinition on Comment {
 class Comments {
   const Comments._();
 
+  /// Starts building a query for [$Comment].
+  ///
+  /// {@macro ormed.query}
   static Query<$Comment> query([String? connection]) =>
       Model.query<$Comment>(connection: connection);
 
@@ -163,6 +182,9 @@ class Comments {
   static Query<$Comment> limit(int count, {String? connection}) =>
       Model.limit<$Comment>(count, connection: connection);
 
+  /// Creates a [Repository] for [$Comment].
+  ///
+  /// {@macro ormed.repository}
   static Repository<$Comment> repo([String? connection]) =>
       Model.repository<$Comment>(connection: connection);
 }

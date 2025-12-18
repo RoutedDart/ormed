@@ -43,6 +43,17 @@ const FieldDefinition _$SoftDeletePostDeletedAtField = FieldDefinition(
   autoIncrement: false,
 );
 
+Map<String, Object?> _encodeSoftDeletePostUntracked(
+  Object model,
+  ValueCodecRegistry registry,
+) {
+  final m = model as SoftDeletePost;
+  return <String, Object?>{
+    'id': registry.encodeField(_$SoftDeletePostIdField, m.id),
+    'title': registry.encodeField(_$SoftDeletePostTitleField, m.title),
+  };
+}
+
 final ModelDefinition<$SoftDeletePost> _$SoftDeletePostDefinition =
     ModelDefinition(
       modelName: 'SoftDeletePost',
@@ -63,6 +74,7 @@ final ModelDefinition<$SoftDeletePost> _$SoftDeletePostDefinition =
         softDeletes: true,
         softDeleteColumn: 'deleted_at',
       ),
+      untrackedToMap: _encodeSoftDeletePostUntracked,
       codec: _$SoftDeletePostCodec(),
     );
 
@@ -383,6 +395,17 @@ const FieldDefinition _$SoftDeleteArticleTzDeletedAtField = FieldDefinition(
   autoIncrement: false,
 );
 
+Map<String, Object?> _encodeSoftDeleteArticleTzUntracked(
+  Object model,
+  ValueCodecRegistry registry,
+) {
+  final m = model as SoftDeleteArticleTz;
+  return <String, Object?>{
+    'id': registry.encodeField(_$SoftDeleteArticleTzIdField, m.id),
+    'title': registry.encodeField(_$SoftDeleteArticleTzTitleField, m.title),
+  };
+}
+
 final ModelDefinition<$SoftDeleteArticleTz> _$SoftDeleteArticleTzDefinition =
     ModelDefinition(
       modelName: 'SoftDeleteArticleTz',
@@ -403,6 +426,7 @@ final ModelDefinition<$SoftDeleteArticleTz> _$SoftDeleteArticleTzDefinition =
         softDeletes: false,
         softDeleteColumn: 'deleted_at',
       ),
+      untrackedToMap: _encodeSoftDeleteArticleTzUntracked,
       codec: _$SoftDeleteArticleTzCodec(),
     );
 

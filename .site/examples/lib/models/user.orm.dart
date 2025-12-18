@@ -55,6 +55,19 @@ const FieldDefinition _$UserCreatedAtField = FieldDefinition(
   autoIncrement: false,
 );
 
+Map<String, Object?> _encodeUserUntracked(
+  Object model,
+  ValueCodecRegistry registry,
+) {
+  final m = model as User;
+  return <String, Object?>{
+    'id': registry.encodeField(_$UserIdField, m.id),
+    'email': registry.encodeField(_$UserEmailField, m.email),
+    'name': registry.encodeField(_$UserNameField, m.name),
+    'createdAt': registry.encodeField(_$UserCreatedAtField, m.createdAt),
+  };
+}
+
 final ModelDefinition<$User> _$UserDefinition = ModelDefinition(
   modelName: 'User',
   tableName: 'users',
@@ -75,6 +88,7 @@ final ModelDefinition<$User> _$UserDefinition = ModelDefinition(
     softDeletes: false,
     softDeleteColumn: 'deleted_at',
   ),
+  untrackedToMap: _encodeUserUntracked,
   codec: _$UserCodec(),
 );
 

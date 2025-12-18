@@ -38,6 +38,17 @@ const RelationDefinition _$UserWithProfileProfileRelation = RelationDefinition(
   foreignKey: 'user_id',
 );
 
+Map<String, Object?> _encodeUserWithProfileUntracked(
+  Object model,
+  ValueCodecRegistry registry,
+) {
+  final m = model as UserWithProfile;
+  return <String, Object?>{
+    'id': registry.encodeField(_$UserWithProfileIdField, m.id),
+    'profile': registry.encodeField(_$UserWithProfileProfileField, m.profile),
+  };
+}
+
 final ModelDefinition<$UserWithProfile> _$UserWithProfileDefinition =
     ModelDefinition(
       modelName: 'UserWithProfile',
@@ -54,6 +65,7 @@ final ModelDefinition<$UserWithProfile> _$UserWithProfileDefinition =
         softDeletes: false,
         softDeleteColumn: 'deleted_at',
       ),
+      untrackedToMap: _encodeUserWithProfileUntracked,
       codec: _$UserWithProfileCodec(),
     );
 
@@ -382,6 +394,18 @@ const FieldDefinition _$ProfileBioField = FieldDefinition(
   autoIncrement: false,
 );
 
+Map<String, Object?> _encodeProfileUntracked(
+  Object model,
+  ValueCodecRegistry registry,
+) {
+  final m = model as Profile;
+  return <String, Object?>{
+    'id': registry.encodeField(_$ProfileIdField, m.id),
+    'userId': registry.encodeField(_$ProfileUserIdField, m.userId),
+    'bio': registry.encodeField(_$ProfileBioField, m.bio),
+  };
+}
+
 final ModelDefinition<$Profile> _$ProfileDefinition = ModelDefinition(
   modelName: 'Profile',
   tableName: 'profiles',
@@ -397,6 +421,7 @@ final ModelDefinition<$Profile> _$ProfileDefinition = ModelDefinition(
     softDeletes: false,
     softDeleteColumn: 'deleted_at',
   ),
+  untrackedToMap: _encodeProfileUntracked,
   codec: _$ProfileCodec(),
 );
 

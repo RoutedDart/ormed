@@ -42,6 +42,20 @@ const FieldDefinition _$DriverOverrideExamplePayloadField = FieldDefinition(
   },
 );
 
+Map<String, Object?> _encodeDriverOverrideExampleUntracked(
+  Object model,
+  ValueCodecRegistry registry,
+) {
+  final m = model as DriverOverrideExample;
+  return <String, Object?>{
+    'id': registry.encodeField(_$DriverOverrideExampleIdField, m.id),
+    'payload': registry.encodeField(
+      _$DriverOverrideExamplePayloadField,
+      m.payload,
+    ),
+  };
+}
+
 final ModelDefinition<$DriverOverrideExample>
 _$DriverOverrideExampleDefinition = ModelDefinition(
   modelName: 'DriverOverrideExample',
@@ -61,6 +75,7 @@ _$DriverOverrideExampleDefinition = ModelDefinition(
     softDeletes: false,
     softDeleteColumn: 'deleted_at',
   ),
+  untrackedToMap: _encodeDriverOverrideExampleUntracked,
   codec: _$DriverOverrideExampleCodec(),
 );
 
@@ -385,6 +400,17 @@ const FieldDefinition _$AuditedEventActionField = FieldDefinition(
   autoIncrement: false,
 );
 
+Map<String, Object?> _encodeAuditedEventUntracked(
+  Object model,
+  ValueCodecRegistry registry,
+) {
+  final m = model as AuditedEvent;
+  return <String, Object?>{
+    'id': registry.encodeField(_$AuditedEventIdField, m.id),
+    'action': registry.encodeField(_$AuditedEventActionField, m.action),
+  };
+}
+
 final ModelDefinition<$AuditedEvent> _$AuditedEventDefinition = ModelDefinition(
   modelName: 'AuditedEvent',
   tableName: 'audited_events',
@@ -401,6 +427,7 @@ final ModelDefinition<$AuditedEvent> _$AuditedEventDefinition = ModelDefinition(
     softDeletes: false,
     softDeleteColumn: 'deleted_at',
   ),
+  untrackedToMap: _encodeAuditedEventUntracked,
   codec: _$AuditedEventCodec(),
 );
 

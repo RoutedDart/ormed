@@ -31,6 +31,17 @@ const FieldDefinition _$PostWithTagsTagsField = FieldDefinition(
   autoIncrement: false,
 );
 
+Map<String, Object?> _encodePostWithTagsUntracked(
+  Object model,
+  ValueCodecRegistry registry,
+) {
+  final m = model as PostWithTags;
+  return <String, Object?>{
+    'id': registry.encodeField(_$PostWithTagsIdField, m.id),
+    'tags': registry.encodeField(_$PostWithTagsTagsField, m.tags),
+  };
+}
+
 final ModelDefinition<$PostWithTags> _$PostWithTagsDefinition = ModelDefinition(
   modelName: 'PostWithTags',
   tableName: 'posts',
@@ -46,6 +57,7 @@ final ModelDefinition<$PostWithTags> _$PostWithTagsDefinition = ModelDefinition(
     softDeletes: false,
     softDeleteColumn: 'deleted_at',
   ),
+  untrackedToMap: _encodePostWithTagsUntracked,
   codec: _$PostWithTagsCodec(),
 );
 
@@ -339,6 +351,17 @@ const FieldDefinition _$TagNameField = FieldDefinition(
   autoIncrement: false,
 );
 
+Map<String, Object?> _encodeTagUntracked(
+  Object model,
+  ValueCodecRegistry registry,
+) {
+  final m = model as Tag;
+  return <String, Object?>{
+    'id': registry.encodeField(_$TagIdField, m.id),
+    'name': registry.encodeField(_$TagNameField, m.name),
+  };
+}
+
 final ModelDefinition<$Tag> _$TagDefinition = ModelDefinition(
   modelName: 'Tag',
   tableName: 'tags',
@@ -354,6 +377,7 @@ final ModelDefinition<$Tag> _$TagDefinition = ModelDefinition(
     softDeletes: false,
     softDeleteColumn: 'deleted_at',
   ),
+  untrackedToMap: _encodeTagUntracked,
   codec: _$TagCodec(),
 );
 

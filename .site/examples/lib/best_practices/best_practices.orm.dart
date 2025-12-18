@@ -43,6 +43,18 @@ const FieldDefinition _$ValidatedUserAgeField = FieldDefinition(
   autoIncrement: false,
 );
 
+Map<String, Object?> _encodeValidatedUserUntracked(
+  Object model,
+  ValueCodecRegistry registry,
+) {
+  final m = model as ValidatedUser;
+  return <String, Object?>{
+    'id': registry.encodeField(_$ValidatedUserIdField, m.id),
+    'email': registry.encodeField(_$ValidatedUserEmailField, m.email),
+    'age': registry.encodeField(_$ValidatedUserAgeField, m.age),
+  };
+}
+
 final ModelDefinition<$ValidatedUser> _$ValidatedUserDefinition =
     ModelDefinition(
       modelName: 'ValidatedUser',
@@ -63,6 +75,7 @@ final ModelDefinition<$ValidatedUser> _$ValidatedUserDefinition =
         softDeletes: false,
         softDeleteColumn: 'deleted_at',
       ),
+      untrackedToMap: _encodeValidatedUserUntracked,
       codec: _$ValidatedUserCodec(),
     );
 

@@ -43,6 +43,18 @@ const FieldDefinition _$CommentPostIdField = FieldDefinition(
   autoIncrement: false,
 );
 
+Map<String, Object?> _encodeCommentUntracked(
+  Object model,
+  ValueCodecRegistry registry,
+) {
+  final m = model as Comment;
+  return <String, Object?>{
+    'id': registry.encodeField(_$CommentIdField, m.id),
+    'body': registry.encodeField(_$CommentBodyField, m.body),
+    'postId': registry.encodeField(_$CommentPostIdField, m.postId),
+  };
+}
+
 final ModelDefinition<$Comment> _$CommentDefinition = ModelDefinition(
   modelName: 'Comment',
   tableName: 'comments',
@@ -58,6 +70,7 @@ final ModelDefinition<$Comment> _$CommentDefinition = ModelDefinition(
     softDeletes: false,
     softDeleteColumn: 'deleted_at',
   ),
+  untrackedToMap: _encodeCommentUntracked,
   codec: _$CommentCodec(),
 );
 

@@ -56,6 +56,19 @@ const FieldDefinition _$AdminCreatedAtField = FieldDefinition(
   codecType: 'datetime',
 );
 
+Map<String, Object?> _encodeAdminUntracked(
+  Object model,
+  ValueCodecRegistry registry,
+) {
+  final m = model as Admin;
+  return <String, Object?>{
+    'id': registry.encodeField(_$AdminIdField, m.id),
+    'email': registry.encodeField(_$AdminEmailField, m.email),
+    'password': registry.encodeField(_$AdminPasswordField, m.password),
+    'createdAt': registry.encodeField(_$AdminCreatedAtField, m.createdAt),
+  };
+}
+
 final ModelDefinition<$Admin> _$AdminDefinition = ModelDefinition(
   modelName: 'Admin',
   tableName: 'admins',
@@ -76,6 +89,7 @@ final ModelDefinition<$Admin> _$AdminDefinition = ModelDefinition(
     softDeletes: false,
     softDeleteColumn: 'deleted_at',
   ),
+  untrackedToMap: _encodeAdminUntracked,
   codec: _$AdminCodec(),
 );
 

@@ -43,6 +43,17 @@ const FieldDefinition _$CustomSoftDeleteDeletedAtField = FieldDefinition(
   autoIncrement: false,
 );
 
+Map<String, Object?> _encodeCustomSoftDeleteUntracked(
+  Object model,
+  ValueCodecRegistry registry,
+) {
+  final m = model as CustomSoftDelete;
+  return <String, Object?>{
+    'id': registry.encodeField(_$CustomSoftDeleteIdField, m.id),
+    'title': registry.encodeField(_$CustomSoftDeleteTitleField, m.title),
+  };
+}
+
 final ModelDefinition<$CustomSoftDelete> _$CustomSoftDeleteDefinition =
     ModelDefinition(
       modelName: 'CustomSoftDelete',
@@ -63,6 +74,7 @@ final ModelDefinition<$CustomSoftDelete> _$CustomSoftDeleteDefinition =
         softDeletes: true,
         softDeleteColumn: 'removed_on',
       ),
+      untrackedToMap: _encodeCustomSoftDeleteUntracked,
       codec: _$CustomSoftDeleteCodec(),
     );
 

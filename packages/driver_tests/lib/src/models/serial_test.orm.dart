@@ -31,6 +31,17 @@ const FieldDefinition _$SerialTestLabelField = FieldDefinition(
   autoIncrement: false,
 );
 
+Map<String, Object?> _encodeSerialTestUntracked(
+  Object model,
+  ValueCodecRegistry registry,
+) {
+  final m = model as SerialTest;
+  return <String, Object?>{
+    'id': registry.encodeField(_$SerialTestIdField, m.id),
+    'label': registry.encodeField(_$SerialTestLabelField, m.label),
+  };
+}
+
 final ModelDefinition<$SerialTest> _$SerialTestDefinition = ModelDefinition(
   modelName: 'SerialTest',
   tableName: 'serial_tests',
@@ -46,6 +57,7 @@ final ModelDefinition<$SerialTest> _$SerialTestDefinition = ModelDefinition(
     softDeletes: false,
     softDeleteColumn: 'deleted_at',
   ),
+  untrackedToMap: _encodeSerialTestUntracked,
   codec: _$SerialTestCodec(),
 );
 

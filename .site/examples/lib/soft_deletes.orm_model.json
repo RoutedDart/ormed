@@ -1,1 +1,0 @@
-[{"className":"CombinedPost","import":"soft_deletes.dart","definition":"CombinedPostOrmDefinition.definition","hasFactory":false,"hasEventHandlers":false,"hasScopes":false},{"className":"CombinedPostTz","import":"soft_deletes.dart","definition":"CombinedPostTzOrmDefinition.definition","hasFactory":false,"hasEventHandlers":false,"hasScopes":false}]

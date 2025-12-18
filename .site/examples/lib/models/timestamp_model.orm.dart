@@ -55,6 +55,17 @@ const FieldDefinition _$TimestampPostUpdatedAtField = FieldDefinition(
   autoIncrement: false,
 );
 
+Map<String, Object?> _encodeTimestampPostUntracked(
+  Object model,
+  ValueCodecRegistry registry,
+) {
+  final m = model as TimestampPost;
+  return <String, Object?>{
+    'id': registry.encodeField(_$TimestampPostIdField, m.id),
+    'title': registry.encodeField(_$TimestampPostTitleField, m.title),
+  };
+}
+
 final ModelDefinition<$TimestampPost> _$TimestampPostDefinition =
     ModelDefinition(
       modelName: 'TimestampPost',
@@ -76,6 +87,7 @@ final ModelDefinition<$TimestampPost> _$TimestampPostDefinition =
         softDeletes: false,
         softDeleteColumn: 'deleted_at',
       ),
+      untrackedToMap: _encodeTimestampPostUntracked,
       codec: _$TimestampPostCodec(),
     );
 
@@ -417,6 +429,17 @@ const FieldDefinition _$TimestampArticleTzUpdatedAtField = FieldDefinition(
   autoIncrement: false,
 );
 
+Map<String, Object?> _encodeTimestampArticleTzUntracked(
+  Object model,
+  ValueCodecRegistry registry,
+) {
+  final m = model as TimestampArticleTz;
+  return <String, Object?>{
+    'id': registry.encodeField(_$TimestampArticleTzIdField, m.id),
+    'title': registry.encodeField(_$TimestampArticleTzTitleField, m.title),
+  };
+}
+
 final ModelDefinition<$TimestampArticleTz> _$TimestampArticleTzDefinition =
     ModelDefinition(
       modelName: 'TimestampArticleTz',
@@ -438,6 +461,7 @@ final ModelDefinition<$TimestampArticleTz> _$TimestampArticleTzDefinition =
         softDeletes: false,
         softDeleteColumn: 'deleted_at',
       ),
+      untrackedToMap: _encodeTimestampArticleTzUntracked,
       codec: _$TimestampArticleTzCodec(),
     );
 

@@ -55,6 +55,18 @@ const FieldDefinition _$EventModelDeletedAtField = FieldDefinition(
   autoIncrement: false,
 );
 
+Map<String, Object?> _encodeEventModelUntracked(
+  Object model,
+  ValueCodecRegistry registry,
+) {
+  final m = model as EventModel;
+  return <String, Object?>{
+    'id': registry.encodeField(_$EventModelIdField, m.id),
+    'name': registry.encodeField(_$EventModelNameField, m.name),
+    'score': registry.encodeField(_$EventModelScoreField, m.score),
+  };
+}
+
 final ModelDefinition<$EventModel> _$EventModelDefinition = ModelDefinition(
   modelName: 'EventModel',
   tableName: 'event_models',
@@ -75,6 +87,7 @@ final ModelDefinition<$EventModel> _$EventModelDefinition = ModelDefinition(
     softDeletes: true,
     softDeleteColumn: 'deleted_at',
   ),
+  untrackedToMap: _encodeEventModelUntracked,
   codec: _$EventModelCodec(),
 );
 

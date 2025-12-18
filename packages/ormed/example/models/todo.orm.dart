@@ -43,6 +43,18 @@ const FieldDefinition _$TodoCompletedField = FieldDefinition(
   autoIncrement: false,
 );
 
+Map<String, Object?> _encodeTodoUntracked(
+  Object model,
+  ValueCodecRegistry registry,
+) {
+  final m = model as Todo;
+  return <String, Object?>{
+    'id': registry.encodeField(_$TodoIdField, m.id),
+    'title': registry.encodeField(_$TodoTitleField, m.title),
+    'completed': registry.encodeField(_$TodoCompletedField, m.completed),
+  };
+}
+
 final ModelDefinition<$Todo> _$TodoDefinition = ModelDefinition(
   modelName: 'Todo',
   tableName: 'todos',
@@ -58,6 +70,7 @@ final ModelDefinition<$Todo> _$TodoDefinition = ModelDefinition(
     softDeletes: false,
     softDeleteColumn: 'deleted_at',
   ),
+  untrackedToMap: _encodeTodoUntracked,
   codec: _$TodoCodec(),
 );
 
@@ -68,6 +81,9 @@ extension TodoOrmDefinition on Todo {
 class Todos {
   const Todos._();
 
+  /// Starts building a query for [$Todo].
+  ///
+  /// {@macro ormed.query}
   static Query<$Todo> query([String? connection]) =>
       Model.query<$Todo>(connection: connection);
 
@@ -112,6 +128,9 @@ class Todos {
   static Query<$Todo> limit(int count, {String? connection}) =>
       Model.limit<$Todo>(count, connection: connection);
 
+  /// Creates a [Repository] for [$Todo].
+  ///
+  /// {@macro ormed.repository}
   static Repository<$Todo> repo([String? connection]) =>
       Model.repository<$Todo>(connection: connection);
 }
@@ -294,6 +313,14 @@ class $Todo extends Todo with ModelAttributes implements OrmEntity {
     return $Todo(id: model.id, title: model.title, completed: model.completed);
   }
 
+  $Todo copyWith({int? id, String? title, bool? completed}) {
+    return $Todo(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      completed: completed ?? this.completed,
+    );
+  }
+
   @override
   int get id => getAttribute<int>('id') ?? super.id;
 
@@ -327,4 +354,8 @@ extension TodoOrmExtension on Todo {
   $Todo toTracked() {
     return $Todo.fromModel(this);
   }
+}
+
+void registerTodoEventHandlers(EventBus bus) {
+  // No event handlers registered for Todo.
 }

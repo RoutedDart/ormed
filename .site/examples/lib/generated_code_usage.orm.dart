@@ -32,6 +32,17 @@ const FieldDefinition _$DocumentMetadataField = FieldDefinition(
   codecType: 'JsonMapCodec',
 );
 
+Map<String, Object?> _encodeDocumentUntracked(
+  Object model,
+  ValueCodecRegistry registry,
+) {
+  final m = model as Document;
+  return <String, Object?>{
+    'id': registry.encodeField(_$DocumentIdField, m.id),
+    'metadata': registry.encodeField(_$DocumentMetadataField, m.metadata),
+  };
+}
+
 final ModelDefinition<$Document> _$DocumentDefinition = ModelDefinition(
   modelName: 'Document',
   tableName: 'documents',
@@ -47,6 +58,7 @@ final ModelDefinition<$Document> _$DocumentDefinition = ModelDefinition(
     softDeletes: false,
     softDeleteColumn: 'deleted_at',
   ),
+  untrackedToMap: _encodeDocumentUntracked,
   codec: _$DocumentCodec(),
 );
 

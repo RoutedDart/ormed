@@ -55,6 +55,25 @@ const FieldDefinition _$PhotoPathField = FieldDefinition(
   autoIncrement: false,
 );
 
+Map<String, Object?> _encodePhotoUntracked(
+  Object model,
+  ValueCodecRegistry registry,
+) {
+  final m = model as Photo;
+  return <String, Object?>{
+    'id': registry.encodeField(_$PhotoIdField, m.id),
+    'imageable_id': registry.encodeField(
+      _$PhotoImageableIdField,
+      m.imageableId,
+    ),
+    'imageable_type': registry.encodeField(
+      _$PhotoImageableTypeField,
+      m.imageableType,
+    ),
+    'path': registry.encodeField(_$PhotoPathField, m.path),
+  };
+}
+
 final ModelDefinition<$Photo> _$PhotoDefinition = ModelDefinition(
   modelName: 'Photo',
   tableName: 'photos',
@@ -75,6 +94,7 @@ final ModelDefinition<$Photo> _$PhotoDefinition = ModelDefinition(
     softDeletes: false,
     softDeleteColumn: 'deleted_at',
   ),
+  untrackedToMap: _encodePhotoUntracked,
   codec: _$PhotoCodec(),
 );
 

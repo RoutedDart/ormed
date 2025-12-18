@@ -43,6 +43,18 @@ const FieldDefinition _$LogTimestampField = FieldDefinition(
   autoIncrement: false,
 );
 
+Map<String, Object?> _encodeLogUntracked(
+  Object model,
+  ValueCodecRegistry registry,
+) {
+  final m = model as Log;
+  return <String, Object?>{
+    'id': registry.encodeField(_$LogIdField, m.id),
+    'message': registry.encodeField(_$LogMessageField, m.message),
+    'timestamp': registry.encodeField(_$LogTimestampField, m.timestamp),
+  };
+}
+
 final ModelDefinition<$Log> _$LogDefinition = ModelDefinition(
   modelName: 'Log',
   tableName: 'logs',
@@ -58,6 +70,7 @@ final ModelDefinition<$Log> _$LogDefinition = ModelDefinition(
     softDeletes: false,
     softDeleteColumn: 'deleted_at',
   ),
+  untrackedToMap: _encodeLogUntracked,
   codec: _$LogCodec(),
 );
 

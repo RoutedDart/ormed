@@ -55,6 +55,19 @@ const FieldDefinition _$PostAuthorIdField = FieldDefinition(
   autoIncrement: false,
 );
 
+Map<String, Object?> _encodePostUntracked(
+  Object model,
+  ValueCodecRegistry registry,
+) {
+  final m = model as Post;
+  return <String, Object?>{
+    'id': registry.encodeField(_$PostIdField, m.id),
+    'title': registry.encodeField(_$PostTitleField, m.title),
+    'content': registry.encodeField(_$PostContentField, m.content),
+    'authorId': registry.encodeField(_$PostAuthorIdField, m.authorId),
+  };
+}
+
 final ModelDefinition<$Post> _$PostDefinition = ModelDefinition(
   modelName: 'Post',
   tableName: 'posts',
@@ -75,6 +88,7 @@ final ModelDefinition<$Post> _$PostDefinition = ModelDefinition(
     softDeletes: false,
     softDeleteColumn: 'deleted_at',
   ),
+  untrackedToMap: _encodePostUntracked,
   codec: _$PostCodec(),
 );
 

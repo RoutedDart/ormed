@@ -31,6 +31,17 @@ const FieldDefinition _$PostTagTagIdField = FieldDefinition(
   autoIncrement: false,
 );
 
+Map<String, Object?> _encodePostTagUntracked(
+  Object model,
+  ValueCodecRegistry registry,
+) {
+  final m = model as PostTag;
+  return <String, Object?>{
+    'post_id': registry.encodeField(_$PostTagPostIdField, m.postId),
+    'tag_id': registry.encodeField(_$PostTagTagIdField, m.tagId),
+  };
+}
+
 final ModelDefinition<$PostTag> _$PostTagDefinition = ModelDefinition(
   modelName: 'PostTag',
   tableName: 'post_tags',
@@ -46,6 +57,7 @@ final ModelDefinition<$PostTag> _$PostTagDefinition = ModelDefinition(
     softDeletes: false,
     softDeleteColumn: 'deleted_at',
   ),
+  untrackedToMap: _encodePostTagUntracked,
   codec: _$PostTagCodec(),
 );
 
