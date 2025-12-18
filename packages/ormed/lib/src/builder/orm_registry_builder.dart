@@ -1,13 +1,12 @@
-import 'dart:convert';
-
 import 'package:build/build.dart';
 import 'package:glob/glob.dart';
+import 'package:path/path.dart' as p;
 
 Builder ormRegistryBuilder(BuilderOptions options) =>
     _OrmRegistryBuilder(options);
 
 class _OrmRegistryBuilder implements Builder {
-  static final _summaryGlob = Glob('lib/**.orm_model.json');
+  static final _ormPartGlob = Glob('lib/**.orm.dart');
 
   _OrmRegistryBuilder(BuilderOptions options)
     : outputPath =
@@ -31,25 +30,20 @@ class _OrmRegistryBuilder implements Builder {
   @override
   Future<void> build(BuildStep buildStep) async {
     final summariesByKey = <String, ModelSummary>{};
-    await for (final asset in buildStep.findAssets(_summaryGlob)) {
+    await for (final asset in buildStep.findAssets(_ormPartGlob)) {
       final content = await buildStep.readAsString(asset);
-      final decoded = jsonDecode(content);
-      final entries = decoded is List ? decoded : [decoded];
-      for (final entry in entries) {
-        if (entry is! Map) continue;
-        final data = entry.cast<String, dynamic>();
-        final importPath = data['import'] as String?;
-        final className = data['className'] as String?;
-        final definition = data['definition'] as String?;
-        final hasFactory = data['hasFactory'] as bool? ?? false;
-        final hasEventHandlers = data['hasEventHandlers'] as bool? ?? false;
-        final hasScopes = data['hasScopes'] as bool? ?? false;
-        if (importPath == null ||
-            className == null ||
-            definition == null ||
-            importPath.isEmpty) {
-          continue;
-        }
+      final importPath = _inferImportPath(asset.path, content);
+      if (importPath == null || importPath.isEmpty) {
+        continue;
+      }
+
+      final factoryCapableModels = _inferFactoryCapableModels(content);
+      final eventHandlerModels = _inferEventHandlerModels(content);
+      final scopeModels = _inferScopeModels(content);
+
+      for (final entry in _inferOrmDefinitions(content)) {
+        final className = entry.className;
+        final definition = '${entry.extensionName}.definition';
         final key = '$importPath::$className';
         summariesByKey.putIfAbsent(
           key,
@@ -57,21 +51,101 @@ class _OrmRegistryBuilder implements Builder {
             className: className,
             importPath: importPath,
             definition: definition,
-            hasFactory: hasFactory,
-            hasEventHandlers: hasEventHandlers,
-            hasScopes: hasScopes,
+            hasFactory: factoryCapableModels.contains(className),
+            hasEventHandlers: eventHandlerModels.contains(className),
+            hasScopes: scopeModels.contains(className),
           ),
         );
       }
     }
 
     final content = renderRegistryContent(summariesByKey.values.toList());
-    final outputId = AssetId(
-      buildStep.inputId.package,
-      'lib/orm_registry.g.dart',
-    );
+    final outputId = AssetId(buildStep.inputId.package, outputPath);
     await buildStep.writeAsString(outputId, content);
   }
+}
+
+String? _inferImportPath(String ormPartPath, String content) {
+  final partOfMatch = RegExp(
+    r"""part of\s+['"]([^'"]+)['"]\s*;""",
+  ).firstMatch(content);
+  if (partOfMatch == null) return null;
+
+  final partOfUri = partOfMatch.group(1);
+  if (partOfUri == null || partOfUri.isEmpty) return null;
+
+  final dir = p.posix.dirname(ormPartPath);
+  final libraryAssetPath = p.posix.normalize(p.posix.join(dir, partOfUri));
+  if (!libraryAssetPath.startsWith('lib/')) return null;
+  return libraryAssetPath.substring('lib/'.length);
+}
+
+Iterable<_OrmDefinitionEntry> _inferOrmDefinitions(String content) sync* {
+  final re = RegExp(r'extension\s+([A-Za-z0-9_]+)\s+on\s+([A-Za-z0-9_]+)\s*\{');
+  for (final match in re.allMatches(content)) {
+    final extensionName = match.group(1);
+    final className = match.group(2);
+    if (extensionName == null ||
+        className == null ||
+        !extensionName.endsWith('OrmDefinition')) {
+      continue;
+    }
+    yield _OrmDefinitionEntry(
+      extensionName: extensionName,
+      className: className,
+    );
+  }
+}
+
+Set<String> _inferFactoryCapableModels(String content) {
+  final re = RegExp(r'ModelFactoryRegistry\.register<\$([A-Za-z0-9_]+)>\(');
+  return {for (final m in re.allMatches(content)) m.group(1)!};
+}
+
+Set<String> _inferScopeModels(String content) {
+  final re = RegExp(r'void\s+register([A-Za-z0-9_]+)Scopes\(');
+  return {for (final m in re.allMatches(content)) m.group(1)!};
+}
+
+Set<String> _inferEventHandlerModels(String content) {
+  final models = <String>{};
+  final re = RegExp(
+    r'void\s+register([A-Za-z0-9_]+)EventHandlers\s*\(\s*EventBus\s+bus\s*\)\s*\{',
+  );
+  for (final match in re.allMatches(content)) {
+    final className = match.group(1);
+    if (className == null) continue;
+    final block = _extractBraceBlock(content, match.end - 1);
+    if (block != null && block.contains('bus.on<')) {
+      models.add(className);
+    }
+  }
+  return models;
+}
+
+String? _extractBraceBlock(String source, int braceIndex) {
+  if (braceIndex < 0 || braceIndex >= source.length) return null;
+  if (source.codeUnitAt(braceIndex) != '{'.codeUnitAt(0)) {
+    final next = source.indexOf('{', braceIndex);
+    if (next == -1) return null;
+    braceIndex = next;
+  }
+
+  var depth = 0;
+  for (var i = braceIndex; i < source.length; i++) {
+    final ch = source.codeUnitAt(i);
+    if (ch == '{'.codeUnitAt(0)) {
+      depth++;
+      continue;
+    }
+    if (ch == '}'.codeUnitAt(0)) {
+      depth--;
+      if (depth == 0) {
+        return source.substring(braceIndex, i + 1);
+      }
+    }
+  }
+  return null;
 }
 
 String renderRegistryContent(List<ModelSummary> models) {
@@ -236,6 +310,15 @@ String renderRegistryContent(List<ModelSummary> models) {
   buffer.writeln('}');
 
   return buffer.toString();
+}
+
+class _OrmDefinitionEntry {
+  const _OrmDefinitionEntry({
+    required this.extensionName,
+    required this.className,
+  });
+  final String extensionName;
+  final String className;
 }
 
 class ModelSummary {

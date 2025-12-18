@@ -131,7 +131,7 @@ class ModelDefinitionEmitter {
     }
     buffer.writeln(');\n');
 
-    if (context.mixinModelFactory) {
+    if (context.hasFactory) {
       buffer.writeln('// ignore: unused_element');
       buffer.writeln(
         'final ${className.toLowerCase()}ModelDefinitionRegistration = ModelFactoryRegistry.register<$generatedClassName>(',
