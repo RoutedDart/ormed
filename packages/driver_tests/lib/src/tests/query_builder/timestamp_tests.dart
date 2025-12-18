@@ -269,10 +269,27 @@ void runTimestampTests() {
         expect(eastern, isNotNull);
         expect(eastern, isA<CarbonInterface>());
 
-        // Test comparison methods (convert to local time for comparison)
+        // Test comparison methods (convert to local time for comparison).
+        //
+        // Note: Some environments (notably MariaDB in CI) can exhibit small
+        // clock skew between the database container and the test runner. Avoid
+        // asserting `isFuture == false` for a "now" timestamp; instead assert
+        // the timestamp is close to now and that the comparison helpers behave
+        // correctly for clearly past/future values.
         final localTime = fetched.createdAt!.tz(CarbonConfig.defaultTimezone);
         expect(localTime.isToday(), isTrue);
-        expect(localTime.isFuture(), isFalse);
+
+        final nowLocal = Carbon.now().tz(CarbonConfig.defaultTimezone);
+        expect(
+          localTime.diffInMinutes(nowLocal),
+          lessThan(5),
+          reason: 'createdAt should be close to current time',
+        );
+
+        expect(localTime.addDays(1).isFuture(), isTrue);
+        final yesterday = localTime.addDays(-1);
+        expect(yesterday.isFuture(), isFalse);
+        expect(yesterday.isPast(), isTrue);
       });
 
       test('can set timestamps explicitly', () async {
