@@ -104,7 +104,7 @@ class _PagerState extends PagerModel {
 }
 
 String _hLine(int width) => width <= 0 ? '' : '─' * width;
-int _widthOf(String text) => text.runes.length;
+int _widthOf(String text) => Style.visibleLength(text);
 
 Future<void> main() async {
   final content = await io.File('README.md').readAsString();

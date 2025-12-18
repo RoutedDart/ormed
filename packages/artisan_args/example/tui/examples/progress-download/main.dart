@@ -18,13 +18,14 @@ class DownloadModel implements tui.Model {
     this.downloaded = 0,
     tui.ProgressModel? progress,
     Random? rand,
-  }) : progress = progress ??
-          tui.ProgressModel(
-            width: 60,
-            useGradient: true,
-            gradientColorA: '#5A56E0',
-            gradientColorB: '#EE6FF8',
-          ),
+  }) : progress =
+           progress ??
+           tui.ProgressModel(
+             width: 60,
+             useGradient: true,
+             gradientColorA: '#5A56E0',
+             gradientColorB: '#EE6FF8',
+           ),
        _rand = rand ?? Random();
 
   final int totalBytes;
@@ -90,11 +91,13 @@ class DownloadModel implements tui.Model {
 
   @override
   String view() {
-    final pct = (downloaded / totalBytes * 100).clamp(0, 100).toStringAsFixed(0);
+    final pct = (downloaded / totalBytes * 100)
+        .clamp(0, 100)
+        .toStringAsFixed(0);
     final kb = (totalBytes / 1024).toStringAsFixed(0);
-    final info = Style().foreground(const AnsiColor(98)).render(
-          'Downloading... $pct% of $kb KB (press any key to quit)',
-        );
+    final info = Style()
+        .foreground(const AnsiColor(98))
+        .render('Downloading... $pct% of $kb KB (press any key to quit)');
     return '\n${progress.view()}\n\n$info\n';
   }
 }

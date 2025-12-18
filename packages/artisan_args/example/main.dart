@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:io' as dartio;
-
 import 'package:artisan_args/artisan_args.dart';
 
 extension ViewComponentPrinter on ViewComponent {

@@ -60,10 +60,7 @@ class SpinnersModel implements tui.Model {
     if (idx < 0) idx = count - 1;
     if (idx >= count) idx = 0;
     final newSpinner = tui.SpinnerModel(spinner: _spinnerDefs[idx]);
-    return (
-      SpinnersModel(index: idx, spinner: newSpinner),
-      newSpinner.tick(),
-    );
+    return (SpinnersModel(index: idx, spinner: newSpinner), newSpinner.tick());
   }
 
   SpinnersModel copyWith({int? index, tui.SpinnerModel? spinner}) {

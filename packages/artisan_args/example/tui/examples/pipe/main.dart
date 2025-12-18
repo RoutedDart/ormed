@@ -10,14 +10,14 @@ import 'package:artisan_args/tui.dart' as tui;
 class PipeModel implements tui.Model {
   PipeModel({required this.initial})
     : input = tui.TextInputModel(
-          prompt: '',
-          cursor: tui.CursorModel(
-            // Match lipgloss color 63
-            char: ' ',
-            blinkSpeed: const Duration(milliseconds: 530),
-          ),
-          width: 48,
-        )..value = initial;
+        prompt: '',
+        cursor: tui.CursorModel(
+          // Match lipgloss color 63
+          char: ' ',
+          blinkSpeed: const Duration(milliseconds: 530),
+        ),
+        width: 48,
+      )..value = initial;
 
   final String initial;
   final tui.TextInputModel input;
@@ -43,7 +43,10 @@ class PipeModel implements tui.Model {
     }
 
     final (newInput, cmd) = input.update(msg);
-    return (PipeModel(initial: initial)._withInput(newInput as tui.TextInputModel), cmd);
+    return (
+      PipeModel(initial: initial)._withInput(newInput as tui.TextInputModel),
+      cmd,
+    );
   }
 
   PipeModel _withInput(tui.TextInputModel newInput) {

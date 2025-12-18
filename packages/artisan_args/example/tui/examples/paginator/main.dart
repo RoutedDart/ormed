@@ -6,17 +6,14 @@ import 'package:artisan_args/tui.dart' as tui;
 
 class PaginatorExampleModel implements tui.Model {
   PaginatorExampleModel({required this.items, tui.PaginatorModel? paginator})
-    : paginator = paginator ??
-        tui.PaginatorModel(
-          type: tui.PaginationType.dots,
-          perPage: 10,
-          activeDot: Style()
-              .foreground(const AnsiColor(235))
-              .render('•'),
-          inactiveDot: Style()
-              .foreground(const AnsiColor(250))
-              .render('•'),
-        ).setTotalPages(items.length);
+    : paginator =
+          paginator ??
+          tui.PaginatorModel(
+            type: tui.PaginationType.dots,
+            perPage: 10,
+            activeDot: Style().foreground(const AnsiColor(235)).render('•'),
+            inactiveDot: Style().foreground(const AnsiColor(250)).render('•'),
+          ).setTotalPages(items.length);
 
   final List<String> items;
   final tui.PaginatorModel paginator;

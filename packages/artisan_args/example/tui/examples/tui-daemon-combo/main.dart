@@ -6,6 +6,7 @@ import 'dart:math';
 
 import 'package:artisan_args/artisan_args.dart' show AnsiColor, Style;
 import 'package:artisan_args/tui.dart' as tui;
+import 'package:characters/characters.dart';
 
 final _helpStyle = Style().foreground(const AnsiColor(241)).render;
 final _mainStyle = Style().margin(0, 1, 0, 1);
@@ -108,8 +109,9 @@ tui.Cmd _runPretendProcess() {
 
 String _randomEmoji() {
   const emojis = '🍦🧋🍡🤠👾😭🦊🐯🦆🥨🎏🍔🍒🍥🎮📦🦁🐶🐸🍕🥐🧲🚒🥇🏆🌽';
-  final r = Random().nextInt(emojis.runes.length);
-  return String.fromCharCodes([emojis.runes.elementAt(r)]);
+  final clusters = emojis.characters.toList(growable: false);
+  final r = Random().nextInt(clusters.length);
+  return clusters[r];
 }
 
 void _log(String msg) {

@@ -9,11 +9,7 @@ import 'package:artisan_args/src/tui/bubbles/runeutil.dart' show stringWidth;
 import 'package:artisan_args/tui.dart' as tui;
 
 class TabsModel implements tui.Model {
-  TabsModel({
-    required this.tabs,
-    required this.contents,
-    this.active = 0,
-  });
+  TabsModel({required this.tabs, required this.contents, this.active = 0});
 
   final List<String> tabs;
   final List<String> contents;
@@ -44,10 +40,7 @@ class TabsModel implements tui.Model {
         case 'h':
         case 'p':
         case 'shift+tab':
-          return (
-            copyWith(active: math.max(active - 1, 0)),
-            null,
-          );
+          return (copyWith(active: math.max(active - 1, 0)), null);
       }
     }
     return (this, null);
@@ -134,7 +127,13 @@ final _inactiveTabBorder = _tabBorderWithBottom('┴', '─', '┴');
 final _activeTabBorder = _tabBorderWithBottom('┘', ' ', '└');
 
 final _inactiveTabStyle = Style()
-    .border(_inactiveTabBorder, top: true, right: true, left: true, bottom: true)
+    .border(
+      _inactiveTabBorder,
+      top: true,
+      right: true,
+      left: true,
+      bottom: true,
+    )
     .borderForeground(_highlight)
     .padding(0, 1);
 final _activeTabStyle = _inactiveTabStyle.border(
@@ -170,8 +169,9 @@ String _joinHorizontalTop(List<String> parts) {
   if (parts.isEmpty) return '';
   final split = parts.map((p) => p.split('\n')).toList();
   final heights = split.map((l) => l.length).toList();
-  final widths =
-      split.map((l) => l.map(stringWidth).fold<int>(0, math.max)).toList();
+  final widths = split
+      .map((l) => l.map(stringWidth).fold<int>(0, math.max))
+      .toList();
   final maxH = heights.fold<int>(0, math.max);
 
   final buffer = StringBuffer();
