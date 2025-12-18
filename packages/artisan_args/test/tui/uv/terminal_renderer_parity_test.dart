@@ -339,6 +339,35 @@ void main() {
     expect(out.value, '\x1b[2;2H\x1b[?1049h\x1b[H\x1b[2J\x1b[?1049l');
   });
 
+  test('TerminalRenderer parity: phantom cursor handling', () {
+    // Upstream: `third_party/ultraviolet/terminal_renderer_test.go`
+    // (TestRendererPhantomCursor)
+    final out = _TestSink();
+    final r = TerminalRenderer(
+      out,
+      env: const ['TERM=xterm-256color', 'COLORTERM=truecolor'],
+    );
+    r.setColorProfile(cp.Profile.trueColor);
+
+    r.setFullscreen(true);
+    r.setRelativeCursor(false);
+    r.resize(5, 3);
+
+    final cellbuf = Buffer.create(5, 3);
+    final cell = Cell(content: 'X', width: 1);
+    for (var y = 0; y < cellbuf.height(); y++) {
+      cellbuf.setCell(4, y, cell);
+    }
+
+    r.render(cellbuf);
+    r.flush();
+
+    expect(
+      out.value,
+      '\x1b[1;5HX\r\n\x1b[5GX\r\n\x1b[5G\x1b[?7lX\x1b[?7h',
+    );
+  });
+
   test('TerminalRenderer parity: resize with clear does not crash', () {
     // Regression: during a resize, the cursor can be outside the current buffer
     // when a full clear redraw happens. Upstream Buffer.Line returns nil; our

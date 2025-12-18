@@ -4,6 +4,8 @@ import 'geometry.dart';
 import 'screen.dart';
 import 'width.dart';
 
+import '../../unicode/grapheme.dart' as uni;
+
 /// StyledString is a string that can be decomposed into a series of styled
 /// lines and cells.
 ///
@@ -303,8 +305,7 @@ void _printString(
       continue;
     }
 
-    final (:rune, :nextIndex) = _readRuneAt(input, i);
-    final grapheme = String.fromCharCode(rune);
+    final (:grapheme, :nextIndex) = uni.readGraphemeAt(input, i);
     var cell = Cell.newCell(method, grapheme);
     cell.style = pen.style;
     cell.link = link.link;
@@ -338,21 +339,6 @@ void _printString(
 
     i = nextIndex;
   }
-}
-
-// Returns the rune starting at index and the next string index.
-//
-// Dart strings are UTF-16, so some runes are represented as surrogate pairs.
-({int rune, int nextIndex}) _readRuneAt(String s, int index) {
-  final cu1 = s.codeUnitAt(index);
-  if (cu1 >= 0xD800 && cu1 <= 0xDBFF && index + 1 < s.length) {
-    final cu2 = s.codeUnitAt(index + 1);
-    if (cu2 >= 0xDC00 && cu2 <= 0xDFFF) {
-      final rune = 0x10000 + ((cu1 - 0xD800) << 10) + (cu2 - 0xDC00);
-      return (rune: rune, nextIndex: index + 2);
-    }
-  }
-  return (rune: cu1, nextIndex: index + 1);
 }
 
 int _findCsiFinal(String s, int start) {

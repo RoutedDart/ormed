@@ -292,6 +292,17 @@ class StdioTerminal implements Terminal {
   final io.Stdout _stdout;
   final io.Stdin _stdin;
 
+  // Stdout flush in Dart binds the underlying StreamSink; any concurrent write
+  // while a flush is in flight will throw:
+  //   StateError: Bad state: StreamSink is bound to a stream
+  //
+  // We coalesce and serialize flushes, and buffer writes that happen while a
+  // flush is in progress so TUI control messages (e.g. resize handlers) cannot
+  // crash the program.
+  Future<void>? _stdoutFlushInFlight;
+  final StringBuffer _stdoutPending = StringBuffer();
+  int _stdoutPendingLen = 0;
+
   // State tracking
   bool _rawModeEnabled = false;
   bool _altScreenEnabled = false;
@@ -354,13 +365,83 @@ class StdioTerminal implements Terminal {
   // ─────────────────────────────────────────────────────────────────────────────
 
   @override
-  void write(String text) => _stdout.write(text);
+  void write(String text) {
+    if (text.isEmpty) return;
+    if (_stdoutFlushInFlight != null) {
+      _stdoutPending.write(text);
+      _stdoutPendingLen += text.length;
+      return;
+    }
+    try {
+      _stdout.write(text);
+    } on StateError catch (e) {
+      if (_isStdoutBoundToStream(e)) {
+        _stdoutPending.write(text);
+        _stdoutPendingLen += text.length;
+        unawaited(flush());
+        return;
+      }
+      rethrow;
+    }
+  }
 
   @override
-  void writeln([String text = '']) => _stdout.writeln(text);
+  void writeln([String text = '']) =>
+      write('$text${io.Platform.lineTerminator}');
 
   @override
-  Future<void> flush() => _stdout.flush();
+  Future<void> flush() {
+    final existing = _stdoutFlushInFlight;
+    if (existing != null) return existing;
+
+    final f = _flushStdoutAll();
+    _stdoutFlushInFlight = f.whenComplete(() {
+      _stdoutFlushInFlight = null;
+    });
+    return _stdoutFlushInFlight!;
+  }
+
+  static bool _isStdoutBoundToStream(StateError e) =>
+      e.message == 'Bad state: StreamSink is bound to a stream';
+
+  Future<void> _flushStdoutAll() async {
+    // Keep flushing until no more writes arrived during the previous flush.
+    while (true) {
+      if (_stdoutPendingLen != 0) {
+        final pending = _stdoutPending.toString();
+        _stdoutPending.clear();
+        _stdoutPendingLen = 0;
+
+        while (true) {
+          try {
+            _stdout.write(pending);
+            break;
+          } on StateError catch (e) {
+            if (_isStdoutBoundToStream(e)) {
+              await Future<void>.delayed(Duration.zero);
+              continue;
+            }
+            rethrow;
+          }
+        }
+      }
+
+      while (true) {
+        try {
+          await _stdout.flush();
+          break;
+        } on StateError catch (e) {
+          if (_isStdoutBoundToStream(e)) {
+            await Future<void>.delayed(Duration.zero);
+            continue;
+          }
+          rethrow;
+        }
+      }
+
+      if (_stdoutPendingLen == 0) return;
+    }
+  }
 
   // ─────────────────────────────────────────────────────────────────────────────
   // Cursor Visibility

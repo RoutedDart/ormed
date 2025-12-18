@@ -235,12 +235,12 @@ List<_Token> _tokenize(String input) {
       continue;
     }
 
-    final (:rune, :nextIndex) = _readRuneAt(input, i);
-    final ch = String.fromCharCode(rune);
+    final (:grapheme, :nextIndex) = uni.readGraphemeAt(input, i);
+    final rune = uni.firstCodePoint(grapheme);
     tokens.add(
       _Token(
         kind: _TokenKind.text,
-        raw: ch,
+        raw: grapheme,
         visibleWidth: runeWidth(rune),
         rune: rune,
       ),
@@ -309,18 +309,6 @@ _Osc? _parseOsc(String s, int start) {
     i++;
   }
   return null;
-}
-
-({int rune, int nextIndex}) _readRuneAt(String s, int index) {
-  final cu1 = s.codeUnitAt(index);
-  if (cu1 >= 0xD800 && cu1 <= 0xDBFF && index + 1 < s.length) {
-    final cu2 = s.codeUnitAt(index + 1);
-    if (cu2 >= 0xDC00 && cu2 <= 0xDFFF) {
-      final rune = 0x10000 + ((cu1 - 0xD800) << 10) + (cu2 - 0xDC00);
-      return (rune: rune, nextIndex: index + 2);
-    }
-  }
-  return (rune: cu1, nextIndex: index + 1);
 }
 
 Style _applySgr(String rawParams, Style style) {

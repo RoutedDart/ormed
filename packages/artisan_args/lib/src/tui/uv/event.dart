@@ -211,13 +211,59 @@ final class ModifyOtherKeysEvent extends Event {
 
 // Kitty graphics events.
 final class KittyOptions {
-  const KittyOptions();
+  const KittyOptions({
+    this.action = '',
+    this.id = 0,
+    this.number = 0,
+    this.quiet = 0,
+  });
+
+  /// Kitty graphics action (`a=`), e.g. `t` for transmit.
+  final String action;
+
+  /// Image id (`i=`).
+  final int id;
+
+  /// Image number (`I=`).
+  final int number;
+
+  /// Quiet level (`q=`).
+  final int quiet;
+
+  @override
+  bool operator ==(Object other) =>
+      other is KittyOptions &&
+      other.action == action &&
+      other.id == id &&
+      other.number == number &&
+      other.quiet == quiet;
+
+  @override
+  int get hashCode => Object.hash(action, id, number, quiet);
 }
 
 final class KittyGraphicsEvent extends Event {
   const KittyGraphicsEvent({required this.options, required this.payload});
   final KittyOptions options;
   final List<int> payload;
+
+  @override
+  bool operator ==(Object other) =>
+      other is KittyGraphicsEvent &&
+      other.options == options &&
+      _listEq(other.payload, payload);
+
+  @override
+  int get hashCode => Object.hash(options, Object.hashAll(payload));
+}
+
+bool _listEq(List<int> a, List<int> b) {
+  if (identical(a, b)) return true;
+  if (a.length != b.length) return false;
+  for (var i = 0; i < a.length; i++) {
+    if (a[i] != b[i]) return false;
+  }
+  return true;
 }
 
 final class KeyboardEnhancementsEvent extends Event {

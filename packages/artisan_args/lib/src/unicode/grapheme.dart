@@ -5,29 +5,23 @@ Iterable<String> graphemes(String s) => s.characters;
 
 /// Decodes a Dart String (UTF-16) into Unicode scalar values (code points).
 ///
-/// This intentionally avoids `String.runes` so callers can stay consistent on
-/// grapheme-cluster APIs while still accessing code points when needed.
-List<int> codePoints(String s) {
-  final units = s.codeUnits;
-  if (units.isEmpty) return const [];
+List<int> codePoints(String s) => s.runes.toList(growable: false);
 
-  final out = <int>[];
-  for (var i = 0; i < units.length; i++) {
-    final u = units[i];
-    if (u >= 0xD800 && u <= 0xDBFF && i + 1 < units.length) {
-      final u2 = units[i + 1];
-      if (u2 >= 0xDC00 && u2 <= 0xDFFF) {
-        // surrogate pair
-        final high = u - 0xD800;
-        final low = u2 - 0xDC00;
-        out.add(0x10000 + ((high << 10) | low));
-        i++;
-        continue;
-      }
-    }
-    out.add(u);
-  }
-  return out;
+/// Reads the grapheme cluster starting at [index] and returns it along with the
+/// next UTF-16 code-unit index.
+///
+/// This is useful when scanning strings with embedded ANSI escape sequences
+/// (where we still need index-based parsing for the ASCII control bytes).
+({String grapheme, int nextIndex}) readGraphemeAt(String s, int index) {
+  if (index < 0) index = 0;
+  if (index >= s.length) return (grapheme: '', nextIndex: s.length);
+
+  final r = CharacterRange.at(s, index);
+  if (!r.moveNext()) return (grapheme: '', nextIndex: s.length);
+
+  final g = r.current;
+  final start = r.stringBeforeLength;
+  return (grapheme: g, nextIndex: start + g.length);
 }
 
 int firstCodePoint(String s) {

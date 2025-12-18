@@ -190,6 +190,8 @@ void main() {
       p.legacy = const LegacyKeyEncoding(0);
       _expectKeyPress(p.parseControl(0x00), code: keySpace, mod: KeyMod.ctrl);
 
+      _expectKeyPress(p.parseControl(0x08), code: 0x68, mod: KeyMod.ctrl);
+
       p.legacy = const LegacyKeyEncoding(1 << 1);
       _expectKeyPress(p.parseControl(0x09), code: 0x69, mod: KeyMod.ctrl);
 

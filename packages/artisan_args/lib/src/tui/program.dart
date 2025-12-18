@@ -1165,10 +1165,18 @@ class Program {
     // Re-initialize renderer
     final rendererOptions = RendererOptions(
       fps: _options.fps,
-      altScreen: _options.altScreen,
-      hideCursor: _options.hideCursor,
+      altScreen: _options.altScreen && !_options.disableRenderer,
+      hideCursor: _options.hideCursor && !_options.disableRenderer,
+      ansiCompress: _options.ansiCompress,
     );
-    if (_options.altScreen) {
+    if (_options.disableRenderer) {
+      _renderer = NullRenderer(terminal: _terminal!, options: rendererOptions);
+    } else if (_options.useUltravioletRenderer) {
+      _renderer = UltravioletRenderer(
+        terminal: _terminal!,
+        options: rendererOptions,
+      );
+    } else if (_options.altScreen) {
       _renderer = FullScreenRenderer(
         terminal: _terminal!,
         options: rendererOptions,

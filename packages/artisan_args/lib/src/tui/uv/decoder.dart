@@ -402,9 +402,11 @@ final class EventDecoder {
       i++;
     }
     if (i >= buf.length) {
-      return allowIncompleteEsc
-          ? (buf.length, UnknownEvent(String.fromCharCodes(buf)))
-          : (0, null);
+      // Match upstream `parseCsi`: treat a CSI that never reaches a final byte
+      // as an `UnknownEvent`, even when we want streaming behavior. The
+      // streaming parser (`UvEventStreamParser`) holds `UnknownEvent`s until the
+      // escape timeout expires.
+      return (buf.length, UnknownEvent(String.fromCharCodes(buf)));
     }
 
     final finalByte = buf[i];
@@ -482,6 +484,15 @@ final class EventDecoder {
         if (!mok.ok || mok.value != 4) break;
         if (!val.ok || val.value == -1) break;
         return (i + 1, ModifyOtherKeysEvent(val.value));
+      case 'u':
+        // Kitty keyboard protocol / CSI u (fixterms).
+        if (params.length == 0) {
+          return (
+            i + 1,
+            UnknownCsiEvent(String.fromCharCodes(buf.sublist(0, i + 1))),
+          );
+        }
+        return (i + 1, _parseKittyKeyboard(params));
       case 'I':
         return (i + 1, const FocusEvent());
       case 'O':
@@ -675,6 +686,11 @@ final class EventDecoder {
     // Modifiers: CSI 1 ; <mod> <cmd>
     final id = params.param(0, 1).value;
     final mod = params.param(1, 1).value;
+
+    if ((params.length > 2 && !params.params[1].hasMore) || id != 1) {
+      return null;
+    }
+
     if (params.length > 1 && id == 1 && mod != -1) {
       final m = keyModFromXTerm(mod - 1);
       base = Key(
@@ -696,6 +712,32 @@ final class EventDecoder {
     if (cmd == '~') {
       if (p == 200) return const PasteStartEvent();
       if (p == 201) return const PasteEndEvent();
+      // XTerm modifyOtherKeys:
+      // CSI 27 ; <modifier> ; <code> ~
+      // Upstream: `third_party/ultraviolet/decoder.go` (parseXTermModifyOtherKeys)
+      if (p == 27 && params.length >= 3) {
+        final xmod = params.param(1, 1);
+        final xr = params.param(2, 1);
+        if (!xmod.ok || !xr.ok) return null;
+
+        final mod = keyModFromXTerm(xmod.value - 1);
+        final r = xr.value;
+
+        final special = switch (r) {
+          8 || 127 => keyBackspace,
+          9 => keyTab,
+          13 => keyEnter,
+          27 => keyEscape,
+          _ => null,
+        };
+        if (special != null) {
+          return KeyPressEvent(Key(code: special, mod: mod));
+        }
+
+        // Printable keys get a text payload only when unmodified or shift-only.
+        final text = (mod <= KeyMod.shift) ? String.fromCharCode(r) : '';
+        return KeyPressEvent(Key(code: r, mod: mod, text: text));
+      }
     }
 
     Key? k;
@@ -1027,6 +1069,26 @@ final class EventDecoder {
     if (buf.length == 2 && buf[0] == 0x1b) {
       return (2, KeyPressEvent(Key(code: 0x5f /* _ */, mod: KeyMod.alt)));
     }
+
+    // Kitty Graphics protocol uses APC with a leading 'G':
+    //   ESC _ G <options> ; <payload> ST
+    // or the 8-bit APC introducer (0x9f) followed by 'G' and ST (0x9c).
+    final apcPrefixLen = switch (buf) {
+      [0x9f, ...] => 1,
+      [0x1b, 0x5f, ...] => 2,
+      _ => 0,
+    };
+    if (apcPrefixLen != 0 &&
+        buf.length > apcPrefixLen &&
+        buf[apcPrefixLen] == 0x47 /* 'G' */ ) {
+      final parsed = _parseKittyGraphics(
+        buf,
+        start: apcPrefixLen + 1,
+        allowIncompleteEsc: allowIncompleteEsc,
+      );
+      if (parsed != null) return parsed;
+    }
+
     return _parseStTerminated(
       intro8: 0x9f,
       intro7: 0x5f,
@@ -1034,6 +1096,100 @@ final class EventDecoder {
       makeUnknown: (s) => UnknownApcEvent(s),
       buf: buf,
       allowIncompleteEsc: allowIncompleteEsc,
+    );
+  }
+
+  (int, Event?)? _parseKittyGraphics(
+    List<int> buf, {
+    required int start,
+    required bool allowIncompleteEsc,
+  }) {
+    // Scan for ST (0x9c or ESC \\) or cancel (CAN/SUB). Unlike other
+    // ST-terminated sequences, we only implement the subset needed for the
+    // upstream `key_test.go` Kitty graphics cases.
+    var i = start;
+    while (i < buf.length) {
+      final b = buf[i];
+      if (b == 0x9c /* ST */ ||
+          b == 0x1b /* ESC */ ||
+          b == 0x18 /* CAN */ ||
+          b == 0x1a /* SUB */ ) {
+        break;
+      }
+      i++;
+    }
+
+    if (i >= buf.length) {
+      return allowIncompleteEsc
+          ? (buf.length, UnknownEvent(String.fromCharCodes(buf)))
+          : (0, null);
+    }
+
+    final end = i;
+    i++; // consume terminator or ESC/CAN/SUB
+
+    final consumedSeq = String.fromCharCodes(buf.sublist(0, i));
+    Event ignored() => IgnoredEvent(consumedSeq);
+
+    switch (buf[i - 1]) {
+      case 0x18: // CAN
+      case 0x1a: // SUB
+        return (i, ignored());
+      case 0x1b: // ESC
+        if (i >= buf.length || buf[i] != 0x5c /* \\ */ ) {
+          return (i, ignored());
+        }
+        i++; // consume '\\'
+        break;
+      default:
+        // 8-bit ST already consumed.
+        break;
+    }
+
+    final body = buf.sublist(start, end);
+    final semi = body.indexOf(0x3b /* ';' */);
+    if (semi < 0) {
+      // Malformed kitty graphics: fall back to UnknownApcEvent to keep parser
+      // behavior predictable.
+      return (i, UnknownApcEvent(String.fromCharCodes(buf.sublist(0, i))));
+    }
+
+    final optionsStr = String.fromCharCodes(body.sublist(0, semi));
+    final payload = body.sublist(semi + 1);
+
+    var action = '';
+    var id = 0;
+    var number = 0;
+    var quiet = 0;
+
+    for (final part in optionsStr.split(',')) {
+      if (part.isEmpty) continue;
+      final eq = part.indexOf('=');
+      final key = eq < 0 ? part : part.substring(0, eq);
+      final value = eq < 0 ? '' : part.substring(eq + 1);
+      switch (key) {
+        case 'a':
+          action = value;
+        case 'i':
+          id = int.tryParse(value) ?? 0;
+        case 'I':
+          number = int.tryParse(value) ?? 0;
+        case 'q':
+          quiet = int.tryParse(value) ?? 0;
+      }
+    }
+
+    return (
+      i,
+      KittyGraphicsEvent(
+        options: KittyOptions(
+          action: action,
+          id: id,
+          number: number,
+          quiet: quiet,
+        ),
+        payload: payload,
+      ),
     );
   }
 
@@ -1115,11 +1271,13 @@ final class EventDecoder {
 
   Event _parseKittyKeyboardExt(_AnsiParams params, KeyPressEvent k) {
     // Minimal port of `parseKittyKeyboardExt`.
-    if (params.length > 2 &&
+    // In our params model, sub-parameters are stored on the same param.
+    // For CSI A / CSI ~ extensions, the event type lives in the second
+    // sub-parameter of the 2nd param: `CSI 1 ; <mods>:<type> <final>`.
+    if (params.length >= 2 &&
         params.params[0].param(1) == 1 &&
-        params.params.length > 1 &&
         params.params[1].hasMore) {
-      final type = params.params[2].param(1);
+      final type = params.params[1].param(1, 1);
       if (type == 2) {
         final key = k.key();
         return KeyPressEvent(
@@ -1137,7 +1295,391 @@ final class EventDecoder {
     }
     return k;
   }
+
+  Event _parseKittyKeyboard(_AnsiParams params) {
+    // Port of `parseKittyKeyboard`:
+    // `third_party/ultraviolet/decoder.go` (parseKittyKeyboard/fromKittyMod)
+    var isRelease = false;
+
+    Key key = const Key(code: 0);
+
+    var paramIdx = 0;
+    var subIdx = 0;
+    for (final p in params.params) {
+      for (var sub = 0; sub < p.values.length; sub++) {
+        final v = switch ((paramIdx, subIdx)) {
+          (0, 0) => p.param(1, sub), // codepoint defaults to 1
+          (1, 0) => p.param(1, sub), // modifiers defaults to 1
+          (1, 1) => p.param(1, sub), // event type defaults to 1
+          _ => p.param(0, sub),
+        };
+        switch (paramIdx) {
+          case 0:
+            switch (subIdx) {
+              case 0:
+                key = _kittyKeyMap[v] ?? Key(code: _validRuneOrReplacement(v));
+              case 1:
+                final s = v;
+                if (_isPrintable(s)) {
+                  key = Key(
+                    code: key.code,
+                    text: key.text,
+                    mod: key.mod,
+                    shiftedCode: s,
+                    baseCode: key.baseCode,
+                    isRepeat: key.isRepeat,
+                  );
+                }
+              case 2:
+                final b = v;
+                if (_isPrintable(b)) {
+                  // Base key (PC-101 layout).
+                  key = Key(
+                    code: key.code,
+                    text: key.text,
+                    mod: key.mod,
+                    shiftedCode: key.shiftedCode,
+                    baseCode: b,
+                    isRepeat: key.isRepeat,
+                  );
+                }
+                // Upstream fallthrough to shifted code assignment for this
+                // parameter.
+                if (_isPrintable(b)) {
+                  key = Key(
+                    code: key.code,
+                    text: key.text,
+                    mod: key.mod,
+                    shiftedCode: b,
+                    baseCode: key.baseCode,
+                    isRepeat: key.isRepeat,
+                  );
+                }
+            }
+          case 1:
+            switch (subIdx) {
+              case 0:
+                final mod = v;
+                if (mod > 1) {
+                  final m = _fromKittyMod(mod - 1);
+                  key = Key(
+                    code: key.code,
+                    text: key.text,
+                    mod: m,
+                    shiftedCode: key.shiftedCode,
+                    baseCode: key.baseCode,
+                    isRepeat: key.isRepeat,
+                  );
+                  if (m > KeyMod.shift) {
+                    key = Key(
+                      code: key.code,
+                      text: '',
+                      mod: key.mod,
+                      shiftedCode: key.shiftedCode,
+                      baseCode: key.baseCode,
+                      isRepeat: key.isRepeat,
+                    );
+                  }
+                }
+              case 1:
+                final type = v;
+                if (type == 2) {
+                  key = Key(
+                    code: key.code,
+                    text: key.text,
+                    mod: key.mod,
+                    shiftedCode: key.shiftedCode,
+                    baseCode: key.baseCode,
+                    isRepeat: true,
+                  );
+                } else if (type == 3) {
+                  isRelease = true;
+                }
+              default:
+                break;
+            }
+          default:
+            // Text-as-codepoints (optional 3rd component).
+            final cp = p.param(0, sub);
+            if (cp != 0) {
+              key = Key(
+                code: key.code,
+                text: '${key.text}${String.fromCharCode(cp)}',
+                mod: key.mod,
+                shiftedCode: key.shiftedCode,
+                baseCode: key.baseCode,
+                isRepeat: key.isRepeat,
+              );
+            }
+        }
+
+        subIdx++;
+      }
+
+      paramIdx++;
+      subIdx = 0;
+    }
+
+    var keyMod = key.mod;
+    // Remove these lock modifiers from now on since they don't affect the text.
+    keyMod &= ~KeyMod.numLock;
+
+    final printMod =
+        keyMod <= KeyMod.shift ||
+        keyMod == KeyMod.capsLock ||
+        keyMod == (KeyMod.shift | KeyMod.capsLock);
+    final printKeyPad = key.code >= keyKpEqual && key.code <= keyKpSep;
+
+    if (key.text.isEmpty && printKeyPad && printMod) {
+      String? t;
+      if (key.code >= keyKp0 && key.code <= keyKp9) {
+        t = String.fromCharCode(0x30 + (key.code - keyKp0));
+      } else {
+        switch (key.code) {
+          case keyKpEqual:
+            t = '=';
+          case keyKpMultiply:
+            t = '*';
+          case keyKpPlus:
+            t = '+';
+          case keyKpMinus:
+            t = '-';
+          case keyKpDecimal:
+            t = '.';
+          case keyKpDivide:
+            t = '/';
+          case keyKpSep:
+            t = ',';
+        }
+      }
+      if (t != null) {
+        key = Key(
+          code: key.code,
+          text: t,
+          mod: key.mod,
+          shiftedCode: key.shiftedCode,
+          baseCode: key.baseCode,
+          isRepeat: key.isRepeat,
+        );
+      }
+    }
+
+    if (key.text.isEmpty && _isPrintable(key.code) && printMod) {
+      if (keyMod == 0) {
+        key = Key(
+          code: key.code,
+          text: String.fromCharCode(key.code),
+          mod: key.mod,
+          shiftedCode: key.shiftedCode,
+          baseCode: key.baseCode,
+          isRepeat: key.isRepeat,
+        );
+      } else {
+        final wantUpper =
+            KeyMod.contains(keyMod, KeyMod.shift) ||
+            KeyMod.contains(keyMod, KeyMod.capsLock);
+        if (key.shiftedCode != 0) {
+          key = Key(
+            code: key.code,
+            text: String.fromCharCode(key.shiftedCode),
+            mod: key.mod,
+            shiftedCode: key.shiftedCode,
+            baseCode: key.baseCode,
+            isRepeat: key.isRepeat,
+          );
+        } else {
+          final c = String.fromCharCode(key.code);
+          key = Key(
+            code: key.code,
+            text: wantUpper ? c.toUpperCase() : c.toLowerCase(),
+            mod: key.mod,
+            shiftedCode: key.shiftedCode,
+            baseCode: key.baseCode,
+            isRepeat: key.isRepeat,
+          );
+        }
+      }
+    }
+
+    if (isRelease) return KeyReleaseEvent(key);
+    return KeyPressEvent(key);
+  }
 }
+
+bool _isPrintable(int r) =>
+    r >= 0x20 && r <= 0x10ffff && !(r >= 0xD800 && r <= 0xDFFF);
+
+int _validRuneOrReplacement(int r) {
+  if (r < 0 || r > 0x10ffff) return 0xfffd;
+  if (r >= 0xD800 && r <= 0xDFFF) return 0xfffd;
+  return r;
+}
+
+int _fromKittyMod(int bits) {
+  // `third_party/ultraviolet/decoder.go` (fromKittyMod)
+  const kittyShift = 1 << 0;
+  const kittyAlt = 1 << 1;
+  const kittyCtrl = 1 << 2;
+  const kittySuper = 1 << 3;
+  const kittyHyper = 1 << 4;
+  const kittyMeta = 1 << 5;
+  const kittyCapsLock = 1 << 6;
+  const kittyNumLock = 1 << 7;
+
+  var m = 0;
+  if ((bits & kittyShift) != 0) m |= KeyMod.shift;
+  if ((bits & kittyAlt) != 0) m |= KeyMod.alt;
+  if ((bits & kittyCtrl) != 0) m |= KeyMod.ctrl;
+  if ((bits & kittySuper) != 0) m |= KeyMod.superKey;
+  if ((bits & kittyHyper) != 0) m |= KeyMod.hyper;
+  if ((bits & kittyMeta) != 0) m |= KeyMod.meta;
+  if ((bits & kittyCapsLock) != 0) m |= KeyMod.capsLock;
+  if ((bits & kittyNumLock) != 0) m |= KeyMod.numLock;
+  return m;
+}
+
+final Map<int, Key> _kittyKeyMap = <int, Key>{
+  // C0 mappings.
+  0x08: const Key(code: keyBackspace),
+  0x09: const Key(code: keyTab),
+  0x0d: const Key(code: keyEnter),
+  0x1b: const Key(code: keyEscape),
+  0x7f: const Key(code: keyBackspace),
+
+  // Kitty special keys range.
+  57344: const Key(code: keyEscape),
+  57345: const Key(code: keyEnter),
+  57346: const Key(code: keyTab),
+  57347: const Key(code: keyBackspace),
+  57348: const Key(code: keyInsert),
+  57349: const Key(code: keyDelete),
+  57350: const Key(code: keyLeft),
+  57351: const Key(code: keyRight),
+  57352: const Key(code: keyUp),
+  57353: const Key(code: keyDown),
+  57354: const Key(code: keyPgUp),
+  57355: const Key(code: keyPgDown),
+  57356: const Key(code: keyHome),
+  57357: const Key(code: keyEnd),
+  57358: const Key(code: keyCapsLock),
+  57359: const Key(code: keyScrollLock),
+  57360: const Key(code: keyNumLock),
+  57361: const Key(code: keyPrintScreen),
+  57362: const Key(code: keyPause),
+  57363: const Key(code: keyMenu),
+  57364: const Key(code: keyF1),
+  57365: const Key(code: keyF2),
+  57366: const Key(code: keyF3),
+  57367: const Key(code: keyF4),
+  57368: const Key(code: keyF5),
+  57369: const Key(code: keyF6),
+  57370: const Key(code: keyF7),
+  57371: const Key(code: keyF8),
+  57372: const Key(code: keyF9),
+  57373: const Key(code: keyF10),
+  57374: const Key(code: keyF11),
+  57375: const Key(code: keyF12),
+  57376: const Key(code: keyF13),
+  57377: const Key(code: keyF14),
+  57378: const Key(code: keyF15),
+  57379: const Key(code: keyF16),
+  57380: const Key(code: keyF17),
+  57381: const Key(code: keyF18),
+  57382: const Key(code: keyF19),
+  57383: const Key(code: keyF20),
+  57384: const Key(code: keyF21),
+  57385: const Key(code: keyF22),
+  57386: const Key(code: keyF23),
+  57387: const Key(code: keyF24),
+  57388: const Key(code: keyF25),
+  57389: const Key(code: keyF26),
+  57390: const Key(code: keyF27),
+  57391: const Key(code: keyF28),
+  57392: const Key(code: keyF29),
+  57393: const Key(code: keyF30),
+  57394: const Key(code: keyF31),
+  57395: const Key(code: keyF32),
+  57396: const Key(code: keyF33),
+  57397: const Key(code: keyF34),
+  57398: const Key(code: keyF35),
+  57399: const Key(code: keyKp0),
+  57400: const Key(code: keyKp1),
+  57401: const Key(code: keyKp2),
+  57402: const Key(code: keyKp3),
+  57403: const Key(code: keyKp4),
+  57404: const Key(code: keyKp5),
+  57405: const Key(code: keyKp6),
+  57406: const Key(code: keyKp7),
+  57407: const Key(code: keyKp8),
+  57408: const Key(code: keyKp9),
+  57409: const Key(code: keyKpDecimal),
+  57410: const Key(code: keyKpDivide),
+  57411: const Key(code: keyKpMultiply),
+  57412: const Key(code: keyKpMinus),
+  57413: const Key(code: keyKpPlus),
+  57414: const Key(code: keyKpEnter),
+  57415: const Key(code: keyKpEqual),
+  57416: const Key(code: keyKpSep),
+  57417: const Key(code: keyKpLeft),
+  57418: const Key(code: keyKpRight),
+  57419: const Key(code: keyKpUp),
+  57420: const Key(code: keyKpDown),
+  57421: const Key(code: keyKpPgUp),
+  57422: const Key(code: keyKpPgDown),
+  57423: const Key(code: keyKpHome),
+  57424: const Key(code: keyKpEnd),
+  57425: const Key(code: keyKpInsert),
+  57426: const Key(code: keyKpDelete),
+  57427: const Key(code: keyKpBegin),
+  57428: const Key(code: keyMediaPlay),
+  57429: const Key(code: keyMediaPause),
+  57430: const Key(code: keyMediaPlayPause),
+  57431: const Key(code: keyMediaReverse),
+  57432: const Key(code: keyMediaStop),
+  57433: const Key(code: keyMediaFastForward),
+  57434: const Key(code: keyMediaRewind),
+  57435: const Key(code: keyMediaNext),
+  57436: const Key(code: keyMediaPrev),
+  57437: const Key(code: keyMediaRecord),
+  57438: const Key(code: keyLowerVol),
+  57439: const Key(code: keyRaiseVol),
+  57440: const Key(code: keyMute),
+  57441: const Key(code: keyLeftShift),
+  57442: const Key(code: keyLeftCtrl),
+  57443: const Key(code: keyLeftAlt),
+  57444: const Key(code: keyLeftSuper),
+  57445: const Key(code: keyLeftHyper),
+  57446: const Key(code: keyLeftMeta),
+  57447: const Key(code: keyRightShift),
+  57448: const Key(code: keyRightCtrl),
+  57449: const Key(code: keyRightAlt),
+  57450: const Key(code: keyRightSuper),
+  57451: const Key(code: keyRightHyper),
+  57452: const Key(code: keyRightMeta),
+  57453: const Key(code: keyIsoLevel3Shift),
+  57454: const Key(code: keyIsoLevel5Shift),
+};
+
+// WezTerm-style faulty C0 mappings also included upstream.
+void _initKittyKeyMapC0() {
+  // NUL => Ctrl+Space.
+  _kittyKeyMap.putIfAbsent(
+    0x00,
+    () => const Key(code: keySpace, mod: KeyMod.ctrl),
+  );
+  for (var i = 0x01; i <= 0x1a; i++) {
+    _kittyKeyMap.putIfAbsent(i, () => Key(code: 0x60 + i, mod: KeyMod.ctrl));
+  }
+  for (var i = 0x1c; i <= 0x1f; i++) {
+    _kittyKeyMap.putIfAbsent(i, () => Key(code: 0x40 + i, mod: KeyMod.ctrl));
+  }
+}
+
+// Ensure C0 init runs once.
+final bool _ = (() {
+  _initKittyKeyMapC0();
+  return true;
+})();
 
 // --- Helpers / parser utilities ---
 

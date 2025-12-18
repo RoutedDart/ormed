@@ -1,5 +1,27 @@
 # Changelog
 
+## Unreleased
+
+### Breaking
+
+- Removed legacy interactive component classes in favor of the Bubble Tea-style
+  bubbles architecture (`lib/src/tui/bubbles/`).
+  - Removed: `InteractiveComponent<T>`, `TextInput`, `Confirm`,
+    `SecretInputComponent`, `PasswordComponent`, `TextareaComponent`,
+    `Select<T>`, `MultiSelect<T>`, `SearchComponent<T>`, `AnticipateComponent`,
+    `WizardComponent`, `SpinnerComponent`, `PauseComponent`, `CountdownComponent`
+  - Replacements: `TextInputModel`, `ConfirmModel`, `PasswordModel`,
+    `PasswordConfirmModel`, `TextAreaModel`, `SelectModel<T>`,
+    `MultiSelectModel<T>`, `SearchModel<T>`, `AnticipateModel`, `WizardModel`,
+    `SpinnerModel`, `PauseModel`, `CountdownModel`
+- Added prompt helpers to run bubbles in “artisan prompt” mode:
+  `runTextInputPrompt`, `runConfirmPrompt`, `runPasswordPrompt`,
+  `runPasswordConfirmPrompt`, `runSelectPrompt`, `runMultiSelectPrompt`,
+  `runSearchPrompt`, `runAnticipatePrompt`, `runTextAreaPrompt`,
+  `runWizardPrompt`, `runSpinnerTask`.
+
+See `doc/migration_guide.md`.
+
 ## 0.0.1
 
 Initial release with Artisan-style console primitives.
@@ -45,4 +67,3 @@ Initial release with Artisan-style console primitives.
 - **Interactive Prompts**
   - `SecretInput` - password input without echo
   - `InteractiveChoice` - arrow-key navigable choice selection
-
