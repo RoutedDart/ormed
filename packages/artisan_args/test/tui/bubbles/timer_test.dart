@@ -101,7 +101,7 @@ void main() {
         test('ignores messages with wrong tag', () {
           final timer = TimerModel(timeout: Duration(seconds: 10));
           final (updated, cmd) = timer.update(TimerStartStopMsg(true, 999));
-          expect((updated as TimerModel).running, isFalse);
+          expect((updated).running, isFalse);
           expect(cmd, isNull);
         });
 
@@ -110,7 +110,7 @@ void main() {
           final (updated, cmd) = timer.update(
             TimerStartStopMsg(true, timer.tag),
           );
-          expect((updated as TimerModel).running, isTrue);
+          expect((updated).running, isTrue);
           expect(cmd, isNull);
         });
 
@@ -118,12 +118,12 @@ void main() {
           // First start the timer
           var timer = TimerModel(timeout: Duration(seconds: 10));
           var (updated, _) = timer.update(TimerStartStopMsg(true, timer.tag));
-          timer = updated as TimerModel;
+          timer = updated;
           expect(timer.running, isTrue);
 
           // Then stop it
           (updated, _) = timer.update(TimerStartStopMsg(false, timer.tag));
-          expect((updated as TimerModel).running, isFalse);
+          expect((updated).running, isFalse);
         });
       });
 
@@ -133,7 +133,7 @@ void main() {
           final (updated, cmd) = timer.update(
             TimerTickMsg(DateTime.now(), 999, false),
           );
-          expect((updated as TimerModel).timeout, Duration(seconds: 10));
+          expect((updated).timeout, Duration(seconds: 10));
           expect(cmd, isNull);
         });
 
@@ -142,7 +142,7 @@ void main() {
           final (updated, cmd) = timer.update(
             TimerTickMsg(DateTime.now(), timer.tag, false),
           );
-          expect((updated as TimerModel).timeout, Duration(seconds: 10));
+          expect((updated).timeout, Duration(seconds: 10));
           expect(cmd, isNull);
         });
 
@@ -150,13 +150,13 @@ void main() {
           var timer = TimerModel(timeout: Duration(seconds: 10));
           // Start the timer
           var (updated, _) = timer.update(TimerStartStopMsg(true, timer.tag));
-          timer = updated as TimerModel;
+          timer = updated;
 
           // Process a tick
           (updated, _) = timer.update(
             TimerTickMsg(DateTime.now(), timer.tag, false),
           );
-          expect((updated as TimerModel).timeout, Duration(seconds: 9));
+          expect((updated).timeout, Duration(seconds: 9));
         });
 
         test('stops and sets timeout to zero when reaching zero', () {
@@ -166,13 +166,13 @@ void main() {
           );
           // Start the timer
           var (updated, cmd) = timer.update(TimerStartStopMsg(true, timer.tag));
-          timer = updated as TimerModel;
+          timer = updated;
 
           // Process a tick that brings it to zero
           (updated, cmd) = timer.update(
             TimerTickMsg(DateTime.now(), timer.tag, false),
           );
-          timer = updated as TimerModel;
+          timer = updated;
           expect(timer.timeout, Duration.zero);
           expect(timer.running, isFalse);
           expect(cmd, isNotNull); // timeout command
@@ -182,13 +182,13 @@ void main() {
           var timer = TimerModel(timeout: Duration(seconds: 5));
           // Start the timer
           var (updated, _) = timer.update(TimerStartStopMsg(true, timer.tag));
-          timer = updated as TimerModel;
+          timer = updated;
 
           // Process a timeout tick
           (updated, _) = timer.update(
             TimerTickMsg(DateTime.now(), timer.tag, true),
           );
-          timer = updated as TimerModel;
+          timer = updated;
           expect(timer.timeout, Duration.zero);
           expect(timer.running, isFalse);
         });
@@ -198,7 +198,7 @@ void main() {
         final timer = TimerModel(timeout: Duration(seconds: 10));
         final (updated, cmd) = timer.update(_UnknownMsg());
         expect(updated, isA<TimerModel>());
-        expect((updated as TimerModel).timeout, Duration(seconds: 10));
+        expect((updated).timeout, Duration(seconds: 10));
         expect(cmd, isNull);
       });
     });

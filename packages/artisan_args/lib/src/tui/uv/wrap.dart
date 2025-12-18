@@ -1,6 +1,6 @@
 import 'ansi.dart';
 import 'cell.dart';
-import 'width.dart';
+import '../../unicode/width.dart';
 
 import '../../unicode/grapheme.dart' as uni;
 

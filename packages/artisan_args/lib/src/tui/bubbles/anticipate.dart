@@ -10,6 +10,7 @@ import 'package:artisan_args/src/tui/bubbles/key_binding.dart';
 import 'package:artisan_args/src/tui/tui.dart';
 import 'package:artisan_args/src/style/style.dart';
 import 'package:artisan_args/src/style/color.dart';
+import 'package:artisan_args/src/unicode/grapheme.dart' as uni;
 
 /// Configuration for anticipate/autocomplete component.
 class AnticipateConfig {
@@ -100,7 +101,7 @@ class AnticipateKeyMap implements KeyMap {
 }
 
 /// Anticipate model for autocomplete input.
-class AnticipateModel implements Model {
+class AnticipateModel extends ViewComponent {
   /// Creates a new anticipate model.
   AnticipateModel({
     this.prompt = '? ',
@@ -218,12 +219,20 @@ class AnticipateModel implements Model {
     newModel._value = value ?? _value;
     newModel._selectedIndex = selectedIndex ?? _selectedIndex;
     newModel._focused = focused ?? _focused;
-    newModel._filteredSuggestions = filteredSuggestions ?? _filteredSuggestions;
+
+    if (filteredSuggestions != null) {
+      newModel._filteredSuggestions = filteredSuggestions;
+    } else if (value != null) {
+      // If the value changed, recompute suggestions deterministically.
+      newModel._updateFilteredSuggestions();
+    } else {
+      newModel._filteredSuggestions = _filteredSuggestions;
+    }
     return newModel;
   }
 
   void _updateFilteredSuggestions() {
-    if (_value.length < config.minCharsToSearch) {
+    if (uni.graphemes(_value).length < config.minCharsToSearch) {
       _filteredSuggestions = [];
     } else {
       _filteredSuggestions = suggestions
@@ -231,14 +240,18 @@ class AnticipateModel implements Model {
           .take(config.maxSuggestions)
           .toList();
     }
-    _selectedIndex = _selectedIndex.clamp(0, _filteredSuggestions.length - 1);
+    if (_filteredSuggestions.isEmpty) {
+      _selectedIndex = 0;
+    } else {
+      _selectedIndex = _selectedIndex.clamp(0, _filteredSuggestions.length - 1);
+    }
   }
 
   @override
   Cmd? init() => null;
 
   @override
-  (Model, Cmd?) update(Msg msg) {
+  (AnticipateModel, Cmd?) update(Msg msg) {
     if (!_focused) return (this, null);
 
     if (msg is KeyMsg) {
@@ -263,7 +276,7 @@ class AnticipateModel implements Model {
         }
       } else if (keyMatches(msg.key, [keyMap.deleteCharacterBackward])) {
         if (_value.isNotEmpty) {
-          final newValue = _value.substring(0, _value.length - 1);
+          final newValue = _dropLastGrapheme(_value);
           final newModel = copyWith(value: newValue);
           return (newModel, null);
         }
@@ -312,5 +325,13 @@ class AnticipateModel implements Model {
     }
 
     return buffer.toString();
+  }
+
+  static String _dropLastGrapheme(String s) {
+    if (s.isEmpty) return '';
+    final gs = uni.graphemes(s).toList();
+    if (gs.isEmpty) return '';
+    gs.removeLast();
+    return gs.join();
   }
 }

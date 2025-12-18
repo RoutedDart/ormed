@@ -188,29 +188,33 @@ void main() {
 
     group('styling', () {
       test('applies prefix style', () {
-        final alert = Alert()
+        final alert = Alert(
+          renderConfig: const RenderConfig(colorProfile: ColorProfile.trueColor),
+        )
           ..info()
           ..message('Test')
-          ..prefixStyle(Style().bold().foreground(Colors.magenta))
-          ..colorProfile(ColorProfile.trueColor);
+          ..prefixStyle(Style().bold().foreground(Colors.magenta));
         final output = alert.render();
         expect(output, contains('\x1B['));
         expect(output, contains('[INFO]'));
       });
 
       test('applies message style', () {
-        final alert = Alert()
+        final alert = Alert(
+          renderConfig: const RenderConfig(colorProfile: ColorProfile.trueColor),
+        )
           ..info()
           ..message('Styled message')
-          ..messageStyle(Style().italic())
-          ..colorProfile(ColorProfile.trueColor);
+          ..messageStyle(Style().italic());
         final output = alert.render();
         expect(output, contains('\x1B['));
       });
 
       test('applies message style function', () {
         var callCount = 0;
-        final alert = Alert()
+        final alert = Alert(
+          renderConfig: const RenderConfig(colorProfile: ColorProfile.trueColor),
+        )
           ..info()
           ..message('Line 0\nLine 1\nLine 2')
           ..messageStyleFunc((line, index) {
@@ -220,17 +224,18 @@ void main() {
             }
             return null;
           })
-          ..colorProfile(ColorProfile.trueColor);
+          ;
         alert.render();
         expect(callCount, equals(3));
       });
 
       test('applies border style for block', () {
-        final alert = Alert()
+        final alert = Alert(
+          renderConfig: const RenderConfig(colorProfile: ColorProfile.trueColor),
+        )
           ..block()
           ..message('Test')
-          ..borderStyle(Style().foreground(Colors.cyan))
-          ..colorProfile(ColorProfile.trueColor);
+          ..borderStyle(Style().foreground(Colors.cyan));
         final output = alert.render();
         expect(output, contains('\x1B['));
       });
@@ -268,40 +273,58 @@ void main() {
 
     group('color profile', () {
       test('respects ASCII color profile', () {
-        final alert = Alert()
+        final alert = Alert(
+          renderConfig: const RenderConfig(colorProfile: ColorProfile.ascii),
+        )
           ..info()
           ..message('Test')
           ..prefixStyle(Style().bold().foreground(Colors.red))
-          ..colorProfile(ColorProfile.ascii);
+          ;
         final output = alert.render();
         expect(output.contains('\x1B['), isFalse);
       });
 
       test('respects trueColor profile', () {
-        final alert = Alert()
+        final alert = Alert(
+          renderConfig: const RenderConfig(colorProfile: ColorProfile.trueColor),
+        )
           ..info()
           ..message('Test')
-          ..prefixStyle(Style().foreground(Colors.rgb(100, 150, 200)))
-          ..colorProfile(ColorProfile.trueColor);
+          ..prefixStyle(Style().foreground(Colors.rgb(100, 150, 200)));
         final output = alert.render();
         expect(output, contains('\x1B['));
       });
 
       test('respects dark background setting', () {
-        final alert = Alert()
+        final alertLight = Alert(
+          renderConfig: const RenderConfig(
+            colorProfile: ColorProfile.trueColor,
+            hasDarkBackground: true,
+          ),
+        )
           ..info()
           ..message('Test')
           ..prefixStyle(
             Style().foreground(
               AdaptiveColor(light: Colors.black, dark: Colors.white),
             ),
-          )
-          ..colorProfile(ColorProfile.trueColor)
-          ..darkBackground(true);
-        final output1 = alert.render();
+          );
+        final output1 = alertLight.render();
 
-        alert.darkBackground(false);
-        final output2 = alert.render();
+        final alertDark = Alert(
+          renderConfig: const RenderConfig(
+            colorProfile: ColorProfile.trueColor,
+            hasDarkBackground: false,
+          ),
+        )
+          ..info()
+          ..message('Test')
+          ..prefixStyle(
+            Style().foreground(
+              AdaptiveColor(light: Colors.black, dark: Colors.white),
+            ),
+          );
+        final output2 = alertDark.render();
 
         expect(output1, isNot(equals(output2)));
       });
@@ -371,8 +394,6 @@ void main() {
         expect(alert.borderStyle(Style()), same(alert));
         expect(alert.padding(1), same(alert));
         expect(alert.width(50), same(alert));
-        expect(alert.colorProfile(ColorProfile.trueColor), same(alert));
-        expect(alert.darkBackground(true), same(alert));
       });
     });
   });

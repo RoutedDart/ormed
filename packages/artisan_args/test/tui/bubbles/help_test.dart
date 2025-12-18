@@ -1,5 +1,6 @@
 import 'package:artisan_args/src/tui/bubbles/help.dart';
 import 'package:artisan_args/src/tui/bubbles/key_binding.dart';
+import 'package:artisan_args/src/style/style.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -172,6 +173,30 @@ void main() {
         if (view.contains('…')) {
           expect(view, contains('…'));
         }
+      });
+
+      test('pads keys by visible width (combining marks)', () {
+        final help = HelpModel();
+        final groups = [
+          [
+            KeyBinding.withHelp(['a'], 'e\u0301', 'one'), // é (combining)
+            KeyBinding.withHelp(['b'], 'x', 'two'),
+          ],
+        ];
+
+        final view = help.fullHelpView(groups);
+        final lines = view.split('\n');
+        expect(lines, hasLength(2));
+
+        final prefixes = [
+          lines[0].split('one').first,
+          lines[1].split('two').first,
+        ];
+
+        expect(
+          Style.visibleLength(prefixes[0]),
+          equals(Style.visibleLength(prefixes[1])),
+        );
       });
     });
   });

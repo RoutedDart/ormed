@@ -1,4 +1,7 @@
 import 'package:artisan_args/src/tui/bubbles/paginator.dart';
+import 'package:artisan_args/src/tui/component.dart';
+import 'package:artisan_args/src/tui/key.dart';
+import 'package:artisan_args/src/tui/msg.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -286,6 +289,13 @@ void main() {
         final paginator = PaginatorModel();
         expect(paginator.init(), isNull);
       });
+    });
+
+    test('is a ViewComponent and updates via base type', () {
+      final paginator = PaginatorModel(totalPages: 3);
+      ViewComponent model = paginator;
+      final (updated, _) = model.update(const KeyMsg(Key(KeyType.right)));
+      expect(updated, isA<PaginatorModel>());
     });
   });
 

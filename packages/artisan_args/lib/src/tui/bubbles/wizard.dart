@@ -6,6 +6,7 @@ library;
 
 import '../cmd.dart';
 import '../key.dart';
+import '../component.dart';
 import '../model.dart';
 import '../msg.dart';
 import 'textinput.dart';
@@ -402,7 +403,7 @@ class GroupStep extends WizardStep {
 ///     return (this, Cmd.quit());
 /// }
 /// ```
-class WizardModel implements Model {
+class WizardModel extends ViewComponent {
   /// Creates a wizard model.
   WizardModel({required this.steps, this.title, this.showProgress = true})
     : _answers = {},
@@ -504,7 +505,7 @@ class WizardModel implements Model {
   }
 
   @override
-  (Model, Cmd?) update(Msg msg) {
+  (WizardModel, Cmd?) update(Msg msg) {
     // Handle cancel (Escape key)
     if (msg is KeyMsg &&
         keyMatches(msg.key, [

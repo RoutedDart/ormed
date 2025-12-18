@@ -62,7 +62,7 @@ String _toRoman(int n) {
 }
 
 /// A bullet list component.
-class BulletList extends ViewComponent {
+class BulletList extends DisplayComponent {
   const BulletList({
     required this.items,
     this.bullet = '•',
@@ -106,7 +106,7 @@ class BulletList extends ViewComponent {
 }
 
 /// A numbered list component.
-class NumberedList extends ViewComponent {
+class NumberedList extends DisplayComponent {
   const NumberedList({
     required this.items,
     this.indent = 2,

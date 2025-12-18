@@ -97,7 +97,7 @@ class PreventQuitModel implements tui.Model {
         saveText,
         hasChanges,
         quitting,
-      ).copyWith(textarea: newTextarea as tui.TextAreaModel),
+      ).copyWith(textarea: newTextarea),
       cmds.isNotEmpty ? tui.Cmd.batch(cmds) : null,
     );
   }

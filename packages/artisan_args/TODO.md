@@ -42,7 +42,7 @@
   - [x] `-n, --no-interaction` (disable prompts)
   - [x] `--ansi/--no-ansi` (already present)
 - [x] Add a single `ArtisanIO` instance accessible to commands (e.g. `command.io`).
-- [ ] Add snapshot-style tests for formatted usage output (ANSI on/off).
+- [x] Add snapshot-style tests for formatted usage output (ANSI on/off).
 
 ## Advanced CLI UIs (Implemented)
 
@@ -164,40 +164,42 @@
 
 ```
 lib/src/
-├── components/          # Display-only components
-│   ├── base.dart        # CliComponent, ComponentContext
-│   ├── layout.dart      # CompositeComponent, ColumnComponent, RowComponent
-│   ├── text.dart        # Text, StyledText, Rule
-│   ├── list.dart        # BulletList, NumberedList
-│   ├── box.dart         # KeyValue, Box
-│   ├── progress.dart    # ProgressBar (static), SpinnerFrame
-│   ├── progress_bar.dart # ProgressBarComponent, StatefulProgressBar
-│   ├── panel.dart       # PanelComponent
-│   ├── tree.dart        # TreeComponent
-│   ├── columns.dart     # ColumnsComponent
-│   ├── table.dart       # TableComponent, HorizontalTableComponent
-│   ├── alert.dart       # AlertComponent
-│   ├── task.dart        # TaskComponent
-│   ├── styled_block.dart # StyledBlockComponent, CommentComponent
-│   ├── exception.dart   # ExceptionComponent, SimpleExceptionComponent
-│   └── link.dart        # LinkComponent, LinkGroupComponent
+├── tui/                 # Bubble Tea-style runtime + interactive bubbles
+│   ├── component.dart   # ViewComponent, StaticComponent, ComponentHost
+│   ├── model.dart       # Model base class
+│   ├── program.dart     # TUI event loop
+│   └── bubbles/         # Stateful widgets (TEA units)
+│       ├── bubbles.dart # Convenience exports
+│       └── components/  # Display-only components (stateless)
+│           ├── base.dart        # DisplayComponent, RenderConfig
+│           ├── layout.dart      # CompositeComponent, ColumnComponent, RowComponent
+│           ├── text.dart        # Text, StyledText, Rule
+│           ├── list.dart        # BulletList, NumberedList
+│           ├── box.dart         # KeyValue, Box
+│           ├── progress.dart    # ProgressBar (static), SpinnerFrame
+│           ├── progress_bar.dart # ProgressBarComponent, StatefulProgressBar
+│           ├── panel.dart       # PanelComponent
+│           ├── tree.dart        # TreeComponent
+│           ├── columns.dart     # ColumnsComponent
+│           ├── table.dart       # TableComponent, HorizontalTableComponent
+│           ├── alert.dart       # AlertComponent
+│           ├── task.dart        # TaskComponent
+│           ├── styled_block.dart # StyledBlockComponent, CommentComponent
+│           ├── exception.dart   # ExceptionComponent, SimpleExceptionComponent
+│           └── link.dart        # LinkComponent, LinkGroupComponent
 │
 ├── io/                  # IO utilities (3 files)
 │   ├── artisan_io.dart  # Main IO facade (uses components)
 │   ├── components.dart  # ArtisanComponents (high-level helpers)
 │   └── validators.dart  # Input validators (Acanthis)
 │
-├── output/              # Terminal utilities (1 file)
-│   └── terminal.dart    # Terminal, KeyCode, RawModeState
+├── terminal/            # Terminal utilities
+│   └── terminal.dart    # Terminal, Key, RawModeGuard
 │
 ├── style/               # Styling utilities
-│   ├── artisan_style.dart # ArtisanStyle
-│   ├── verbosity.dart   # ArtisanVerbosity
-│   └── chalk.dart       # ArtisanChalk, ColorPresets
-│
-├── tui/                 # Bubble Tea-style runtime + interactive bubbles
-│   ├── program.dart
-│   └── bubbles/
+│   ├── style.dart       # Fluent Style system (Lipgloss v2)
+│   ├── color.dart       # Color and ColorProfile
+│   └── verbosity.dart   # ArtisanVerbosity
 │       ├── bubbles.dart # Convenience exports
 │       └── ...          # TextInputModel, SelectModel, WizardModel, etc.
 │
@@ -222,3 +224,26 @@ lib/src/
 - [ ] Terminal resize events
 - [ ] Clipboard support
 - [ ] `logo(ascii)` - ASCII art logo display
+
+## Ultraviolet & Lipgloss v2 Parity
+
+- [x] Phase 8: Lipgloss v2 Parity Gaps
+    - [x] Width unification (Style.visibleLength)
+    - [x] Tabs and CRLF handling
+    - [x] Hyperlink support (Style.hyperlink)
+- [x] Phase 9: Remaining UV Ports
+    - [x] Cursor (uv/cursor.dart)
+    - [x] Logger (uv/logger.dart)
+    - [x] Environ (uv/environ.dart)
+- [x] Phase 10: Example Cleanup & Direct Writes Audit
+    - [x] Create Golden Demo for parity verification
+    - [x] Audit examples for direct stdout writes
+    - [x] Ensure examples are UV-safe (use Cmd.println)
+    - [x] Fix "Stream already listened to" error on TUI restart (sharedStdinStream)
+- [x] Phase 12: UV Decoder+Events Parity (TUI Adapter)
+    - [x] Emit non-key UV events to the TUI message stream (`UvEventMsg`)
+    - [x] Map `UnknownEvent` via UV key table after ESC-timeout flush
+- [x] Phase 11: Final Polish & Documentation
+    - [x] Update README with UV renderer instructions
+    - [x] Add migration guide for Lipgloss v2
+    - [ ] Final API audit and export cleanup

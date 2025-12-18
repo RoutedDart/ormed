@@ -110,14 +110,14 @@ void main() {
       test('handles FocusMsg(focused: true)', () {
         final cursor = CursorModel();
         final (updated, _) = cursor.update(FocusMsg(true));
-        expect((updated as CursorModel).focused, isTrue);
+        expect((updated).focused, isTrue);
       });
 
       test('handles FocusMsg(focused: false)', () {
         final cursor = CursorModel();
         final (focused, _) = cursor.focus();
         final (blurred, _) = focused.update(FocusMsg(false));
-        expect((blurred as CursorModel).focused, isFalse);
+        expect((blurred).focused, isFalse);
       });
 
       test('ignores blink messages from other cursors', () {

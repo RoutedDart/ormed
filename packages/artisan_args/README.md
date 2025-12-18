@@ -76,6 +76,39 @@ class ServeCommand extends ArtisanCommand<void> {
 }
 ```
 
+## Ultraviolet Renderer (Experimental)
+
+`artisan_args` includes a high-performance cell-buffer renderer based on [Ultraviolet](https://github.com/charmbracelet/ultraviolet). This renderer provides:
+- **Flicker-free updates**: Only changed cells are sent to the terminal.
+- **Complex layouts**: Support for overlapping layers and absolute positioning.
+- **Lipgloss v2 Parity**: Full support for advanced styling features like hyperlinks and unified width calculation.
+
+To enable the Ultraviolet renderer in your TUI program:
+
+```dart
+await runProgram(
+  MyModel(),
+  options: const ProgramOptions(
+    useUltravioletRenderer: true,
+    useUltravioletInputDecoder: true,
+  ),
+);
+```
+
+### UV-Safe Logging
+
+When using the Ultraviolet renderer, avoid direct `print()` or `stdout.write()` calls as they will desync the cell buffer. Instead, use `Cmd.println`:
+
+```dart
+@override
+(Model, Cmd?) update(Msg msg) {
+  if (msg is LogMsg) {
+    return (this, Cmd.println('Log: ${msg.text}'));
+  }
+  return (this, null);
+}
+```
+
 ## Features
 
 ### Output Helpers

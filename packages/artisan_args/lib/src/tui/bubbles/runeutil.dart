@@ -5,6 +5,7 @@
 library;
 
 import '../../unicode/grapheme.dart' as uni;
+import '../../unicode/width.dart' as uv_width;
 
 /// Function type for sanitizing rune lists.
 typedef RuneSanitizer = List<int> Function(List<int> runes);
@@ -99,36 +100,7 @@ int stringWidth(String s) {
 ///
 /// Returns 2 for wide characters (CJK, etc.), 0 for zero-width characters,
 /// and 1 for normal characters.
-int runeWidth(int rune) {
-  // Zero-width characters
-  if (rune == 0x200B || // Zero-width space
-      rune == 0x200C || // Zero-width non-joiner
-      rune == 0x200D || // Zero-width joiner
-      rune == 0xFEFF) {
-    // BOM
-    return 0;
-  }
-
-  // Wide characters (simplified - in practice you'd use a proper table)
-  // CJK Unified Ideographs
-  if ((rune >= 0x4E00 && rune <= 0x9FFF) ||
-      // CJK Extension A
-      (rune >= 0x3400 && rune <= 0x4DBF) ||
-      // Full-width ASCII variants
-      (rune >= 0xFF00 && rune <= 0xFF60) ||
-      // Full-width punctuation
-      (rune >= 0xFFE0 && rune <= 0xFFE6) ||
-      // Hangul
-      (rune >= 0xAC00 && rune <= 0xD7A3) ||
-      // Hiragana
-      (rune >= 0x3040 && rune <= 0x309F) ||
-      // Katakana
-      (rune >= 0x30A0 && rune <= 0x30FF)) {
-    return 2;
-  }
-
-  return 1;
-}
+int runeWidth(int rune) => uv_width.runeWidth(rune);
 
 /// Truncates a string to fit within the given width.
 ///

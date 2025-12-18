@@ -18,7 +18,7 @@ void main() {
 
       final msg = ProgressFrameMsg(id: targeted.id, tag: targeted.tag);
       final (advanced, _) = targeted.update(msg);
-      final progressed = advanced as ProgressModel;
+      final progressed = advanced;
 
       expect(progressed.percentShown, greaterThan(0));
       expect(progressed.percentShown, lessThan(1));

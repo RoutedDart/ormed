@@ -52,7 +52,7 @@ class ProgressAnimatedModel implements tui.Model {
 
       case tui.ProgressFrameMsg():
         final (newProgress, cmd) = progress.update(msg);
-        return (copyWith(progress: newProgress as tui.ProgressModel), cmd);
+        return (copyWith(progress: newProgress), cmd);
 
       default:
         return (this, null);

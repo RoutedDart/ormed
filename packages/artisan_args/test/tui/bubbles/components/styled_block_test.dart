@@ -113,8 +113,7 @@ void main() {
         final block = StyledBlock()
           ..info()
           ..fullWidth()
-          ..message('Full width message')
-          ..colorProfile(ColorProfile.trueColor);
+          ..message('Full width message');
         final output = block.render();
         // Full width format has more lines
         final lines = output.split('\n');
@@ -146,8 +145,7 @@ void main() {
         final block = StyledBlock()
           ..fullWidth()
           ..backgroundColor(Colors.blue)
-          ..message('Test')
-          ..colorProfile(ColorProfile.trueColor);
+          ..message('Test');
         final output = block.render();
         expect(output, contains('\x1B['));
       });
@@ -156,8 +154,7 @@ void main() {
         final block = StyledBlock()
           ..fullWidth()
           ..foregroundColor(Colors.white)
-          ..message('Test')
-          ..colorProfile(ColorProfile.trueColor);
+          ..message('Test');
         final output = block.render();
         expect(output, contains('\x1B['));
       });
@@ -167,8 +164,7 @@ void main() {
           ..fullWidth()
           ..backgroundColor(Colors.red)
           ..foregroundColor(Colors.white)
-          ..message('Test')
-          ..colorProfile(ColorProfile.trueColor);
+          ..message('Test');
         final output = block.render();
         expect(output, contains('\x1B['));
       });
@@ -210,8 +206,7 @@ void main() {
         final block = StyledBlock()
           ..info()
           ..message('Test')
-          ..prefixStyle(Style().bold().foreground(Colors.magenta))
-          ..colorProfile(ColorProfile.trueColor);
+          ..prefixStyle(Style().bold().foreground(Colors.magenta));
         final output = block.render();
         expect(output, contains('\x1B['));
         expect(output, contains('[INFO]'));
@@ -221,8 +216,7 @@ void main() {
         final block = StyledBlock()
           ..info()
           ..message('Styled content')
-          ..contentStyle(Style().italic())
-          ..colorProfile(ColorProfile.trueColor);
+          ..contentStyle(Style().italic());
         final output = block.render();
         expect(output, contains('\x1B['));
       });
@@ -239,7 +233,7 @@ void main() {
             }
             return null;
           })
-          ..colorProfile(ColorProfile.trueColor);
+          ;
         block.render();
         expect(callCount, equals(3));
       });
@@ -248,8 +242,7 @@ void main() {
         final block = StyledBlock()
           ..bordered()
           ..message('Test')
-          ..borderStyle(Style().foreground(Colors.cyan))
-          ..colorProfile(ColorProfile.trueColor);
+          ..borderStyle(Style().foreground(Colors.cyan));
         final output = block.render();
         expect(output, contains('\x1B['));
       });
@@ -286,40 +279,57 @@ void main() {
 
     group('color profile', () {
       test('respects ASCII color profile', () {
-        final block = StyledBlock()
+        final block = StyledBlock(
+          renderConfig: const RenderConfig(colorProfile: ColorProfile.ascii),
+        )
           ..info()
           ..message('Test')
-          ..prefixStyle(Style().bold().foreground(Colors.red))
-          ..colorProfile(ColorProfile.ascii);
+          ..prefixStyle(Style().bold().foreground(Colors.red));
         final output = block.render();
         expect(output.contains('\x1B['), isFalse);
       });
 
       test('respects trueColor profile', () {
-        final block = StyledBlock()
+        final block = StyledBlock(
+          renderConfig: const RenderConfig(colorProfile: ColorProfile.trueColor),
+        )
           ..info()
           ..message('Test')
-          ..prefixStyle(Style().foreground(Colors.rgb(100, 150, 200)))
-          ..colorProfile(ColorProfile.trueColor);
+          ..prefixStyle(Style().foreground(Colors.rgb(100, 150, 200)));
         final output = block.render();
         expect(output, contains('\x1B['));
       });
 
       test('respects dark background setting', () {
-        final block = StyledBlock()
+        final blockLight = StyledBlock(
+          renderConfig: const RenderConfig(
+            colorProfile: ColorProfile.trueColor,
+            hasDarkBackground: true,
+          ),
+        )
           ..info()
           ..message('Test')
           ..prefixStyle(
             Style().foreground(
               AdaptiveColor(light: Colors.black, dark: Colors.white),
             ),
-          )
-          ..colorProfile(ColorProfile.trueColor)
-          ..darkBackground(true);
-        final output1 = block.render();
+          );
+        final output1 = blockLight.render();
 
-        block.darkBackground(false);
-        final output2 = block.render();
+        final blockDark = StyledBlock(
+          renderConfig: const RenderConfig(
+            colorProfile: ColorProfile.trueColor,
+            hasDarkBackground: false,
+          ),
+        )
+          ..info()
+          ..message('Test')
+          ..prefixStyle(
+            Style().foreground(
+              AdaptiveColor(light: Colors.black, dark: Colors.white),
+            ),
+          );
+        final output2 = blockDark.render();
 
         expect(output1, isNot(equals(output2)));
       });
@@ -393,8 +403,6 @@ void main() {
         expect(block.padding(1), same(block));
         expect(block.width(50), same(block));
         expect(block.maxWidth(80), same(block));
-        expect(block.colorProfile(ColorProfile.trueColor), same(block));
-        expect(block.darkBackground(true), same(block));
       });
     });
   });
@@ -437,7 +445,6 @@ void main() {
 
     test('infoFullWidth creates full-width info block', () {
       final block = StyledBlockFactory.infoFullWidth('Full width info');
-      block.colorProfile(ColorProfile.trueColor);
       final output = block.render();
       final lines = output.split('\n');
       expect(lines.length, greaterThan(3));
@@ -445,7 +452,6 @@ void main() {
 
     test('successFullWidth creates full-width success block', () {
       final block = StyledBlockFactory.successFullWidth('Full width success');
-      block.colorProfile(ColorProfile.trueColor);
       final output = block.render();
       final lines = output.split('\n');
       expect(lines.length, greaterThan(3));
@@ -453,7 +459,6 @@ void main() {
 
     test('warningFullWidth creates full-width warning block', () {
       final block = StyledBlockFactory.warningFullWidth('Full width warning');
-      block.colorProfile(ColorProfile.trueColor);
       final output = block.render();
       final lines = output.split('\n');
       expect(lines.length, greaterThan(3));
@@ -461,7 +466,6 @@ void main() {
 
     test('errorFullWidth creates full-width error block', () {
       final block = StyledBlockFactory.errorFullWidth('Full width error');
-      block.colorProfile(ColorProfile.trueColor);
       final output = block.render();
       final lines = output.split('\n');
       expect(lines.length, greaterThan(3));
@@ -585,8 +589,7 @@ void main() {
     group('styling', () {
       test('applies default dim style', () {
         final comment = Comment()
-          ..text('Comment')
-          ..colorProfile(ColorProfile.trueColor);
+          ..text('Comment');
         final output = comment.render();
         // Should have ANSI codes for dim
         expect(output, contains('\x1B['));
@@ -595,8 +598,7 @@ void main() {
       test('applies custom style', () {
         final comment = Comment()
           ..text('Comment')
-          ..style(Style().italic().foreground(Colors.gray))
-          ..colorProfile(ColorProfile.trueColor);
+          ..style(Style().italic().foreground(Colors.gray));
         final output = comment.render();
         expect(output, contains('\x1B['));
       });
@@ -604,19 +606,21 @@ void main() {
 
     group('color profile', () {
       test('respects ASCII color profile', () {
-        final comment = Comment()
+        final comment = Comment(
+          renderConfig: const RenderConfig(colorProfile: ColorProfile.ascii),
+        )
           ..text('Comment')
-          ..style(Style().bold().foreground(Colors.red))
-          ..colorProfile(ColorProfile.ascii);
+          ..style(Style().bold().foreground(Colors.red));
         final output = comment.render();
         expect(output.contains('\x1B['), isFalse);
       });
 
       test('respects trueColor profile', () {
-        final comment = Comment()
+        final comment = Comment(
+          renderConfig: const RenderConfig(colorProfile: ColorProfile.trueColor),
+        )
           ..text('Comment')
-          ..style(Style().foreground(Colors.rgb(100, 100, 100)))
-          ..colorProfile(ColorProfile.trueColor);
+          ..style(Style().foreground(Colors.rgb(100, 100, 100)));
         final output = comment.render();
         expect(output, contains('\x1B['));
       });
@@ -660,8 +664,6 @@ void main() {
         expect(comment.text('Text'), same(comment));
         expect(comment.prefix('//'), same(comment));
         expect(comment.style(Style()), same(comment));
-        expect(comment.colorProfile(ColorProfile.trueColor), same(comment));
-        expect(comment.darkBackground(true), same(comment));
       });
     });
   });

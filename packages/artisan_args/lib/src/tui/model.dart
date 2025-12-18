@@ -105,6 +105,8 @@ import 'msg.dart';
 /// }
 /// ```
 abstract class Model {
+  const Model();
+
   /// Returns an optional command to execute on program startup.
   ///
   /// This is called once when the program starts, after the initial
@@ -115,17 +117,7 @@ abstract class Model {
   /// - Set up subscriptions
   ///
   /// Return `null` if no initialization is needed.
-  ///
-  /// ## Example
-  ///
-  /// ```dart
-  /// @override
-  /// Cmd? init() {
-  ///   // Start a countdown timer
-  ///   return Cmd.tick(Duration(seconds: 1), (t) => TickMsg(t));
-  /// }
-  /// ```
-  Cmd? init();
+  Cmd? init() => null;
 
   /// Handles a message and returns the new model state and optional command.
   ///

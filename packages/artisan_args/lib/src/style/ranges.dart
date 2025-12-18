@@ -23,6 +23,24 @@ final class StyleRange {
   final Style style;
 }
 
+/// A collection of [StyleRange]s that can be applied to a string.
+///
+/// Ported from lipgloss v2:
+/// - `third_party/lipgloss/ranges.go`
+class Ranges {
+  final List<StyleRange> _ranges = [];
+
+  /// Adds a new style range.
+  void add(int start, int end, Style style) {
+    _ranges.add(StyleRange(start, end, style));
+  }
+
+  /// Applies all ranges to the given string.
+  String apply(String s) {
+    return styleRanges(s, _ranges);
+  }
+}
+
 /// Styles ranges in an ANSI string.
 ///
 /// Existing ANSI styles are preserved outside the styled ranges. Ranges MUST
@@ -49,6 +67,17 @@ String styleRanges(String s, Iterable<StyleRange> ranges) {
   buf.write(_truncateLeftAnsiByCells(s, lastIdx));
   return buf.toString();
 }
+
+/// Cuts an ANSI string by visible cell indices, preserving any active SGR/OSC 8
+/// state at the start boundary.
+///
+/// This is useful for viewport-style horizontal scrolling and truncation.
+String cutAnsiByCells(String s, int start, int end) =>
+    _cutAnsiByCells(s, start, end);
+
+/// Truncates an ANSI string from the left by visible cell indices.
+String truncateLeftAnsiByCells(String s, int start) =>
+    _truncateLeftAnsiByCells(s, start);
 
 // --- Plain (no-ANSI) slicing -------------------------------------------------
 
@@ -217,7 +246,7 @@ String _penStateAt(List<_Token> tokens, int cellIndex) {
         }
 
       case _TokenKind.newline:
-        // ANSI pen state typically carries across newlines; keep state.
+      // ANSI pen state typically carries across newlines; keep state.
 
       case _TokenKind.text:
         final nextCell = cell + t.visibleWidth;
@@ -238,7 +267,8 @@ String _penStateAt(List<_Token> tokens, int cellIndex) {
   }
 
   final prefix = StringBuffer();
-  if (!link.isZero) prefix.write(uv_ansi.UvAnsi.setHyperlink(link.url, link.params));
+  if (!link.isZero)
+    prefix.write(uv_ansi.UvAnsi.setHyperlink(link.url, link.params));
   if (!style.isZero) prefix.write(uv_ops.styleToSgr(style));
   return prefix.toString();
 }
@@ -289,7 +319,9 @@ List<_Token> _tokenizeAnsi(String input) {
     }
 
     if (cu == 0x0A) {
-      tokens.add(const _Token(kind: _TokenKind.newline, raw: '\n', visibleWidth: 0));
+      tokens.add(
+        const _Token(kind: _TokenKind.newline, raw: '\n', visibleWidth: 0),
+      );
       i++;
       continue;
     }
@@ -406,7 +438,9 @@ List<_SgrParam> _parseSgrParams(String raw) {
 }
 
 uv.Style _applySgr(String rawParams, uv.Style style) {
-  final params = rawParams.isEmpty ? const <_SgrParam>[] : _parseSgrParams(rawParams);
+  final params = rawParams.isEmpty
+      ? const <_SgrParam>[]
+      : _parseSgrParams(rawParams);
   if (params.isEmpty) return const uv.Style();
 
   var out = style;

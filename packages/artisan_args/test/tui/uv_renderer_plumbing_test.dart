@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:artisan_args/src/terminal/terminal.dart';
 import 'package:artisan_args/src/tui/renderer.dart';
 import 'package:test/test.dart';
@@ -23,7 +22,10 @@ class MockPlumbingTerminal extends StringTerminal {
 void main() {
   group('UltravioletRenderer Plumbing', () {
     test('wires optimizeMovements to internal renderer', () {
-      final terminal = MockPlumbingTerminal(mockTabs: true, mockBackspace: false);
+      final terminal = MockPlumbingTerminal(
+        mockTabs: true,
+        mockBackspace: false,
+      );
       final renderer = UltravioletRenderer(
         terminal: terminal,
         options: const RendererOptions(),
@@ -32,13 +34,7 @@ void main() {
 
       // Trigger initialization
       renderer.render('test');
-      
-      // We can't easily inspect the private _renderer fields, but we can 
-      // verify that optimizeMovements was called.
-      // Since we can't easily check if it was called, we'll trust the implementation
-      // if it doesn't crash and we can verify the output behavior if we had more 
-      // complex tests.
-      
+
       // For now, let's just ensure it doesn't crash and the terminal was used.
       expect(terminal.output, isNotEmpty);
     });
@@ -51,21 +47,4 @@ void main() {
       // TtyTerminal._ uses the provided sink.
     });
   });
-}
-
-class _StringSinkWrapper implements StringSink {
-  final StringBuffer _buffer;
-  _StringSinkWrapper(this._buffer);
-
-  @override
-  void write(Object? obj) => _buffer.write(obj);
-  @override
-  void writeAll(Iterable objects, [String separator = ""]) => _buffer.writeAll(objects, separator);
-  @override
-  void writeCharCode(int charCode) => _buffer.writeCharCode(charCode);
-  @override
-  void writeln([Object? obj = ""]) => _buffer.writeln(obj);
-
-  // IOSink methods if needed, but TtyTerminal uses IOSink.
-  // Let's just use a real IOSink mock if possible, or just trust the write() call.
 }

@@ -1,5 +1,5 @@
 import '../cmd.dart';
-import '../model.dart';
+import '../component.dart';
 import '../msg.dart';
 import '../../style/style.dart';
 import '../../style/color.dart';
@@ -273,7 +273,7 @@ class SearchStyles {
 ///     return (this, Cmd.quit());
 /// }
 /// ```
-class SearchModel<T> implements Model {
+class SearchModel<T> extends ViewComponent {
   /// Creates a new search model.
   SearchModel({
     required List<T> items,
@@ -480,7 +480,7 @@ class SearchModel<T> implements Model {
   Cmd? init() => _input.focus();
 
   @override
-  (Model, Cmd?) update(Msg msg) {
+  (SearchModel<T>, Cmd?) update(Msg msg) {
     final cmds = <Cmd>[];
 
     if (msg is KeyMsg) {
@@ -532,7 +532,7 @@ class SearchModel<T> implements Model {
     // Forward other messages to input
     final oldValue = _input.value;
     final (newInput, inputCmd) = _input.update(msg);
-    _input = newInput as TextInputModel;
+    _input = newInput;
     if (inputCmd != null) cmds.add(inputCmd);
 
     // Re-run filter if query changed

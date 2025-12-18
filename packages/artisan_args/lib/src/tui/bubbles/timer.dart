@@ -1,5 +1,5 @@
 import '../cmd.dart';
-import '../model.dart';
+import '../component.dart';
 import '../msg.dart';
 
 /// Message sent when the timer ticks.
@@ -56,7 +56,7 @@ int _nextTimerId() {
 /// // Start the timer
 /// final (model2, cmd2) = model.update(TimerStartStopMsg(true, model.tag));
 /// ```
-class TimerModel implements Model {
+class TimerModel extends ViewComponent {
   /// Creates a new timer model.
   ///
   /// [timeout] is the duration to count down from.
@@ -133,7 +133,7 @@ class TimerModel implements Model {
 
   /// Updates the timer based on incoming messages.
   @override
-  (Model, Cmd?) update(Msg msg) {
+  (TimerModel, Cmd?) update(Msg msg) {
     switch (msg) {
       case TimerStartStopMsg():
         // Ignore messages for other timer instances.

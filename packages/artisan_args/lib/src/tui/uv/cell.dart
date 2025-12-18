@@ -1,4 +1,4 @@
-import 'width.dart';
+import '../../unicode/width.dart';
 
 /// Upstream: `third_party/ultraviolet/cell.go` (`Link`).
 final class Link {

@@ -1,7 +1,7 @@
 /// Display components used by the artisan-style I/O layer.
 ///
 /// These components follow bubble conventions: they render to strings via
-/// [ViewComponent.render] and can be printed directly or composed into a model's
+/// [DisplayComponent.render] and can be printed directly or composed into a model's
 /// `view()`.
 library;
 

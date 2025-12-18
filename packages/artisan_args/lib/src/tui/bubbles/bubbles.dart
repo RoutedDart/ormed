@@ -25,10 +25,10 @@
 ///
 /// ## Usage
 ///
-/// Bubbles can be composed within your own models:
+/// Bubbles can be composed within your own models using [ComponentHost]:
 ///
 /// ```dart
-/// class MyModel implements Model {
+/// class MyModel with ComponentHost implements Model {
 ///   final TextInputModel input;
 ///   final SpinnerModel spinner;
 ///
@@ -41,7 +41,7 @@
 ///   @override
 ///   (Model, Cmd?) update(Msg msg) {
 ///     // Delegate to child bubbles
-///     final (newInput, inputCmd) = input.update(msg);
+///     final (newInput, inputCmd) = updateComponent(input, msg);
 ///     return (
 ///       MyModel(input: newInput, spinner: spinner),
 ///       inputCmd,

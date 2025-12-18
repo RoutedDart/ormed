@@ -8,7 +8,7 @@ import 'environ.dart';
 import 'geometry.dart';
 import 'style_ops.dart' as style_ops;
 import 'tabstop.dart';
-import 'width.dart';
+import '../../unicode/width.dart';
 
 import 'package:artisan_args/src/colorprofile/detect.dart' as cp_detect;
 import 'package:artisan_args/src/colorprofile/profile.dart' as cp;
@@ -609,14 +609,18 @@ final class TerminalRenderer {
   int _el0Cost() => 0; // prefer EL in xterm-like terminals
 
   void _clearToEnd(Buffer newbuf, Cell blank, bool force) {
+    final width = newbuf.width();
+    var startX = _cur.x;
+    if (startX < 0) startX = 0;
+    if (startX > width) startX = width;
+
     if (_cur.y >= 0 && _curbuf != null) {
       final curLine = _curbuf!.line(_cur.y);
       if (curLine == null) {
         // During a resize, the cursor may briefly point outside the current
         // buffer. Upstream returns a nil line in this case; treat it as empty.
       } else {
-        for (var j = _cur.x; j < newbuf.width(); j++) {
-          if (j < 0) continue;
+        for (var j = startX; j < width; j++) {
           final c = curLine.at(j);
           if (!_cellEqual(c, blank)) {
             curLine.set(j, blank);
@@ -628,7 +632,8 @@ final class TerminalRenderer {
 
     if (!force) return;
     _updatePen(blank);
-    final count = newbuf.width() - _cur.x;
+    final count = width - startX;
+    if (count < 0) return;
     if (_el0Cost() <= count) {
       _buf.write(UvAnsi.eraseLineRight);
     } else {
@@ -643,6 +648,12 @@ final class TerminalRenderer {
     var col = _cur.x;
     if (row < 0) row = 0;
     if (col < 0) col = 0;
+    if (_curbuf != null) {
+      final h = _curbuf!.height();
+      final w = _curbuf!.width();
+      if (row > h) row = h;
+      if (col > w) col = w;
+    }
 
     _updatePen(blank);
     _buf.write(UvAnsi.eraseScreenBelow);

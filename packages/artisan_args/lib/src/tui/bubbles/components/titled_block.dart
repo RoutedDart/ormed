@@ -11,7 +11,7 @@ import 'base.dart';
 ///   line 1
 ///   line 2
 /// ```
-class TitledBlockComponent extends ViewComponent {
+class TitledBlockComponent extends DisplayComponent {
   const TitledBlockComponent({
     required this.title,
     required this.message,

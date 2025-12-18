@@ -11,7 +11,7 @@ import 'base.dart';
 ///   blockStyle: BlockStyleType.error,
 /// ).render();
 /// ```
-class StyledBlockComponent extends ViewComponent {
+class StyledBlockComponent extends DisplayComponent {
   const StyledBlockComponent({
     required this.message,
     this.blockStyle = BlockStyleType.info,
@@ -67,10 +67,11 @@ class StyledBlockComponent extends ViewComponent {
     final pad = ' ' * padding;
 
     if (large) {
+      final prefixWidth = Style.visibleLength(prefixText);
       final maxWidth = lines
           .map((l) => Style.visibleLength(l))
           .fold<int>(0, (m, v) => v > m ? v : m);
-      final blockWidth = (maxWidth + padding * 2 + prefixText.length + 2).clamp(
+      final blockWidth = (maxWidth + padding * 2 + prefixWidth + 2).clamp(
         40,
         renderConfig.terminalWidth - 4,
       );
@@ -79,7 +80,7 @@ class StyledBlockComponent extends ViewComponent {
       buffer.writeln(blockColor(' ' * blockWidth));
       buffer.writeln(
         blockColor(
-          '$pad$prefixText${' ' * (blockWidth - prefixText.length - padding)}',
+          '$pad$prefixText${' ' * (blockWidth - prefixWidth - padding)}',
         ),
       );
       for (final line in lines) {
@@ -118,7 +119,7 @@ enum BlockStyleType { info, success, warning, error, note }
 ///   text: 'This is a comment',
 /// ).render();
 /// ```
-class CommentComponent extends ViewComponent {
+class CommentComponent extends DisplayComponent {
   const CommentComponent({
     required this.text,
     this.renderConfig = const RenderConfig(),
@@ -190,9 +191,12 @@ typedef StyledBlockStyleFunc = Style? Function(String line, int lineIndex);
 ///     .foregroundColor(Colors.white)
 ///     .render();
 /// ```
-class StyledBlock extends FluentComponent<StyledBlock> {
+class StyledBlock extends DisplayComponent {
   /// Creates a new empty styled block builder.
-  StyledBlock();
+  StyledBlock({RenderConfig renderConfig = const RenderConfig()})
+    : _renderConfig = renderConfig;
+
+  RenderConfig _renderConfig;
 
   String _message = '';
   String? _prefix;
@@ -365,12 +369,12 @@ class StyledBlock extends FluentComponent<StyledBlock> {
   /// Applies prefix styling.
   String _stylePrefix(String text) {
     if (_prefixStyle != null) {
-      return configureStyle(_prefixStyle!).render(text);
+      return _renderConfig.configureStyle(_prefixStyle!).render(text);
     }
     final style = Style().bold().foreground(
       _foregroundColor ?? _defaultForegroundColor,
     );
-    return configureStyle(style).render(text);
+    return _renderConfig.configureStyle(style).render(text);
   }
 
   /// Applies content styling.
@@ -378,12 +382,12 @@ class StyledBlock extends FluentComponent<StyledBlock> {
     if (_contentStyleFunc != null) {
       final style = _contentStyleFunc!(text, lineIndex);
       if (style != null) {
-        return configureStyle(style).render(text);
+        return _renderConfig.configureStyle(style).render(text);
       }
       return text;
     }
     if (_contentStyle != null) {
-      return configureStyle(_contentStyle!).render(text);
+      return _renderConfig.configureStyle(_contentStyle!).render(text);
     }
     return text;
   }
@@ -393,13 +397,13 @@ class StyledBlock extends FluentComponent<StyledBlock> {
     final bg = _backgroundColor ?? _defaultBackgroundColor;
     final fg = _foregroundColor ?? _defaultForegroundColor;
     final style = Style().foreground(fg).background(bg);
-    return configureStyle(style).render(text);
+    return _renderConfig.configureStyle(style).render(text);
   }
 
   /// Applies border styling.
   String _styleBorder(String text) {
     if (_borderStyle == null) return text;
-    return configureStyle(_borderStyle!).render(text);
+    return _renderConfig.configureStyle(_borderStyle!).render(text);
   }
 
   @override
@@ -637,9 +641,12 @@ extension StyledBlockFactory on StyledBlock {
 ///
 /// print(comment);
 /// ```
-class Comment extends FluentComponent<Comment> {
+class Comment extends DisplayComponent {
   /// Creates a new empty comment builder.
-  Comment();
+  Comment({RenderConfig renderConfig = const RenderConfig()})
+    : _renderConfig = renderConfig;
+
+  RenderConfig _renderConfig;
 
   String _text = '';
   String _prefix = '//';
@@ -673,7 +680,7 @@ class Comment extends FluentComponent<Comment> {
     for (var i = 0; i < lines.length; i++) {
       if (i > 0) buffer.writeln();
       final line = '$_prefix ${lines[i]}';
-      buffer.write(configureStyle(style).render(line));
+      buffer.write(_renderConfig.configureStyle(style).render(line));
     }
 
     return buffer.toString();

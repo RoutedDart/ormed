@@ -468,7 +468,7 @@ class StatusMessageTimeoutMsg implements Msg {}
 ///   title: 'Fruits',
 /// );
 /// ```
-class ListModel implements Model {
+class ListModel extends ViewComponent {
   /// Creates a new list model.
   ListModel({
     List<ListItem>? items,
@@ -806,7 +806,7 @@ class ListModel implements Model {
   Cmd? init() => null;
 
   @override
-  (Model, Cmd?) update(Msg msg) {
+  (ListModel, Cmd?) update(Msg msg) {
     final cmds = <Cmd>[];
 
     if (msg is FilterMatchesMsg) {
@@ -816,7 +816,7 @@ class ListModel implements Model {
 
     if (msg is SpinnerTickMsg && _showSpinner) {
       final (newSpinner, cmd) = _spinner.update(msg);
-      _spinner = newSpinner as SpinnerModel;
+      _spinner = newSpinner;
       if (cmd != null) cmds.add(cmd);
     }
 

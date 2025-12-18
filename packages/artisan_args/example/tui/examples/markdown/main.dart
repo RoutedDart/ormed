@@ -87,7 +87,7 @@ class MarkdownExample implements tui.Model {
     }
 
     final (newVp, cmd) = viewport.update(msg);
-    return (copyWith(viewport: newVp as tui.ViewportModel), cmd);
+    return (copyWith(viewport: newVp), cmd);
   }
 
   MarkdownExample copyWith({

@@ -65,7 +65,7 @@ class SendMsgModel implements tui.Model {
         return (copyWith(results: next), null);
       case tui.SpinnerTickMsg():
         final (newSpinner, cmd) = spinner.update(msg);
-        return (copyWith(spinner: newSpinner as tui.SpinnerModel), cmd);
+        return (copyWith(spinner: newSpinner), cmd);
     }
     return (this, null);
   }

@@ -2,7 +2,7 @@ import 'dart:async';
 
 import '../cmd.dart';
 import '../key.dart';
-import '../model.dart';
+import '../component.dart';
 import '../msg.dart';
 import '../program.dart';
 import '../terminal.dart';
@@ -244,7 +244,7 @@ class _PromptController<T> {
   }
 }
 
-class _PasswordPromptModel implements Model {
+class _PasswordPromptModel extends ViewComponent {
   _PasswordPromptModel(this._model, this._controller);
 
   PasswordModel _model;
@@ -254,7 +254,7 @@ class _PasswordPromptModel implements Model {
   Cmd? init() => _model.init();
 
   @override
-  (Model, Cmd?) update(Msg msg) {
+  (_PasswordPromptModel, Cmd?) update(Msg msg) {
     if (_controller.isCompleted) return (this, null);
 
     if (msg is PasswordSubmittedMsg) {
@@ -268,7 +268,7 @@ class _PasswordPromptModel implements Model {
     }
 
     final (newModel, cmd) = _model.update(msg);
-    _model = newModel as PasswordModel;
+    _model = newModel;
     return (this, cmd);
   }
 
@@ -276,7 +276,7 @@ class _PasswordPromptModel implements Model {
   String view() => _model.view();
 }
 
-class _PasswordConfirmPromptModel implements Model {
+class _PasswordConfirmPromptModel extends ViewComponent {
   _PasswordConfirmPromptModel(this._model, this._controller);
 
   PasswordConfirmModel _model;
@@ -286,7 +286,7 @@ class _PasswordConfirmPromptModel implements Model {
   Cmd? init() => _model.init();
 
   @override
-  (Model, Cmd?) update(Msg msg) {
+  (_PasswordConfirmPromptModel, Cmd?) update(Msg msg) {
     if (_controller.isCompleted) return (this, null);
 
     if (msg is PasswordSubmittedMsg) {
@@ -300,7 +300,7 @@ class _PasswordConfirmPromptModel implements Model {
     }
 
     final (newModel, cmd) = _model.update(msg);
-    _model = newModel as PasswordConfirmModel;
+    _model = newModel;
     return (this, cmd);
   }
 
@@ -308,7 +308,7 @@ class _PasswordConfirmPromptModel implements Model {
   String view() => _model.view();
 }
 
-class _ConfirmPromptModel implements Model {
+class _ConfirmPromptModel extends ViewComponent {
   _ConfirmPromptModel(this._model, this._controller);
 
   ConfirmModel _model;
@@ -318,7 +318,7 @@ class _ConfirmPromptModel implements Model {
   Cmd? init() => _model.init();
 
   @override
-  (Model, Cmd?) update(Msg msg) {
+  (_ConfirmPromptModel, Cmd?) update(Msg msg) {
     if (_controller.isCompleted) return (this, null);
 
     if (msg is ConfirmResultMsg) {
@@ -332,7 +332,7 @@ class _ConfirmPromptModel implements Model {
     }
 
     final (newModel, cmd) = _model.update(msg);
-    _model = newModel as ConfirmModel;
+    _model = newModel;
     return (this, cmd);
   }
 
@@ -340,7 +340,7 @@ class _ConfirmPromptModel implements Model {
   String view() => _model.view();
 }
 
-class _SelectPromptModel<T> implements Model {
+class _SelectPromptModel<T> extends ViewComponent {
   _SelectPromptModel(this._model, this._controller);
 
   SelectModel<T> _model;
@@ -350,7 +350,7 @@ class _SelectPromptModel<T> implements Model {
   Cmd? init() => _model.init();
 
   @override
-  (Model, Cmd?) update(Msg msg) {
+  (_SelectPromptModel<T>, Cmd?) update(Msg msg) {
     if (_controller.isCompleted) return (this, null);
 
     if (msg is SelectionMadeMsg<T>) {
@@ -364,7 +364,7 @@ class _SelectPromptModel<T> implements Model {
     }
 
     final (newModel, cmd) = _model.update(msg);
-    _model = newModel as SelectModel<T>;
+    _model = newModel;
     return (this, cmd);
   }
 
@@ -372,7 +372,7 @@ class _SelectPromptModel<T> implements Model {
   String view() => _model.view();
 }
 
-class _SearchPromptModel<T> implements Model {
+class _SearchPromptModel<T> extends ViewComponent {
   _SearchPromptModel(this._model, this._controller);
 
   SearchModel<T> _model;
@@ -382,7 +382,7 @@ class _SearchPromptModel<T> implements Model {
   Cmd? init() => _model.init();
 
   @override
-  (Model, Cmd?) update(Msg msg) {
+  (_SearchPromptModel<T>, Cmd?) update(Msg msg) {
     if (_controller.isCompleted) return (this, null);
 
     if (msg is SearchSelectionMadeMsg<T>) {
@@ -396,7 +396,7 @@ class _SearchPromptModel<T> implements Model {
     }
 
     final (newModel, cmd) = _model.update(msg);
-    _model = newModel as SearchModel<T>;
+    _model = newModel;
     return (this, cmd);
   }
 
@@ -404,7 +404,7 @@ class _SearchPromptModel<T> implements Model {
   String view() => _model.view();
 }
 
-class _AnticipatePromptModel implements Model {
+class _AnticipatePromptModel extends ViewComponent {
   _AnticipatePromptModel(this._model, this._controller);
 
   AnticipateModel _model;
@@ -417,7 +417,7 @@ class _AnticipatePromptModel implements Model {
   }
 
   @override
-  (Model, Cmd?) update(Msg msg) {
+  (_AnticipatePromptModel, Cmd?) update(Msg msg) {
     if (_controller.isCompleted) return (this, null);
 
     if (msg is KeyMsg &&
@@ -430,7 +430,7 @@ class _AnticipatePromptModel implements Model {
     }
 
     final (newModel, cmd) = _model.update(msg);
-    _model = newModel as AnticipateModel;
+    _model = newModel;
 
     // Anticipate "completes" when it loses focus.
     if (!_model.focused) {
@@ -446,7 +446,7 @@ class _AnticipatePromptModel implements Model {
   String view() => _model.view();
 }
 
-class _TextInputPromptModel implements Model {
+class _TextInputPromptModel extends ViewComponent {
   _TextInputPromptModel(this._model, this._controller);
 
   TextInputModel _model;
@@ -456,7 +456,7 @@ class _TextInputPromptModel implements Model {
   Cmd? init() => _model.focus();
 
   @override
-  (Model, Cmd?) update(Msg msg) {
+  (_TextInputPromptModel, Cmd?) update(Msg msg) {
     if (_controller.isCompleted) return (this, null);
 
     if (msg is KeyMsg) {
@@ -475,7 +475,7 @@ class _TextInputPromptModel implements Model {
     }
 
     final (newModel, cmd) = _model.update(msg);
-    _model = newModel as TextInputModel;
+    _model = newModel;
     return (this, cmd);
   }
 
@@ -483,7 +483,7 @@ class _TextInputPromptModel implements Model {
   String view() => _model.view();
 }
 
-class _MultiSelectPromptModel<T> implements Model {
+class _MultiSelectPromptModel<T> extends ViewComponent {
   _MultiSelectPromptModel(this._model, this._controller);
 
   MultiSelectModel<T> _model;
@@ -493,7 +493,7 @@ class _MultiSelectPromptModel<T> implements Model {
   Cmd? init() => _model.init();
 
   @override
-  (Model, Cmd?) update(Msg msg) {
+  (_MultiSelectPromptModel<T>, Cmd?) update(Msg msg) {
     if (_controller.isCompleted) return (this, null);
 
     if (msg is MultiSelectionMadeMsg<T>) {
@@ -507,7 +507,7 @@ class _MultiSelectPromptModel<T> implements Model {
     }
 
     final (newModel, cmd) = _model.update(msg);
-    _model = newModel as MultiSelectModel<T>;
+    _model = newModel;
     return (this, cmd);
   }
 
@@ -515,7 +515,7 @@ class _MultiSelectPromptModel<T> implements Model {
   String view() => _model.view();
 }
 
-class _TextAreaPromptModel implements Model {
+class _TextAreaPromptModel extends ViewComponent {
   _TextAreaPromptModel(this._model, this._controller);
 
   TextAreaModel _model;
@@ -525,7 +525,7 @@ class _TextAreaPromptModel implements Model {
   Cmd? init() => _model.focus();
 
   @override
-  (Model, Cmd?) update(Msg msg) {
+  (_TextAreaPromptModel, Cmd?) update(Msg msg) {
     if (_controller.isCompleted) return (this, null);
 
     if (msg is KeyMsg) {
@@ -547,7 +547,7 @@ class _TextAreaPromptModel implements Model {
     }
 
     final (newModel, cmd) = _model.update(msg);
-    _model = newModel as TextAreaModel;
+    _model = newModel;
     return (this, cmd);
   }
 
@@ -555,7 +555,7 @@ class _TextAreaPromptModel implements Model {
   String view() => _model.view();
 }
 
-class _WizardPromptModel implements Model {
+class _WizardPromptModel extends ViewComponent {
   _WizardPromptModel(this._model, this._controller);
 
   WizardModel _model;
@@ -565,7 +565,7 @@ class _WizardPromptModel implements Model {
   Cmd? init() => _model.init();
 
   @override
-  (Model, Cmd?) update(Msg msg) {
+  (_WizardPromptModel, Cmd?) update(Msg msg) {
     if (_controller.isCompleted) return (this, null);
 
     if (msg is WizardCompletedMsg) {
@@ -579,7 +579,7 @@ class _WizardPromptModel implements Model {
     }
 
     final (newModel, cmd) = _model.update(msg);
-    _model = newModel as WizardModel;
+    _model = newModel;
     return (this, cmd);
   }
 
@@ -600,7 +600,7 @@ class _SpinnerTaskErrorMsg extends Msg {
   final StackTrace stackTrace;
 }
 
-class _SpinnerTaskModel<T> implements Model {
+class _SpinnerTaskModel<T> extends ViewComponent {
   _SpinnerTaskModel({
     required this.message,
     required this.task,
@@ -628,7 +628,7 @@ class _SpinnerTaskModel<T> implements Model {
   }
 
   @override
-  (Model, Cmd?) update(Msg msg) {
+  (_SpinnerTaskModel<T>, Cmd?) update(Msg msg) {
     if (_controller.isCompleted) return (this, null);
 
     if (msg is _SpinnerTaskDoneMsg<T>) {
@@ -642,7 +642,7 @@ class _SpinnerTaskModel<T> implements Model {
     }
 
     final (newSpinner, cmd) = _spinner.update(msg);
-    _spinner = newSpinner as SpinnerModel;
+    _spinner = newSpinner;
     return (this, cmd);
   }
 

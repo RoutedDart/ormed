@@ -3,7 +3,7 @@ import '../../../style/style.dart';
 import 'base.dart';
 
 /// A simple text component.
-class Text extends ViewComponent {
+class Text extends DisplayComponent {
   const Text(this.text, {this.style});
 
   final String text;
@@ -14,7 +14,7 @@ class Text extends ViewComponent {
 }
 
 /// A styled text component using the context's style.
-class StyledText extends ViewComponent {
+class StyledText extends DisplayComponent {
   const StyledText.info(this.text, {this.renderConfig = const RenderConfig()})
     : _type = _StyleType.info;
   const StyledText.success(
@@ -63,7 +63,7 @@ class StyledText extends ViewComponent {
 enum _StyleType { info, success, warning, error, muted, emphasize, heading }
 
 /// A horizontal rule/separator component.
-class Rule extends ViewComponent {
+class Rule extends DisplayComponent {
   const Rule({
     this.text,
     this.char = '─',
@@ -83,9 +83,10 @@ class Rule extends ViewComponent {
     }
 
     final label = ' $text ';
-    final remaining = width - label.length;
-    final left = remaining ~/ 2;
-    final right = remaining - left;
+    final remaining = width - Style.visibleLength(label);
+    final safeRemaining = remaining > 0 ? remaining : 0;
+    final left = safeRemaining ~/ 2;
+    final right = safeRemaining - left;
 
     return '${char * left}$label${char * right}';
   }

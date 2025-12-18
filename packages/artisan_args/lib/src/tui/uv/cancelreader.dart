@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:io';
 
+import '../../terminal/stdin_stream.dart';
+
 /// CancelReader provides a cancelable reader interface.
 ///
 /// Upstream: `github.com/muesli/cancelreader`.
@@ -9,7 +11,7 @@ class CancelReader {
   CancelReader(this._source);
 
   /// Creates a new [CancelReader] from [stdin].
-  factory CancelReader.stdin() => CancelReader(stdin);
+  factory CancelReader.stdin() => CancelReader(sharedStdinStream);
 
   final Stream<List<int>> _source;
   StreamSubscription<List<int>>? _subscription;

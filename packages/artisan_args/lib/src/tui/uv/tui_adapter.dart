@@ -5,6 +5,7 @@ import 'decoder.dart';
 import 'event_stream.dart';
 import 'event.dart' as uvev;
 import 'key.dart' as uvk;
+import 'key_table.dart';
 import 'mouse.dart' as uvm;
 
 /// Adapts Ultraviolet-style input events to the current TUI message types.
@@ -12,10 +13,28 @@ import 'mouse.dart' as uvm;
 /// This is an opt-in compatibility layer so the TUI runtime can consume the UV
 /// decoder without rewriting the entire Msg/Key pipeline.
 final class UvTuiInputParser {
-  UvTuiInputParser({EventDecoder? decoder})
-    : _events = UvEventStreamParser(decoder: decoder);
+  UvTuiInputParser({
+    EventDecoder? decoder,
+    LegacyKeyEncoding? legacy,
+    String term = '',
+    bool useTerminfo = false,
+  }) : _decoder =
+           decoder ??
+           EventDecoder(
+             legacy: legacy ?? const LegacyKeyEncoding(),
+             useTerminfo: useTerminfo,
+           ) {
+    _events = UvEventStreamParser(decoder: _decoder);
+    _table = buildKeysTable(
+      _decoder.legacy,
+      term,
+      useTerminfo: _decoder.useTerminfo,
+    );
+  }
 
-  final UvEventStreamParser _events;
+  final EventDecoder _decoder;
+  late final UvEventStreamParser _events;
+  late final Map<String, uvk.Key> _table;
 
   bool get hasPending => _events.hasPending;
 
@@ -29,11 +48,23 @@ final class UvTuiInputParser {
     final out = <Msg>[];
     final evs = _events.parseAll(bytes, expired: expired);
     for (final ev in evs) {
+      if (ev is uvev.UnknownEvent) {
+        final mapped = _table[ev.value];
+        if (mapped != null) {
+          out.add(KeyMsg(_toTermKey(mapped)));
+          continue;
+        }
+      }
       if (ev is uvev.PasteEvent) {
         out.add(PasteMsg(ev.content));
         continue;
       }
-      out.addAll(_eventToMsgs(ev));
+      final msgs = _eventToMsgs(ev);
+      if (msgs.isEmpty) {
+        out.add(UvEventMsg(ev));
+      } else {
+        out.addAll(msgs);
+      }
     }
 
     return out;

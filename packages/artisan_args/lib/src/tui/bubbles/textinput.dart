@@ -254,7 +254,7 @@ class PasteErrorMsg implements Msg {
 ///   placeholder: 'Enter your name',
 /// );
 /// ```
-class TextInputModel implements Model {
+class TextInputModel extends ViewComponent {
   /// Creates a new text input model.
   TextInputModel({
     this.prompt = '> ',
@@ -324,28 +324,29 @@ class TextInputModel implements Model {
   final Style _completionStyle;
 
   // Internal state
-  List<int> _value = [];
+  List<String> _value = <String>[];
   bool _focused = false;
   int _pos = 0;
   int _offset = 0;
   int _offsetRight = 0;
 
   // Suggestions
-  List<List<int>> _suggestions = [];
-  List<List<int>> _matchedSuggestions = [];
+  List<List<String>> _suggestions = <List<String>>[];
+  List<List<String>> _matchedSuggestions = <List<String>>[];
   int _currentSuggestionIndex = 0;
 
   // Rune sanitizer
   RuneSanitizer? _sanitizer;
 
   /// Gets the current value as a string.
-  String get value => String.fromCharCodes(_value);
+  String get value => _value.join();
 
   /// Sets the value of the text input.
   set value(String s) {
     final runes = _san(uni.codePoints(s));
-    final err = _validate(runes);
-    _setValueInternal(runes, err);
+    final graphemes = uni.graphemes(String.fromCharCodes(runes)).toList();
+    final err = _validate(graphemes);
+    _setValueInternal(graphemes, err);
   }
 
   /// Gets the cursor position.
@@ -362,17 +363,17 @@ class TextInputModel implements Model {
 
   /// Sets available suggestions for autocomplete.
   set suggestions(List<String> suggestions) {
-    _suggestions = suggestions.map(uni.codePoints).toList();
+    _suggestions = suggestions.map((s) => uni.graphemes(s).toList()).toList();
     _updateSuggestions();
   }
 
   /// Gets available suggestions.
   List<String> get availableSuggestions =>
-      _suggestions.map((s) => String.fromCharCodes(s)).toList();
+      _suggestions.map((s) => s.join()).toList();
 
   /// Gets matched suggestions.
   List<String> get matchedSuggestions =>
-      _matchedSuggestions.map((s) => String.fromCharCodes(s)).toList();
+      _matchedSuggestions.map((s) => s.join()).toList();
 
   /// Gets current suggestion index.
   int get currentSuggestionIndex => _currentSuggestionIndex;
@@ -382,7 +383,7 @@ class TextInputModel implements Model {
     if (_currentSuggestionIndex >= _matchedSuggestions.length) {
       return '';
     }
-    return String.fromCharCodes(_matchedSuggestions[_currentSuggestionIndex]);
+    return _matchedSuggestions[_currentSuggestionIndex].join();
   }
 
   /// Focus the input.
@@ -401,7 +402,7 @@ class TextInputModel implements Model {
 
   /// Reset the input to empty.
   void reset() {
-    _value = [];
+    _value = <String>[];
     position = 0;
   }
 
@@ -422,21 +423,21 @@ class TextInputModel implements Model {
     return _sanitizer!(runes);
   }
 
-  String? _validate(List<int> runes) {
+  String? _validate(List<String> graphemes) {
     if (validate != null) {
-      return validate!(String.fromCharCodes(runes));
+      return validate!(graphemes.join());
     }
     return null;
   }
 
-  void _setValueInternal(List<int> runes, String? err) {
+  void _setValueInternal(List<String> graphemes, String? err) {
     error = err;
     final empty = _value.isEmpty;
 
-    if (charLimit > 0 && runes.length > charLimit) {
-      _value = runes.sublist(0, charLimit);
+    if (charLimit > 0 && graphemes.length > charLimit) {
+      _value = graphemes.sublist(0, charLimit);
     } else {
-      _value = runes;
+      _value = graphemes;
     }
 
     if ((position == 0 && empty) || position > _value.length) {
@@ -446,7 +447,8 @@ class TextInputModel implements Model {
   }
 
   void _insertRunes(List<int> v) {
-    final paste = _san(v);
+    final pasteRunes = _san(v);
+    final paste = uni.graphemes(String.fromCharCodes(pasteRunes)).toList();
 
     int availSpace;
     if (charLimit > 0) {
@@ -454,8 +456,7 @@ class TextInputModel implements Model {
       if (availSpace <= 0) return;
 
       if (availSpace < paste.length) {
-        final limited = paste.sublist(0, availSpace);
-        _insertLimited(limited);
+        _insertLimited(paste.sublist(0, availSpace));
         return;
       }
     }
@@ -463,7 +464,7 @@ class TextInputModel implements Model {
     _insertLimited(paste);
   }
 
-  void _insertLimited(List<int> paste) {
+  void _insertLimited(List<String> paste) {
     final head = _value.sublist(0, _pos);
     final tail = _value.sublist(_pos);
 
@@ -475,7 +476,7 @@ class TextInputModel implements Model {
   }
 
   void _handleOverflow() {
-    if (width <= 0 || stringWidth(String.fromCharCodes(_value)) <= width) {
+    if (width <= 0 || stringWidth(_value.join()) <= width) {
       _offset = 0;
       _offsetRight = _value.length;
       return;
@@ -487,10 +488,10 @@ class TextInputModel implements Model {
       _offset = _pos;
       var w = 0;
       var i = 0;
-      final runes = _value.sublist(_offset);
+      final gs = _value.sublist(_offset);
 
-      while (i < runes.length && w <= width) {
-        w += runeWidth(runes[i]);
+      while (i < gs.length && w <= width) {
+        w += runeWidth(uni.firstCodePoint(gs[i]));
         if (w <= width + 1) i++;
       }
 
@@ -498,15 +499,15 @@ class TextInputModel implements Model {
     } else if (_pos >= _offsetRight) {
       _offsetRight = _pos;
       var w = 0;
-      final runes = _value.sublist(0, _offsetRight);
-      var i = runes.length - 1;
+      final gs = _value.sublist(0, _offsetRight);
+      var i = gs.length - 1;
 
       while (i > 0 && w < width) {
-        w += runeWidth(runes[i]);
+        w += runeWidth(uni.firstCodePoint(gs[i]));
         if (w <= width) i--;
       }
 
-      _offset = _offsetRight - (runes.length - 1 - i);
+      _offset = _offsetRight - (gs.length - 1 - i);
     }
   }
 
@@ -531,30 +532,14 @@ class TextInputModel implements Model {
       return;
     }
 
-    final oldPos = _pos;
-    position = _pos - 1;
+    var i = _pos - 1;
+    while (i >= 0 && _isWhitespace(_value[i])) i--;
+    while (i >= 0 && !_isWhitespace(_value[i])) i--;
+    final start = (i + 1).clamp(0, _pos);
 
-    // Skip whitespace
-    while (_pos > 0 && _isWhitespace(_value[_pos])) {
-      position = _pos - 1;
-    }
-
-    // Skip non-whitespace
-    while (_pos > 0 && !_isWhitespace(_value[_pos])) {
-      position = _pos - 1;
-    }
-
-    // Keep the previous space
-    if (_pos > 0 && _isWhitespace(_value[_pos])) {
-      position = _pos + 1;
-    }
-
-    if (oldPos > _value.length) {
-      _value = _value.sublist(0, _pos);
-    } else {
-      _value = [..._value.sublist(0, _pos), ..._value.sublist(oldPos)];
-    }
+    _value = [..._value.sublist(0, start), ..._value.sublist(_pos)];
     error = _validate(_value);
+    position = start;
   }
 
   void _deleteWordForward() {
@@ -565,26 +550,13 @@ class TextInputModel implements Model {
       return;
     }
 
-    final oldPos = _pos;
-    position = _pos + 1;
+    var i = _pos;
+    while (i < _value.length && _isWhitespace(_value[i])) i++;
+    while (i < _value.length && !_isWhitespace(_value[i])) i++;
 
-    // Skip whitespace
-    while (_pos < _value.length && _isWhitespace(_value[_pos])) {
-      position = _pos + 1;
-    }
-
-    // Skip non-whitespace
-    while (_pos < _value.length && !_isWhitespace(_value[_pos])) {
-      position = _pos + 1;
-    }
-
-    if (_pos > _value.length) {
-      _value = _value.sublist(0, oldPos);
-    } else {
-      _value = [..._value.sublist(0, oldPos), ..._value.sublist(_pos)];
-    }
+    _value = [..._value.sublist(0, _pos), ..._value.sublist(i)];
     error = _validate(_value);
-    position = oldPos;
+    _handleOverflow();
   }
 
   void _wordBackward() {
@@ -596,17 +568,9 @@ class TextInputModel implements Model {
     }
 
     var i = _pos - 1;
-    // Skip whitespace
-    while (i >= 0 && _isWhitespace(_value[i])) {
-      position = _pos - 1;
-      i--;
-    }
-
-    // Skip non-whitespace
-    while (i >= 0 && !_isWhitespace(_value[i])) {
-      position = _pos - 1;
-      i--;
-    }
+    while (i >= 0 && _isWhitespace(_value[i])) i--;
+    while (i >= 0 && !_isWhitespace(_value[i])) i--;
+    position = (i + 1).clamp(0, _value.length);
   }
 
   void _wordForward() {
@@ -618,20 +582,13 @@ class TextInputModel implements Model {
     }
 
     var i = _pos;
-    // Skip whitespace
-    while (i < _value.length && _isWhitespace(_value[i])) {
-      position = _pos + 1;
-      i++;
-    }
-
-    // Skip non-whitespace
-    while (i < _value.length && !_isWhitespace(_value[i])) {
-      position = _pos + 1;
-      i++;
-    }
+    while (i < _value.length && _isWhitespace(_value[i])) i++;
+    while (i < _value.length && !_isWhitespace(_value[i])) i++;
+    position = i;
   }
 
-  bool _isWhitespace(int rune) {
+  bool _isWhitespace(String grapheme) {
+    final rune = uni.firstCodePoint(grapheme);
     return rune == 0x20 || // Space
         rune == 0x09 || // Tab
         rune == 0x0A || // LF
@@ -655,15 +612,15 @@ class TextInputModel implements Model {
     if (!showSuggestions) return;
 
     if (_value.isEmpty || _suggestions.isEmpty) {
-      _matchedSuggestions = [];
+      _matchedSuggestions = <List<String>>[];
       return;
     }
 
-    final valueStr = String.fromCharCodes(_value).toLowerCase();
-    final matches = <List<int>>[];
+    final valueStr = _value.join().toLowerCase();
+    final matches = <List<String>>[];
 
     for (final s in _suggestions) {
-      final suggestion = String.fromCharCodes(s).toLowerCase();
+      final suggestion = s.join().toLowerCase();
       if (suggestion.startsWith(valueStr)) {
         matches.add(s);
       }
@@ -676,7 +633,7 @@ class TextInputModel implements Model {
     _matchedSuggestions = matches;
   }
 
-  bool _listEquals(List<List<int>> a, List<List<int>> b) {
+  bool _listEquals(List<List<String>> a, List<List<String>> b) {
     if (a.length != b.length) return false;
     for (var i = 0; i < a.length; i++) {
       if (a[i].length != b[i].length) return false;
@@ -705,7 +662,7 @@ class TextInputModel implements Model {
   Cmd? init() => null;
 
   @override
-  (Model, Cmd?) update(Msg msg) {
+  (TextInputModel, Cmd?) update(Msg msg) {
     if (!_focused) {
       return (this, null);
     }
@@ -784,7 +741,7 @@ class TextInputModel implements Model {
 
     // Update cursor
     final (newCursor, cursorCmd) = cursor.update(msg);
-    cursor = newCursor as CursorModel;
+    cursor = newCursor;
     if (cursorCmd != null) cmds.add(cursorCmd);
 
     // Reset blink if position changed - use focus() to restart blink
@@ -810,25 +767,21 @@ class TextInputModel implements Model {
     final visibleValue = _value.sublist(_offset, _offsetRight);
     final pos = math.max(0, _pos - _offset);
 
-    var v = styleText(
-      _echoTransform(String.fromCharCodes(visibleValue.sublist(0, pos))),
-    );
+    var v = styleText(_echoTransform(visibleValue.sublist(0, pos).join()));
 
     if (pos < visibleValue.length) {
-      final char = _echoTransform(String.fromCharCode(visibleValue[pos]));
+      final char = _echoTransform(visibleValue[pos]);
       cursor = cursor.setChar(char);
       v += cursor.view(); // Cursor and text under it
       v += styleText(
-        _echoTransform(String.fromCharCodes(visibleValue.sublist(pos + 1))),
+        _echoTransform(visibleValue.sublist(pos + 1).join()),
       ); // Text after cursor
       v += _completionView(0); // Suggested completion
     } else {
       if (_focused && _canAcceptSuggestion()) {
         final suggestion = _matchedSuggestions[_currentSuggestionIndex];
         if (_value.length < suggestion.length) {
-          cursor = cursor.setChar(
-            _echoTransform(String.fromCharCode(suggestion[pos])),
-          );
+          cursor = cursor.setChar(_echoTransform(suggestion[_value.length]));
           v += cursor.view();
           v += _completionView(1);
         } else {
@@ -842,7 +795,7 @@ class TextInputModel implements Model {
     }
 
     // Padding for fixed width
-    final valWidth = stringWidth(String.fromCharCodes(visibleValue));
+    final valWidth = stringWidth(visibleValue.join());
     if (width > 0 && valWidth <= width) {
       var padding = math.max(0, width - valWidth);
       if (valWidth + padding <= width && pos < visibleValue.length) {
@@ -888,7 +841,7 @@ class TextInputModel implements Model {
       final suggestion = _matchedSuggestions[_currentSuggestionIndex];
       if (_value.length < suggestion.length) {
         return _completionStyle.render(
-          String.fromCharCodes(suggestion.sublist(_value.length + offset)),
+          suggestion.sublist(_value.length + offset).join(),
         );
       }
     }

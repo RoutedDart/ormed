@@ -3,6 +3,8 @@ import 'dart:io' as io;
 
 import 'package:artisan_args/terminal.dart';
 
+import '../terminal/stdin_stream.dart'
+    show isSharedStdinStreamStarted, shutdownSharedStdinStream;
 import 'cmd.dart';
 import 'key.dart' show Key, KeyParser, KeyResult, KeyType, MsgResult;
 import 'model.dart';
@@ -31,6 +33,7 @@ export 'cmd.dart'
         SuspendMsg,
         ResumeMsg,
         PrintLineMsg,
+        WriteRawMsg,
         ExecProcessMsg,
         ExecResult,
         RepaintRequestMsg;
@@ -94,6 +97,7 @@ class ProgramOptions {
     this.environment,
     this.inputTTY = false,
     this.movementCapsOverride,
+    this.shutdownSharedStdinOnExit = true,
   }) : assert(fps >= 1 && fps <= 120, 'fps must be between 1 and 120');
 
   /// Whether to use the alternate screen buffer (fullscreen mode).
@@ -244,6 +248,16 @@ class ProgramOptions {
   /// `terminal.optimizeMovements()`.
   final ({bool useTabs, bool useBackspace})? movementCapsOverride;
 
+  /// Whether to shut down the shared stdin broadcast stream on exit.
+  ///
+  /// The TUI uses a shared broadcast wrapper around `stdin` so it can pause and
+  /// resume input listening during a single run (e.g. suspend/exec) without
+  /// hitting Dart's single-subscription stdin limitation.
+  ///
+  /// When enabled, program shutdown cancels the underlying stdin subscription
+  /// so the process can exit cleanly on real TTYs.
+  final bool shutdownSharedStdinOnExit;
+
   /// Creates a copy with the given fields replaced.
   ProgramOptions copyWith({
     bool? altScreen,
@@ -269,6 +283,7 @@ class ProgramOptions {
     List<String>? environment,
     bool? inputTTY,
     ({bool useTabs, bool useBackspace})? movementCapsOverride,
+    bool? shutdownSharedStdinOnExit,
   }) {
     return ProgramOptions(
       altScreen: altScreen ?? this.altScreen,
@@ -296,6 +311,8 @@ class ProgramOptions {
       environment: environment ?? this.environment,
       inputTTY: inputTTY ?? this.inputTTY,
       movementCapsOverride: movementCapsOverride ?? this.movementCapsOverride,
+      shutdownSharedStdinOnExit:
+          shutdownSharedStdinOnExit ?? this.shutdownSharedStdinOnExit,
     );
   }
 
@@ -335,6 +352,7 @@ class ProgramOptions {
     startupTitle: startupTitle,
     input: input,
     output: output,
+    shutdownSharedStdinOnExit: shutdownSharedStdinOnExit,
   );
 
   /// Creates options with signal handlers disabled.
@@ -796,17 +814,20 @@ class Program {
     final inputStream =
         _options.input ??
         ((_options.inputTTY &&
-                    _terminal is! TtyTerminal &&
-                    _terminal is! SplitTerminal)
-                ? _openTtyInput()
-                : null) ??
+                _terminal is! TtyTerminal &&
+                _terminal is! SplitTerminal)
+            ? _openTtyInput()
+            : null) ??
         _terminal!.input;
     _inputSubscription = inputStream.listen(
       _handleInput,
       onError: (error) {
-        // Log error but continue running
-        // ignore: avoid_print
-        print('Input error: $error');
+        // Avoid direct stdout writes while a TUI is running (UV renderer will
+        // desync). Best-effort: surface the issue via the program pipeline.
+        scheduleMicrotask(() {
+          if (!_running) return;
+          send(PrintLineMsg('Input error: $error'));
+        });
       },
     );
   }
@@ -1014,6 +1035,11 @@ class Program {
             _render();
           }
         }
+        return true;
+
+      case WriteRawMsg(:final data):
+        _terminal?.write(data);
+        unawaited(_terminal?.flush());
         return true;
 
       case SuspendMsg():
@@ -1260,6 +1286,10 @@ class Program {
 
     final view = _model!.view();
     _renderer!.render(view);
+    // Ensure the underlying sink paints promptly. Some terminals (and Dart IO
+    // implementations) may buffer output until an explicit flush, and the UV
+    // renderer in particular emits bytes through an intermediate writer.
+    unawaited(_renderer!.flush());
   }
 
   /// Forces a re-render, bypassing the skip-if-unchanged optimization.
@@ -1270,6 +1300,7 @@ class Program {
     _renderer!.clear();
     final view = _model!.view();
     _renderer!.render(view);
+    unawaited(_renderer!.flush());
   }
 
   /// Executes a command.
@@ -1501,6 +1532,12 @@ class Program {
     } catch (_) {}
     _terminal = null;
     _model = null;
+
+    if (_options.shutdownSharedStdinOnExit && isSharedStdinStreamStarted) {
+      try {
+        await shutdownSharedStdinStream();
+      } catch (_) {}
+    }
   }
 }
 

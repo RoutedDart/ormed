@@ -1,9 +1,10 @@
 import '../cmd.dart';
 import '../key.dart';
-import '../model.dart';
+import '../component.dart';
 import '../msg.dart';
 import '../../style/style.dart';
 import '../../style/color.dart';
+import '../../unicode/grapheme.dart' as uni;
 import 'key_binding.dart';
 
 /// Message sent when confirmation is made.
@@ -186,7 +187,7 @@ enum ConfirmDisplayMode {
 ///     return (this, Cmd.quit());
 /// }
 /// ```
-class ConfirmModel implements Model {
+class ConfirmModel extends ViewComponent {
   /// Creates a new confirm model.
   ConfirmModel({
     required this.prompt,
@@ -237,7 +238,7 @@ class ConfirmModel implements Model {
   Cmd? init() => null;
 
   @override
-  (Model, Cmd?) update(Msg msg) {
+  (ConfirmModel, Cmd?) update(Msg msg) {
     if (msg is KeyMsg) {
       final key = msg.key;
 
@@ -332,12 +333,11 @@ class ConfirmModel implements Model {
 
   /// Renders inline mode: (Y)es / (N)o
   void _renderInlineMode(StringBuffer buffer) {
-    final yesFirst = styles.yesText.isNotEmpty ? styles.yesText[0] : 'Y';
-    final yesRest = styles.yesText.length > 1
-        ? styles.yesText.substring(1)
-        : '';
-    final noFirst = styles.noText.isNotEmpty ? styles.noText[0] : 'N';
-    final noRest = styles.noText.length > 1 ? styles.noText.substring(1) : '';
+    final (yesFirst, yesRest) = _splitFirstGrapheme(
+      styles.yesText,
+      fallback: 'Y',
+    );
+    final (noFirst, noRest) = _splitFirstGrapheme(styles.noText, fallback: 'N');
 
     if (_value) {
       buffer.write(styles.activeChoice.render('($yesFirst)$yesRest'));
@@ -348,6 +348,16 @@ class ConfirmModel implements Model {
       buffer.write(styles.separator);
       buffer.write(styles.activeChoice.render('($noFirst)$noRest'));
     }
+  }
+
+  static (String, String) _splitFirstGrapheme(
+    String text, {
+    required String fallback,
+  }) {
+    if (text.isEmpty) return (fallback, '');
+    final (:grapheme, :nextIndex) = uni.readGraphemeAt(text, 0);
+    if (grapheme.isEmpty) return (fallback, text);
+    return (grapheme, text.substring(nextIndex));
   }
 }
 
@@ -363,7 +373,7 @@ class ConfirmModel implements Model {
 ///   confirmText: 'DELETE',
 /// );
 /// ```
-class DestructiveConfirmModel implements Model {
+class DestructiveConfirmModel extends ViewComponent {
   /// Creates a new destructive confirm model.
   DestructiveConfirmModel({
     required this.prompt,
@@ -394,11 +404,11 @@ class DestructiveConfirmModel implements Model {
   final ConfirmStyles styles;
 
   // Internal state
-  final List<int> _input = [];
+  final List<String> _input = [];
   String? _error;
 
   /// Gets the current input value.
-  String get value => String.fromCharCodes(_input);
+  String get value => _input.join();
 
   /// Gets whether the current input matches the confirm text.
   bool get isMatch {
@@ -417,7 +427,7 @@ class DestructiveConfirmModel implements Model {
   Cmd? init() => null;
 
   @override
-  (Model, Cmd?) update(Msg msg) {
+  (DestructiveConfirmModel, Cmd?) update(Msg msg) {
     if (msg is KeyMsg) {
       final key = msg.key;
 
@@ -445,10 +455,13 @@ class DestructiveConfirmModel implements Model {
 
       // Handle character input
       if (key.runes.isNotEmpty) {
-        final rune = key.runes.first;
-        if (rune >= 32 && rune != 127) {
-          _input.add(rune);
-          _error = null;
+        final text = String.fromCharCodes(key.runes);
+        for (final g in uni.graphemes(text)) {
+          final cp = uni.firstCodePoint(g);
+          if (cp >= 32 && cp != 127) {
+            _input.add(g);
+            _error = null;
+          }
         }
         return (this, null);
       }
@@ -470,20 +483,19 @@ class DestructiveConfirmModel implements Model {
     buffer.write('": ');
 
     // Current input with match highlighting
-    final input = value;
-    for (var i = 0; i < input.length; i++) {
-      final inputChar = input[i];
-      final expectedChar = i < confirmText.length ? confirmText[i] : '';
+    final expected = uni.graphemes(confirmText).toList(growable: false);
+    for (var i = 0; i < _input.length; i++) {
+      final typed = _input[i];
+      final exp = i < expected.length ? expected[i] : '';
 
       final matches = caseSensitive
-          ? inputChar == expectedChar
-          : inputChar.toLowerCase() == expectedChar.toLowerCase();
+          ? typed == exp
+          : typed.toLowerCase() == exp.toLowerCase();
 
-      if (matches) {
-        buffer.write(styles.activeChoice.render(inputChar));
-      } else {
-        buffer.write(Style().foreground(AnsiColor(9)).render(inputChar));
-      }
+      buffer.write(
+        (matches ? styles.activeChoice : Style().foreground(AnsiColor(9)))
+            .render(typed),
+      );
     }
 
     buffer.writeln();

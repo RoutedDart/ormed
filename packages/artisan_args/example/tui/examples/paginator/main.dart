@@ -34,7 +34,7 @@ class PaginatorExampleModel implements tui.Model {
     return (
       PaginatorExampleModel(
         items: items,
-        paginator: newPaginator as tui.PaginatorModel,
+        paginator: newPaginator,
       ),
       cmd,
     );

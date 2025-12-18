@@ -126,7 +126,7 @@ class SplitEditorsModel implements tui.Model {
       final (newTa, cmd) = inputs[i].update(msg);
       updatedInputs = [
         ...updatedInputs.take(i),
-        newTa as tui.TextAreaModel,
+        newTa,
         ...updatedInputs.skip(i + 1),
       ];
       cmds.add(cmd);

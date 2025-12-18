@@ -272,8 +272,7 @@ void main() {
         final box = BoxBuilder()
           ..title('Styled Title')
           ..content('Content')
-          ..titleStyle(Style().bold())
-          ..colorProfile(ColorProfile.trueColor);
+          ..titleStyle(Style().bold());
         final output = box.render();
         expect(output, contains('\x1B['));
         expect(output, contains('Styled Title'));
@@ -282,8 +281,7 @@ void main() {
       test('applies border style', () {
         final box = BoxBuilder()
           ..content('Content')
-          ..borderStyle(Style().foreground(Colors.blue))
-          ..colorProfile(ColorProfile.trueColor);
+          ..borderStyle(Style().foreground(Colors.blue));
         final output = box.render();
         expect(output, contains('\x1B['));
       });
@@ -291,8 +289,7 @@ void main() {
       test('applies content style', () {
         final box = BoxBuilder()
           ..content('Styled Content')
-          ..contentStyle(Style().italic())
-          ..colorProfile(ColorProfile.trueColor);
+          ..contentStyle(Style().italic());
         final output = box.render();
         expect(output, contains('\x1B['));
         expect(output, contains('Styled Content'));
@@ -308,8 +305,7 @@ void main() {
               return Style().bold();
             }
             return null;
-          })
-          ..colorProfile(ColorProfile.trueColor);
+          });
         box.render();
         expect(callCount, equals(3));
       });
@@ -333,38 +329,54 @@ void main() {
 
     group('color profile', () {
       test('respects ASCII color profile', () {
-        final box = BoxBuilder()
+        final box = BoxBuilder(
+          renderConfig: const RenderConfig(colorProfile: ColorProfile.ascii),
+        )
           ..title('Title')
           ..content('Content')
-          ..titleStyle(Style().bold().foreground(Colors.red))
-          ..colorProfile(ColorProfile.ascii);
+          ..titleStyle(Style().bold().foreground(Colors.red));
         final output = box.render();
         expect(output.contains('\x1B['), isFalse);
       });
 
       test('respects trueColor profile', () {
-        final box = BoxBuilder()
+        final box = BoxBuilder(
+          renderConfig: const RenderConfig(colorProfile: ColorProfile.trueColor),
+        )
           ..content('Content')
-          ..contentStyle(Style().foreground(Colors.rgb(255, 100, 50)))
-          ..colorProfile(ColorProfile.trueColor);
+          ..contentStyle(Style().foreground(Colors.rgb(255, 100, 50)));
         final output = box.render();
         expect(output, contains('\x1B['));
       });
 
       test('respects dark background setting', () {
-        final box = BoxBuilder()
+        final boxLight = BoxBuilder(
+          renderConfig: const RenderConfig(
+            colorProfile: ColorProfile.trueColor,
+            hasDarkBackground: true,
+          ),
+        )
           ..content('Content')
           ..contentStyle(
             Style().foreground(
               AdaptiveColor(light: Colors.black, dark: Colors.white),
             ),
-          )
-          ..colorProfile(ColorProfile.trueColor)
-          ..darkBackground(true);
-        final output1 = box.render();
+          );
+        final output1 = boxLight.render();
 
-        box.darkBackground(false);
-        final output2 = box.render();
+        final boxDark = BoxBuilder(
+          renderConfig: const RenderConfig(
+            colorProfile: ColorProfile.trueColor,
+            hasDarkBackground: false,
+          ),
+        )
+          ..content('Content')
+          ..contentStyle(
+            Style().foreground(
+              AdaptiveColor(light: Colors.black, dark: Colors.white),
+            ),
+          );
+        final output2 = boxDark.render();
 
         expect(output1, isNot(equals(output2)));
       });
@@ -439,8 +451,6 @@ void main() {
         expect(box.width(50), same(box));
         expect(box.minWidth(20), same(box));
         expect(box.maxWidth(80), same(box));
-        expect(box.colorProfile(ColorProfile.trueColor), same(box));
-        expect(box.darkBackground(true), same(box));
       });
     });
   });

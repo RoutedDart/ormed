@@ -107,7 +107,7 @@ class TextInputsModel implements tui.Model {
     final cmds = <tui.Cmd>[];
     for (var i = 0; i < inputs.length; i++) {
       final (newInput, cmd) = inputs[i].update(msg);
-      inputs[i] = newInput as tui.TextInputModel;
+      inputs[i] = newInput;
       if (cmd != null) cmds.add(cmd);
     }
 

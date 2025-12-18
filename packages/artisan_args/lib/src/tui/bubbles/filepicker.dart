@@ -5,7 +5,7 @@ import 'package:artisan_args/src/style/style.dart';
 import 'package:path/path.dart' as p;
 
 import '../cmd.dart';
-import '../model.dart';
+import '../component.dart';
 import '../msg.dart';
 import 'key_binding.dart';
 
@@ -273,7 +273,7 @@ int _nextFilePickerId() {
 /// );
 /// final (model, cmd) = picker.init();
 /// ```
-class FilePickerModel implements Model {
+class FilePickerModel extends ViewComponent {
   /// Creates a new file picker model.
   ///
   /// [currentDirectory] is the starting directory.
@@ -501,7 +501,7 @@ class FilePickerModel implements Model {
   // ─────────────────────────────────────────────────────────────────────────────
 
   @override
-  (Model, Cmd?) update(Msg msg) {
+  (FilePickerModel, Cmd?) update(Msg msg) {
     switch (msg) {
       case FilePickerReadDirMsg():
         if (msg.id != _id) return (this, null);
@@ -519,7 +519,7 @@ class FilePickerModel implements Model {
     }
   }
 
-  (Model, Cmd?) _handleReadDir(FilePickerReadDirMsg msg) {
+  (FilePickerModel, Cmd?) _handleReadDir(FilePickerReadDirMsg msg) {
     final entries = <FileEntry>[];
 
     for (final entity in msg.entries) {
@@ -555,7 +555,7 @@ class FilePickerModel implements Model {
     );
   }
 
-  (Model, Cmd?) _handleKeyMsg(KeyMsg msg) {
+  (FilePickerModel, Cmd?) _handleKeyMsg(KeyMsg msg) {
     final key = msg.key;
 
     // Down
@@ -610,7 +610,7 @@ class FilePickerModel implements Model {
     return (this, null);
   }
 
-  (Model, Cmd?) _moveDown() {
+  (FilePickerModel, Cmd?) _moveDown() {
     if (_files.isEmpty) return (this, null);
 
     var newSelected = _selected + 1;
@@ -628,7 +628,7 @@ class FilePickerModel implements Model {
     return (copyWith(selected: newSelected, min: newMin, max: newMax), null);
   }
 
-  (Model, Cmd?) _moveUp() {
+  (FilePickerModel, Cmd?) _moveUp() {
     if (_files.isEmpty) return (this, null);
 
     var newSelected = _selected - 1;
@@ -646,11 +646,11 @@ class FilePickerModel implements Model {
     return (copyWith(selected: newSelected, min: newMin, max: newMax), null);
   }
 
-  (Model, Cmd?) _goToTop() {
+  (FilePickerModel, Cmd?) _goToTop() {
     return (copyWith(selected: 0, min: 0, max: _height - 1), null);
   }
 
-  (Model, Cmd?) _goToLast() {
+  (FilePickerModel, Cmd?) _goToLast() {
     if (_files.isEmpty) return (this, null);
 
     final newSelected = _files.length - 1;
@@ -660,7 +660,7 @@ class FilePickerModel implements Model {
     return (copyWith(selected: newSelected, min: newMin, max: newMax), null);
   }
 
-  (Model, Cmd?) _pageDown() {
+  (FilePickerModel, Cmd?) _pageDown() {
     if (_files.isEmpty) return (this, null);
 
     var newSelected = _selected + _height;
@@ -679,7 +679,7 @@ class FilePickerModel implements Model {
     return (copyWith(selected: newSelected, min: newMin, max: newMax), null);
   }
 
-  (Model, Cmd?) _pageUp() {
+  (FilePickerModel, Cmd?) _pageUp() {
     if (_files.isEmpty) return (this, null);
 
     var newSelected = _selected - _height;
@@ -698,7 +698,7 @@ class FilePickerModel implements Model {
     return (copyWith(selected: newSelected, min: newMin, max: newMax), null);
   }
 
-  (Model, Cmd?) _goBack() {
+  (FilePickerModel, Cmd?) _goBack() {
     final parentDir = p.dirname(_currentDirectory);
 
     // Pop view state if available
@@ -732,7 +732,7 @@ class FilePickerModel implements Model {
     );
   }
 
-  (Model, Cmd?) _open(bool isSelect) {
+  (FilePickerModel, Cmd?) _open(bool isSelect) {
     if (_files.isEmpty) return (this, null);
 
     final file = _files[_selected];

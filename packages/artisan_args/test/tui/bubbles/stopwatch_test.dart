@@ -103,7 +103,7 @@ void main() {
           final (updated, cmd) = stopwatch.update(
             StopwatchStartStopMsg(true, 999, stopwatch.id + 1),
           );
-          expect((updated as StopwatchModel).running, isFalse);
+          expect((updated).running, isFalse);
           expect(cmd, isNull);
         });
 
@@ -112,7 +112,7 @@ void main() {
           final (updated, cmd) = stopwatch.update(
             StopwatchStartStopMsg(true, stopwatch.tag, stopwatch.id),
           );
-          expect((updated as StopwatchModel).running, isTrue);
+          expect((updated).running, isTrue);
           expect(cmd, isNull);
         });
 
@@ -121,13 +121,13 @@ void main() {
           var (updated, _) = stopwatch.update(
             StopwatchStartStopMsg(true, stopwatch.tag, stopwatch.id),
           );
-          stopwatch = updated as StopwatchModel;
+          stopwatch = updated;
           expect(stopwatch.running, isTrue);
 
           (updated, _) = stopwatch.update(
             StopwatchStartStopMsg(false, stopwatch.tag, stopwatch.id),
           );
-          expect((updated as StopwatchModel).running, isFalse);
+          expect((updated).running, isFalse);
         });
       });
 
@@ -139,7 +139,7 @@ void main() {
           final (updated, cmd) = stopwatch.update(
             StopwatchResetMsg(stopwatch.tag, stopwatch.id + 1),
           );
-          expect((updated as StopwatchModel).elapsed, Duration(seconds: 10));
+          expect((updated).elapsed, Duration(seconds: 10));
           expect(cmd, isNull);
         });
 
@@ -150,7 +150,7 @@ void main() {
           final (updated, cmd) = stopwatch.update(
             StopwatchResetMsg(stopwatch.tag, stopwatch.id),
           );
-          expect((updated as StopwatchModel).elapsed, Duration.zero);
+          expect((updated).elapsed, Duration.zero);
           expect(cmd, isNull);
         });
       });
@@ -161,7 +161,7 @@ void main() {
           final (updated, cmd) = stopwatch.update(
             StopwatchTickMsg(DateTime.now(), stopwatch.tag, stopwatch.id + 1),
           );
-          expect((updated as StopwatchModel).elapsed, Duration.zero);
+          expect((updated).elapsed, Duration.zero);
           expect(cmd, isNull);
         });
 
@@ -170,7 +170,7 @@ void main() {
           final (updated, cmd) = stopwatch.update(
             StopwatchTickMsg(DateTime.now(), stopwatch.tag, stopwatch.id),
           );
-          expect((updated as StopwatchModel).elapsed, Duration.zero);
+          expect((updated).elapsed, Duration.zero);
           expect(cmd, isNull);
         });
 
@@ -180,14 +180,14 @@ void main() {
           var (updated, _) = stopwatch.update(
             StopwatchStartStopMsg(true, stopwatch.tag, stopwatch.id),
           );
-          stopwatch = updated as StopwatchModel;
+          stopwatch = updated;
 
           // Process a tick
           (updated, _) = stopwatch.update(
             StopwatchTickMsg(DateTime.now(), stopwatch.tag, stopwatch.id),
           );
           expect(
-            (updated as StopwatchModel).elapsed,
+            (updated).elapsed,
             Duration(milliseconds: 100),
           );
         });
@@ -197,7 +197,7 @@ void main() {
           var (updated, _) = stopwatch.update(
             StopwatchStartStopMsg(true, stopwatch.tag, stopwatch.id),
           );
-          stopwatch = updated as StopwatchModel;
+          stopwatch = updated;
 
           var cmd;
           (updated, cmd) = stopwatch.update(
@@ -244,27 +244,27 @@ void main() {
         var (updated, _) = stopwatch.update(
           StopwatchStartStopMsg(true, stopwatch.tag, stopwatch.id),
         );
-        stopwatch = updated as StopwatchModel;
+        stopwatch = updated;
 
         // First tick
         (updated, _) = stopwatch.update(
           StopwatchTickMsg(DateTime.now(), stopwatch.tag, stopwatch.id),
         );
-        stopwatch = updated as StopwatchModel;
+        stopwatch = updated;
         expect(stopwatch.elapsed, Duration(milliseconds: 100));
 
         // Second tick
         (updated, _) = stopwatch.update(
           StopwatchTickMsg(DateTime.now(), stopwatch.tag, stopwatch.id),
         );
-        stopwatch = updated as StopwatchModel;
+        stopwatch = updated;
         expect(stopwatch.elapsed, Duration(milliseconds: 200));
 
         // Third tick
         (updated, _) = stopwatch.update(
           StopwatchTickMsg(DateTime.now(), stopwatch.tag, stopwatch.id),
         );
-        stopwatch = updated as StopwatchModel;
+        stopwatch = updated;
         expect(stopwatch.elapsed, Duration(milliseconds: 300));
       });
     });

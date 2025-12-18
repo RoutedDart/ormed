@@ -177,7 +177,7 @@ class TreeEnumerator {
 ///   },
 /// ).renderln(context);
 /// ```
-class TreeComponent extends ViewComponent {
+class TreeComponent extends DisplayComponent {
   final Map<String, dynamic> data;
   final bool showRoot;
   final String rootLabel;
@@ -353,9 +353,12 @@ class TreeComponent extends ViewComponent {
 ///
 /// print(tree);
 /// ```
-class Tree extends FluentComponent<Tree> {
+class Tree extends DisplayComponent {
   /// Creates a new empty tree builder.
-  Tree();
+  Tree({RenderConfig renderConfig = const RenderConfig()})
+    : _renderConfig = renderConfig;
+
+  RenderConfig _renderConfig;
 
   String? _root;
   final List<dynamic> _children = [];
@@ -556,21 +559,21 @@ class Tree extends FluentComponent<Tree> {
     if (_styleFunc != null) {
       final style = _styleFunc!(text, depth, isDirectory);
       if (style != null) {
-        return configureStyle(style).render(text);
+        return _renderConfig.configureStyle(style).render(text);
       }
     }
 
     // Apply specific styles
     if (isRoot && _rootStyle != null) {
-      return configureStyle(_rootStyle!).render(text);
+      return _renderConfig.configureStyle(_rootStyle!).render(text);
     }
 
     if (isDirectory && _directoryStyle != null) {
-      return configureStyle(_directoryStyle!).render(text);
+      return _renderConfig.configureStyle(_directoryStyle!).render(text);
     }
 
     if (!isDirectory && _fileStyle != null) {
-      return configureStyle(_fileStyle!).render(text);
+      return _renderConfig.configureStyle(_fileStyle!).render(text);
     }
 
     return text;
@@ -581,13 +584,13 @@ class Tree extends FluentComponent<Tree> {
     if (_enumeratorStyleFunc != null) {
       final style = _enumeratorStyleFunc!(children, index);
       if (style != null) {
-        return configureStyle(style).render(text);
+        return _renderConfig.configureStyle(style).render(text);
       }
     }
 
     // Fall back to static branch style
     if (_branchStyle != null) {
-      return configureStyle(_branchStyle!).render(text);
+      return _renderConfig.configureStyle(_branchStyle!).render(text);
     }
     return text;
   }

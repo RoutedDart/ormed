@@ -5,7 +5,7 @@ import 'canvas.dart';
 import 'geometry.dart';
 import 'screen.dart';
 import 'styled_string.dart';
-import 'width.dart';
+import '../../unicode/width.dart';
 
 /// Layer represents a visual layer with content and positioning.
 ///

@@ -56,7 +56,7 @@ class PagerModel implements tui.Model {
     }
 
     final (newViewport, cmd) = viewport.update(msg);
-    return (copyWith(viewport: newViewport as tui.ViewportModel), cmd);
+    return (copyWith(viewport: newViewport), cmd);
   }
 
   int _headerHeight() => 1; // computed in view

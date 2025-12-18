@@ -1,4 +1,5 @@
 import 'package:artisan_args/src/tui/bubbles/spinner.dart';
+import 'package:artisan_args/src/tui/component.dart';
 import 'package:artisan_args/src/tui/msg.dart' show Msg;
 import 'package:test/test.dart';
 
@@ -153,7 +154,7 @@ void main() {
           tag: 0,
         );
         final (newModel, _) = model.update(tickMsg);
-        expect((newModel as SpinnerModel).frame, 1);
+        expect((newModel).frame, 1);
       });
 
       test('wraps frame at end of animation', () {
@@ -167,7 +168,7 @@ void main() {
           tag: 0,
         );
         final (newModel, _) = model.update(tickMsg);
-        expect((newModel as SpinnerModel).frame, 0);
+        expect((newModel).frame, 0);
       });
 
       test('ignores tick for different spinner ID', () {
@@ -228,6 +229,18 @@ void main() {
         final model = SpinnerModel();
         expect(model.tick(), isNotNull);
       });
+    });
+
+    test('is a ViewComponent and updates via base type', () {
+      final spinner = SpinnerModel(spinner: Spinners.line, frame: 0);
+      ViewComponent model = spinner;
+      final tickMsg = SpinnerTickMsg(
+        time: DateTime.now(),
+        id: spinner.id,
+        tag: 0,
+      );
+      final (updated, _) = model.update(tickMsg);
+      expect(updated, isA<SpinnerModel>());
     });
   });
 

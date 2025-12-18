@@ -59,7 +59,7 @@ class AutocompleteModel implements tui.Model {
     }
 
     final (newInput, cmd) = input.update(msg);
-    return (copyWith(input: newInput as tui.TextInputModel), cmd);
+    return (copyWith(input: newInput), cmd);
   }
 
   @override

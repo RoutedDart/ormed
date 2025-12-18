@@ -14,7 +14,7 @@ enum AlertType { info, success, warning, error, note }
 ///   type: AlertType.warning,
 /// ).render();
 /// ```
-class AlertComponent extends ViewComponent {
+class AlertComponent extends DisplayComponent {
   const AlertComponent({
     required this.message,
     this.type = AlertType.info,
@@ -98,9 +98,12 @@ typedef AlertStyleFunc = Style? Function(String line, int lineIndex);
 ///     .messageStyle(Style().italic())
 ///     .render();
 /// ```
-class Alert extends FluentComponent<Alert> {
+class Alert extends DisplayComponent {
   /// Creates a new empty alert builder.
-  Alert();
+  Alert({RenderConfig renderConfig = const RenderConfig()})
+    : _renderConfig = renderConfig;
+
+  RenderConfig _renderConfig;
 
   String _message = '';
   String? _prefix;
@@ -249,7 +252,7 @@ class Alert extends FluentComponent<Alert> {
   /// Applies prefix styling.
   String _stylePrefix(String text) {
     final style = _prefixStyle ?? Style().bold().foreground(_defaultColor);
-    return configureStyle(style).render(text);
+    return _renderConfig.configureStyle(style).render(text);
   }
 
   /// Applies message styling.
@@ -257,12 +260,12 @@ class Alert extends FluentComponent<Alert> {
     if (_messageStyleFunc != null) {
       final style = _messageStyleFunc!(text, lineIndex);
       if (style != null) {
-        return configureStyle(style).render(text);
+        return _renderConfig.configureStyle(style).render(text);
       }
       return text;
     }
     if (_messageStyle != null) {
-      return configureStyle(_messageStyle!).render(text);
+      return _renderConfig.configureStyle(_messageStyle!).render(text);
     }
     return text;
   }
@@ -270,7 +273,7 @@ class Alert extends FluentComponent<Alert> {
   /// Applies border styling.
   String _styleBorder(String text) {
     if (_borderStyle == null) return text;
-    return configureStyle(_borderStyle!).render(text);
+    return _renderConfig.configureStyle(_borderStyle!).render(text);
   }
 
   @override

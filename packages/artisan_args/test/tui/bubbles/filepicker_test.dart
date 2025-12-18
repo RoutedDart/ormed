@@ -150,7 +150,7 @@ void main() {
         test('ignores messages with wrong id', () {
           final picker = FilePickerModel(currentDirectory: '/tmp');
           final (updated, cmd) = picker.update(FilePickerReadDirMsg(999, []));
-          expect((updated as FilePickerModel).files, isEmpty);
+          expect((updated).files, isEmpty);
           expect(cmd, isNull);
         });
 
@@ -160,7 +160,7 @@ void main() {
           final (updated, cmd) = picker.update(
             FilePickerReadDirMsg(picker.id, entities),
           );
-          final model = updated as FilePickerModel;
+          final model = updated;
           // Directories are sorted first
           expect(model.files.length, 2);
           expect(cmd, isNull);
@@ -203,49 +203,49 @@ void main() {
           final (updated, _) = picker.update(
             FilePickerReadDirMsg(picker.id, entities),
           );
-          picker = updated as FilePickerModel;
+          picker = updated;
         });
 
         test('down moves selection down', () {
           expect(picker.selected, 0);
           final (updated, _) = picker.update(keyChar('j'));
-          expect((updated as FilePickerModel).selected, 1);
+          expect((updated).selected, 1);
         });
 
         test('up moves selection up', () {
           // First move down
           var (updated, _) = picker.update(keyChar('j'));
-          picker = updated as FilePickerModel;
+          picker = updated;
           expect(picker.selected, 1);
 
           // Then move up
           (updated, _) = picker.update(keyChar('k'));
-          expect((updated as FilePickerModel).selected, 0);
+          expect((updated).selected, 0);
         });
 
         test('up does not go below 0', () {
           expect(picker.selected, 0);
           final (updated, _) = picker.update(keyChar('k'));
-          expect((updated as FilePickerModel).selected, 0);
+          expect((updated).selected, 0);
         });
 
         test('go to top moves to first item', () {
           // First move down
           var (updated, _) = picker.update(keyChar('j'));
-          (updated, _) = (updated as FilePickerModel).update(keyChar('j'));
-          picker = updated as FilePickerModel;
+          (updated, _) = (updated).update(keyChar('j'));
+          picker = updated;
           expect(picker.selected, 2);
 
           // Go to top
           (updated, _) = picker.update(keyChar('g'));
-          expect((updated as FilePickerModel).selected, 0);
+          expect((updated).selected, 0);
         });
 
         test('go to last moves to last item', () {
           expect(picker.selected, 0);
           final (updated, _) = picker.update(keyChar('G'));
           expect(
-            (updated as FilePickerModel).selected,
+            (updated).selected,
             picker.files.length - 1,
           );
         });
@@ -276,7 +276,7 @@ void main() {
         final (updated, _) = picker.update(
           FilePickerReadDirMsg(picker.id, entities),
         );
-        picker = updated as FilePickerModel;
+        picker = updated;
         final view = picker.view();
         expect(view, contains('test.txt'));
       });

@@ -5,7 +5,7 @@ import 'package:artisan_args/src/style/color.dart';
 import 'package:artisan_args/src/tui/harmonica.dart' as hz;
 
 import '../cmd.dart';
-import '../model.dart';
+import '../component.dart';
 import '../msg.dart';
 
 /// Message indicating a progress bar animation frame should advance.
@@ -95,7 +95,7 @@ class _Spring {
 ///   String view() => progress.view();
 /// }
 /// ```
-class ProgressModel implements Model {
+class ProgressModel extends ViewComponent {
   /// Creates a new progress bar model.
   ProgressModel({
     this.width = _defaultWidth,
@@ -256,7 +256,7 @@ class ProgressModel implements Model {
   Cmd? init() => null;
 
   @override
-  (Model, Cmd?) update(Msg msg) {
+  (ProgressModel, Cmd?) update(Msg msg) {
     if (msg is! ProgressFrameMsg) {
       return (this, null);
     }

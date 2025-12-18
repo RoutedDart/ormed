@@ -2,7 +2,7 @@ import 'cell.dart';
 import 'buffer.dart';
 import 'geometry.dart';
 import 'screen.dart';
-import 'width.dart';
+import '../../unicode/width.dart';
 
 /// Canvas is a cell-buffer that can be used to compose and draw [Drawable]s.
 ///

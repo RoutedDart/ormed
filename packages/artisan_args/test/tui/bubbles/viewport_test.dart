@@ -1,4 +1,7 @@
 import 'package:artisan_args/src/tui/bubbles/viewport.dart';
+import 'package:artisan_args/src/style/style.dart';
+import 'package:artisan_args/src/tui/component.dart';
+import 'package:artisan_args/src/tui/msg.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -52,6 +55,13 @@ void main() {
         final updated = viewport.setContent('line1\nline2');
         expect(updated.yOffset, lessThanOrEqualTo(updated.lines.length));
       });
+    });
+
+    test('is a ViewComponent and updates via base type', () {
+      final viewport = ViewportModel(height: 3).setContent('a\nb\nc\nd');
+      ViewComponent model = viewport;
+      final (updated, _) = model.update(const WindowSizeMsg(80, 24));
+      expect(updated, isA<ViewportModel>());
     });
 
     group('SetYOffset', () {
@@ -379,6 +389,16 @@ void main() {
         ).setContent('line1\nline2');
         final lines = viewport.view().split('\n');
         expect(lines.length, 5);
+      });
+
+      test('horizontal scrolling is grapheme-aware (combining marks)', () {
+        final viewport = ViewportModel(
+          width: 1,
+          height: 1,
+        ).setContent('e\u0301x');
+
+        final scrolled = viewport.setXOffset(1);
+        expect(Style.stripAnsi(scrolled.view()), equals('x'));
       });
     });
 

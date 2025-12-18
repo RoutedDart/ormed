@@ -9,7 +9,7 @@ import 'base.dart';
 ///   columnCount: 2,
 /// ).render();
 /// ```
-class ColumnsComponent extends ViewComponent {
+class ColumnsComponent extends DisplayComponent {
   const ColumnsComponent({
     required this.items,
     this.columnCount,

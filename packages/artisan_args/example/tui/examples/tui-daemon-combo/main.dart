@@ -58,7 +58,7 @@ class DaemonComboModel implements tui.Model {
         return (copyWith(quitting: true), tui.Cmd.quit());
       case tui.SpinnerTickMsg():
         final (newSpin, cmd) = spinner.update(msg);
-        return (copyWith(spinner: newSpin as tui.SpinnerModel), cmd);
+        return (copyWith(spinner: newSpin), cmd);
       case ProcessFinishedMsg(:final duration):
         final res = Result(duration: duration, emoji: _randomEmoji());
         _log('${res.emoji} Job finished in ${res.duration}');
@@ -109,7 +109,7 @@ tui.Cmd _runPretendProcess() {
 
 String _randomEmoji() {
   const emojis = '🍦🧋🍡🤠👾😭🦊🐯🦆🥨🎏🍔🍒🍥🎮📦🦁🐶🐸🍕🥐🧲🚒🥇🏆🌽';
-  final clusters = uni.graphemes(emojis);
+  final clusters = uni.graphemes(emojis).toList();
   final r = Random().nextInt(clusters.length);
   return clusters[r];
 }
@@ -141,6 +141,8 @@ Future<void> main(List<String> args) async {
   final options = tui.ProgramOptions(
     altScreen: !(daemonMode || !io.stdout.hasTerminal),
     hideCursor: !(daemonMode || !io.stdout.hasTerminal),
+  useUltravioletRenderer:  true ,
+  useUltravioletInputDecoder: true
   );
 
   await tui.runProgram(DaemonComboModel.initial(), options: options);

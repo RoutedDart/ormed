@@ -36,7 +36,7 @@ class RealtimeModel implements tui.Model {
         return (copyWith(responses: responses + 1), null);
       case tui.SpinnerTickMsg():
         final (newSpinner, cmd) = spinner.update(msg);
-        return (copyWith(spinner: newSpinner as tui.SpinnerModel), cmd);
+        return (copyWith(spinner: newSpinner), cmd);
     }
     return (this, null);
   }

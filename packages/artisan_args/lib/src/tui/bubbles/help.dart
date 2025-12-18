@@ -130,7 +130,7 @@ class HelpModel {
     final buffer = StringBuffer();
     var totalWidth = 0;
     final separator = styles.renderSep(styles.shortSeparator);
-    final sepWidth = styles.shortSeparator.length;
+    final sepWidth = Style.visibleLength(styles.shortSeparator);
 
     for (var i = 0; i < bindings.length; i++) {
       final binding = bindings[i];
@@ -146,14 +146,17 @@ class HelpModel {
       final item =
           '${styles.renderKey(binding.help.key)} '
           '${styles.renderDesc(binding.help.desc)}';
-      final itemWidth = binding.help.key.length + 1 + binding.help.desc.length;
+      final itemWidth =
+          Style.visibleLength(binding.help.key) +
+          1 +
+          Style.visibleLength(binding.help.desc);
 
       // Check if we need to truncate
       final addedWidth = (sep.isNotEmpty ? sepWidth : 0) + itemWidth;
       if (width > 0 && totalWidth + addedWidth > width) {
         // Add ellipsis if there's room
         final ellipsis = ' ${styles.renderSep(styles.ellipsis)}';
-        if (totalWidth + 2 < width) {
+        if (totalWidth + Style.visibleLength(ellipsis) < width) {
           buffer.write(ellipsis);
         }
         break;
@@ -197,7 +200,7 @@ class HelpModel {
       // Check if we need to truncate
       if (width > 0 && totalWidth + colWidth > width) {
         final ellipsis = ' ${styles.ellipsis}';
-        if (totalWidth + ellipsis.length < width) {
+        if (totalWidth + Style.visibleLength(ellipsis) < width) {
           columns.add(ellipsis);
         }
         break;
@@ -218,13 +221,16 @@ class HelpModel {
   String _formatColumn(List<String> keys, List<String> descs, bool addSep) {
     if (keys.isEmpty) return '';
 
-    final maxKeyLen = keys.fold<int>(0, (m, k) => k.length > m ? k.length : m);
+    final maxKeyLen = keys.fold<int>(0, (m, k) {
+      final w = Style.visibleLength(k);
+      return w > m ? w : m;
+    });
     final lines = <String>[];
 
     final sep = addSep ? styles.fullSeparator : '';
 
     for (var i = 0; i < keys.length; i++) {
-      final paddedKey = keys[i].padRight(maxKeyLen);
+      final paddedKey = _padRightVisible(keys[i], maxKeyLen);
       lines.add(
         '$sep${styles.renderKey(paddedKey)} '
         '${styles.renderDesc(descs[i])}',
@@ -235,12 +241,25 @@ class HelpModel {
   }
 
   int _columnWidth(List<String> keys, List<String> descs) {
-    final maxKeyLen = keys.fold<int>(0, (m, k) => k.length > m ? k.length : m);
-    final maxDescLen = descs.fold<int>(
-      0,
-      (m, d) => d.length > m ? d.length : m,
-    );
-    return maxKeyLen + 1 + maxDescLen + styles.fullSeparator.length;
+    final maxKeyLen = keys.fold<int>(0, (m, k) {
+      final w = Style.visibleLength(k);
+      return w > m ? w : m;
+    });
+    final maxDescLen = descs.fold<int>(0, (m, d) {
+      final w = Style.visibleLength(d);
+      return w > m ? w : m;
+    });
+    return maxKeyLen +
+        1 +
+        maxDescLen +
+        Style.visibleLength(styles.fullSeparator);
+  }
+
+  static String _padRightVisible(String text, int targetWidth) {
+    final w = Style.visibleLength(text);
+    final pad = targetWidth - w;
+    if (pad <= 0) return text;
+    return '$text${' ' * pad}';
   }
 
   String _joinColumnsHorizontally(List<String> columns) {
@@ -264,8 +283,8 @@ class HelpModel {
     // Calculate the visual width of each column (without ANSI codes)
     final columnWidths = columnLines.map((col) {
       return col.fold<int>(0, (m, line) {
-        final stripped = _stripAnsi(line);
-        return stripped.length > m ? stripped.length : m;
+        final w = Style.visibleLength(line);
+        return w > m ? w : m;
       });
     }).toList();
 
@@ -276,8 +295,7 @@ class HelpModel {
       for (var colIdx = 0; colIdx < columnLines.length; colIdx++) {
         var line = columnLines[colIdx][lineIdx];
         // Pad line to column width
-        final stripped = _stripAnsi(line);
-        final padding = columnWidths[colIdx] - stripped.length;
+        final padding = columnWidths[colIdx] - Style.visibleLength(line);
         if (padding > 0) {
           line = '$line${' ' * padding}';
         }
@@ -287,11 +305,6 @@ class HelpModel {
     }
 
     return result.join('\n');
-  }
-
-  /// Strips ANSI escape codes from a string.
-  String _stripAnsi(String text) {
-    return Style.stripAnsi(text);
   }
 
   @override

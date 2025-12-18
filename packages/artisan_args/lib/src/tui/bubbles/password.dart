@@ -1,8 +1,9 @@
 import '../cmd.dart';
-import '../model.dart';
+import '../component.dart';
 import '../msg.dart';
 import '../../style/style.dart';
 import '../../style/color.dart';
+import '../../unicode/grapheme.dart' as uni;
 import 'key_binding.dart';
 import 'cursor.dart';
 
@@ -198,7 +199,7 @@ class PasswordStyles {
 ///     return (this, Cmd.quit());
 /// }
 /// ```
-class PasswordModel implements Model {
+class PasswordModel extends ViewComponent {
   /// Creates a new password model.
   PasswordModel({
     this.prompt = 'Password: ',
@@ -254,13 +255,13 @@ class PasswordModel implements Model {
   CursorModel cursor;
 
   // Internal state
-  List<int> _value = [];
+  List<String> _value = [];
   int _pos = 0;
   bool _focused = true;
   String? _error;
 
   /// Gets the current password value.
-  String get value => String.fromCharCodes(_value);
+  String get value => _value.join();
 
   /// Gets the cursor position.
   int get position => _pos;
@@ -300,21 +301,28 @@ class PasswordModel implements Model {
     _pos = pos.clamp(0, _value.length);
   }
 
-  /// Insert runes at current position.
+  /// Insert user input at current position, split by grapheme cluster.
   void _insertRunes(List<int> runes) {
-    // Filter out control characters
-    final filtered = runes.where((r) => r >= 32 && r != 127).toList();
-    if (filtered.isEmpty) return;
+    if (runes.isEmpty) return;
 
-    // Check max length
-    if (maxLength > 0 && _value.length + filtered.length > maxLength) {
+    final text = String.fromCharCodes(runes);
+    final clusters = <String>[];
+    for (final g in uni.graphemes(text)) {
+      final cp = uni.firstCodePoint(g);
+      if (cp == 0xFFFD) continue;
+      if (cp < 32 || cp == 127) continue;
+      clusters.add(g);
+    }
+    if (clusters.isEmpty) return;
+
+    if (maxLength > 0 && _value.length + clusters.length > maxLength) {
       final remaining = maxLength - _value.length;
       if (remaining <= 0) return;
-      filtered.removeRange(remaining, filtered.length);
+      clusters.removeRange(remaining, clusters.length);
     }
 
-    _value = [..._value.sublist(0, _pos), ...filtered, ..._value.sublist(_pos)];
-    _pos += filtered.length;
+    _value = [..._value.sublist(0, _pos), ...clusters, ..._value.sublist(_pos)];
+    _pos += clusters.length;
     _error = null;
   }
 
@@ -371,7 +379,7 @@ class PasswordModel implements Model {
   Cmd? init() => focus();
 
   @override
-  (Model, Cmd?) update(Msg msg) {
+  (PasswordModel, Cmd?) update(Msg msg) {
     if (!_focused) {
       return (this, null);
     }
@@ -421,7 +429,7 @@ class PasswordModel implements Model {
 
     // Update cursor
     final (newCursor, cursorCmd) = cursor.update(msg);
-    cursor = newCursor as CursorModel;
+    cursor = newCursor;
     if (cursorCmd != null) cmds.add(cursorCmd);
 
     return (this, cmds.isNotEmpty ? Cmd.batch(cmds) : null);
@@ -478,7 +486,7 @@ class PasswordModel implements Model {
 ///   confirmPrompt: 'Confirm password: ',
 /// );
 /// ```
-class PasswordConfirmModel implements Model {
+class PasswordConfirmModel extends ViewComponent {
   /// Creates a new password confirmation model.
   PasswordConfirmModel({
     this.prompt = 'Password: ',
@@ -548,7 +556,7 @@ class PasswordConfirmModel implements Model {
   Cmd? init() => _passwordInput.init();
 
   @override
-  (Model, Cmd?) update(Msg msg) {
+  (PasswordConfirmModel, Cmd?) update(Msg msg) {
     if (msg is PasswordSubmittedMsg) {
       if (!_inConfirmPhase) {
         // First password entered, move to confirmation

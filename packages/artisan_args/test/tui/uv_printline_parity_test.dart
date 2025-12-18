@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:artisan_args/src/terminal/terminal.dart';
 import 'package:artisan_args/src/tui/cmd.dart';
-import 'package:artisan_args/src/tui/key.dart';
 import 'package:artisan_args/src/tui/model.dart';
 import 'package:artisan_args/src/tui/msg.dart';
 import 'package:artisan_args/src/tui/program.dart';

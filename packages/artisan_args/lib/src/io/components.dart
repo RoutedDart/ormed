@@ -3,7 +3,7 @@ import 'dart:async';
 import '../style/color.dart';
 import '../style/style.dart';
 import '../tui/bubbles/components/alert.dart' show Alert, AlertDisplayStyle;
-import '../tui/bubbles/components/base.dart' show RenderConfig, ViewComponent;
+import '../tui/bubbles/components/base.dart' show RenderConfig, DisplayComponent;
 import '../tui/bubbles/components/list.dart' show BulletList;
 import '../tui/bubbles/components/table.dart' show HorizontalTableComponent;
 import '../tui/bubbles/components/titled_block.dart' show TitledBlockComponent;
@@ -42,7 +42,7 @@ class ArtisanComponents {
   /// Helper to apply muted styling.
   String muted(String text) => style.foreground(Colors.muted).render(text);
 
-  void _writeComponent(ViewComponent component) {
+  void _writeComponent(DisplayComponent component) {
     final output = component.render();
     if (output.isEmpty) return;
     for (final line in output.split('\n')) {
@@ -86,12 +86,11 @@ class ArtisanComponents {
   /// Displays a boxed alert message.
   void alert(Object message) {
     _writeComponent(
-      Alert()
+      Alert(renderConfig: _renderConfig)
         ..warning()
         ..displayStyle(AlertDisplayStyle.block)
         ..message(message.toString())
-        ..width(_renderConfig.terminalWidth)
-        ..fromRenderConfig(_renderConfig),
+        ..width(_renderConfig.terminalWidth),
     );
     io.newLine();
   }
@@ -149,8 +148,7 @@ class ArtisanComponents {
     if (definitions.isEmpty) return;
 
     _writeComponent(
-      TwoColumnDetailList()
-        ..fromRenderConfig(_renderConfig)
+      TwoColumnDetailList(renderConfig: _renderConfig)
         ..width(_renderConfig.terminalWidth)
         ..fillChar('.')
         ..fillStyle(Style().dim())

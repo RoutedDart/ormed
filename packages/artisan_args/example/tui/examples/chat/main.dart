@@ -59,10 +59,10 @@ class ChatModel implements tui.Model {
           height,
         );
 
-        final resizedTa = (newTa as tui.TextAreaModel)
+        final resizedTa = newTa
           ..setWidth(vpWidth)
           ..setHeight(taHeight);
-        final resizedVp = (newVp as tui.ViewportModel).copyWith(
+        final resizedVp = (newVp).copyWith(
           width: vpWidth,
           height: vpHeight,
         );
@@ -112,8 +112,8 @@ class ChatModel implements tui.Model {
 
     return (
       copyWith(
-        textarea: newTa as tui.TextAreaModel,
-        viewport: newVp as tui.ViewportModel,
+        textarea: newTa,
+        viewport: newVp,
       ),
       cmds.isEmpty ? null : tui.Cmd.batch(cmds),
     );

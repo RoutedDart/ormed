@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:artisan_args/src/style/style.dart';
 
 import '../cmd.dart';
-import '../model.dart';
+import '../component.dart';
 import '../msg.dart';
 
 /// Cursor display mode.
@@ -77,7 +77,7 @@ int _nextCursorId() => ++_lastCursorId;
 ///   String view() => '$text${cursor.view()}';
 /// }
 /// ```
-class CursorModel implements Model {
+class CursorModel extends ViewComponent {
   /// Creates a new cursor model.
   CursorModel({
     this.blinkSpeed = const Duration(milliseconds: 530),
@@ -158,7 +158,7 @@ class CursorModel implements Model {
   Cmd? init() => null;
 
   @override
-  (Model, Cmd?) update(Msg msg) {
+  (CursorModel, Cmd?) update(Msg msg) {
     switch (msg) {
       case _InitialBlinkMsg():
         if (_mode != CursorMode.blink || !_focus) {

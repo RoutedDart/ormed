@@ -44,7 +44,7 @@ class FilePickerExampleModel implements tui.Model {
     final (nextPicker, cmd) = filepicker.update(msg);
     cmds.add(cmd);
 
-    var model = copyWith(filepicker: nextPicker as tui.FilePickerModel);
+    var model = copyWith(filepicker: nextPicker);
 
     final (didSelect, path) = model.filepicker.didSelectFile(msg);
     if (didSelect && path != null) {

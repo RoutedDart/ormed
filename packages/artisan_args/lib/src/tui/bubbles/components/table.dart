@@ -27,7 +27,7 @@ typedef TableStyleFunc = Style? Function(int row, int col, String data);
 ///   },
 /// ).renderln(context);
 /// ```
-class TableComponent extends ViewComponent {
+class TableComponent extends DisplayComponent {
   const TableComponent({
     required this.headers,
     required this.rows,
@@ -118,7 +118,7 @@ class TableComponent extends ViewComponent {
 ///   },
 /// ).renderln(context);
 /// ```
-class HorizontalTableComponent extends ViewComponent {
+class HorizontalTableComponent extends DisplayComponent {
   const HorizontalTableComponent({
     required this.data,
     this.padding = 1,
@@ -191,9 +191,12 @@ class HorizontalTableComponent extends ViewComponent {
 ///
 /// print(table);
 /// ```
-class Table extends FluentComponent<Table> {
+class Table extends DisplayComponent {
   /// Creates a new empty table builder.
-  Table();
+  Table({RenderConfig renderConfig = const RenderConfig()})
+    : _renderConfig = renderConfig;
+
+  RenderConfig _renderConfig;
 
   /// Row index constant for the header row in [styleFunc].
   static const int headerRow = -1;
@@ -224,15 +227,15 @@ class Table extends FluentComponent<Table> {
   Style? _styleForCell(int row, int col, String raw) {
     if (_styleFunc != null) {
       final style = _styleFunc!(row, col, raw);
-      if (style != null) return configureStyle(style);
+      if (style != null) return _renderConfig.configureStyle(style);
     }
 
     if (row == headerRow && _headerStyle != null) {
-      return configureStyle(_headerStyle!);
+      return _renderConfig.configureStyle(_headerStyle!);
     }
 
     if (_cellStyle != null) {
-      return configureStyle(_cellStyle!);
+      return _renderConfig.configureStyle(_cellStyle!);
     }
 
     return null;
@@ -425,7 +428,7 @@ class Table extends FluentComponent<Table> {
     // Helper to style border characters
     String styleBorderText(String text) {
       if (_borderStyle == null) return text;
-      return configureStyle(_borderStyle!).render(text);
+      return _renderConfig.configureStyle(_borderStyle!).render(text);
     }
 
     // Build horizontal border line

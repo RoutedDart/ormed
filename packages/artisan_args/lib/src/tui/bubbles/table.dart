@@ -168,7 +168,7 @@ class TableStyles {
 ///   ],
 /// );
 /// ```
-class TableModel implements Model {
+class TableModel extends ViewComponent {
   /// Creates a new table model.
   TableModel({
     List<Column>? columns,
@@ -408,7 +408,7 @@ class TableModel implements Model {
   Cmd? init() => null;
 
   @override
-  (Model, Cmd?) update(Msg msg) {
+  (TableModel, Cmd?) update(Msg msg) {
     if (!_focused) {
       return (this, null);
     }

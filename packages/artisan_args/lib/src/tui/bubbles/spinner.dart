@@ -1,5 +1,5 @@
 import '../cmd.dart';
-import '../model.dart';
+import '../component.dart';
 import '../msg.dart';
 
 /// A spinner animation definition.
@@ -198,7 +198,7 @@ class SpinnerTickMsg extends Msg {
 ///   String view() => '${spinner.view()} $message';
 /// }
 /// ```
-class SpinnerModel implements Model {
+class SpinnerModel extends ViewComponent {
   /// Creates a new spinner model.
   SpinnerModel({Spinner spinner = Spinners.line, int frame = 0})
     : _spinner = spinner,
@@ -244,7 +244,7 @@ class SpinnerModel implements Model {
   Cmd? init() => null;
 
   @override
-  (Model, Cmd?) update(Msg msg) {
+  (SpinnerModel, Cmd?) update(Msg msg) {
     if (msg is! SpinnerTickMsg) {
       return (this, null);
     }

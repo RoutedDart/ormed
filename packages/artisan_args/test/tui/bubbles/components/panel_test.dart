@@ -229,8 +229,7 @@ void main() {
         final panel = Panel()
           ..title('Styled Title')
           ..content('Content')
-          ..titleStyle(Style().bold())
-          ..colorProfile(ColorProfile.trueColor);
+          ..titleStyle(Style().bold());
         final output = panel.render();
         // Should contain ANSI codes for bold
         expect(output, contains('\x1B['));
@@ -240,8 +239,7 @@ void main() {
       test('applies border style', () {
         final panel = Panel()
           ..content('Content')
-          ..borderStyle(Style().foreground(Colors.blue))
-          ..colorProfile(ColorProfile.trueColor);
+          ..borderStyle(Style().foreground(Colors.blue));
         final output = panel.render();
         // Should contain ANSI codes
         expect(output, contains('\x1B['));
@@ -250,8 +248,7 @@ void main() {
       test('applies content style', () {
         final panel = Panel()
           ..content('Styled Content')
-          ..contentStyle(Style().italic())
-          ..colorProfile(ColorProfile.trueColor);
+          ..contentStyle(Style().italic());
         final output = panel.render();
         expect(output, contains('\x1B['));
         expect(output, contains('Styled Content'));
@@ -267,8 +264,7 @@ void main() {
               return Style().bold();
             }
             return null;
-          })
-          ..colorProfile(ColorProfile.trueColor);
+          });
         panel.render();
         expect(callCount, equals(3));
       });
@@ -292,40 +288,56 @@ void main() {
 
     group('color profile', () {
       test('respects ASCII color profile', () {
-        final panel = Panel()
+        final panel = Panel(
+          renderConfig: const RenderConfig(colorProfile: ColorProfile.ascii),
+        )
           ..title('Title')
           ..content('Content')
-          ..titleStyle(Style().bold().foreground(Colors.red))
-          ..colorProfile(ColorProfile.ascii);
+          ..titleStyle(Style().bold().foreground(Colors.red));
         final output = panel.render();
         // Should not contain ANSI escape codes
         expect(output.contains('\x1B['), isFalse);
       });
 
       test('respects trueColor profile', () {
-        final panel = Panel()
+        final panel = Panel(
+          renderConfig: const RenderConfig(colorProfile: ColorProfile.trueColor),
+        )
           ..content('Content')
-          ..contentStyle(Style().foreground(Colors.rgb(255, 100, 50)))
-          ..colorProfile(ColorProfile.trueColor);
+          ..contentStyle(Style().foreground(Colors.rgb(255, 100, 50)));
         final output = panel.render();
         // Should contain ANSI codes
         expect(output, contains('\x1B['));
       });
 
       test('respects dark background setting', () {
-        final panel = Panel()
+        final panelLight = Panel(
+          renderConfig: const RenderConfig(
+            colorProfile: ColorProfile.trueColor,
+            hasDarkBackground: true,
+          ),
+        )
           ..content('Content')
           ..contentStyle(
             Style().foreground(
               AdaptiveColor(light: Colors.black, dark: Colors.white),
             ),
-          )
-          ..colorProfile(ColorProfile.trueColor)
-          ..darkBackground(true);
-        final output1 = panel.render();
+          );
+        final output1 = panelLight.render();
 
-        panel.darkBackground(false);
-        final output2 = panel.render();
+        final panelDark = Panel(
+          renderConfig: const RenderConfig(
+            colorProfile: ColorProfile.trueColor,
+            hasDarkBackground: false,
+          ),
+        )
+          ..content('Content')
+          ..contentStyle(
+            Style().foreground(
+              AdaptiveColor(light: Colors.black, dark: Colors.white),
+            ),
+          );
+        final output2 = panelDark.render();
 
         // Outputs should differ based on background
         expect(output1, isNot(equals(output2)));
@@ -389,8 +401,6 @@ void main() {
         expect(panel.width(50), same(panel));
         expect(panel.minWidth(20), same(panel));
         expect(panel.maxWidth(80), same(panel));
-        expect(panel.colorProfile(ColorProfile.trueColor), same(panel));
-        expect(panel.darkBackground(true), same(panel));
       });
     });
   });

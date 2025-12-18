@@ -5,7 +5,7 @@ import 'dart:math' as math;
 
 import 'package:artisan_args/src/style/color.dart';
 import 'package:artisan_args/src/style/style.dart';
-import '../model.dart';
+import '../component.dart';
 import '../msg.dart';
 import '../cmd.dart';
 import '../key.dart';
@@ -335,7 +335,7 @@ class TextAreaKeyMap implements KeyMap {
 // TextArea model (simplified)
 // ─────────────────────────────────────────────────────────────────────────────
 
-class TextAreaModel implements Model {
+class TextAreaModel extends ViewComponent {
   TextAreaModel({
     this.prompt = '│ ',
     this.placeholder = '',
@@ -348,7 +348,7 @@ class TextAreaModel implements Model {
   }) : keyMap = keyMap ?? TextAreaKeyMap(),
        _width = width,
        _height = height {
-    _lines = [''];
+    _lines = [[]];
   }
 
   String prompt;
@@ -362,7 +362,7 @@ class TextAreaModel implements Model {
   TextAreaStyle blurredStyle = defaultBlurredStyle();
 
   bool _focused = false;
-  late List<String> _lines;
+  late List<List<String>> _lines;
   int _row = 0;
   int _col = 0;
   int _width;
@@ -374,12 +374,12 @@ class TextAreaModel implements Model {
   int get width => _width;
   int get height => _height;
   int get lineCount => _lines.length;
-  int get length => value.length;
+  int get length => _totalGraphemeLength();
 
-  String get value => _lines.join('\n');
+  String get value => _lines.map((l) => l.join()).join('\n');
   set value(String v) {
     final limited = _applyCharLimit(v);
-    _lines = limited.split('\n');
+    _lines = _parseLines(limited);
     _row = _lines.length - 1;
     _col = _lines.isNotEmpty ? _lines.last.length : 0;
   }
@@ -397,7 +397,7 @@ class TextAreaModel implements Model {
   }
 
   void reset() {
-    _lines = [''];
+    _lines = [[]];
     _row = 0;
     _col = 0;
   }
@@ -411,67 +411,53 @@ class TextAreaModel implements Model {
   }
 
   void insertString(String s) {
-    for (final r in s.runes) {
-      if (r == 0x0a) {
+    for (final g in uni.graphemes(s)) {
+      if (g == '\n') {
         _newline();
       } else {
-        _insertChar(String.fromCharCode(r));
+        _insertChar(g);
       }
     }
   }
 
   void _insertChar(String ch) {
-    final current = _lines[_row];
-    final newText = current.substring(0, _col) + ch + current.substring(_col);
-    final merged = [
-      ..._lines.sublist(0, _row),
-      newText,
-      ..._lines.sublist(_row + 1),
-    ].join('\n');
-    final limited = _applyCharLimit(merged);
-    _lines = limited.split('\n');
-    _col += stringWidth(ch);
-    if (_col > _lines[_row].length) _col = _lines[_row].length;
+    if (ch.isEmpty) return;
+    _lines[_row].insert(_col, ch);
+    _col += 1;
+    _enforceCharLimit();
   }
 
   void _newline() {
     final current = _lines[_row];
-    final before = current.substring(0, _col);
-    final after = current.substring(_col);
-    final merged = [
-      ..._lines.sublist(0, _row),
-      before,
-      after,
-      ..._lines.sublist(_row + 1),
-    ].join('\n');
-    final limited = _applyCharLimit(merged);
-    _lines = limited.split('\n');
+    final before = current.sublist(0, _col);
+    final after = current.sublist(_col);
+    _lines[_row] = before;
+    _lines.insert(_row + 1, after);
     _row = (_row + 1).clamp(0, _lines.length - 1);
     _col = 0;
+    _enforceCharLimit();
   }
 
   void _backspace() {
     if (_row == 0 && _col == 0) return;
     if (_col > 0) {
-      final current = _lines[_row];
-      _lines[_row] = current.substring(0, _col - 1) + current.substring(_col);
+      _lines[_row].removeAt(_col - 1);
       _col -= 1;
     } else if (_row > 0) {
       final prev = _lines[_row - 1];
-      final current = _lines[_row];
-      final merged = prev + current;
-      _lines
-        ..removeAt(_row)
-        ..[_row - 1] = merged;
+      final current = _lines.removeAt(_row);
+      final prevLen = prev.length;
+      prev.addAll(current);
       _row -= 1;
-      _col = prev.length;
+      _col = prevLen;
     }
   }
 
   String _applyCharLimit(String text) {
     if (charLimit <= 0) return text;
-    if (text.length <= charLimit) return text;
-    return text.substring(0, charLimit);
+    final gs = uni.graphemes(text).toList(growable: false);
+    if (gs.length <= charLimit) return text;
+    return gs.take(charLimit).join();
   }
 
   void cursorStart() {
@@ -483,7 +469,7 @@ class TextAreaModel implements Model {
   }
 
   @override
-  (Model, Cmd?) update(Msg msg) {
+  (TextAreaModel, Cmd?) update(Msg msg) {
     switch (msg) {
       case TextAreaPasteMsg(:final content):
         insertString(content);
@@ -697,17 +683,16 @@ class TextAreaModel implements Model {
     for (var rowIndex = 0; rowIndex < _lines.length; rowIndex++) {
       final line = _lines[rowIndex];
       if (!softWrap || wrapWidth <= 0) {
-        result.add(_DisplayLine(line, hasCursor: rowIndex == _row));
+        result.add(_DisplayLine(line.join(), hasCursor: rowIndex == _row));
         continue;
       }
 
-      final runes = uni.codePoints(line);
       var start = 0;
-      while (start < runes.length) {
+      while (start < line.length) {
         var width = 0;
         var end = start;
-        while (end < runes.length) {
-          final w = runeWidth(runes[end]);
+        while (end < line.length) {
+          final w = runeWidth(uni.firstCodePoint(line[end]));
           if (width + w > wrapWidth) break;
           width += w;
           end += 1;
@@ -718,10 +703,10 @@ class TextAreaModel implements Model {
           end = start + 1;
         }
 
-        final segment = String.fromCharCodes(runes.sublist(start, end));
-        final cursorRune = _row == rowIndex ? _col.clamp(0, runes.length) : -1;
+        final segment = line.sublist(start, end).join();
+        final cursorCol = _row == rowIndex ? _col.clamp(0, line.length) : -1;
         final hasCursor =
-            _row == rowIndex && cursorRune >= start && cursorRune <= end;
+            _row == rowIndex && cursorCol >= start && cursorCol <= end;
 
         result.add(_DisplayLine(segment, hasCursor: hasCursor));
         start = end;
@@ -743,61 +728,60 @@ class TextAreaModel implements Model {
   }
 
   void _deleteWordBackward() {
-    final text = value;
+    final flat = _flattenWithNewlines();
     final pos = _globalOffset();
     if (pos == 0) return;
 
     var newPos = pos - 1;
-    while (newPos > 0 && !_isWordChar(text.codeUnitAt(newPos))) {
+    while (newPos > 0 && !_isWordGrapheme(flat[newPos])) {
       newPos--;
     }
-    while (newPos > 0 && _isWordChar(text.codeUnitAt(newPos - 1))) {
+    while (newPos > 0 && _isWordGrapheme(flat[newPos - 1])) {
       newPos--;
     }
 
-    final updated = text.substring(0, newPos) + text.substring(pos);
-    _setValueAndCursor(updated, newPos);
+    flat.removeRange(newPos, pos);
+    _setValueAndCursor(flat.join(), newPos);
   }
 
   void _deleteToLineStart() {
     if (_col == 0) return;
-    final lineText = _lines[_row];
-    _lines[_row] = lineText.substring(_col);
+    _lines[_row].removeRange(0, _col);
     _col = 0;
   }
 
   void _deleteToLineEnd() {
-    final lineText = _lines[_row];
-    if (_col >= lineText.length) return;
-    _lines[_row] = lineText.substring(0, _col);
+    final line = _lines[_row];
+    if (_col >= line.length) return;
+    line.removeRange(_col, line.length);
   }
 
   void _moveWordForward() {
-    final text = value;
+    final flat = _flattenWithNewlines();
     var pos = _globalOffset();
-    if (pos >= text.length) return;
+    if (pos >= flat.length) return;
 
     // Skip current character and any non-word chars.
     pos++;
-    while (pos < text.length && !_isWordChar(text.codeUnitAt(pos))) {
+    while (pos < flat.length && !_isWordGrapheme(flat[pos])) {
       pos++;
     }
-    while (pos < text.length && _isWordChar(text.codeUnitAt(pos))) {
+    while (pos < flat.length && _isWordGrapheme(flat[pos])) {
       pos++;
     }
     _setCursorFromGlobal(pos);
   }
 
   void _moveWordBackward() {
-    final text = value;
+    final flat = _flattenWithNewlines();
     var pos = _globalOffset();
     if (pos == 0) return;
 
     pos--;
-    while (pos > 0 && !_isWordChar(text.codeUnitAt(pos))) {
+    while (pos > 0 && !_isWordGrapheme(flat[pos])) {
       pos--;
     }
-    while (pos > 0 && _isWordChar(text.codeUnitAt(pos - 1))) {
+    while (pos > 0 && _isWordGrapheme(flat[pos - 1])) {
       pos--;
     }
     _setCursorFromGlobal(pos);
@@ -824,38 +808,36 @@ class TextAreaModel implements Model {
   void _deleteCharForward() {
     final line = _lines[_row];
     if (_col < line.length) {
-      _lines[_row] = line.substring(0, _col) + line.substring(_col + 1);
+      line.removeAt(_col);
       return;
     }
     if (_row < _lines.length - 1) {
-      final merged = line + _lines[_row + 1];
-      _lines
-        ..removeAt(_row + 1)
-        ..[_row] = merged;
+      final next = _lines.removeAt(_row + 1);
+      line.addAll(next);
     }
   }
 
   void _deleteWordForward() {
-    final text = value;
+    final flat = _flattenWithNewlines();
     final pos = _globalOffset();
-    if (pos >= text.length) return;
+    if (pos >= flat.length) return;
 
     var end = pos;
-    if (_isWordChar(text.codeUnitAt(pos))) {
-      while (end < text.length && _isWordChar(text.codeUnitAt(end))) {
+    if (_isWordGrapheme(flat[pos])) {
+      while (end < flat.length && _isWordGrapheme(flat[end])) {
         end++;
       }
     } else {
-      while (end < text.length && !_isWordChar(text.codeUnitAt(end))) {
+      while (end < flat.length && !_isWordGrapheme(flat[end])) {
         end++;
       }
-      while (end < text.length && _isWordChar(text.codeUnitAt(end))) {
+      while (end < flat.length && _isWordGrapheme(flat[end])) {
         end++;
       }
     }
 
-    final updated = text.substring(0, pos) + text.substring(end);
-    _setValueAndCursor(updated, pos);
+    flat.removeRange(pos, end);
+    _setValueAndCursor(flat.join(), pos);
   }
 
   void _transposeBackward() {
@@ -864,72 +846,73 @@ class TextAreaModel implements Model {
     if (_col == 0) return;
 
     // Swap char before cursor with the one at cursor (Bubble Tea behavior).
-    final runes = uni.codePoints(line);
-    final at = math.min(_col, runes.length - 1);
+    final at = math.min(_col, line.length - 1);
     final before = at - 1;
     if (before < 0) return;
-    final tmp = runes[before];
-    runes[before] = runes[at];
-    runes[at] = tmp;
-    _lines[_row] = String.fromCharCodes(runes);
-    _col = math.min(at + 1, _lines[_row].length);
+    final tmp = line[before];
+    line[before] = line[at];
+    line[at] = tmp;
+    _col = math.min(at + 1, line.length);
   }
 
   void _uppercaseWordForward() {
     final (start, end) = _wordRangeForTransform();
     if (start == -1) return;
-    final text = value;
-    final segment = text.substring(start, end).toUpperCase();
-    final updated = text.replaceRange(start, end, segment);
-    _setValueAndCursor(updated, end);
+    final flat = _flattenWithNewlines();
+    final segment = flat.sublist(start, end).join().toUpperCase();
+    final replacement = uni.graphemes(segment).toList(growable: false);
+    flat.replaceRange(start, end, replacement);
+    _setValueAndCursor(flat.join(), start + replacement.length);
   }
 
   void _lowercaseWordForward() {
     final (start, end) = _wordRangeForTransform();
     if (start == -1) return;
-    final text = value;
-    final segment = text.substring(start, end).toLowerCase();
-    final updated = text.replaceRange(start, end, segment);
-    _setValueAndCursor(updated, end);
+    final flat = _flattenWithNewlines();
+    final segment = flat.sublist(start, end).join().toLowerCase();
+    final replacement = uni.graphemes(segment).toList(growable: false);
+    flat.replaceRange(start, end, replacement);
+    _setValueAndCursor(flat.join(), start + replacement.length);
   }
 
   void _capitalizeWordForward() {
     final (start, end) = _wordRangeForTransform();
     if (start == -1) return;
-    final text = value;
-    final word = text.substring(start, end);
+    final flat = _flattenWithNewlines();
+    final word = flat.sublist(start, end).join();
     if (word.isEmpty) return;
-    final runes = uni.codePoints(word);
-    if (runes.isEmpty) return;
-    final first = String.fromCharCode(runes.first).toUpperCase();
-    final rest = String.fromCharCodes(runes.skip(1)).toLowerCase();
-    final updated = text.replaceRange(start, end, '$first$rest');
-    _setValueAndCursor(updated, end);
+    final wordGs = uni.graphemes(word).toList(growable: false);
+    if (wordGs.isEmpty) return;
+    final first = wordGs.first.toUpperCase();
+    final rest = wordGs.skip(1).join().toLowerCase();
+    final replacement = uni.graphemes('$first$rest').toList(growable: false);
+    flat.replaceRange(start, end, replacement);
+    _setValueAndCursor(flat.join(), start + replacement.length);
   }
 
   (int, int) _nextWordRange() {
-    final text = value;
+    final flat = _flattenWithNewlines();
     var pos = _globalOffset();
-    while (pos < text.length && !_isWordChar(text.codeUnitAt(pos))) {
+    while (pos < flat.length && !_isWordGrapheme(flat[pos])) {
       pos++;
     }
-    if (pos >= text.length) return (-1, -1);
+    if (pos >= flat.length) return (-1, -1);
     var end = pos;
-    while (end < text.length && _isWordChar(text.codeUnitAt(end))) {
+    while (end < flat.length && _isWordGrapheme(flat[end])) {
       end++;
     }
     return (pos, end);
   }
 
   (int, int) _prevWordRange() {
-    final text = value;
+    final flat = _flattenWithNewlines();
     var pos = _globalOffset() - 1;
-    while (pos >= 0 && !_isWordChar(text.codeUnitAt(pos))) {
+    while (pos >= 0 && !_isWordGrapheme(flat[pos])) {
       pos--;
     }
     if (pos < 0) return (-1, -1);
     var end = pos + 1;
-    while (pos >= 0 && _isWordChar(text.codeUnitAt(pos))) {
+    while (pos >= 0 && _isWordGrapheme(flat[pos])) {
       pos--;
     }
     final start = pos + 1;
@@ -1002,12 +985,53 @@ class TextAreaModel implements Model {
 
   void _setValueAndCursor(String newValue, int cursorPos) {
     final limited = _applyCharLimit(newValue);
-    _lines = limited.split('\n');
-    _setCursorFromGlobal(cursorPos.clamp(0, limited.length));
+    _lines = _parseLines(limited);
+    _setCursorFromGlobal(cursorPos.clamp(0, _totalGraphemeLength()));
   }
 
-  bool _isWordChar(int codeUnit) {
-    final ch = String.fromCharCode(codeUnit);
+  bool _isWordChar(int rune) {
+    final ch = String.fromCharCode(rune);
     return RegExp(r'[A-Za-z0-9_]').hasMatch(ch);
+  }
+
+  bool _isWordGrapheme(String grapheme) {
+    if (grapheme.isEmpty || grapheme == '\n') return false;
+    return _isWordChar(uni.firstCodePoint(grapheme));
+  }
+
+  int _totalGraphemeLength() {
+    var total = 0;
+    for (var i = 0; i < _lines.length; i++) {
+      total += _lines[i].length;
+      if (i < _lines.length - 1) total += 1; // newline
+    }
+    return total;
+  }
+
+  List<List<String>> _parseLines(String s) {
+    final parts = s.split('\n');
+    if (parts.isEmpty) return [[]];
+    final lines =
+        parts.map((p) => uni.graphemes(p).toList(growable: true)).toList();
+    if (lines.isEmpty) return [[]];
+    return lines;
+  }
+
+  List<String> _flattenWithNewlines() {
+    final result = <String>[];
+    for (var i = 0; i < _lines.length; i++) {
+      result.addAll(_lines[i]);
+      if (i < _lines.length - 1) result.add('\n');
+    }
+    return result;
+  }
+
+  void _enforceCharLimit() {
+    if (charLimit <= 0) return;
+    final cursorPos = _globalOffset();
+    final limited = _applyCharLimit(value);
+    if (limited == value) return;
+    _lines = _parseLines(limited);
+    _setCursorFromGlobal(cursorPos.clamp(0, _totalGraphemeLength()));
   }
 }

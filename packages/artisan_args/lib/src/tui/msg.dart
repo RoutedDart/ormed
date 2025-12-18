@@ -183,6 +183,22 @@ class BatchMsg extends Msg {
   String toString() => 'BatchMsg(${messages.length} messages)';
 }
 
+/// Raw Ultraviolet event message (only emitted when UV input decoding is enabled).
+///
+/// This enables feature parity for terminals that send non-key events like
+/// OSC/CSI/DCS reports (device attributes, color reports, XTGETTCAP, etc.).
+///
+/// The payload is intentionally typed as [Object] to avoid hard-coupling the
+/// core TUI message module to the UV event types.
+final class UvEventMsg extends Msg {
+  const UvEventMsg(this.event);
+
+  final Object event;
+
+  @override
+  String toString() => 'UvEventMsg($event)';
+}
+
 /// Mouse button identifiers.
 enum MouseButton {
   /// No button (for motion events).

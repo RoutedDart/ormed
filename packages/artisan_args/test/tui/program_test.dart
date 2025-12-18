@@ -167,6 +167,10 @@ class MockTerminal implements TuiTerminal {
     _inputController.add(bytes);
   }
 
+  void sendError(Object error) {
+    _inputController.addError(error);
+  }
+
   void sendKey(int byte) {
     sendInput([byte]);
   }
@@ -645,6 +649,41 @@ void main() {
       program.quit();
       await runFuture;
     });
+
+    test(
+      'does not print directly on input stream error (routes via PrintLineMsg)',
+      () async {
+        final model = _CallbackModel(
+          onInit: () {
+            return Cmd.perform<void>(() async {
+              // Trigger a stream error after the program has started listening.
+              terminal.sendError(StateError('boom'));
+
+              // Give the microtask in Program.onError a chance to run before quit.
+              await Future<void>.delayed(Duration.zero);
+              await Future<void>.delayed(Duration.zero);
+            }, onSuccess: (_) => const QuitMsg());
+          },
+        );
+
+        final program = Program(
+          model,
+          options: const ProgramOptions(
+            altScreen: false,
+            disableRenderer: true,
+            signalHandlers: false,
+          ),
+          terminal: terminal,
+        );
+
+        await program.run();
+
+        expect(
+          terminal.output.join(),
+          contains('Input error: Bad state: boom'),
+        );
+      },
+    );
   });
 
   group('Panic recovery', () {
@@ -781,6 +820,27 @@ void main() {
       await program.run();
 
       expect(terminal.operations, contains('clearScreen'));
+    });
+
+    test('WriteRawMsg writes directly to terminal', () async {
+      final model = _CallbackModel(
+        onInit: () => Cmd.batch([
+          Cmd.writeRaw('XYZ'),
+          Cmd.tick(const Duration(milliseconds: 10), (_) => const QuitMsg()),
+        ]),
+        onUpdate: (msg) => null,
+      );
+
+      final program = Program(
+        model,
+        options: const ProgramOptions(altScreen: false),
+        terminal: terminal,
+      );
+
+      await program.run();
+
+      expect(terminal.output.any((s) => s.contains('XYZ')), isTrue);
+      expect(terminal.operations.any((s) => s.startsWith('write: ')), isTrue);
     });
 
     test('ShowCursorMsg and HideCursorMsg control cursor', () async {

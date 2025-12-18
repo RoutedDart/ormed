@@ -32,7 +32,7 @@ class SpinnerExampleModel implements Model {
 
       default:
         final (newSpinner, cmd) = spinner.update(msg);
-        return (copyWith(spinner: newSpinner as SpinnerModel), cmd);
+        return (copyWith(spinner: newSpinner), cmd);
     }
   }
 

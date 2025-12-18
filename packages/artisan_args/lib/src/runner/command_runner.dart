@@ -50,6 +50,7 @@ class ArtisanCommandRunner<T> extends CommandRunner<T> {
     this.namespaceSeparator = ':',
     this.usageExitCode = 64,
     bool? ansi,
+    Renderer? renderer,
     ArtisanWrite? out,
     ArtisanWrite? err,
     ArtisanWriteRaw? outRaw,
@@ -64,12 +65,15 @@ class ArtisanCommandRunner<T> extends CommandRunner<T> {
        _readLine = readLine,
        _setExitCode = setExitCode ?? ((code) => dartio.exitCode = code),
        _ansiOverride = ansi,
-       _renderer = TerminalRenderer(
-         forceProfile: ansi == true
-             ? null
-             : (ansi == false ? ColorProfile.ascii : null),
-         forceNoAnsi: ansi == false,
-       ),
+       _renderer =
+           renderer ??
+           TerminalRenderer(
+             forceProfile: ansi == true
+                 ? null
+                 : (ansi == false ? ColorProfile.ascii : null),
+             forceNoAnsi: ansi == false,
+           ),
+       _rendererInjected = renderer != null,
        super(usageLineLength: usageLineLength) {
     _setupGlobalFlags();
   }
@@ -88,6 +92,7 @@ class ArtisanCommandRunner<T> extends CommandRunner<T> {
   final ArtisanExitCodeSetter _setExitCode;
   final bool? _ansiOverride;
   Renderer _renderer;
+  final bool _rendererInjected;
   ArtisanVerbosity _verbosity = ArtisanVerbosity.normal;
   bool _interactive = true;
   ArtisanIO? _io;
@@ -125,14 +130,25 @@ class ArtisanCommandRunner<T> extends CommandRunner<T> {
   @override
   Future<T?> run(Iterable<String> args) async {
     final ansi = _resolveAnsiForArgs(args);
-    if (ansi == false) {
-      _renderer = TerminalRenderer(forceProfile: ColorProfile.ascii);
-    } else if (ansi == true) {
-      // If forced on, we use default detection but could optionally force ANSI support
-      // For now we leave it to auto-detect the best profile
-      _renderer = TerminalRenderer();
+    if (_rendererInjected) {
+      // Deterministic behavior for tests: respect explicit --ansi/--no-ansi but
+      // do not auto-detect terminal capabilities.
+      if (ansi == false) {
+        _renderer.colorProfile = ColorProfile.ascii;
+      } else if (ansi == true) {
+        // Use a safe default for "ANSI enabled" output.
+        _renderer.colorProfile = ColorProfile.trueColor;
+      }
     } else {
-      _renderer = TerminalRenderer();
+      if (ansi == false) {
+        _renderer = TerminalRenderer(forceProfile: ColorProfile.ascii);
+      } else if (ansi == true) {
+        // If forced on, we use default detection but could optionally force ANSI support.
+        // For now we leave it to auto-detect the best profile.
+        _renderer = TerminalRenderer();
+      } else {
+        _renderer = TerminalRenderer();
+      }
     }
 
     _verbosity = _resolveVerbosityForArgs(args);

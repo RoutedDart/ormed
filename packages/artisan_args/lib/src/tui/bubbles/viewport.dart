@@ -1,7 +1,9 @@
 import 'dart:math' as math;
 
+import '../../style/ranges.dart' as ranges;
+import '../../style/style.dart';
 import '../cmd.dart';
-import '../model.dart';
+import '../component.dart';
 import '../msg.dart';
 import 'key_binding.dart';
 
@@ -97,7 +99,7 @@ class ViewportKeyMap implements KeyMap {
 /// ''';
 /// }
 /// ```
-class ViewportModel implements Model {
+class ViewportModel extends ViewComponent {
   /// Creates a new viewport model.
   ViewportModel({
     this.width = 80,
@@ -146,6 +148,8 @@ class ViewportModel implements Model {
 
   /// The content lines.
   List<String> get lines => _lines;
+
+  int get _contentWidth => math.max(0, width - gutter);
 
   /// Creates a copy with the given fields replaced.
   ViewportModel copyWith({
@@ -216,10 +220,11 @@ class ViewportModel implements Model {
 
   /// Returns the horizontal scroll percentage (0.0 to 1.0).
   double get horizontalScrollPercent {
-    if (width <= 0 || _longestLineWidth <= width) return 1.0;
-    if (xOffset >= _longestLineWidth - width) return 1.0;
+    final contentWidth = _contentWidth;
+    if (contentWidth <= 0 || _longestLineWidth <= contentWidth) return 1.0;
+    if (xOffset >= _longestLineWidth - contentWidth) return 1.0;
     final x = xOffset.toDouble();
-    final w = width.toDouble();
+    final w = contentWidth.toDouble();
     final t = _longestLineWidth.toDouble();
     final v = x / (t - w);
     return v.clamp(0.0, 1.0);
@@ -239,16 +244,17 @@ class ViewportModel implements Model {
     final bottom = (yOffset + height).clamp(top, _lines.length);
     var visible = _lines.sublist(top, bottom);
 
-    if (width <= 0) {
+    final contentWidth = _contentWidth;
+    if (contentWidth <= 0) {
       return visible;
     }
 
     // Apply horizontal scrolling
-    if (xOffset > 0 || _longestLineWidth > width) {
+    if (xOffset > 0 || _longestLineWidth > contentWidth) {
       visible = visible.map((line) {
-        if (line.length <= xOffset) return '';
-        final end = math.min(line.length, xOffset + width);
-        return line.substring(xOffset, end);
+        final lineWidth = Style.visibleLength(line);
+        if (lineWidth <= xOffset) return '';
+        return ranges.cutAnsiByCells(line, xOffset, xOffset + contentWidth);
       }).toList();
     }
 
@@ -262,7 +268,8 @@ class ViewportModel implements Model {
 
   /// Sets the X offset (clamped to valid range).
   ViewportModel setXOffset(int n) {
-    return copyWith(xOffset: n.clamp(0, _longestLineWidth - width));
+    final maxXOffset = _longestLineWidth - _contentWidth;
+    return copyWith(xOffset: n.clamp(0, maxXOffset > 0 ? maxXOffset : 0));
   }
 
   /// Scrolls down by the given number of lines.
@@ -326,7 +333,7 @@ class ViewportModel implements Model {
   Cmd? init() => null;
 
   @override
-  (Model, Cmd?) update(Msg msg) {
+  (ViewportModel, Cmd?) update(Msg msg) {
     switch (msg) {
       case KeyMsg(:final key):
         if (key.matchesSingle(keyMap.pageDown)) {
@@ -409,11 +416,11 @@ class ViewportModel implements Model {
     final gutterPad = ' ' * gutter;
     final paddedLines = visible.map((line) {
       var working = line;
-      if (working.length < contentWidth) {
-        working = working.padRight(contentWidth);
-      }
-      if (working.length > contentWidth) {
-        working = working.substring(0, contentWidth);
+      final w = Style.visibleLength(working);
+      if (w < contentWidth) {
+        working = '$working${' ' * (contentWidth - w)}';
+      } else if (w > contentWidth) {
+        working = ranges.cutAnsiByCells(working, 0, contentWidth);
       }
       return '$gutterPad$working';
     }).toList();
@@ -429,8 +436,9 @@ class ViewportModel implements Model {
   static int _findLongestLineWidth(List<String> lines) {
     var maxWidth = 0;
     for (final line in lines) {
-      if (line.length > maxWidth) {
-        maxWidth = line.length;
+      final w = Style.visibleLength(line);
+      if (w > maxWidth) {
+        maxWidth = w;
       }
     }
     return maxWidth;

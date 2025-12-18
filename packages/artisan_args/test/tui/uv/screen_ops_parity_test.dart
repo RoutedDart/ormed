@@ -3,7 +3,7 @@ import 'package:artisan_args/src/tui/uv/cell.dart';
 import 'package:artisan_args/src/tui/uv/geometry.dart';
 import 'package:artisan_args/src/tui/uv/screen.dart';
 import 'package:artisan_args/src/tui/uv/screen_ops.dart' as screen;
-import 'package:artisan_args/src/tui/uv/width.dart';
+import 'package:artisan_args/src/unicode/width.dart';
 import 'package:test/test.dart';
 
 // Upstream parity:

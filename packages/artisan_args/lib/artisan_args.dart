@@ -85,8 +85,18 @@ export 'tui.dart' hide Renderer, ListItem, PasteMsg;
 export 'src/style/verbosity.dart' show ArtisanVerbosity;
 
 // Style - Fluent Style System
-export 'src/style/style.dart' show Style;
-export 'src/style/ranges.dart' show StyleRange, styleRanges;
+export 'src/style/style.dart' show Style, styleRunes;
+export 'src/style/ranges.dart' show StyleRange, styleRanges, Ranges;
+export 'src/style/properties.dart'
+    show
+        Padding,
+        Margin,
+        Align,
+        UnderlineStyle,
+        HorizontalAlign,
+        VerticalAlign,
+        HorizontalAlignPosition,
+        VerticalAlignPosition;
 export 'src/style/color.dart'
     show
         Color,
@@ -99,16 +109,6 @@ export 'src/style/color.dart'
         Colors,
         ColorProfile;
 export 'src/style/border.dart' show Border, BorderSides;
-export 'src/style/properties.dart'
-    show
-        Padding,
-        Margin,
-        Align,
-        UnderlineStyle,
-        HorizontalAlign,
-        VerticalAlign,
-        HorizontalAlignPosition,
-        VerticalAlignPosition;
 
 // Renderer
 export 'src/renderer/renderer.dart'
@@ -125,7 +125,7 @@ export 'src/layout/layout.dart' show Layout, WhitespaceOptions;
 
 // Component System - Base
 export 'src/tui/bubbles/components/base.dart'
-    show RenderConfig, ViewComponent, FluentComponent;
+    show RenderConfig, DisplayComponent;
 
 // Component System - Layout
 export 'src/tui/bubbles/components/layout.dart'
@@ -165,7 +165,16 @@ export 'src/tui/bubbles/components/box.dart'
 export 'src/tui/bubbles/components/progress.dart'
     show ProgressBar, SpinnerFrame;
 export 'src/tui/bubbles/components/progress_bar.dart'
-    show ProgressBarComponent, StatefulProgressBar;
+    show
+        ProgressBarComponent,
+        ProgressBarModel,
+        ProgressBarMsg,
+        ProgressBarSetMsg,
+        ProgressBarAdvanceMsg,
+        ProgressBarIterateDoneMsg,
+        ProgressBarIterateErrorMsg,
+        progressIterateCmd,
+        StatefulProgressBar;
 
 // Interactive components now live under `src/tui/bubbles/` and are exposed via
 // `package:artisan_args/tui.dart` + `package:artisan_args/artisan_args.dart`.

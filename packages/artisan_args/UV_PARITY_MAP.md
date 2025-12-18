@@ -58,13 +58,14 @@ Legend:
 
 ## Likely-missing upstream modules (audit targets)
 
-- ❌ `third_party/ultraviolet/environ.go` (env parsing helpers; we currently use `dart:io Platform.environment`)
-- ❌ `third_party/ultraviolet/utils.go` (misc helpers; likely split across `geometry.dart`, `width.dart`, `color_utils.dart`)
-- ❌ `third_party/ultraviolet/uv.go` (package-level API glue; Dart exposes pieces via TUI runtime)
-- ⚠️ `third_party/ultraviolet/logger.go` (we have internal log hooks in some modules, but not a unified logger API)
+- ✅ `third_party/ultraviolet/environ.go` → `packages/artisan_args/lib/src/tui/uv/environ.dart`
+- ✅ `third_party/ultraviolet/utils.go` → `packages/artisan_args/lib/src/unicode/width.dart`
+- ✅ `third_party/ultraviolet/uv.go` → `packages/artisan_args/lib/src/tui/uv/cursor.dart` (Cursor), `packages/artisan_args/lib/src/unicode/width.dart` (WidthMethod)
+- ✅ `third_party/ultraviolet/logger.go` → `packages/artisan_args/lib/src/tui/uv/logger.dart`
 
 ## Next gaps to close (recommended)
 
-1. Fix real-terminal `--uv-renderer` reliability (blank screen + resize crash + sink binding).
-2. Implement the `/dev/tty` split plumbing so output can be redirected while keeping raw mode + resize probes on the controlling TTY.
-3. Port/replicate upstream movement-optimization probing (`optimizeMovements`) or expose a compatibility API for host capability bits.
+1. [x] Fix real-terminal `--uv-renderer` reliability (blank screen + resize crash + sink binding + shared stdin).
+2. [x] Implement the `/dev/tty` split plumbing so output can be redirected while keeping raw mode + resize probes on the controlling TTY.
+3. [x] Port/replicate upstream movement-optimization probing (`optimizeMovements`) or expose a compatibility API for host capability bits.
+4. [ ] Finalize Lipgloss v2 migration guide and documentation.

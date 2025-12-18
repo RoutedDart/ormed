@@ -35,6 +35,12 @@ class _LogModel implements tui.Model {
       tui.Cmd.enableReportFocus(),
       tui.Cmd.enableBracketedPaste(),
       tui.Cmd.enableMouseCellMotion(),
+      // Request a few common terminal reports so `UvEventMsg` can be observed.
+      // Not all terminals respond to these.
+      tui.Cmd.writeRaw('\x1b[c'), // DA1
+      tui.Cmd.writeRaw('\x1b]10;?\x07'), // foreground color report
+      tui.Cmd.writeRaw('\x1b]11;?\x07'), // background color report
+      tui.Cmd.writeRaw('\x1b]12;?\x07'), // cursor color report
     ]);
   }
 
@@ -75,7 +81,24 @@ class _LogModel implements tui.Model {
         if (key.matchesSingle(tui.CommonKeyBindings.quit)) {
           return (this, tui.Cmd.quit());
         }
+        // Convenience: press `d/b/f/c` to re-request reports.
+        if (key.type == tui.KeyType.runes && key.runes.isNotEmpty) {
+          switch (key.runes.first) {
+            case 0x64: // d
+              return (this, tui.Cmd.writeRaw('\x1b[c'));
+            case 0x62: // b
+              return (this, tui.Cmd.writeRaw('\x1b]11;?\x07'));
+            case 0x66: // f
+              return (this, tui.Cmd.writeRaw('\x1b]10;?\x07'));
+            case 0x63: // c
+              return (this, tui.Cmd.writeRaw('\x1b]12;?\x07'));
+          }
+        }
         _log('KeyMsg($key)');
+        return (this, null);
+
+      case tui.UvEventMsg(:final event):
+        _log('UvEventMsg(${event.runtimeType}): $event');
         return (this, null);
     }
 
@@ -87,7 +110,8 @@ class _LogModel implements tui.Model {
     final title = Style().bold().render('UV Input Decoder Demo');
     final mode =
         'input=${useUvInput ? 'uv' : 'legacy'}  renderer=${useUvRenderer ? 'uv' : 'default'}';
-    final help = 'Press `q` to quit. Try keys/mouse/paste/focus/resize.';
+    final help =
+        'Press `q` to quit. Try keys/mouse/paste/focus/resize. Press `d/b/f/c` to request DA/bg/fg/cursor reports.';
 
     final header = '$title\n$mode\n$help\n';
 

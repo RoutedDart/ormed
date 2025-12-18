@@ -1,3 +1,8 @@
+library;
+
+import '../unicode/width.dart';
+import '../unicode/grapheme.dart' as uni;
+
 /// Unified ANSI escape sequence constants and utilities.
 ///
 /// This module provides a single source of truth for all ANSI escape sequences
@@ -15,8 +20,6 @@
 /// stdout.write(Ansi.cursorTo(10, 5));
 /// stdout.write(Ansi.cursorUp(3));
 /// ```
-library;
-
 /// ANSI escape sequence constants and helpers.
 ///
 /// Provides all escape sequences needed for terminal control:
@@ -388,35 +391,43 @@ abstract final class Ansi {
   // Utility Methods
   // ─────────────────────────────────────────────────────────────────────────────
 
+  /// Pattern matching all ANSI escape sequences.
+  ///
+  /// Supports CSI, OSC, DCS, and common control sequences.
+  static final ansiPattern = RegExp(
+    r'\x1b'
+    r'(?:'
+    // CSI sequences.
+    //
+    // Support both the common semicolon SGR form (\x1b[38;2;...m) and the
+    // ITU colon form (\x1b[38:2::...m).
+    r'\[[0-9;:]*[ -/]*[@-~]'
+    r'|'
+    r'\][^\x07]*\x07' // OSC sequences (terminated by BEL)
+    r'|'
+    r'\][^\x1b]*\x1b\\' // OSC sequences (terminated by ST)
+    r'|'
+    r'P[^\x1b]*\x1b\\' // DCS sequences
+    r'|'
+    r'[()][AB012]' // Character set selection
+    r'|'
+    r'[78]' // DEC cursor save/restore
+    r')',
+  );
+
   /// Strips all ANSI escape sequences from a string.
   static String stripAnsi(String text) {
-    // Matches CSI sequences, OSC sequences, and other escape sequences
-    return text.replaceAll(
-      RegExp(
-        r'\x1b'
-        r'(?:'
-        // CSI sequences.
-        //
-        // Support both the common semicolon SGR form (\x1b[38;2;...m) and the
-        // ITU colon form (\x1b[38:2::...m).
-        r'\[[0-9;:]*[ -/]*[@-~]'
-        r'|'
-        r'\][^\x07]*\x07' // OSC sequences (terminated by BEL)
-        r'|'
-        r'\][^\x1b]*\x1b\\' // OSC sequences (terminated by ST)
-        r'|'
-        r'[()][AB012]' // Character set selection
-        r'|'
-        r'[78]' // DEC cursor save/restore
-        r')',
-      ),
-      '',
-    );
+    return text.replaceAll(ansiPattern, '');
   }
 
   /// Calculates the visible width of a string (excluding ANSI sequences).
   static int visibleLength(String text) {
-    return stripAnsi(text).length;
+    final stripped = stripAnsi(text);
+    var width = 0;
+    for (final g in uni.graphemes(stripped)) {
+      width += runeWidth(uni.firstCodePoint(g));
+    }
+    return width;
   }
 
   /// Wraps text in ANSI sequences that will be stripped by [stripAnsi].

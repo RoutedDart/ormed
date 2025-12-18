@@ -60,7 +60,7 @@ class TimerExampleModel implements tui.Model {
       case tui.TimerTickMsg():
       case tui.TimerStartStopMsg():
         final (newTimerModel, cmd) = timer.update(msg);
-        final tm = newTimerModel as tui.TimerModel;
+        final tm = newTimerModel;
         final quitCmd = tm.timedOut ? tui.Cmd.quit() : null;
         return (
           copyWith(timer: tm, quitting: quitting || tm.timedOut),

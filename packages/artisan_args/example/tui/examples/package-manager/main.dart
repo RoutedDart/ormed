@@ -99,11 +99,11 @@ class PackageManagerModel implements tui.Model {
 
       case tui.SpinnerTickMsg():
         final (newSpin, cmd) = spinner.update(msg);
-        return (copyWith(spinner: newSpin as tui.SpinnerModel), cmd);
+        return (copyWith(spinner: newSpin), cmd);
 
       case tui.ProgressFrameMsg():
         final (newProg, cmd) = progress.update(msg);
-        return (copyWith(progress: newProg as tui.ProgressModel), cmd);
+        return (copyWith(progress: newProg), cmd);
     }
 
     return (this, null);

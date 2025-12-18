@@ -10,7 +10,7 @@ import 'geometry.dart';
 import 'screen.dart';
 import 'terminal_reader.dart';
 import 'terminal_renderer.dart';
-import 'width.dart';
+import '../../unicode/width.dart';
 import 'winch.dart';
 
 /// Terminal represents a terminal screen that can be manipulated and drawn to.

@@ -42,7 +42,7 @@ class TextareaModel implements tui.Model {
     final (newTa, cmd) = textarea.update(msg);
     if (cmd != null) cmds.add(cmd);
 
-    return (copyWith(textarea: newTa as tui.TextAreaModel), _batch(cmds));
+    return (copyWith(textarea: newTa), _batch(cmds));
   }
 
   tui.Cmd? _batch(List<tui.Cmd> cmds) =>

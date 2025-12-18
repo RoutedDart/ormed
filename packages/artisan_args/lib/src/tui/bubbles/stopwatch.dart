@@ -1,5 +1,5 @@
 import '../cmd.dart';
-import '../model.dart';
+import '../component.dart';
 import '../msg.dart';
 
 /// Message sent when the stopwatch ticks.
@@ -61,7 +61,7 @@ int _nextStopwatchId() {
 /// // Start the stopwatch
 /// final (model2, cmd2) = model.startCmd();
 /// ```
-class StopwatchModel implements Model {
+class StopwatchModel extends ViewComponent {
   /// Creates a new stopwatch model.
   ///
   /// [interval] is how often the stopwatch ticks (defaults to 100 milliseconds).
@@ -137,7 +137,7 @@ class StopwatchModel implements Model {
 
   /// Updates the stopwatch based on incoming messages.
   @override
-  (Model, Cmd?) update(Msg msg) {
+  (StopwatchModel, Cmd?) update(Msg msg) {
     switch (msg) {
       case StopwatchStartStopMsg():
         // Ignore messages for other stopwatch instances.

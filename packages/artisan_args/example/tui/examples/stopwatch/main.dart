@@ -65,7 +65,7 @@ class StopwatchExampleModel implements tui.Model {
       case tui.StopwatchStartStopMsg():
       case tui.StopwatchResetMsg():
         final (newStopwatch, cmd) = stopwatch.update(msg);
-        return (copyWith(stopwatch: newStopwatch as tui.StopwatchModel), cmd);
+        return (copyWith(stopwatch: newStopwatch), cmd);
     }
     return (this, null);
   }

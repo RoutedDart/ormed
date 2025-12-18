@@ -3,7 +3,7 @@ import '../../../style/style.dart';
 import 'base.dart';
 
 /// A progress indicator component.
-class ProgressBar extends ViewComponent {
+class ProgressBar extends DisplayComponent {
   const ProgressBar({
     required this.current,
     required this.total,
@@ -36,7 +36,7 @@ class ProgressBar extends ViewComponent {
 }
 
 /// A spinner frame component (for use in animations).
-class SpinnerFrame extends ViewComponent {
+class SpinnerFrame extends DisplayComponent {
   const SpinnerFrame({
     required this.frame,
     required this.message,

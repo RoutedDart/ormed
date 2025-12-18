@@ -1,4 +1,5 @@
 import 'package:artisan_args/src/tui/bubbles/textarea.dart';
+import 'package:artisan_args/src/tui/component.dart';
 import 'package:artisan_args/src/tui/key.dart';
 import 'package:artisan_args/src/tui/msg.dart';
 import 'package:test/test.dart';
@@ -83,6 +84,28 @@ void main() {
           textarea.value.length,
           lessThanOrEqualTo(6),
         ); // Allow some buffer
+      });
+
+      test('treats combining marks as one grapheme', () {
+        final textarea = TextAreaModel();
+        textarea.insertString('e\u0301'); // e + combining acute accent
+        expect(textarea.column, 1);
+        expect(textarea.value, 'e\u0301');
+      });
+
+      test('backspace deletes a full grapheme cluster', () {
+        final textarea = TextAreaModel();
+        textarea.insertString('e\u0301'); // e + combining acute accent
+        textarea.update(const KeyMsg(Key(KeyType.backspace)));
+        expect(textarea.value, '');
+        expect(textarea.column, 0);
+      });
+
+      test('char limit does not split a grapheme cluster', () {
+        final textarea = TextAreaModel(charLimit: 1);
+        textarea.insertString('e\u0301x');
+        expect(textarea.value, 'e\u0301');
+        expect(textarea.column, 1);
       });
     });
 
@@ -321,6 +344,13 @@ void main() {
         final textarea = TextAreaModel();
         expect(textarea.init(), isNull);
       });
+    });
+
+    test('is a ViewComponent and updates via base type', () {
+      final textarea = TextAreaModel();
+      ViewComponent model = textarea;
+      final (updated, _) = model.update(const KeyMsg(Key(KeyType.enter)));
+      expect(updated, isA<TextAreaModel>());
     });
   });
 

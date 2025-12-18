@@ -12,7 +12,7 @@ import 'base.dart';
 ///   },
 /// ).render();
 /// ```
-class DefinitionListComponent extends ViewComponent {
+class DefinitionListComponent extends DisplayComponent {
   const DefinitionListComponent({
     required this.items,
     this.separator = ':',
@@ -84,9 +84,12 @@ typedef DefinitionStyleFunc =
 ///
 /// print(list);
 /// ```
-class DefinitionList extends FluentComponent<DefinitionList> {
+class DefinitionList extends DisplayComponent {
   /// Creates a new empty definition list builder.
-  DefinitionList();
+  DefinitionList({RenderConfig renderConfig = const RenderConfig()})
+    : _renderConfig = renderConfig;
+
+  RenderConfig _renderConfig;
 
   final List<(String, String)> _items = [];
   String _separator = ':';
@@ -165,11 +168,11 @@ class DefinitionList extends FluentComponent<DefinitionList> {
     if (_styleFunc != null) {
       final style = _styleFunc!(text, description, index, true);
       if (style != null) {
-        return configureStyle(style).render(text);
+        return _renderConfig.configureStyle(style).render(text);
       }
     }
     if (_termStyle != null) {
-      return configureStyle(_termStyle!).render(text);
+      return _renderConfig.configureStyle(_termStyle!).render(text);
     }
     return text;
   }
@@ -179,11 +182,11 @@ class DefinitionList extends FluentComponent<DefinitionList> {
     if (_styleFunc != null) {
       final style = _styleFunc!(term, text, index, false);
       if (style != null) {
-        return configureStyle(style).render(text);
+        return _renderConfig.configureStyle(style).render(text);
       }
     }
     if (_descriptionStyle != null) {
-      return configureStyle(_descriptionStyle!).render(text);
+      return _renderConfig.configureStyle(_descriptionStyle!).render(text);
     }
     return text;
   }
@@ -191,7 +194,7 @@ class DefinitionList extends FluentComponent<DefinitionList> {
   /// Applies separator styling.
   String _applySeparatorStyle(String text) {
     if (_separatorStyle != null) {
-      return configureStyle(_separatorStyle!).render(text);
+      return _renderConfig.configureStyle(_separatorStyle!).render(text);
     }
     return text;
   }
@@ -268,9 +271,13 @@ class DefinitionList extends FluentComponent<DefinitionList> {
 ///
 /// print(list);
 /// ```
-class GroupedDefinitionList extends FluentComponent<GroupedDefinitionList> {
+class GroupedDefinitionList extends DisplayComponent
+{
   /// Creates a new empty grouped definition list builder.
-  GroupedDefinitionList();
+  GroupedDefinitionList({RenderConfig renderConfig = const RenderConfig()})
+    : _renderConfig = renderConfig;
+
+  RenderConfig _renderConfig;
 
   final List<(String, Map<String, String>)> _groups = [];
   String _separator = ':';
@@ -367,10 +374,10 @@ class GroupedDefinitionList extends FluentComponent<GroupedDefinitionList> {
   /// Applies header styling.
   String _applyHeaderStyle(String text) {
     if (_headerStyle != null) {
-      return configureStyle(_headerStyle!).render(text);
+      return _renderConfig.configureStyle(_headerStyle!).render(text);
     }
     // Default to bold
-    return configureStyle(Style().bold()).render(text);
+    return _renderConfig.configureStyle(Style().bold()).render(text);
   }
 
   @override
@@ -402,14 +409,12 @@ class GroupedDefinitionList extends FluentComponent<GroupedDefinitionList> {
       buffer.writeln('$groupIndentStr${_applyHeaderStyle(header)}');
 
       // Build definition list for this group
-      final list = DefinitionList()
+      final list = DefinitionList(renderConfig: _renderConfig)
         ..items(items)
         ..separator(_separator)
         ..indent(_indent)
         ..gap(_gap)
-        ..alignTerms(_alignTerms)
-        ..colorProfile(currentColorProfile)
-        ..darkBackground(currentHasDarkBackground);
+        ..alignTerms(_alignTerms);
 
       if (_termStyle != null) list.termStyle(_termStyle!);
       if (_descriptionStyle != null) list.descriptionStyle(_descriptionStyle!);

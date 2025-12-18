@@ -1,4 +1,5 @@
 import 'package:artisan_args/src/tui/bubbles/progress.dart';
+import 'package:artisan_args/src/tui/component.dart';
 import 'package:artisan_args/src/tui/msg.dart';
 import 'package:test/test.dart';
 
@@ -218,6 +219,14 @@ void main() {
         final progress = ProgressModel();
         expect(progress.init(), isNull);
       });
+    });
+
+    test('is a ViewComponent and updates via base type', () {
+      final progress = ProgressModel();
+      ViewComponent model = progress;
+      final msg = ProgressFrameMsg(id: progress.id, tag: 0);
+      final (updated, _) = model.update(msg);
+      expect(updated, isA<ProgressModel>());
     });
 
     group('Gradient', () {

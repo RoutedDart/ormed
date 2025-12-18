@@ -12,7 +12,7 @@ import 'base.dart';
 ///   text: 'Visit Dart',
 /// ).render();
 /// ```
-class LinkComponent extends ViewComponent {
+class LinkComponent extends DisplayComponent {
   const LinkComponent({
     required this.url,
     this.text,
@@ -76,7 +76,7 @@ class LinkComponent extends ViewComponent {
 /// print('See $ref1 and $ref2');
 /// links.renderln(context); // Renders: [1] https://dart.dev  [2] https://flutter.dev
 /// ```
-class LinkGroupComponent extends ViewComponent {
+class LinkGroupComponent extends DisplayComponent {
   LinkGroupComponent({
     this.prefix = 'link',
     this.renderConfig = const RenderConfig(),

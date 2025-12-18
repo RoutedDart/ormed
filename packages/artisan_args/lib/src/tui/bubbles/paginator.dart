@@ -1,5 +1,5 @@
 import '../cmd.dart';
-import '../model.dart';
+import '../component.dart';
 import '../msg.dart';
 import 'key_binding.dart';
 
@@ -74,7 +74,7 @@ class PaginatorKeyMap implements KeyMap {
 ///   }
 /// }
 /// ```
-class PaginatorModel implements Model {
+class PaginatorModel extends ViewComponent {
   /// Creates a new paginator model.
   PaginatorModel({
     this.type = PaginationType.arabic,
@@ -195,7 +195,7 @@ class PaginatorModel implements Model {
   Cmd? init() => null;
 
   @override
-  (Model, Cmd?) update(Msg msg) {
+  (PaginatorModel, Cmd?) update(Msg msg) {
     if (msg is KeyMsg) {
       if (msg.matches([keyMap.nextPage])) {
         return (nextPage(), null);

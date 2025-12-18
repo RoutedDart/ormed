@@ -77,7 +77,7 @@ class ListDefaultModel implements tui.Model {
     }
 
     final (newList, cmd) = list.update(msg);
-    return (ListDefaultModel(list: newList as tui.ListModel), cmd);
+    return (ListDefaultModel(list: newList), cmd);
   }
 
   @override

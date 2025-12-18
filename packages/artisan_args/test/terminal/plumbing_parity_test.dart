@@ -43,7 +43,7 @@ void main() {
       // We can't easily test real /dev/tty in unit tests without side effects,
       // but we can verify the API exists and handles null/custom sinks.
       // On non-Linux/macOS this will return null anyway.
-      final terminal = TtyTerminal.tryOpen(path: '/dev/null');
+      TtyTerminal.tryOpen(path: '/dev/null');
       // /dev/null is not a TTY, so it might return null or fail stty.
       // This is just a smoke test for the parameter.
     });

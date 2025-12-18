@@ -35,7 +35,7 @@ class TextInputExampleModel implements Model {
 
       default:
         final (newInput, cmd) = input.update(msg);
-        return (copyWith(input: newInput as TextInputModel), cmd);
+        return (copyWith(input: newInput), cmd);
     }
   }
 
@@ -50,6 +50,6 @@ class TextInputExampleModel implements Model {
 Future<void> main() async {
   await runProgram(
     TextInputExampleModel(),
-    options: const ProgramOptions(altScreen: false, hideCursor: false),
+    options: const ProgramOptions(altScreen: false, hideCursor: false, useUltravioletInputDecoder: true, useUltravioletRenderer: true),
   );
 }

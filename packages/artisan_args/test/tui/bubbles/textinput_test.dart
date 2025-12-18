@@ -1,4 +1,6 @@
 import 'package:artisan_args/src/tui/bubbles/textinput.dart';
+import 'package:artisan_args/src/tui/component.dart';
+import 'package:artisan_args/tui.dart' show Key, KeyMsg, KeyType;
 import 'package:test/test.dart';
 
 void main() {
@@ -80,6 +82,12 @@ void main() {
         expect(input.position, 5);
         input.position = -5;
         expect(input.position, 0);
+      });
+
+      test('counts position in grapheme clusters (combining marks)', () {
+        final input = TextInputModel();
+        input.value = 'e\u0301'; // single grapheme, two code points
+        expect(input.position, 1);
       });
     });
 
@@ -227,11 +235,31 @@ void main() {
       });
     });
 
+    group('Grapheme Editing', () {
+      test('backspace deletes a full grapheme cluster', () {
+        final input = TextInputModel()..focus();
+        input.value = 'e\u0301x'; // 2 graphemes: "é" + "x"
+        input.position = 1; // after first grapheme
+
+        input.update(KeyMsg(const Key(KeyType.backspace)));
+
+        expect(input.value, 'x');
+        expect(input.position, 0);
+      });
+    });
+
     group('Init', () {
       test('returns null', () {
         final input = TextInputModel();
         expect(input.init(), isNull);
       });
+    });
+
+    test('is a ViewComponent and updates via base type', () {
+      final input = TextInputModel();
+      ViewComponent model = input;
+      final (updated, _) = model.update(const KeyMsg(Key(KeyType.left)));
+      expect(updated, isA<TextInputModel>());
     });
   });
 

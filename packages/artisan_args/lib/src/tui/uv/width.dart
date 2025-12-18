@@ -20,6 +20,11 @@ extension WidthMethodX on WidthMethod {
 }
 
 int runeWidth(int rune) {
+  // Control characters and null
+  if (rune < 32 || (rune >= 0x7F && rune < 0xA0)) {
+    return 0;
+  }
+
   // Zero-width (very small subset).
   if (rune == 0x200B || // ZWSP
       rune == 0x200C || // ZWNJ

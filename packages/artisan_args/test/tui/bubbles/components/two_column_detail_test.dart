@@ -136,8 +136,7 @@ void main() {
         final detail = TwoColumnDetail()
           ..left('Key')
           ..right('Value')
-          ..leftStyle(Style().bold())
-          ..colorProfile(ColorProfile.trueColor);
+          ..leftStyle(Style().bold());
         final output = detail.render();
         expect(output, contains('\x1B['));
         expect(output, contains('Key'));
@@ -147,8 +146,7 @@ void main() {
         final detail = TwoColumnDetail()
           ..left('Key')
           ..right('Value')
-          ..rightStyle(Style().italic())
-          ..colorProfile(ColorProfile.trueColor);
+          ..rightStyle(Style().italic());
         final output = detail.render();
         expect(output, contains('\x1B['));
         expect(output, contains('Value'));
@@ -160,7 +158,7 @@ void main() {
           ..right('Value')
           ..fillStyle(Style().dim())
           ..width(40)
-          ..colorProfile(ColorProfile.trueColor);
+          ;
         final output = detail.render();
         expect(output, contains('\x1B['));
       });
@@ -177,7 +175,7 @@ void main() {
             }
             return Style().italic();
           })
-          ..colorProfile(ColorProfile.trueColor);
+          ;
         detail.render();
         expect(callCount, equals(2)); // Called for left and right
       });
@@ -219,7 +217,7 @@ void main() {
             funcCalled = true;
             return Style().italic();
           })
-          ..colorProfile(ColorProfile.trueColor);
+          ;
         detail.render();
         expect(funcCalled, isTrue);
       });
@@ -227,40 +225,57 @@ void main() {
 
     group('color profile', () {
       test('respects ASCII color profile', () {
-        final detail = TwoColumnDetail()
+        final detail = TwoColumnDetail(
+          renderConfig: const RenderConfig(colorProfile: ColorProfile.ascii),
+        )
           ..left('Key')
           ..right('Value')
-          ..leftStyle(Style().bold().foreground(Colors.red))
-          ..colorProfile(ColorProfile.ascii);
+          ..leftStyle(Style().bold().foreground(Colors.red));
         final output = detail.render();
         expect(output.contains('\x1B['), isFalse);
       });
 
       test('respects trueColor profile', () {
-        final detail = TwoColumnDetail()
+        final detail = TwoColumnDetail(
+          renderConfig: const RenderConfig(colorProfile: ColorProfile.trueColor),
+        )
           ..left('Key')
           ..right('Value')
-          ..leftStyle(Style().foreground(Colors.rgb(255, 100, 50)))
-          ..colorProfile(ColorProfile.trueColor);
+          ..leftStyle(Style().foreground(Colors.rgb(255, 100, 50)));
         final output = detail.render();
         expect(output, contains('\x1B['));
       });
 
       test('respects dark background setting', () {
-        final detail = TwoColumnDetail()
+        final detailLight = TwoColumnDetail(
+          renderConfig: const RenderConfig(
+            colorProfile: ColorProfile.trueColor,
+            hasDarkBackground: true,
+          ),
+        )
           ..left('Key')
           ..right('Value')
           ..leftStyle(
             Style().foreground(
               AdaptiveColor(light: Colors.black, dark: Colors.white),
             ),
-          )
-          ..colorProfile(ColorProfile.trueColor)
-          ..darkBackground(true);
-        final output1 = detail.render();
+          );
+        final output1 = detailLight.render();
 
-        detail.darkBackground(false);
-        final output2 = detail.render();
+        final detailDark = TwoColumnDetail(
+          renderConfig: const RenderConfig(
+            colorProfile: ColorProfile.trueColor,
+            hasDarkBackground: false,
+          ),
+        )
+          ..left('Key')
+          ..right('Value')
+          ..leftStyle(
+            Style().foreground(
+              AdaptiveColor(light: Colors.black, dark: Colors.white),
+            ),
+          );
+        final output2 = detailDark.render();
 
         expect(output1, isNot(equals(output2)));
       });
@@ -297,8 +312,6 @@ void main() {
         expect(detail.rightStyle(Style()), same(detail));
         expect(detail.fillStyle(Style()), same(detail));
         expect(detail.styleFunc((_, __) => null), same(detail));
-        expect(detail.colorProfile(ColorProfile.trueColor), same(detail));
-        expect(detail.darkBackground(true), same(detail));
       });
     });
   });
@@ -381,8 +394,7 @@ void main() {
         final list = TwoColumnDetailList()
           ..row('A', '1')
           ..row('B', '2')
-          ..leftStyle(Style().bold())
-          ..colorProfile(ColorProfile.trueColor);
+          ..leftStyle(Style().bold());
         final output = list.render();
         expect(output, contains('\x1B['));
       });
@@ -391,8 +403,7 @@ void main() {
         final list = TwoColumnDetailList()
           ..row('A', '1')
           ..row('B', '2')
-          ..rightStyle(Style().italic())
-          ..colorProfile(ColorProfile.trueColor);
+          ..rightStyle(Style().italic());
         final output = list.render();
         expect(output, contains('\x1B['));
       });
@@ -453,8 +464,6 @@ void main() {
         expect(list.rightStyle(Style()), same(list));
         expect(list.fillStyle(Style()), same(list));
         expect(list.styleFunc((_, __) => null), same(list));
-        expect(list.colorProfile(ColorProfile.trueColor), same(list));
-        expect(list.darkBackground(true), same(list));
       });
     });
   });
@@ -466,7 +475,6 @@ void main() {
         'OK',
         success: true,
       );
-      detail.colorProfile(ColorProfile.trueColor);
       final output = detail.render();
       expect(output, contains('Status'));
       expect(output, contains('OK'));
@@ -479,7 +487,6 @@ void main() {
         'FAIL',
         success: false,
       );
-      detail.colorProfile(ColorProfile.trueColor);
       final output = detail.render();
       expect(output, contains('Status'));
       expect(output, contains('FAIL'));
@@ -488,7 +495,6 @@ void main() {
 
     test('info creates info-style row', () {
       final detail = TwoColumnDetailFactory.info('Key', 'Value');
-      detail.colorProfile(ColorProfile.trueColor);
       final output = detail.render();
       expect(output, contains('Key'));
       expect(output, contains('Value'));
@@ -497,7 +503,6 @@ void main() {
 
     test('muted creates muted-style row', () {
       final detail = TwoColumnDetailFactory.muted('Key', 'Value');
-      detail.colorProfile(ColorProfile.trueColor);
       final output = detail.render();
       expect(output, contains('Key'));
       expect(output, contains('Value'));

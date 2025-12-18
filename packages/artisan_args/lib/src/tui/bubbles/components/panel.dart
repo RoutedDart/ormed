@@ -15,7 +15,7 @@ enum PanelAlignment { left, center, right }
 ///   title: 'Greeting',
 /// ).render();
 /// ```
-class PanelComponent extends ViewComponent {
+class PanelComponent extends DisplayComponent {
   const PanelComponent({
     required this.content,
     this.title,
@@ -166,9 +166,12 @@ typedef PanelContentStyleFunc = Style? Function(String line, int lineIndex);
 ///
 /// print(panel);
 /// ```
-class Panel extends FluentComponent<Panel> {
+class Panel extends DisplayComponent {
   /// Creates a new empty panel builder.
-  Panel();
+  Panel({RenderConfig renderConfig = const RenderConfig()})
+    : _renderConfig = renderConfig;
+
+  RenderConfig _renderConfig;
 
   String? _title;
   final List<String> _content = [];
@@ -336,13 +339,13 @@ class Panel extends FluentComponent<Panel> {
     // Helper to style border characters
     String styleBorder(String text) {
       if (_borderStyle == null) return text;
-      return configureStyle(_borderStyle!).render(text);
+      return _renderConfig.configureStyle(_borderStyle!).render(text);
     }
 
     // Helper to style title
     String styleTitle(String text) {
       if (_titleStyle == null) return text;
-      return configureStyle(_titleStyle!).render(text);
+      return _renderConfig.configureStyle(_titleStyle!).render(text);
     }
 
     // Helper to style content
@@ -350,12 +353,12 @@ class Panel extends FluentComponent<Panel> {
       if (_contentStyleFunc != null) {
         final style = _contentStyleFunc!(text, lineIndex);
         if (style != null) {
-          return configureStyle(style).render(text);
+          return _renderConfig.configureStyle(style).render(text);
         }
         return text;
       }
       if (_contentStyle != null) {
-        return configureStyle(_contentStyle!).render(text);
+        return _renderConfig.configureStyle(_contentStyle!).render(text);
       }
       return text;
     }

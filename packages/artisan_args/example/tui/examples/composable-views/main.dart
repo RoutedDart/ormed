@@ -79,12 +79,12 @@ class ComposableViewsModel implements tui.Model {
         cmds.add(cmd);
       case tui.SpinnerTickMsg():
         final (newSpinner, cmd) = spinner.update(msg);
-        model = model.copyWith(spinner: newSpinner as tui.SpinnerModel);
+        model = model.copyWith(spinner: newSpinner);
         cmds.add(cmd);
       case tui.TimerTickMsg():
       case tui.TimerStartStopMsg():
         final (newTimer, cmd) = timer.update(msg);
-        model = model.copyWith(timer: newTimer as tui.TimerModel);
+        model = model.copyWith(timer: newTimer);
         cmds.add(cmd);
     }
 
@@ -135,10 +135,10 @@ class ComposableViewsModel implements tui.Model {
     switch (state) {
       case _SessionState.spinner:
         final (newSpinner, cmd) = spinner.update(msg);
-        return (copyWith(spinner: newSpinner as tui.SpinnerModel), cmd);
+        return (copyWith(spinner: newSpinner), cmd);
       case _SessionState.timer:
         final (newTimer, cmd) = timer.update(msg);
-        return (copyWith(timer: newTimer as tui.TimerModel), cmd);
+        return (copyWith(timer: newTimer), cmd);
     }
   }
 

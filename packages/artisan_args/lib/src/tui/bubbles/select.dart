@@ -1,5 +1,5 @@
 import '../cmd.dart';
-import '../model.dart';
+import '../component.dart';
 import '../msg.dart';
 import '../../style/style.dart';
 import '../../style/color.dart';
@@ -190,7 +190,7 @@ class SelectStyles {
 ///     return (this, Cmd.quit());
 /// }
 /// ```
-class SelectModel<T> implements Model {
+class SelectModel<T> extends ViewComponent {
   /// Creates a new select model.
   SelectModel({
     required List<T> items,
@@ -330,7 +330,7 @@ class SelectModel<T> implements Model {
   Cmd? init() => null;
 
   @override
-  (Model, Cmd?) update(Msg msg) {
+  (SelectModel<T>, Cmd?) update(Msg msg) {
     if (msg is KeyMsg) {
       final key = msg.key;
 
@@ -634,7 +634,7 @@ class MultiSelectStyles {
 ///     return (this, Cmd.quit());
 /// }
 /// ```
-class MultiSelectModel<T> implements Model {
+class MultiSelectModel<T> extends ViewComponent {
   /// Creates a new multi-select model.
   MultiSelectModel({
     required List<T> items,
@@ -808,7 +808,7 @@ class MultiSelectModel<T> implements Model {
   Cmd? init() => null;
 
   @override
-  (Model, Cmd?) update(Msg msg) {
+  (MultiSelectModel<T>, Cmd?) update(Msg msg) {
     if (msg is KeyMsg) {
       final key = msg.key;
 

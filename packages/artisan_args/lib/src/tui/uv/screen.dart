@@ -1,6 +1,6 @@
 import 'cell.dart';
 import 'geometry.dart';
-import 'width.dart';
+import '../../unicode/width.dart';
 
 /// Screen is a 2D surface of cells.
 ///

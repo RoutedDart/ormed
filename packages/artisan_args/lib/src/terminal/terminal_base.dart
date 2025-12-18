@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io' as io;
 
 import 'ansi.dart';
+import 'stdin_stream.dart';
 
 /// Abstract terminal interface for all terminal operations.
 ///
@@ -645,8 +646,7 @@ class StdioTerminal implements Terminal {
   }
 
   static bool _isStdoutBoundToStream(StateError e) =>
-      (e.message?.toString().contains('StreamSink is bound to a stream') ??
-      false);
+      e.message.toString().contains('StreamSink is bound to a stream');
 
   Future<void> _flushStdoutAll() async {
     // Keep flushing until no more writes arrived during the previous flush.
@@ -990,7 +990,14 @@ class StdioTerminal implements Terminal {
   }
 
   void _startInputListener() {
-    _inputSubscription ??= _stdin.listen(
+    final Stream<List<int>> stream;
+    if (identical(_stdin, io.stdin)) {
+      stream = sharedStdinStream;
+    } else {
+      stream = _stdin;
+    }
+
+    _inputSubscription ??= stream.listen(
       (data) => _inputController?.add(data),
       onError: (error) => _inputController?.addError(error),
       cancelOnError: false,
@@ -1170,8 +1177,7 @@ final class TtyTerminal implements Terminal {
   }
 
   static bool _isSinkBoundToStream(StateError e) =>
-      (e.message?.toString().contains('StreamSink is bound to a stream') ??
-          false);
+      e.message.toString().contains('StreamSink is bound to a stream');
 
   Future<void> _flushAll() async {
     // Keep flushing until no more writes arrived during the previous flush.
@@ -1370,7 +1376,11 @@ final class TtyTerminal implements Terminal {
   @override
   RawModeGuard enableRawMode() {
     if (_rawModeEnabled) {
-      return RawModeGuard(wasEchoMode: false, wasLineMode: false, restore: () {});
+      return RawModeGuard(
+        wasEchoMode: false,
+        wasLineMode: false,
+        restore: () {},
+      );
     }
 
     _sttySavedMode ??= _sttyGetMode();
@@ -1549,12 +1559,12 @@ final class TtyTerminal implements Terminal {
           _lineBuf.clear();
           return s;
         }
-        if (b == 0x0a /* \\n */) {
+        if (b == 0x0a /* \\n */ ) {
           final s = io.systemEncoding.decode(_lineBuf);
           _lineBuf.clear();
           return s;
         }
-        if (b != 0x0d /* \\r */) _lineBuf.add(b);
+        if (b != 0x0d /* \\r */ ) _lineBuf.add(b);
       }
     } catch (_) {
       return null;

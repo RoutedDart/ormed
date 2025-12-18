@@ -89,6 +89,9 @@ library;
 export 'terminal.dart'
     show TuiTerminal, StdioTerminal, TerminalState, AnsiCodes;
 
+// Components
+export 'component.dart' show ViewComponent, StaticComponent, ComponentHost;
+
 // Key input
 export 'key.dart' show Key, KeyType, KeyParser, Keys;
 
@@ -108,7 +111,8 @@ export 'msg.dart'
         PasteMsg,
         CustomMsg,
         InterruptMsg,
-        RepaintMsg;
+        RepaintMsg,
+        UvEventMsg;
 
 // Command system
 export 'cmd.dart'

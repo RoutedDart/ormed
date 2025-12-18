@@ -10,7 +10,7 @@ import 'base.dart';
 ///   right: 'OK',
 /// ).render();
 /// ```
-class TwoColumnDetailComponent extends ViewComponent {
+class TwoColumnDetailComponent extends DisplayComponent {
   const TwoColumnDetailComponent({
     required this.left,
     required this.right,
@@ -65,9 +65,12 @@ typedef TwoColumnStyleFunc = Style? Function(String text, bool isLeft);
 ///
 /// print(detail);
 /// ```
-class TwoColumnDetail extends FluentComponent<TwoColumnDetail> {
+class TwoColumnDetail extends DisplayComponent {
   /// Creates a new empty two-column detail builder.
-  TwoColumnDetail();
+  TwoColumnDetail({RenderConfig renderConfig = const RenderConfig()})
+    : _renderConfig = renderConfig;
+
+  RenderConfig _renderConfig;
 
   String _left = '';
   String _right = '';
@@ -138,11 +141,11 @@ class TwoColumnDetail extends FluentComponent<TwoColumnDetail> {
     if (_styleFunc != null) {
       final style = _styleFunc!(text, true);
       if (style != null) {
-        return configureStyle(style).render(text);
+        return _renderConfig.configureStyle(style).render(text);
       }
     }
     if (_leftStyle != null) {
-      return configureStyle(_leftStyle!).render(text);
+      return _renderConfig.configureStyle(_leftStyle!).render(text);
     }
     return text;
   }
@@ -152,11 +155,11 @@ class TwoColumnDetail extends FluentComponent<TwoColumnDetail> {
     if (_styleFunc != null) {
       final style = _styleFunc!(text, false);
       if (style != null) {
-        return configureStyle(style).render(text);
+        return _renderConfig.configureStyle(style).render(text);
       }
     }
     if (_rightStyle != null) {
-      return configureStyle(_rightStyle!).render(text);
+      return _renderConfig.configureStyle(_rightStyle!).render(text);
     }
     return text;
   }
@@ -164,7 +167,7 @@ class TwoColumnDetail extends FluentComponent<TwoColumnDetail> {
   /// Applies fill character styling.
   String _applyFillStyle(String text) {
     if (_fillStyle != null) {
-      return configureStyle(_fillStyle!).render(text);
+      return _renderConfig.configureStyle(_fillStyle!).render(text);
     }
     return text;
   }
@@ -176,7 +179,7 @@ class TwoColumnDetail extends FluentComponent<TwoColumnDetail> {
 
     final leftLen = Style.visibleLength(_left);
     final rightLen = Style.visibleLength(_right);
-    final totalWidth = _width ?? 80;
+    final totalWidth = _width ?? _renderConfig.terminalWidth;
     final available = totalWidth - _indent - leftLen - rightLen - 2;
 
     String fill;
@@ -210,9 +213,12 @@ class TwoColumnDetail extends FluentComponent<TwoColumnDetail> {
 ///
 /// print(details);
 /// ```
-class TwoColumnDetailList extends FluentComponent<TwoColumnDetailList> {
+class TwoColumnDetailList extends DisplayComponent {
   /// Creates a new empty two-column detail list builder.
-  TwoColumnDetailList();
+  TwoColumnDetailList({RenderConfig renderConfig = const RenderConfig()})
+    : _renderConfig = renderConfig;
+
+  RenderConfig _renderConfig;
 
   final List<(String, String)> _rows = [];
   String _fillChar = '.';
@@ -289,13 +295,11 @@ class TwoColumnDetailList extends FluentComponent<TwoColumnDetailList> {
       if (i > 0) buffer.writeln();
 
       final (left, right) = _rows[i];
-      final detail = TwoColumnDetail()
+      final detail = TwoColumnDetail(renderConfig: _renderConfig)
         ..left(left)
         ..right(right)
         ..fillChar(_fillChar)
-        ..indent(_indent)
-        ..colorProfile(currentColorProfile)
-        ..darkBackground(currentHasDarkBackground);
+        ..indent(_indent);
 
       if (_width != null) detail.width(_width!);
       if (_leftStyle != null) detail.leftStyle(_leftStyle!);

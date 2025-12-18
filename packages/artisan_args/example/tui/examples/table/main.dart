@@ -41,7 +41,7 @@ class TableDemoModel implements tui.Model {
     }
 
     final (newTable, cmd) = table.update(msg);
-    return (TableDemoModel(newTable as tui.TableModel), cmd);
+    return (TableDemoModel(newTable), cmd);
   }
 
   @override

@@ -13,7 +13,7 @@ enum TaskStatus { success, failure, skipped, running }
 ///   status: TaskStatus.success,
 /// ).render();
 /// ```
-class TaskComponent extends ViewComponent {
+class TaskComponent extends DisplayComponent {
   const TaskComponent({
     required this.description,
     required this.status,

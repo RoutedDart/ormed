@@ -94,6 +94,16 @@ class PrintLineMsg extends Msg {
   final String text;
 }
 
+/// Internal message to write raw bytes/escape sequences to the terminal.
+///
+/// This is primarily intended for requesting terminal reports (e.g. DA/OSC
+/// queries) without performing direct `stdout.write` calls that can desync the
+/// renderer.
+class WriteRawMsg extends Msg {
+  const WriteRawMsg(this.data);
+  final String data;
+}
+
 /// Internal message to request a repaint.
 class RepaintRequestMsg extends Msg {
   const RepaintRequestMsg({this.force = false});
@@ -245,6 +255,11 @@ class Cmd {
   /// ```
   static Cmd setWindowTitle(String title) {
     return Cmd(() async => SetWindowTitleMsg(title));
+  }
+
+  /// A command that writes raw bytes/escape sequences directly to the terminal.
+  static Cmd writeRaw(String data) {
+    return Cmd(() async => WriteRawMsg(data));
   }
 
   /// A command that clears the terminal screen.

@@ -316,8 +316,6 @@ void main() {
             .children(['a', 'b'])
             .enumerator(TreeEnumerator.rounded)
             .itemStyleFunc((i, d, dir) => null)
-            .colorProfile(ColorProfile.trueColor)
-            .darkBackground(true)
             .showRoot(true);
 
         expect(tree, isA<Tree>());

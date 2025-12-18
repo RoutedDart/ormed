@@ -1,7 +1,7 @@
 import 'package:artisan_args/src/tui/uv/buffer.dart';
 import 'package:artisan_args/src/tui/uv/cell.dart';
 import 'package:artisan_args/src/tui/uv/styled_string.dart';
-import 'package:artisan_args/src/tui/uv/width.dart';
+import 'package:artisan_args/src/unicode/width.dart';
 import 'package:test/test.dart';
 
 // Upstream parity:

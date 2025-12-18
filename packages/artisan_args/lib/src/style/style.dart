@@ -27,6 +27,7 @@ import 'color.dart';
 import 'properties.dart';
 import '../terminal/ansi.dart';
 import '../unicode/grapheme.dart' as uni;
+import '../unicode/width.dart';
 import '../tui/uv/wrap.dart' as uv_wrap;
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -128,6 +129,9 @@ class Style {
 
   /// Second bitfield for additional properties.
   int _props2 = 0;
+
+  /// Non-breaking space character.
+  static const nbsp = '\u00A0';
 
   bool _hasFlag(int flag) => _props & flag != 0;
   void _setFlag(int flag) => _props |= flag;
@@ -1685,7 +1689,11 @@ class Style {
   /// This produces an ANSI-escaped string ready for terminal output.
   String render(String text) {
     text = _applyConsoleTags(text);
-    text = _applyConsoleTags(text);
+
+    // Potentially convert tabs to spaces
+    text = _maybeConvertTabs(text);
+    // carriage returns can cause strange behaviour when rendering.
+    text = text.replaceAll('\r\n', '\n');
 
     // Check if any styling or layout is needed
     final hasLayout =
@@ -1919,68 +1927,11 @@ class Style {
   static int _displayWidth(String text) {
     var width = 0;
     for (final g in uni.graphemes(text)) {
-      width += _charWidth(uni.firstCodePoint(g));
+      width += runeWidth(uni.firstCodePoint(g));
     }
     return width;
   }
 
-  /// Returns the display width of a single Unicode code point.
-  ///
-  /// Returns 2 for full-width characters (CJK, emoji, etc.), 0 for combining
-  /// characters and control codes, and 1 for everything else.
-  static int _charWidth(int codePoint) {
-    // Control characters and null
-    if (codePoint < 32 || (codePoint >= 0x7F && codePoint < 0xA0)) {
-      return 0;
-    }
-
-    // Combining characters (zero width)
-    if (_isCombining(codePoint)) {
-      return 0;
-    }
-
-    // Full-width characters (CJK and others)
-    if (_isFullWidth(codePoint)) {
-      return 2;
-    }
-
-    return 1;
-  }
-
-  /// Checks if a code point is a combining character (zero width).
-  static bool _isCombining(int cp) {
-    return (cp >= 0x0300 && cp <= 0x036F) || // Combining Diacritical Marks
-        (cp >= 0x1AB0 &&
-            cp <= 0x1AFF) || // Combining Diacritical Marks Extended
-        (cp >= 0x1DC0 &&
-            cp <= 0x1DFF) || // Combining Diacritical Marks Supplement
-        (cp >= 0x20D0 &&
-            cp <= 0x20FF) || // Combining Diacritical Marks for Symbols
-        (cp >= 0xFE20 && cp <= 0xFE2F); // Combining Half Marks
-  }
-
-  /// Checks if a code point is a full-width character (displays as 2 columns).
-  static bool _isFullWidth(int cp) {
-    // CJK Unified Ideographs and related blocks
-    return (cp >= 0x1100 && cp <= 0x115F) || // Hangul Jamo
-        (cp >= 0x2E80 &&
-            cp <= 0x9FFF) || // CJK Radicals through CJK Unified Ideographs
-        (cp >= 0xAC00 && cp <= 0xD7A3) || // Hangul Syllables
-        (cp >= 0xF900 && cp <= 0xFAFF) || // CJK Compatibility Ideographs
-        (cp >= 0xFE10 && cp <= 0xFE1F) || // Vertical Forms
-        (cp >= 0xFE30 && cp <= 0xFE6F) || // CJK Compatibility Forms
-        (cp >= 0xFF00 && cp <= 0xFF60) || // Fullwidth ASCII variants
-        (cp >= 0xFFE0 && cp <= 0xFFE6) || // Fullwidth symbol variants
-        (cp >= 0x20000 &&
-            cp <= 0x2FFFF) || // CJK Unified Ideographs Extension B-F
-        (cp >= 0x30000 &&
-            cp <= 0x3FFFF) || // CJK Unified Ideographs Extension G-H
-        // Common emoji ranges (simplified - many emoji are double-width)
-        (cp >= 0x1F300 &&
-            cp <=
-                0x1F9FF) || // Miscellaneous Symbols and Pictographs, Emoticons, etc.
-        (cp >= 0x1FA00 && cp <= 0x1FAFF); // Chess, symbols, extended-A
-  }
 
   int _getMaxLineWidth(List<String> lines) {
     if (lines.isEmpty) return 0;
@@ -2000,7 +1951,7 @@ class Style {
     if (targetLen <= 0) return '…';
 
     final buffer = StringBuffer();
-    final ansiPattern = RegExp(r'\x1B\[[0-9;]*m');
+    final ansiPattern = Ansi.ansiPattern;
     var currentLen = 0;
     var i = 0;
 
@@ -2101,7 +2052,7 @@ class Style {
   List<String> _splitIntoWords(String text) {
     final words = <String>[];
     final buffer = StringBuffer();
-    final ansiPattern = RegExp(r'\x1B\[[0-9;]*m');
+    final ansiPattern = Ansi.ansiPattern;
     var i = 0;
 
     while (i < text.length) {
@@ -2136,7 +2087,7 @@ class Style {
   /// Breaks a long word into pieces that fit within maxWidth.
   List<String> _breakLongWord(String word, int maxWidth) {
     final result = <String>[];
-    final ansiPattern = RegExp(r'\x1B\[[0-9;]*m');
+    final ansiPattern = Ansi.ansiPattern;
     var buffer = StringBuffer();
     var currentLen = 0;
     var i = 0;
@@ -2208,6 +2159,13 @@ class Style {
   // ─────────────────────────────────────────────────────────────────────────
   // Console-style tag parsing (Symfony/Laravel)
   // ─────────────────────────────────────────────────────────────────────────
+
+  String _maybeConvertTabs(String text) {
+    final tw = _hasFlag2(_PropBits.tabWidth) ? _tabWidth : 4;
+    if (tw == -1) return text;
+    if (tw == 0) return text.replaceAll('\t', '');
+    return text.replaceAll('\t', ' ' * tw);
+  }
 
   static const _resetAnsi = '\x1B[0m';
 
@@ -2552,4 +2510,20 @@ class Style {
     if (_hasFlag(_PropBits.border)) parts.add('border:$_border');
     return 'Style(${parts.join(', ')})';
   }
+}
+
+/// Styles individual runes in a string using a styler function.
+///
+/// Ported from lipgloss v2:
+/// - `third_party/lipgloss/runes.go`
+String styleRunes(String s, Style Function(int rune, int index) styler) {
+  final runes = s.runes.toList(growable: false);
+  if (runes.isEmpty) return '';
+
+  final out = StringBuffer();
+  for (var i = 0; i < runes.length; i++) {
+    final style = styler(runes[i], i);
+    out.write(style.render(String.fromCharCode(runes[i])));
+  }
+  return out.toString();
 }

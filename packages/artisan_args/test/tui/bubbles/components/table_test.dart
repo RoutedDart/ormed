@@ -259,8 +259,6 @@ void main() {
             .border(Border.rounded)
             .padding(2)
             .width(50)
-            .colorProfile(ColorProfile.trueColor)
-            .darkBackground(true)
             .styleFunc((r, c, d) => null);
 
         expect(table, isA<Table>());

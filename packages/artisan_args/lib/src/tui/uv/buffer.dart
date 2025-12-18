@@ -3,7 +3,7 @@ import 'cell.dart';
 import 'geometry.dart';
 import 'screen.dart';
 import 'style_ops.dart' as style_ops;
-import 'width.dart';
+import '../../unicode/width.dart';
 
 /// Metadata for a touched line.
 ///

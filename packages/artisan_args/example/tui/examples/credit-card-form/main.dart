@@ -101,7 +101,7 @@ class CreditCardModel implements tui.Model {
       final (updated, cmd) = inputs[i].update(msg);
       nextInputs = [
         ...nextInputs.take(i),
-        updated as tui.TextInputModel,
+        updated,
         ...nextInputs.skip(i + 1),
       ];
       cmds.add(cmd);

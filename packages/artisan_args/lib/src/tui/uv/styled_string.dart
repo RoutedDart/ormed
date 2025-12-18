@@ -2,7 +2,7 @@ import 'buffer.dart';
 import 'cell.dart';
 import 'geometry.dart';
 import 'screen.dart';
-import 'width.dart';
+import '../../unicode/width.dart';
 
 import '../../unicode/grapheme.dart' as uni;
 

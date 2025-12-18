@@ -1,10 +1,10 @@
 import 'base.dart';
 
 /// A component that composes multiple child components.
-class CompositeComponent extends ViewComponent {
+class CompositeComponent extends DisplayComponent {
   const CompositeComponent({required this.children});
 
-  final List<ViewComponent> children;
+  final List<DisplayComponent> children;
 
   @override
   String render() {
@@ -17,10 +17,10 @@ class CompositeComponent extends ViewComponent {
 }
 
 /// A component that renders with a newline after each child.
-class ColumnComponent extends ViewComponent {
+class ColumnComponent extends DisplayComponent {
   const ColumnComponent({required this.children, this.spacing = 0});
 
-  final List<ViewComponent> children;
+  final List<DisplayComponent> children;
   final int spacing;
 
   @override
@@ -42,10 +42,10 @@ class ColumnComponent extends ViewComponent {
 }
 
 /// A component that renders children horizontally with a separator.
-class RowComponent extends ViewComponent {
+class RowComponent extends DisplayComponent {
   const RowComponent({required this.children, this.separator = ' '});
 
-  final List<ViewComponent> children;
+  final List<DisplayComponent> children;
   final String separator;
 
   @override

@@ -23,7 +23,7 @@ void main() {
           );
 
       final (next, _) = model.update(const KeyMsg(Key(KeyType.enter)));
-      final fm = next as FilePickerModel;
+      final fm = next;
       final (didSelect, path) = fm.didSelectFile(
         const KeyMsg(Key(KeyType.enter)),
       );
@@ -41,7 +41,7 @@ void main() {
       final (next, _) = model.update(
         const KeyMsg(Key(KeyType.runes, runes: [0x2e])), // '.'
       );
-      final fm = next as FilePickerModel;
+      final fm = next;
       expect(fm.showHidden, isTrue);
     });
   });

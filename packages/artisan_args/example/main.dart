@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:io' as dartio;
 import 'package:artisan_args/artisan_args.dart';
 
-extension ViewComponentPrinter on ViewComponent {
+extension DisplayComponentPrinter on DisplayComponent {
   void writelnTo(ArtisanIO io) {
     for (final line in render().split('\n')) {
       io.writeln(line);
@@ -2119,11 +2119,11 @@ class UiComponentSystemCommand extends ArtisanCommand<void> {
     // ─────────────────────────────────────────────────────────────────────────
     io.section('Custom Components');
 
-    io.text('Create custom components by extending ViewComponent:');
+    io.text('Create custom components by extending DisplayComponent:');
     io.newLine();
 
     io.writeln('''
-    class MyBanner extends ViewComponent {
+    class MyBanner extends DisplayComponent {
       final String title;
       MyBanner(this.title);
 
@@ -2138,7 +2138,7 @@ class UiComponentSystemCommand extends ArtisanCommand<void> {
 }
 
 /// Example custom component.
-class _CustomBanner extends ViewComponent {
+class _CustomBanner extends DisplayComponent {
   const _CustomBanner(this.title, {this.renderConfig = const RenderConfig()});
 
   final String title;

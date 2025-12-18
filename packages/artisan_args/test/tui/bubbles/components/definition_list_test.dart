@@ -152,8 +152,7 @@ void main() {
       test('applies term style', () {
         final list = DefinitionList()
           ..item('Key', 'Value')
-          ..termStyle(Style().bold())
-          ..colorProfile(ColorProfile.trueColor);
+          ..termStyle(Style().bold());
         final output = list.render();
         expect(output, contains('\x1B['));
         expect(output, contains('Key'));
@@ -162,8 +161,7 @@ void main() {
       test('applies description style', () {
         final list = DefinitionList()
           ..item('Key', 'Value')
-          ..descriptionStyle(Style().italic())
-          ..colorProfile(ColorProfile.trueColor);
+          ..descriptionStyle(Style().italic());
         final output = list.render();
         expect(output, contains('\x1B['));
         expect(output, contains('Value'));
@@ -172,8 +170,7 @@ void main() {
       test('applies separator style', () {
         final list = DefinitionList()
           ..item('Key', 'Value')
-          ..separatorStyle(Style().dim())
-          ..colorProfile(ColorProfile.trueColor);
+          ..separatorStyle(Style().dim());
         final output = list.render();
         expect(output, contains('\x1B['));
       });
@@ -188,8 +185,7 @@ void main() {
               return Style().bold();
             }
             return null;
-          })
-          ..colorProfile(ColorProfile.trueColor);
+          });
         list.render();
         // Called for both term and description of each item
         expect(callCount, equals(6));
@@ -221,37 +217,53 @@ void main() {
 
     group('color profile', () {
       test('respects ASCII color profile', () {
-        final list = DefinitionList()
+        final list = DefinitionList(
+          renderConfig: const RenderConfig(colorProfile: ColorProfile.ascii),
+        )
           ..item('Key', 'Value')
-          ..termStyle(Style().bold().foreground(Colors.red))
-          ..colorProfile(ColorProfile.ascii);
+          ..termStyle(Style().bold().foreground(Colors.red));
         final output = list.render();
         expect(output.contains('\x1B['), isFalse);
       });
 
       test('respects trueColor profile', () {
-        final list = DefinitionList()
+        final list = DefinitionList(
+          renderConfig: const RenderConfig(colorProfile: ColorProfile.trueColor),
+        )
           ..item('Key', 'Value')
-          ..termStyle(Style().foreground(Colors.rgb(255, 100, 50)))
-          ..colorProfile(ColorProfile.trueColor);
+          ..termStyle(Style().foreground(Colors.rgb(255, 100, 50)));
         final output = list.render();
         expect(output, contains('\x1B['));
       });
 
       test('respects dark background setting', () {
-        final list = DefinitionList()
+        final listLight = DefinitionList(
+          renderConfig: const RenderConfig(
+            colorProfile: ColorProfile.trueColor,
+            hasDarkBackground: true,
+          ),
+        )
           ..item('Key', 'Value')
           ..termStyle(
             Style().foreground(
               AdaptiveColor(light: Colors.black, dark: Colors.white),
             ),
-          )
-          ..colorProfile(ColorProfile.trueColor)
-          ..darkBackground(true);
-        final output1 = list.render();
+          );
+        final output1 = listLight.render();
 
-        list.darkBackground(false);
-        final output2 = list.render();
+        final listDark = DefinitionList(
+          renderConfig: const RenderConfig(
+            colorProfile: ColorProfile.trueColor,
+            hasDarkBackground: false,
+          ),
+        )
+          ..item('Key', 'Value')
+          ..termStyle(
+            Style().foreground(
+              AdaptiveColor(light: Colors.black, dark: Colors.white),
+            ),
+          );
+        final output2 = listDark.render();
 
         expect(output1, isNot(equals(output2)));
       });
@@ -298,8 +310,6 @@ void main() {
         expect(list.descriptionStyle(Style()), same(list));
         expect(list.separatorStyle(Style()), same(list));
         expect(list.styleFunc((_, __, ___, ____) => null), same(list));
-        expect(list.colorProfile(ColorProfile.trueColor), same(list));
-        expect(list.darkBackground(true), same(list));
       });
     });
   });
@@ -336,8 +346,7 @@ void main() {
       test('applies header style', () {
         final list = GroupedDefinitionList()
           ..group('Header', {'Key': 'Value'})
-          ..headerStyle(Style().bold().underline())
-          ..colorProfile(ColorProfile.trueColor);
+          ..headerStyle(Style().bold().underline());
         final output = list.render();
         expect(output, contains('\x1B['));
         expect(output, contains('Header'));
@@ -345,8 +354,7 @@ void main() {
 
       test('defaults to bold header', () {
         final list = GroupedDefinitionList()
-          ..group('Header', {'Key': 'Value'})
-          ..colorProfile(ColorProfile.trueColor);
+          ..group('Header', {'Key': 'Value'});
         final output = list.render();
         expect(output, contains('\x1B['));
       });
@@ -431,8 +439,6 @@ void main() {
         expect(list.descriptionStyle(Style()), same(list));
         expect(list.separatorStyle(Style()), same(list));
         expect(list.styleFunc((_, __, ___, ____) => null), same(list));
-        expect(list.colorProfile(ColorProfile.trueColor), same(list));
-        expect(list.darkBackground(true), same(list));
       });
     });
   });
@@ -449,7 +455,6 @@ void main() {
 
     test('boldTerms creates list with bold terms', () {
       final list = DefinitionListFactory.boldTerms({'Key': 'Value'});
-      list.colorProfile(ColorProfile.trueColor);
       final output = list.render();
       expect(output, contains('\x1B['));
       expect(output, contains('Key'));
@@ -459,21 +464,18 @@ void main() {
       final list = DefinitionListFactory.coloredTerms({
         'Key': 'Value',
       }, Colors.blue);
-      list.colorProfile(ColorProfile.trueColor);
       final output = list.render();
       expect(output, contains('\x1B['));
     });
 
     test('info creates info-styled list', () {
       final list = DefinitionListFactory.info({'Key': 'Value'});
-      list.colorProfile(ColorProfile.trueColor);
       final output = list.render();
       expect(output, contains('\x1B['));
     });
 
     test('muted creates muted-styled list', () {
       final list = DefinitionListFactory.muted({'Key': 'Value'});
-      list.colorProfile(ColorProfile.trueColor);
       final output = list.render();
       expect(output, contains('\x1B['));
     });

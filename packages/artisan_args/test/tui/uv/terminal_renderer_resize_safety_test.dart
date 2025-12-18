@@ -42,6 +42,45 @@ void main() {
     expect(() => r.render(b), returnsNormally);
   });
 
+  test('TerminalRenderer tolerates shrinking buffer across frames', () {
+    final out = _TestSink();
+    final r = TerminalRenderer(out, env: const ['TERM=xterm-256color']);
+    r.setFullscreen(true);
+
+    final before = Buffer.create(12, 6);
+    before.setCell(11, 5, Cell(content: 'Z', width: 1));
+    r.render(before);
+    r.flush();
+
+    // Simulate cursor ending on the last cell, then shrink the buffer so both
+    // x and y are out of bounds for the next frame.
+    r.setPosition(before.width() - 1, before.height() - 1);
+
+    final after = Buffer.create(5, 2);
+    after.setCell(0, 0, Cell(content: 'A', width: 1));
+
+    expect(() => r.render(after), returnsNormally);
+    expect(() => r.flush(), returnsNormally);
+  });
+
+  test('TerminalRenderer tolerates far out-of-bounds cursor', () {
+    final out = _TestSink();
+    final r = TerminalRenderer(out, env: const ['TERM=xterm-256color']);
+    r.setFullscreen(true);
+
+    final b = Buffer.create(6, 3);
+    b.setCell(0, 0, Cell(content: 'A', width: 1));
+    r.render(b);
+    r.flush();
+
+    // Cursor can become garbage during rapid resizes; renderer must not crash.
+    r.setPosition(b.width() + 50, b.height() + 50);
+    b.setCell(1, 0, Cell(content: 'B', width: 1));
+
+    expect(() => r.render(b), returnsNormally);
+    expect(() => r.flush(), returnsNormally);
+  });
+
   test('TerminalRenderer skips scroll optimization across resize', () {
     final out = _TestSink();
     final r = TerminalRenderer(out, env: const ['TERM=xterm-256color']);

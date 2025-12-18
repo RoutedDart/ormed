@@ -10,7 +10,7 @@ import 'base.dart';
 ///   stackTrace: stackTrace,
 /// ).render();
 /// ```
-class ExceptionComponent extends ViewComponent {
+class ExceptionComponent extends DisplayComponent {
   const ExceptionComponent({
     required this.exception,
     this.stackTrace,
@@ -138,7 +138,7 @@ class _StackFrame {
 ///   exception: myException,
 /// ).render();
 /// ```
-class SimpleExceptionComponent extends ViewComponent {
+class SimpleExceptionComponent extends DisplayComponent {
   const SimpleExceptionComponent({
     required this.exception,
     this.renderConfig = const RenderConfig(),

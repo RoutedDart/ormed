@@ -54,7 +54,7 @@ class ListSimpleModel implements tui.Model {
 
       default:
         final (newList, cmd) = list.update(msg);
-        return (copyWith(list: newList as tui.ListModel), cmd);
+        return (copyWith(list: newList), cmd);
     }
   }
 

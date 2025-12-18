@@ -4,7 +4,7 @@ import '../../../style/style.dart';
 import 'base.dart';
 
 /// A key-value pair component with dot fill.
-class KeyValue extends ViewComponent {
+class KeyValue extends DisplayComponent {
   const KeyValue({
     required this.key,
     required this.value,
@@ -32,7 +32,7 @@ class KeyValue extends ViewComponent {
 }
 
 /// A boxed message component.
-class Box extends ViewComponent {
+class Box extends DisplayComponent {
   const Box({
     required this.content,
     this.title,
@@ -204,9 +204,12 @@ typedef BoxContentStyleFunc = Style? Function(String line, int lineIndex);
 ///
 /// print(box);
 /// ```
-class BoxBuilder extends FluentComponent<BoxBuilder> {
+class BoxBuilder extends DisplayComponent {
   /// Creates a new empty box builder.
-  BoxBuilder();
+  BoxBuilder({RenderConfig renderConfig = const RenderConfig()})
+    : _renderConfig = renderConfig;
+
+  RenderConfig _renderConfig;
 
   String? _title;
   final List<String> _content = [];
@@ -395,28 +398,28 @@ class BoxBuilder extends FluentComponent<BoxBuilder> {
     final b = _border;
 
     // Helper to style border characters
-    String styleBorder(String text) {
-      if (_borderStyle == null) return text;
-      return configureStyle(_borderStyle!).render(text);
-    }
+  String styleBorder(String text) {
+    if (_borderStyle == null) return text;
+    return _renderConfig.configureStyle(_borderStyle!).render(text);
+  }
 
     // Helper to style title
-    String styleTitle(String text) {
-      if (_titleStyle == null) return text;
-      return configureStyle(_titleStyle!).render(text);
-    }
+  String styleTitle(String text) {
+    if (_titleStyle == null) return text;
+    return _renderConfig.configureStyle(_titleStyle!).render(text);
+  }
 
     // Helper to style content
     String styleContent(String text, int lineIndex) {
       if (_contentStyleFunc != null) {
         final style = _contentStyleFunc!(text, lineIndex);
         if (style != null) {
-          return configureStyle(style).render(text);
+          return _renderConfig.configureStyle(style).render(text);
         }
         return text;
       }
       if (_contentStyle != null) {
-        return configureStyle(_contentStyle!).render(text);
+        return _renderConfig.configureStyle(_contentStyle!).render(text);
       }
       return text;
     }

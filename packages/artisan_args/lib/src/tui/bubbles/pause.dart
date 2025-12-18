@@ -1,6 +1,6 @@
 import '../cmd.dart';
 import '../key.dart';
-import '../model.dart';
+import '../component.dart';
 import '../msg.dart';
 import 'timer.dart';
 
@@ -8,7 +8,7 @@ import 'timer.dart';
 ///
 /// This is a small convenience bubble that mirrors the legacy "pause"
 /// behavior (previously exposed as `PauseComponent`).
-class PauseModel implements Model {
+class PauseModel extends ViewComponent {
   PauseModel({this.message = 'Press any key to continue...'});
 
   final String message;
@@ -17,7 +17,7 @@ class PauseModel implements Model {
   Cmd? init() => null;
 
   @override
-  (Model, Cmd?) update(Msg msg) {
+  (PauseModel, Cmd?) update(Msg msg) {
     if (msg is KeyMsg) {
       return (this, Cmd.quit());
     }
@@ -32,7 +32,7 @@ class PauseModel implements Model {
 ///
 /// This is a convenience bubble for the legacy countdown behavior (previously
 /// exposed as `CountdownComponent`).
-class CountdownModel implements Model {
+class CountdownModel extends ViewComponent {
   CountdownModel({
     required Duration duration,
     this.message = 'Continuing in',
@@ -46,7 +46,7 @@ class CountdownModel implements Model {
   Cmd? init() => _timer.start();
 
   @override
-  (Model, Cmd?) update(Msg msg) {
+  (CountdownModel, Cmd?) update(Msg msg) {
     if (msg is KeyMsg &&
         (msg.key.type == KeyType.escape ||
             (msg.key.ctrl &&
@@ -56,7 +56,7 @@ class CountdownModel implements Model {
     }
 
     final (newTimer, cmd) = _timer.update(msg);
-    _timer = newTimer as TimerModel;
+    _timer = newTimer;
 
     if (_timer.timedOut) {
       return (this, Cmd.quit());
