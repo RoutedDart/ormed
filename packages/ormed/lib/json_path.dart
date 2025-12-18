@@ -1,5 +1,3 @@
-library ormed.json_path;
-
 export 'src/query/json_path.dart'
     show
         JsonSelector,
@@ -7,4 +5,3 @@ export 'src/query/json_path.dart'
         parseJsonSelectorExpression,
         normalizeJsonPath,
         jsonPathSegments;
-

@@ -1402,17 +1402,17 @@ extension CrudExtension<T extends OrmEntity> on Query<T> {
       // Only set if not already provided by user
       if (!values.containsKey(columnName)) {
         // Use Carbon for Carbon/CarbonInterface fields, DateTime for DateTime fields
-        final now = Carbon.now();
+        final nowUtc = monotonicNowUtc();
         final fieldType = updatedAtField.dartType;
 
         if (fieldType == 'Carbon' ||
             fieldType == 'Carbon?' ||
             fieldType == 'CarbonInterface' ||
             fieldType == 'CarbonInterface?') {
-          return {...values, columnName: now};
+          return {...values, columnName: Carbon.fromDateTime(nowUtc)};
         } else {
           // Convert to DateTime for DateTime fields
-          return {...values, columnName: now.toDateTime()};
+          return {...values, columnName: nowUtc};
         }
       }
     } catch (_) {

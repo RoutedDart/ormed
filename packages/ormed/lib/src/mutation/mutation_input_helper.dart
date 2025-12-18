@@ -2,6 +2,7 @@ import 'package:carbonized/carbonized.dart' show Carbon;
 import 'package:carbonized/carbonized.dart';
 import 'package:ormed/src/model/model.dart';
 
+import '../core/monotonic_time.dart';
 import '../contracts.dart';
 import '../value_codec.dart';
 
@@ -102,7 +103,7 @@ class MutationInputHelper<T extends OrmEntity> {
   void applyInsertTimestampsToModel(T model) {
     if (model is! ModelAttributes) return;
     final attrs = model as ModelAttributes;
-    final now = Carbon.now().toUtc().toDateTime();
+    final now = monotonicNowUtc();
 
     try {
       final createdAtField = definition.fields.firstWhere(
@@ -129,7 +130,7 @@ class MutationInputHelper<T extends OrmEntity> {
   void applyUpdateTimestampsToModel(T model) {
     if (model is! ModelAttributes) return;
     final attrs = model as ModelAttributes;
-    final now = Carbon.now().toUtc().toDateTime();
+    final now = monotonicNowUtc();
 
     try {
       final updatedAtField = definition.fields.firstWhere(
@@ -250,15 +251,15 @@ class MutationInputHelper<T extends OrmEntity> {
   }
 
   Object _createTimestampValue(FieldDefinition field) {
-    final now = Carbon.now();
+    final nowUtc = monotonicNowUtc();
     final type = field.dartType;
     if (type == 'Carbon' ||
         type == 'Carbon?' ||
         type == 'CarbonInterface' ||
         type == 'CarbonInterface?') {
-      return now;
+      return Carbon.fromDateTime(nowUtc);
     }
-    return now.toUtc().toDateTime();
+    return nowUtc;
   }
 
   /// Converts an update input to a map suitable for updates.
