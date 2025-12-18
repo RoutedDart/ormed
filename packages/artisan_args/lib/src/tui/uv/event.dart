@@ -1,0 +1,320 @@
+import 'dart:convert' show jsonEncode;
+
+import 'cell.dart' show UvRgb;
+import 'color_utils.dart';
+import 'geometry.dart';
+import 'key.dart';
+import 'mouse.dart';
+
+/// Base type for UV-style input events.
+///
+/// Upstream: `third_party/ultraviolet/event.go` (`type Event interface{}`).
+sealed class Event {
+  const Event();
+}
+
+sealed class _QuotedStringEvent extends Event {
+  const _QuotedStringEvent(this.value);
+  final String value;
+
+  @override
+  String toString() => jsonEncode(value);
+}
+
+final class UnknownEvent extends _QuotedStringEvent {
+  const UnknownEvent(super.value);
+}
+
+final class UnknownCsiEvent extends _QuotedStringEvent {
+  const UnknownCsiEvent(super.value);
+}
+
+final class UnknownSs3Event extends _QuotedStringEvent {
+  const UnknownSs3Event(super.value);
+}
+
+final class UnknownOscEvent extends _QuotedStringEvent {
+  const UnknownOscEvent(super.value);
+}
+
+final class UnknownDcsEvent extends _QuotedStringEvent {
+  const UnknownDcsEvent(super.value);
+}
+
+final class UnknownSosEvent extends _QuotedStringEvent {
+  const UnknownSosEvent(super.value);
+}
+
+final class UnknownPmEvent extends _QuotedStringEvent {
+  const UnknownPmEvent(super.value);
+}
+
+final class UnknownApcEvent extends _QuotedStringEvent {
+  const UnknownApcEvent(super.value);
+}
+
+final class MultiEvent extends Event {
+  const MultiEvent(this.events);
+  final List<Event> events;
+
+  @override
+  String toString() {
+    final sb = StringBuffer();
+    for (final ev in events) {
+      sb.write(ev);
+      sb.write('\n');
+    }
+    return sb.toString();
+  }
+}
+
+final class Size extends Event {
+  const Size({required this.width, required this.height});
+  final int width;
+  final int height;
+
+  Rectangle bounds() => Rectangle(minX: 0, minY: 0, maxX: width, maxY: height);
+}
+
+final class WindowSizeEvent extends Event {
+  const WindowSizeEvent({required this.width, required this.height});
+  final int width;
+  final int height;
+
+  Rectangle bounds() => Rectangle(minX: 0, minY: 0, maxX: width, maxY: height);
+}
+
+final class WindowPixelSizeEvent extends Event {
+  const WindowPixelSizeEvent({required this.width, required this.height});
+  final int width;
+  final int height;
+
+  Rectangle bounds() => Rectangle(minX: 0, minY: 0, maxX: width, maxY: height);
+}
+
+final class CellSizeEvent extends Event {
+  const CellSizeEvent({required this.width, required this.height});
+  final int width;
+  final int height;
+
+  Rectangle bounds() => Rectangle(minX: 0, minY: 0, maxX: width, maxY: height);
+}
+
+sealed class KeyEvent extends Event {
+  const KeyEvent(this._key);
+  final Key _key;
+  Key key() => _key;
+
+  bool matchString(
+    String s, [
+    String? s2,
+    String? s3,
+    String? s4,
+    String? s5,
+  ]) => _key.matchString(s, s2, s3, s4, s5);
+  String keystroke() => _key.keystroke();
+
+  @override
+  String toString() => _key.toString();
+}
+
+final class KeyPressEvent extends KeyEvent {
+  const KeyPressEvent(super.key);
+}
+
+final class KeyReleaseEvent extends KeyEvent {
+  const KeyReleaseEvent(super.key);
+}
+
+sealed class MouseEvent extends Event {
+  const MouseEvent(this._mouse);
+  final Mouse _mouse;
+  Mouse mouse() => _mouse;
+
+  @override
+  String toString() => _mouse.toString();
+}
+
+final class MouseClickEvent extends MouseEvent {
+  const MouseClickEvent(super.mouse);
+}
+
+final class MouseReleaseEvent extends MouseEvent {
+  const MouseReleaseEvent(super.mouse);
+}
+
+final class MouseWheelEvent extends MouseEvent {
+  const MouseWheelEvent(super.mouse);
+}
+
+final class MouseMotionEvent extends MouseEvent {
+  const MouseMotionEvent(super.mouse);
+
+  @override
+  String toString() {
+    final m = mouse();
+    if (m.button != 0) return '${m}+motion';
+    return '${m}motion';
+  }
+}
+
+final class CursorPositionEvent extends Event {
+  const CursorPositionEvent({required this.x, required this.y});
+  final int x;
+  final int y;
+}
+
+final class FocusEvent extends Event {
+  const FocusEvent();
+}
+
+final class BlurEvent extends Event {
+  const BlurEvent();
+}
+
+final class DarkColorSchemeEvent extends Event {
+  const DarkColorSchemeEvent();
+}
+
+final class LightColorSchemeEvent extends Event {
+  const LightColorSchemeEvent();
+}
+
+final class PasteEvent extends Event {
+  const PasteEvent(this.content);
+  final String content;
+
+  @override
+  String toString() => content;
+}
+
+final class PasteStartEvent extends Event {
+  const PasteStartEvent();
+}
+
+final class PasteEndEvent extends Event {
+  const PasteEndEvent();
+}
+
+final class TerminalVersionEvent extends Event {
+  const TerminalVersionEvent(this.name);
+  final String name;
+
+  @override
+  String toString() => name;
+}
+
+final class ModifyOtherKeysEvent extends Event {
+  const ModifyOtherKeysEvent(this.mode);
+  final int mode;
+}
+
+// Kitty graphics events.
+final class KittyOptions {
+  const KittyOptions();
+}
+
+final class KittyGraphicsEvent extends Event {
+  const KittyGraphicsEvent({required this.options, required this.payload});
+  final KittyOptions options;
+  final List<int> payload;
+}
+
+final class KeyboardEnhancementsEvent extends Event {
+  const KeyboardEnhancementsEvent(this.flags);
+  final int flags;
+
+  bool contains(int enhancements) => (flags & enhancements) == enhancements;
+}
+
+final class PrimaryDeviceAttributesEvent extends Event {
+  const PrimaryDeviceAttributesEvent(this.attrs);
+  final List<int> attrs;
+}
+
+final class SecondaryDeviceAttributesEvent extends Event {
+  const SecondaryDeviceAttributesEvent(this.attrs);
+  final List<int> attrs;
+}
+
+final class TertiaryDeviceAttributesEvent extends Event {
+  const TertiaryDeviceAttributesEvent(this.value);
+  final String value;
+}
+
+enum ModeSetting { notRecognized, reset, set, permanentlySet, permanentlyReset }
+
+final class ModeReportEvent extends Event {
+  const ModeReportEvent({required this.mode, required this.value});
+  final int mode;
+  final ModeSetting value;
+}
+
+final class ForegroundColorEvent extends Event {
+  const ForegroundColorEvent(this.color);
+  final UvRgb? color;
+
+  bool isDark() => isDarkColor(color);
+  @override
+  String toString() => colorToHex(color);
+}
+
+final class BackgroundColorEvent extends Event {
+  const BackgroundColorEvent(this.color);
+  final UvRgb? color;
+
+  bool isDark() => isDarkColor(color);
+  @override
+  String toString() => colorToHex(color);
+}
+
+final class CursorColorEvent extends Event {
+  const CursorColorEvent(this.color);
+  final UvRgb? color;
+
+  bool isDark() => isDarkColor(color);
+  @override
+  String toString() => colorToHex(color);
+}
+
+final class WindowOpEvent extends Event {
+  const WindowOpEvent({required this.op, required this.args});
+  final int op;
+  final List<int> args;
+}
+
+final class CapabilityEvent extends Event {
+  const CapabilityEvent(this.content);
+  final String content;
+
+  @override
+  String toString() => content;
+}
+
+// Clipboard selection values (OSC 52).
+abstract final class ClipboardSelection {
+  /// Unspecified selection (used by upstream for malformed OSC 52 payloads).
+  static const int none = 0;
+  static const int system = 0x63; // 'c'
+  static const int primary = 0x70; // 'p'
+}
+
+final class ClipboardEvent extends Event {
+  const ClipboardEvent({
+    this.content = '',
+    this.selection = ClipboardSelection.none,
+  });
+  final String content;
+  final int selection;
+
+  int clipboard() => selection;
+
+  @override
+  String toString() => content;
+}
+
+// Internal marker for ignored sequences.
+final class IgnoredEvent extends Event {
+  const IgnoredEvent(this.value);
+  final String value;
+}
