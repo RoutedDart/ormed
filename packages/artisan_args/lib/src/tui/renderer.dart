@@ -1,4 +1,9 @@
+import 'dart:io' as io;
+
 import 'terminal.dart';
+import 'uv/buffer.dart' as uv_buffer;
+import 'uv/styled_string.dart' as uv_styled;
+import 'uv/terminal_renderer.dart' as uv_term;
 
 /// Abstract renderer interface for TUI output.
 ///
@@ -307,6 +312,173 @@ class BufferedRenderer implements Renderer {
   void dispose() {
     inner.dispose();
   }
+}
+
+/// Ultraviolet-inspired renderer backed by a cell buffer + diffing updates.
+///
+/// This renderer keeps `Model.view(): String` as the public API, but internally
+/// parses ANSI-styled strings into a cell buffer and diffs frames to emit
+/// minimal terminal updates.
+///
+/// Upstream references:
+/// - `third_party/ultraviolet/styled.go` (`StyledString.Draw`)
+/// - `third_party/ultraviolet/terminal_renderer.go` (`TerminalRenderer.Render`)
+class UltravioletRenderer implements Renderer {
+  UltravioletRenderer({
+    required this.terminal,
+    RendererOptions options = const RendererOptions(),
+  }) : _options = options;
+
+  final TuiTerminal terminal;
+  final RendererOptions _options;
+
+  bool _initialized = false;
+  bool _dirty = false;
+  String _pendingView = '';
+
+  uv_buffer.ScreenBuffer? _screen;
+  uv_term.TerminalRenderer? _renderer;
+
+  DateTime? _lastRenderTime;
+
+  void _initialize() {
+    if (_initialized) return;
+
+    if (_options.altScreen) {
+      terminal.enterAltScreen();
+    }
+    if (_options.hideCursor) {
+      terminal.hideCursor();
+    }
+    if (_options.altScreen) {
+      terminal.clearScreen();
+    }
+
+    final (width: w, height: h) = terminal.size;
+    _screen = uv_buffer.ScreenBuffer(w, h);
+
+    final sink = _TerminalStringSink(terminal);
+    final envMap = io.Platform.environment;
+    final env = envMap.entries.map((e) => '${e.key}=${e.value}').toList();
+    // The UV-style renderer needs to know whether output is a TTY so it can
+    // pick the correct color profile and enable terminal optimizations.
+    //
+    // Upstream: `third_party/ultraviolet/terminal_renderer.go` uses a real
+    // terminal writer; our `StringSink` abstraction requires an explicit hint.
+    if (terminal.isTerminal && !envMap.containsKey('TTY_FORCE')) {
+      env.add('TTY_FORCE=1');
+    }
+    if (terminal.isTerminal &&
+        terminal.supportsAnsi &&
+        (envMap['TERM'] == null || (envMap['TERM'] ?? '').isEmpty)) {
+      env.add('TERM=xterm-256color');
+    }
+    _renderer = uv_term.TerminalRenderer(sink, env: env);
+    _renderer!.setFullscreen(_options.altScreen);
+    _renderer!.setRelativeCursor(!_options.altScreen);
+    _renderer!.setScrollOptim(!io.Platform.isWindows);
+
+    if (_options.altScreen) {
+      _renderer!.saveCursor();
+      _renderer!.erase();
+    }
+
+    _initialized = true;
+  }
+
+  void _ensureSize() {
+    final (width: w, height: h) = terminal.size;
+    final scr = _screen;
+    if (scr == null) return;
+    if (scr.width() == w && scr.height() == h) return;
+    scr.resize(w, h);
+    _renderer?.erase();
+  }
+
+  @override
+  void render(String view) {
+    _initialize();
+
+    if (_lastRenderTime != null) {
+      final elapsed = DateTime.now().difference(_lastRenderTime!);
+      if (elapsed < _options.frameTime) return;
+    }
+
+    _pendingView = view;
+    _dirty = true;
+    _lastRenderTime = DateTime.now();
+
+    // Unlike the other renderers, the UV renderer buffers terminal output in
+    // its own writer and needs a flush step to emit bytes. Do it immediately
+    // so Program doesn't need to coordinate flush ordering with control writes.
+    _flushInternal();
+  }
+
+  @override
+  void clear() {
+    _initialize();
+    _renderer?.erase();
+    _dirty = true;
+    _pendingView = '';
+  }
+
+  @override
+  Future<void> flush() async {
+    if (!_initialized) return;
+    _flushInternal();
+    await terminal.flush();
+  }
+
+  void _flushInternal() {
+    if (!_initialized) return;
+    if (!_dirty) return;
+
+    _ensureSize();
+    final scr = _screen;
+    final r = _renderer;
+    if (scr == null || r == null) return;
+
+    final ss = uv_styled.newStyledString(
+      _options.ansiCompress ? _compressAnsi(_pendingView) : _pendingView,
+    )..wrap = true;
+    ss.draw(scr, scr.bounds());
+
+    r.render(scr.buffer);
+    r.flush();
+    _dirty = false;
+  }
+
+  @override
+  void dispose() {
+    if (!_initialized) return;
+    if (_options.hideCursor) {
+      terminal.showCursor();
+    }
+    if (_options.altScreen) {
+      terminal.exitAltScreen();
+    }
+    _initialized = false;
+  }
+}
+
+final class _TerminalStringSink implements StringSink {
+  _TerminalStringSink(this.terminal);
+
+  final TuiTerminal terminal;
+
+  @override
+  void write(Object? obj) => terminal.write(obj?.toString() ?? '');
+
+  @override
+  void writeAll(Iterable objects, [String separator = '']) =>
+      write(objects.join(separator));
+
+  @override
+  void writeCharCode(int charCode) =>
+      terminal.write(String.fromCharCode(charCode));
+
+  @override
+  void writeln([Object? obj = '']) => terminal.writeln(obj?.toString() ?? '');
 }
 
 /// A renderer that does nothing (for testing).

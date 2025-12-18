@@ -153,6 +153,7 @@ export 'renderer.dart'
         RendererOptions,
         FullScreenRenderer,
         InlineRenderer,
+        UltravioletRenderer,
         BufferedRenderer,
         NullTuiRenderer,
         StringSinkRenderer,
@@ -175,4 +176,12 @@ export 'markdown.dart' show renderMarkdown;
 
 // Harmonica helpers (spring, projectile) used by progress and demos
 export 'harmonica.dart'
-    show Spring, Projectile, Point, Vector, gravity, terminalGravity, fpsDelta, newSpringFromFps;
+    show
+        Spring,
+        Projectile,
+        Point,
+        Vector,
+        gravity,
+        terminalGravity,
+        fpsDelta,
+        newSpringFromFps;

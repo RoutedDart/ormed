@@ -16,7 +16,8 @@ class Spring {
   }
 
   final double deltaTime;
-  final double frequency; // angular frequency (radians/sec divided by 2π in Go impl)
+  final double
+  frequency; // angular frequency (radians/sec divided by 2π in Go impl)
   final double damping; // damping ratio
 
   // Precomputed coefficients
@@ -73,8 +74,7 @@ class Spring {
 
       final expSin = expTerm * sinTerm;
       final expCos = expTerm * cosTerm;
-      final expOmegaZetaSinOverAlpha =
-          expTerm * omegaZeta * sinTerm * invAlpha;
+      final expOmegaZetaSinOverAlpha = expTerm * omegaZeta * sinTerm * invAlpha;
 
       _posPosCoef = expCos + expOmegaZetaSinOverAlpha;
       _posVelCoef = expSin * invAlpha;
@@ -106,11 +106,14 @@ class Spring {
 
 /// A simple projectile integrator mirroring harmonica/projectile.go.
 class Projectile {
-  Projectile(this.deltaTime, Point initialPosition, Vector initialVelocity,
-      Vector initialAcceleration)
-      : _pos = initialPosition,
-        _vel = initialVelocity,
-        _acc = initialAcceleration;
+  Projectile(
+    this.deltaTime,
+    Point initialPosition,
+    Vector initialVelocity,
+    Vector initialAcceleration,
+  ) : _pos = initialPosition,
+      _vel = initialVelocity,
+      _acc = initialAcceleration;
 
   final double deltaTime;
   Point _pos;

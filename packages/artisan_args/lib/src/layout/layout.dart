@@ -30,6 +30,7 @@ library;
 import '../style/properties.dart';
 import '../style/color.dart';
 import '../style/style.dart';
+import '../unicode/grapheme.dart' as uni;
 
 /// Options for rendering whitespace in layout functions.
 ///
@@ -50,25 +51,25 @@ class WhitespaceOptions {
   String render(int width) {
     if (width <= 0) return '';
 
-    final runes = chars.runes.toList();
-    if (runes.isEmpty) return ' ' * width;
+    final glyphs = uni.graphemes(chars).toList(growable: false);
+    if (glyphs.isEmpty) return ' ' * width;
 
     final buffer = StringBuffer();
     var j = 0;
     var currentWidth = 0;
 
-    // Cycle through runes to fill the width
+    // Cycle through grapheme clusters to fill the width
     while (currentWidth < width) {
-      final char = String.fromCharCode(runes[j]);
-      final charWidth = Layout._charWidth(runes[j]);
+      final glyph = glyphs[j];
+      final glyphWidth = Layout.visibleLength(glyph);
 
       // Don't exceed width
-      if (currentWidth + charWidth > width) break;
+      if (currentWidth + glyphWidth > width) break;
 
-      buffer.write(char);
-      currentWidth += charWidth;
+      buffer.write(glyph);
+      currentWidth += glyphWidth;
 
-      j = (j + 1) % runes.length;
+      j = (j + 1) % glyphs.length;
     }
 
     // Fill any remaining gap with spaces
@@ -124,8 +125,8 @@ class Layout {
   /// Calculates the display width of a string, accounting for double-width characters.
   static int _displayWidth(String text) {
     var width = 0;
-    for (final rune in text.runes) {
-      width += _charWidth(rune);
+    for (final g in uni.graphemes(text)) {
+      width += _charWidth(uni.firstCodePoint(g));
     }
     return width;
   }

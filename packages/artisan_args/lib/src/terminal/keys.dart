@@ -17,6 +17,8 @@
 /// ```
 library;
 
+import '../unicode/grapheme.dart' as uni;
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Key Type Enumeration
 // ─────────────────────────────────────────────────────────────────────────────
@@ -336,7 +338,7 @@ class Key {
   }) {
     return Key(
       KeyType.runes,
-      runes: char.runes.toList(),
+      runes: uni.codePoints(char),
       ctrl: ctrl,
       alt: alt,
       shift: shift,
@@ -693,21 +695,21 @@ abstract final class Keys {
 
   /// Creates a key for a single character.
   static Key char(String c) {
-    return Key(KeyType.runes, runes: c.runes.toList());
+    return Key(KeyType.runes, runes: uni.codePoints(c));
   }
 
   /// Creates a Ctrl+key combination.
   static Key ctrl(String c) {
     return Key(
       KeyType.runes,
-      runes: c.toLowerCase().runes.toList(),
+      runes: uni.codePoints(c.toLowerCase()),
       ctrl: true,
     );
   }
 
   /// Creates an Alt+key combination.
   static Key alt(String c) {
-    return Key(KeyType.runes, runes: c.runes.toList(), alt: true);
+    return Key(KeyType.runes, runes: uni.codePoints(c), alt: true);
   }
 
   // ═══════════════════════════════════════════════════════════════════════════

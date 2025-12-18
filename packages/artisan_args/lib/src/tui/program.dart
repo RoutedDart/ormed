@@ -7,6 +7,7 @@ import 'model.dart';
 import 'msg.dart';
 import 'renderer.dart';
 import 'terminal.dart';
+import 'uv/tui_adapter.dart' show UvTuiInputParser;
 
 // Re-export control messages for convenience
 export 'cmd.dart'
@@ -85,6 +86,8 @@ class ProgramOptions {
     this.output,
     this.disableRenderer = false,
     this.ansiCompress = false,
+    this.useUltravioletRenderer = false,
+    this.useUltravioletInputDecoder = false,
     this.cancelSignal,
     this.environment,
     this.inputTTY = false,
@@ -203,6 +206,17 @@ class ProgramOptions {
   /// Enable simple ANSI compression to remove redundant sequences.
   final bool ansiCompress;
 
+  /// Use the Ultraviolet-inspired buffer + diff renderer.
+  ///
+  /// This keeps `Model.view(): String` but renders via a cell buffer to reduce
+  /// flicker and minimize output.
+  final bool useUltravioletRenderer;
+
+  /// Use the Ultraviolet-style event decoder for terminal input.
+  ///
+  /// This is opt-in. The default input parser remains [KeyParser].
+  final bool useUltravioletInputDecoder;
+
   /// Optional cancellation signal. When this completes, the program exits with cancellation.
   final Future<void>? cancelSignal;
 
@@ -231,6 +245,8 @@ class ProgramOptions {
     void Function(String)? output,
     bool? disableRenderer,
     bool? ansiCompress,
+    bool? useUltravioletRenderer,
+    bool? useUltravioletInputDecoder,
     Future<void>? cancelSignal,
     List<String>? environment,
     bool? inputTTY,
@@ -253,6 +269,10 @@ class ProgramOptions {
       output: output ?? this.output,
       disableRenderer: disableRenderer ?? this.disableRenderer,
       ansiCompress: ansiCompress ?? this.ansiCompress,
+      useUltravioletRenderer:
+          useUltravioletRenderer ?? this.useUltravioletRenderer,
+      useUltravioletInputDecoder:
+          useUltravioletInputDecoder ?? this.useUltravioletInputDecoder,
       cancelSignal: cancelSignal ?? this.cancelSignal,
       environment: environment ?? this.environment,
       inputTTY: inputTTY ?? this.inputTTY,
@@ -422,6 +442,8 @@ class Program {
 
   /// The key parser for input.
   final KeyParser _keyParser = KeyParser();
+  final UvTuiInputParser _uvInputParser = UvTuiInputParser();
+  Timer? _uvInputTimeoutTimer;
 
   /// Stream subscription for input.
   StreamSubscription<List<int>>? _inputSubscription;
@@ -655,6 +677,11 @@ class Program {
 
     if (_options.disableRenderer) {
       _renderer = NullRenderer(terminal: _terminal!, options: rendererOptions);
+    } else if (_options.useUltravioletRenderer) {
+      _renderer = UltravioletRenderer(
+        terminal: _terminal!,
+        options: rendererOptions,
+      );
     } else if (_options.altScreen) {
       _renderer = FullScreenRenderer(
         terminal: _terminal!,
@@ -762,6 +789,26 @@ class Program {
 
   /// Handles raw input bytes from the terminal.
   void _handleInput(List<int> bytes) {
+    if (_options.useUltravioletInputDecoder) {
+      _uvInputTimeoutTimer?.cancel();
+
+      final msgs = _uvInputParser.parseAll(bytes, expired: false);
+      for (final msg in msgs) {
+        send(msg);
+      }
+
+      if (_uvInputParser.hasPending) {
+        _uvInputTimeoutTimer = Timer(_options.inputTimeout, () {
+          if (!_running) return;
+          final flushed = _uvInputParser.parseAll(const [], expired: true);
+          for (final msg in flushed) {
+            send(msg);
+          }
+        });
+      }
+      return;
+    }
+
     // Parse bytes into keys and other messages (mouse, focus, paste)
     final results = _keyParser.parseAll(bytes);
 
@@ -1044,6 +1091,11 @@ class Program {
 
     if (_options.disableRenderer) {
       _renderer = NullRenderer(terminal: _terminal!, options: rendererOptions);
+    } else if (_options.useUltravioletRenderer) {
+      _renderer = UltravioletRenderer(
+        terminal: _terminal!,
+        options: rendererOptions,
+      );
     } else if (_options.altScreen) {
       _renderer = FullScreenRenderer(
         terminal: _terminal!,
@@ -1305,6 +1357,9 @@ class Program {
     // Snapshot final model before clearing references
     _finalModel = _model;
 
+    _uvInputTimeoutTimer?.cancel();
+    _uvInputTimeoutTimer = null;
+
     // Cancel input subscription
     try {
       await _inputSubscription?.cancel();
@@ -1345,6 +1400,9 @@ class Program {
     // Clear key parser buffer
     try {
       _keyParser.clear();
+    } catch (_) {}
+    try {
+      _uvInputParser.clear();
     } catch (_) {}
 
     // Dispose renderer (this should restore cursor/alt screen)

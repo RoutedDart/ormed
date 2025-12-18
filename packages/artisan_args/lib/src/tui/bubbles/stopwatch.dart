@@ -166,7 +166,10 @@ class StopwatchModel implements Model {
 
         // Update elapsed time.
         final newTag = _tag + 1;
-        return (copyWith(elapsed: _elapsed + interval, tag: newTag), _tickWithTag(newTag));
+        return (
+          copyWith(elapsed: _elapsed + interval, tag: newTag),
+          _tickWithTag(newTag),
+        );
 
       default:
         return (this, null);

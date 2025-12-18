@@ -15,6 +15,7 @@ import 'package:artisan_args/src/style/color.dart';
 import 'cursor.dart';
 import 'key_binding.dart';
 import 'runeutil.dart';
+import '../../unicode/grapheme.dart' as uni;
 
 /// Echo mode for text input display.
 enum EchoMode {
@@ -342,7 +343,7 @@ class TextInputModel implements Model {
 
   /// Sets the value of the text input.
   set value(String s) {
-    final runes = _san(s.runes.toList());
+    final runes = _san(uni.codePoints(s));
     final err = _validate(runes);
     _setValueInternal(runes, err);
   }
@@ -361,7 +362,7 @@ class TextInputModel implements Model {
 
   /// Sets available suggestions for autocomplete.
   set suggestions(List<String> suggestions) {
-    _suggestions = suggestions.map((s) => s.runes.toList()).toList();
+    _suggestions = suggestions.map(uni.codePoints).toList();
     _updateSuggestions();
   }
 
@@ -776,7 +777,7 @@ class TextInputModel implements Model {
 
       _updateSuggestions();
     } else if (msg is PasteMsg) {
-      _insertRunes(msg.content.runes.toList());
+      _insertRunes(uni.codePoints(msg.content));
     } else if (msg is PasteErrorMsg) {
       error = msg.error.toString();
     }

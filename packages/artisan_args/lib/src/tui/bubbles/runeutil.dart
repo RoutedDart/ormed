@@ -4,6 +4,8 @@
 /// runes. It handles control characters, newlines, and tabs.
 library;
 
+import '../../unicode/grapheme.dart' as uni;
+
 /// Function type for sanitizing rune lists.
 typedef RuneSanitizer = List<int> Function(List<int> runes);
 
@@ -29,16 +31,18 @@ class SanitizerOptions {
 ///
 /// Example:
 /// ```dart
+/// import 'package:artisan_args/src/unicode/grapheme.dart' as uni;
+///
 /// final sanitizer = createSanitizer(SanitizerOptions(
 ///   tabReplacement: ' ',
 ///   newlineReplacement: ' ',
 /// ));
-/// final clean = sanitizer('hello\tworld'.runes.toList());
+/// final clean = sanitizer(uni.codePoints('hello\tworld'));
 /// ```
 RuneSanitizer createSanitizer([SanitizerOptions? options]) {
   final opts = options ?? SanitizerOptions();
-  final tabRunes = opts.tabReplacement.runes.toList();
-  final newlineRunes = opts.newlineReplacement.runes.toList();
+  final tabRunes = uni.codePoints(opts.tabReplacement);
+  final newlineRunes = uni.codePoints(opts.newlineReplacement);
 
   return (List<int> runes) {
     final result = <int>[];
@@ -85,8 +89,8 @@ bool _isControl(int rune) {
 /// take up two columns.
 int stringWidth(String s) {
   var width = 0;
-  for (final rune in s.runes) {
-    width += runeWidth(rune);
+  for (final g in uni.graphemes(s)) {
+    width += runeWidth(uni.firstCodePoint(g));
   }
   return width;
 }
@@ -142,11 +146,11 @@ String truncate(String s, int width, [String tail = '']) {
   var currentWidth = 0;
   final result = StringBuffer();
 
-  for (final rune in s.runes) {
-    final w = runeWidth(rune);
+  for (final g in uni.graphemes(s)) {
+    final w = runeWidth(uni.firstCodePoint(g));
     if (currentWidth + w > targetWidth) break;
     currentWidth += w;
-    result.writeCharCode(rune);
+    result.write(g);
   }
 
   if (tail.isNotEmpty && currentWidth < width) {
@@ -166,14 +170,9 @@ String truncate(String s, int width, [String tail = '']) {
     return (first: '', rest: '');
   }
 
-  // Simple implementation - take first rune
-  // For proper grapheme clustering, use a Unicode library
-  final runes = s.runes.toList();
-  if (runes.isEmpty) {
-    return (first: '', rest: '');
-  }
-
-  final first = String.fromCharCode(runes[0]);
-  final rest = String.fromCharCodes(runes.skip(1));
+  final it = uni.graphemes(s).iterator;
+  if (!it.moveNext()) return (first: '', rest: '');
+  final first = it.current;
+  final rest = s.substring(first.length);
   return (first: first, rest: rest);
 }

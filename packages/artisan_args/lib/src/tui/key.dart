@@ -16,8 +16,11 @@ library;
 
 import 'dart:convert';
 
+import 'package:characters/characters.dart';
+
 import '../terminal/keys.dart';
 import 'msg.dart';
+import '../unicode/grapheme.dart' as uni;
 
 // Re-export key types from the shared terminal module
 export '../terminal/keys.dart' show Key, KeyType, Keys;
@@ -124,7 +127,9 @@ class KeyParser {
     }
 
     // Regular character or UTF-8 sequence
-    return KeyResult(_parseUtf8Char());
+    final key = _parseUtf8Cluster(0);
+    if (key == null) return null;
+    return KeyResult(key);
   }
 
   /// Parses an escape sequence.
@@ -151,12 +156,17 @@ class KeyParser {
 
     // Alt+key: ESC followed by a regular character
     if (secondByte >= 0x20 && secondByte < 0x7f) {
-      _buffer.removeAt(0); // Remove ESC
-      _buffer.removeAt(0); // Remove the character
-      final char = String.fromCharCode(secondByte);
-      return KeyResult(
-        Key(KeyType.runes, runes: char.runes.toList(), alt: true),
-      );
+      _buffer.removeRange(0, 2);
+      return KeyResult(Key(KeyType.runes, runes: [secondByte], alt: true));
+    }
+
+    // Alt+UTF-8 sequence: ESC followed by a UTF-8 character/grapheme cluster.
+    if (secondByte >= 0x80) {
+      final key = _parseUtf8Cluster(1);
+      if (key == null) return null;
+      final text = key.char ?? String.fromCharCodes(key.runes);
+      _buffer.removeRange(0, 1 + utf8.encode(text).length);
+      return KeyResult(key.copyWith(alt: true));
     }
 
     // Unknown escape sequence - just return the ESC key
@@ -535,49 +545,89 @@ class KeyParser {
     };
   }
 
-  /// Parses a UTF-8 character sequence.
-  Key _parseUtf8Char() {
-    if (_buffer.isEmpty) return const Key(KeyType.unknown);
+  /// Parses a single UTF-8 grapheme cluster starting at [startIndex].
+  ///
+  /// Returns null if more bytes are required.
+  Key? _parseUtf8Cluster(int startIndex) {
+    if (_buffer.length <= startIndex) return null;
 
-    final firstByte = _buffer[0];
-
-    // Determine the expected length of the UTF-8 sequence
-    int expectedLength;
+    final firstByte = _buffer[startIndex] & 0xff;
     if (firstByte < 0x80) {
-      expectedLength = 1;
-    } else if ((firstByte & 0xe0) == 0xc0) {
-      expectedLength = 2;
-    } else if ((firstByte & 0xf0) == 0xe0) {
-      expectedLength = 3;
-    } else if ((firstByte & 0xf8) == 0xf0) {
-      expectedLength = 4;
-    } else {
-      // Invalid UTF-8 start byte
-      _buffer.removeAt(0);
-      return const Key(KeyType.unknown);
+      // Fast path: single-byte ASCII.
+      if (startIndex == 0) _buffer.removeAt(0);
+      if (firstByte == 0x20) return const Key(KeyType.space);
+      return Key(KeyType.runes, runes: [firstByte]);
     }
 
-    // Check if we have enough bytes
-    if (_buffer.length < expectedLength) {
-      return const Key(KeyType.unknown);
-    }
+    // Decode runes until we can determine the first grapheme cluster boundary.
+    var offset = startIndex;
+    final sb = StringBuffer();
 
-    // Extract the bytes
-    final bytes = _buffer.sublist(0, expectedLength);
-    _buffer.removeRange(0, expectedLength);
-
-    try {
-      final char = utf8.decode(bytes);
-      final runes = char.runes.toList();
-
-      // Check for space
-      if (runes.length == 1 && runes[0] == 0x20) {
-        return const Key(KeyType.space);
+    while (offset < _buffer.length) {
+      final decoded = _decodeOneRuneAt(_buffer, offset);
+      if (!decoded.ok) {
+        if (decoded.consumed == 0) return null; // incomplete
+        if (startIndex == 0) _buffer.removeAt(0);
+        return const Key(KeyType.unknown);
       }
 
-      return Key(KeyType.runes, runes: runes);
-    } catch (_) {
-      return const Key(KeyType.unknown);
+      offset += decoded.consumed;
+      sb.writeCharCode(decoded.rune);
+
+      final s = sb.toString();
+      final it = s.characters.iterator;
+      if (!it.moveNext()) continue;
+      final firstCluster = it.current;
+      if (it.moveNext()) {
+        final bytesConsumed = utf8.encode(firstCluster).length;
+        if (startIndex == 0) _buffer.removeRange(0, bytesConsumed);
+        return Key(KeyType.runes, runes: uni.codePoints(firstCluster));
+      }
     }
+
+    // Only one grapheme cluster in the available buffer.
+    final cluster = sb.toString();
+    if (startIndex == 0) _buffer.removeRange(0, offset - startIndex);
+    return Key(KeyType.runes, runes: uni.codePoints(cluster));
   }
+}
+
+({int consumed, int rune, bool ok}) _decodeOneRuneAt(List<int> buf, int start) {
+  if (start >= buf.length) return (consumed: 0, rune: 0, ok: false);
+  final b0 = buf[start] & 0xff;
+  if (b0 < 0x80) return (consumed: 1, rune: b0, ok: true);
+
+  int need;
+  int min;
+  int rune;
+  if ((b0 & 0xE0) == 0xC0) {
+    need = 2;
+    min = 0x80;
+    rune = b0 & 0x1F;
+  } else if ((b0 & 0xF0) == 0xE0) {
+    need = 3;
+    min = 0x800;
+    rune = b0 & 0x0F;
+  } else if ((b0 & 0xF8) == 0xF0) {
+    need = 4;
+    min = 0x10000;
+    rune = b0 & 0x07;
+  } else {
+    return (consumed: 1, rune: b0, ok: false);
+  }
+
+  if (start + need > buf.length) return (consumed: 0, rune: 0, ok: false);
+
+  for (var i = 1; i < need; i++) {
+    final bx = buf[start + i] & 0xff;
+    if ((bx & 0xC0) != 0x80) return (consumed: 1, rune: b0, ok: false);
+    rune = (rune << 6) | (bx & 0x3F);
+  }
+
+  if (rune < min) return (consumed: 1, rune: b0, ok: false);
+  if (rune > 0x10ffff) return (consumed: 1, rune: b0, ok: false);
+  if (rune >= 0xD800 && rune <= 0xDFFF)
+    return (consumed: 1, rune: b0, ok: false);
+
+  return (consumed: need, rune: rune, ok: true);
 }

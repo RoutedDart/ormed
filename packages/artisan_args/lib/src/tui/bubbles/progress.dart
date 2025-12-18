@@ -31,10 +31,8 @@ const _defaultDamping = 1.0;
 
 /// A stable damped spring integrator matching charmbracelet/harmonica.
 class _Spring {
-  _Spring({
-    this.frequency = _defaultFrequency,
-    this.damping = _defaultDamping,
-  }) : _inner = hz.Spring(1 / _fps, frequency * 2 * math.pi, damping);
+  _Spring({this.frequency = _defaultFrequency, this.damping = _defaultDamping})
+    : _inner = hz.Spring(1 / _fps, frequency * 2 * math.pi, damping);
 
   final double frequency;
   final double damping;

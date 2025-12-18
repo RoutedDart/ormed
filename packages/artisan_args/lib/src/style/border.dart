@@ -21,6 +21,8 @@
 /// ```
 library;
 
+import '../unicode/grapheme.dart' as uni;
+
 /// Defines the characters used to draw borders.
 ///
 /// A border consists of:
@@ -339,8 +341,8 @@ class Border {
   static int _maxRuneWidth(String s) {
     if (s.isEmpty) return 0;
     var maxWidth = 0;
-    for (final rune in s.runes) {
-      final w = _runeWidth(rune);
+    for (final g in uni.graphemes(s)) {
+      final w = _runeWidth(uni.firstCodePoint(g));
       if (w > maxWidth) {
         maxWidth = w;
       }

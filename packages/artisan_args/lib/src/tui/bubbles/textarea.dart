@@ -11,6 +11,7 @@ import '../cmd.dart';
 import '../key.dart';
 import 'key_binding.dart';
 import 'runeutil.dart';
+import '../../unicode/grapheme.dart' as uni;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Support types
@@ -700,7 +701,7 @@ class TextAreaModel implements Model {
         continue;
       }
 
-      final runes = line.runes.toList();
+      final runes = uni.codePoints(line);
       var start = 0;
       while (start < runes.length) {
         var width = 0;
@@ -863,7 +864,7 @@ class TextAreaModel implements Model {
     if (_col == 0) return;
 
     // Swap char before cursor with the one at cursor (Bubble Tea behavior).
-    final runes = line.runes.toList();
+    final runes = uni.codePoints(line);
     final at = math.min(_col, runes.length - 1);
     final before = at - 1;
     if (before < 0) return;
@@ -898,7 +899,7 @@ class TextAreaModel implements Model {
     final text = value;
     final word = text.substring(start, end);
     if (word.isEmpty) return;
-    final runes = word.runes.toList();
+    final runes = uni.codePoints(word);
     if (runes.isEmpty) return;
     final first = String.fromCharCode(runes.first).toUpperCase();
     final rest = String.fromCharCodes(runes.skip(1)).toLowerCase();

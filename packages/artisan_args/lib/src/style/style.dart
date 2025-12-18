@@ -25,6 +25,7 @@ import 'package:html/parser.dart' as html;
 import 'border.dart';
 import 'color.dart';
 import 'properties.dart';
+import '../unicode/grapheme.dart' as uni;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Property Bits
@@ -1770,8 +1771,8 @@ class Style {
   /// CJK characters, emoji, and other full-width characters take 2 columns in a terminal.
   static int _displayWidth(String text) {
     var width = 0;
-    for (final rune in text.runes) {
-      width += _charWidth(rune);
+    for (final g in uni.graphemes(text)) {
+      width += _charWidth(uni.firstCodePoint(g));
     }
     return width;
   }
