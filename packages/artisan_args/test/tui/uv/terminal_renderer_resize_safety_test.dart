@@ -1,3 +1,5 @@
+import 'dart:io' show Platform;
+
 import 'package:artisan_args/src/tui/uv/buffer.dart';
 import 'package:artisan_args/src/tui/uv/cell.dart';
 import 'package:artisan_args/src/tui/uv/terminal_renderer.dart';
@@ -38,5 +40,31 @@ void main() {
     b.setCell(1, 0, Cell(content: 'Y', width: 1));
 
     expect(() => r.render(b), returnsNormally);
+  });
+
+  test('TerminalRenderer skips scroll optimization across resize', () {
+    final out = _TestSink();
+    final r = TerminalRenderer(out, env: const ['TERM=xterm-256color']);
+    r.setFullscreen(true);
+    r.setRelativeCursor(false);
+    r.setScrollOptim(true);
+
+    final before = Buffer.create(8, 5);
+    before.setCell(0, 0, Cell(content: 'A', width: 1));
+    r.render(before);
+    r.flush();
+
+    final after = Buffer.create(8, 6);
+    after.setCell(0, 0, Cell(content: 'B', width: 1));
+
+    // On non-Windows platforms, scroll optimization runs only in fullscreen
+    // mode; it must not crash if the buffer size changes between frames.
+    expect(() => r.render(after), returnsNormally);
+
+    // Keep the test meaningful on Windows too (where scroll optimization is
+    // disabled by default in the renderer).
+    if (Platform.isWindows) {
+      r.flush();
+    }
   });
 }

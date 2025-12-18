@@ -540,7 +540,16 @@ void _renderLine(StringSink out, Line line) {
 /// method for calculating cell widths.
 ///
 /// Upstream: `third_party/ultraviolet/screen` + `NewScreenBuffer`.
-final class ScreenBuffer implements Screen, Drawable {
+final class ScreenBuffer
+    implements
+        Screen,
+        Drawable,
+        ClearableScreen,
+        ClearAreaScreen,
+        FillableScreen,
+        FillAreaScreen,
+        CloneableScreen,
+        CloneAreaScreen {
   ScreenBuffer(int width, int height)
     : method = WidthMethod.wcwidth,
       buffer = Buffer.create(width, height);
@@ -559,7 +568,23 @@ final class ScreenBuffer implements Screen, Drawable {
 
   void resize(int width, int height) => buffer.resize(width, height);
 
+  @override
   void clear() => buffer.fill(Cell.emptyCell());
+
+  @override
+  void clearArea(Rectangle area) => buffer.clearArea(area);
+
+  @override
+  void fill(Cell? cell) => buffer.fill(cell);
+
+  @override
+  void fillArea(Cell? cell, Rectangle area) => buffer.fillArea(cell, area);
+
+  @override
+  Buffer clone() => buffer.clone();
+
+  @override
+  Buffer? cloneArea(Rectangle area) => buffer.cloneArea(area);
 
   @override
   WidthMethod widthMethod() => method;

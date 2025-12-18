@@ -82,6 +82,9 @@ final class WindowSizeEvent extends Event {
   final int height;
 
   Rectangle bounds() => Rectangle(minX: 0, minY: 0, maxX: width, maxY: height);
+
+  @override
+  String toString() => 'WindowSizeEvent($width, $height)';
 }
 
 final class WindowPixelSizeEvent extends Event {
@@ -90,6 +93,9 @@ final class WindowPixelSizeEvent extends Event {
   final int height;
 
   Rectangle bounds() => Rectangle(minX: 0, minY: 0, maxX: width, maxY: height);
+
+  @override
+  String toString() => 'WindowPixelSizeEvent($width, $height)';
 }
 
 final class CellSizeEvent extends Event {
@@ -98,6 +104,9 @@ final class CellSizeEvent extends Event {
   final int height;
 
   Rectangle bounds() => Rectangle(minX: 0, minY: 0, maxX: width, maxY: height);
+
+  @override
+  String toString() => 'CellSizeEvent($width, $height)';
 }
 
 sealed class KeyEvent extends Event {
@@ -131,8 +140,26 @@ sealed class MouseEvent extends Event {
   final Mouse _mouse;
   Mouse mouse() => _mouse;
 
+  static String _mouseKeystroke(Mouse m) {
+    // Upstream event formatting ignores coordinates.
+    if (m.button == MouseButton.none) return '';
+
+    var s = '';
+    if (KeyMod.contains(m.mod, KeyMod.ctrl)) s += 'ctrl+';
+    if (KeyMod.contains(m.mod, KeyMod.alt)) s += 'alt+';
+    if (KeyMod.contains(m.mod, KeyMod.shift)) s += 'shift+';
+
+    final name = MouseButton.toName(m.button);
+    if (name.isEmpty || name == 'none') {
+      s += 'unknown';
+    } else {
+      s += name;
+    }
+    return s;
+  }
+
   @override
-  String toString() => _mouse.toString();
+  String toString() => _mouseKeystroke(_mouse);
 }
 
 final class MouseClickEvent extends MouseEvent {
@@ -153,8 +180,9 @@ final class MouseMotionEvent extends MouseEvent {
   @override
   String toString() {
     final m = mouse();
-    if (m.button != 0) return '${m}+motion';
-    return '${m}motion';
+    final base = MouseEvent._mouseKeystroke(m);
+    if (base.isEmpty) return 'motion';
+    return '$base+motion';
   }
 }
 

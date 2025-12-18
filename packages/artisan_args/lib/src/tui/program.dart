@@ -223,7 +223,13 @@ class ProgramOptions {
   /// Optional environment variables to use for terminal setup.
   final List<String>? environment;
 
-  /// Whether to open a TTY for input (when stdin is not a terminal).
+  /// Whether to prefer the controlling TTY (`/dev/tty`) for interactive input.
+  ///
+  /// This is useful when stdin is redirected (e.g. piping a file into the
+  /// process) but you still want the TUI to read keystrokes from the terminal.
+  ///
+  /// On Unix platforms, the runtime attempts to open `/dev/tty` and will use
+  /// `stty` to toggle raw mode for that device.
   final bool inputTTY;
 
   /// Creates a copy with the given fields replaced.
@@ -657,7 +663,11 @@ class Program {
   /// Sets up the terminal and renderer.
   Future<void> _setup() async {
     // Create terminal if not provided
-    _terminal ??= StdioTerminal();
+    if (_terminal == null && _options.inputTTY) {
+      _terminal = TtyTerminal.tryOpen() ?? StdioTerminal();
+    } else {
+      _terminal ??= StdioTerminal();
+    }
 
     // Enable raw mode for character-by-character input
     _terminal!.enableRawMode();
@@ -762,7 +772,7 @@ class Program {
     // Use custom input stream if provided, otherwise use terminal input
     final inputStream =
         _options.input ??
-        (_options.inputTTY ? _openTtyInput() : null) ??
+        ((_options.inputTTY && _terminal is! TtyTerminal) ? _openTtyInput() : null) ??
         _terminal!.input;
     _inputSubscription = inputStream.listen(
       _handleInput,
@@ -1015,7 +1025,7 @@ class Program {
     Map<String, String>? environment,
   ) async {
     // Release terminal for external process
-    _releaseTerminal();
+    await _releaseTerminal();
 
     try {
       // Run the external process
@@ -1050,9 +1060,16 @@ class Program {
   }
 
   /// Releases the terminal for external process execution.
-  void _releaseTerminal() {
-    // Stop input listening temporarily
-    _inputSubscription?.pause();
+  Future<void> _releaseTerminal() async {
+    // Stop input listening temporarily.
+    _uvInputTimeoutTimer?.cancel();
+    _uvInputTimeoutTimer = null;
+    _uvInputParser.clear();
+
+    try {
+      await _inputSubscription?.cancel();
+    } catch (_) {}
+    _inputSubscription = null;
 
     // Dispose renderer (restores cursor, exits alt screen if needed)
     _renderer?.dispose();
@@ -1108,8 +1125,10 @@ class Program {
       );
     }
 
-    // Resume input listening
-    _inputSubscription?.resume();
+    // Restart input listening.
+    if (_inputSubscription == null) {
+      _startInputListener();
+    }
 
     // Re-render
     _render();
@@ -1138,6 +1157,13 @@ class Program {
   void _suspend() {
     // Save terminal state
     _renderer?.dispose();
+
+    // Stop input listening temporarily.
+    _uvInputTimeoutTimer?.cancel();
+    _uvInputTimeoutTimer = null;
+    _uvInputParser.clear();
+    unawaited(_inputSubscription?.cancel());
+    _inputSubscription = null;
 
     // Restore terminal
     _terminal?.disableRawMode();
@@ -1187,6 +1213,9 @@ class Program {
         options: rendererOptions,
       );
     }
+
+    // Restart input.
+    _startInputListener();
 
     // Send resume message
     _processMessage(const ResumeMsg());

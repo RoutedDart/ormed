@@ -23,6 +23,24 @@ abstract final class UvAnsi {
   static const setModeAltScreenSaveCursor = '\x1b[?1049h';
   static const resetModeAltScreenSaveCursor = '\x1b[?1049l';
 
+  // Cursor visibility (DECTCEM).
+  static const hideCursor = '\x1b[?25l';
+  static const showCursor = '\x1b[?25h';
+
+  // Mouse tracking.
+  static const enableMouseAllEvents = '\x1b[?1003h';
+  static const disableMouseAllEvents = '\x1b[?1003l';
+  static const enableMouseSgr = '\x1b[?1006h';
+  static const disableMouseSgr = '\x1b[?1006l';
+
+  // Bracketed paste.
+  static const enableBracketedPaste = '\x1b[?2004h';
+  static const disableBracketedPaste = '\x1b[?2004l';
+
+  // Focus reporting.
+  static const enableFocusReporting = '\x1b[?1004h';
+  static const disableFocusReporting = '\x1b[?1004l';
+
   static String cursorUp(int n) => n == 1 ? '\x1b[A' : '\x1b[${n}A';
   static String cursorDown(int n) => n == 1 ? '\x1b[B' : '\x1b[${n}B';
   static String cursorForward(int n) => n == 1 ? '\x1b[C' : '\x1b[${n}C';

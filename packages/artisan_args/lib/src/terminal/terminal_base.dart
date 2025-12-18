@@ -778,6 +778,564 @@ class StdioTerminal implements Terminal {
   }
 }
 
+/// POSIX `/dev/tty` terminal implementation.
+///
+/// This is a best-effort port of Ultraviolet's `OpenTTY` behavior for cases
+/// where stdin/stdout are redirected but the process still has access to a
+/// controlling TTY.
+///
+/// Notes:
+/// - Uses `/dev/tty` for input and output.
+/// - Uses `stty` to toggle raw mode and query size.
+/// - If any operation fails, it falls back to safe defaults (80x24, no-op raw).
+final class TtyTerminal implements Terminal {
+  TtyTerminal._(this._ttyPath, this._tty)
+    : _out = _tty.openWrite(),
+      _supportsAnsi = _envSupportsAnsi();
+
+  static const String _defaultTtyPath = '/dev/tty';
+
+  final String _ttyPath;
+  final io.File _tty;
+  final io.IOSink _out;
+  final bool _supportsAnsi;
+
+  // Output flush serialization.
+  Future<void>? _flushInFlight;
+  final StringBuffer _pending = StringBuffer();
+  int _pendingLen = 0;
+
+  // State tracking (mirrors StdioTerminal behavior).
+  bool _rawModeEnabled = false;
+  bool _altScreenEnabled = false;
+  bool _mouseEnabled = false;
+  bool _bracketedPasteEnabled = false;
+
+  // stty-mode snapshot for raw mode restore.
+  String? _sttySavedMode;
+
+  // Input stream management
+  StreamController<List<int>>? _inputController;
+  StreamSubscription<List<int>>? _inputSubscription;
+
+  // Blocking read support (best-effort).
+  io.RandomAccessFile? _raf;
+  final List<int> _lineBuf = <int>[];
+
+  /// Attempts to open `/dev/tty` and returns a [TtyTerminal], or `null` if not
+  /// available on this platform.
+  static TtyTerminal? tryOpen({String path = _defaultTtyPath}) {
+    try {
+      if (io.Platform.isWindows) return null;
+      final tty = io.File(path);
+      if (!tty.existsSync()) return null;
+      // Verify we can open for write (throws if not).
+      final sink = tty.openWrite();
+      sink.close();
+      return TtyTerminal._(path, tty);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static bool _envSupportsAnsi() {
+    final term = io.Platform.environment['TERM'] ?? '';
+    if (term.isEmpty) return true;
+    return term.toLowerCase() != 'dumb';
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Terminal Information
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  @override
+  int get width {
+    final s = _sttySize();
+    return s?.$1 ?? 80;
+  }
+
+  @override
+  int get height {
+    final s = _sttySize();
+    return s?.$2 ?? 24;
+  }
+
+  @override
+  ({int width, int height}) get size => (width: width, height: height);
+
+  @override
+  bool get supportsAnsi => _supportsAnsi;
+
+  @override
+  bool get isTerminal => true;
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Output Operations
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  @override
+  void write(String text) {
+    if (text.isEmpty) return;
+    if (_flushInFlight != null) {
+      _pending.write(text);
+      _pendingLen += text.length;
+      return;
+    }
+    try {
+      _out.write(text);
+    } on StateError catch (e) {
+      if (_isSinkBoundToStream(e)) {
+        _pending.write(text);
+        _pendingLen += text.length;
+        unawaited(flush());
+        return;
+      }
+      rethrow;
+    }
+  }
+
+  @override
+  void writeln([String text = '']) =>
+      write('$text${io.Platform.lineTerminator}');
+
+  @override
+  Future<void> flush() {
+    final existing = _flushInFlight;
+    if (existing != null) return existing;
+
+    final f = _flushAll();
+    _flushInFlight = f.whenComplete(() {
+      _flushInFlight = null;
+    });
+    return _flushInFlight!;
+  }
+
+  static bool _isSinkBoundToStream(StateError e) =>
+      e.message == 'Bad state: StreamSink is bound to a stream';
+
+  Future<void> _flushAll() async {
+    while (true) {
+      if (_pendingLen != 0) {
+        final pending = _pending.toString();
+        _pending.clear();
+        _pendingLen = 0;
+        _out.write(pending);
+      }
+      await _out.flush();
+      if (_pendingLen == 0) return;
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Cursor Visibility
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  @override
+  void hideCursor() {
+    if (supportsAnsi) write(Ansi.cursorHide);
+  }
+
+  @override
+  void showCursor() {
+    if (supportsAnsi) write(Ansi.cursorShow);
+  }
+
+  @override
+  void saveCursor() {
+    if (supportsAnsi) write(Ansi.cursorSave);
+  }
+
+  @override
+  void restoreCursor() {
+    if (supportsAnsi) write(Ansi.cursorRestore);
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Cursor Movement
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  @override
+  void moveCursor(int row, int col) {
+    if (supportsAnsi) write(Ansi.cursorTo(row, col));
+  }
+
+  @override
+  void cursorHome() {
+    if (supportsAnsi) write(Ansi.cursorHome);
+  }
+
+  @override
+  void cursorUp([int lines = 1]) {
+    if (!supportsAnsi) return;
+    if (lines <= 1) return write(Ansi.cursorUp);
+    write(Ansi.cursorUpBy(lines));
+  }
+
+  @override
+  void cursorDown([int lines = 1]) {
+    if (!supportsAnsi) return;
+    if (lines <= 1) return write(Ansi.cursorDown);
+    write(Ansi.cursorDownBy(lines));
+  }
+
+  @override
+  void cursorRight([int cols = 1]) {
+    if (!supportsAnsi) return;
+    if (cols <= 1) return write(Ansi.cursorRight);
+    write(Ansi.cursorRightBy(cols));
+  }
+
+  @override
+  void cursorLeft([int cols = 1]) {
+    if (!supportsAnsi) return;
+    if (cols <= 1) return write(Ansi.cursorLeft);
+    write(Ansi.cursorLeftBy(cols));
+  }
+
+  @override
+  void cursorToColumn(int col) {
+    if (supportsAnsi) write(Ansi.cursorToColumn(col));
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Screen Control
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  @override
+  void clearScreen() {
+    if (supportsAnsi) write(Ansi.clearScreen);
+  }
+
+  @override
+  void clearToEnd() {
+    if (supportsAnsi) write(Ansi.clearScreenToEnd);
+  }
+
+  @override
+  void clearToStart() {
+    if (supportsAnsi) write(Ansi.clearScreenToStart);
+  }
+
+  @override
+  void clearLine() {
+    if (supportsAnsi) write(Ansi.clearLine);
+  }
+
+  @override
+  void clearLineToEnd() {
+    if (supportsAnsi) write(Ansi.clearLineToEnd);
+  }
+
+  @override
+  void clearLineToStart() {
+    if (supportsAnsi) write(Ansi.clearLineToStart);
+  }
+
+  @override
+  void clearPreviousLines(int lines) {
+    if (!supportsAnsi) return;
+    if (lines <= 0) return;
+    for (var i = 0; i < lines; i++) {
+      clearLine();
+      if (i < lines - 1) write(Ansi.cursorUp);
+    }
+    cursorToColumn(1);
+  }
+
+  @override
+  void scrollUp([int lines = 1]) {
+    if (!supportsAnsi) return;
+    if (lines <= 1) return write(Ansi.scrollUp);
+    write(Ansi.scrollUpBy(lines));
+  }
+
+  @override
+  void scrollDown([int lines = 1]) {
+    if (!supportsAnsi) return;
+    if (lines <= 1) return write(Ansi.scrollDown);
+    write(Ansi.scrollDownBy(lines));
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Alternate Screen Buffer
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  @override
+  void enterAltScreen() {
+    if (_altScreenEnabled || !supportsAnsi) return;
+    write(Ansi.altScreenEnter);
+    _altScreenEnabled = true;
+  }
+
+  @override
+  void exitAltScreen() {
+    if (!_altScreenEnabled || !supportsAnsi) return;
+    write(Ansi.altScreenExit);
+    _altScreenEnabled = false;
+  }
+
+  @override
+  bool get isAltScreen => _altScreenEnabled;
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Input Mode Control
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  @override
+  RawModeGuard enableRawMode() {
+    if (_rawModeEnabled) {
+      return RawModeGuard(wasEchoMode: false, wasLineMode: false, restore: () {});
+    }
+
+    _sttySavedMode ??= _sttyGetMode();
+    _sttySetRaw();
+    _rawModeEnabled = true;
+
+    return RawModeGuard(
+      wasEchoMode: false,
+      wasLineMode: false,
+      restore: disableRawMode,
+    );
+  }
+
+  @override
+  void disableRawMode() {
+    if (!_rawModeEnabled) return;
+    _rawModeEnabled = false;
+    final mode = _sttySavedMode;
+    if (mode != null && mode.isNotEmpty) {
+      _sttySetMode(mode);
+    } else {
+      _sttySane();
+    }
+  }
+
+  @override
+  bool get isRawMode => _rawModeEnabled;
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Mouse Tracking
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  @override
+  void enableMouse() => enableMouseCellMotion();
+
+  @override
+  void enableMouseCellMotion() {
+    if (_mouseEnabled || !supportsAnsi) return;
+    write(Ansi.mouseEnableNormal);
+    write(Ansi.mouseEnableButton);
+    write(Ansi.mouseEnableSgr);
+    _mouseEnabled = true;
+  }
+
+  @override
+  void enableMouseAllMotion() {
+    if (_mouseEnabled || !supportsAnsi) return;
+    write(Ansi.mouseEnableNormal);
+    write(Ansi.mouseEnableAny);
+    write(Ansi.mouseEnableSgr);
+    _mouseEnabled = true;
+  }
+
+  @override
+  void disableMouse() {
+    if (!_mouseEnabled || !supportsAnsi) return;
+    write(Ansi.mouseDisableNormal);
+    write(Ansi.mouseDisableButton);
+    write(Ansi.mouseDisableAny);
+    write(Ansi.mouseDisableSgr);
+    _mouseEnabled = false;
+  }
+
+  @override
+  bool get isMouseEnabled => _mouseEnabled;
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Bracketed Paste Mode
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  @override
+  void enableBracketedPaste() {
+    if (_bracketedPasteEnabled || !supportsAnsi) return;
+    write(Ansi.bracketedPasteEnable);
+    _bracketedPasteEnabled = true;
+  }
+
+  @override
+  void disableBracketedPaste() {
+    if (!_bracketedPasteEnabled || !supportsAnsi) return;
+    write(Ansi.bracketedPasteDisable);
+    _bracketedPasteEnabled = false;
+  }
+
+  @override
+  bool get isBracketedPasteEnabled => _bracketedPasteEnabled;
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Focus Reporting
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  @override
+  void enableFocusReporting() {
+    if (supportsAnsi) write(Ansi.focusEnable);
+  }
+
+  @override
+  void disableFocusReporting() {
+    if (supportsAnsi) write(Ansi.focusDisable);
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Window/Terminal Control
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  @override
+  void setTitle(String title) {
+    if (supportsAnsi) write(Ansi.setTitle(title));
+  }
+
+  @override
+  void bell() => write(Ansi.bell);
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Input Stream
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  @override
+  Stream<List<int>> get input {
+    _inputController ??= StreamController<List<int>>.broadcast(
+      onListen: _startInputListener,
+      onCancel: _stopInputListener,
+    );
+    return _inputController!.stream;
+  }
+
+  void _startInputListener() {
+    _inputSubscription ??= _tty.openRead().listen(
+      (data) => _inputController?.add(data),
+      onError: (error) => _inputController?.addError(error),
+      cancelOnError: false,
+    );
+  }
+
+  void _stopInputListener() {
+    _inputSubscription?.cancel();
+    _inputSubscription = null;
+  }
+
+  @override
+  int readByte() {
+    try {
+      _raf ??= _tty.openSync(mode: io.FileMode.read);
+      return _raf!.readByteSync();
+    } catch (_) {
+      return -1;
+    }
+  }
+
+  @override
+  String? readLine() {
+    // Best-effort, blocking line read from the tty.
+    try {
+      while (true) {
+        final b = readByte();
+        if (b < 0) {
+          if (_lineBuf.isEmpty) return null;
+          final s = io.systemEncoding.decode(_lineBuf);
+          _lineBuf.clear();
+          return s;
+        }
+        if (b == 0x0a /* \\n */) {
+          final s = io.systemEncoding.decode(_lineBuf);
+          _lineBuf.clear();
+          return s;
+        }
+        if (b != 0x0d /* \\r */) _lineBuf.add(b);
+      }
+    } catch (_) {
+      return null;
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Lifecycle
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  @override
+  void dispose() {
+    if (_bracketedPasteEnabled) disableBracketedPaste();
+    if (_mouseEnabled) disableMouse();
+    if (_altScreenEnabled) exitAltScreen();
+    if (_rawModeEnabled) disableRawMode();
+
+    _stopInputListener();
+    _inputController?.close();
+    _inputController = null;
+
+    try {
+      _raf?.closeSync();
+    } catch (_) {}
+    _raf = null;
+
+    try {
+      _out.close();
+    } catch (_) {}
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // stty helpers (best-effort)
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  (int width, int height)? _sttySize() {
+    final out = _runStty(['size']);
+    if (out == null || out.exitCode != 0) return null;
+    final s = (out.stdout ?? '').toString().trim();
+    final parts = s.split(RegExp(r'\\s+'));
+    if (parts.length != 2) return null;
+    final rows = int.tryParse(parts[0]);
+    final cols = int.tryParse(parts[1]);
+    if (rows == null || cols == null) return null;
+    return (cols, rows);
+  }
+
+  String? _sttyGetMode() {
+    final out = _runStty(['-g']);
+    if (out == null || out.exitCode != 0) return null;
+    return (out.stdout ?? '').toString().trim();
+  }
+
+  void _sttySetRaw() {
+    _runStty(['raw', '-echo']);
+  }
+
+  void _sttySane() {
+    _runStty(['sane']);
+  }
+
+  void _sttySetMode(String mode) {
+    _runStty([mode]);
+  }
+
+  io.ProcessResult? _runStty(List<String> args) {
+    try {
+      final candidates = <List<String>>[
+        ['-F', _ttyPath, ...args],
+        ['-f', _ttyPath, ...args],
+      ];
+      io.ProcessResult? last;
+      for (final c in candidates) {
+        final r = io.Process.runSync('stty', c);
+        last = r;
+        if (r.exitCode == 0) return r;
+      }
+      return last;
+    } catch (_) {
+      return null;
+    }
+  }
+}
+
 /// A terminal that captures output to a string buffer (for testing).
 ///
 /// This implementation does not interact with any real terminal and is

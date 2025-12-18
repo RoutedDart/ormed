@@ -1,7 +1,5 @@
 import 'dart:convert';
 
-import 'package:characters/characters.dart';
-
 import 'event.dart';
 import 'key.dart';
 import 'mouse.dart';
@@ -56,12 +54,13 @@ final class LegacyKeyEncoding {
 
 final class EventDecoder {
   EventDecoder({LegacyKeyEncoding? legacy, this.useTerminfo = false})
-    : legacy = legacy ?? const LegacyKeyEncoding();
+    : legacy = legacy ?? const LegacyKeyEncoding() {
+    // Ensure kitty key map is initialized.
+    _kittyInit;
+  }
 
   LegacyKeyEncoding legacy;
   bool useTerminfo;
-
-  int _lastCks = 0;
 
   /// Decode the first event in [buf].
   ///
@@ -232,7 +231,7 @@ final class EventDecoder {
       sb.writeCharCode(decoded.rune);
 
       final s = sb.toString();
-      final it = s.characters.iterator;
+      final it = uni.graphemes(s).iterator;
       if (!it.moveNext()) continue;
       final firstCluster = it.current;
       if (it.moveNext()) {
@@ -1676,7 +1675,7 @@ void _initKittyKeyMapC0() {
 }
 
 // Ensure C0 init runs once.
-final bool _ = (() {
+final bool _kittyInit = (() {
   _initKittyKeyMapC0();
   return true;
 })();
@@ -1757,7 +1756,7 @@ int? _xParseRgbComponent(String hex) {
   final max = (1 << (4 * hex.length)) - 1;
   if (max <= 0) return null;
   // Scale to 0..255.
-  return (((v * 255) / max).round().clamp(0, 255) as int);
+  return ((v * 255) / max).round().clamp(0, 255);
 }
 
 ({int consumed, int rune, bool ok}) _decodeOneRune(List<int> buf) {

@@ -62,6 +62,17 @@ final class Rectangle {
     );
   }
 
+  Rectangle intersect(Rectangle other) {
+    final minX = math.max(this.minX, other.minX);
+    final minY = math.max(this.minY, other.minY);
+    final maxX = math.min(this.maxX, other.maxX);
+    final maxY = math.min(this.maxY, other.maxY);
+    if (minX >= maxX || minY >= maxY) {
+      return const Rectangle(minX: 0, minY: 0, maxX: 0, maxY: 0);
+    }
+    return Rectangle(minX: minX, minY: minY, maxX: maxX, maxY: maxY);
+  }
+
   @override
   bool operator ==(Object other) =>
       other is Rectangle &&

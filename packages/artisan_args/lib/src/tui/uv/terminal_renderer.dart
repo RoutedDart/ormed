@@ -76,13 +76,13 @@ final class TerminalRenderer {
   static const int capHt = _Cap.ht;
   static const int capBs = _Cap.bs;
 
-  TerminalRenderer(this._writer, {List<String>? env})
+  TerminalRenderer(this._writer, {List<String>? env, bool? isTty})
     : _env = env ?? const [],
       _term = _getEnv(env ?? const [], 'TERM'),
       _caps = _xtermCaps(_getEnv(env ?? const [], 'TERM')) {
     _cur = _Cursor(x: -1, y: -1);
     _saved = _cur.clone();
-    _profile = _detectProfile(_env);
+    _profile = _detectProfile(_env, isTty);
   }
 
   final StringSink _writer;
@@ -169,6 +169,40 @@ final class TerminalRenderer {
     restoreCursor();
   }
 
+  void hideCursor() {
+    _buf.write(UvAnsi.hideCursor);
+  }
+
+  void showCursor() {
+    _buf.write(UvAnsi.showCursor);
+  }
+
+  void enableMouseAllEvents() {
+    _buf.write(UvAnsi.enableMouseAllEvents);
+    _buf.write(UvAnsi.enableMouseSgr);
+  }
+
+  void disableMouseAllEvents() {
+    _buf.write(UvAnsi.disableMouseAllEvents);
+    _buf.write(UvAnsi.disableMouseSgr);
+  }
+
+  void enableBracketedPaste() {
+    _buf.write(UvAnsi.enableBracketedPaste);
+  }
+
+  void disableBracketedPaste() {
+    _buf.write(UvAnsi.disableBracketedPaste);
+  }
+
+  void enableFocusReporting() {
+    _buf.write(UvAnsi.enableFocusReporting);
+  }
+
+  void disableFocusReporting() {
+    _buf.write(UvAnsi.disableFocusReporting);
+  }
+
   void erase() {
     _clear = true;
   }
@@ -214,6 +248,7 @@ final class TerminalRenderer {
   void resize(int width, int height) {
     _tabs?.resize(width);
     _scrollHeight = 0;
+    erase();
   }
 
   ({int x, int y}) position() => (x: _cur.x, y: _cur.y);
@@ -304,10 +339,12 @@ final class TerminalRenderer {
     final newHeight = newbuf.height();
     final curWidth = _curbuf!.width();
     final curHeight = _curbuf!.height();
+    final sameSize = curWidth == newWidth && curHeight == newHeight;
 
-    if (curWidth != newWidth || curHeight != newHeight) {
+    if (!sameSize) {
       _oldhash = const [];
       _newhash = const [];
+      _curbuf!.resize(newWidth, newHeight);
     }
 
     final partialClear =
@@ -328,6 +365,7 @@ final class TerminalRenderer {
     } else if (touchedLines > 0) {
       if ((_flags & _Flag.scrollOptim) != 0 &&
           fullscreen() &&
+          sameSize &&
           !Platform.isWindows) {
         _scrollOptimize(newbuf);
       }
@@ -509,7 +547,8 @@ final class TerminalRenderer {
 
     _updatePen(cell);
 
-    final cellWidth = cell?.width ?? 1;
+    final rawWidth = cell?.width;
+    final cellWidth = (rawWidth == null || rawWidth <= 0) ? 1 : rawWidth;
     _buf.write(cell?.content ?? ' ');
 
     _cur.x += cellWidth;
@@ -1160,7 +1199,7 @@ int _xtermCaps(String termtype) {
   }
 }
 
-cp.Profile _detectProfile(List<String> env) {
+cp.Profile _detectProfile(List<String> env, bool? isTty) {
   final m = <String, String>{};
   for (final e in env) {
     final idx = e.indexOf('=');
@@ -1168,7 +1207,7 @@ cp.Profile _detectProfile(List<String> env) {
     m[e.substring(0, idx)] = e.substring(idx + 1);
   }
 
-  final forceTty = _parseBool(m['TTY_FORCE']);
+  final forceTty = isTty ?? _parseBool(m['TTY_FORCE']);
   // TerminalRenderer can be used with arbitrary sinks; default to non-TTY
   // unless explicitly forced.
   return cp_detect.detect(

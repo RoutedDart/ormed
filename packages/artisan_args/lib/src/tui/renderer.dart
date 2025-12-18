@@ -392,6 +392,7 @@ class UltravioletRenderer implements Renderer {
     if (scr == null) return;
     if (scr.width() == w && scr.height() == h) return;
     scr.resize(w, h);
+    _renderer?.resize(w, h);
     _renderer?.erase();
   }
 

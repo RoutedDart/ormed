@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'cell.dart';
 
 int _shift16To8(int x) => x > 0xff ? (x >> 8) : x;

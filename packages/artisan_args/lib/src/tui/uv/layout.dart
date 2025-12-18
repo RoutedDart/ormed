@@ -96,3 +96,78 @@ final class Fixed implements Constraint {
   );
   return (left: left, right: right);
 }
+
+/// Returns a new [Rectangle] centered within [area] with [width] and [height].
+///
+/// Upstream: `CenterRect` in `third_party/ultraviolet/layout.go`.
+Rectangle centerRect(Rectangle area, int width, int height) {
+  final centerX = area.minX + area.width ~/ 2;
+  final centerY = area.minY + area.height ~/ 2;
+  final minX = centerX - width ~/ 2;
+  final minY = centerY - height ~/ 2;
+  return rect(minX, minY, width, height);
+}
+
+/// Returns a new [Rectangle] at the top-left of [area] with [width] and [height].
+///
+/// Upstream: `TopLeftRect` in `third_party/ultraviolet/layout.go`.
+Rectangle topLeftRect(Rectangle area, int width, int height) {
+  return rect(area.minX, area.minY, width, height).intersect(area);
+}
+
+/// Returns a new [Rectangle] at the top-center of [area] with [width] and [height].
+///
+/// Upstream: `TopCenterRect` in `third_party/ultraviolet/layout.go`.
+Rectangle topCenterRect(Rectangle area, int width, int height) {
+  final centerX = area.minX + area.width ~/ 2;
+  final minX = centerX - width ~/ 2;
+  return rect(minX, area.minY, width, height).intersect(area);
+}
+
+/// Returns a new [Rectangle] at the top-right of [area] with [width] and [height].
+///
+/// Upstream: `TopRightRect` in `third_party/ultraviolet/layout.go`.
+Rectangle topRightRect(Rectangle area, int width, int height) {
+  return rect(area.maxX - width, area.minY, width, height).intersect(area);
+}
+
+/// Returns a new [Rectangle] at the right-center of [area] with [width] and [height].
+///
+/// Upstream: `RightCenterRect` in `third_party/ultraviolet/layout.go`.
+Rectangle rightCenterRect(Rectangle area, int width, int height) {
+  final centerY = area.minY + area.height ~/ 2;
+  final minY = centerY - height ~/ 2;
+  return rect(area.maxX - width, minY, width, height).intersect(area);
+}
+
+/// Returns a new [Rectangle] at the left-center of [area] with [width] and [height].
+///
+/// Upstream: `LeftCenterRect` in `third_party/ultraviolet/layout.go`.
+Rectangle leftCenterRect(Rectangle area, int width, int height) {
+  final centerY = area.minY + area.height ~/ 2;
+  final minY = centerY - height ~/ 2;
+  return rect(area.minX, minY, width, height).intersect(area);
+}
+
+/// Returns a new [Rectangle] at the bottom-left of [area] with [width] and [height].
+///
+/// Upstream: `BottomLeftRect` in `third_party/ultraviolet/layout.go`.
+Rectangle bottomLeftRect(Rectangle area, int width, int height) {
+  return rect(area.minX, area.maxY - height, width, height).intersect(area);
+}
+
+/// Returns a new [Rectangle] at the bottom-center of [area] with [width] and [height].
+///
+/// Upstream: `BottomCenterRect` in `third_party/ultraviolet/layout.go`.
+Rectangle bottomCenterRect(Rectangle area, int width, int height) {
+  final centerX = area.minX + area.width ~/ 2;
+  final minX = centerX - width ~/ 2;
+  return rect(minX, area.maxY - height, width, height).intersect(area);
+}
+
+/// Returns a new [Rectangle] at the bottom-right of [area] with [width] and [height].
+///
+/// Upstream: `BottomRightRect` in `third_party/ultraviolet/layout.go`.
+Rectangle bottomRightRect(Rectangle area, int width, int height) {
+  return rect(area.maxX - width, area.maxY - height, width, height).intersect(area);
+}

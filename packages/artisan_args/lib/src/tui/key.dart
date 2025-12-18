@@ -16,8 +16,6 @@ library;
 
 import 'dart:convert';
 
-import 'package:characters/characters.dart';
-
 import '../terminal/keys.dart';
 import 'msg.dart';
 import '../unicode/grapheme.dart' as uni;
@@ -575,7 +573,7 @@ class KeyParser {
       sb.writeCharCode(decoded.rune);
 
       final s = sb.toString();
-      final it = s.characters.iterator;
+      final it = uni.graphemes(s).iterator;
       if (!it.moveNext()) continue;
       final firstCluster = it.current;
       if (it.moveNext()) {

@@ -81,9 +81,12 @@ final class Mouse {
     if (str.isEmpty) {
       s += 'unknown';
     } else if (str != 'none') {
-      // Motion events don't have a button.
       s += str;
     }
+    if (s.isNotEmpty && !s.endsWith('+')) {
+      s += ' ';
+    }
+    s += '($x,$y)';
     return s;
   }
 

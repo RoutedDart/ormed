@@ -81,14 +81,14 @@ String wrapAnsiPreserving(String input, int width, {String breakpoints = ''}) {
     if (lineWidth + w > width) {
       if (lastBreakToken != null &&
           widthAtBreak != null &&
-          lastBreakToken! >= lineStart) {
+          lastBreakToken >= lineStart) {
         // Emit up to break, drop the break token itself.
-        emitRange(lineStart, lastBreakToken!);
+        emitRange(lineStart, lastBreakToken);
         resetIfNeeded();
         out.write('\n');
         reapplyIfNeeded();
 
-        i = lastBreakToken! + 1;
+        i = lastBreakToken + 1;
         lineStart = i;
         lineWidth = 0;
         lastBreakToken = null;

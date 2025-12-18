@@ -158,8 +158,8 @@ final class Cell {
     this.content = '',
     this.style = const Style(),
     this.link = const Link(),
-    this.width = 0,
-  });
+    int? width,
+  }) : width = width ?? (content.isEmpty ? 0 : 1);
 
   String content;
   Style style;
