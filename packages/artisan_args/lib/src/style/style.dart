@@ -26,6 +26,7 @@ import 'border.dart';
 import 'color.dart';
 import 'properties.dart';
 import '../unicode/grapheme.dart' as uni;
+import '../tui/uv/wrap.dart' as uv_wrap;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Property Bits
@@ -76,6 +77,7 @@ class _PropBits {
   static const int borderRight = 1 << 6;
   static const int borderBottom = 1 << 7;
   static const int borderLeft = 1 << 8;
+  static const int wrapAnsi = 1 << 9;
 }
 
 /// Fluent, chainable style builder for terminal output.
@@ -199,6 +201,7 @@ class Style {
   Border? _border;
   BorderSides _borderSides = BorderSides.all;
   bool _inline = false;
+  bool _wrapAnsi = false;
 
   // ─────────────────────────────────────────────────────────────────────────────
   // Transform
@@ -741,6 +744,16 @@ class Style {
   Style inline([bool value = true]) {
     _inline = value;
     _setFlag(_PropBits.inline);
+    return this;
+  }
+
+  /// Sets whether to use ANSI-preserving wrapping.
+  ///
+  /// When enabled, ANSI pen state (SGR + OSC 8) is preserved across
+  /// wrapped lines.
+  Style wrapAnsi([bool value = true]) {
+    _wrapAnsi = value;
+    _setFlag2(_PropBits.wrapAnsi);
     return this;
   }
 
@@ -1364,6 +1377,7 @@ class Style {
     s._border = _border;
     s._borderSides = _borderSides;
     s._inline = _inline;
+    s._wrapAnsi = _wrapAnsi;
     s._transform = _transform;
     s._whitespaceChar = _whitespaceChar;
     s._whitespaceForeground = _whitespaceForeground;
@@ -1501,6 +1515,10 @@ class Style {
     if (other._hasFlag(_PropBits.inline)) {
       _inline = other._inline;
       _setFlag(_PropBits.inline);
+    }
+    if (other._hasFlag2(_PropBits.wrapAnsi)) {
+      _wrapAnsi = other._wrapAnsi;
+      _setFlag2(_PropBits.wrapAnsi);
     }
     if (other._hasFlag(_PropBits.transform)) {
       _transform = other._transform;
@@ -1882,6 +1900,12 @@ class Style {
   ///
   /// Breaks lines at word boundaries when possible, preserving ANSI codes.
   List<String> _wrapText(List<String> lines, int maxWidth) {
+    if (_wrapAnsi) {
+      final joined = lines.join('\n');
+      final wrapped = uv_wrap.wrapAnsiPreserving(joined, maxWidth);
+      return wrapped.split('\n');
+    }
+
     final result = <String>[];
 
     for (final line in lines) {

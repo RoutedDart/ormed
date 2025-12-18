@@ -248,7 +248,9 @@ final class TerminalRenderer {
   void resize(int width, int height) {
     _tabs?.resize(width);
     _scrollHeight = 0;
-    erase();
+    // Important: resizing MUST NOT implicitly clear the screen. Upstream UV
+    // keeps resize side-effect free; callers explicitly call `erase()` when
+    // they want a full clear (parity tests depend on this).
   }
 
   ({int x, int y}) position() => (x: _cur.x, y: _cur.y);
@@ -344,7 +346,6 @@ final class TerminalRenderer {
     if (!sameSize) {
       _oldhash = const [];
       _newhash = const [];
-      _curbuf!.resize(newWidth, newHeight);
     }
 
     final partialClear =
@@ -410,7 +411,8 @@ final class TerminalRenderer {
 
     if (curWidth != newWidth || curHeight != newHeight) {
       _curbuf!.resize(newWidth, newHeight);
-      for (var i = curHeight; i < newHeight; i++) {
+      final start = curHeight <= 0 ? 0 : curHeight - 1;
+      for (var i = start; i < newHeight; i++) {
         final src = newbuf.line(i)!.cells;
         final dst = _curbuf!.line(i)!.cells;
         for (var x = 0; x < dst.length && x < src.length; x++) {
