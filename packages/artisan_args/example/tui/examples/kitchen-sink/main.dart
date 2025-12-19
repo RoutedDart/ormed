@@ -186,7 +186,8 @@ class _KitchenSinkModel extends tui.Model {
     return true;
   }
 
-  String emoji(String emoji, String fallback) => emojiEnabled ? emoji : fallback;
+  String emoji(String emoji, String fallback) =>
+      emojiEnabled ? emoji : fallback;
 
   @override
   tui.Cmd? init() {
@@ -205,7 +206,9 @@ class _KitchenSinkModel extends tui.Model {
       cmds.add(
         tui.Cmd.writeRaw('\x1b_Gi=31,s=1,v=1,a=q,t=d,f=24;AAAA\x1b\\'),
       ); // Kitty graphics query
-      cmds.add(tui.Cmd.writeRaw('\x1b[?u')); // Kitty keyboard enhancements query
+      cmds.add(
+        tui.Cmd.writeRaw('\x1b[?u'),
+      ); // Kitty keyboard enhancements query
       // Query a handful of palette entries (enough to know it's supported).
       for (var i = 0; i < 8; i++) {
         cmds.add(tui.Cmd.writeRaw('\x1b]4;$i;?\x1b\\'));
@@ -507,8 +510,7 @@ abstract class _KitchenSinkPage {
 }
 
 final class _OverviewPage extends _KitchenSinkPage {
-  const _OverviewPage()
-    : super(help: 'Overview: what this app covers');
+  const _OverviewPage() : super(help: 'Overview: what this app covers');
 
   @override
   String view(_KitchenSinkModel m) {
@@ -526,9 +528,10 @@ final class _OverviewPage extends _KitchenSinkPage {
       '• Writer: ANSI downsampling (Writer tab)',
       '• Unicode width: emoji/CJK/grapheme clusters (Unicode tab)',
       '',
-      m._style(
-        Style(),
-      ).dim().render('Tip: run with `--uv-renderer` and resize the terminal.'),
+      m
+          ._style(Style())
+          .dim()
+          .render('Tip: run with `--uv-renderer` and resize the terminal.'),
     ];
     return lines.join('\n');
   }
@@ -543,17 +546,17 @@ final class _InputPage extends _KitchenSinkPage {
 
   @override
   String view(_KitchenSinkModel m) {
-      final left = <String>[
-        m._style(Style()).bold().render('Input controls'),
-        '',
-        'TextInput:',
-        '  ${m.textInput.view()}',
-        '',
-        'TextArea:',
-        m.textarea.view() as String,
-        '',
-        m._style(Style()).dim().render('Recent events (newest last):'),
-      ];
+    final left = <String>[
+      m._style(Style()).bold().render('Input controls'),
+      '',
+      'TextInput:',
+      '  ${m.textInput.view()}',
+      '',
+      'TextArea:',
+      m.textarea.view() as String,
+      '',
+      m._style(Style()).dim().render('Recent events (newest last):'),
+    ];
 
     final maxLog = (m._height - 18).clamp(3, 9999);
     final logLines = m._eventLog.length <= maxLog
@@ -601,12 +604,16 @@ final class _ListSelectPage extends _KitchenSinkPage {
 
   @override
   String view(_KitchenSinkModel m) {
-    final title = m._style(
-      Style(),
-    ).bold().render('Interactive list (accept/select)');
-    final subtitle = m._style(Style()).dim().render(
-      'Selected: ${m.listSelection.selected ?? '(none)'}  (Enter should select)',
-    );
+    final title = m
+        ._style(Style())
+        .bold()
+        .render('Interactive list (accept/select)');
+    final subtitle = m
+        ._style(Style())
+        .dim()
+        .render(
+          'Selected: ${m.listSelection.selected ?? '(none)'}  (Enter should select)',
+        );
     return [title, subtitle, '', m.listSelection.view(m)].join('\n');
   }
 
@@ -732,19 +739,22 @@ final class _RendererPage extends _KitchenSinkPage {
 
 final class _LipglossPage extends _KitchenSinkPage {
   _LipglossPage()
-    : _pane = _ScrollPane(horizontalStep: 4),
+    : _pane = tui.ViewportScrollPane(
+        viewport: tui.ViewportModel(width: 0, height: 0, horizontalStep: 4),
+      ),
       super(
         help:
             'Tree/List/Table: scroll with ↑/↓ j/k, PgUp/PgDn, mouse wheel • drag scrollbar',
       );
 
-  final _ScrollPane _pane;
+  final tui.ViewportScrollPane _pane;
 
   @override
   String view(_KitchenSinkModel m) {
-    final title = m._style(
-      Style(),
-    ).bold().render('Tree/List/Table (lipgloss v2 parity)');
+    final title = m
+        ._style(Style())
+        .bold()
+        .render('Tree/List/Table (lipgloss v2 parity)');
 
     final tree1 =
         (Tree()
@@ -765,7 +775,12 @@ final class _LipglossPage extends _KitchenSinkPage {
               ..root('Packages')
               ..child('🍞 bread')
               ..child('🥬 kale')
-              ..child(Tree()..root('Nested')..child('one')..child('two')))
+              ..child(
+                Tree()
+                  ..root('Nested')
+                  ..child('one')
+                  ..child('two'),
+              ))
             .enumerator(TreeEnumerator.heavy)
             .rootStyle(
               m._style(Style())
@@ -776,8 +791,10 @@ final class _LipglossPage extends _KitchenSinkPage {
             .indenterStyle(m._style(Style()).dim())
             .itemStyleFunc((children, index) {
               final v = children[index].value.toString();
-              if (v.contains('🍞')) return m._style(Style()).foreground(Colors.rose);
-              if (v.contains('🥬')) return m._style(Style()).foreground(Colors.lime);
+              if (v.contains('🍞'))
+                return m._style(Style()).foreground(Colors.rose);
+              if (v.contains('🥬'))
+                return m._style(Style()).foreground(Colors.lime);
               return m._style(Style());
             })
             .render();
@@ -786,7 +803,11 @@ final class _LipglossPage extends _KitchenSinkPage {
         (Tree()
               ..root('Offset + hidden (double-line)')
               ..child('trim-start')
-              ..child((Tree()..root('hidden subtree')..hide(true)))
+              ..child(
+                (Tree()
+                  ..root('hidden subtree')
+                  ..hide(true)),
+              )
               ..child('shown A')
               ..child('shown B')
               ..child('trim-end'))
@@ -876,7 +897,12 @@ final class _LipglossPage extends _KitchenSinkPage {
               }
               return switch (col) {
                 0 => m._style(Style()).dim(),
-                2 => m._style(Style()).width(4).alignRight().foreground(Colors.lime),
+                2 =>
+                  m
+                      ._style(Style())
+                      .width(4)
+                      .alignRight()
+                      .foreground(Colors.lime),
                 _ => null,
               };
             })
@@ -938,10 +964,16 @@ final class _LipglossPage extends _KitchenSinkPage {
       m._style(Style()).dim().render('Table (borders + row dividers):'),
       table2,
       '',
-      m._style(Style()).dim().render('Table (ascii + no columns + offset/height):'),
+      m
+          ._style(Style())
+          .dim()
+          .render('Table (ascii + no columns + offset/height):'),
       table3,
       '',
-      m._style(Style()).dim().render('Table (blended outer border via Style.border):'),
+      m
+          ._style(Style())
+          .dim()
+          .render('Table (blended outer border via Style.border):'),
       blendedBorderTable,
     ].join('\n');
 
@@ -953,228 +985,57 @@ final class _LipglossPage extends _KitchenSinkPage {
 
     // Header can wrap when many tabs are present; use the measured line count.
     final topRow0 = m._headerLines + 2;
-    final pane = _pane.render(
-      m,
-      columns,
-      topRow0: topRow0,
-      topPaddingLines: 2, // title + blank line
+    final contentHeight = (m._height - m._headerLines - m._footerLines - 1)
+        .clamp(0, 9999);
+    final bodyHeight = (contentHeight - 2).clamp(1, 9999);
+
+    final viewportWidth = (m._width - 2).clamp(10, 9999);
+    _pane.viewport = _pane.viewport.copyWith(
+      width: viewportWidth,
+      height: bodyHeight,
     );
+    _pane.viewport = _pane.viewport.setContent(columns);
+    _pane.originX = 0;
+    _pane.originY = topRow0;
+
+    final pane = _pane.view();
 
     return [title, '', pane].join('\n');
   }
 
   @override
   bool onKey(_KitchenSinkModel m, tui.Key key, List<tui.Cmd> cmds) {
-    _pane.onKey(key, cmds);
+    final (_, cmd) = _pane.update(tui.KeyMsg(key));
+    if (cmd != null) cmds.add(cmd);
     return false;
   }
 
   @override
   void onMsg(_KitchenSinkModel m, tui.Msg msg, List<tui.Cmd> cmds) {
     if (msg is! tui.MouseMsg) return;
-    _pane.onMouse(msg, cmds);
-  }
-}
-
-final class _ScrollPane {
-  _ScrollPane({int horizontalStep = 0})
-    : viewport = tui.ViewportModel(
-        width: 0,
-        height: 0,
-        horizontalStep: horizontalStep,
-      );
-
-  tui.ViewportModel viewport;
-  bool draggingScrollbar = false;
-
-  int topRow0 = 0;
-  int barX0 = 0;
-
-  String render(
-    _KitchenSinkModel m,
-    String content, {
-    required int topRow0,
-    required int topPaddingLines,
-  }) {
-    // Fit viewport to remaining terminal space (leave room for scrollbar).
-    // Header/footer can wrap; use the measured line counts.
-    final contentHeight =
-        (m._height - m._headerLines - m._footerLines - 1).clamp(0, 9999);
-    final bodyHeight = (contentHeight - topPaddingLines).clamp(1, 9999);
-
-    final viewportWidth = (m._width - 2).clamp(10, 9999);
-    viewport = viewport.copyWith(width: viewportWidth, height: bodyHeight);
-    viewport = viewport.setContent(content);
-
-    this.topRow0 = topRow0;
-    barX0 = viewportWidth + 1; // content width + 1 space separator
-
-    final viewLines = viewport.view().split('\n');
-    final bar = _scrollbarLines(
-      height: viewLines.length,
-      contentLines: viewport.lines.length,
-      scrollPercent: viewport.scrollPercent,
-    );
-
-    final withBar = <String>[];
-    for (var i = 0; i < viewLines.length; i++) {
-      withBar.add('${viewLines[i]} ${bar[i]}');
-    }
-    return withBar.join('\n');
-  }
-
-  void onKey(tui.Key key, List<tui.Cmd> cmds) {
-    final (vp, cmd) = viewport.update(tui.KeyMsg(key));
-    viewport = vp;
+    final (_, cmd) = _pane.update(msg);
     if (cmd != null) cmds.add(cmd);
   }
-
-  /// Handles mouse input for the scroll pane.
-  ///
-  /// Returns true if the event was consumed (wheel/scrollbar drag).
-  bool onMouse(tui.MouseMsg msg, List<tui.Cmd> cmds) {
-    // Scrollbar drag.
-    if (msg.button == tui.MouseButton.left) {
-      final candidates = <(int x, int y)>[
-        (msg.x, msg.y),
-        (msg.x - 1, msg.y),
-        (msg.x, msg.y - 1),
-        (msg.x - 1, msg.y - 1),
-      ];
-
-      bool onBar((int x, int y) p) {
-        final (x, y) = p;
-        if (x != barX0) return false;
-        final yIn = y - topRow0;
-        final h = viewport.height;
-        if (h == null) return false;
-        return yIn >= 0 && yIn < h;
-      }
-
-      switch (msg.action) {
-        case tui.MouseAction.press:
-          if (candidates.any(onBar)) {
-            draggingScrollbar = true;
-            _scrollToMouseY(candidates);
-            return true;
-          }
-          break;
-        case tui.MouseAction.release:
-          draggingScrollbar = false;
-          return false;
-        case tui.MouseAction.motion:
-          if (draggingScrollbar) {
-            _scrollToMouseY(candidates);
-            return true;
-          }
-          break;
-        default:
-          break;
-      }
-    }
-
-    // Default viewport mouse handling (wheel scrolling etc).
-    if (msg.action == tui.MouseAction.wheel) {
-      final (vp, cmd) = viewport.update(msg);
-      viewport = vp;
-      if (cmd != null) cmds.add(cmd);
-      return true;
-    }
-
-    final (vp, cmd) = viewport.update(msg);
-    viewport = vp;
-    if (cmd != null) cmds.add(cmd);
-    return false;
-  }
-
-  int? contentLineAtMouse(tui.MouseMsg msg) {
-    final candidates = <(int x, int y)>[
-      (msg.x, msg.y),
-      (msg.x - 1, msg.y),
-      (msg.x, msg.y - 1),
-      (msg.x - 1, msg.y - 1),
-    ];
-    for (final (x, y) in candidates) {
-      final yIn = y - topRow0;
-      final h = viewport.height ?? viewport.lines.length;
-      if (yIn < 0 || yIn >= h) continue;
-      // Ignore clicks on the scrollbar column.
-      if (x == barX0) continue;
-      return viewport.yOffset + yIn;
-    }
-    return null;
-  }
-
-  (int line, int col)? contentPosAtMouse(tui.MouseMsg msg) {
-    final candidates = <(int x, int y)>[
-      (msg.x, msg.y),
-      (msg.x - 1, msg.y),
-      (msg.x, msg.y - 1),
-      (msg.x - 1, msg.y - 1),
-    ];
-    for (final (x, y) in candidates) {
-      final yIn = y - topRow0;
-      final h = viewport.height ?? viewport.lines.length;
-      if (yIn < 0 || yIn >= h) continue;
-      if (x == barX0) continue;
-      if (x < 0 || x >= viewport.width) continue;
-      return (viewport.yOffset + yIn, viewport.xOffset + x);
-    }
-    return null;
-  }
-
-  void _scrollToMouseY(List<(int x, int y)> candidates) {
-    final h = viewport.height;
-    if (h == null) return;
-    final maxOffset = math.max(0, viewport.lines.length - h);
-    if (maxOffset == 0) return;
-
-    for (final (x, y) in candidates) {
-      if (x != barX0) continue;
-      final yIn = y - topRow0;
-      if (yIn < 0 || yIn >= h) continue;
-      final denom = math.max(1, h - 1);
-      final pct = (yIn / denom).clamp(0.0, 1.0);
-      final off = (pct * maxOffset).round().clamp(0, maxOffset);
-      viewport = viewport.setYOffset(off);
-      return;
-    }
-  }
-}
-
-List<String> _scrollbarLines({
-  required int height,
-  required int contentLines,
-  required double scrollPercent,
-}) {
-  if (height <= 0) return const [];
-  if (contentLines <= height) {
-    return List<String>.filled(height, ' ');
-  }
-
-  final track = List<String>.filled(height, '│');
-  final thumbHeight = math.max(1, ((height * height) / contentLines).round());
-  final maxTop = math.max(0, height - thumbHeight);
-  final top = (scrollPercent * maxTop).round().clamp(0, maxTop);
-
-  for (var i = 0; i < thumbHeight; i++) {
-    track[top + i] = '█';
-  }
-  return track;
 }
 
 final class _ColorsPage extends _KitchenSinkPage {
   const _ColorsPage()
-    : super(help: 'Colors: shows background detection + adaptive colors + gradients');
+    : super(
+        help:
+            'Colors: shows background detection + adaptive colors + gradients',
+      );
 
   @override
   String view(_KitchenSinkModel m) {
     final title = m._style(Style()).bold().render('Colors + theme detection');
     final bg = m.capabilities.backgroundColor;
     final bgStr = bg != null ? 'rgb(${bg.r},${bg.g},${bg.b})' : '(unknown)';
-    final detected = m._style(Style()).dim().render(
-      'background=${m._theme.backgroundHex ?? '(unknown)'} (UV: $bgStr)  dark=${m._theme.hasDarkBackground ?? '(unknown)'}',
-    );
+    final detected = m
+        ._style(Style())
+        .dim()
+        .render(
+          'background=${m._theme.backgroundHex ?? '(unknown)'} (UV: $bgStr)  dark=${m._theme.hasDarkBackground ?? '(unknown)'}',
+        );
 
     final adaptive = m._style(Style())
       ..foreground(AdaptiveColor(light: Colors.black, dark: Colors.white));
@@ -1195,7 +1056,8 @@ final class _ColorsPage extends _KitchenSinkPage {
         .map((s) => s.render(' '))
         .join();
 
-    final box = m._style(Style())
+    final box = m
+        ._style(Style())
         .border(Border.rounded)
         .borderForegroundBlend([Colors.red, Colors.blue])
         .borderForegroundBlendOffset(2)
@@ -1224,22 +1086,31 @@ final class _ColorsPage extends _KitchenSinkPage {
 
 final class _WriterPage extends _KitchenSinkPage {
   const _WriterPage()
-    : super(help: 'Writer: downsampling (trueColor→ansi256/ansi/noColor/ascii) demos');
+    : super(
+        help:
+            'Writer: downsampling (trueColor→ansi256/ansi/noColor/ascii) demos',
+      );
 
   @override
   String view(_KitchenSinkModel m) {
-    final title = m._style(Style()).bold().render('Writer (downsampling demos)');
-    final hint = m._style(Style()).dim().render(
-      'These show how our v2-style Writer can downsample ANSI sequences for different terminal profiles.',
-    );
+    final title = m
+        ._style(Style())
+        .bold()
+        .render('Writer (downsampling demos)');
+    final hint = m
+        ._style(Style())
+        .dim()
+        .render(
+          'These show how our v2-style Writer can downsample ANSI sequences for different terminal profiles.',
+        );
 
-    final sample =
-        m._style(Style())
-            .bold()
-            .foreground(Colors.rose)
-            .background(Colors.black)
-            .padding(0, 1)
-            .render('Who wants marmalade? 🍊');
+    final sample = m
+        ._style(Style())
+        .bold()
+        .foreground(Colors.rose)
+        .background(Colors.black)
+        .padding(0, 1)
+        .render('Who wants marmalade? 🍊');
 
     String sim(ColorProfile p) => stringForProfile(sample, p);
 
@@ -1270,12 +1141,16 @@ final class _UnicodePage extends _KitchenSinkPage {
 
   @override
   String view(_KitchenSinkModel m) {
-    final title = m._style(
-      Style(),
-    ).bold().render('Unicode width + grapheme clusters');
-    final hint = m._style(Style()).dim().render(
-      'If you see boxes, your terminal font lacks emoji glyphs. Press "e" to toggle emoji samples.',
-    );
+    final title = m
+        ._style(Style())
+        .bold()
+        .render('Unicode width + grapheme clusters');
+    final hint = m
+        ._style(Style())
+        .dim()
+        .render(
+          'If you see boxes, your terminal font lacks emoji glyphs. Press "e" to toggle emoji samples.',
+        );
     final samples = <String>[
       'ASCII: hello',
       'CJK: 漢字かなカナ',
@@ -1293,9 +1168,12 @@ final class _UnicodePage extends _KitchenSinkPage {
       );
     }
 
-    final explain = m._style(Style()).dim().render(
-      'The widths above use ANSI-aware display width and grapheme iteration; compare with resize + renderer.',
-    );
+    final explain = m
+        ._style(Style())
+        .dim()
+        .render(
+          'The widths above use ANSI-aware display width and grapheme iteration; compare with resize + renderer.',
+        );
 
     return [title, hint, '', ...rows, '', explain].join('\n');
   }
@@ -1303,7 +1181,9 @@ final class _UnicodePage extends _KitchenSinkPage {
 
 final class _WidgetsPage extends _KitchenSinkPage {
   _WidgetsPage()
-    : _pane = _ScrollPane(horizontalStep: 4),
+    : _pane = tui.ViewportScrollPane(
+        viewport: tui.ViewportModel(width: 0, height: 0, horizontalStep: 4),
+      ),
       _confirmToggle = tui.ConfirmModel(
         prompt: 'Continue?',
         displayMode: tui.ConfirmDisplayMode.toggle,
@@ -1397,10 +1277,9 @@ final class _WidgetsPage extends _KitchenSinkPage {
           ['FilePicker', 'OK', 'directory browsing'],
         ],
       ),
-      _viewportPreview =
-          tui.ViewportModel(width: 60, height: 4).setContent(
-            List.generate(20, (i) => 'line ${i + 1}').join('\n'),
-          ).setYOffset(6),
+      _viewportPreview = tui.ViewportModel(width: 60, height: 4)
+          .setContent(List.generate(20, (i) => 'line ${i + 1}').join('\n'))
+          .setYOffset(6),
       _timer = tui.TimerModel(timeout: const Duration(minutes: 2, seconds: 34)),
       _stopwatch = tui.StopwatchModel(),
       _pause = tui.PauseModel(message: 'Press any key to continue…'),
@@ -1417,7 +1296,7 @@ final class _WidgetsPage extends _KitchenSinkPage {
             'Widgets: click a panel to focus; Esc unfocus; when unfocused you can scroll/drag the scrollbar',
       );
 
-  final _ScrollPane _pane;
+  final tui.ViewportScrollPane _pane;
   final tui.ConfirmModel _confirmToggle;
   final tui.ConfirmModel _confirmHint;
   final tui.ConfirmModel _confirmInline;
@@ -1452,23 +1331,28 @@ final class _WidgetsPage extends _KitchenSinkPage {
   String view(_KitchenSinkModel m) {
     final title = m._style(Style()).bold().render('Widgets showcase');
 
-    final paginator = tui.PaginatorModel(type: tui.PaginationType.dots)
-        .setTotalPages(12)
-        .copyWith(page: 3);
+    final paginator = tui.PaginatorModel(
+      type: tui.PaginationType.dots,
+    ).setTotalPages(12).copyWith(page: 3);
 
     final helpShort = tui.HelpModel(width: 72).view(tui.ViewportKeyMap());
-    final helpFull =
-        tui.HelpModel(width: 72, showAll: true).view(tui.TableKeyMap());
+    final helpFull = tui.HelpModel(
+      width: 72,
+      showAll: true,
+    ).view(tui.TableKeyMap());
 
     final status = [
       '${m.spinner.view()}  spinner',
       m.progress.view(),
       '',
-      m._style(Style()).dim().render(
-        _focus == _WidgetsFocus.live
-            ? 'focused: ${_liveTextArea ? 'TextArea' : 'TextInput'} (press i to toggle)'
-            : 'click this panel to edit; Esc to unfocus',
-      ),
+      m
+          ._style(Style())
+          .dim()
+          .render(
+            _focus == _WidgetsFocus.live
+                ? 'focused: ${_liveTextArea ? 'TextArea' : 'TextInput'} (press i to toggle)'
+                : 'click this panel to edit; Esc to unfocus',
+          ),
       '',
       m._style(Style()).dim().render('TextInput:'),
       m.textInput.view(),
@@ -1478,7 +1362,10 @@ final class _WidgetsPage extends _KitchenSinkPage {
     ].join('\n');
 
     final panels = <({String text, _WidgetsFocus focus})>[
-      (text: _box(m, 'Live (shared state)', status, focus: _WidgetsFocus.live), focus: _WidgetsFocus.live),
+      (
+        text: _box(m, 'Live (shared state)', status, focus: _WidgetsFocus.live),
+        focus: _WidgetsFocus.live,
+      ),
       (
         text: _box(
           m,
@@ -1508,15 +1395,30 @@ final class _WidgetsPage extends _KitchenSinkPage {
         focus: _WidgetsFocus.confirm,
       ),
       (
-        text: _box(m, 'Destructive confirm', _destructive.view(), focus: _WidgetsFocus.destructive),
+        text: _box(
+          m,
+          'Destructive confirm',
+          _destructive.view(),
+          focus: _WidgetsFocus.destructive,
+        ),
         focus: _WidgetsFocus.destructive,
       ),
       (
-        text: _box(m, 'Password', _password.view(), focus: _WidgetsFocus.password),
+        text: _box(
+          m,
+          'Password',
+          _password.view(),
+          focus: _WidgetsFocus.password,
+        ),
         focus: _WidgetsFocus.password,
       ),
       (
-        text: _box(m, 'Anticipate (autocomplete)', _anticipate.view(), focus: _WidgetsFocus.anticipate),
+        text: _box(
+          m,
+          'Anticipate (autocomplete)',
+          _anticipate.view(),
+          focus: _WidgetsFocus.anticipate,
+        ),
         focus: _WidgetsFocus.anticipate,
       ),
       (
@@ -1532,7 +1434,12 @@ final class _WidgetsPage extends _KitchenSinkPage {
         focus: _WidgetsFocus.list,
       ),
       (
-        text: _box(m, 'TableModel', _tableModel.view(), focus: _WidgetsFocus.table),
+        text: _box(
+          m,
+          'TableModel',
+          _tableModel.view(),
+          focus: _WidgetsFocus.table,
+        ),
         focus: _WidgetsFocus.table,
       ),
       (
@@ -1541,9 +1448,12 @@ final class _WidgetsPage extends _KitchenSinkPage {
           'ViewportModel',
           [
             _viewportPreview.view(),
-            m._style(Style()).dim().render(
-              'scroll=${(_viewportPreview.scrollPercent * 100).round()}% (focus this panel to use j/k)',
-            ),
+            m
+                ._style(Style())
+                .dim()
+                .render(
+                  'scroll=${(_viewportPreview.scrollPercent * 100).round()}% (focus this panel to use j/k)',
+                ),
           ].join('\n'),
           focus: _WidgetsFocus.viewport,
         ),
@@ -1602,12 +1512,20 @@ final class _WidgetsPage extends _KitchenSinkPage {
     final columns = renderedPanels.join('\n\n');
 
     final topRow0 = m._headerLines + 2;
-    final pane = _pane.render(
-      m,
-      columns,
-      topRow0: topRow0,
-      topPaddingLines: 2, // title + blank line
+    final contentHeight = (m._height - m._headerLines - m._footerLines - 1)
+        .clamp(0, 9999);
+    final bodyHeight = (contentHeight - 2).clamp(1, 9999);
+
+    final viewportWidth = (m._width - 2).clamp(10, 9999);
+    _pane.viewport = _pane.viewport.copyWith(
+      width: viewportWidth,
+      height: bodyHeight,
     );
+    _pane.viewport = _pane.viewport.setContent(columns);
+    _pane.originX = 0;
+    _pane.originY = topRow0;
+
+    final pane = _pane.view();
 
     return [title, '', pane].join('\n');
   }
@@ -1620,7 +1538,8 @@ final class _WidgetsPage extends _KitchenSinkPage {
     }
 
     if (_focus == _WidgetsFocus.none) {
-      _pane.onKey(key, cmds);
+      final (_, cmd) = _pane.update(tui.KeyMsg(key));
+      if (cmd != null) cmds.add(cmd);
       return false;
     }
 
@@ -1710,7 +1629,9 @@ final class _WidgetsPage extends _KitchenSinkPage {
   @override
   void onMsg(_KitchenSinkModel m, tui.Msg msg, List<tui.Cmd> cmds) {
     if (msg is tui.MouseMsg) {
-      final consumed = _pane.onMouse(msg, cmds);
+      final consumed = _pane.consumesMouse(msg);
+      final (_, cmd) = _pane.update(msg);
+      if (cmd != null) cmds.add(cmd);
       if (consumed) return;
 
       if (msg.button == tui.MouseButton.left &&
@@ -1853,7 +1774,8 @@ String _box(
   String body, {
   required _WidgetsFocus focus,
 }) {
-  final focused = m._activePage is _WidgetsPage &&
+  final focused =
+      m._activePage is _WidgetsPage &&
       (m._activePage as _WidgetsPage)._focus == focus &&
       focus != _WidgetsFocus.none;
 
@@ -1883,9 +1805,10 @@ final class _NeofetchPage extends _KitchenSinkPage {
         .bold()
         .foreground(Colors.lime)
         .render('$user@$host');
-    final underline = m._style(Style()).dim().render(
-      '-' * math.min(Style.visibleLength('$user@$host'), 28),
-    );
+    final underline = m
+        ._style(Style())
+        .dim()
+        .render('-' * math.min(Style.visibleLength('$user@$host'), 28));
 
     final os =
         _readOsPrettyName() ??
@@ -1900,7 +1823,11 @@ final class _NeofetchPage extends _KitchenSinkPage {
     final mem = _readMemPretty() ?? '(unknown)';
 
     String kv(String k, String v) {
-      final key = m._style(Style()).bold().foreground(Colors.lime).render('$k:');
+      final key = m
+          ._style(Style())
+          .bold()
+          .foreground(Colors.lime)
+          .render('$k:');
       return '$key $v';
     }
 
@@ -2106,9 +2033,7 @@ final class _ListSelectionState {
       final line = '  $prefix$icon ${item.label}';
       buf.writeln(
         isSelected
-            ? Style()
-                  .foreground(const BasicColor('14'))
-                  .render(line)
+            ? Style().foreground(const BasicColor('14')).render(line)
             : line,
       );
     }
@@ -2122,7 +2047,11 @@ final class _ListSelectionState {
 }
 
 final class _EmojiItem {
-  const _EmojiItem({required this.emoji, required this.fallback, required this.label});
+  const _EmojiItem({
+    required this.emoji,
+    required this.fallback,
+    required this.label,
+  });
 
   final String emoji;
   final String fallback;
@@ -2178,8 +2107,15 @@ String _colorSwatches(_KitchenSinkModel m) {
     Colors.white,
   ];
   final top = colors.map((c) => (s.copy()..background(c)).render('   ')).join();
-  final dim =
-      colors.map((c) => (s.copy()..background(c)..dim()).render('   ')).join();
+  final dim = colors
+      .map(
+        (c) =>
+            (s.copy()
+                  ..background(c)
+                  ..dim())
+                .render('   '),
+      )
+      .join();
   return '$dim\n$top';
 }
 
@@ -2298,7 +2234,9 @@ class _LipglossV2Page extends _KitchenSinkPage {
         .underlineStyle(UnderlineStyle.curly)
         .underlineColor(Colors.error)
         .bold();
-    buffer.writeln('${labelStyle.render('Underline Color:')} ${ulColorStyle.render('Curly red underline on bold text')}');
+    buffer.writeln(
+      '${labelStyle.render('Underline Color:')} ${ulColorStyle.render('Curly red underline on bold text')}',
+    );
     buffer.writeln(
       '${labelStyle.render('Underline Stress:')} '
       '${Style().underline().underlineColor(Colors.error).render('single')}  '
@@ -2324,7 +2262,9 @@ class _LipglossV2Page extends _KitchenSinkPage {
         .padding(1, 2)
         .paddingChar('.')
         .foreground(Colors.white);
-    buffer.writeln('${labelStyle.render('Padding Char:')} ${padCharStyle.render('Dots as padding')}');
+    buffer.writeln(
+      '${labelStyle.render('Padding Char:')} ${padCharStyle.render('Dots as padding')}',
+    );
 
     // 3. Margin Character & Background
     final marginStyle = Style()
@@ -2334,31 +2274,47 @@ class _LipglossV2Page extends _KitchenSinkPage {
         .marginBackground(Colors.warning)
         .foreground(Colors.white);
     buffer.writeln('${labelStyle.render('Margin Char/Bg:')}');
-    buffer.writeln(marginStyle.render('Styled box with hash margins on yellow background'));
+    buffer.writeln(
+      marginStyle.render('Styled box with hash margins on yellow background'),
+    );
 
     // 4. Underline Spaces
     final ulSpacesStyle = Style().underline().underlineSpaces(true);
     final noUlSpacesStyle = Style().underline().underlineSpaces(false);
-    buffer.writeln('${labelStyle.render('Underline Spaces:')} ${ulSpacesStyle.render('Underlined  Spaces')} vs ${noUlSpacesStyle.render('No  Underlined  Spaces')}');
+    buffer.writeln(
+      '${labelStyle.render('Underline Spaces:')} ${ulSpacesStyle.render('Underlined  Spaces')} vs ${noUlSpacesStyle.render('No  Underlined  Spaces')}',
+    );
 
     // 5. Strikethrough Spaces
     final stSpacesStyle = Style().strikethrough().strikethroughSpaces(true);
     final noStSpacesStyle = Style().strikethrough().strikethroughSpaces(false);
-    buffer.writeln('${labelStyle.render('Strikethrough Spaces:')} ${stSpacesStyle.render('Strikethrough  Spaces')} vs ${noStSpacesStyle.render('No  Strikethrough  Spaces')}');
+    buffer.writeln(
+      '${labelStyle.render('Strikethrough Spaces:')} ${stSpacesStyle.render('Strikethrough  Spaces')} vs ${noStSpacesStyle.render('No  Strikethrough  Spaces')}',
+    );
 
     // 6. Faint & Reverse Aliases
     final faintStyle = Style().faint();
     final reverseStyle = Style().reverse();
-    buffer.writeln('${labelStyle.render('Faint/Reverse:')} ${faintStyle.render('Faint text')} and ${reverseStyle.render('Reverse text')}');
+    buffer.writeln(
+      '${labelStyle.render('Faint/Reverse:')} ${faintStyle.render('Faint text')} and ${reverseStyle.render('Reverse text')}',
+    );
 
     // 7. Multi-string Render
     final multiStyle = Style().bold().foreground(Colors.warning);
-    buffer.writeln('${labelStyle.render('Multi-string Render:')} ${multiStyle.render(['Joined', 'with', 'spaces'])}');
+    buffer.writeln(
+      '${labelStyle.render('Multi-string Render:')} ${multiStyle.render(['Joined', 'with', 'spaces'])}',
+    );
 
     // 7b. A noisy ANSI line to stress state transitions in the UV renderer.
     final ulA = Style().underline().underlineColor(Colors.error);
-    final ulB = Style().underlineStyle(UnderlineStyle.curly).underline().underlineColor(Colors.warning);
-    final ulC = Style().underlineStyle(UnderlineStyle.dotted).underline().underlineColor(Colors.info);
+    final ulB = Style()
+        .underlineStyle(UnderlineStyle.curly)
+        .underline()
+        .underlineColor(Colors.warning);
+    final ulC = Style()
+        .underlineStyle(UnderlineStyle.dotted)
+        .underline()
+        .underlineColor(Colors.info);
     buffer.writeln(
       '${labelStyle.render('ANSI Stress:')} '
       '${ulA.render('A')}'
@@ -2377,11 +2333,12 @@ class _LipglossV2Page extends _KitchenSinkPage {
         .row(['StyleFunc', 'Overrides'])
         .baseStyle(baseStyle)
         .styleFunc((row, col, data) {
-          if (data == 'Overrides') return Style().foreground(Colors.success).bold().unsetItalic();
+          if (data == 'Overrides')
+            return Style().foreground(Colors.success).bold().unsetItalic();
           return null;
         })
         .border(Border.rounded);
-    
+
     buffer.writeln();
     buffer.writeln(titleStyle.render('Table BaseStyle Inheritance'));
     buffer.writeln(table.render());
@@ -2391,7 +2348,10 @@ class _LipglossV2Page extends _KitchenSinkPage {
 }
 
 final class _CompositorPage extends _KitchenSinkPage {
-  const _CompositorPage() : super(help: 'Compositor: demonstrates UV layering and canvas composition');
+  const _CompositorPage()
+    : super(
+        help: 'Compositor: demonstrates UV layering and canvas composition',
+      );
 
   @override
   String view(_KitchenSinkModel m) {
@@ -2403,7 +2363,7 @@ final class _CompositorPage extends _KitchenSinkPage {
         .width(40)
         .height(10)
         .render('');
-    
+
     final foregroundBox = Style()
         .background(Colors.indigo)
         .foreground(Colors.white)
@@ -2412,22 +2372,18 @@ final class _CompositorPage extends _KitchenSinkPage {
         .render('I am a floating layer');
 
     final textLayer = StyledString(
-      m._style(Style()).bold().foreground(Colors.warning).render('Topmost Text'),
+      m
+          ._style(Style())
+          .bold()
+          .foreground(Colors.warning)
+          .render('Topmost Text'),
     );
 
     // Build a composition.
     final comp = Compositor([
       Layer(StyledString(bgBox)).setId('bg').setZ(0),
-      Layer(StyledString(foregroundBox))
-          .setId('fg')
-          .setX(5)
-          .setY(2)
-          .setZ(10),
-      Layer(textLayer)
-          .setId('text')
-          .setX(15)
-          .setY(4)
-          .setZ(20),
+      Layer(StyledString(foregroundBox)).setId('fg').setX(5).setY(2).setZ(10),
+      Layer(textLayer).setId('text').setX(15).setY(4).setZ(20),
     ]);
 
     final rendered = comp.render();
@@ -2494,7 +2450,9 @@ The selection will persist even if you scroll the viewport.
   String view(_KitchenSinkModel m) {
     final out = <String>[];
 
-    out.add(m._style(Style()).bold().render('1. Viewport (Scrollable & Selectable)'));
+    out.add(
+      m._style(Style()).bold().render('1. Viewport (Scrollable & Selectable)'),
+    );
     final vpTop = out.length;
     out.addAll(m.viewport.view().split('\n'));
     out.add('');
@@ -2504,18 +2462,25 @@ The selection will persist even if you scroll the viewport.
     out.addAll((m.textarea.view() as String).split('\n'));
     out.add('');
 
-    out.add(m._style(Style()).bold().render('3. TextInput (Single-line Input)'));
+    out.add(
+      m._style(Style()).bold().render('3. TextInput (Single-line Input)'),
+    );
     final tiTop = out.length;
     out.addAll((m.textInput.view() as String).split('\n'));
     out.add('');
 
-    out.add(m._style(Style()).bold().render('4. Text (Auto-height & Selectable)'));
+    out.add(
+      m._style(Style()).bold().render('4. Text (Auto-height & Selectable)'),
+    );
     final txTop = out.length;
     out.addAll(m.text.view().split('\n'));
     out.add('');
 
     out.add(
-      m._style(Style()).dim().render(
+      m
+          ._style(Style())
+          .dim()
+          .render(
             'Tip: Use your mouse to select text. Press Ctrl+C to copy to clipboard.',
           ),
     );

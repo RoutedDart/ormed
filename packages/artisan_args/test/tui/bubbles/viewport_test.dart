@@ -101,29 +101,33 @@ void main() {
 
     group('Parity Features', () {
       test('softWrap wraps long lines', () {
-        final viewport = ViewportModel(width: 10, softWrap: true).setContent(
-          'this is a very long line',
-        );
+        final viewport = ViewportModel(
+          width: 10,
+          softWrap: true,
+        ).setContent('this is a very long line');
         final view = viewport.view();
         // With width 10, 'this is a very long line' should wrap into multiple lines
         expect(view.split('\n').length, greaterThan(1));
       });
 
       test('showLineNumbers adds gutter', () {
-        final viewport = ViewportModel(width: 20, showLineNumbers: true)
-            .setContent('line1\nline2');
+        final viewport = ViewportModel(
+          width: 20,
+          showLineNumbers: true,
+        ).setContent('line1\nline2');
         final view = viewport.view();
         expect(view, contains('1 '));
         expect(view, contains('2 '));
       });
 
       test('highlights apply styles', () {
-        final viewport = ViewportModel(
-          width: 20,
-          highlightStyle: Style().foreground(const AnsiColor(1)),
-        ).setContent('test line').setHighlights([
-          [0, 4],
-        ]);
+        final viewport =
+            ViewportModel(
+              width: 20,
+              highlightStyle: Style().foreground(const AnsiColor(1)),
+            ).setContent('test line').setHighlights([
+              [0, 4],
+            ]);
         final view = viewport.view();
         expect(view, contains('\x1b[38;5;1mtest\x1b[m'));
       });
@@ -329,13 +333,14 @@ void main() {
         // Find the index of "Target" in the full content.
         final targetIndex = content.indexOf('Target');
 
-        var viewport = ViewportModel(
-          width: 20,
-          height: 5,
-          highlightStyle: style,
-        ).setContent(content).setHighlights([
-          [targetIndex, targetIndex + 6],
-        ]);
+        var viewport =
+            ViewportModel(
+              width: 20,
+              height: 5,
+              highlightStyle: style,
+            ).setContent(content).setHighlights([
+              [targetIndex, targetIndex + 6],
+            ]);
 
         // setHighlights() ensures the current highlight is visible.
         expect(viewport.yOffset, anyOf(10, 11));
@@ -353,14 +358,14 @@ void main() {
         final t1Idx = content.indexOf('Target 1');
         final t2Idx = content.indexOf('Target 2');
 
-        var viewport = ViewportModel(
-          width: 20,
-          height: 5,
-          highlightStyle: style,
-        ).setContent(content).setHighlights([
-          [t1Idx, t1Idx + 8],
-          [t2Idx, t2Idx + 8],
-        ]).setYOffset(10);
+        var viewport =
+            ViewportModel(width: 20, height: 5, highlightStyle: style)
+                .setContent(content)
+                .setHighlights([
+                  [t1Idx, t1Idx + 8],
+                  [t2Idx, t2Idx + 8],
+                ])
+                .setYOffset(10);
 
         final startYOffset = viewport.yOffset; // clamped to maxYOffset
         viewport = viewport.highlightPrev();
@@ -466,8 +471,11 @@ void main() {
       test('softWrap wraps long lines', () {
         final content =
             'This is a very long line that should be wrapped by the viewport.';
-        final viewport = ViewportModel(width: 20, height: 5, softWrap: true)
-            .setContent(content);
+        final viewport = ViewportModel(
+          width: 20,
+          height: 5,
+          softWrap: true,
+        ).setContent(content);
 
         final view = viewport.view();
         final lines = view.split('\n');
@@ -498,13 +506,14 @@ void main() {
       test('highlights apply styles to content', () {
         final content = 'Hello World';
         final style = Style().foreground(const BasicColor('#ff0000'));
-        final viewport = ViewportModel(
-          width: 20,
-          height: 5,
-          highlightStyle: style,
-        ).setContent(content).setHighlights([
-          [6, 11],
-        ]);
+        final viewport =
+            ViewportModel(
+              width: 20,
+              height: 5,
+              highlightStyle: style,
+            ).setContent(content).setHighlights([
+              [6, 11],
+            ]);
 
         final view = viewport.view();
         // "World" should be styled
@@ -564,119 +573,174 @@ void main() {
       });
     });
 
+    group('Mouse Wheel', () {
+      test('scrolls when action is MouseAction.wheel (UV adapter)', () {
+        final viewport = ViewportModel(height: 2).setContent('a\nb\nc');
+
+        final (v1, _) = viewport.update(
+          const MouseMsg(
+            action: MouseAction.wheel,
+            button: MouseButton.wheelDown,
+            x: 0,
+            y: 0,
+          ),
+        );
+
+        expect(v1.yOffset, 1);
+      });
+    });
+
     group('Selection', () {
       test('selects text via mouse drag', () {
-        var viewport = ViewportModel(width: 20, height: 5).setContent('Hello World\nLine 2');
+        var viewport = ViewportModel(
+          width: 20,
+          height: 5,
+        ).setContent('Hello World\nLine 2');
 
         // Press at (0, 0)
-        var (v1, _) = viewport.update(const MouseMsg(
-          action: MouseAction.press,
-          button: MouseButton.left,
-          x: 0,
-          y: 0,
-        ));
+        var (v1, _) = viewport.update(
+          const MouseMsg(
+            action: MouseAction.press,
+            button: MouseButton.left,
+            x: 0,
+            y: 0,
+          ),
+        );
 
         // Drag to (5, 0)
-        var (v2, _) = v1.update(const MouseMsg(
-          action: MouseAction.motion,
-          button: MouseButton.left,
-          x: 5,
-          y: 0,
-        ));
+        var (v2, _) = v1.update(
+          const MouseMsg(
+            action: MouseAction.motion,
+            button: MouseButton.left,
+            x: 5,
+            y: 0,
+          ),
+        );
 
         expect(v2.getSelectedText(), equals('Hello'));
       });
 
       test('renders selection with highlight style', () {
-        var viewport = ViewportModel(width: 20, height: 5).setContent('Hello World');
+        var viewport = ViewportModel(
+          width: 20,
+          height: 5,
+        ).setContent('Hello World');
 
         // Select "Hello".
-        final (v1, _) = viewport.update(const MouseMsg(
-          action: MouseAction.press,
-          button: MouseButton.left,
-          x: 0,
-          y: 0,
-        ));
-        final (v2, _) = v1.update(const MouseMsg(
-          action: MouseAction.motion,
-          button: MouseButton.left,
-          x: 5,
-          y: 0,
-        ));
+        final (v1, _) = viewport.update(
+          const MouseMsg(
+            action: MouseAction.press,
+            button: MouseButton.left,
+            x: 0,
+            y: 0,
+          ),
+        );
+        final (v2, _) = v1.update(
+          const MouseMsg(
+            action: MouseAction.motion,
+            button: MouseButton.left,
+            x: 5,
+            y: 0,
+          ),
+        );
 
         final view = v2.view();
-        final selectionStyle =
-            Style().background(const AnsiColor(7)).foreground(const AnsiColor(0));
+        final selectionStyle = Style()
+            .background(const AnsiColor(7))
+            .foreground(const AnsiColor(0));
         expect(view, contains(selectionStyle.render('Hello')));
       });
 
       test('double click selects word', () {
-        var viewport = ViewportModel(width: 20, height: 5).setContent('Hello World\nLine 2');
+        var viewport = ViewportModel(
+          width: 20,
+          height: 5,
+        ).setContent('Hello World\nLine 2');
 
         // First click at (2, 0) - inside "Hello"
-        var (v1, _) = viewport.update(const MouseMsg(
-          action: MouseAction.press,
-          button: MouseButton.left,
-          x: 2,
-          y: 0,
-        ));
+        var (v1, _) = viewport.update(
+          const MouseMsg(
+            action: MouseAction.press,
+            button: MouseButton.left,
+            x: 2,
+            y: 0,
+          ),
+        );
 
         // Second click at same position immediately
-        var (v2, _) = v1.update(const MouseMsg(
-          action: MouseAction.press,
-          button: MouseButton.left,
-          x: 2,
-          y: 0,
-        ));
+        var (v2, _) = v1.update(
+          const MouseMsg(
+            action: MouseAction.press,
+            button: MouseButton.left,
+            x: 2,
+            y: 0,
+          ),
+        );
 
         expect(v2.getSelectedText(), equals('Hello'));
       });
 
       test('double click selects whitespace', () {
-        var viewport = ViewportModel(width: 20, height: 5).setContent('Hello   World');
+        var viewport = ViewportModel(
+          width: 20,
+          height: 5,
+        ).setContent('Hello   World');
 
         // Click in the middle of spaces
-        var (v1, _) = viewport.update(const MouseMsg(
-          action: MouseAction.press,
-          button: MouseButton.left,
-          x: 6,
-          y: 0,
-        ));
+        var (v1, _) = viewport.update(
+          const MouseMsg(
+            action: MouseAction.press,
+            button: MouseButton.left,
+            x: 6,
+            y: 0,
+          ),
+        );
 
-        var (v2, _) = v1.update(const MouseMsg(
-          action: MouseAction.press,
-          button: MouseButton.left,
-          x: 6,
-          y: 0,
-        ));
+        var (v2, _) = v1.update(
+          const MouseMsg(
+            action: MouseAction.press,
+            button: MouseButton.left,
+            x: 6,
+            y: 0,
+          ),
+        );
 
         expect(v2.getSelectedText(), equals('   '));
       });
 
       test('click outside bounds clears selection', () {
-        var viewport = ViewportModel(width: 20, height: 5).setContent('Hello World');
+        var viewport = ViewportModel(
+          width: 20,
+          height: 5,
+        ).setContent('Hello World');
         // Select something
-        var (v1, _) = viewport.update(const MouseMsg(
-          action: MouseAction.press,
-          button: MouseButton.left,
-          x: 0,
-          y: 0,
-        ));
-        var (v2, _) = v1.update(const MouseMsg(
-          action: MouseAction.motion,
-          button: MouseButton.left,
-          x: 5,
-          y: 0,
-        ));
+        var (v1, _) = viewport.update(
+          const MouseMsg(
+            action: MouseAction.press,
+            button: MouseButton.left,
+            x: 0,
+            y: 0,
+          ),
+        );
+        var (v2, _) = v1.update(
+          const MouseMsg(
+            action: MouseAction.motion,
+            button: MouseButton.left,
+            x: 5,
+            y: 0,
+          ),
+        );
         expect(v2.getSelectedText(), equals('Hello'));
 
         // Click outside (y = -1)
-        var (v3, _) = v2.update(const MouseMsg(
-          action: MouseAction.press,
-          button: MouseButton.left,
-          x: 0,
-          y: -1,
-        ));
+        var (v3, _) = v2.update(
+          const MouseMsg(
+            action: MouseAction.press,
+            button: MouseButton.left,
+            x: 0,
+            y: -1,
+          ),
+        );
         expect(v3.getSelectedText(), equals(''));
       });
     });

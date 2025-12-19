@@ -63,6 +63,7 @@ export 'spinner.dart';
 export 'help.dart';
 export 'paginator.dart';
 export 'viewport.dart';
+export 'viewport_scroll_pane.dart';
 export 'text.dart';
 export 'progress.dart';
 export 'textinput.dart';

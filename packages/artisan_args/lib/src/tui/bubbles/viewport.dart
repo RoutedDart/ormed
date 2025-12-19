@@ -300,11 +300,9 @@ class ViewportModel extends ViewComponent {
   int _maxWidth() {
     var gutterSize = 0;
     if (leftGutterFunc != null) {
-      gutterSize = Style.visibleLength(leftGutterFunc!(GutterContext(
-        index: 0,
-        totalLines: 0,
-        soft: false,
-      )));
+      gutterSize = Style.visibleLength(
+        leftGutterFunc!(GutterContext(index: 0, totalLines: 0, soft: false)),
+      );
     } else {
       gutterSize = gutter;
     }
@@ -387,10 +385,12 @@ class ViewportModel extends ViewComponent {
       leftGutterFunc: leftGutterFunc ?? this.leftGutterFunc,
       style: style ?? this.style,
       highlightStyle: highlightStyle ?? this.highlightStyle,
-      selectedHighlightStyle: selectedHighlightStyle ?? this.selectedHighlightStyle,
+      selectedHighlightStyle:
+          selectedHighlightStyle ?? this.selectedHighlightStyle,
       styleLineFunc: styleLineFunc ?? this.styleLineFunc,
       highlights: newHighlights,
-      currentHighlightIndex: currentHighlightIndex ?? this.currentHighlightIndex,
+      currentHighlightIndex:
+          currentHighlightIndex ?? this.currentHighlightIndex,
       selectionStart: newSelectionStart,
       selectionEnd: newSelectionEnd,
       lastClickTime: lastClickTime ?? this.lastClickTime,
@@ -402,10 +402,7 @@ class ViewportModel extends ViewComponent {
 
   /// Clears the current selection.
   ViewportModel clearSelection() {
-    return copyWith(
-      selectionStart: null,
-      selectionEnd: null,
-    );
+    return copyWith(selectionStart: null, selectionEnd: null);
   }
 
   /// Selects all text in the viewport.
@@ -496,7 +493,9 @@ class ViewportModel extends ViewComponent {
     }
     final highlights = _parseMatches(_originalLines.join('\n'), matches);
     final newModel = copyWith(highlights: highlights);
-    return newModel.copyWith(currentHighlightIndex: newModel._findNearestMatch())._showHighlight();
+    return newModel
+        .copyWith(currentHighlightIndex: newModel._findNearestMatch())
+        ._showHighlight();
   }
 
   /// Clears previously set highlights.
@@ -508,7 +507,8 @@ class ViewportModel extends ViewComponent {
     if (currentHighlightIndex == -1 || _highlights.isEmpty) {
       return this;
     }
-    final (line, colstart, colend) = _highlights[currentHighlightIndex].coords();
+    final (line, colstart, colend) = _highlights[currentHighlightIndex]
+        .coords();
     return ensureVisible(line, colstart, colend);
   }
 
@@ -605,7 +605,11 @@ class ViewportModel extends ViewComponent {
 
     // Cut the lines to the viewport width.
     for (var i = 0; i < visible.length; i++) {
-      visible[i] = ranges.cutAnsiByCells(visible[i], xOffset, xOffset + maxWidth);
+      visible[i] = ranges.cutAnsiByCells(
+        visible[i],
+        xOffset,
+        xOffset + maxWidth,
+      );
     }
     return _setupGutter(visible, total, ridx);
   }
@@ -622,8 +626,9 @@ class ViewportModel extends ViewComponent {
     if (endY < offset) return lines;
     if (startY >= offset + lines.length) return lines;
 
-    final selectionStyle =
-        Style().background(const AnsiColor(7)).foreground(const AnsiColor(0));
+    final selectionStyle = Style()
+        .background(const AnsiColor(7))
+        .foreground(const AnsiColor(0));
 
     final result = <String>[];
 
@@ -695,7 +700,7 @@ class ViewportModel extends ViewComponent {
         final hi = sel.lines[lineIdx];
         if (hi != null) {
           line = ranges.styleRanges(line, [
-            ranges.StyleRange(hi.$1, hi.$2, selectedHighlightStyle)
+            ranges.StyleRange(hi.$1, hi.$2, selectedHighlightStyle),
           ]);
         }
       }
@@ -720,11 +725,10 @@ class ViewportModel extends ViewComponent {
 
       if (lineWidth <= maxWidth) {
         if (leftGutterFunc != null) {
-          line = leftGutterFunc!(GutterContext(
-                index: i + ridx,
-                totalLines: total,
-                soft: false,
-              )) +
+          line =
+              leftGutterFunc!(
+                GutterContext(index: i + ridx, totalLines: total, soft: false),
+              ) +
               line;
         }
         wrappedLines.add(line);
@@ -735,11 +739,14 @@ class ViewportModel extends ViewComponent {
       while (lineWidth > idx) {
         var truncatedLine = ranges.cutAnsiByCells(line, idx, maxWidth + idx);
         if (leftGutterFunc != null) {
-          truncatedLine = leftGutterFunc!(GutterContext(
-                index: i + ridx,
-                totalLines: total,
-                soft: idx > 0,
-              )) +
+          truncatedLine =
+              leftGutterFunc!(
+                GutterContext(
+                  index: i + ridx,
+                  totalLines: total,
+                  soft: idx > 0,
+                ),
+              ) +
               truncatedLine;
         }
         wrappedLines.add(truncatedLine);
@@ -757,12 +764,12 @@ class ViewportModel extends ViewComponent {
 
     final result = <String>[];
     for (var i = 0; i < lines.length; i++) {
-      result.add(leftGutterFunc!(GutterContext(
-            index: i + ridx,
-            totalLines: total,
-            soft: false,
-          )) +
-          lines[i]);
+      result.add(
+        leftGutterFunc!(
+              GutterContext(index: i + ridx, totalLines: total, soft: false),
+            ) +
+            lines[i],
+      );
     }
     return result;
   }
@@ -782,14 +789,18 @@ class ViewportModel extends ViewComponent {
   ViewportModel scrollDown(int n) {
     if (atBottom || n == 0 || _lines.isEmpty) return this;
     final newModel = setYOffset(yOffset + n);
-    return newModel.copyWith(currentHighlightIndex: newModel._findNearestMatch());
+    return newModel.copyWith(
+      currentHighlightIndex: newModel._findNearestMatch(),
+    );
   }
 
   /// Scrolls up by the given number of lines.
   ViewportModel scrollUp(int n) {
     if (atTop || n == 0 || _lines.isEmpty) return this;
     final newModel = setYOffset(yOffset - n);
-    return newModel.copyWith(currentHighlightIndex: newModel._findNearestMatch());
+    return newModel.copyWith(
+      currentHighlightIndex: newModel._findNearestMatch(),
+    );
   }
 
   /// Scrolls left by the given number of columns.
@@ -830,13 +841,17 @@ class ViewportModel extends ViewComponent {
   ViewportModel gotoTop() {
     if (atTop) return this;
     final newModel = setYOffset(0);
-    return newModel.copyWith(currentHighlightIndex: newModel._findNearestMatch());
+    return newModel.copyWith(
+      currentHighlightIndex: newModel._findNearestMatch(),
+    );
   }
 
   /// Goes to the bottom of the content.
   ViewportModel gotoBottom() {
     final newModel = setYOffset(_maxYOffset);
-    return newModel.copyWith(currentHighlightIndex: newModel._findNearestMatch());
+    return newModel.copyWith(
+      currentHighlightIndex: newModel._findNearestMatch(),
+    );
   }
 
   /// Returns the currently selected text.
@@ -927,7 +942,13 @@ class ViewportModel extends ViewComponent {
         }
         return (this, null);
 
-      case MouseMsg(:final button, :final action, :final x, :final y, :final shift):
+      case MouseMsg(
+        :final button,
+        :final action,
+        :final x,
+        :final y,
+        :final shift,
+      ):
         if (button == MouseButton.left) {
           final isOutside =
               y < 0 || (height != null ? y >= height! : y >= lines.length);
@@ -972,22 +993,23 @@ class ViewportModel extends ViewComponent {
             );
           }
 
-        if (action == MouseAction.motion && selectionStart != null) {
-          // Update selection
-          final contentX = x - gutter + xOffset;
-          final contentY = y + yOffset;
-          return (copyWith(selectionEnd: (contentX, contentY)), null);
+          if (action == MouseAction.motion && selectionStart != null) {
+            // Update selection
+            final contentX = x - gutter + xOffset;
+            final contentY = y + yOffset;
+            return (copyWith(selectionEnd: (contentX, contentY)), null);
+          }
+
+          if (action == MouseAction.release && button == MouseButton.left) {
+            // Finalize selection (keep it for copying)
+            return (this, null);
+          }
         }
 
-        if (action == MouseAction.release && button == MouseButton.left) {
-          // Finalize selection (keep it for copying)
+        if (!mouseWheelEnabled ||
+            (action != MouseAction.press && action != MouseAction.wheel)) {
           return (this, null);
         }
-      }
-
-      if (!mouseWheelEnabled || action != MouseAction.press) {
-        return (this, null);
-      }
 
         switch (button) {
           case MouseButton.wheelUp:
@@ -1044,10 +1066,7 @@ class ViewportModel extends ViewComponent {
         .height(contentHeight)
         .render(contents);
 
-    return style
-        .unsetWidth()
-        .unsetHeight()
-        .render(contents);
+    return style.unsetWidth().unsetHeight().render(contents);
   }
 
   static int _findLongestLineWidth(List<String> lines) {
@@ -1125,7 +1144,10 @@ List<HighlightInfo> _parseMatches(String content, List<List<int>> matches) {
       // if it ends with a new line, add the range, increase line, and continue
       if (grapheme == '\n') {
         final colstart = math.max(0, graphemeStart - previousLinesOffset);
-        final colend = math.max(graphemePos - previousLinesOffset + 1, colstart);
+        final colend = math.max(
+          graphemePos - previousLinesOffset + 1,
+          colstart,
+        );
 
         if (colend > colstart) {
           hiLines[line] = (colstart, colend);
@@ -1149,11 +1171,9 @@ List<HighlightInfo> _parseMatches(String content, List<List<int>> matches) {
       }
     }
 
-    highlights.add(HighlightInfo(
-      lineStart: lineStart,
-      lineEnd: line,
-      lines: hiLines,
-    ));
+    highlights.add(
+      HighlightInfo(lineStart: lineStart, lineEnd: line, lines: hiLines),
+    );
   }
 
   return highlights;

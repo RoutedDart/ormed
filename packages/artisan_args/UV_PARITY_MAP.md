@@ -68,4 +68,4 @@ Legend:
 1. [x] Fix real-terminal `--uv-renderer` reliability (blank screen + resize crash + sink binding + shared stdin).
 2. [x] Implement the `/dev/tty` split plumbing so output can be redirected while keeping raw mode + resize probes on the controlling TTY.
 3. [x] Port/replicate upstream movement-optimization probing (`optimizeMovements`) or expose a compatibility API for host capability bits.
-4. [ ] Finalize Lipgloss v2 migration guide and documentation.
+4. [x] Finalize Lipgloss v2 migration guide and documentation.

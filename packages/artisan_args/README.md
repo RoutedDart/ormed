@@ -11,7 +11,7 @@ Provides a polished CLI experience with:
 
 ## Components vs. Bubbles
 
-- `lib/src/components/` contains **display-only** building blocks (`CliComponent`).
+- `lib/src/tui/bubbles/components/` contains **display-only** building blocks (`DisplayComponent`).
 - `lib/src/tui/bubbles/` contains **interactive** components implemented as Bubble
   Tea-style `Model`s.
 
@@ -126,9 +126,11 @@ io.error('Something went wrong');
 io.note('Remember to...');
 io.alert('Important message!');
 
-// Lists
+// Lists and UI
 io.listing(['Item 1', 'Item 2', 'Item 3']);
 io.twoColumnDetail('Key', 'Value');
+io.logo('MY APP'); // ASCII art logo
+io.menu('Main Menu', ['Option 1', 'Option 2']); // Persistent menu
 ```
 
 ### Tables
@@ -230,6 +232,23 @@ final style = Style()
 print(style.render('Styled Text'));
 ```
 
+### Console Tags
+
+`artisan_args` supports Laravel/Symfony-style console tags for inline styling:
+
+```dart
+io.text('The <fg=red;options=bold>red bold</> text.');
+io.text('Hex colors: <fg=#ff0000>Red</>');
+io.text('ANSI 256: <fg=208>Orange</>');
+io.text('Nested: <fg=blue>Blue <fg=yellow>Yellow</> Blue</>');
+```
+
+Supported tags:
+- `<fg=color>`: Foreground color (name, hex, or 256-code)
+- `<bg=color>`: Background color
+- `<options=bold,italic,underscore,reverse,blink,conceal,strike>`: Text options
+- `<href=url>`: Terminal hyperlinks (OSC 8)
+
 **Components with Fluent Builders:**
 
 ```dart
@@ -265,23 +284,36 @@ The runner automatically adds these flags:
 ## Project Structure
 
 ```
-lib/
-├── artisan_args.dart      # Main library export
-└── src/
-    ├── io/                # I/O and prompts
-    │   ├── artisan_io.dart
-    │   ├── components.dart
-    │   └── prompts.dart
-    ├── output/            # Output rendering
-    │   ├── progress_bar.dart
-    │   └── table.dart
-    ├── runner/            # Command runner
-    │   ├── command.dart
-    │   ├── command_listing.dart
-    │   └── command_runner.dart
-    └── style/             # Styling
-        ├── artisan_style.dart
-        └── verbosity.dart
+lib/src/
+├── tui/                 # Bubble Tea-style runtime + interactive bubbles
+│   ├── component.dart   # ViewComponent, StaticComponent, ComponentHost
+│   ├── model.dart       # Model base class
+│   ├── program.dart     # TUI event loop
+│   └── bubbles/         # Stateful widgets (TEA units)
+│       └── components/  # Display-only components (stateless)
+│           ├── layout.dart      # CompositeComponent, ColumnComponent, RowComponent
+│           ├── text.dart        # Text, StyledText, Rule
+│           ├── list.dart        # BulletList, NumberedList
+│           ├── box.dart         # KeyValue, Box
+│           ├── progress.dart    # ProgressBar, MultiProgressModel
+│           ├── table.dart       # TableComponent, HorizontalTableComponent
+│           └── ...
+│
+├── io/                  # IO utilities
+│   ├── artisan_io.dart  # Main IO facade (uses components)
+│   ├── components.dart  # ArtisanComponents (high-level helpers)
+│   └── validators.dart  # Input validators (Acanthis)
+│
+├── terminal/            # Terminal utilities
+│   └── terminal.dart    # Terminal, Key, RawModeGuard
+│
+├── style/               # Styling utilities
+│   ├── style.dart       # Fluent Style system (Lipgloss v2)
+│   └── color.dart       # Color and ColorProfile
+│
+└── runner/              # Command runner
+    ├── artisan_command.dart
+    └── artisan_command_runner.dart
 ```
 
 ## Examples

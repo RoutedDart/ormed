@@ -19,6 +19,7 @@ import 'cursor.dart';
 import 'key_binding.dart';
 import 'runeutil.dart';
 import '../../unicode/grapheme.dart' as uni;
+import 'text_layout.dart' as layout;
 
 /// Echo mode for text input display.
 enum EchoMode {
@@ -837,7 +838,13 @@ class TextInputModel extends ViewComponent {
         return (this, null);
       }
       final promptWidth = stringWidth(prompt);
-      final x = msg.x - promptWidth + _offset;
+      final localX = msg.x - promptWidth;
+      final visibleValue = _value.sublist(_offset, _offsetRight);
+      final idxInVisible = layout.localCellXToGraphemeIndex(
+        visibleValue.join(),
+        localX,
+      );
+      final x = _offset + idxInVisible;
 
       if (msg.action == MouseAction.press && msg.button == MouseButton.left) {
         _focused = true;

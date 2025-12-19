@@ -481,6 +481,34 @@ void main() {
         expect(view, contains('\x1b[48;5;7m'));
       });
 
+      test('selects wrapped continuation when line numbers are enabled', () {
+        var textarea = TextAreaModel(
+          prompt: '│ ',
+          showLineNumbers: true,
+          softWrap: true,
+          width: 12,
+          height: 5,
+        );
+        textarea.value = 'abcdefghijkl'; // wraps into "abcdefgh" + "ijkl"
+
+        // Continuation visual line is y=1. Content starts at x=4:
+        // prompt "│ " (2) + line number gutter "1 " or blank (2).
+        var (v1, _) = textarea.update(const MouseMsg(
+          action: MouseAction.press,
+          button: MouseButton.left,
+          x: 4,
+          y: 1,
+        ));
+        var (v2, _) = v1.update(const MouseMsg(
+          action: MouseAction.motion,
+          button: MouseButton.left,
+          x: 7,
+          y: 1,
+        ));
+
+        expect(v2.getSelectedText(), equals('ijk'));
+      });
+
       test('double click selects word', () {
         var textarea = TextAreaModel(prompt: '> ', showLineNumbers: false);
         textarea.value = 'Hello World\nLine 2';

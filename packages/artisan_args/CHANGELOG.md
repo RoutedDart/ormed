@@ -2,6 +2,34 @@
 
 ## Unreleased
 
+### Added
+
+- **Progress Enhancements**:
+  - Added indeterminate progress mode for unknown durations.
+  - Added `MultiProgressModel` for managing and rendering multiple parallel progress bars.
+  - Added ETA calculation and smooth spring-based animations to `ProgressModel`.
+- **Console Tag Improvements**:
+  - Enhanced tag parsing to support hex colors (`<fg=#ff0000>`) and ANSI 256 codes (`<fg=208>`).
+  - Added support for nested tags and multiple options (`<options=bold,italic>`).
+  - Added support for terminal hyperlinks via `<href=url>` tags.
+- **UI Helpers**:
+  - Added `ArtisanIO.logo(ascii)` for rendering ASCII art logos.
+  - Added `ArtisanIO.menu(title, choices)` for persistent interactive menus.
+- **Ultraviolet Parity**:
+  - Added `prependString` support to `Terminal` and `TerminalRenderer` for adding lines to the top of the screen.
+  - Added comprehensive capability and optimization setters to `Terminal` (`setBackspace`, `setHasTab`, `setScrollOptim`, etc.).
+  - Updated `WindowSizeEvent` and `Size` to include pixel dimensions.
+  - Improved terminal cleanup on exit when not using the alternate screen.
+- **Architecture**:
+  - Established `ViewComponent` as the primary model for composable TUI widgets.
+  - Migrated all interactive prompts to the Bubble Tea (TEA) architecture.
+
+### Fixed
+
+- Fixed nested console tags resetting to default style instead of parent style.
+- Fixed "Stream already listened to" error when restarting TUI programs.
+- Improved width calculation for strings containing ANSI escape sequences.
+
 ### Breaking
 
 - Removed legacy interactive component classes in favor of the Bubble Tea-style

@@ -16,6 +16,7 @@ import 'key_binding.dart';
 import 'runeutil.dart';
 import 'cursor.dart';
 import '../../unicode/grapheme.dart' as uni;
+import 'text_layout.dart' as layout;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Support types
@@ -1090,49 +1091,28 @@ class TextAreaModel extends ViewComponent {
     final result = <_DisplayLine>[];
     final wrapWidth = softWrap ? _effectiveWrapWidth(lineNumberDigits) : 0;
 
-    for (var rowIndex = 0; rowIndex < _lines.length; rowIndex++) {
-      final line = _lines[rowIndex];
-      if (!softWrap || wrapWidth <= 0) {
-        result.add(_DisplayLine(
-          line.join(),
-          hasCursor: rowIndex == _row,
-          rowIndex: rowIndex,
-          charOffset: 0,
-        ));
-        continue;
-      }
+    final visual = layout.buildVisualLines(
+      _lines,
+      softWrap: softWrap,
+      wrapWidthCells: wrapWidth,
+    );
 
-      var start = 0;
-      while (start < line.length) {
-        var width = 0;
-        var end = start;
-        while (end < line.length) {
-          final w = runeWidth(uni.firstCodePoint(line[end]));
-          if (width + w > wrapWidth) break;
-          width += w;
-          end += 1;
-        }
+    for (final v in visual) {
+      final lineLen = _lines[v.rowIndex].length;
+      final cursorCol = _row == v.rowIndex ? _col.clamp(0, lineLen) : -1;
+      final segStart = v.charOffset;
+      final segEnd = segStart + v.graphemeCount;
+      final hasCursor =
+          _row == v.rowIndex && cursorCol >= segStart && cursorCol <= segEnd;
 
-        // Safety to avoid infinite loop if wrapWidth is too small
-        if (end == start) {
-          end = start + 1;
-        }
-
-        final segment = line.sublist(start, end).join();
-        final cursorCol = _row == rowIndex ? _col.clamp(0, line.length) : -1;
-        final hasCursor =
-            _row == rowIndex && cursorCol >= start && cursorCol <= end;
-
-        result.add(_DisplayLine(segment,
-            hasCursor: hasCursor, rowIndex: rowIndex, charOffset: start));
-        start = end;
-      }
-
-      if (line.isEmpty) {
-        // Preserve empty lines when soft wrapping is on.
-        result.add(_DisplayLine('',
-            hasCursor: rowIndex == _row, rowIndex: rowIndex, charOffset: 0));
-      }
+      result.add(
+        _DisplayLine(
+          v.text,
+          hasCursor: hasCursor,
+          rowIndex: v.rowIndex,
+          charOffset: v.charOffset,
+        ),
+      );
     }
 
     // Respect the configured height by showing the most recent lines.
