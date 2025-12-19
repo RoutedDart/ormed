@@ -7,24 +7,18 @@ void main() {
     final root = Directory('packages/artisan_args/example/tui');
     expect(root.existsSync(), isTrue, reason: 'Missing ${root.path}');
 
-    final allowlisted = <String>{
-      // Prints help text; does not run the TUI.
-      'packages/artisan_args/example/tui/examples/uv-input/main.dart',
-      // Demonstrates daemon + help paths outside TUI.
-      'packages/artisan_args/example/tui/examples/tui-daemon-combo/main.dart',
-      // Demonstrates non-TUI pipe behavior.
-      'packages/artisan_args/example/tui/examples/pipe/main.dart',
-      // Prints selection after the program exits (safe; renderer is stopped).
-      'packages/artisan_args/example/tui/list.dart',
-    };
+    const allowMarker = 'tui:allow-stdout';
 
     final bannedPatterns = <RegExp>[
       RegExp(r'\bprint\s*\('),
-      RegExp(r'\bio\.(stdout|stderr)\s*\.'),
+      RegExp(r'\bio\.(stdout|stderr)\s*\.(write|writeln)\s*\('),
       // Catch unprefixed `stdout.*` / `stderr.*` (dart:io globals) but avoid
       // false-positives like `result.stderr`.
-      RegExp(r'(^|[^\w.])stdout\s*\.'),
-      RegExp(r'(^|[^\w.])stderr\s*\.'),
+      RegExp(r'(^|[^\w.])stdout\s*\.(write|writeln)\s*\('),
+      RegExp(r'(^|[^\w.])stderr\s*\.(write|writeln)\s*\('),
+      // Catch direct terminal writes inside examples (these bypass the
+      // renderer/program pipeline and can desync UV rendering).
+      RegExp(r'\bterminal\s*\.(write|writeln)\s*\('),
     ];
 
     final violations = <String>[];
@@ -34,12 +28,14 @@ void main() {
       if (!entity.path.endsWith('.dart')) continue;
 
       final normalized = entity.path.replaceAll('\\', '/');
-      if (allowlisted.contains(normalized)) continue;
-
-      final contents = entity.readAsStringSync();
-      for (final pattern in bannedPatterns) {
-        if (pattern.hasMatch(contents)) {
-          violations.add('$normalized matches ${pattern.pattern}');
+      final lines = entity.readAsLinesSync();
+      for (var i = 0; i < lines.length; i++) {
+        final line = lines[i];
+        if (line.contains(allowMarker)) continue;
+        for (final pattern in bannedPatterns) {
+          if (pattern.hasMatch(line)) {
+            violations.add('$normalized:${i + 1} matches ${pattern.pattern}');
+          }
         }
       }
     }

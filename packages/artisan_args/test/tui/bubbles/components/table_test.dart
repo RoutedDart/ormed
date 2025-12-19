@@ -57,12 +57,12 @@ void main() {
     });
 
     group('borders', () {
-      test('uses rounded border by default', () {
+      test('uses normal border by default', () {
         final table = Table().headers(['X']).row(['Y']);
         final result = table.render();
 
-        expect(result, contains('╭'));
-        expect(result, contains('╰'));
+        expect(result, contains('┌'));
+        expect(result, contains('└'));
         expect(result, contains('│'));
       });
 
@@ -98,12 +98,12 @@ void main() {
     });
 
     group('padding', () {
-      test('default padding is 1', () {
+      test('default padding is 0', () {
         final table = Table().headers(['X']).row(['Y']);
         final result = table.render();
 
-        // With padding 1, cell content should have space on each side
-        expect(result, contains(' X '));
+        // With padding 0, cell content is flush to the borders.
+        expect(result, contains('│X│'));
       });
 
       test('custom padding works', () {

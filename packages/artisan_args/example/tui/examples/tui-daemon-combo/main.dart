@@ -47,8 +47,11 @@ class DaemonComboModel implements tui.Model {
 
   @override
   tui.Cmd? init() {
-    _log('Starting work...');
-    return tui.Cmd.batch([spinner.tick(), _runPretendProcess()]);
+    return tui.Cmd.batch([
+      tui.Cmd.println('Starting work...'),
+      spinner.tick(),
+      _runPretendProcess(),
+    ]);
   }
 
   @override
@@ -61,9 +64,14 @@ class DaemonComboModel implements tui.Model {
         return (copyWith(spinner: newSpin), cmd);
       case ProcessFinishedMsg(:final duration):
         final res = Result(duration: duration, emoji: _randomEmoji());
-        _log('${res.emoji} Job finished in ${res.duration}');
         final nextResults = [...results.skip(1), res];
-        return (copyWith(results: nextResults), _runPretendProcess());
+        return (
+          copyWith(results: nextResults),
+          tui.Cmd.batch([
+            tui.Cmd.println('${res.emoji} Job finished in ${res.duration}'),
+            _runPretendProcess(),
+          ]),
+        );
     }
     return (this, null);
   }
@@ -114,14 +122,12 @@ String _randomEmoji() {
   return clusters[r];
 }
 
-void _log(String msg) {
-  io.stderr.writeln(msg);
-}
-
 void _printUsage() {
-  io.stdout.writeln('Usage: dart main.dart [-d] [-h]');
-  io.stdout.writeln('  -d   daemon mode (no TUI, but we still run tasks)');
-  io.stdout.writeln('  -h   show this help');
+  io.stdout.writeln('Usage: dart main.dart [-d] [-h]'); // tui:allow-stdout
+  io.stdout.writeln( // tui:allow-stdout
+    '  -d   daemon mode (no TUI, but we still run tasks)',
+  );
+  io.stdout.writeln('  -h   show this help'); // tui:allow-stdout
 }
 
 Future<void> main(List<String> args) async {

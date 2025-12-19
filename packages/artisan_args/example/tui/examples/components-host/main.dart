@@ -102,7 +102,7 @@ class _ComponentsHostModel extends tui.Model {
     if (msg is _ProgressStepMsg) {
       cmds.add(_scheduleProgressStep());
       if (_auto) {
-        final nextTarget =
+        final double nextTarget =
             progress.percent >= 1 ? 0.0 : (progress.percent + 0.04);
         final (p, c) = progress.setPercent(nextTarget, animate: true);
         progress = p;

@@ -39,6 +39,17 @@ class ListModel implements Model {
   @override
   (Model, Cmd?) update(Msg msg) {
     return switch (msg) {
+      KeyMsg(key: final key)
+          when key.isChar('q') || key.isEscape || key.isCtrlC =>
+        (this, Cmd.quit()),
+
+      // Accept/select should win over navigation in case a terminal reports
+      // Enter as Ctrl+J / Ctrl+M (or other enter-like variants).
+      KeyMsg(key: final key) when key.isEnterLike || key.isSpaceLike => (
+        copyWith(selected: items[cursor]),
+        Cmd.quit(),
+      ),
+
       KeyMsg(key: final key) when key.type == KeyType.up || key.isChar('k') => (
         copyWith(cursor: (cursor - 1).clamp(0, items.length - 1)),
         null,
@@ -46,15 +57,6 @@ class ListModel implements Model {
 
       KeyMsg(key: final key) when key.type == KeyType.down || key.isChar('j') =>
         (copyWith(cursor: (cursor + 1).clamp(0, items.length - 1)), null),
-
-      KeyMsg(key: final key) when key.isAccept => (
-        copyWith(selected: items[cursor]),
-        Cmd.quit(),
-      ),
-
-      KeyMsg(key: final key)
-          when key.isChar('q') || key.isEscape || key.isCtrlC =>
-        (this, Cmd.quit()),
 
       KeyMsg(key: final key) when key.type == KeyType.home || key.char == 'g' =>
         (copyWith(cursor: 0), null),
@@ -122,7 +124,7 @@ void main() async {
           )
           as ListModel;
 
-  io.stdout.writeln(
+  io.stdout.writeln( // tui:allow-stdout
     result.selected == null
         ? 'No selection made. Maybe next time!'
         : 'You selected: ${result.selected}',

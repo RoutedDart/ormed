@@ -11,8 +11,9 @@
 /// ```
 library;
 
-import '../layout/layout.dart';
 import 'style.dart';
+import '../tui/bubbles/components/tree.dart' as lip_tree;
+import '../tui/bubbles/components/base.dart' show RenderConfig;
 
 /// Callback for determining the style of a list item.
 typedef ListStyleFunc = Style Function(ListItems items, int index);
@@ -44,55 +45,37 @@ abstract class ListItem {
   bool get hidden;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// List Implementation
-// ═══════════════════════════════════════════════════════════════════════════
+final class _TreeListItems implements ListItems {
+  _TreeListItems(this._nodes);
 
-/// Internal implementation of ListItems.
-class _ListItems implements ListItems {
-  final List<_ListNode> _nodes;
-
-  _ListItems(this._nodes);
+  final List<lip_tree.TreeNode> _nodes;
 
   @override
-  ListItem at(int index) =>
-      (index >= 0 && index < _nodes.length) ? _nodes[index] : _EmptyItem();
+  ListItem at(int index) {
+    if (index < 0 || index >= _nodes.length) return const _TreeListItem.empty();
+    return _TreeListItem(_nodes[index]);
+  }
 
   @override
   int get length => _nodes.length;
-
-  /// Returns visible items only.
-  List<_ListNode> get visible => _nodes.where((n) => !n._hidden).toList();
 }
 
-/// Empty item placeholder.
-class _EmptyItem implements ListItem {
-  @override
-  String get value => '';
+final class _TreeListItem implements ListItem {
+  const _TreeListItem(this._node);
+
+  const _TreeListItem.empty() : _node = null;
+
+  final lip_tree.TreeNode? _node;
 
   @override
-  ListItems get children => _ListItems([]);
+  String get value => _node?.value ?? '';
 
   @override
-  bool get hidden => true;
-}
-
-/// Internal node implementation.
-class _ListNode implements ListItem {
-  String _value;
-  final List<_ListNode> _children = [];
-  bool _hidden = false;
-
-  _ListNode(this._value);
+  ListItems get children =>
+      _TreeListItems(_node?.childrenNodes.toList(growable: false) ?? const []);
 
   @override
-  String get value => _value;
-
-  @override
-  ListItems get children => _ListItems(_children);
-
-  @override
-  bool get hidden => _hidden;
+  bool get hidden => _node?.hidden ?? true;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -113,25 +96,31 @@ class _ListNode implements ListItem {
 /// print(groceries);
 /// ```
 class LipList {
-  final List<_ListNode> _items = [];
+  LipList({RenderConfig renderConfig = const RenderConfig()})
+    : _tree = lip_tree.Tree(renderConfig: renderConfig, showRoot: false) {
+    // Mirror lipgloss v2 defaults: enumerator + indenter styles include
+    // right padding of 1, and we render without inserting an extra space
+    // between prefix and item.
+    enumeratorStyleFunc((_, __) => Style().paddingRight(1));
+    indenterStyleFunc((_, __) => Style().paddingRight(1));
+  }
+
+  final lip_tree.Tree _tree;
   ListEnumeratorFunc _enumerator = ListEnumerators.bullet;
   ListIndenterFunc _indenter = (_, __) => ' ';
   ListStyleFunc _itemStyleFunc = (_, __) => Style();
-  ListStyleFunc _enumeratorStyleFunc = (_, __) => Style();
-  int _startOffset = 0;
-  int _endOffset = 0;
-  bool _hidden = false;
-
-  /// Creates a new empty list.
-  LipList();
+  ListStyleFunc _enumeratorStyleFunc = (_, __) => Style().paddingRight(1);
+  ListStyleFunc _indenterStyleFunc = (_, __) => Style().paddingRight(1);
 
   /// Creates a new list with the given items.
   ///
   /// Items can be strings, other LipLists (for nesting), or any object
   /// that can be converted to a string.
-  factory LipList.create(List<dynamic> items) {
-    final list = LipList();
-    return list.items(items);
+  factory LipList.create(
+    List<dynamic> items, {
+    RenderConfig renderConfig = const RenderConfig(),
+  }) {
+    return LipList(renderConfig: renderConfig).items(items);
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -142,13 +131,23 @@ class LipList {
   ///
   /// [item] can be a string, LipList (for nesting), or any object.
   LipList item(dynamic item) {
-    if (item is LipList) {
-      // Nested list - convert to a node with children
-      final node = _ListNode('');
-      node._children.addAll(item._items);
-      _items.add(node);
-    } else {
-      _items.add(_ListNode(item.toString()));
+    switch (item) {
+      case null:
+        break;
+      case LipList list:
+        _tree.child(list._tree);
+      case lip_tree.Tree tree:
+        _tree.child(tree);
+      case List<dynamic> items:
+        for (final it in items) {
+          this.item(it);
+        }
+      case Iterable<dynamic> items:
+        for (final it in items) {
+          this.item(it);
+        }
+      default:
+        _tree.child(item.toString());
     }
     return this;
   }
@@ -176,6 +175,7 @@ class LipList {
   /// ```
   LipList enumerator(ListEnumeratorFunc fn) {
     _enumerator = fn;
+    _syncRenderer();
     return this;
   }
 
@@ -184,6 +184,7 @@ class LipList {
   /// The indenter generates the prefix for child items at each level.
   LipList indenter(ListIndenterFunc fn) {
     _indenter = fn;
+    _syncRenderer();
     return this;
   }
 
@@ -194,24 +195,42 @@ class LipList {
   /// Sets a static style for all items.
   LipList itemStyle(Style style) {
     _itemStyleFunc = (_, __) => style;
+    _syncRenderer();
     return this;
   }
 
   /// Sets a function to determine item style per-item.
   LipList itemStyleFunc(ListStyleFunc fn) {
     _itemStyleFunc = fn;
+    _syncRenderer();
     return this;
   }
 
   /// Sets a static style for all enumerators.
   LipList enumeratorStyle(Style style) {
     _enumeratorStyleFunc = (_, __) => style;
+    _syncRenderer();
     return this;
   }
 
   /// Sets a function to determine enumerator style per-item.
   LipList enumeratorStyleFunc(ListStyleFunc fn) {
     _enumeratorStyleFunc = fn;
+    _syncRenderer();
+    return this;
+  }
+
+  /// Sets a static style for all indenters.
+  LipList indenterStyle(Style style) {
+    _indenterStyleFunc = (_, __) => style;
+    _syncRenderer();
+    return this;
+  }
+
+  /// Sets the indenter style function for list items.
+  LipList indenterStyleFunc(ListStyleFunc fn) {
+    _indenterStyleFunc = fn;
+    _syncRenderer();
     return this;
   }
 
@@ -221,12 +240,12 @@ class LipList {
 
   /// Hides this list from rendering.
   LipList hide([bool hidden = true]) {
-    _hidden = hidden;
+    _tree.hide(hidden);
     return this;
   }
 
   /// Returns whether this list is hidden.
-  bool get isHidden => _hidden;
+  bool get isHidden => _tree.hidden;
 
   /// Sets the start and end offset for the list.
   ///
@@ -237,8 +256,7 @@ class LipList {
   /// list.offset(1, -1)  // Skip first and last items
   /// ```
   LipList offset(int start, [int end = 0]) {
-    _startOffset = start;
-    _endOffset = end;
+    _tree.offset(start, end);
     return this;
   }
 
@@ -248,66 +266,24 @@ class LipList {
 
   /// Renders the list to a string.
   String render() {
-    if (_hidden) return '';
-
-    final buffer = StringBuffer();
-    final items = _getVisibleItems();
-    _renderItems(buffer, items, '');
-    return buffer.toString().trimRight();
+    _syncRenderer();
+    return _tree.render().trimRight();
   }
 
-  List<_ListNode> _getVisibleItems() {
-    var items = _items.where((n) => !n._hidden).toList();
+  void _syncRenderer() {
+    final children = _tree.childrenNodes.toList(growable: false);
+    final listItems = _TreeListItems(children);
 
-    // Apply offset
-    final start = _startOffset.clamp(0, items.length);
-    var end = items.length - _endOffset;
-    if (_endOffset < 0) {
-      end = items.length + _endOffset;
-    }
-    end = end.clamp(start, items.length);
-
-    return items.sublist(start, end);
-  }
-
-  void _renderItems(StringBuffer buffer, List<_ListNode> items, String prefix) {
-    final listItems = _ListItems(items);
-
-    // Calculate max enumerator width for alignment
-    var maxEnumWidth = 0;
-    for (var i = 0; i < items.length; i++) {
-      final enumStr = _enumerator(listItems, i);
-      final width = Layout.visibleLength(enumStr);
-      if (width > maxEnumWidth) maxEnumWidth = width;
-    }
-
-    for (var i = 0; i < items.length; i++) {
-      final node = items[i];
-      if (node._hidden) continue;
-
-      final enumStr = _enumerator(listItems, i);
-      final enumStyle = _enumeratorStyleFunc(listItems, i);
-      final itemStyle = _itemStyleFunc(listItems, i);
-
-      // Pad enumerator for alignment
-      final enumWidth = Layout.visibleLength(enumStr);
-      final padding = maxEnumWidth - enumWidth;
-      final paddedEnum = ' ' * padding + enumStr;
-
-      // Style and render
-      final styledEnum = enumStyle.render(paddedEnum);
-      final styledItem = itemStyle.render(node._value);
-
-      if (node._value.isNotEmpty) {
-        buffer.writeln('$prefix$styledEnum $styledItem');
-      }
-
-      // Render children (nested list)
-      if (node._children.isNotEmpty) {
-        final indent = _indenter(listItems, i);
-        _renderItems(buffer, node._children, prefix + indent);
-      }
-    }
+    _tree
+      ..enumeratorFunc((sibs, i) {
+        // We intentionally use the *current* children snapshot to match
+        // lipgloss' siblings semantics for style functions.
+        return _enumerator(listItems, i);
+      })
+      ..indenterFunc((sibs, i) => _indenter(listItems, i))
+      ..itemStyleAt((sibs, i) => _itemStyleFunc(listItems, i))
+      ..enumeratorStyleAt((sibs, i) => _enumeratorStyleFunc(listItems, i))
+      ..indenterStyleAt((sibs, i) => _indenterStyleFunc(listItems, i));
   }
 
   @override
@@ -336,12 +312,12 @@ class ListEnumerators {
 
   /// Alphabetic (a. b. c.).
   static String alphabet(ListItems items, int index) {
-    return '${_toAlpha(index)}.';
+    return '${_toAlphaUpper(index)}.';
   }
 
   /// Uppercase alphabetic (A. B. C.).
   static String alphabetUpper(ListItems items, int index) {
-    return '${_toAlpha(index).toUpperCase()}.';
+    return '${_toAlphaUpper(index)}.';
   }
 
   /// Roman numerals (I. II. III.).
@@ -365,15 +341,21 @@ class ListEnumerators {
   }
 
   // Helper: Convert number to alphabetic (0=a, 1=b, 26=aa, etc.)
-  static String _toAlpha(int n) {
-    final result = StringBuffer();
-    var num = n;
-    while (num >= 0) {
-      result.writeCharCode(97 + (num % 26)); // 'a' = 97
-      num = (num ~/ 26) - 1;
-      if (num < 0) break;
+  static String _toAlphaUpper(int index) {
+    const abcLen = 26;
+    final i = index;
+    if (i >= abcLen * abcLen + abcLen) {
+      final a = (i ~/ abcLen ~/ abcLen) - 1;
+      final b = (i ~/ abcLen) % abcLen - 1;
+      final c = i % abcLen;
+      return String.fromCharCodes([0x41 + a, 0x41 + b, 0x41 + c]);
     }
-    return result.toString().split('').reversed.join();
+    if (i >= abcLen) {
+      final a = (i ~/ abcLen) - 1;
+      final b = i % abcLen;
+      return String.fromCharCodes([0x41 + a, 0x41 + b]);
+    }
+    return String.fromCharCode(0x41 + (i % abcLen));
   }
 
   // Helper: Convert number to roman numerals

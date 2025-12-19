@@ -50,9 +50,9 @@ void main() {
         'C',
       ]).enumerator(ListEnumerators.alphabet);
       final output = list.render();
-      expect(output, contains('a.'));
-      expect(output, contains('b.'));
-      expect(output, contains('c.'));
+      expect(output, contains('A.'));
+      expect(output, contains('B.'));
+      expect(output, contains('C.'));
     });
 
     test('uses dash enumerator', () {
@@ -139,9 +139,9 @@ void main() {
     });
 
     test('alphabet handles single and double letters', () {
-      expect(ListEnumerators.alphabet(items, 0), equals('a.'));
-      expect(ListEnumerators.alphabet(items, 25), equals('z.'));
-      expect(ListEnumerators.alphabet(items, 26), equals('aa.'));
+      expect(ListEnumerators.alphabet(items, 0), equals('A.'));
+      expect(ListEnumerators.alphabet(items, 25), equals('Z.'));
+      expect(ListEnumerators.alphabet(items, 26), equals('AA.'));
     });
 
     test('roman numerals', () {

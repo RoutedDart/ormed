@@ -132,11 +132,22 @@ class BasicColor extends Color {
         return '';
       }
 
-      final code = int.tryParse(value) ?? 0;
+      final code = (int.tryParse(value) ?? 0).clamp(0, 255);
+
+      // lipgloss v2 parity: prefer 16-color SGR codes when possible.
+      if (code <= 15) {
+        final base = background ? 40 : 30;
+        final brightBase = background ? 100 : 90;
+        if (code < 8) {
+          return '\x1b[${base + code}m';
+        }
+        return '\x1b[${brightBase + (code - 8)}m';
+      }
+
       return cp.sgrColor(
         profile: _toInternalProfile(profile),
         background: background,
-        ansi256: code.clamp(0, 255),
+        ansi256: code,
       );
     }
   }

@@ -162,7 +162,7 @@ String _clipToWidth(String s, int maxWidth) {
 
 void main(List<String> args) async {
   if (args.contains('-h') || args.contains('--help')) {
-    io.stdout.writeln('''
+    io.stdout.writeln(''' // tui:allow-stdout
 UV input decoder demo
 
 Usage:

@@ -19,6 +19,26 @@ extension WidthMethodX on WidthMethod {
   }
 }
 
+/// Returns the terminal display width of [s], counting per grapheme cluster.
+///
+/// This is a convenience wrapper around [WidthMethodX.stringWidth] using the
+/// default grapheme-based method.
+int stringWidth(String s) => WidthMethod.grapheme.stringWidth(s);
+
+/// Returns the maximum display width across all lines in [s].
+///
+/// The input is treated as newline-separated rows; width resets after each
+/// newline. This matches how layout code interprets terminal cell widths.
+int maxLineWidth(String s) {
+  final normalized = s.replaceAll('\r\n', '\n');
+  var maxWidth = 0;
+  for (final line in normalized.split('\n')) {
+    final w = stringWidth(line);
+    if (w > maxWidth) maxWidth = w;
+  }
+  return maxWidth;
+}
+
 int runeWidth(int rune) {
   // Control characters and null
   if (rune < 32 || (rune >= 0x7F && rune < 0xA0)) {

@@ -615,6 +615,20 @@ abstract final class Keys {
   /// Ctrl+Z key.
   static const ctrlZ = Key(KeyType.runes, runes: [0x7a], ctrl: true);
 
+  // Common printable single-character keys (as consts for pattern matching).
+  //
+  // Prefer `key.isChar('q')` etc for flexibility, but these constants are
+  // convenient in switch patterns and avoid manual rune lists.
+  static const q = Key(KeyType.runes, runes: [0x71]); // 'q'
+  static const j = Key(KeyType.runes, runes: [0x6a]); // 'j'
+  static const k = Key(KeyType.runes, runes: [0x6b]); // 'k'
+  static const h = Key(KeyType.runes, runes: [0x68]); // 'h'
+  static const l = Key(KeyType.runes, runes: [0x6c]); // 'l'
+  static const g = Key(KeyType.runes, runes: [0x67]); // 'g'
+  static const G = Key(KeyType.runes, runes: [0x47]); // 'G'
+  static const slash = Key(KeyType.runes, runes: [0x2f]); // '/'
+  static const questionMark = Key(KeyType.runes, runes: [0x3f]); // '?'
+
   // Shift combinations
   /// Shift+Tab key.
   static const shiftTab = Key(KeyType.tab, shift: true);

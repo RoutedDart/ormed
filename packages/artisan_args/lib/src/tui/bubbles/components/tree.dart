@@ -1,5 +1,7 @@
 import '../../../style/color.dart';
+import '../../../style/properties.dart';
 import '../../../style/style.dart';
+import '../../../layout/layout.dart';
 import 'base.dart';
 
 /// Callback for per-item styling in trees.
@@ -330,291 +332,533 @@ class TreeComponent extends DisplayComponent {
 // Fluent Tree Builder
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// A fluent builder for creating styled trees.
-///
-/// Provides a chainable API for tree configuration with support for
-/// customizable enumerators and per-item conditional styling.
-///
-/// ```dart
-/// final tree = Tree()
-///     .root('Project')
-///     .child('src/', [
-///       Tree().root('lib/').child(['main.dart', 'utils.dart']),
-///       'README.md',
-///     ])
-///     .enumerator(TreeEnumerator.rounded)
-///     .itemStyleFunc((item, depth, isDir) {
-///       if (isDir) {
-///         return Style().bold().foreground(Colors.blue);
-///       }
-///       return null;
-///     })
-///     .render();
-///
-/// print(tree);
-/// ```
-class Tree extends DisplayComponent {
-  /// Creates a new empty tree builder.
-  Tree({RenderConfig renderConfig = const RenderConfig()})
-    : _renderConfig = renderConfig;
+abstract interface class TreeNode {
+  String get value;
+  Iterable<TreeNode> get childrenNodes;
+  bool get hidden;
+}
 
-  RenderConfig _renderConfig;
+abstract interface class TreeChildren {
+  TreeNode? at(int index);
+  int get length;
+}
 
-  String? _root;
-  final List<dynamic> _children = [];
-  TreeEnumerator _enumerator = TreeEnumerator.normal;
-  TreeStyleFunc? _styleFunc;
-  TreeEnumeratorStyleFunc? _enumeratorStyleFunc;
-  bool _showRoot = true;
-  Style? _rootStyle;
+final class TreeNodeChildren implements TreeChildren {
+  TreeNodeChildren(this._nodes);
+  final List<TreeNode> _nodes;
+
+  @override
+  TreeNode? at(int index) =>
+      (index >= 0 && index < _nodes.length) ? _nodes[index] : null;
+
+  @override
+  int get length => _nodes.length;
+}
+
+final class TreeStringData implements TreeChildren {
+  TreeStringData(this._values);
+  final List<String> _values;
+
+  @override
+  TreeNode? at(int index) =>
+      (index >= 0 && index < _values.length) ? _TreeLeaf(_values[index]) : null;
+
+  @override
+  int get length => _values.length;
+}
+
+final class TreeFilter implements TreeChildren {
+  TreeFilter(this._data);
+
+  final TreeChildren _data;
+  bool Function(int index)? _filter;
+
+  TreeFilter filter(bool Function(int index) fn) {
+    _filter = fn;
+    return this;
+  }
+
+  @override
+  TreeNode? at(int index) {
+    final f = _filter;
+    if (f == null) return null;
+
+    var j = 0;
+    for (var i = 0; i < _data.length; i++) {
+      if (f(i)) {
+        if (j == index) return _data.at(i);
+        j++;
+      }
+    }
+    return null;
+  }
+
+  @override
+  int get length {
+    final f = _filter;
+    if (f == null) return 0;
+    var j = 0;
+    for (var i = 0; i < _data.length; i++) {
+      if (f(i)) j++;
+    }
+    return j;
+  }
+}
+
+final class _TreeLeaf implements TreeNode {
+  _TreeLeaf(this._value, {bool hidden = false}) : _hidden = hidden;
+
+  final String _value;
+  final bool _hidden;
+
+  @override
+  String get value => _value;
+
+  @override
+  Iterable<TreeNode> get childrenNodes => const [];
+
+  @override
+  bool get hidden => _hidden;
+}
+
+typedef TreeEnumeratorFunc = String Function(List<TreeNode> children, int index);
+typedef TreeIndenterFunc = String Function(List<TreeNode> children, int index);
+typedef TreeNodeStyleFunc = Style Function(List<TreeNode> children, int index);
+
+String _defaultEnumerator(List<TreeNode> children, int index) {
+  if (children.length - 1 == index) return '└──';
+  return '├──';
+}
+
+String _roundedEnumerator(List<TreeNode> children, int index) {
+  if (children.length - 1 == index) return '╰──';
+  return '├──';
+}
+
+String _defaultIndenter(List<TreeNode> children, int index) {
+  if (children.length - 1 == index) return '   ';
+  return '│  ';
+}
+
+final class _TreeRendererStyle {
+  _TreeRendererStyle({
+    required this.enumeratorStyle,
+    required this.indenterStyle,
+    required this.itemStyle,
+    required this.rootStyle,
+  });
+
+  TreeNodeStyleFunc enumeratorStyle;
+  TreeNodeStyleFunc indenterStyle;
+  TreeNodeStyleFunc itemStyle;
+  Style rootStyle;
+}
+
+final class _TreeRenderer {
+  _TreeRenderer()
+    : style = _TreeRendererStyle(
+        enumeratorStyle: (_, __) => Style().paddingRight(1),
+        indenterStyle: (_, __) => Style().paddingRight(1),
+        itemStyle: (_, __) => Style(),
+        rootStyle: Style(),
+      ),
+      enumerator = _defaultEnumerator,
+      indenter = _defaultIndenter,
+      width = 0;
+
+  final _TreeRendererStyle style;
+  TreeEnumeratorFunc enumerator;
+  TreeIndenterFunc indenter;
+  int width;
+}
+
+/// A fluent builder for creating styled trees (lipgloss v2 parity).
+///
+/// This mirrors `charm.land/lipgloss/v2/tree` behavior:
+/// - Per-node hide + child filtering
+/// - Auto-parenting unnamed subtrees to previous siblings
+/// - Separate enumerator/indenter functions + styles
+/// - Multiline items and mixed prefix widths are aligned
+class Tree extends DisplayComponent implements TreeNode {
+  Tree({RenderConfig renderConfig = const RenderConfig(), bool showRoot = true})
+    : _renderConfig = renderConfig,
+      _showRoot = showRoot;
+
+  final RenderConfig _renderConfig;
+
+  String _value = '';
+  bool _hidden = false;
+  int _offsetStart = 0;
+  int _offsetEnd = 0;
+  final List<TreeNode> _children = <TreeNode>[];
+  bool _showRoot;
+
+  // Convenience styles (kept for existing Dart examples).
   Style? _directoryStyle;
   Style? _fileStyle;
   Style? _branchStyle;
-  bool _hidden = false;
-  int _offsetStart = 0;
-  int _offsetEnd = -1; // -1 means no end limit
 
-  /// Sets the root label.
-  Tree root(String label) {
-    _root = label;
+  // Legacy per-item style hook (kept for existing API).
+  TreeStyleFunc? _legacyItemStyleFunc;
+  TreeEnumeratorStyleFunc? _legacyEnumeratorStyleFunc;
+
+  _TreeRenderer? _renderer; // null => inherit parent renderer
+
+  _TreeRenderer _ensureRenderer() => _renderer ??= _TreeRenderer();
+
+  @override
+  String get value => _value;
+
+  Tree root(Object? label) {
+    _value = label?.toString() ?? '';
     return this;
   }
 
-  /// Gets the root label value.
-  String? get value => _root;
-
-  /// Gets the children items.
-  List<dynamic> get getChildren => List.unmodifiable(_children);
-
-  /// Adds a child item.
-  ///
-  /// [item] can be:
-  /// - A string (leaf node)
-  /// - A [Tree] (nested subtree)
-  /// - A list of items
-  Tree child(dynamic item) {
-    _children.add(item);
-    return this;
-  }
-
-  /// Adds multiple children.
-  Tree children(List<dynamic> items) {
-    _children.addAll(items);
-    return this;
-  }
-
-  /// Sets the tree enumerator (branch characters).
-  Tree enumerator(TreeEnumerator e) {
-    _enumerator = e;
-    return this;
-  }
-
-  /// Sets the style function for per-item conditional styling.
-  Tree itemStyleFunc(TreeStyleFunc func) {
-    _styleFunc = func;
-    return this;
-  }
-
-  /// Sets whether to show the root node.
   Tree showRoot(bool value) {
     _showRoot = value;
     return this;
   }
 
-  /// Sets the root node style.
-  Tree rootStyle(Style style) {
-    _rootStyle = style;
-    return this;
-  }
+  @override
+  bool get hidden => _hidden;
 
-  /// Sets the directory/folder style (items with children).
-  Tree directoryStyle(Style style) {
-    _directoryStyle = style;
-    return this;
-  }
-
-  /// Sets the file/leaf style (items without children).
-  Tree fileStyle(Style style) {
-    _fileStyle = style;
-    return this;
-  }
-
-  /// Sets the branch character style.
-  Tree branchStyle(Style style) {
-    _branchStyle = style;
-    return this;
-  }
-
-  /// Sets a function to determine branch (enumerator) style per-item.
-  ///
-  /// This allows conditional styling of the tree branches (├──, └──, etc.)
-  /// based on the current item's position.
-  ///
-  /// Example:
-  /// ```dart
-  /// tree.enumeratorStyleFunc((children, index) {
-  ///   // Highlight the selected item's branch
-  ///   if (index == selectedIndex) {
-  ///     return Style().foreground(Colors.green);
-  ///   }
-  ///   return Style().foreground(Colors.dim);
-  /// });
-  /// ```
-  Tree enumeratorStyleFunc(TreeEnumeratorStyleFunc fn) {
-    _enumeratorStyleFunc = fn;
-    return this;
-  }
-
-  /// Sets whether to hide this tree when rendering.
   Tree hide(bool value) {
     _hidden = value;
     return this;
   }
 
-  /// Returns whether this tree is hidden.
-  bool get hidden => _hidden;
-
-  /// Sets the offset range for rendering children.
-  ///
-  /// [start] is the first child index to render (0-based).
-  /// [end] is the exclusive end index. Use -1 or omit for no limit.
-  Tree offset(int start, [int end = -1]) {
-    _offsetStart = start;
-    _offsetEnd = end;
+  Tree offset(int start, [int end = 0]) {
+    var s = start;
+    var e = end;
+    if (s > e) {
+      final tmp = s;
+      s = e;
+      e = tmp;
+    }
+    if (s < 0) s = 0;
+    if (e < 0 || e > _children.length) e = _children.length;
+    _offsetStart = s;
+    _offsetEnd = e;
     return this;
   }
 
-  /// Renders the tree to a string.
+  Iterable<TreeNode> get childrenNodes {
+    final len = _children.length;
+    final end = (len - _offsetEnd).clamp(0, len);
+    final start = _offsetStart.clamp(0, end);
+    return _children.sublist(start, end);
+  }
+
+  List<TreeNode> _visibleChildren() =>
+      childrenNodes.where((c) => !c.hidden).toList(growable: false);
+
+  Tree child(Object? item) {
+    switch (item) {
+      case null:
+        return this;
+
+      case TreeChildren data:
+        for (var i = 0; i < data.length; i++) {
+          child(data.at(i));
+        }
+        return this;
+
+      case List<dynamic> items:
+        for (final it in items) {
+          child(it);
+        }
+        return this;
+
+      case Iterable<dynamic> items:
+        for (final it in items) {
+          child(it);
+        }
+        return this;
+
+      case Tree t:
+        return _appendTree(t);
+
+      case TreeNode n:
+        _children.add(n);
+        return this;
+
+      default:
+        _children.add(_TreeLeaf(item.toString()));
+        return this;
+    }
+  }
+
+  Tree childrenAll(List<dynamic> items) => children(items);
+
+  Tree children(List<dynamic> items) {
+    for (final it in items) {
+      child(it);
+    }
+    return this;
+  }
+
+  Tree _appendTree(Tree t) {
+    // Auto-parent unnamed trees to the previous sibling.
+    if (t.value.isEmpty && _children.isNotEmpty) {
+      final parent = _children.last;
+      switch (parent) {
+        case Tree parentTree:
+          for (final c in t.childrenNodes) {
+            parentTree._children.add(c);
+          }
+          return this;
+        case _TreeLeaf leaf:
+          _children.removeLast();
+          t._value = leaf.value;
+          _children.add(t);
+          return this;
+        default:
+          break;
+      }
+    }
+
+    _children.add(t);
+    return this;
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // v2 parity configuration surface
+  // ─────────────────────────────────────────────────────────────────────────
+
+  Tree enumerator(Object enumerator) {
+    // Back-compat: map our preset enum struct to v2 enumerators.
+    if (enumerator is TreeEnumerator && enumerator == TreeEnumerator.rounded) {
+      return enumeratorFunc(_roundedEnumerator);
+    }
+    return enumeratorFunc(_defaultEnumerator);
+  }
+
+  Tree enumeratorFunc(TreeEnumeratorFunc fn) {
+    _ensureRenderer().enumerator = fn;
+    return this;
+  }
+
+  Tree indenterFunc(TreeIndenterFunc fn) {
+    _ensureRenderer().indenter = fn;
+    return this;
+  }
+
+  Tree width(int width) {
+    _ensureRenderer().width = width;
+    return this;
+  }
+
+  Tree rootStyle(Style style) {
+    _ensureRenderer().style.rootStyle = style;
+    return this;
+  }
+
+  Tree enumeratorStyle(Style style) {
+    _ensureRenderer().style.enumeratorStyle = (_, __) => style;
+    return this;
+  }
+
+  Tree enumeratorStyleAt(TreeNodeStyleFunc fn) {
+    _ensureRenderer().style.enumeratorStyle = fn;
+    return this;
+  }
+
+  Tree indenterStyle(Style style) {
+    _ensureRenderer().style.indenterStyle = (_, __) => style;
+    return this;
+  }
+
+  Tree indenterStyleAt(TreeNodeStyleFunc fn) {
+    _ensureRenderer().style.indenterStyle = fn;
+    return this;
+  }
+
+  Tree itemStyle(Style style) {
+    _ensureRenderer().style.itemStyle = (_, __) => style;
+    return this;
+  }
+
+  Tree itemStyleAt(TreeNodeStyleFunc fn) {
+    _ensureRenderer().style.itemStyle = fn;
+    return this;
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Existing Dart convenience APIs (mapped onto v2 style funcs)
+  // ─────────────────────────────────────────────────────────────────────────
+
+  Tree directoryStyle(Style style) {
+    _directoryStyle = style;
+    _syncConvenienceItemStyles();
+    return this;
+  }
+
+  Tree fileStyle(Style style) {
+    _fileStyle = style;
+    _syncConvenienceItemStyles();
+    return this;
+  }
+
+  Tree branchStyle(Style style) {
+    _branchStyle = style;
+    // In v2, both the enumerator and indenter are "branches".
+    enumeratorStyle(style);
+    indenterStyle(style);
+    return this;
+  }
+
+  Tree enumeratorStyleFunc(TreeEnumeratorStyleFunc fn) {
+    _legacyEnumeratorStyleFunc = fn;
+    enumeratorStyleAt((children, index) {
+      final style = fn(children, index);
+      return style ?? Style();
+    });
+    return this;
+  }
+
+  Tree itemStyleFunc(TreeStyleFunc func) {
+    _legacyItemStyleFunc = func;
+    _syncConvenienceItemStyles();
+    return this;
+  }
+
+  void _syncConvenienceItemStyles() {
+    itemStyleAt((children, index) {
+      final node = children[index];
+      final isDir = node.childrenNodes.isNotEmpty;
+
+      // Legacy hook has priority.
+      final legacy = _legacyItemStyleFunc;
+      if (legacy != null) {
+        final s = legacy(node.value, 0, isDir);
+        if (s != null) return s;
+      }
+
+      if (isDir && _directoryStyle != null) return _directoryStyle!;
+      if (!isDir && _fileStyle != null) return _fileStyle!;
+      return Style();
+    });
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Rendering
+  // ─────────────────────────────────────────────────────────────────────────
+
   @override
   String render() {
     if (_hidden) return '';
-
-    final buffer = StringBuffer();
-
-    if (_showRoot && _root != null) {
-      final styled = _applyStyle(_root!, 0, _children.isNotEmpty, isRoot: true);
-      buffer.writeln(styled);
-    }
-
-    // Apply offset to root children only
-    final startIndex = _offsetStart.clamp(0, _children.length);
-    final endIndex = _offsetEnd < 0
-        ? _children.length
-        : _offsetEnd.clamp(startIndex, _children.length);
-    final slicedChildren = startIndex < endIndex
-        ? _children.sublist(startIndex, endIndex)
-        : <dynamic>[];
-
-    _renderChildren(buffer, slicedChildren, '', 0);
-
-    return buffer.toString().trimRight();
+    final renderer = _ensureRenderer();
+    return _renderWith(renderer, prefix: '', isRoot: true);
   }
 
-  void _renderChildren(
-    StringBuffer buffer,
-    List<dynamic> children,
-    String prefix,
-    int depth,
-  ) {
+  String _renderWith(
+    _TreeRenderer renderer, {
+    required String prefix,
+    required bool isRoot,
+  }) {
+    if (_hidden) return '';
+
+    final children = _visibleChildren();
+    final enumerator = renderer.enumerator;
+    final indenter = renderer.indenter;
+
+    final out = <String>[];
+
+    // Print root (if any).
+    if (isRoot && _showRoot && _value.isNotEmpty) {
+      final line = _renderConfig
+          .configureStyle(renderer.style.rootStyle)
+          .render(_value);
+      out.add(line);
+    }
+
+    // Compute max prefix width (after styling).
+    var maxLen = 0;
+    for (var i = 0; i < children.length; i++) {
+      final enumStyle = _renderConfig.configureStyle(
+        renderer.style.enumeratorStyle(children, i),
+      );
+      final p = enumStyle.render(enumerator(children, i));
+      maxLen = maxLen < Layout.visibleLength(p) ? Layout.visibleLength(p) : maxLen;
+    }
+
     for (var i = 0; i < children.length; i++) {
       final child = children[i];
-      final isLast = i == children.length - 1;
-      final connector = isLast ? _enumerator.elbow : _enumerator.tee;
-      final nextPrefix =
-          prefix + (isLast ? _enumerator.indent : '${_enumerator.pipe}   ');
+      if (child.hidden) continue;
 
-      // Style the branch characters
-      final styledConnector = _styleBranch(
-        '$connector${_enumerator.dash}',
-        children,
-        i,
+      final enumStyle = _renderConfig.configureStyle(
+        renderer.style.enumeratorStyle(children, i),
+      );
+      final indentStyle = _renderConfig.configureStyle(
+        renderer.style.indenterStyle(children, i),
+      );
+      final itemStyle = _renderConfig.configureStyle(
+        renderer.style.itemStyle(children, i),
       );
 
-      if (child is Tree) {
-        // Nested tree
-        final hasChildren = child._children.isNotEmpty;
-        final label = child._root ?? '';
-        final styled = _applyStyle(label, depth, hasChildren);
-        buffer.writeln('$prefix$styledConnector $styled');
-        _renderChildren(buffer, child._children, nextPrefix, depth + 1);
-      } else if (child is List) {
-        // List of children
-        _renderChildren(buffer, child, prefix, depth);
-      } else {
-        // Leaf node
-        final label = child.toString();
-        final styled = _applyStyle(label, depth, false);
-        buffer.writeln('$prefix$styledConnector $styled');
+      final indent = indentStyle.render(indenter(children, i));
+      var nodePrefix = enumStyle.render(enumerator(children, i));
+
+      final bg = enumStyle.getBackground;
+      final enumBgStyle = bg == null ? Style() : Style().background(bg);
+      final padLeft = maxLen - Layout.visibleLength(nodePrefix);
+      if (padLeft > 0) {
+        nodePrefix = enumBgStyle.render(' ' * padLeft) + nodePrefix;
       }
-    }
-  }
 
-  String _applyStyle(
-    String text,
-    int depth,
-    bool isDirectory, {
-    bool isRoot = false,
-  }) {
-    // Try style function first
-    if (_styleFunc != null) {
-      final style = _styleFunc!(text, depth, isDirectory);
-      if (style != null) {
-        return _renderConfig.configureStyle(style).render(text);
+      final item = itemStyle.render(child.value);
+      var multiPrefix = enumBgStyle.render(prefix);
+
+      while (item.split('\n').length > nodePrefix.split('\n').length) {
+        nodePrefix = Layout.joinVertical(
+          HorizontalAlign.left,
+          [nodePrefix, indent],
+        );
       }
-    }
 
-    // Apply specific styles
-    if (isRoot && _rootStyle != null) {
-      return _renderConfig.configureStyle(_rootStyle!).render(text);
-    }
-
-    if (isDirectory && _directoryStyle != null) {
-      return _renderConfig.configureStyle(_directoryStyle!).render(text);
-    }
-
-    if (!isDirectory && _fileStyle != null) {
-      return _renderConfig.configureStyle(_fileStyle!).render(text);
-    }
-
-    return text;
-  }
-
-  String _styleBranch(String text, List<dynamic> children, int index) {
-    // Try enumerator style function first (most specific)
-    if (_enumeratorStyleFunc != null) {
-      final style = _enumeratorStyleFunc!(children, index);
-      if (style != null) {
-        return _renderConfig.configureStyle(style).render(text);
+      while (nodePrefix.split('\n').length > multiPrefix.split('\n').length) {
+        multiPrefix = Layout.joinVertical(
+          HorizontalAlign.left,
+          [multiPrefix, prefix],
+        );
       }
-    }
 
-    // Fall back to static branch style
-    if (_branchStyle != null) {
-      return _renderConfig.configureStyle(_branchStyle!).render(text);
-    }
-    return text;
-  }
+      var line = Layout.joinHorizontal(
+        VerticalAlign.top,
+        [multiPrefix, nodePrefix, item],
+      );
 
-  /// Returns the number of lines in the rendered tree.
-  @override
-  int get lineCount {
-    var count = _showRoot && _root != null ? 1 : 0;
-    count += _countChildren(_children);
-    return count;
-  }
-
-  int _countChildren(List<dynamic> children) {
-    var count = 0;
-    for (final child in children) {
-      if (child is Tree) {
-        count += 1 + _countChildren(child._children);
-      } else if (child is List) {
-        count += _countChildren(child);
-      } else {
-        count += 1;
+      final w = renderer.width;
+      if (w > 0) {
+        final pad = w - Layout.visibleLength(line);
+        if (pad > 0) {
+          line = line + itemStyle.render(' ' * pad);
+        }
       }
+
+      out.add(line);
+
+      final childChildren =
+          child.childrenNodes.where((c) => !c.hidden).toList();
+      if (childChildren.isEmpty) continue;
+
+      // Use a child renderer if the child has one, otherwise inherit.
+      var nextRenderer = renderer;
+      var nextPrefix = prefix + indent;
+      if (child is Tree && child._renderer != null) {
+        nextRenderer = child._renderer!;
+        nextPrefix = prefix + indent;
+      }
+
+      final subtree = switch (child) {
+        Tree t => t._renderWith(nextRenderer, prefix: nextPrefix, isRoot: false),
+        _ => '',
+      };
+
+      if (subtree.isNotEmpty) out.add(subtree);
     }
-    return count;
+
+    return out.join('\n');
   }
 }
 

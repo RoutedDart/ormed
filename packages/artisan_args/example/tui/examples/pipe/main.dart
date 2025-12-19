@@ -67,7 +67,7 @@ Future<void> main() async {
   final data = isPiped ? await utf8.decoder.bind(io.stdin).join() : '';
 
   if (!isPiped || data.isEmpty) {
-    io.stderr.writeln('Try piping in some text.');
+    io.stderr.writeln('Try piping in some text.'); // tui:allow-stdout
     io.exit(1);
   }
 

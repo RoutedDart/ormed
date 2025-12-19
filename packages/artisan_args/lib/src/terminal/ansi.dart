@@ -439,24 +439,32 @@ abstract final class Ansi {
   ///
   /// Supports CSI, OSC, DCS, and common control sequences.
   static final ansiPattern = RegExp(
-    r'\x1b'
     r'(?:'
-    // CSI sequences.
-    //
-    // Support both the common semicolon SGR form (\x1b[38;2;...m) and the
-    // ITU colon form (\x1b[38:2::...m).
-    r'\[[0-9;:]*[ -/]*[@-~]'
+    // 7-bit CSI: ESC [ ... <final>
+    r'\x1b\[[0-9;:]*[ -/]*[@-~]'
     r'|'
-    r'\][^\x07]*\x07' // OSC sequences (terminated by BEL)
+    // 8-bit CSI: CSI ... <final> (0x9B)
+    r'\x9b[0-9;:]*[ -/]*[@-~]'
     r'|'
-    r'\][^\x1b]*\x1b\\' // OSC sequences (terminated by ST)
+    // 7-bit OSC: ESC ] ... (BEL | ST)
+    r'\x1b\].*?(?:\x07|\x1b\\)'
     r'|'
-    r'P[^\x1b]*\x1b\\' // DCS sequences
+    // 8-bit OSC: OSC ... (BEL | ST) (0x9D ... 0x9C)
+    r'\x9d.*?(?:\x07|\x9c)'
     r'|'
-    r'[()][AB012]' // Character set selection
+    // 7-bit DCS/SOS/PM/APC: ESC (P|X|^|_) ... ST
+    r'\x1b(?:P|X|\^|_).*?\x1b\\'
     r'|'
-    r'[78]' // DEC cursor save/restore
+    // 8-bit DCS/SOS/PM/APC: (0x90|0x98|0x9E|0x9F) ... ST (0x9C)
+    r'[\x90\x98\x9e\x9f].*?\x9c'
+    r'|'
+    // Character set selection (ESC ( or ESC ) ...)
+    r'\x1b[()][AB012]'
+    r'|'
+    // DEC cursor save/restore (ESC 7 / ESC 8)
+    r'\x1b[78]'
     r')',
+    dotAll: true,
   );
 
   /// Strips all ANSI escape sequences from a string.
@@ -467,11 +475,7 @@ abstract final class Ansi {
   /// Calculates the visible width of a string (excluding ANSI sequences).
   static int visibleLength(String text) {
     final stripped = stripAnsi(text);
-    var width = 0;
-    for (final g in uni.graphemes(stripped)) {
-      width += runeWidth(uni.firstCodePoint(g));
-    }
-    return width;
+    return maxLineWidth(stripped);
   }
 
   /// Wraps text in ANSI sequences that will be stripped by [stripAnsi].

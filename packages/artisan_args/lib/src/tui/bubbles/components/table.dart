@@ -204,8 +204,8 @@ class Table extends DisplayComponent {
   final List<String> _headers = [];
   final List<List<String>> _rows = [];
   TableStyleFunc? _styleFunc;
-  style_border.Border _border = style_border.Border.rounded;
-  int _padding = 1;
+  style_border.Border _border = style_border.Border.normal;
+  int _padding = 0;
   int? _width;
   int? _height;
   int _offset = 0;
@@ -418,6 +418,17 @@ class Table extends DisplayComponent {
         final perColumn = available ~/ columns;
         for (var i = 0; i < widths.length; i++) {
           if (widths[i] < perColumn) widths[i] = perColumn;
+        }
+
+        // Distribute any remaining width across columns (left-to-right) so the
+        // rendered table matches the requested total width.
+        final used = widths.fold<int>(0, (sum, w) => sum + w);
+        var remaining = available - used;
+        var j = 0;
+        while (remaining > 0 && widths.isNotEmpty) {
+          widths[j % widths.length]++;
+          remaining--;
+          j++;
         }
       }
     }

@@ -1688,12 +1688,36 @@ class Style {
   ///
   /// This produces an ANSI-escaped string ready for terminal output.
   String render(String text) {
+    // lipgloss v2 compatibility: if this style has a pre-set string value,
+    // render it *in addition to* any provided text.
+    //
+    // In Go lipgloss, Style.Render(strs...) prepends Style.value and joins with
+    // spaces. We mirror that behavior here for API parity (e.g. tree/list
+    // prefix markers via `setString()`).
+    final preset = _string;
+    if (preset != null && preset.isNotEmpty) {
+      if (text.isEmpty) {
+        text = preset;
+      } else {
+        text = '$preset $text';
+      }
+    }
+    return _renderComposed(text);
+  }
+
+  String _renderComposed(String text) {
     text = _applyConsoleTags(text);
 
     // Potentially convert tabs to spaces
     text = _maybeConvertTabs(text);
     // carriage returns can cause strange behaviour when rendering.
     text = text.replaceAll('\r\n', '\n');
+
+    // If this style has no active properties, return the string unchanged.
+    // This matches lipgloss' early return when a style is effectively empty.
+    if (_props == 0 && _props2 == 0) {
+      return text;
+    }
 
     // Check if any styling or layout is needed
     final hasLayout =
@@ -1706,9 +1730,7 @@ class Style {
         _hasFlag(_PropBits.transform) ||
         hasSpacing;
 
-    if (colorProfile == ColorProfile.ascii &&
-        !hasTextAttributes &&
-        !hasLayout) {
+    if (colorProfile == ColorProfile.ascii && !hasTextAttributes && !hasLayout) {
       return text;
     }
 
@@ -1717,6 +1739,46 @@ class Style {
     // Apply transform first
     if (_hasFlag(_PropBits.transform) && _transform != null) {
       result = _transform!(result);
+    }
+
+    // lipgloss v2 compatibility: when styling with *foreground only* and
+    // applying padding, the padding whitespace should not inherit the
+    // foreground color. In upstream lipgloss this is achieved by styling the
+    // core text first, then applying padding with a whitespace styler that only
+    // includes background (unless in reverse mode).
+    //
+    // Our general pipeline applies padding before coloring, so we special-case
+    // this common scenario (enumerators/indenters) for parity.
+    final fgOnly =
+        _hasFlag(_PropBits.foreground) &&
+        _foreground != null &&
+        (!_hasFlag(_PropBits.background) || _background == null) &&
+        (!_hasFlag(_PropBits.inverse) || !_inverse);
+    final hasOnlyPaddingLayout =
+        !_inline &&
+        !_padding.isZero &&
+        _margin.isZero &&
+        !_hasFlag(_PropBits.width) &&
+        !_hasFlag(_PropBits.height) &&
+        !_hasFlag(_PropBits.maxWidth) &&
+        !_hasFlag(_PropBits.maxHeight) &&
+        !_hasFlag(_PropBits.border) &&
+        !_hasFlag(_PropBits.align);
+    if (fgOnly && hasOnlyPaddingLayout) {
+      final leftPad = ' ' * _padding.left;
+      final rightPad = ' ' * _padding.right;
+      final lines = result.split('\n');
+      final out = <String>[];
+      for (var i = 0; i < _padding.top; i++) {
+        out.add('');
+      }
+      for (final line in lines) {
+        out.add('$leftPad${_applyTextStyles(line)}$rightPad');
+      }
+      for (var i = 0; i < _padding.bottom; i++) {
+        out.add('');
+      }
+      return out.join('\n');
     }
 
     // If inline, skip layout processing
@@ -1803,8 +1865,8 @@ class Style {
       return text;
     }
 
-    final chalk = Chalk();
     var styled = text;
+    var hasAnsi = false;
 
     // Apply colors
     if (_hasFlag(_PropBits.background) && _background != null) {
@@ -1814,7 +1876,8 @@ class Style {
         hasDarkBackground: hasDarkBackground,
       );
       if (ansi.isNotEmpty) {
-        styled = '$ansi$styled\x1B[49m';
+        styled = '$ansi$styled';
+        hasAnsi = true;
       }
     }
 
@@ -1825,16 +1888,21 @@ class Style {
         hasDarkBackground: hasDarkBackground,
       );
       if (ansi.isNotEmpty) {
-        styled = '$ansi$styled\x1B[39m';
+        styled = '$ansi$styled';
+        hasAnsi = true;
       }
     }
+
+    final chalk = Chalk();
 
     // Apply text attributes
     if (_hasFlag(_PropBits.bold) && _bold) {
       styled = chalk.bold(styled);
+      hasAnsi = true;
     }
     if (_hasFlag(_PropBits.italic) && _italic) {
       styled = chalk.italic(styled);
+      hasAnsi = true;
     }
     if (_hasFlag(_PropBits.underline) && _underline) {
       final style = getUnderlineStyle;
@@ -1848,16 +1916,20 @@ class Style {
       };
       if (start.isNotEmpty) {
         styled = '$start$styled\x1b[24m';
+        hasAnsi = true;
       }
     }
     if (_hasFlag(_PropBits.strikethrough) && _strikethrough) {
       styled = chalk.strikethrough(styled);
+      hasAnsi = true;
     }
     if (_hasFlag(_PropBits.dim) && _dim) {
       styled = chalk.dim(styled);
+      hasAnsi = true;
     }
     if (_hasFlag(_PropBits.inverse) && _inverse) {
       styled = chalk.inverse(styled);
+      hasAnsi = true;
     }
 
     if (_hasFlag2(_PropBits.hyperlink) && _hyperlinkUrl != null) {
@@ -1866,9 +1938,11 @@ class Style {
           ? '\x1b]8;;${_hyperlinkUrl!}\x1b\\'
           : '\x1b]8;${params};${_hyperlinkUrl!}\x1b\\';
       styled = '$prefix$styled\x1b]8;;\x1b\\';
+      hasAnsi = true;
     }
 
-    return styled;
+    // lipgloss v2 parity: use a full reset when any styling is applied.
+    return hasAnsi ? '$styled\x1b[m' : styled;
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -1917,20 +1991,14 @@ class Style {
 
   /// Gets the visible length of a string (ignoring ANSI codes).
   static int visibleLength(String text) {
-    final stripped = stripAnsi(text);
-    return _displayWidth(stripped);
+    return Ansi.visibleLength(text);
   }
 
   /// Calculates the display width of a string, accounting for double-width characters.
   ///
-  /// CJK characters, emoji, and other full-width characters take 2 columns in a terminal.
-  static int _displayWidth(String text) {
-    var width = 0;
-    for (final g in uni.graphemes(text)) {
-      width += runeWidth(uni.firstCodePoint(g));
-    }
-    return width;
-  }
+  /// This is retained as an internal helper for code paths that need line-only
+  /// widths without ANSI stripping.
+  static int _displayWidth(String text) => stringWidth(text);
 
   int _getMaxLineWidth(List<String> lines) {
     if (lines.isEmpty) return 0;
@@ -2491,7 +2559,7 @@ class Style {
   String toString() {
     // If a string was pre-set, render it
     if (_string != null) {
-      return render(_string!);
+      return _renderComposed(_string!);
     }
     // Otherwise, return a debug representation
     final parts = <String>[];
