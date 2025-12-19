@@ -32,7 +32,7 @@ import '../style/properties.dart';
 import '../style/color.dart';
 import '../style/style.dart';
 import '../unicode/grapheme.dart' as uni;
-import '../unicode/width.dart' show maxLineWidth, stringWidth;
+import '../unicode/width.dart' show maxLineWidth;
 
 /// Options for rendering whitespace in layout functions.
 ///
@@ -120,9 +120,6 @@ class Layout {
   static String stripAnsi(String text) {
     return Ansi.stripAnsi(text);
   }
-
-  /// Calculates the display width of a string, accounting for double-width characters.
-  static int _displayWidth(String text) => stringWidth(text);
 
   /// Pads a string to a given width, respecting ANSI codes.
   ///

@@ -5,11 +5,14 @@ import 'package:artisan_args/terminal.dart';
 
 import '../terminal/stdin_stream.dart'
     show isSharedStdinStreamStarted, shutdownSharedStdinStream;
+import '../unicode/width.dart' as uni_width;
 import 'cmd.dart';
+import 'emoji_width_probe.dart';
 import 'key.dart' show Key, KeyParser, KeyResult, KeyType, MsgResult;
 import 'model.dart';
 import 'msg.dart';
 import 'renderer.dart';
+import 'startup_probe.dart';
 import 'terminal.dart';
 import 'uv/tui_adapter.dart' show UvTuiInputParser;
 
@@ -483,6 +486,9 @@ class Program {
   final UvTuiInputParser _uvInputParser = UvTuiInputParser();
   Timer? _uvInputTimeoutTimer;
 
+  StartupProbeRunner? _startupProbes;
+  StartupProbeContext? _startupProbeContext;
+
   /// Stream subscription for input.
   StreamSubscription<List<int>>? _inputSubscription;
   StreamSubscription<void>? _cancelSubscription;
@@ -766,12 +772,19 @@ class Program {
   Future<void> _initialize() async {
     _model = _initialModel;
 
+    // If we're using UV input decoding, probe terminal emoji width before we
+    // render anything. The UV renderer relies on correct cell widths to avoid
+    // overwriting graphemes during incremental updates.
+    await _runStartupProbesIfNeeded();
+
     // Send initial window size
     final size = _terminal!.size;
     _processMessage(WindowSizeMsg(size.width, size.height));
 
     // Render initial view
     _render();
+
+    _startupProbes?.drain(_processMessage);
 
     // Execute init command
     final initCmd = _model!.init();
@@ -881,6 +894,36 @@ class Program {
     }
   }
 
+  Future<void> _runStartupProbesIfNeeded() async {
+    if (!_options.useUltravioletRenderer) return;
+    if (!_options.useUltravioletInputDecoder) return;
+    // Avoid messing with normal terminal output in inline mode. Users can
+    // always override via UV_EMOJI_WIDTH/EMOJI_WIDTH if needed.
+    if (!_options.altScreen) return;
+    final term = _terminal;
+    if (term == null) return;
+    if (!term.supportsAnsi || !term.isTerminal) return;
+
+    // Allow explicit override via environment (skip probing).
+    final override =
+        io.Platform.environment['UV_EMOJI_WIDTH'] ??
+        io.Platform.environment['EMOJI_WIDTH'];
+    if (override != null) {
+      final v = int.tryParse(override.trim());
+      if (v != null) uni_width.setEmojiPresentationWidth(v);
+      return;
+    }
+
+    final ctx = StartupProbeContext(terminal: term);
+    _startupProbeContext = ctx;
+
+    // For now, only emoji-width probing is wired, but this runner makes it easy
+    // to add other one-shot terminal capability probes later.
+    final runner = StartupProbeRunner([EmojiWidthProbe()]);
+    _startupProbes = runner;
+    await runner.runAll(ctx);
+  }
+
   /// Sends a message to the program.
   ///
   /// The message will be processed through [Model.update] and
@@ -895,6 +938,12 @@ class Program {
   /// Processes a message through the model.
   void _processMessage(Msg msg) {
     if (_model == null) return;
+
+    final probes = _startupProbes;
+    final probeCtx = _startupProbeContext;
+    if (probes != null && probeCtx != null) {
+      if (probes.intercept(msg, probeCtx)) return;
+    }
 
     // Apply message filter if configured
     if (_options.filter != null) {
@@ -1510,6 +1559,8 @@ class Program {
     try {
       _uvInputParser.clear();
     } catch (_) {}
+    _startupProbes = null;
+    _startupProbeContext = null;
 
     // Dispose renderer (this should restore cursor/alt screen)
     try {
