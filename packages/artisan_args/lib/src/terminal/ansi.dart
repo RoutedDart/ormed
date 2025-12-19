@@ -1,7 +1,6 @@
 library;
 
 import '../unicode/width.dart';
-import '../unicode/grapheme.dart' as uni;
 
 /// Unified ANSI escape sequence constants and utilities.
 ///
@@ -377,6 +376,12 @@ abstract final class Ansi {
 
   /// Requests cursor position report. Terminal responds with `\x1b[{row};{col}R`.
   static const requestCursorPosition = '\x1b[6n';
+
+  /// Requests extended cursor position report (DECXCPR).
+  ///
+  /// Terminals respond with `\x1b[?{row};{col}R`, which is unambiguous vs
+  /// `CSI 1 ; <mod> R` (modified F3) when the cursor is on row 1.
+  static const requestExtendedCursorPosition = '\x1b[?6n';
 
   /// Requests device attributes.
   static const requestDeviceAttributes = '\x1b[c';

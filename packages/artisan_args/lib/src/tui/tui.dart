@@ -118,6 +118,9 @@ export 'msg.dart'
         RepaintMsg,
         UvEventMsg;
 
+// Terminal theme helper (background/dark-mode)
+export 'theme.dart' show TerminalThemeState, TerminalThemeHost;
+
 // Command system
 export 'cmd.dart'
     show

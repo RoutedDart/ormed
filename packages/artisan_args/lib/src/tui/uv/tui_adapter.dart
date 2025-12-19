@@ -183,6 +183,68 @@ term.Key _toTermKey(uvk.Key key) {
       return term.Key(term.KeyType.escape, alt: alt, ctrl: ctrl, shift: shift);
   }
 
+  // Keypad keys (Kitty protocol / application mode).
+  // These are common in modern terminals and should round-trip into the
+  // existing TUI key model so components can use them without bespoke mapping.
+  switch (key.code) {
+    case uvk.keyKpEnter:
+      return term.Key(term.KeyType.enter, alt: alt, ctrl: ctrl, shift: shift);
+
+    // Keypad arrows/navigation (Kitty keypad keys).
+    case uvk.keyKpUp:
+      return term.Key(term.KeyType.up, alt: alt, ctrl: ctrl, shift: shift);
+    case uvk.keyKpDown:
+      return term.Key(term.KeyType.down, alt: alt, ctrl: ctrl, shift: shift);
+    case uvk.keyKpLeft:
+      return term.Key(term.KeyType.left, alt: alt, ctrl: ctrl, shift: shift);
+    case uvk.keyKpRight:
+      return term.Key(term.KeyType.right, alt: alt, ctrl: ctrl, shift: shift);
+    case uvk.keyKpHome:
+      return term.Key(term.KeyType.home, alt: alt, ctrl: ctrl, shift: shift);
+    case uvk.keyKpEnd:
+      return term.Key(term.KeyType.end, alt: alt, ctrl: ctrl, shift: shift);
+    case uvk.keyKpPgUp:
+      return term.Key(term.KeyType.pageUp, alt: alt, ctrl: ctrl, shift: shift);
+    case uvk.keyKpPgDown:
+      return term.Key(
+        term.KeyType.pageDown,
+        alt: alt,
+        ctrl: ctrl,
+        shift: shift,
+      );
+    case uvk.keyKpInsert:
+      return term.Key(term.KeyType.insert, alt: alt, ctrl: ctrl, shift: shift);
+    case uvk.keyKpDelete:
+      return term.Key(term.KeyType.delete, alt: alt, ctrl: ctrl, shift: shift);
+
+    // Keypad operators/digits: map to printable runes.
+    case uvk.keyKpPlus:
+      return term.Key(term.KeyType.runes, runes: [0x2b], alt: alt, ctrl: ctrl);
+    case uvk.keyKpMinus:
+      return term.Key(term.KeyType.runes, runes: [0x2d], alt: alt, ctrl: ctrl);
+    case uvk.keyKpMultiply:
+      return term.Key(term.KeyType.runes, runes: [0x2a], alt: alt, ctrl: ctrl);
+    case uvk.keyKpDivide:
+      return term.Key(term.KeyType.runes, runes: [0x2f], alt: alt, ctrl: ctrl);
+    case uvk.keyKpEqual:
+      return term.Key(term.KeyType.runes, runes: [0x3d], alt: alt, ctrl: ctrl);
+    case uvk.keyKpComma:
+    case uvk.keyKpSep:
+      return term.Key(term.KeyType.runes, runes: [0x2c], alt: alt, ctrl: ctrl);
+    case uvk.keyKpDecimal:
+      return term.Key(term.KeyType.runes, runes: [0x2e], alt: alt, ctrl: ctrl);
+  }
+
+  if (key.code >= uvk.keyKp0 && key.code <= uvk.keyKp9) {
+    final digit = key.code - uvk.keyKp0;
+    return term.Key(
+      term.KeyType.runes,
+      runes: [0x30 + digit],
+      alt: alt,
+      ctrl: ctrl,
+    );
+  }
+
   // C0/C1 mapped to ctrl+<letter> in UV (code points in ASCII range).
   if (key.code < uvk.keyExtended) {
     return term.Key(

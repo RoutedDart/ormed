@@ -430,11 +430,6 @@ String _defaultEnumerator(List<TreeNode> children, int index) {
   return '├──';
 }
 
-String _roundedEnumerator(List<TreeNode> children, int index) {
-  if (children.length - 1 == index) return '╰──';
-  return '├──';
-}
-
 String _defaultIndenter(List<TreeNode> children, int index) {
   if (children.length - 1 == index) return '   ';
   return '│  ';
@@ -496,11 +491,9 @@ class Tree extends DisplayComponent implements TreeNode {
   // Convenience styles (kept for existing Dart examples).
   Style? _directoryStyle;
   Style? _fileStyle;
-  Style? _branchStyle;
 
   // Legacy per-item style hook (kept for existing API).
   TreeStyleFunc? _legacyItemStyleFunc;
-  TreeEnumeratorStyleFunc? _legacyEnumeratorStyleFunc;
 
   _TreeRenderer? _renderer; // null => inherit parent renderer
 
@@ -626,11 +619,29 @@ class Tree extends DisplayComponent implements TreeNode {
   // ─────────────────────────────────────────────────────────────────────────
 
   Tree enumerator(Object enumerator) {
-    // Back-compat: map our preset enum struct to v2 enumerators.
-    if (enumerator is TreeEnumerator && enumerator == TreeEnumerator.rounded) {
-      return enumeratorFunc(_roundedEnumerator);
+    // Back-compat: map our preset enumerators onto v2 enumerator/indenter funcs.
+    if (enumerator is TreeEnumerator) {
+      final e = enumerator;
+
+      String indenter(List<TreeNode> children, int index) {
+        final isLast = children.length - 1 == index;
+        final dashWidth = Style.visibleLength(e.dash);
+        final pipeWidth = Style.visibleLength(e.pipe);
+        final w = pipeWidth + dashWidth;
+        if (isLast) return ' ' * w;
+        return '${e.pipe}${' ' * dashWidth}';
+      }
+
+      String enumr(List<TreeNode> children, int index) {
+        final isLast = children.length - 1 == index;
+        return '${isLast ? e.elbow : e.tee}${e.dash}';
+      }
+
+      return enumeratorFunc(enumr).indenterFunc(indenter);
     }
-    return enumeratorFunc(_defaultEnumerator);
+
+    // Unknown enumerator object: fall back to the default.
+    return enumeratorFunc(_defaultEnumerator).indenterFunc(_defaultIndenter);
   }
 
   Tree enumeratorFunc(TreeEnumeratorFunc fn) {
@@ -700,7 +711,6 @@ class Tree extends DisplayComponent implements TreeNode {
   }
 
   Tree branchStyle(Style style) {
-    _branchStyle = style;
     // In v2, both the enumerator and indenter are "branches".
     enumeratorStyle(style);
     indenterStyle(style);
@@ -708,7 +718,6 @@ class Tree extends DisplayComponent implements TreeNode {
   }
 
   Tree enumeratorStyleFunc(TreeEnumeratorStyleFunc fn) {
-    _legacyEnumeratorStyleFunc = fn;
     enumeratorStyleAt((children, index) {
       final style = fn(children, index);
       return style ?? Style();

@@ -87,6 +87,23 @@ export 'src/style/verbosity.dart' show ArtisanVerbosity;
 // Style - Fluent Style System
 export 'src/style/style.dart' show Style, styleRunes;
 export 'src/style/ranges.dart' show StyleRange, styleRanges, Ranges;
+export 'src/style/blending.dart' show blend1D, blend2D;
+export 'src/style/writer.dart'
+    show
+        Writer,
+        resetWriter,
+        Print,
+        PrintAll,
+        Println,
+        PrintlnAll,
+        Printf,
+        SprintAll,
+        SprintlnAll,
+        Sprintf,
+        Fprint,
+        Fprintln,
+        Fprintf,
+        stringForProfile;
 export 'src/style/properties.dart'
     show
         Padding,

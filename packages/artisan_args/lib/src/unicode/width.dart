@@ -5,6 +5,24 @@
 /// port initially mostly cover ASCII + common wide (CJK/emoji) characters.
 import 'grapheme.dart' as uni;
 
+/// Runtime configuration for width calculations that depend on terminal
+/// behavior.
+///
+/// Some terminals render emoji as 1 cell wide, others as 2. Our cell-buffer
+/// renderer needs to match the terminal’s behavior to avoid overwriting
+/// graphemes during incremental updates.
+///
+/// Default is 2 (Unicode wide emoji behavior).
+int emojiPresentationWidth = 2;
+
+/// Sets the display width used for emoji presentation characters.
+///
+/// Values outside {1,2} are ignored.
+void setEmojiPresentationWidth(int width) {
+  if (width != 1 && width != 2) return;
+  emojiPresentationWidth = width;
+}
+
 enum WidthMethod { grapheme, wcwidth }
 
 extension WidthMethodX on WidthMethod {
@@ -76,9 +94,13 @@ int runeWidth(int rune) {
       (rune >= 0xFE30 && rune <= 0xFE6F) || // CJK Compatibility Forms
       (rune >= 0xFF00 && rune <= 0xFF60) || // Fullwidth ASCII
       (rune >= 0xFFE0 && rune <= 0xFFE6) || // Fullwidth symbols
-      (rune >= 0x20000 && rune <= 0x3FFFF) || // CJK Extensions
-      (rune >= 0x1F300 && rune <= 0x1F9FF)) {
+      (rune >= 0x20000 && rune <= 0x3FFFF)) {
     return 2;
+  }
+
+  // Emoji range subset. Terminal behavior varies (1 or 2).
+  if (rune >= 0x1F300 && rune <= 0x1F9FF) {
+    return emojiPresentationWidth;
   }
 
   return 1;
