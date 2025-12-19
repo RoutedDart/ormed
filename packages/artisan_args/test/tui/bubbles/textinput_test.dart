@@ -1,6 +1,6 @@
 import 'package:artisan_args/src/tui/bubbles/textinput.dart';
 import 'package:artisan_args/src/tui/component.dart';
-import 'package:artisan_args/tui.dart' show Key, KeyMsg, KeyType;
+import 'package:artisan_args/tui.dart' show Key, KeyMsg, KeyType, MouseAction, MouseButton, MouseMsg;
 import 'package:test/test.dart';
 
 void main() {
@@ -260,6 +260,85 @@ void main() {
       ViewComponent model = input;
       final (updated, _) = model.update(const KeyMsg(Key(KeyType.left)));
       expect(updated, isA<TextInputModel>());
+    });
+
+    group('Selection', () {
+      test('selects text via mouse drag', () {
+        var input = TextInputModel(prompt: '> ');
+        input.value = 'Hello World';
+
+        // Press at (2, 0) -> 'H' is at x=2 (prompt is '> ')
+        var (v1, _) = input.update(const MouseMsg(
+          action: MouseAction.press,
+          button: MouseButton.left,
+          x: 2,
+          y: 0,
+        ));
+
+        // Drag to (7, 0) -> 'o' is at x=6
+        var (v2, _) = v1.update(const MouseMsg(
+          action: MouseAction.motion,
+          button: MouseButton.left,
+          x: 7,
+          y: 0,
+        ));
+
+        expect(v2.getSelectedText(), equals('Hello'));
+      });
+
+      test('double click selects word', () {
+        var input = TextInputModel(prompt: '> ');
+        input.value = 'Hello World';
+
+        // Click inside "Hello"
+        var (v1, _) = input.update(const MouseMsg(
+          action: MouseAction.press,
+          button: MouseButton.left,
+          x: 4,
+          y: 0,
+        ));
+
+        var (v2, _) = v1.update(const MouseMsg(
+          action: MouseAction.press,
+          button: MouseButton.left,
+          x: 4,
+          y: 0,
+        ));
+
+        expect(v2.getSelectedText(), equals('Hello'));
+      });
+
+      test('click outside bounds clears selection and blurs', () {
+        var input = TextInputModel(prompt: '> ');
+        input.value = 'Hello World';
+        input.focus();
+
+        // Select something
+        var (v1, _) = input.update(const MouseMsg(
+          action: MouseAction.press,
+          button: MouseButton.left,
+          x: 2,
+          y: 0,
+        ));
+        var (v2, _) = v1.update(const MouseMsg(
+          action: MouseAction.motion,
+          button: MouseButton.left,
+          x: 7,
+          y: 0,
+        ));
+        expect(v2.getSelectedText(), equals('Hello'));
+        expect(v2.focused, isTrue);
+
+        // Click outside (y = 1)
+        var (v3, _) = v2.update(const MouseMsg(
+          action: MouseAction.press,
+          button: MouseButton.left,
+          x: 2,
+          y: 1,
+        ));
+        expect(v3.getSelectedText(), equals(''));
+        expect(v3.focused, isFalse);
+      });
     });
   });
 

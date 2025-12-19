@@ -240,8 +240,8 @@ class KeyParser {
     }
 
     final cb = sequence[3] - 32;
-    final cx = sequence[4] - 32;
-    final cy = sequence[5] - 32;
+    final cx = sequence[4] - 33;
+    final cy = sequence[5] - 33;
 
     final (button, action) = _decodeX10Button(cb);
 
@@ -299,8 +299,8 @@ class KeyParser {
     }
 
     final cb = int.tryParse(parts[0]) ?? 0;
-    final cx = int.tryParse(parts[1]) ?? 1;
-    final cy = int.tryParse(parts[2]) ?? 1;
+    final cx = (int.tryParse(parts[1]) ?? 1) - 1;
+    final cy = (int.tryParse(parts[2]) ?? 1) - 1;
 
     final isRelease = sequence.last == 0x6d; // 'm' for release, 'M' for press
 

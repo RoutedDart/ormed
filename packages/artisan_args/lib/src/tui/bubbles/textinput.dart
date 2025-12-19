@@ -344,6 +344,10 @@ class TextInputModel extends ViewComponent {
   int? _selectionStart;
   int? _selectionEnd;
 
+  // Double click tracking
+  DateTime? _lastClickTime;
+  int? _lastClickPos;
+
   // Suggestions
   List<List<String>> _suggestions = <List<String>>[];
   List<List<String>> _matchedSuggestions = <List<String>>[];
@@ -615,6 +619,25 @@ class TextInputModel extends ViewComponent {
     position = i;
   }
 
+  (int, int) _findWordAt(int x) {
+    if (_value.isEmpty) return (0, 0);
+    final pos = x.clamp(0, _value.length - 1);
+
+    if (_isWhitespace(_value[pos])) {
+      var start = pos;
+      while (start > 0 && _isWhitespace(_value[start - 1])) start--;
+      var end = pos;
+      while (end < _value.length && _isWhitespace(_value[end])) end++;
+      return (start, end);
+    } else {
+      var start = pos;
+      while (start > 0 && !_isWhitespace(_value[start - 1])) start--;
+      var end = pos;
+      while (end < _value.length && !_isWhitespace(_value[end])) end++;
+      return (start, end);
+    }
+  }
+
   bool _isWhitespace(String grapheme) {
     final rune = uni.firstCodePoint(grapheme);
     return rune == 0x20 || // Space
@@ -691,21 +714,41 @@ class TextInputModel extends ViewComponent {
 
   @override
   (TextInputModel, Cmd?) update(Msg msg) {
-    if (!_focused) {
-      return (this, null);
-    }
-
     final oldPos = _pos;
     final cmds = <Cmd>[];
 
     if (msg is MouseMsg) {
+      if (msg.y != 0) {
+        if (msg.action == MouseAction.press && msg.button == MouseButton.left) {
+          _selectionStart = null;
+          _selectionEnd = null;
+          _focused = false;
+        }
+        return (this, null);
+      }
       final promptWidth = stringWidth(prompt);
       final x = msg.x - promptWidth + _offset;
 
       if (msg.action == MouseAction.press && msg.button == MouseButton.left) {
-        position = x;
-        _selectionStart = _pos;
-        _selectionEnd = _pos;
+        _focused = true;
+        final now = DateTime.now();
+        if (_lastClickTime != null &&
+            now.difference(_lastClickTime!) < const Duration(milliseconds: 500) &&
+            _lastClickPos == x) {
+          // Double click: select word
+          final (start, end) = _findWordAt(x);
+          _selectionStart = start;
+          _selectionEnd = end;
+          _pos = end;
+          _lastClickTime = now;
+          _lastClickPos = x;
+        } else {
+          position = x;
+          _selectionStart = _pos;
+          _selectionEnd = _pos;
+          _lastClickTime = now;
+          _lastClickPos = x;
+        }
       } else if (msg.action == MouseAction.motion &&
           msg.button == MouseButton.left) {
         position = x;
@@ -716,6 +759,11 @@ class TextInputModel extends ViewComponent {
           _selectionEnd = null;
         }
       }
+      return (this, null);
+    }
+
+    if (!_focused) {
+      return (this, null);
     }
 
     // Check for suggestion acceptance first

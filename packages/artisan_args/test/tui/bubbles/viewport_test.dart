@@ -560,6 +560,100 @@ void main() {
         expect(viewport.init(), isNull);
       });
     });
+
+    group('Selection', () {
+      test('selects text via mouse drag', () {
+        var viewport = ViewportModel(width: 20, height: 5).setContent('Hello World\nLine 2');
+
+        // Press at (0, 0)
+        var (v1, _) = viewport.update(const MouseMsg(
+          action: MouseAction.press,
+          button: MouseButton.left,
+          x: 0,
+          y: 0,
+        ));
+
+        // Drag to (5, 0)
+        var (v2, _) = v1.update(const MouseMsg(
+          action: MouseAction.motion,
+          button: MouseButton.left,
+          x: 5,
+          y: 0,
+        ));
+
+        expect(v2.getSelectedText(), equals('Hello'));
+      });
+
+      test('double click selects word', () {
+        var viewport = ViewportModel(width: 20, height: 5).setContent('Hello World\nLine 2');
+
+        // First click at (2, 0) - inside "Hello"
+        var (v1, _) = viewport.update(const MouseMsg(
+          action: MouseAction.press,
+          button: MouseButton.left,
+          x: 2,
+          y: 0,
+        ));
+
+        // Second click at same position immediately
+        var (v2, _) = v1.update(const MouseMsg(
+          action: MouseAction.press,
+          button: MouseButton.left,
+          x: 2,
+          y: 0,
+        ));
+
+        expect(v2.getSelectedText(), equals('Hello'));
+      });
+
+      test('double click selects whitespace', () {
+        var viewport = ViewportModel(width: 20, height: 5).setContent('Hello   World');
+
+        // Click in the middle of spaces
+        var (v1, _) = viewport.update(const MouseMsg(
+          action: MouseAction.press,
+          button: MouseButton.left,
+          x: 6,
+          y: 0,
+        ));
+
+        var (v2, _) = v1.update(const MouseMsg(
+          action: MouseAction.press,
+          button: MouseButton.left,
+          x: 6,
+          y: 0,
+        ));
+
+        expect(v2.getSelectedText(), equals('   '));
+      });
+
+      test('click outside bounds clears selection', () {
+        var viewport = ViewportModel(width: 20, height: 5).setContent('Hello World');
+        // Select something
+        var (v1, _) = viewport.update(const MouseMsg(
+          action: MouseAction.press,
+          button: MouseButton.left,
+          x: 0,
+          y: 0,
+        ));
+        var (v2, _) = v1.update(const MouseMsg(
+          action: MouseAction.motion,
+          button: MouseButton.left,
+          x: 5,
+          y: 0,
+        ));
+        expect(v2.getSelectedText(), equals('Hello'));
+
+        // Click outside (y = -1)
+        var (v3, _) = v2.update(const MouseMsg(
+          action: MouseAction.press,
+          button: MouseButton.left,
+          x: 0,
+          y: -1,
+        ));
+        expect(v3.getSelectedText(), equals(''));
+      });
+    });
   });
 
   group('ViewportKeyMap', () {

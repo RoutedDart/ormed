@@ -9,6 +9,8 @@ import '../msg.dart';
 import '../uv/wrap.dart' as uv_wrap;
 import 'key_binding.dart';
 
+const undefined = Object();
+
 /// Key bindings for viewport navigation.
 class ViewportKeyMap implements KeyMap {
   ViewportKeyMap({
@@ -122,13 +124,15 @@ class ViewportModel extends ViewComponent {
     this.currentHighlightIndex = -1,
     this.selectionStart,
     this.selectionEnd,
+    this.lastClickTime,
+    this.lastClickPos,
     ViewportKeyMap? keyMap,
     List<String>? lines,
     List<String>? wrappedLines,
     List<String>? originalLines,
   }) : keyMap = keyMap ?? ViewportKeyMap(),
        _lines = lines ?? [],
-       _wrappedLines = wrappedLines ?? [],
+       _wrappedLines = wrappedLines ?? lines ?? [],
        _originalLines = originalLines ?? lines ?? [];
 
   /// Width of the viewport in columns.
@@ -180,6 +184,12 @@ class ViewportModel extends ViewComponent {
   /// The end of the selection (x, y) in content coordinates.
   final (int, int)? selectionEnd;
 
+  /// The time of the last mouse click.
+  final DateTime? lastClickTime;
+
+  /// The position of the last mouse click.
+  final (int, int)? lastClickPos;
+
   /// Key bindings for navigation.
   final ViewportKeyMap keyMap;
 
@@ -219,8 +229,10 @@ class ViewportModel extends ViewComponent {
     String Function(int lineIndex)? leftGutterFunc,
     List<ranges.StyleRange>? highlights,
     int? currentHighlightIndex,
-    (int, int)? selectionStart,
-    (int, int)? selectionEnd,
+    Object? selectionStart = undefined,
+    Object? selectionEnd = undefined,
+    DateTime? lastClickTime,
+    (int, int)? lastClickPos,
   }) {
     final newWidth = width ?? this.width;
     final newGutter = gutter ?? this.gutter;
@@ -228,6 +240,12 @@ class ViewportModel extends ViewComponent {
     final newShowLineNumbers = showLineNumbers ?? this.showLineNumbers;
     final newOriginalLines = lines ?? _originalLines;
     final newHighlights = highlights ?? this.highlights;
+    final newSelectionStart = selectionStart == undefined
+        ? this.selectionStart
+        : selectionStart as (int, int)?;
+    final newSelectionEnd = selectionEnd == undefined
+        ? this.selectionEnd
+        : selectionEnd as (int, int)?;
 
     // Apply highlights to original lines
     var styledLines = newOriginalLines;
@@ -263,11 +281,56 @@ class ViewportModel extends ViewComponent {
       leftGutterFunc: leftGutterFunc ?? this.leftGutterFunc,
       highlights: newHighlights,
       currentHighlightIndex: currentHighlightIndex ?? this.currentHighlightIndex,
-      selectionStart: selectionStart ?? this.selectionStart,
-      selectionEnd: selectionEnd ?? this.selectionEnd,
+      selectionStart: newSelectionStart,
+      selectionEnd: newSelectionEnd,
+      lastClickTime: lastClickTime ?? this.lastClickTime,
+      lastClickPos: lastClickPos ?? this.lastClickPos,
     );
     newModel._longestLineWidth = _findLongestLineWidth(styledLines);
     return newModel;
+  }
+
+  /// Clears the current selection.
+  ViewportModel clearSelection() {
+    return copyWith(
+      selectionStart: null,
+      selectionEnd: null,
+    );
+  }
+
+  /// Selects all text in the viewport.
+  ViewportModel selectAll() {
+    if (_lines.isEmpty) return this;
+    return copyWith(
+      selectionStart: (0, 0),
+      selectionEnd: (_lines.last.length, _lines.length - 1),
+    );
+  }
+
+  (int, int) _findWordAt(int x, int y) {
+    if (y < 0 || y >= lines.length) return (x, x);
+    final line = Style.stripAnsi(lines[y]);
+    if (x < 0 || x >= line.length) return (x, x);
+
+    if (_isWhitespace(line[x])) {
+      // Find whitespace block
+      var start = x;
+      while (start > 0 && _isWhitespace(line[start - 1])) start--;
+      var end = x;
+      while (end < line.length && _isWhitespace(line[end])) end++;
+      return (start, end);
+    } else {
+      // Find word block
+      var start = x;
+      while (start > 0 && !_isWhitespace(line[start - 1])) start--;
+      var end = x;
+      while (end < line.length && !_isWhitespace(line[end])) end++;
+      return (start, end);
+    }
+  }
+
+  bool _isWhitespace(String char) {
+    return char == ' ' || char == '\t' || char == '\n' || char == '\r';
   }
 
   /// Sets the content of the viewport.
@@ -538,18 +601,49 @@ class ViewportModel extends ViewComponent {
         return (this, null);
 
       case MouseMsg(:final button, :final action, :final x, :final y, :final shift):
-        if (action == MouseAction.press && button == MouseButton.left) {
-          // Start selection
-          final contentX = x - gutter + xOffset;
-          final contentY = y + yOffset;
-          return (
-            copyWith(
-              selectionStart: (contentX, contentY),
-              selectionEnd: (contentX, contentY),
-            ),
-            null,
-          );
-        }
+        if (button == MouseButton.left) {
+          final isOutside =
+              y < 0 || (height != null ? y >= height! : y >= lines.length);
+          if (isOutside) {
+            if (action == MouseAction.press) {
+              return (clearSelection(), null);
+            }
+            return (this, null);
+          }
+
+          if (action == MouseAction.press) {
+            final contentX = x - gutter + xOffset;
+            final contentY = y + yOffset;
+            final now = DateTime.now();
+
+            // Check for double click
+            if (lastClickTime != null &&
+                now.difference(lastClickTime!) <
+                    const Duration(milliseconds: 500) &&
+                lastClickPos == (contentX, contentY)) {
+              final (start, end) = _findWordAt(contentX, contentY);
+              return (
+                copyWith(
+                  selectionStart: (start, contentY),
+                  selectionEnd: (end, contentY),
+                  lastClickTime: now,
+                  lastClickPos: (contentX, contentY),
+                ),
+                null,
+              );
+            }
+
+            // Start selection
+            return (
+              copyWith(
+                selectionStart: (contentX, contentY),
+                selectionEnd: (contentX, contentY),
+                lastClickTime: now,
+                lastClickPos: (contentX, contentY),
+              ),
+              null,
+            );
+          }
 
         if (action == MouseAction.motion && selectionStart != null) {
           // Update selection
@@ -562,10 +656,11 @@ class ViewportModel extends ViewComponent {
           // Finalize selection (keep it for copying)
           return (this, null);
         }
+      }
 
-        if (!mouseWheelEnabled || action != MouseAction.press) {
-          return (this, null);
-        }
+      if (!mouseWheelEnabled || action != MouseAction.press) {
+        return (this, null);
+      }
 
         switch (button) {
           case MouseButton.wheelUp:

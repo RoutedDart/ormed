@@ -401,6 +401,86 @@ void main() {
       final (updated, _) = model.update(const KeyMsg(Key(KeyType.enter)));
       expect(updated, isA<TextAreaModel>());
     });
+
+    group('Selection', () {
+      test('selects text via mouse drag', () {
+        var textarea = TextAreaModel(prompt: '> ', showLineNumbers: false);
+        textarea.value = 'Hello World\nLine 2';
+
+        // Press at (2, 0) -> 'H' is at x=2 (prompt is '> ')
+        var (v1, _) = textarea.update(const MouseMsg(
+          action: MouseAction.press,
+          button: MouseButton.left,
+          x: 2,
+          y: 0,
+        ));
+
+        // Drag to (7, 0) -> 'o' is at x=6
+        var (v2, _) = v1.update(const MouseMsg(
+          action: MouseAction.motion,
+          button: MouseButton.left,
+          x: 7,
+          y: 0,
+        ));
+
+        expect(v2.getSelectedText(), equals('Hello'));
+      });
+
+      test('double click selects word', () {
+        var textarea = TextAreaModel(prompt: '> ', showLineNumbers: false);
+        textarea.value = 'Hello World\nLine 2';
+
+        // Click inside "Hello"
+        var (v1, _) = textarea.update(const MouseMsg(
+          action: MouseAction.press,
+          button: MouseButton.left,
+          x: 4,
+          y: 0,
+        ));
+
+        var (v2, _) = v1.update(const MouseMsg(
+          action: MouseAction.press,
+          button: MouseButton.left,
+          x: 4,
+          y: 0,
+        ));
+
+        expect(v2.getSelectedText(), equals('Hello'));
+      });
+
+      test('click outside bounds clears selection and blurs', () {
+        var textarea =
+            TextAreaModel(prompt: '> ', showLineNumbers: false, height: 5);
+        textarea.value = 'Hello World\nLine 2';
+        textarea.focus();
+
+        // Select something
+        var (v1, _) = textarea.update(const MouseMsg(
+          action: MouseAction.press,
+          button: MouseButton.left,
+          x: 2,
+          y: 0,
+        ));
+        var (v2, _) = v1.update(const MouseMsg(
+          action: MouseAction.motion,
+          button: MouseButton.left,
+          x: 7,
+          y: 0,
+        ));
+        expect(v2.getSelectedText(), equals('Hello'));
+        expect(v2.focused, isTrue);
+
+        // Click outside (y = 6)
+        var (v3, _) = v2.update(const MouseMsg(
+          action: MouseAction.press,
+          button: MouseButton.left,
+          x: 2,
+          y: 6,
+        ));
+        expect(v3.getSelectedText(), equals(''));
+        expect(v3.focused, isFalse);
+      });
+    });
   });
 
   group('TextAreaKeyMap', () {

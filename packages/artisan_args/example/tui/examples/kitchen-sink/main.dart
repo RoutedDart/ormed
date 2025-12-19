@@ -79,7 +79,7 @@ class _KitchenSinkModel extends tui.Model {
       textInput = tui.TextInputModel(prompt: 'search: ', width: 32),
       textarea = tui.TextAreaModel(width: 48, height: 6, prompt: ''),
       viewport = tui.ViewportModel(width: 60, height: 10),
-      text = tui.TextModel(width: 60),
+      text = tui.TextModel(''),
       listSelection = _ListSelectionState.initial(),
       emojiEnabled = _defaultEmojiEnabled(io.Platform.environment),
       capabilities = TerminalCapabilities(
@@ -388,7 +388,8 @@ class _KitchenSinkModel extends tui.Model {
   @override
   String view() {
     final header = _renderHeader();
-    _headerLines = header.split('\n').length;
+    // +1 for the newline added by join('\n') between header and body.
+    _headerLines = header.split('\n').length + 1;
 
     final footer = _showHelp ? _renderHelp() : '';
     _footerLines = footer.isEmpty ? 0 : footer.split('\n').length;
@@ -2507,7 +2508,7 @@ The selection will persist even if you scroll the viewport.
       vpMsg = msg.copyWith(y: pageY - 1);
       taMsg = msg.copyWith(y: pageY - 13);
       tiMsg = msg.copyWith(y: pageY - 21);
-      txMsg = msg.copyWith(y: pageY - 25);
+      txMsg = msg.copyWith(y: pageY - 24);
     }
 
     // Update Viewport

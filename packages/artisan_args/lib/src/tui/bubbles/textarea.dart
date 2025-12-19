@@ -382,6 +382,10 @@ class TextAreaModel extends ViewComponent {
   (int, int)? _selectionStart;
   (int, int)? _selectionEnd;
 
+  // Double click tracking
+  DateTime? _lastClickTime;
+  (int, int)? _lastClickPos;
+
   bool get focused => _focused;
   int get line => _row;
   int get column => _col;
@@ -692,18 +696,46 @@ class TextAreaModel extends ViewComponent {
       final x = msg.x;
       final y = msg.y;
 
+      if (y < 0 || y >= _height) {
+        if (action == MouseAction.press && button == MouseButton.left) {
+          _selectionStart = null;
+          _selectionEnd = null;
+          _focused = false;
+        }
+        return (this, null);
+      }
+
       if (action == MouseAction.press && button == MouseButton.left) {
-        // Start selection
-        final contentX = x - (_promptWidth ?? 0);
+        _focused = true;
+        final promptW = _promptWidth ?? stringWidth(prompt);
+        final contentX = x - promptW;
         final contentY = y;
+        final now = DateTime.now();
+
+        if (_lastClickTime != null &&
+            now.difference(_lastClickTime!) < const Duration(milliseconds: 500) &&
+            _lastClickPos == (contentX, contentY)) {
+          // Double click: select word
+          final (start, end) = _findWordAt(contentX, contentY);
+          _selectionStart = (start, contentY);
+          _selectionEnd = (end, contentY);
+          _lastClickTime = now;
+          _lastClickPos = (contentX, contentY);
+          return (this, null);
+        }
+
+        // Start selection
         _selectionStart = (contentX, contentY);
         _selectionEnd = (contentX, contentY);
+        _lastClickTime = now;
+        _lastClickPos = (contentX, contentY);
         return (this, null);
       }
 
       if (action == MouseAction.motion && _selectionStart != null) {
         // Update selection
-        final contentX = x - (_promptWidth ?? 0);
+        final promptW = _promptWidth ?? stringWidth(prompt);
+        final contentX = x - promptW;
         final contentY = y;
         _selectionEnd = (contentX, contentY);
         return (this, null);
@@ -1234,5 +1266,34 @@ class TextAreaModel extends ViewComponent {
     if (limited == value) return;
     _lines = _parseLines(limited);
     _setCursorFromGlobal(cursorPos.clamp(0, _totalGraphemeLength()));
+  }
+
+  (int, int) _findWordAt(int x, int y) {
+    if (y < 0 || y >= _lines.length) return (x, x);
+    final line = _lines[y];
+    if (line.isEmpty) return (0, 0);
+    final pos = x.clamp(0, line.length - 1);
+
+    if (_isWhitespace(line[pos])) {
+      var start = pos;
+      while (start > 0 && _isWhitespace(line[start - 1])) start--;
+      var end = pos;
+      while (end < line.length && _isWhitespace(line[end])) end++;
+      return (start, end);
+    } else {
+      var start = pos;
+      while (start > 0 && !_isWhitespace(line[start - 1])) start--;
+      var end = pos;
+      while (end < line.length && !_isWhitespace(line[end])) end++;
+      return (start, end);
+    }
+  }
+
+  bool _isWhitespace(String grapheme) {
+    final rune = uni.firstCodePoint(grapheme);
+    return rune == 0x20 || // Space
+        rune == 0x09 || // Tab
+        rune == 0x0A || // LF
+        rune == 0x0D; // CR
   }
 }
