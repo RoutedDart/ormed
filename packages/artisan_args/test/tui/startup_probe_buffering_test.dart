@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:artisan_args/src/style/color.dart';
 import 'package:artisan_args/src/tui/msg.dart';
 import 'package:artisan_args/src/tui/startup_probe.dart';
 import 'package:artisan_args/src/tui/terminal.dart';
@@ -74,6 +75,9 @@ class _TestTerminal implements TuiTerminal {
   void setTitle(String title) {}
 
   @override
+  void setProgressBar(int state, int value) {}
+
+  @override
   void bell() {}
 
   @override
@@ -87,6 +91,12 @@ class _TestTerminal implements TuiTerminal {
       (useTabs: false, useBackspace: false);
 
   @override
+  int get width => 80;
+
+  @override
+  int get height => 24;
+
+  @override
   ({int width, int height}) get size => (width: 80, height: 24);
 
   @override
@@ -94,6 +104,9 @@ class _TestTerminal implements TuiTerminal {
 
   @override
   bool get isTerminal => true;
+
+  @override
+  ColorProfile get colorProfile => ColorProfile.trueColor;
 
   @override
   bool get isAltScreen => true;
@@ -151,12 +164,6 @@ class _TestTerminal implements TuiTerminal {
 
   @override
   void cursorToColumn(int col) {}
-
-  @override
-  int get width => size.width;
-
-  @override
-  int get height => size.height;
 
   @override
   int readByte() => -1;

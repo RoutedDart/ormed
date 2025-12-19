@@ -145,7 +145,7 @@ void main() {
             underlineColor: blue,
             underline: UnderlineStyle.single,
           ),
-          want: '\x1b[58;2;0;0;255m',
+          want: '\x1b[58:2::0:0:255m',
         ),
         (
           name: 'add underline color',
@@ -154,7 +154,7 @@ void main() {
             underlineColor: green,
             underline: UnderlineStyle.single,
           ),
-          want: '\x1b[58;2;0;255;0m',
+          want: '\x1b[58:2::0:255:0m',
         ),
         (
           name: 'remove underline color',
@@ -536,7 +536,7 @@ void main() {
             attrs: Attr.italic,
             underline: UnderlineStyle.single,
           ),
-          want: '\x1b[38;2;0;255;0;48;2;255;255;0;58;2;0;255;255;22;3;4m',
+          want: '\x1b[38;2;0;255;0;48;2;255;255;0;58:2::0:255:255;22;3;4m',
         ),
         (
           name: 'complex change keeping some properties',
@@ -595,13 +595,13 @@ void main() {
             underlineColor: green,
             underline: UnderlineStyle.single,
           ),
-          want: '\x1b[38;2;255;0;0;48;2;0;0;255;58;2;0;255;0;4m',
+          want: '\x1b[38;2;255;0;0;48;2;0;0;255;58:2::0:255:0;4m',
         ),
         (
           name: 'add all colors without underline',
           from: const Style(),
           to: const Style(fg: red, bg: blue, underlineColor: green),
-          want: '\x1b[38;2;255;0;0;48;2;0;0;255;58;2;0;255;0m',
+          want: '\x1b[38;2;255;0;0;48;2;0;0;255;58:2::0:255:0m',
         ),
         (
           name: 'remove all colors with attributes',
@@ -613,7 +613,7 @@ void main() {
           name: 'change all colors',
           from: const Style(fg: red, bg: blue, underlineColor: green),
           to: const Style(fg: cyan, bg: magenta, underlineColor: yellow),
-          want: '\x1b[38;2;0;255;255;48;2;255;0;255;58;2;255;255;0m',
+          want: '\x1b[38;2;0;255;255;48;2;255;0;255;58:2::255:255:0m',
         ),
       ];
 

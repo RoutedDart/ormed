@@ -375,6 +375,46 @@ abstract final class Ansi {
   /// Example: `Ansi.setTitle('My App')` produces `\x1b]0;My App\x07`
   static String setTitle(String title) => '\x1b]0;$title\x07';
 
+  /// Sets the terminal progress bar (OSC 9;4).
+  ///
+  /// [state]: 0=none, 1=default, 2=error, 3=indeterminate, 4=warning
+  /// [value]: 0-100
+  static String setProgressBar(int state, int value) =>
+      '\x1b]9;4;$state;$value\x07';
+
+  /// Resets the terminal progress bar (OSC 9;4).
+  static const resetProgressBar = '\x1b]9;4;0;0\x07';
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Kitty Keyboard Protocol
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /// Requests the current Kitty keyboard protocol flags.
+  ///
+  /// Terminal responds with `ESC [ ? <flags> u`.
+  static const requestKittyKeyboard = '\x1b[?u';
+
+  /// Sets the Kitty keyboard protocol flags.
+  ///
+  /// [flags] is a bitmask of features to enable.
+  /// [mode] is the operation mode: 0 (set), 1 (push), 2 (pop).
+  static String kittyKeyboard(int flags, {int mode = 0}) {
+    if (mode == 0) {
+      return '\x1b[>$flags u';
+    }
+    return '\x1b[>$flags;$mode u';
+  }
+
+  /// Resets the Kitty keyboard protocol flags to 0.
+  static const resetKittyKeyboard = '\x1b[>0u';
+
+  /// Kitty keyboard protocol flags.
+  static const kittyDisambiguateEscapeCodes = 1;
+  static const kittyReportEventTypes = 2;
+  static const kittyReportAlternateKeys = 4;
+  static const kittyReportAllKeysAsEscapeCodes = 8;
+  static const kittyReportAssociatedText = 16;
+
   /// Rings the terminal bell.
   static const bell = '\x07';
 

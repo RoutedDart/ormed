@@ -1,3 +1,4 @@
+import '../style/color.dart';
 import 'key.dart';
 
 /// Base class for all messages in the TUI runtime.
@@ -276,6 +277,44 @@ final class CursorColorMsg extends Msg {
   String toString() => 'CursorColorMsg($hex)';
 }
 
+/// Message sent when a terminal capability is reported.
+class CapabilityMsg extends Msg {
+  const CapabilityMsg(this.content);
+  final String content;
+
+  @override
+  String toString() => 'CapabilityMsg($content)';
+}
+
+/// Message sent when the terminal version is reported.
+class TerminalVersionMsg extends Msg {
+  const TerminalVersionMsg(this.version);
+  final String version;
+
+  @override
+  String toString() => 'TerminalVersionMsg($version)';
+}
+
+/// Message sent when keyboard enhancements are reported.
+class KeyboardEnhancementsMsg extends Msg {
+  const KeyboardEnhancementsMsg({
+    this.reportEventTypes = false,
+  });
+  final bool reportEventTypes;
+
+  @override
+  String toString() => 'KeyboardEnhancementsMsg(reportEventTypes: $reportEventTypes)';
+}
+
+/// Message sent when the terminal color profile is detected or changed.
+class ColorProfileMsg extends Msg {
+  const ColorProfileMsg(this.profile);
+  final ColorProfile profile;
+
+  @override
+  String toString() => 'ColorProfileMsg($profile)';
+}
+
 ({int r, int g, int b})? _parseHexRgb(String? hex) {
   if (hex == null) return null;
   final s = hex.trim();
@@ -285,6 +324,9 @@ final class CursorColorMsg extends Msg {
   final b = int.parse(s.substring(5, 7), radix: 16);
   return (r: r, g: g, b: b);
 }
+
+/// Mouse tracking modes.
+enum MouseMode { none, cellMotion, allMotion }
 
 /// Mouse button identifiers.
 enum MouseButton {

@@ -46,6 +46,20 @@ enum ColorProfile {
   trueColor,
 }
 
+/// Extension to convert from internal [cp.Profile] to [ColorProfile].
+extension ColorProfileConverter on ColorProfile {
+  /// Converts an internal [cp.Profile] to a [ColorProfile].
+  static ColorProfile fromProfile(cp.Profile profile) {
+    return switch (profile) {
+      cp.Profile.unknown || cp.Profile.noTty => ColorProfile.ascii,
+      cp.Profile.ascii => ColorProfile.ascii,
+      cp.Profile.ansi => ColorProfile.ansi,
+      cp.Profile.ansi256 => ColorProfile.ansi256,
+      cp.Profile.trueColor => ColorProfile.trueColor,
+    };
+  }
+}
+
 /// Abstract base class for terminal colors.
 ///
 /// All color types implement this interface to produce ANSI escape sequences.
@@ -67,6 +81,9 @@ abstract class Color {
 
   /// Returns a dimmed version of this color (if applicable).
   Color get dim => this;
+
+  /// Returns the hex representation of this color.
+  String toHex();
 }
 
 /// A color specified as a hex string or ANSI string code.
@@ -161,6 +178,9 @@ class BasicColor extends Color {
   @override
   Color get dim => isHex ? BasicColor(_dimHex(_normalizedHex)) : this;
 
+  @override
+  String toHex() => isHex ? _normalizedHex : '';
+
   static String _dimHex(String hex) {
     // Reduce brightness by 40%
     final r = int.parse(hex.substring(1, 3), radix: 16);
@@ -230,6 +250,9 @@ class AnsiColor extends Color {
   }
 
   @override
+  String toHex() => '';
+
+  @override
   bool operator ==(Object other) =>
       identical(this, other) || (other is AnsiColor && other.code == code);
 
@@ -279,6 +302,9 @@ class AdaptiveColor extends Color {
 
   @override
   Color get dim => AdaptiveColor(light: light.dim, dark: dark.dim);
+
+  @override
+  String toHex() => dark.toHex();
 
   @override
   bool operator ==(Object other) =>
@@ -362,6 +388,9 @@ class CompleteColor extends Color {
   }
 
   @override
+  String toHex() => trueColor;
+
+  @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is CompleteColor &&
@@ -442,6 +471,9 @@ class CompleteAdaptiveColor extends Color {
   );
 
   @override
+  String toHex() => dark.toHex();
+
+  @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is CompleteAdaptiveColor &&
@@ -468,6 +500,9 @@ class NoColor extends Color {
     bool underline = false,
     bool hasDarkBackground = true,
   }) => '';
+
+  @override
+  String toHex() => '';
 
   @override
   bool operator ==(Object other) => other is NoColor;

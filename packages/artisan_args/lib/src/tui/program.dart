@@ -14,6 +14,8 @@ import 'msg.dart';
 import 'renderer.dart';
 import 'startup_probe.dart';
 import 'terminal.dart';
+import 'view.dart';
+import 'uv/cursor.dart';
 import 'uv/tui_adapter.dart' show UvTuiInputParser;
 
 // Re-export control messages for convenience
@@ -70,9 +72,6 @@ export 'msg.dart' show InterruptMsg, RepaintMsg;
 /// }
 /// ```
 typedef MessageFilter = Msg? Function(Model model, Msg msg);
-
-/// Mouse tracking modes.
-enum MouseMode { none, cellMotion, allMotion }
 
 /// Options for configuring the TUI program.
 class ProgramOptions {
@@ -478,6 +477,9 @@ class Program {
   /// The current model state.
   Model? _model;
 
+  /// The last view object returned by the model.
+  View? _lastView;
+
   /// The renderer for output.
   Renderer? _renderer;
 
@@ -781,6 +783,9 @@ class Program {
     final size = _terminal!.size;
     _processMessage(WindowSizeMsg(size.width, size.height));
 
+    // Send initial color profile
+    _processMessage(ColorProfileMsg(_terminal!.colorProfile));
+
     // Render initial view
     _render();
 
@@ -945,6 +950,14 @@ class Program {
       if (probes.intercept(msg, probeCtx)) return;
     }
 
+    // Handle View-specific mouse interception
+    if (msg is MouseMsg && _lastView?.onMouse != null) {
+      final cmd = _lastView!.onMouse!(msg);
+      if (cmd != null) {
+        _executeCommand(cmd);
+      }
+    }
+
     // Apply message filter if configured
     if (_options.filter != null) {
       final filteredMsg = _options.filter!(_model!, msg);
@@ -1083,7 +1096,9 @@ class Program {
         final r = _renderer;
         if (r is UltravioletRenderer) {
           r.printLine(text);
-          r.renderImmediate(_model?.view() ?? '');
+          final view = _model?.view() ?? '';
+          final content = view is View ? view.content : view.toString();
+          r.renderImmediate(content);
         } else if (!_options.altScreen) {
           _renderer?.clear();
           _terminal?.writeln(text);
@@ -1339,11 +1354,99 @@ class Program {
     if (_model == null || _renderer == null) return;
 
     final view = _model!.view();
+
+    if (view is View) {
+      _lastView = view;
+      _applyViewMetadata(view);
+    } else {
+      _lastView = null;
+    }
+
     _renderer!.render(view);
     // Ensure the underlying sink paints promptly. Some terminals (and Dart IO
     // implementations) may buffer output until an explicit flush, and the UV
     // renderer in particular emits bytes through an intermediate writer.
     unawaited(_renderer!.flush());
+  }
+
+  /// Applies metadata from a [View] object to the terminal state.
+  void _applyViewMetadata(View view) {
+    if (view.windowTitle != null) {
+      _terminal?.setTitle(view.windowTitle!);
+    }
+
+    if (view.backgroundColor != null) {
+      // OSC 11
+      _terminal?.write('\x1b]11;${view.backgroundColor!.toHex()}\x07');
+    }
+
+    if (view.foregroundColor != null) {
+      // OSC 10
+      _terminal?.write('\x1b]10;${view.foregroundColor!.toHex()}\x07');
+    }
+
+    if (view.progressBar != null) {
+      _terminal?.setProgressBar(
+        view.progressBar!.state.index,
+        view.progressBar!.value,
+      );
+    }
+
+    if (view.altScreen != null) {
+      if (view.altScreen!) {
+        _terminal?.enterAltScreen();
+      } else {
+        _terminal?.exitAltScreen();
+      }
+    }
+
+    if (view.reportFocus != null) {
+      if (view.reportFocus!) {
+        _terminal?.enableFocusReporting();
+      } else {
+        _terminal?.disableFocusReporting();
+      }
+    }
+
+    if (view.bracketedPaste != null) {
+      if (view.bracketedPaste!) {
+        _terminal?.enableBracketedPaste();
+      } else {
+        _terminal?.disableBracketedPaste();
+      }
+    }
+
+    if (view.mouseMode != null) {
+      switch (view.mouseMode!) {
+        case MouseMode.none:
+          _terminal?.disableMouse();
+        case MouseMode.cellMotion:
+          _terminal?.enableMouseCellMotion();
+        case MouseMode.allMotion:
+          _terminal?.enableMouseAllMotion();
+      }
+    }
+
+    if (view.keyboardEnhancements != null) {
+      var flags = Ansi.kittyDisambiguateEscapeCodes;
+      if (view.keyboardEnhancements!.reportEventTypes) {
+        flags |= Ansi.kittyReportEventTypes;
+      }
+      _terminal?.write(Ansi.kittyKeyboard(flags, mode: 1));
+      _terminal?.write(Ansi.requestKittyKeyboard);
+    }
+
+    if (view.cursor != null) {
+      // Move cursor to position
+      _terminal?.moveCursor(view.cursor!.position.y + 1, view.cursor!.position.x + 1);
+      // Set shape and blink
+      final code = view.cursor!.shape.encode(blink: view.cursor!.blink);
+      _terminal?.write('\x1b[${code} q');
+      // Set color if provided
+      if (view.cursor!.color != null) {
+        _terminal?.write('\x1b]12;${view.cursor!.color!.toHex()}\x07');
+      }
+    }
   }
 
   /// Forces a re-render, bypassing the skip-if-unchanged optimization.
@@ -1353,6 +1456,14 @@ class Program {
     // Clear the renderer's cached view to force a full redraw
     _renderer!.clear();
     final view = _model!.view();
+
+    if (view is View) {
+      _lastView = view;
+      _applyViewMetadata(view);
+    } else {
+      _lastView = null;
+    }
+
     _renderer!.render(view);
     unawaited(_renderer!.flush());
   }

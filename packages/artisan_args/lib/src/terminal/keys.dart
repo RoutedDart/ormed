@@ -194,6 +194,8 @@ class Key {
     this.ctrl = false,
     this.alt = false,
     this.shift = false,
+    this.isRelease = false,
+    this.isRepeat = false,
   });
 
   /// The type of key.
@@ -212,6 +214,16 @@ class Key {
 
   /// Whether the Shift key was held.
   final bool shift;
+
+  /// Whether this is a key release event.
+  ///
+  /// Requires terminal support and keyboard enhancements to be enabled.
+  final bool isRelease;
+
+  /// Whether this is a key repeat event.
+  ///
+  /// Requires terminal support and keyboard enhancements to be enabled.
+  final bool isRepeat;
 
   // ─────────────────────────────────────────────────────────────────────────────
   // Modifier Helpers
@@ -237,6 +249,8 @@ class Key {
     bool? ctrl,
     bool? alt,
     bool? shift,
+    bool? isRelease,
+    bool? isRepeat,
   }) {
     return Key(
       type ?? this.type,
@@ -244,6 +258,8 @@ class Key {
       ctrl: ctrl ?? this.ctrl,
       alt: alt ?? this.alt,
       shift: shift ?? this.shift,
+      isRelease: isRelease ?? this.isRelease,
+      isRepeat: isRepeat ?? this.isRepeat,
     );
   }
 

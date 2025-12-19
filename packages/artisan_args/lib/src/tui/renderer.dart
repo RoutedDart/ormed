@@ -13,8 +13,9 @@ import 'uv/terminal_renderer.dart' as uv_term;
 abstract class Renderer {
   /// Renders the view to the terminal.
   ///
-  /// [view] is the string representation of the current UI state.
-  void render(String view);
+  /// [view] is the string representation of the current UI state,
+  /// or a [View] object containing metadata.
+  void render(Object view);
 
   /// Clears the rendered content.
   void clear();
@@ -98,9 +99,18 @@ class FullScreenRenderer implements Renderer {
   }
 
   @override
-  void render(String view) {
+  void render(Object view) {
     if (!_initialized) {
       initialize();
+    }
+
+    final String content;
+    if (view is String) {
+      content = view;
+    } else {
+      // For now, just extract content from View object.
+      // Full metadata support will be added to Program.
+      content = (view as dynamic).content as String;
     }
 
     // Frame rate limiting
@@ -113,19 +123,19 @@ class FullScreenRenderer implements Renderer {
     }
 
     // Skip if view hasn't changed
-    if (view == _lastView) {
+    if (content == _lastView) {
       return;
     }
 
     // Full redraw (future: diff with _lastView and update only changed lines)
     terminal.cursorHome();
-    final output = _options.ansiCompress ? _compressAnsi(view) : view;
+    final output = _options.ansiCompress ? _compressAnsi(content) : content;
     terminal.write(output);
 
     // Clear any remaining content from previous render
-    _clearToEndOfScreen(view);
+    _clearToEndOfScreen(content);
 
-    _lastView = view;
+    _lastView = content;
     _lastRenderTime = DateTime.now();
   }
 
@@ -202,7 +212,14 @@ class InlineRenderer implements Renderer {
   bool _hasRendered = false;
 
   @override
-  void render(String view) {
+  void render(Object view) {
+    final String content;
+    if (view is String) {
+      content = view;
+    } else {
+      content = (view as dynamic).content as String;
+    }
+
     // Frame rate limiting
     if (_lastRenderTime != null) {
       final elapsed = DateTime.now().difference(_lastRenderTime!);
@@ -222,7 +239,7 @@ class InlineRenderer implements Renderer {
     }
 
     // Write the new view
-    final output = _options.ansiCompress ? _compressAnsi(view) : view;
+    final output = _options.ansiCompress ? _compressAnsi(content) : content;
     terminal.write(output);
     if (!output.endsWith('\n')) {
       terminal.writeln();
@@ -233,7 +250,7 @@ class InlineRenderer implements Renderer {
       terminal.showCursor();
     }
 
-    _lastLineCount = view.split('\n').length;
+    _lastLineCount = content.split('\n').length;
     _lastRenderTime = DateTime.now();
     _hasRendered = true;
   }
@@ -280,30 +297,29 @@ class BufferedRenderer implements Renderer {
   /// The underlying renderer.
   final Renderer inner;
 
-  /// Output buffer.
-  final StringBuffer _buffer = StringBuffer();
+  /// Pending view to render.
+  Object? _pendingView;
 
   /// Whether we have pending output.
   bool _dirty = false;
 
   @override
-  void render(String view) {
-    _buffer.clear();
-    _buffer.write(view);
+  void render(Object view) {
+    _pendingView = view;
     _dirty = true;
   }
 
   @override
   void clear() {
-    _buffer.clear();
+    _pendingView = null;
     inner.clear();
     _dirty = false;
   }
 
   @override
   Future<void> flush() async {
-    if (_dirty) {
-      inner.render(_buffer.toString());
+    if (_dirty && _pendingView != null) {
+      inner.render(_pendingView!);
       _dirty = false;
     }
     await inner.flush();
@@ -441,15 +457,22 @@ class UltravioletRenderer implements Renderer {
   }
 
   @override
-  void render(String view) {
+  void render(Object view) {
     _initialize();
+
+    final String content;
+    if (view is String) {
+      content = view;
+    } else {
+      content = (view as dynamic).content as String;
+    }
 
     if (_lastRenderTime != null) {
       final elapsed = DateTime.now().difference(_lastRenderTime!);
       if (elapsed < _options.frameTime) return;
     }
 
-    _pendingView = _composeView(view);
+    _pendingView = _composeView(content);
     _dirty = true;
     _lastRenderTime = DateTime.now();
 
@@ -535,13 +558,13 @@ final class _TerminalStringSink implements StringSink {
 /// A renderer that does nothing (for testing).
 class NullTuiRenderer implements Renderer {
   /// The last view that was rendered.
-  String? lastView;
+  Object? lastView;
 
   /// All views that have been rendered.
-  final List<String> views = [];
+  final List<Object> views = [];
 
   @override
-  void render(String view) {
+  void render(Object view) {
     lastView = view;
     views.add(view);
   }
@@ -569,8 +592,14 @@ class NullRenderer implements Renderer {
   final RendererOptions _options;
 
   @override
-  void render(String view) {
-    final output = _options.ansiCompress ? _compressAnsi(view) : view;
+  void render(Object view) {
+    final String content;
+    if (view is String) {
+      content = view;
+    } else {
+      content = (view as dynamic).content as String;
+    }
+    final output = _options.ansiCompress ? _compressAnsi(content) : content;
     terminal.writeln(output);
   }
 
@@ -623,8 +652,14 @@ class StringSinkRenderer implements Renderer {
   final StringSink sink;
 
   @override
-  void render(String view) {
-    sink.write(view);
+  void render(Object view) {
+    final String content;
+    if (view is String) {
+      content = view;
+    } else {
+      content = (view as dynamic).content as String;
+    }
+    sink.write(content);
   }
 
   @override

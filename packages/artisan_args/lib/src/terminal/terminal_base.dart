@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:io' as io;
 
+import '../colorprofile/detect.dart' as cp_detect;
+import '../style/color.dart';
 import 'ansi.dart';
 import 'stdin_stream.dart';
 
@@ -46,6 +48,9 @@ abstract class Terminal {
 
   /// Whether output is connected to a real terminal (vs piped/redirected).
   bool get isTerminal;
+
+  /// The detected color profile of the terminal.
+  ColorProfile get colorProfile;
 
   // ─────────────────────────────────────────────────────────────────────────────
   // Output Operations
@@ -227,6 +232,12 @@ abstract class Terminal {
   /// Sets the terminal window title.
   void setTitle(String title);
 
+  /// Sets the terminal progress bar (OSC 9;4).
+  ///
+  /// [state]: 0=none, 1=default, 2=error, 3=indeterminate, 4=warning
+  /// [value]: 0-100
+  void setProgressBar(int state, int value);
+
   /// Rings the terminal bell.
   void bell();
 
@@ -311,6 +322,9 @@ final class SplitTerminal implements Terminal {
 
   @override
   bool get isTerminal => _output.isTerminal;
+
+  @override
+  ColorProfile get colorProfile => _output.colorProfile;
 
   // ─────────────────────────────────────────────────────────────────────────────
   // Output Operations
@@ -479,6 +493,10 @@ final class SplitTerminal implements Terminal {
   void setTitle(String title) => _control.setTitle(title);
 
   @override
+  void setProgressBar(int state, int value) =>
+      _control.setProgressBar(state, value);
+
+  @override
   void bell() => _control.bell();
 
   @override
@@ -619,6 +637,10 @@ class StdioTerminal implements Terminal {
       return false;
     }
   }
+
+  @override
+  ColorProfile get colorProfile =>
+      ColorProfileConverter.fromProfile(cp_detect.detectForSink(_stdout));
 
   // ─────────────────────────────────────────────────────────────────────────────
   // Output Operations
@@ -1027,6 +1049,11 @@ class StdioTerminal implements Terminal {
   }
 
   @override
+  void setProgressBar(int state, int value) {
+    if (supportsAnsi) write(Ansi.setProgressBar(state, value));
+  }
+
+  @override
   void bell() => write(Ansi.bell);
 
   @override
@@ -1193,6 +1220,10 @@ final class TtyTerminal implements Terminal {
 
   @override
   bool get isTerminal => true;
+
+  @override
+  ColorProfile get colorProfile =>
+      ColorProfileConverter.fromProfile(cp_detect.detectForSink(_out, forceIsTty: true));
 
   // ─────────────────────────────────────────────────────────────────────────────
   // Output Operations
@@ -1588,6 +1619,11 @@ final class TtyTerminal implements Terminal {
   }
 
   @override
+  void setProgressBar(int state, int value) {
+    if (supportsAnsi) write(Ansi.setProgressBar(state, value));
+  }
+
+  @override
   void bell() => write(Ansi.bell);
 
   @override
@@ -1818,6 +1854,9 @@ class StringTerminal implements Terminal {
   bool get isTerminal => true;
 
   @override
+  ColorProfile get colorProfile => ColorProfile.trueColor;
+
+  @override
   void write(String text) {
     buffer.write(text);
     operations.add('write: $text');
@@ -1993,6 +2032,10 @@ class StringTerminal implements Terminal {
 
   @override
   void setTitle(String title) => operations.add('setTitle($title)');
+
+  @override
+  void setProgressBar(int state, int value) =>
+      operations.add('setProgressBar($state, $value)');
 
   @override
   void bell() => operations.add('bell');

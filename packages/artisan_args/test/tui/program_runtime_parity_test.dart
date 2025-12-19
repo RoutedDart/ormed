@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:artisan_args/src/style/color.dart';
 import 'package:artisan_args/src/terminal/terminal_base.dart' show RawModeGuard;
 import 'package:artisan_args/tui.dart';
 import 'package:test/test.dart';
@@ -26,6 +27,15 @@ class _MockTerminal implements TuiTerminal {
 
   @override
   int get height => 24;
+
+  @override
+  bool get supportsAnsi => true;
+
+  @override
+  bool get isTerminal => true;
+
+  @override
+  ColorProfile get colorProfile => ColorProfile.trueColor;
 
   @override
   ({int width, int height}) get size => (width: 80, height: 24);
@@ -190,6 +200,9 @@ class _MockTerminal implements TuiTerminal {
   void setTitle(String title) {}
 
   @override
+  void setProgressBar(int state, int value) {}
+
+  @override
   void bell() => operations.add('bell');
 
   @override
@@ -203,12 +216,6 @@ class _MockTerminal implements TuiTerminal {
     operations.add('dispose');
   }
 
-  @override
-  bool get supportsAnsi => true;
-
-  @override
-  bool get isTerminal => true;
-  
   @override
   ({bool useBackspace, bool useTabs}) optimizeMovements() {
     return (useTabs: false, useBackspace: true);

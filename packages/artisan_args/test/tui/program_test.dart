@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:artisan_args/src/style/color.dart';
 import 'package:artisan_args/src/tui/cmd.dart';
 import 'package:artisan_args/src/tui/model.dart';
 import 'package:artisan_args/src/tui/msg.dart';
@@ -161,6 +162,12 @@ class MockTerminal implements TuiTerminal {
   int get height => 24;
 
   @override
+  bool get isTerminal => true;
+
+  @override
+  ColorProfile get colorProfile => ColorProfile.trueColor;
+
+  @override
   Stream<List<int>> get input => _inputController.stream;
 
   void sendInput(List<int> bytes) {
@@ -297,6 +304,11 @@ class MockTerminal implements TuiTerminal {
   }
 
   @override
+  void setProgressBar(int state, int value) {
+    operations.add('setProgressBar($state, $value)');
+  }
+
+  @override
   void bell() {
     operations.add('bell');
   }
@@ -310,9 +322,6 @@ class MockTerminal implements TuiTerminal {
 
   @override
   bool get supportsAnsi => true;
-
-  @override
-  bool get isTerminal => true;
 
   @override
   bool get isAltScreen => altScreenEnabled;
@@ -1661,6 +1670,9 @@ class _FragileTerminal implements TuiTerminal {
   bool get isTerminal => true;
 
   @override
+  ColorProfile get colorProfile => ColorProfile.trueColor;
+
+  @override
   ({int width, int height}) get size => (width: width, height: height);
 
   @override
@@ -1817,6 +1829,9 @@ class _FragileTerminal implements TuiTerminal {
 
   @override
   void setTitle(String title) {}
+
+  @override
+  void setProgressBar(int state, int value) {}
 
   @override
   void bell() {}

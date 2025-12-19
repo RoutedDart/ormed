@@ -184,10 +184,10 @@ abstract class Model {
   /// ```
   (Model, Cmd?) update(Msg msg);
 
-  /// Renders the current model state as a string for display.
+  /// Renders the current model state for display.
   ///
   /// This method is called after every update to refresh the screen.
-  /// It should return a string representation of the current UI state.
+  /// It should return either a [String] or a [View] object.
   ///
   /// ## Guidelines
   ///
@@ -227,7 +227,7 @@ abstract class Model {
   ///   return buffer.toString();
   /// }
   /// ```
-  String view();
+  Object view();
 }
 
 /// Mixin that documents the copyWith pattern for models.

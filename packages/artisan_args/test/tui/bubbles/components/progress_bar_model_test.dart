@@ -24,7 +24,7 @@ void main() {
       );
       final (m2, _) = m1.update(const ProgressBarAdvanceMsg(id: 1, step: 1));
 
-      final view = Ansi.stripAnsi(m2.view());
+      final view = Ansi.stripAnsi(m2.view().toString());
       expect(view, contains('2/3'));
       expect(view, contains('67%'));
     });
@@ -62,7 +62,7 @@ void main() {
       }
 
       expect(calls, [1, 2, 3]);
-      final view = Ansi.stripAnsi(current.view());
+      final view = Ansi.stripAnsi(current.view().toString());
       expect(view, contains('3/3'));
       expect(view, contains('100%'));
     });
