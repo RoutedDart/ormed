@@ -5,6 +5,7 @@ import '../../style/style.dart';
 import '../cmd.dart';
 import '../component.dart';
 import '../msg.dart';
+import '../uv/wrap.dart' as uv_wrap;
 import 'key_binding.dart';
 
 /// Key bindings for viewport navigation.
@@ -110,10 +111,18 @@ class ViewportModel extends ViewComponent {
     this.mouseWheelEnabled = true,
     this.mouseWheelDelta = 3,
     this.horizontalStep = 0,
+    this.softWrap = false,
+    this.leftGutterFunc,
+    this.highlights = const [],
+    this.currentHighlightIndex = -1,
     ViewportKeyMap? keyMap,
     List<String>? lines,
+    List<String>? wrappedLines,
+    List<String>? originalLines,
   }) : keyMap = keyMap ?? ViewportKeyMap(),
-       _lines = lines ?? [];
+       _lines = lines ?? [],
+       _wrappedLines = wrappedLines ?? [],
+       _originalLines = originalLines ?? lines ?? [];
 
   /// Width of the viewport in columns.
   final int width;
@@ -140,14 +149,30 @@ class ViewportModel extends ViewComponent {
   /// Number of columns to scroll left/right. 0 disables horizontal scrolling.
   final int horizontalStep;
 
+  /// Whether to wrap lines that exceed the viewport width.
+  final bool softWrap;
+
+  /// A function that returns the gutter for a given line index.
+  /// If provided, [gutter] is ignored for rendering but still used
+  /// for width calculations.
+  final String Function(int lineIndex)? leftGutterFunc;
+
+  /// Style ranges to highlight in the viewport.
+  final List<ranges.StyleRange> highlights;
+
+  /// The index of the currently focused highlight.
+  final int currentHighlightIndex;
+
   /// Key bindings for navigation.
   final ViewportKeyMap keyMap;
 
   final List<String> _lines;
+  final List<String> _wrappedLines;
+  final List<String> _originalLines;
   int _longestLineWidth = 0;
 
   /// The content lines.
-  List<String> get lines => _lines;
+  List<String> get lines => softWrap ? _wrappedLines : _lines;
 
   int get _contentWidth => math.max(0, width - gutter);
 
@@ -163,21 +188,53 @@ class ViewportModel extends ViewComponent {
     ViewportKeyMap? keyMap,
     List<String>? lines,
     int? gutter,
+    bool? softWrap,
+    String Function(int lineIndex)? leftGutterFunc,
+    List<ranges.StyleRange>? highlights,
+    int? currentHighlightIndex,
   }) {
+    final newWidth = width ?? this.width;
+    final newGutter = gutter ?? this.gutter;
+    final newSoftWrap = softWrap ?? this.softWrap;
+    final newOriginalLines = lines ?? _originalLines;
+    final newHighlights = highlights ?? this.highlights;
+
+    // Apply highlights to original lines
+    var styledLines = newOriginalLines;
+    if (newHighlights.isNotEmpty) {
+      final content = newOriginalLines.join('\n');
+      final styled = ranges.styleRanges(content, newHighlights);
+      styledLines = styled.split('\n');
+    }
+
+    List<String>? newWrappedLines;
+    if (newSoftWrap) {
+      final contentWidth = math.max(0, newWidth - newGutter);
+      final content = styledLines.join('\n');
+      final wrapped = uv_wrap.wrapAnsiPreserving(content, contentWidth);
+      newWrappedLines = wrapped.split('\n');
+    }
+
     final newModel = ViewportModel(
-      width: width ?? this.width,
+      width: newWidth,
       height: height ?? this.height,
-      gutter: gutter ?? this.gutter,
+      gutter: newGutter,
       yOffset: yOffset ?? this.yOffset,
       xOffset: xOffset ?? this.xOffset,
       mouseWheelEnabled: mouseWheelEnabled ?? this.mouseWheelEnabled,
       mouseWheelDelta: mouseWheelDelta ?? this.mouseWheelDelta,
       horizontalStep: horizontalStep ?? this.horizontalStep,
       keyMap: keyMap ?? this.keyMap,
-      lines: lines ?? _lines,
+      lines: styledLines,
+      wrappedLines: newWrappedLines,
+      originalLines: newOriginalLines,
+      softWrap: newSoftWrap,
+      leftGutterFunc: leftGutterFunc ?? this.leftGutterFunc,
+      highlights: newHighlights,
+      currentHighlightIndex: currentHighlightIndex ?? this.currentHighlightIndex,
     );
-    newModel._longestLineWidth = lines != null
-        ? _findLongestLineWidth(lines)
+    newModel._longestLineWidth = styledLines != null
+        ? _findLongestLineWidth(styledLines)
         : _longestLineWidth;
     return newModel;
   }
@@ -197,7 +254,7 @@ class ViewportModel extends ViewComponent {
   }
 
   /// Maximum Y offset based on content and height.
-  int get _maxYOffset => math.max(0, _lines.length - height);
+  int get _maxYOffset => math.max(0, lines.length - height);
 
   /// Whether the viewport is at the top.
   bool get atTop => yOffset <= 0;
@@ -210,12 +267,41 @@ class ViewportModel extends ViewComponent {
 
   /// Returns the scroll percentage (0.0 to 1.0).
   double get scrollPercent {
-    if (height >= _lines.length) return 1.0;
+    if (height >= lines.length) return 1.0;
     final y = yOffset.toDouble();
     final h = height.toDouble();
-    final t = _lines.length.toDouble();
+    final t = lines.length.toDouble();
     final v = y / (t - h);
     return v.clamp(0.0, 1.0);
+  }
+
+  /// Moves the viewport to the next highlight.
+  ViewportModel highlightNext() {
+    if (highlights.isEmpty) return this;
+    final nextIndex = (currentHighlightIndex + 1) % highlights.length;
+    return copyWith(currentHighlightIndex: nextIndex)._scrollToHighlight(nextIndex);
+  }
+
+  /// Moves the viewport to the previous highlight.
+  ViewportModel highlightPrev() {
+    if (highlights.isEmpty) return this;
+    final prevIndex =
+        (currentHighlightIndex - 1 + highlights.length) % highlights.length;
+    return copyWith(currentHighlightIndex: prevIndex)._scrollToHighlight(prevIndex);
+  }
+
+  ViewportModel _scrollToHighlight(int index) {
+    final h = highlights[index];
+    final targetLines = softWrap ? _wrappedLines : _lines;
+    var currentCell = 0;
+    for (var i = 0; i < targetLines.length; i++) {
+      final w = Style.visibleLength(targetLines[i]);
+      if (currentCell + w > h.start) {
+        return setYOffset(i);
+      }
+      currentCell += w;
+    }
+    return this;
   }
 
   /// Returns the horizontal scroll percentage (0.0 to 1.0).
@@ -238,19 +324,20 @@ class ViewportModel extends ViewComponent {
 
   /// Returns the visible lines based on current scroll position.
   List<String> _visibleLines() {
-    if (_lines.isEmpty) return [];
+    final lines = softWrap ? _wrappedLines : _lines;
+    if (lines.isEmpty) return [];
 
     final top = math.max(0, yOffset);
-    final bottom = (yOffset + height).clamp(top, _lines.length);
-    var visible = _lines.sublist(top, bottom);
+    final bottom = (yOffset + height).clamp(top, lines.length);
+    var visible = lines.sublist(top, bottom);
 
     final contentWidth = _contentWidth;
     if (contentWidth <= 0) {
       return visible;
     }
 
-    // Apply horizontal scrolling
-    if (xOffset > 0 || _longestLineWidth > contentWidth) {
+    // Apply horizontal scrolling (only if not soft wrapping)
+    if (!softWrap && (xOffset > 0 || _longestLineWidth > contentWidth)) {
       visible = visible.map((line) {
         final lineWidth = Style.visibleLength(line);
         if (lineWidth <= xOffset) return '';
@@ -410,24 +497,31 @@ class ViewportModel extends ViewComponent {
     }
 
     final visible = _visibleLines();
+    final top = math.max(0, yOffset);
 
     // Pad lines to width
-    final contentWidth = math.max(0, width - gutter);
-    final gutterPad = ' ' * gutter;
-    final paddedLines = visible.map((line) {
-      var working = line;
-      final w = Style.visibleLength(working);
+    final contentWidth = _contentWidth;
+    final paddedLines = <String>[];
+
+    for (var i = 0; i < visible.length; i++) {
+      var line = visible[i];
+      final lineIndex = top + i;
+      final gutterStr = leftGutterFunc?.call(lineIndex) ?? (' ' * gutter);
+
+      final w = Style.visibleLength(line);
       if (w < contentWidth) {
-        working = '$working${' ' * (contentWidth - w)}';
-      } else if (w > contentWidth) {
-        working = ranges.cutAnsiByCells(working, 0, contentWidth);
+        line = '$line${' ' * (contentWidth - w)}';
+      } else if (w > contentWidth && !softWrap) {
+        line = ranges.cutAnsiByCells(line, xOffset, xOffset + contentWidth);
       }
-      return '$gutterPad$working';
-    }).toList();
+      paddedLines.add('$gutterStr$line');
+    }
 
     // Pad height if content is shorter
     while (paddedLines.length < height) {
-      paddedLines.add(' ' * width);
+      final lineIndex = top + paddedLines.length;
+      final gutterStr = leftGutterFunc?.call(lineIndex) ?? (' ' * gutter);
+      paddedLines.add('$gutterStr${' ' * contentWidth}');
     }
 
     return paddedLines.join('\n');

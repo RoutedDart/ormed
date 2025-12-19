@@ -1,5 +1,7 @@
 import 'package:artisan_args/src/tui/bubbles/viewport.dart';
 import 'package:artisan_args/src/style/style.dart';
+import 'package:artisan_args/src/style/color.dart';
+import 'package:artisan_args/src/style/ranges.dart' as ranges;
 import 'package:artisan_args/src/tui/component.dart';
 import 'package:artisan_args/src/tui/msg.dart';
 import 'package:test/test.dart';
@@ -281,6 +283,52 @@ void main() {
       });
     });
 
+    group('Highlights', () {
+      test('highlightNext scrolls to the next highlight', () {
+        final content = 'Line 1\n' * 10 + 'Target\n' + 'Line 2\n' * 10;
+        final style = Style().bold();
+
+        // Find the cell index of "Target"
+        final targetIndex = content.indexOf('Target');
+
+        var viewport = ViewportModel(
+          width: 20,
+          height: 5,
+          highlights: [ranges.StyleRange(targetIndex, targetIndex + 6, style)],
+        ).setContent(content);
+
+        expect(viewport.yOffset, 0);
+
+        viewport = viewport.highlightNext();
+
+        // Should have scrolled to the line containing "Target"
+        // "Target" is on line 10 (0-indexed)
+        expect(viewport.yOffset, anyOf(10, 11));
+      });
+
+      test('highlightPrev scrolls to the previous highlight', () {
+        final content = 'Target 1\n' + 'Line\n' * 10 + 'Target 2\n';
+        final style = Style().bold();
+
+        final t1Idx = content.indexOf('Target 1');
+        final t2Idx = content.indexOf('Target 2');
+
+        var viewport = ViewportModel(
+          width: 20,
+          height: 5,
+          highlights: [
+            ranges.StyleRange(t1Idx, t1Idx + 8, style),
+            ranges.StyleRange(t2Idx, t2Idx + 8, style),
+          ],
+        ).setContent(content).setYOffset(10);
+
+        viewport = viewport.highlightPrev();
+
+        // Should have scrolled to Target 1 (line 0)
+        expect(viewport.yOffset, 0);
+      });
+    });
+
     group('AtTop', () {
       test('returns true when at top', () {
         final viewport = ViewportModel(height: 5).setContent('line1\nline2');
@@ -370,6 +418,51 @@ void main() {
         expect(view, contains('line2'));
         expect(view, contains('line3'));
         expect(view, isNot(contains('line4')));
+      });
+
+      test('softWrap wraps long lines', () {
+        final content =
+            'This is a very long line that should be wrapped by the viewport.';
+        final viewport = ViewportModel(width: 20, height: 5, softWrap: true)
+            .setContent(content);
+
+        final view = viewport.view();
+        final lines = view.split('\n');
+
+        expect(lines[0].trim(), 'This is a very long');
+        expect(lines[1].trim(), 'line that should be');
+        expect(lines[2].trim(), 'wrapped by the');
+        expect(lines[3].trim(), 'viewport.');
+      });
+
+      test('leftGutterFunc provides dynamic gutters', () {
+        final content = 'Line 1\nLine 2\nLine 3';
+        final viewport = ViewportModel(
+          width: 20,
+          height: 5,
+          leftGutterFunc: (i) => '${i + 1} | ',
+        ).setContent(content);
+
+        final view = viewport.view();
+        final lines = view.split('\n');
+
+        expect(lines[0], startsWith('1 | Line 1'));
+        expect(lines[1], startsWith('2 | Line 2'));
+        expect(lines[2], startsWith('3 | Line 3'));
+      });
+
+      test('highlights apply styles to content', () {
+        final content = 'Hello World';
+        final style = Style().foreground(const BasicColor('#ff0000'));
+        final viewport = ViewportModel(
+          width: 20,
+          height: 5,
+          highlights: [ranges.StyleRange(6, 11, style)],
+        ).setContent(content);
+
+        final view = viewport.view();
+        // "World" should be styled
+        expect(view, contains(style.render('World')));
       });
 
       test('pads lines to width', () {
