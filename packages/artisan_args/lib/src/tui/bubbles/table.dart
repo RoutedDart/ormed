@@ -217,6 +217,11 @@ class TableModel extends ViewComponent {
     updateViewport();
   }
 
+  /// Sets the columns (parity with bubbles).
+  void setColumns(List<Column> c) {
+    columns = c;
+  }
+
   /// Gets the rows.
   List<Row> get rows => _rows;
 
@@ -229,6 +234,11 @@ class TableModel extends ViewComponent {
     updateViewport();
   }
 
+  /// Sets the rows (parity with bubbles).
+  void setRows(List<Row> r) {
+    rows = r;
+  }
+
   /// Gets the cursor position.
   int get cursor => _cursor;
 
@@ -237,6 +247,20 @@ class TableModel extends ViewComponent {
     _cursor = value.clamp(0, _rows.length - 1);
     updateViewport();
   }
+
+  /// Sets the cursor position (parity with bubbles).
+  void setCursor(int n) {
+    cursor = n;
+  }
+
+  /// Returns the current cursor position (parity with bubbles).
+  int getCursor() => _cursor;
+
+  /// Returns the rows (parity with bubbles).
+  List<Row> getRows() => _rows;
+
+  /// Returns the columns (parity with bubbles).
+  List<Column> getColumns() => _columns;
 
   /// Whether the table is focused.
   bool get focused => _focused;

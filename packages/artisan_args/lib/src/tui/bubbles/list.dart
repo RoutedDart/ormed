@@ -575,6 +575,62 @@ class ListModel extends ViewComponent {
     _updatePagination();
   }
 
+  /// Sets the items (parity with bubbles).
+  void setItems(List<ListItem> items) {
+    this.items = items;
+  }
+
+  /// Inserts an item at the given index.
+  void insertItem(int index, ListItem item) {
+    _items.insert(index, item);
+    _updatePagination();
+  }
+
+  /// Removes an item at the given index.
+  void removeItem(int index) {
+    if (index >= 0 && index < _items.length) {
+      _items.removeAt(index);
+      _updatePagination();
+    }
+  }
+
+  /// Sets an item at the given index.
+  void setItem(int index, ListItem item) {
+    if (index >= 0 && index < _items.length) {
+      _items[index] = item;
+    }
+  }
+
+  /// Sets whether filtering is enabled.
+  void setFilteringEnabled(bool enabled) {
+    filteringEnabled = enabled;
+  }
+
+  /// Sets whether to show the title.
+  void setShowTitle(bool show) {
+    showTitle = show;
+  }
+
+  /// Sets whether to show the status bar.
+  void setShowStatusBar(bool show) {
+    showStatusBar = show;
+  }
+
+  /// Sets whether to show pagination.
+  void setShowPagination(bool show) {
+    showPagination = show;
+  }
+
+  /// Sets whether to show help.
+  void setShowHelp(bool show) {
+    showHelp = show;
+  }
+
+  /// Sets whether to show the filter.
+  void setShowFilter(bool show) {
+    showFilter = show;
+  }
+
   /// Gets the width.
   int get width => _width;
 

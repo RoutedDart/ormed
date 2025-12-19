@@ -100,6 +100,49 @@ void main() {
       });
     });
 
+    group('Parity Features', () {
+      test('softWrap wraps long lines', () {
+        final viewport = ViewportModel(width: 10, softWrap: true).setContent(
+          'this is a very long line',
+        );
+        final view = viewport.view();
+        // With width 10, 'this is a very long line' should wrap into multiple lines
+        expect(view.split('\n').length, greaterThan(1));
+      });
+
+      test('showLineNumbers adds gutter', () {
+        final viewport = ViewportModel(width: 20, showLineNumbers: true)
+            .setContent('line1\nline2');
+        final view = viewport.view();
+        expect(view, contains('1 '));
+        expect(view, contains('2 '));
+      });
+
+      test('highlights apply styles', () {
+        final viewport = ViewportModel(
+          width: 20,
+          highlights: [
+            ranges.StyleRange(
+              0,
+              4,
+              Style().foreground(const AnsiColor(1)),
+            ),
+          ],
+        ).setContent('test line');
+        final view = viewport.view();
+        expect(view, contains('\x1b[38;5;1mtest\x1b[m'));
+      });
+
+      test('leftGutterFunc customizes gutter', () {
+        final viewport = ViewportModel(
+          width: 20,
+          leftGutterFunc: (i) => '[${i + 1}] ',
+        ).setContent('line1');
+        final view = viewport.view();
+        expect(view, contains('[1] '));
+      });
+    });
+
     group('HorizontalStep', () {
       test('disables horizontal scrolling when 0', () {
         final viewport = ViewportModel(horizontalStep: 0);

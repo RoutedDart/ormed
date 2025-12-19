@@ -116,7 +116,6 @@ export 'msg.dart'
         FocusMsg,
         PasteMsg,
         CustomMsg,
-        PrintLineMsg,
         CapabilityMsg,
         TerminalVersionMsg,
         KeyboardEnhancementsMsg,
@@ -182,7 +181,6 @@ export 'program.dart'
     show
         Program,
         ProgramOptions,
-        MouseMode,
         MessageFilter,
         ProgramCancelledError,
         runProgram,

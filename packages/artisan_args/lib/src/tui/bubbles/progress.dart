@@ -29,6 +29,21 @@ const _defaultWidth = 40;
 const _defaultFrequency = 18.0;
 const _defaultDamping = 1.0;
 
+/// Default character used to fill the progress bar.
+/// It is a half block, which allows more granular color blending control.
+const String defaultFullCharHalfBlock = '▌';
+
+/// Default character used to fill the progress bar (full block).
+const String defaultFullCharFullBlock = '█';
+
+/// Default character used to fill the empty portion of the progress bar.
+const String defaultEmptyCharBlock = '░';
+
+/// Function that can be used to dynamically fill the progress bar.
+/// [total] is the total filled percentage, and [current] is the current
+/// percentage that is actively being filled with a color.
+typedef ColorFunc = Color Function(double total, double current);
+
 /// A stable damped spring integrator matching charmbracelet/harmonica.
 class _Spring {
   _Spring({this.frequency = _defaultFrequency, this.damping = _defaultDamping})
@@ -99,18 +114,21 @@ class ProgressModel extends ViewComponent {
   /// Creates a new progress bar model.
   ProgressModel({
     this.width = _defaultWidth,
-    this.full = '█',
+    this.full = defaultFullCharFullBlock,
     this.fullColor = '#7571F9',
-    this.empty = '░',
+    this.empty = defaultEmptyCharBlock,
     this.emptyColor = '#606060',
     this.showPercentage = true,
     this.percentFormat = ' %3.0f%%',
-    double frequency = _defaultFrequency,
-    double damping = _defaultDamping,
+    this.frequency = _defaultFrequency,
+    this.damping = _defaultDamping,
     this.useGradient = false,
     this.gradientColorA = '#5A56E0',
     this.gradientColorB = '#EE6FF8',
+    this.blend = const [],
+    this.colorFunc,
     this.scaleGradient = false,
+    this.scaleBlend = false,
     this.indeterminate = false,
     this.pulseWidth = 0.2,
     this.startTime,
@@ -149,6 +167,12 @@ class ProgressModel extends ViewComponent {
   /// Format string for the percentage (e.g., " %3.0f%%").
   final String percentFormat;
 
+  /// Spring frequency (speed).
+  final double frequency;
+
+  /// Spring damping (bounciness).
+  final double damping;
+
   /// Whether to use a gradient fill.
   final bool useGradient;
 
@@ -158,8 +182,18 @@ class ProgressModel extends ViewComponent {
   /// Second color of the gradient.
   final String gradientColorB;
 
+  /// Blend of colors to use. When provided, overrides [fullColor] and [useGradient].
+  final List<String> blend;
+
+  /// Function to dynamically color the progress bar.
+  /// Overrides [blend], [fullColor], and [useGradient].
+  final ColorFunc? colorFunc;
+
   /// Whether to scale the gradient to the filled portion.
   final bool scaleGradient;
+
+  /// Whether to scale the blend to the filled portion.
+  final bool scaleBlend;
 
   /// Whether the progress bar is in indeterminate mode.
   final bool indeterminate;
@@ -192,6 +226,39 @@ class ProgressModel extends ViewComponent {
 
   /// Current frame tag (exposed for testing/inspection).
   int get tag => _tag;
+
+  /// Creates a new progress bar with the default blend of colors (purple to pink).
+  static ProgressModel withDefaultBlend({int width = _defaultWidth}) {
+    return ProgressModel(
+      width: width,
+      blend: ['#5A56E0', '#EE6FF8'],
+    );
+  }
+
+  /// Returns a copy of the model with the given colors.
+  /// - 0 colors: resets to default full color.
+  /// - 1 color: uses a solid fill with the given color.
+  /// - 2+ colors: uses a blend of the provided colors.
+  ProgressModel withColors(List<String> colors) {
+    if (colors.isEmpty) {
+      return copyWith(
+        fullColor: '#7571F9',
+        blend: [],
+        colorFunc: null,
+      );
+    }
+    if (colors.length == 1) {
+      return copyWith(
+        fullColor: colors[0],
+        blend: [],
+        colorFunc: null,
+      );
+    }
+    return copyWith(
+      blend: colors,
+      colorFunc: null,
+    );
+  }
 
   /// Whether the progress bar is currently animating.
   bool get isAnimating {
@@ -228,7 +295,10 @@ class ProgressModel extends ViewComponent {
     bool? useGradient,
     String? gradientColorA,
     String? gradientColorB,
+    List<String>? blend,
+    ColorFunc? colorFunc,
     bool? scaleGradient,
+    bool? scaleBlend,
     bool? indeterminate,
     double? pulseWidth,
     DateTime? startTime,
@@ -251,7 +321,10 @@ class ProgressModel extends ViewComponent {
       useGradient: useGradient ?? this.useGradient,
       gradientColorA: gradientColorA ?? this.gradientColorA,
       gradientColorB: gradientColorB ?? this.gradientColorB,
+      blend: blend ?? this.blend,
+      colorFunc: colorFunc ?? this.colorFunc,
       scaleGradient: scaleGradient ?? this.scaleGradient,
+      scaleBlend: scaleBlend ?? this.scaleBlend,
       indeterminate: indeterminate ?? this.indeterminate,
       pulseWidth: pulseWidth ?? this.pulseWidth,
       startTime: startTime ?? this.startTime,
@@ -261,8 +334,8 @@ class ProgressModel extends ViewComponent {
       pulseOffset: pulseOffset ?? _pulseOffset,
       id: _id,
       tag: tag ?? _tag,
-      frequency: frequency ?? _spring.frequency,
-      damping: damping ?? _spring.damping,
+      frequency: frequency ?? this.frequency,
+      damping: damping ?? this.damping,
     );
   }
 
@@ -349,24 +422,49 @@ class ProgressModel extends ViewComponent {
       return _indeterminateBarView(tw, percent);
     }
 
+    if (tw <= 0) return '';
+
     var fw = (tw * percent).round(); // filled width
     fw = fw.clamp(0, tw);
 
     final buffer = StringBuffer();
+    final isHalfBlock = full == defaultFullCharHalfBlock;
 
-    if (useGradient) {
-      // Gradient fill
+    if (colorFunc != null) {
+      final halfBlockPerc = 0.5 / tw;
       for (var i = 0; i < fw; i++) {
-        double p;
-        if (fw == 1) {
-          p = 0.5;
-        } else if (scaleGradient) {
-          p = i / (fw - 1);
-        } else {
-          p = i / (tw - 1);
+        final current = i / tw;
+        final fg = colorFunc!(percent, current);
+        var style = Style().foreground(fg);
+        if (isHalfBlock) {
+          final bg = colorFunc!(percent, math.min(current + halfBlockPerc, 1.0));
+          style = style.background(bg);
         }
-        final color = _interpolateColor(gradientColorA, gradientColorB, p);
-        buffer.write(_colorize(full, color));
+        buffer.write(style.render(full));
+      }
+    } else if (blend.isNotEmpty || useGradient) {
+      final colors = blend.isNotEmpty ? blend : [gradientColorA, gradientColorB];
+      final scale = blend.isNotEmpty ? scaleBlend : scaleGradient;
+      final multiplier = isHalfBlock ? 2 : 1;
+      final totalSteps = (scale ? fw : tw) * multiplier;
+
+      for (var i = 0; i < fw; i++) {
+        if (!isHalfBlock) {
+          final p = i / (totalSteps > 1 ? totalSteps - 1 : 1);
+          final color = _interpolateColors(colors, p);
+          buffer.write(_colorize(full, color));
+        } else {
+          final p1 = (i * 2) / (totalSteps > 1 ? totalSteps - 1 : 1);
+          final p2 = (i * 2 + 1) / (totalSteps > 1 ? totalSteps - 1 : 1);
+          final fg = _interpolateColors(colors, p1);
+          final bg = _interpolateColors(colors, p2);
+          buffer.write(
+            Style()
+                .foreground(BasicColor(fg))
+                .background(BasicColor(bg))
+                .render(full),
+          );
+        }
       }
     } else {
       // Solid fill
@@ -390,6 +488,7 @@ class ProgressModel extends ViewComponent {
     final buffer = StringBuffer();
     final pw = (tw * pulseWidth).round().clamp(1, tw);
     final start = (tw * offset).round();
+    final isHalfBlock = full == defaultFullCharHalfBlock;
 
     for (var i = 0; i < tw; i++) {
       // Check if i is within the pulse (wrapping around)
@@ -401,7 +500,18 @@ class ProgressModel extends ViewComponent {
       }
 
       if (inPulse) {
-        if (useGradient) {
+        if (colorFunc != null) {
+          final current = i / tw;
+          final fg = colorFunc!(1.0, current);
+          var style = Style().foreground(fg);
+          if (isHalfBlock) {
+            final bg = colorFunc!(1.0, math.min(current + 0.5 / tw, 1.0));
+            style = style.background(bg);
+          }
+          buffer.write(style.render(full));
+        } else if (blend.isNotEmpty || useGradient) {
+          final colors =
+              blend.isNotEmpty ? blend : [gradientColorA, gradientColorB];
           // Calculate relative position in pulse for gradient
           var rel = 0.0;
           if (i >= start) {
@@ -409,8 +519,20 @@ class ProgressModel extends ViewComponent {
           } else {
             rel = (tw - start + i) / (pw - 1);
           }
-          final color = _interpolateColor(gradientColorA, gradientColorB, rel);
-          buffer.write(_colorize(full, color));
+
+          if (!isHalfBlock) {
+            final color = _interpolateColors(colors, rel);
+            buffer.write(_colorize(full, color));
+          } else {
+            final fg = _interpolateColors(colors, rel);
+            final bg = _interpolateColors(colors, math.min(rel + 1.0 / pw, 1.0));
+            buffer.write(
+              Style()
+                  .foreground(BasicColor(fg))
+                  .background(BasicColor(bg))
+                  .render(full),
+            );
+          }
         } else {
           buffer.write(_colorize(full, fullColor));
         }
@@ -445,6 +567,18 @@ class ProgressModel extends ViewComponent {
     final b = int.tryParse(hex.substring(4, 6), radix: 16);
     if (r == null || g == null || b == null) return null;
     return (r, g, b);
+  }
+
+  /// Interpolates between multiple hex colors.
+  String _interpolateColors(List<String> colors, double p) {
+    if (colors.isEmpty) return fullColor;
+    if (colors.length == 1) return colors[0];
+
+    final count = colors.length - 1;
+    final segment = (p * count).floor().clamp(0, count - 1);
+    final segmentP = (p * count) - segment;
+
+    return _interpolateColor(colors[segment], colors[segment + 1], segmentP);
   }
 
   /// Interpolates between two hex colors.

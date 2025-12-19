@@ -349,6 +349,11 @@ class TextInputModel extends ViewComponent {
     _setValueInternal(graphemes, err);
   }
 
+  /// Sets the value of the text input (parity with bubbles).
+  void setValue(String s) {
+    value = s;
+  }
+
   /// Gets the cursor position.
   int get position => _pos;
 

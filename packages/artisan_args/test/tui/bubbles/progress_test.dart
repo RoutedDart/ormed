@@ -1,6 +1,7 @@
 import 'package:artisan_args/src/tui/bubbles/progress.dart';
 import 'package:artisan_args/src/tui/component.dart';
 import 'package:artisan_args/src/tui/msg.dart';
+import 'package:artisan_args/src/style/color.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -261,6 +262,48 @@ void main() {
         final unscaledView = unscaled.viewAs(0.5);
         expect(scaledView, isNotEmpty);
         expect(unscaledView, isNotEmpty);
+      });
+    });
+
+    group('Parity Features', () {
+      test('blend colors', () {
+        final progress = ProgressModel(
+          width: 20,
+          blend: ['#FF0000', '#00FF00', '#0000FF'],
+          showPercentage: false,
+        );
+        final view = progress.viewAs(0.5);
+        expect(view, isNotEmpty);
+      });
+
+      test('colorFunc', () {
+        final progress = ProgressModel(
+          width: 20,
+          colorFunc: (p, current) => const AnsiColor(212),
+          showPercentage: false,
+        );
+        final view = progress.viewAs(0.5);
+        expect(view, isNotEmpty);
+      });
+
+      test('half-block rendering', () {
+        final progress = ProgressModel(
+          width: 20,
+          full: '▌',
+          blend: ['#FF0000', '#00FF00'],
+          showPercentage: false,
+        );
+        final view = progress.viewAs(0.5);
+        expect(view, isNotEmpty);
+      });
+
+      test('spring tuning', () {
+        final progress = ProgressModel(
+          frequency: 5.0,
+          damping: 0.5,
+        );
+        expect(progress.frequency, 5.0);
+        expect(progress.damping, 0.5);
       });
     });
   });

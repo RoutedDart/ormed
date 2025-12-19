@@ -38,11 +38,15 @@ class LineInfo {
 }
 
 class _DisplayLine {
-  _DisplayLine(this.text, {this.hasCursor = false});
+  _DisplayLine(this.text, {this.hasCursor = false, this.rowIndex = 0});
 
   final String text;
   final bool hasCursor;
+  final int rowIndex;
 }
+
+typedef PromptInfo = ({int lineIndex, bool isFocused, int row, int col});
+typedef PromptFunc = String Function(PromptInfo info);
 
 class TextAreaStyle {
   TextAreaStyle({
@@ -352,6 +356,7 @@ class TextAreaModel extends ViewComponent {
   }
 
   String prompt;
+  PromptFunc? promptFunc;
   String placeholder;
   bool showLineNumbers;
   int charLimit;
@@ -367,6 +372,7 @@ class TextAreaModel extends ViewComponent {
   int _col = 0;
   int _width;
   int _height;
+  int? _promptWidth;
 
   bool get focused => _focused;
   int get line => _row;
@@ -376,7 +382,10 @@ class TextAreaModel extends ViewComponent {
   int get lineCount => _lines.length;
   int get length => _totalGraphemeLength();
 
+  /// Returns the current value of the textarea.
   String get value => _lines.map((l) => l.join()).join('\n');
+
+  /// Sets the value of the textarea.
   set value(String v) {
     final limited = _applyCharLimit(v);
     _lines = _parseLines(limited);
@@ -384,17 +393,51 @@ class TextAreaModel extends ViewComponent {
     _col = _lines.isNotEmpty ? _lines.last.length : 0;
   }
 
+  /// Sets the value of the textarea (parity with bubbles).
+  void setValue(String v) {
+    value = v;
+  }
+
+  /// Sets the prompt function.
+  void setPromptFunc(int promptWidth, PromptFunc fn) {
+    _promptWidth = promptWidth;
+    promptFunc = fn;
+  }
+
+  /// Returns the text of the line at the given index.
+  String lineAt(int i) {
+    if (i < 0 || i >= _lines.length) return '';
+    return _lines[i].join();
+  }
+
+  /// Sets the cursor position.
+  void setCursor(int row, int col) {
+    _row = row.clamp(0, _lines.length - 1);
+    _col = col.clamp(0, _lines[_row].length);
+  }
+
+  /// Returns the current cursor line (0-indexed).
+  int cursorLine() => _row;
+
+  /// Returns the current cursor column (0-indexed).
+  int cursorColumn() => _col;
+
   @override
   Cmd? init() => null;
 
+  /// Focuses the textarea.
   Cmd? focus() {
     _focused = true;
     return null;
   }
 
+  /// Blurs the textarea.
   void blur() {
     _focused = false;
   }
+
+  /// Returns whether the textarea is focused.
+  bool isFocused() => _focused;
 
   void reset() {
     _lines = [[]];
@@ -402,12 +445,25 @@ class TextAreaModel extends ViewComponent {
     _col = 0;
   }
 
+  /// Sets the width of the textarea.
   void setWidth(int w) {
     _width = w;
   }
 
+  /// Sets the height of the textarea.
   void setHeight(int h) {
     _height = h;
+  }
+
+  /// Sets the placeholder text.
+  void setPlaceholder(String s) {
+    placeholder = s;
+  }
+
+  /// Sets the character limit.
+  void setCharLimit(int n) {
+    charLimit = n;
+    _enforceCharLimit();
   }
 
   void insertString(String s) {
@@ -628,21 +684,37 @@ class TextAreaModel extends ViewComponent {
     final buffer = StringBuffer();
 
     if (value.isEmpty && placeholder.isNotEmpty) {
+      final p = promptFunc?.call((
+            lineIndex: 0,
+            isFocused: _focused,
+            row: _row,
+            col: _col
+          )) ??
+          prompt;
       final ph = style.placeholder.render(placeholder);
-      buffer.write('${style.prompt.render(prompt)}$ph');
+      buffer.write('${style.prompt.render(p)}$ph');
     } else {
       for (var i = 0; i < lines.length; i++) {
+        final displayLine = lines[i];
+        final p = promptFunc?.call((
+              lineIndex: i,
+              isFocused: _focused,
+              row: displayLine.rowIndex,
+              col: _col
+            )) ??
+            prompt;
+
         final lnNumber = showLineNumbers
             ? style.lineNumber.render(
-                '${(i + 1).toString().padLeft(lineNumberDigits)} ',
+                '${(displayLine.rowIndex + 1).toString().padLeft(lineNumberDigits)} ',
               )
             : '';
-        final lineBody = lines[i].text;
-        final renderedLine = lines[i].hasCursor
+        final lineBody = displayLine.text;
+        final renderedLine = displayLine.hasCursor
             ? style.cursorLine.render(lineBody)
             : lineBody;
         buffer.writeln(
-          '${style.prompt.render(prompt)}$lnNumber${style.text.render(renderedLine)}',
+          '${style.prompt.render(p)}$lnNumber${style.text.render(renderedLine)}',
         );
       }
 
@@ -668,7 +740,7 @@ class TextAreaModel extends ViewComponent {
     var wrapWidth = _width;
     if (wrapWidth <= 0) return wrapWidth;
 
-    wrapWidth -= stringWidth(prompt);
+    wrapWidth -= _promptWidth ?? stringWidth(prompt);
     if (showLineNumbers) {
       // add a trailing space after the number
       wrapWidth -= (lineNumberDigits + 1);
@@ -683,7 +755,11 @@ class TextAreaModel extends ViewComponent {
     for (var rowIndex = 0; rowIndex < _lines.length; rowIndex++) {
       final line = _lines[rowIndex];
       if (!softWrap || wrapWidth <= 0) {
-        result.add(_DisplayLine(line.join(), hasCursor: rowIndex == _row));
+        result.add(_DisplayLine(
+          line.join(),
+          hasCursor: rowIndex == _row,
+          rowIndex: rowIndex,
+        ));
         continue;
       }
 
@@ -708,13 +784,13 @@ class TextAreaModel extends ViewComponent {
         final hasCursor =
             _row == rowIndex && cursorCol >= start && cursorCol <= end;
 
-        result.add(_DisplayLine(segment, hasCursor: hasCursor));
+        result.add(_DisplayLine(segment, hasCursor: hasCursor, rowIndex: rowIndex));
         start = end;
       }
 
       if (line.isEmpty) {
         // Preserve empty lines when soft wrapping is on.
-        result.add(_DisplayLine('', hasCursor: rowIndex == _row));
+        result.add(_DisplayLine('', hasCursor: rowIndex == _row, rowIndex: rowIndex));
       }
     }
 

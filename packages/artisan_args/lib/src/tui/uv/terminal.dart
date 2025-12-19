@@ -355,11 +355,6 @@ class Terminal implements Screen, FillableScreen, FillAreaScreen, ClearableScree
   }
 
   /// Sets the logger for debugging.
-  void setLogger(void Function(String message)? logger) {
-    _renderer.setLogger(logger);
-    _reader.setLogger(logger);
-  }
-
   /// Sets the escape sequence timeout.
   void setEscTimeout(Duration d) {
     _reader.escTimeout = d;

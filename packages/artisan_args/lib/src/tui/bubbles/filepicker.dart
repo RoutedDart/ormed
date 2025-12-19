@@ -361,25 +361,25 @@ class FilePickerModel extends ViewComponent {
   // Fields
   // ─────────────────────────────────────────────────────────────────────────────
 
-  final String _currentDirectory;
-  final List<String> _allowedTypes;
-  final bool _fileAllowed;
-  final bool _dirAllowed;
-  final bool _showHidden;
-  final bool _showPermissions;
-  final bool _showSize;
-  final int _height;
-  final String _cursor;
-  final FilePickerKeyMap _keyMap;
-  final FilePickerStyles _styles;
-  final List<FileEntry> _files;
-  final int _selected;
-  final int _min;
-  final int _max;
-  final String? _selectedPath;
-  final List<_ViewState> _selectedStack;
+  String _currentDirectory;
+  List<String> _allowedTypes;
+  bool _fileAllowed;
+  bool _dirAllowed;
+  bool _showHidden;
+  bool _showPermissions;
+  bool _showSize;
+  int _height;
+  String _cursor;
+  FilePickerKeyMap _keyMap;
+  FilePickerStyles _styles;
+  List<FileEntry> _files;
+  int _selected;
+  int _min;
+  int _max;
+  String? _selectedPath;
+  List<_ViewState> _selectedStack;
   final int _id;
-  final String? _errorMessage;
+  String? _errorMessage;
 
   // ─────────────────────────────────────────────────────────────────────────────
   // Getters
@@ -482,6 +482,21 @@ class FilePickerModel extends ViewComponent {
       id: id ?? _id,
       errorMessage: clearError ? null : (errorMessage ?? _errorMessage),
     );
+  }
+
+  /// Sets the allowed file extensions.
+  void setAllowedExtensions(List<String> extensions) {
+    _allowedTypes = extensions;
+  }
+
+  /// Sets whether directories can be selected.
+  void setDirAllowed(bool allowed) {
+    _dirAllowed = allowed;
+  }
+
+  /// Sets whether files can be selected.
+  void setFileAllowed(bool allowed) {
+    _fileAllowed = allowed;
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -736,25 +751,51 @@ class FilePickerModel extends ViewComponent {
     if (_files.isEmpty) return (this, null);
 
     final file = _files[_selected];
-    final isDir = file.isDirectory;
+    var isDir = file.isDirectory;
+
+    // Resolve symlinks for directory check
+    if (file.isSymlink) {
+      try {
+        final resolvedPath = Link(file.entity.path).resolveSymbolicLinksSync();
+        if (Directory(resolvedPath).existsSync()) {
+          isDir = true;
+        }
+      } catch (_) {
+        // Ignore resolution errors
+      }
+    }
 
     // Handle selection
     if (isSelect) {
       // File selection
-      if (!isDir && _fileAllowed) {
-        if (canSelect(file.name)) {
-          final selectedPath = p.join(_currentDirectory, file.name);
-          return (copyWith(selectedPath: selectedPath, clearError: true), null);
+      if (!isDir) {
+        if (_fileAllowed) {
+          if (canSelect(file.name)) {
+            final selectedPath = p.join(_currentDirectory, file.name);
+            return (
+              copyWith(selectedPath: selectedPath, clearError: true),
+              null,
+            );
+          } else {
+            final msg = 'Selection disabled for ${file.name}';
+            return (copyWith(errorMessage: msg), null);
+          }
         } else {
-          final msg = 'Selection disabled for ${file.name}';
-          return (copyWith(errorMessage: msg), null);
+          return (copyWith(errorMessage: 'File selection is disabled'), null);
         }
       }
 
       // Directory selection
-      if (isDir && _dirAllowed) {
-        final selectedPath = p.join(_currentDirectory, file.name);
-        return (copyWith(selectedPath: selectedPath, clearError: true), null);
+      if (isDir) {
+        if (_dirAllowed) {
+          final selectedPath = p.join(_currentDirectory, file.name);
+          return (
+            copyWith(selectedPath: selectedPath, clearError: true),
+            null,
+          );
+        }
+        // If dir selection is not allowed, we don't show an error here
+        // because Enter will navigate into the directory below.
       }
     }
 
@@ -774,6 +815,7 @@ class FilePickerModel extends ViewComponent {
         selected: 0,
         min: 0,
         max: _height - 1,
+        clearError: true,
       ),
       _readDir(newDir, _showHidden),
     );
@@ -820,14 +862,15 @@ class FilePickerModel extends ViewComponent {
 
     final file = _files[_selected];
     final isDir = file.isDirectory;
+    final selectedPath = _selectedPath;
 
-    if (isDir && _dirAllowed && _selectedPath != null) {
-      return (true, _selectedPath);
+    if (isDir && _dirAllowed && selectedPath != null) {
+      return (true, selectedPath);
     }
 
-    if (!isDir && _fileAllowed && _selectedPath != null) {
-      if (canSelect(p.basename(_selectedPath))) {
-        return (true, _selectedPath);
+    if (!isDir && _fileAllowed && selectedPath != null) {
+      if (canSelect(p.basename(selectedPath))) {
+        return (true, selectedPath);
       }
     }
 
@@ -857,6 +900,26 @@ class FilePickerModel extends ViewComponent {
   // ─────────────────────────────────────────────────────────────────────────────
   // View
   // ─────────────────────────────────────────────────────────────────────────────
+
+  /// Sets the height of the file picker.
+  void setHeight(int h) {
+    _height = h;
+    _max = _min + _height - 1;
+    if (_files.isEmpty) {
+      _min = 0;
+      _max = _height - 1;
+      return;
+    }
+    if (_max >= _files.length) {
+      _max = _files.length - 1;
+      _min = (_max - _height + 1).clamp(0, _max);
+    }
+  }
+
+  /// Sets the width of the file picker (currently no-op as it's dynamic).
+  void setWidth(int w) {
+    // Width is currently handled during rendering based on content.
+  }
 
   @override
   String view() {

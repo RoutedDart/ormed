@@ -107,7 +107,31 @@ void main() {
         table.cursor = -5;
         expect(table.cursor, 0);
       });
+      test('setCursor parity', () {
+        final table = TableModel(rows: [['1'], ['2']]);
+        table.setCursor(1);
+        expect(table.getCursor(), 1);
+      });
     });
+
+    group('Parity Features', () {
+      test('setColumns parity', () {
+        final table = TableModel();
+        table.setColumns([Column(title: 'A', width: 5)]);
+        expect(table.getColumns().length, 1);
+      });
+
+      test('setRows parity', () {
+        final table = TableModel();
+        table.setRows([['1']]);
+        expect(table.getRows().length, 1);
+      });
+
+      test('selectedRow parity', () {
+        final table = TableModel(rows: [['1'], ['2']]);
+        table.setCursor(1);
+        expect(table.selectedRow, ['2']);
+      });    });
 
     group('MoveUp', () {
       test('moves cursor up', () {

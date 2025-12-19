@@ -1,3 +1,4 @@
+import 'package:artisan_args/src/style/color.dart';
 import 'package:artisan_args/src/tui/bubbles/progress.dart';
 import 'package:test/test.dart';
 
@@ -22,6 +23,42 @@ void main() {
 
       expect(progressed.percentShown, greaterThan(0));
       expect(progressed.percentShown, lessThan(1));
+    });
+
+    test('ColorFunc overrides static colors', () {
+      final model = ProgressModel(
+        width: 10,
+        full: '█',
+        colorFunc: (total, current) => BasicColor('#FF0000'),
+      );
+      final view = model.viewAs(0.5);
+      // Should contain red color code (38;2;255;0;0)
+      expect(view, contains('255;0;0'));
+    });
+
+    test('High-resolution blending with half-block', () {
+      final model = ProgressModel(
+        width: 10,
+        full: defaultFullCharHalfBlock,
+        blend: ['#FF0000', '#0000FF'],
+      );
+      final view = model.viewAs(0.5);
+      // Should contain both foreground and background colors for the half-block
+      // FG: 255;0;0, BG: some interpolation
+      expect(view, contains('255;0;0'));
+      expect(view, contains('\x1b[48;2;')); // Background color escape
+    });
+
+    test('Multi-color blend interpolation', () {
+      final model = ProgressModel(
+        width: 10,
+        full: '█',
+        blend: ['#FF0000', '#00FF00', '#0000FF'],
+      );
+      final view = model.viewAs(1.0);
+      // Start should be red, end should be blue
+      expect(view, contains('255;0;0'));
+      expect(view, contains('0;0;255'));
     });
   });
 }

@@ -61,6 +61,55 @@ void main() {
         textarea.value = 'line1\nline2\nline3';
         expect(textarea.lineCount, 3);
       });
+
+      test('setValue parity', () {
+        final textarea = TextAreaModel();
+        textarea.setValue('parity');
+        expect(textarea.value, 'parity');
+      });
+    });
+
+    group('Cursor', () {
+      test('setCursor parity', () {
+        final textarea = TextAreaModel();
+        textarea.setValue('line1\nline2');
+        textarea.setCursor(1, 2);
+        expect(textarea.cursorLine(), 1);
+        expect(textarea.cursorColumn(), 2);
+      });
+    });
+
+    group('Focus', () {
+      test('focus/blur parity', () {
+        final textarea = TextAreaModel();
+        expect(textarea.isFocused(), isFalse);
+        textarea.focus();
+        expect(textarea.isFocused(), isTrue);
+        textarea.blur();
+        expect(textarea.isFocused(), isFalse);
+      });
+    });
+
+    group('Parity Features', () {
+      test('setPlaceholder parity', () {
+        final textarea = TextAreaModel();
+        textarea.setPlaceholder('new placeholder');
+        expect(textarea.placeholder, 'new placeholder');
+      });
+
+      test('setCharLimit parity', () {
+        final textarea = TextAreaModel();
+        textarea.setCharLimit(10);
+        expect(textarea.charLimit, 10);
+      });
+
+      test('setPromptFunc parity', () {
+        final textarea = TextAreaModel();
+        textarea.setPromptFunc(4, (info) => '[${info.lineIndex}] ');
+        textarea.setValue('line1');
+        final view = textarea.view();
+        expect(view, contains('[0] '));
+      });
     });
 
     group('InsertString', () {

@@ -112,6 +112,7 @@ class ViewportModel extends ViewComponent {
     this.mouseWheelDelta = 3,
     this.horizontalStep = 0,
     this.softWrap = false,
+    this.showLineNumbers = false,
     this.leftGutterFunc,
     this.highlights = const [],
     this.currentHighlightIndex = -1,
@@ -152,6 +153,9 @@ class ViewportModel extends ViewComponent {
   /// Whether to wrap lines that exceed the viewport width.
   final bool softWrap;
 
+  /// Whether to show line numbers in the gutter.
+  final bool showLineNumbers;
+
   /// A function that returns the gutter for a given line index.
   /// If provided, [gutter] is ignored for rendering but still used
   /// for width calculations.
@@ -189,6 +193,7 @@ class ViewportModel extends ViewComponent {
     List<String>? lines,
     int? gutter,
     bool? softWrap,
+    bool? showLineNumbers,
     String Function(int lineIndex)? leftGutterFunc,
     List<ranges.StyleRange>? highlights,
     int? currentHighlightIndex,
@@ -196,6 +201,7 @@ class ViewportModel extends ViewComponent {
     final newWidth = width ?? this.width;
     final newGutter = gutter ?? this.gutter;
     final newSoftWrap = softWrap ?? this.softWrap;
+    final newShowLineNumbers = showLineNumbers ?? this.showLineNumbers;
     final newOriginalLines = lines ?? _originalLines;
     final newHighlights = highlights ?? this.highlights;
 
@@ -229,13 +235,12 @@ class ViewportModel extends ViewComponent {
       wrappedLines: newWrappedLines,
       originalLines: newOriginalLines,
       softWrap: newSoftWrap,
+      showLineNumbers: newShowLineNumbers,
       leftGutterFunc: leftGutterFunc ?? this.leftGutterFunc,
       highlights: newHighlights,
       currentHighlightIndex: currentHighlightIndex ?? this.currentHighlightIndex,
     );
-    newModel._longestLineWidth = styledLines != null
-        ? _findLongestLineWidth(styledLines)
-        : _longestLineWidth;
+    newModel._longestLineWidth = _findLongestLineWidth(styledLines);
     return newModel;
   }
 

@@ -109,7 +109,31 @@ void main() {
         expect(picker.height, 10);
       });
     });
+    group('Parity Features', () {
+      test('setAllowedExtensions parity', () {
+        final picker = FilePickerModel(currentDirectory: '/tmp');
+        picker.setAllowedExtensions(['.txt']);
+        expect(picker.allowedTypes, ['.txt']);
+      });
 
+      test('setDirAllowed parity', () {
+        final picker = FilePickerModel(currentDirectory: '/tmp');
+        picker.setDirAllowed(true);
+        expect(picker.dirAllowed, isTrue);
+      });
+
+      test('setFileAllowed parity', () {
+        final picker = FilePickerModel(currentDirectory: '/tmp');
+        picker.setFileAllowed(false);
+        expect(picker.fileAllowed, isFalse);
+      });
+
+      test('setHeight parity', () {
+        final picker = FilePickerModel(currentDirectory: '/tmp', height: 10);
+        picker.setHeight(20);
+        expect(picker.height, 20);
+      });
+    });
     group('init', () {
       test('returns command to read directory', () {
         final picker = FilePickerModel(
