@@ -401,7 +401,7 @@ class TextAreaModel extends ViewComponent {
     this.placeholder = '',
     this.showLineNumbers = true,
     this.charLimit = 0,
-    this.softWrap = false,
+    this.softWrap = true,
     int width = 0,
     int height = 6,
     this.useVirtualCursor = true,
@@ -814,12 +814,14 @@ class TextAreaModel extends ViewComponent {
     }
 
     if (msg is MouseMsg) {
+      final lineNumberDigits = showLineNumbers ? '${_lines.length}'.length : 0;
+      final displayLines = _softWrappedLines(lineNumberDigits);
       final action = msg.action;
       final button = msg.button;
       final x = msg.x;
       final y = msg.y;
 
-      if (y < 0 || y >= _height) {
+      if (y < 0 || y >= displayLines.length) {
         if (action == MouseAction.press && button == MouseButton.left) {
           _selectionStart = null;
           _selectionEnd = null;
@@ -828,11 +830,15 @@ class TextAreaModel extends ViewComponent {
         return (this, null);
       }
 
+      final dl = displayLines[y];
+
       if (action == MouseAction.press && button == MouseButton.left) {
         _focused = true;
-        final promptW = _promptWidth ?? stringWidth(prompt);
-        final contentX = x - promptW;
-        final contentY = y;
+        final promptW = _getPromptWidth(y);
+        final lineNumberW = showLineNumbers ? (lineNumberDigits + 1) : 0;
+        final localX = x - promptW - lineNumberW;
+        final contentX = localX + dl.charOffset;
+        final contentY = dl.rowIndex;
         final now = DateTime.now();
 
         if (_lastClickTime != null &&
@@ -857,9 +863,11 @@ class TextAreaModel extends ViewComponent {
 
       if (action == MouseAction.motion && _selectionStart != null) {
         // Update selection
-        final promptW = _promptWidth ?? stringWidth(prompt);
-        final contentX = x - promptW;
-        final contentY = y;
+        final promptW = _getPromptWidth(y);
+        final lineNumberW = showLineNumbers ? (lineNumberDigits + 1) : 0;
+        final localX = x - promptW - lineNumberW;
+        final contentX = localX + dl.charOffset;
+        final contentY = dl.rowIndex;
         _selectionEnd = (contentX, contentY);
         return (this, null);
       }
@@ -946,77 +954,95 @@ class TextAreaModel extends ViewComponent {
             )) ??
             prompt;
 
-        final lnNumber = showLineNumbers
-            ? style.computedLineNumber.render(
-                '${(displayLine.rowIndex + 1).toString().padLeft(lineNumberDigits)} ',
-              )
-            : '';
-        var lineBody = displayLine.text;
+        String lnNumber = '';
+        if (showLineNumbers) {
+          final lnText = displayLine.charOffset == 0
+              ? '${(displayLine.rowIndex + 1).toString().padLeft(lineNumberDigits)} '
+              : ' ' * (lineNumberDigits + 1);
+          lnNumber = style.computedLineNumber.render(lnText);
+        }
+        final selectionStyle =
+            Style().background(const AnsiColor(7)).foreground(const AnsiColor(0));
 
-        // Apply selection style
+        // Compute selection overlap for this visual segment.
+        int? selStart;
+        int? selEnd;
         if (_selectionStart != null && _selectionEnd != null) {
           final (x1, y1) = _selectionStart!;
           final (x2, y2) = _selectionEnd!;
           final startY = math.min(y1, y2);
           final endY = math.max(y1, y2);
 
-          if (displayLine.rowIndex >= startY && displayLine.rowIndex <= endY) {
-            int startX, endX;
+          final rowIdx = displayLine.rowIndex;
+          if (rowIdx >= startY && rowIdx <= endY) {
+            // Selection range in the original (unwrapped) row coordinates.
+            int rowStart;
+            int rowEnd;
             if (startY == endY) {
-              startX = math.min(x1, x2);
-              endX = math.max(x1, x2);
-            } else if (displayLine.rowIndex == startY) {
-              startX = y1 < y2 ? x1 : x2;
-              endX = lineBody.length;
-            } else if (displayLine.rowIndex == endY) {
-              startX = 0;
-              endX = y1 < y2 ? x2 : x1;
+              rowStart = math.min(x1, x2);
+              rowEnd = math.max(x1, x2);
+            } else if (rowIdx == startY) {
+              rowStart = y1 < y2 ? x1 : x2;
+              rowEnd = _lines[rowIdx].length;
+            } else if (rowIdx == endY) {
+              rowStart = 0;
+              rowEnd = y1 < y2 ? x2 : x1;
             } else {
-              startX = 0;
-              endX = lineBody.length;
+              rowStart = 0;
+              rowEnd = _lines[rowIdx].length;
             }
 
-            startX = startX.clamp(0, lineBody.length);
-            endX = endX.clamp(0, lineBody.length);
+            rowStart = rowStart.clamp(0, _lines[rowIdx].length);
+            rowEnd = rowEnd.clamp(0, _lines[rowIdx].length);
 
-            if (startX < endX) {
-              final selectionStyle = Style()
-                  .background(const AnsiColor(7))
-                  .foreground(const AnsiColor(0));
-              final before = lineBody.substring(0, startX);
-              final selected =
-                  selectionStyle.render(lineBody.substring(startX, endX));
-              final after = lineBody.substring(endX);
-              lineBody = '$before$selected$after';
+            // Map to this segment via charOffset.
+            final segStart = displayLine.charOffset;
+            final segLen = uni.graphemes(displayLine.text).length;
+            final segEnd = segStart + segLen;
+
+            final overlapStart = math.max(rowStart, segStart);
+            final overlapEnd = math.min(rowEnd, segEnd);
+
+            if (overlapStart < overlapEnd) {
+              selStart = overlapStart - segStart;
+              selEnd = overlapEnd - segStart;
             }
           }
         }
 
-        if (displayLine.hasCursor && useVirtualCursor) {
-          final cursorCol =
-              (_col - displayLine.charOffset).clamp(0, lineBody.length);
-          final gs = uni.graphemes(lineBody).toList();
-          var rendered = '';
-          for (var j = 0; j < gs.length; j++) {
-            if (j == cursorCol) {
-              cursor = cursor.setChar(gs[j]);
-              rendered += cursor.view();
-            } else {
-              rendered += style.computedText.render(gs[j]);
-            }
+        final gs = uni.graphemes(displayLine.text).toList(growable: false);
+        final cursorCol =
+            displayLine.hasCursor ? (_col - displayLine.charOffset) : -1;
+
+        var renderedBody = '';
+        for (var j = 0; j < gs.length; j++) {
+          String part;
+          if (displayLine.hasCursor && useVirtualCursor && j == cursorCol) {
+            cursor = cursor.setChar(gs[j]);
+            part = cursor.view();
+          } else {
+            part = style.computedText.render(gs[j]);
           }
-          if (cursorCol >= gs.length) {
-            cursor = cursor.setChar(' ');
-            rendered += cursor.view();
+
+          final isSelected =
+              selStart != null && selEnd != null && j >= selStart && j < selEnd;
+          if (isSelected) {
+            part = selectionStyle.render(part);
           }
-          lineBody = rendered;
-        } else {
-          lineBody = style.computedText.render(lineBody);
+          renderedBody += part;
         }
 
-        final renderedLine = displayLine.hasCursor && !useVirtualCursor
-            ? style.computedCursorLine.render(lineBody)
-            : lineBody;
+        if (displayLine.hasCursor && useVirtualCursor && cursorCol >= gs.length) {
+          cursor = cursor.setChar(' ');
+          var part = cursor.view();
+          // If the selection is anchored past EOL (rare), don't attempt to style it.
+          renderedBody += part;
+        }
+
+        final renderedLine =
+            displayLine.hasCursor && !useVirtualCursor
+                ? style.computedCursorLine.render(renderedBody)
+                : renderedBody;
 
         buffer.writeln(
           '${style.computedPrompt.render(p)}$lnNumber$renderedLine',

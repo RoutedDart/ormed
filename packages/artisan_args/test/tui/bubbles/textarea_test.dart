@@ -427,6 +427,60 @@ void main() {
         expect(v2.getSelectedText(), equals('Hello'));
       });
 
+      test('selects text when line numbers are enabled', () {
+        var textarea = TextAreaModel(prompt: '│ ', showLineNumbers: true, height: 5);
+        textarea.value = 'hello';
+
+        // With default prompt "│ " (width 2) and line number gutter "1 "
+        // (digits=1, plus trailing space), the first content cell starts at x=4.
+        var (v1, _) = textarea.update(const MouseMsg(
+          action: MouseAction.press,
+          button: MouseButton.left,
+          x: 4,
+          y: 0,
+        ));
+        var (v2, _) = v1.update(const MouseMsg(
+          action: MouseAction.motion,
+          button: MouseButton.left,
+          x: 9,
+          y: 0,
+        ));
+
+        expect(v2.getSelectedText(), equals('hello'));
+      });
+
+      test('selects and highlights text on wrapped visual lines', () {
+        var textarea = TextAreaModel(
+          prompt: '',
+          showLineNumbers: false,
+          softWrap: true,
+          width: 6,
+          height: 5,
+        );
+        textarea.value = 'abcdefghijkl'; // wraps into "abcdef" + "ghijkl"
+
+        // Select "ghi" from the second wrapped line (y=1).
+        var (v1, _) = textarea.update(const MouseMsg(
+          action: MouseAction.press,
+          button: MouseButton.left,
+          x: 0,
+          y: 1,
+        ));
+        var (v2, _) = v1.update(const MouseMsg(
+          action: MouseAction.motion,
+          button: MouseButton.left,
+          x: 3,
+          y: 1,
+        ));
+
+        expect(v2.getSelectedText(), equals('ghi'));
+
+        final view = v2.view() as String;
+        // Selection uses a reversed-like style (bg=7, fg=0); we just ensure
+        // the selection styling is present somewhere in the output.
+        expect(view, contains('\x1b[48;5;7m'));
+      });
+
       test('double click selects word', () {
         var textarea = TextAreaModel(prompt: '> ', showLineNumbers: false);
         textarea.value = 'Hello World\nLine 2';
