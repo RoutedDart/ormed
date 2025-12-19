@@ -116,6 +116,24 @@ class Layout {
     return maxLineWidth(Ansi.stripAnsi(text));
   }
 
+  /// Returns the cell width of characters in the string.
+  ///
+  /// This is an alias for [visibleLength] to match lipgloss v2 naming.
+  static int width(String text) => visibleLength(text);
+
+  /// Returns the height of a string in cells.
+  ///
+  /// This is done by counting newline characters.
+  static int height(String text) {
+    if (text.isEmpty) return 1; // Match lipgloss v2 behavior
+    return text.split('\n').length;
+  }
+
+  /// Returns the width and height of a string in cells.
+  static (int width, int height) size(String text) {
+    return (width(text), height(text));
+  }
+
   /// Strips all ANSI escape codes from a string.
   static String stripAnsi(String text) {
     return Ansi.stripAnsi(text);

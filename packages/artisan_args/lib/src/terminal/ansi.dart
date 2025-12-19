@@ -1,5 +1,6 @@
 library;
 
+import 'package:characters/characters.dart';
 import '../unicode/width.dart';
 
 /// Unified ANSI escape sequence constants and utilities.
@@ -491,5 +492,85 @@ abstract final class Ansi {
   /// Useful for applying styles that can be conditionally removed.
   static String wrap(String text, String startSeq, String endSeq) {
     return '$startSeq$text$endSeq';
+  }
+
+  /// Cuts a string at given character indices, preserving ANSI state.
+  ///
+  /// [start] and [end] are indices into the *stripped* version of the string.
+  ///
+  /// Upstream parity: `x/ansi.Cut`.
+  static String cut(String text, int start, int end) {
+    if (start < 0) start = 0;
+    final stripped = stripAnsi(text);
+    final strippedChars = stripped.characters;
+    if (start >= strippedChars.length) return '';
+    if (end > strippedChars.length) end = strippedChars.length;
+    if (start >= end) return '';
+
+    final result = StringBuffer();
+    final matches = ansiPattern.allMatches(text).toList();
+
+    var currentVisibleIdx = 0;
+    var lastTextIdx = 0;
+
+    // Track active ANSI sequences to prepend them if we start in the middle.
+    final activeAnsi = <String>[];
+
+    for (final match in matches) {
+      final textBefore = text.substring(lastTextIdx, match.start);
+      final charsBefore = textBefore.characters;
+
+      for (final char in charsBefore) {
+        if (currentVisibleIdx >= start && currentVisibleIdx < end) {
+          if (currentVisibleIdx == start) {
+            for (final seq in activeAnsi) {
+              result.write(seq);
+            }
+          }
+          result.write(char);
+        }
+        currentVisibleIdx++;
+      }
+
+      final ansiSeq = match.group(0)!;
+      if (currentVisibleIdx >= start && currentVisibleIdx < end) {
+        result.write(ansiSeq);
+      } else if (currentVisibleIdx < start) {
+        // Track stateful sequences (SGR, OSC 8, etc.)
+        if (ansiSeq.startsWith('\x1b[') || ansiSeq.startsWith('\x1b]')) {
+          activeAnsi.add(ansiSeq);
+        }
+      }
+
+      lastTextIdx = match.end;
+    }
+
+    final remainingText = text.substring(lastTextIdx);
+    final remainingChars = remainingText.characters;
+    for (final char in remainingChars) {
+      if (currentVisibleIdx >= start && currentVisibleIdx < end) {
+        if (currentVisibleIdx == start) {
+          for (final seq in activeAnsi) {
+            result.write(seq);
+          }
+        }
+        result.write(char);
+      }
+      currentVisibleIdx++;
+    }
+
+    return result.toString();
+  }
+
+  /// Truncates a string from the left by [n] characters, preserving ANSI state.
+  ///
+  /// Upstream parity: `x/ansi.TruncateLeft`.
+  static String truncateLeft(String text, int n, [String replacement = '']) {
+    final stripped = stripAnsi(text);
+    final strippedChars = stripped.characters;
+    if (n <= 0) return text;
+    if (n >= strippedChars.length) return replacement;
+
+    return replacement + cut(text, n, strippedChars.length);
   }
 }

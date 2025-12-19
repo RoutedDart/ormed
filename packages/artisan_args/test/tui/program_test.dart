@@ -210,6 +210,15 @@ class MockTerminal implements TuiTerminal {
   }
 
   @override
+  Future<String?> query(
+    String query, {
+    Duration timeout = const Duration(seconds: 2),
+  }) async {
+    operations.add('query: $query');
+    return null;
+  }
+
+  @override
   bool get isRawMode => rawModeEnabled;
 
   @override
@@ -1678,6 +1687,12 @@ class _FragileTerminal implements TuiTerminal {
 
   @override
   void writeln([String data = '']) {}
+
+  @override
+  Future<String?> query(
+    String query, {
+    Duration timeout = const Duration(seconds: 2),
+  }) async => null;
 
   @override
   Future<void> flush() async {}

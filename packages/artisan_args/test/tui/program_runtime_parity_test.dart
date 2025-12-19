@@ -51,6 +51,15 @@ class _MockTerminal implements TuiTerminal {
   }
 
   @override
+  Future<String?> query(
+    String query, {
+    Duration timeout = const Duration(seconds: 2),
+  }) async {
+    operations.add('query');
+    return null;
+  }
+
+  @override
   RawModeGuard enableRawMode() {
     _raw = true;
     operations.add('enableRaw');

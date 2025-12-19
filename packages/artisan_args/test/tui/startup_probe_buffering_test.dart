@@ -16,6 +16,12 @@ class _TestTerminal implements TuiTerminal {
   void writeln([String data = '']) {}
 
   @override
+  Future<String?> query(
+    String query, {
+    Duration timeout = const Duration(seconds: 2),
+  }) async => null;
+
+  @override
   Future<void> flush() async {}
 
   @override

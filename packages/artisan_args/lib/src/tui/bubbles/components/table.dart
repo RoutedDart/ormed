@@ -209,8 +209,8 @@ class Table extends DisplayComponent {
   int? _width;
   int? _height;
   int _offset = 0;
-  // ignore: unused_field
-  bool _wrap = true; // Reserved for future cell wrapping support
+  bool _wrap = true;
+  List<int>? _manualWidths;
   Style? _headerStyle;
   Style? _borderStyle;
   Style? _cellStyle;
@@ -256,8 +256,17 @@ class Table extends DisplayComponent {
     return null;
   }
 
-  String _renderCellValue(int row, int col, String raw) {
-    final style = _styleForCell(row, col, raw);
+  String _renderCellValue(int row, int col, String raw, [int? width]) {
+    var style = _styleForCell(row, col, raw);
+    if (width != null && _wrap && row != headerRow) {
+      // Headers are never wrapped in lipgloss v2.
+      // We wrap at (width - table padding) so the table's own padding
+      // can still be applied around the wrapped content.
+      final wrapAt = width - (_padding * 2);
+      if (wrapAt > 0) {
+        style = (style ?? Style()).width(wrapAt);
+      }
+    }
     return style?.render(raw) ?? raw;
   }
 
@@ -285,6 +294,12 @@ class Table extends DisplayComponent {
   /// Clears all rows from the table.
   Table clearRows() {
     _rows.clear();
+    return this;
+  }
+
+  /// Sets manual column widths.
+  Table widths(List<int> values) {
+    _manualWidths = values;
     return this;
   }
 
@@ -323,8 +338,15 @@ class Table extends DisplayComponent {
 
   /// Sets the border style.
   Table border(style_border.Border border) {
-    _border = border;
-    return this;
+    _border = border;    if (border == style_border.Border.none) {
+      _borderTop = false;
+      _borderBottom = false;
+      _borderLeft = false;
+      _borderRight = false;
+      _borderHeader = false;
+      _borderColumn = false;
+      _borderRow = false;
+    }    return this;
   }
 
   /// Sets the cell padding.
@@ -416,28 +438,35 @@ class Table extends DisplayComponent {
 
     // Calculate column widths using rendered cell content so width/align styles are respected.
     final widths = List<int>.filled(columns, 0);
-
-    void applyWidths(List<String> cells, int rowIndex) {
-      for (var c = 0; c < columns; c++) {
-        final raw = c < cells.length ? cells[c] : '';
-        final rendered = _renderCellValue(rowIndex, c, raw);
-        for (final line in rendered.split('\n')) {
-          final len = Style.visibleLength(line);
-          if (len > widths[c]) widths[c] = len;
-        }
+    if (_manualWidths != null) {
+      for (var i = 0; i < columns && i < _manualWidths!.length; i++) {
+        widths[i] = _manualWidths![i];
       }
     }
 
-    if (_headers.isNotEmpty) {
-      applyWidths(_headers, headerRow);
-    }
+    if (_manualWidths == null) {
+      void applyWidths(List<String> cells, int rowIndex) {
+        for (var c = 0; c < columns; c++) {
+          final raw = c < cells.length ? cells[c] : '';
+          final rendered = _renderCellValue(rowIndex, c, raw);
+          for (final line in rendered.split('\n')) {
+            final len = Style.visibleLength(line);
+            if (len > widths[c]) widths[c] = len;
+          }
+        }
+      }
 
-    for (var i = 0; i < _rows.length; i++) {
-      applyWidths(_rows[i], i);
+      if (_headers.isNotEmpty) {
+        applyWidths(_headers, headerRow);
+      }
+
+      for (var i = 0; i < _rows.length; i++) {
+        applyWidths(_rows[i], i);
+      }
     }
 
     // Adjust for fixed width if specified
-    if (_width != null) {
+    if (_width != null && _manualWidths == null) {
       final totalPadding = _padding * 2 * columns;
       final borderCount = _borderColumn ? columns + 1 : 2;
       final available = _width! - totalPadding - borderCount;
@@ -486,7 +515,7 @@ class Table extends DisplayComponent {
 
       for (var c = 0; c < columns; c++) {
         final raw = c < cells.length ? cells[c] : '';
-        final styledContent = _renderCellValue(rowIndex, c, raw);
+        final styledContent = _renderCellValue(rowIndex, c, raw, widths[c]);
 
         // Split by newlines to handle multi-line content
         final lines = styledContent.split('\n');

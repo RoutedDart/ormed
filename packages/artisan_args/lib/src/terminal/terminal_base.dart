@@ -60,6 +60,16 @@ abstract class Terminal {
   /// Flushes any buffered output.
   Future<void> flush();
 
+  /// Queries the terminal for information by writing [query] and waiting for a response.
+  ///
+  /// Returns the response string, or `null` if the query timed out.
+  ///
+  /// This is intended for non-TUI use cases. In a TUI, use the message loop.
+  Future<String?> query(
+    String query, {
+    Duration timeout = const Duration(seconds: 2),
+  });
+
   // ─────────────────────────────────────────────────────────────────────────────
   // Cursor Visibility
   // ─────────────────────────────────────────────────────────────────────────────
@@ -314,6 +324,12 @@ final class SplitTerminal implements Terminal {
 
   @override
   Future<void> flush() => _output.flush();
+
+  @override
+  Future<String?> query(
+    String query, {
+    Duration timeout = const Duration(seconds: 2),
+  }) => _control.query(query, timeout: timeout);
 
   // ─────────────────────────────────────────────────────────────────────────────
   // Cursor Visibility
@@ -643,6 +659,49 @@ class StdioTerminal implements Terminal {
       _stdoutFlushInFlight = null;
     });
     return _stdoutFlushInFlight!;
+  }
+
+  @override
+  Future<String?> query(
+    String query, {
+    Duration timeout = const Duration(seconds: 2),
+  }) async {
+    if (!isTerminal) return null;
+
+    final wasRaw = _rawModeEnabled;
+    if (!wasRaw) enableRawMode();
+
+    try {
+      write(query);
+      await flush();
+
+      final completer = Completer<String?>();
+      final buffer = StringBuffer();
+
+      final timer = Timer(timeout, () {
+        if (!completer.isCompleted) completer.complete(null);
+      });
+
+      final sub = input.listen((data) {
+        buffer.write(String.fromCharCodes(data));
+        final s = buffer.toString();
+
+        // Common terminal response terminators:
+        // - BEL (0x07)
+        // - ST (ESC \)
+        // - DA1 response ends with 'c' (e.g. ESC [ ? 62 ; 1 c)
+        if (s.contains('\x07') || s.contains('\x1b\\') || s.endsWith('c')) {
+          if (!completer.isCompleted) completer.complete(s);
+        }
+      });
+
+      final result = await completer.future;
+      timer.cancel();
+      await sub.cancel();
+      return result;
+    } finally {
+      if (!wasRaw) disableRawMode();
+    }
   }
 
   static bool _isStdoutBoundToStream(StateError e) =>
@@ -1174,6 +1233,43 @@ final class TtyTerminal implements Terminal {
       _flushInFlight = null;
     });
     return _flushInFlight!;
+  }
+
+  @override
+  Future<String?> query(
+    String query, {
+    Duration timeout = const Duration(seconds: 2),
+  }) async {
+    final wasRaw = _rawModeEnabled;
+    if (!wasRaw) enableRawMode();
+
+    try {
+      write(query);
+      await flush();
+
+      final completer = Completer<String?>();
+      final buffer = StringBuffer();
+
+      final timer = Timer(timeout, () {
+        if (!completer.isCompleted) completer.complete(null);
+      });
+
+      final sub = input.listen((data) {
+        buffer.write(String.fromCharCodes(data));
+        final s = buffer.toString();
+
+        if (s.contains('\x07') || s.contains('\x1b\\') || s.endsWith('c')) {
+          if (!completer.isCompleted) completer.complete(s);
+        }
+      });
+
+      final result = await completer.future;
+      timer.cancel();
+      await sub.cancel();
+      return result;
+    } finally {
+      if (!wasRaw) disableRawMode();
+    }
   }
 
   static bool _isSinkBoundToStream(StateError e) =>
@@ -1736,6 +1832,15 @@ class StringTerminal implements Terminal {
   @override
   Future<void> flush() async {
     operations.add('flush');
+  }
+
+  @override
+  Future<String?> query(
+    String query, {
+    Duration timeout = const Duration(seconds: 2),
+  }) async {
+    operations.add('query: $query');
+    return null;
   }
 
   @override
