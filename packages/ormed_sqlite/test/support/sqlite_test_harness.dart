@@ -79,6 +79,7 @@ Future<SqliteTestHarness> createSqliteTestHarness({
             id: e.id,
             migration: e.migration,
             defaultSchema: dataSource.options.defaultSchema,
+            tablePrefix: dataSource.options.tablePrefix,
           ),
         )
         .toList(),

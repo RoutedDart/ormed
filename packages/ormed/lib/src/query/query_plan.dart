@@ -10,6 +10,7 @@ class QueryPlan {
   QueryPlan({
     required this.definition,
     this.driverName,
+    this.tablePrefix,
     List<FilterClause>? filters,
     List<OrderClause>? orders,
     this.randomOrder = false,
@@ -72,6 +73,7 @@ class QueryPlan {
 
   final ModelDefinition<OrmEntity> definition;
   final String? driverName;
+  final String? tablePrefix;
   final List<FilterClause> filters;
   final List<OrderClause> orders;
   final bool randomOrder;
@@ -136,9 +138,11 @@ class QueryPlan {
     bool? disableAutoHydration,
     Duration? cacheTtl,
     bool? disableCache,
+    String? tablePrefix,
   }) => QueryPlan(
     definition: definition,
     driverName: driverName,
+    tablePrefix: tablePrefix ?? this.tablePrefix,
     filters: filters ?? this.filters,
     orders: orders ?? this.orders,
     randomOrder: randomOrder ?? this.randomOrder,

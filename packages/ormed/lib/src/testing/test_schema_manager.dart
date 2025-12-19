@@ -34,15 +34,18 @@ class TestSchemaManager {
     List<ModelDefinition>? modelDefinitions,
     List<MigrationDescriptor>? migrations,
     String ledgerTable = 'orm_migrations',
+    String? tablePrefix,
   }) : _schemaDriver = schemaDriver,
        _modelDefinitions = modelDefinitions ?? [],
        _migrations = migrations ?? [],
-       _ledgerTable = ledgerTable;
+       _ledgerTable = ledgerTable,
+       _tablePrefix = tablePrefix;
 
   final SchemaDriver _schemaDriver;
   final List<ModelDefinition> _modelDefinitions;
   final List<MigrationDescriptor> _migrations;
   final String _ledgerTable;
+  final String? _tablePrefix;
   MigrationRunner? _runner;
 
   /// Initialize the migration runner
@@ -51,7 +54,11 @@ class TestSchemaManager {
 
     _runner = MigrationRunner(
       schemaDriver: _schemaDriver,
-      ledger: SqlMigrationLedger(_schemaDriver as DriverAdapter),
+      ledger: SqlMigrationLedger(
+        _schemaDriver as DriverAdapter,
+        tableName: _ledgerTable,
+        tablePrefix: _tablePrefix,
+      ),
       migrations: _migrations,
     );
     return _runner!;
@@ -126,7 +133,7 @@ class TestSchemaManager {
   /// await manager.purge();
   /// ```
   Future<void> purge() async {
-    final builder = SchemaBuilder();
+    final builder = SchemaBuilder(tablePrefix: _tablePrefix);
     final seenTables = <String>{};
 
     for (final definition in _modelDefinitions) {
@@ -148,7 +155,7 @@ class TestSchemaManager {
 
   /// Drop the migration ledger table
   Future<void> _purgeLedger() async {
-    final builder = SchemaBuilder()
+    final builder = SchemaBuilder(tablePrefix: _tablePrefix)
       ..drop(_ledgerTable, ifExists: true, cascade: true);
 
     if (builder.isEmpty) {

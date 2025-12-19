@@ -5,12 +5,18 @@ import 'table_blueprint.dart';
 
 /// Fluent builder that collects schema commands for a migration direction.
 class SchemaBuilder {
-  SchemaBuilder({SchemaSnapshot? snapshot, String? defaultSchema})
-    : _snapshot = snapshot,
-      _defaultSchema = defaultSchema;
+  SchemaBuilder({
+    SchemaSnapshot? snapshot,
+    String? defaultSchema,
+    String? tablePrefix,
+  }) : _snapshot = snapshot,
+       _defaultSchema = defaultSchema,
+       _tablePrefix = tablePrefix;
 
   final SchemaSnapshot? _snapshot;
   final String? _defaultSchema;
+  final String? _tablePrefix;
+  static final RegExp _identifier = RegExp(r'^[A-Za-z_][A-Za-z0-9_]*$');
   SchemaInspector? _inspector;
   final List<SchemaMutation> _mutations = [];
 
@@ -34,7 +40,11 @@ class SchemaBuilder {
     String? schema,
   }) {
     final effectiveSchema = schema ?? _defaultSchema;
-    final blueprint = TableBlueprint.create(table, schema: effectiveSchema);
+    final effectiveTable = _applyTablePrefix(table, schema: effectiveSchema);
+    final blueprint = TableBlueprint.create(
+      effectiveTable,
+      schema: effectiveSchema,
+    );
     definition(blueprint);
     _mutations.add(SchemaMutation.createTable(blueprint));
     return blueprint;
@@ -47,7 +57,11 @@ class SchemaBuilder {
     String? schema,
   }) {
     final effectiveSchema = schema ?? _defaultSchema;
-    final blueprint = TableBlueprint.alter(table, schema: effectiveSchema);
+    final effectiveTable = _applyTablePrefix(table, schema: effectiveSchema);
+    final blueprint = TableBlueprint.alter(
+      effectiveTable,
+      schema: effectiveSchema,
+    );
     definition(blueprint);
     _mutations.add(SchemaMutation.alterTable(blueprint));
     return blueprint;
@@ -57,7 +71,7 @@ class SchemaBuilder {
   void drop(String table, {bool ifExists = false, bool cascade = false}) {
     _mutations.add(
       SchemaMutation.dropTable(
-        table: table,
+        table: _applyTablePrefix(table),
         ifExists: ifExists,
         cascade: cascade,
       ),
@@ -66,7 +80,12 @@ class SchemaBuilder {
 
   /// Registers a rename table command.
   void rename(String from, String to) {
-    _mutations.add(SchemaMutation.renameTable(from: from, to: to));
+    _mutations.add(
+      SchemaMutation.renameTable(
+        from: _applyTablePrefix(from),
+        to: _applyTablePrefix(to),
+      ),
+    );
   }
 
   /// Creates a new database with optional driver-specific options.
@@ -158,7 +177,7 @@ class SchemaBuilder {
   /// Returns true if a table exists within the captured snapshot.
   bool hasTable(String table, {String? schema}) {
     final snapshot = _requireSnapshot();
-    final target = table.toLowerCase();
+    final target = _applyTablePrefix(table, schema: schema).toLowerCase();
     final schemaTarget = schema?.toLowerCase();
     return snapshot.tables.any((entry) {
       final entrySchema = entry.schema?.toLowerCase();
@@ -172,7 +191,7 @@ class SchemaBuilder {
   /// Returns true if a column exists within the captured snapshot.
   bool hasColumn(String table, String column, {String? schema}) {
     final snapshot = _requireSnapshot();
-    final tableTarget = table.toLowerCase();
+    final tableTarget = _applyTablePrefix(table, schema: schema).toLowerCase();
     final columnTarget = column.toLowerCase();
     final schemaTarget = schema?.toLowerCase();
     return snapshot.columns.any((entry) {
@@ -190,7 +209,7 @@ class SchemaBuilder {
   /// Returns the column type for the requested table/column if available.
   String? columnType(String table, String column, {String? schema}) {
     final snapshot = _requireSnapshot();
-    final tableTarget = table.toLowerCase();
+    final tableTarget = _applyTablePrefix(table, schema: schema).toLowerCase();
     final columnTarget = column.toLowerCase();
     final schemaTarget = schema?.toLowerCase();
     final match = snapshot.columns.firstWhere((entry) {
@@ -229,5 +248,25 @@ class SchemaBuilder {
       );
     }
     return snapshot;
+  }
+
+  String _applyTablePrefix(String table, {String? schema}) {
+    final prefix = _tablePrefix;
+    if (prefix == null || prefix.isEmpty) {
+      return table;
+    }
+    if (schema != null && schema.isNotEmpty) {
+      return table;
+    }
+    if (table.contains('.')) {
+      return table;
+    }
+    if (!_identifier.hasMatch(table)) {
+      return table;
+    }
+    if (table.startsWith(prefix)) {
+      return table;
+    }
+    return '$prefix$table';
   }
 }

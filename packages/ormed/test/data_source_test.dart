@@ -307,7 +307,6 @@ void main() {
       expect(options.tablePrefix, '');
       expect(options.defaultSchema, isNull);
       expect(options.codecs, isEmpty);
-      expect(options.synchronize, isFalse);
       expect(options.logging, isFalse);
     });
 
@@ -347,7 +346,6 @@ void main() {
         database: 'new-db',
         tablePrefix: 'new_',
         defaultSchema: 'public',
-        synchronize: true,
         logging: true,
       );
 
@@ -357,7 +355,6 @@ void main() {
       expect(copied.database, 'new-db');
       expect(copied.tablePrefix, 'new_');
       expect(copied.defaultSchema, 'public');
-      expect(copied.synchronize, isTrue);
       expect(copied.logging, isTrue);
     });
   });

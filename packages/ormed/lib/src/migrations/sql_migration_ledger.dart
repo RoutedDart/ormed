@@ -7,35 +7,58 @@ import '../query/query.dart';
 
 /// Generic SQL ledger that persists migrations inside a driver-managed table.
 class SqlMigrationLedger implements MigrationLedger {
-  SqlMigrationLedger(DriverAdapter driver, {String? tableName})
-    : this._(tableName ?? 'orm_migrations', _DriverInvoker.direct(driver));
+  SqlMigrationLedger(
+    DriverAdapter driver, {
+    String? tableName,
+    String? tablePrefix,
+  }) : this._(
+         _applyTablePrefix(
+           tableName ?? 'orm_migrations',
+           tablePrefix,
+         ),
+         _DriverInvoker.direct(driver),
+         tablePrefix,
+       );
 
   SqlMigrationLedger.managed({
     required String connectionName,
     ConnectionManager? manager,
     ConnectionRole role = ConnectionRole.primary,
     String? tableName,
+    String? tablePrefix,
   }) : this._(
-         tableName ?? 'orm_migrations',
+         _applyTablePrefix(
+           tableName ?? 'orm_migrations',
+           tablePrefix,
+         ),
          _DriverInvoker.managed(
            manager ?? ConnectionManager.defaultManager,
            connectionName,
            role,
          ),
+         tablePrefix,
        );
 
-  SqlMigrationLedger._(this.tableName, this._driverInvoker);
+  SqlMigrationLedger._(
+    this.tableName,
+    this._driverInvoker,
+    this._tablePrefix,
+  );
 
   final String tableName;
   final _DriverInvoker _driverInvoker;
+  final String? _tablePrefix;
   static final ModelRegistry _ledgerRegistry = ModelRegistry()
     ..register(OrmMigrationRecordOrmDefinition.definition);
 
   Future<T> _withDriver<T>(Future<T> Function(DriverAdapter driver) action) =>
       _driverInvoker.invoke(action);
 
-  QueryContext _contextForDriver(DriverAdapter driver) =>
-      QueryContext(registry: _ledgerRegistry, driver: driver);
+  QueryContext _contextForDriver(DriverAdapter driver) => QueryContext(
+    registry: _ledgerRegistry,
+    driver: driver,
+    connectionTablePrefix: _tablePrefix,
+  );
 
   @override
   Future<void> ensureInitialized() => _withDriver((driver) async {
@@ -192,6 +215,19 @@ class _DriverInvoker {
       role: _role,
     );
   }
+}
+
+String _applyTablePrefix(String table, String? prefix) {
+  if (prefix == null || prefix.isEmpty) {
+    return table;
+  }
+  if (table.contains('.')) {
+    return table;
+  }
+  if (table.startsWith(prefix)) {
+    return table;
+  }
+  return '$prefix$table';
 }
 
 class _LedgerTableMigration extends Migration {

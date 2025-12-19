@@ -265,6 +265,7 @@ class TestDatabaseManager {
       final schemaManager = TestSchemaManager(
         schemaDriver: driver as SchemaDriver,
         migrations: descriptors,
+        tablePrefix: dataSource.options.tablePrefix,
       );
       await schemaManager.setup();
 
@@ -299,6 +300,7 @@ class TestDatabaseManager {
     final resolved = <MigrationDescriptor>[];
     final migrations = _migrations;
     final defaultSchema = _baseDataSource.options.defaultSchema;
+    final tablePrefix = _baseDataSource.options.tablePrefix;
     for (var i = 0; i < migrations.length; i++) {
       final migration = migrations[i];
       resolved.add(
@@ -309,6 +311,7 @@ class TestDatabaseManager {
           ),
           migration: migration,
           defaultSchema: defaultSchema,
+          tablePrefix: tablePrefix,
         ),
       );
     }

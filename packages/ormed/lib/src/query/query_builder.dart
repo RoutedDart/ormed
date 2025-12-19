@@ -472,6 +472,7 @@ class Query<T extends OrmEntity> {
     return QueryPlan(
       definition: definition,
       driverName: context.driver.metadata.name,
+      tablePrefix: context.connectionTablePrefix,
       filters: _filters,
       orders: _orders,
       randomOrder: _randomOrder,

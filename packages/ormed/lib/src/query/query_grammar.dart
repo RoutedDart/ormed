@@ -440,7 +440,12 @@ class _SelectCompilation {
         rawGroupLimit != null && grammar.supportsGroupLimit(rawGroupLimit)
         ? rawGroupLimit
         : null;
-    final table = grammar.wrapIdentifier(plan.definition.tableName);
+    final table = grammar.wrapIdentifier(
+      _prefixedTableName(
+        plan.definition.tableName,
+        schema: plan.definition.schema,
+      ),
+    );
     final schema = plan.definition.schema;
     final qualified = schema == null || schema.isEmpty
         ? table
@@ -814,17 +819,52 @@ class _SelectCompilation {
   }
 
   String _formatTableReference(String table) {
-    if (_qualifiedIdentifier.hasMatch(table)) {
-      return table
+    final resolved = _prefixedTableName(table);
+    if (_qualifiedIdentifier.hasMatch(resolved)) {
+      return resolved
           .split('.')
           .map((segment) => grammar.wrapIdentifier(segment))
           .join('.');
     }
-    if (_identifier.hasMatch(table)) {
-      return grammar.wrapIdentifier(table);
+    if (_identifier.hasMatch(resolved)) {
+      return grammar.wrapIdentifier(resolved);
     }
-    return table;
+    return resolved;
   }
+
+  String _prefixedTableName(String table, {String? schema}) {
+    final prefix = plan.tablePrefix;
+    if (prefix == null || prefix.isEmpty) {
+      return table;
+    }
+    if (schema != null && schema.isNotEmpty) {
+      return table;
+    }
+    if (_qualifiedIdentifier.hasMatch(table)) {
+      return table;
+    }
+    if (!_identifier.hasMatch(table)) {
+      return table;
+    }
+    if (table.startsWith(prefix)) {
+      return table;
+    }
+    return '$prefix$table';
+  }
+
+  String _qualifiedTable(ModelDefinition<OrmEntity> definition) {
+    final table = grammar.wrapIdentifier(
+      _prefixedTableName(definition.tableName, schema: definition.schema),
+    );
+    final schema = definition.schema;
+    if (schema == null || schema.isEmpty) {
+      return table;
+    }
+    return '${grammar.wrapIdentifier(schema)}.$table';
+  }
+
+  String _qualifiedPivotTable(String table) =>
+      _formatTableReference(_prefixedTableName(table));
 
   String? _whereClause() {
     final clauses = <String>[];
@@ -1499,7 +1539,7 @@ class _SelectCompilation {
         if (includedPivots.add(pivotAlias)) {
           joins
             ..write('JOIN ')
-            ..write(grammar.wrapIdentifier(segment.pivotTable!))
+            ..write(_qualifiedPivotTable(segment.pivotTable!))
             ..write(' AS ')
             ..write(pivotAlias)
             ..write(' ON ')
@@ -1588,10 +1628,10 @@ class _SelectCompilation {
       final pivotAlias = _nextAlias('pivot');
       buffer
         ..write(
-          '${grammar.wrapIdentifier(segment.pivotTable!)} AS $pivotAlias ',
+          '${_qualifiedPivotTable(segment.pivotTable!)} AS $pivotAlias ',
         )
         ..write(
-          'JOIN ${grammar.wrapIdentifier(segment.targetDefinition.tableName)} AS $targetAlias ',
+          'JOIN ${_qualifiedTable(segment.targetDefinition)} AS $targetAlias ',
         )
         ..write(
           'ON $targetAlias.${grammar.wrapIdentifier(segment.childKey)} = '
@@ -1604,7 +1644,7 @@ class _SelectCompilation {
     } else {
       buffer
         ..write(
-          '${grammar.wrapIdentifier(segment.targetDefinition.tableName)} AS $targetAlias ',
+          '${_qualifiedTable(segment.targetDefinition)} AS $targetAlias ',
         )
         ..write(
           'WHERE $targetAlias.${grammar.wrapIdentifier(segment.childKey)} = '
@@ -1668,10 +1708,10 @@ class _SelectCompilation {
       final pivotAlias = _nextAlias('pivot');
       buffer
         ..write(
-          '${grammar.wrapIdentifier(segment.pivotTable!)} AS $pivotAlias ',
+          '${_qualifiedPivotTable(segment.pivotTable!)} AS $pivotAlias ',
         )
         ..write(
-          'JOIN ${grammar.wrapIdentifier(segment.targetDefinition.tableName)} AS $targetAlias ',
+          'JOIN ${_qualifiedTable(segment.targetDefinition)} AS $targetAlias ',
         )
         ..write(
           'ON $targetAlias.${grammar.wrapIdentifier(segment.childKey)} = '
@@ -1684,7 +1724,7 @@ class _SelectCompilation {
     } else {
       buffer
         ..write(
-          '${grammar.wrapIdentifier(segment.targetDefinition.tableName)} AS $targetAlias ',
+          '${_qualifiedTable(segment.targetDefinition)} AS $targetAlias ',
         )
         ..write(
           'WHERE $targetAlias.${grammar.wrapIdentifier(segment.childKey)} = '
@@ -1751,15 +1791,6 @@ class _SelectCompilation {
     return segment.foreignKeyOnParent
         ? '$parentColumn = $childColumn'
         : '$childColumn = $parentColumn';
-  }
-
-  String _qualifiedTable(ModelDefinition<OrmEntity> definition) {
-    final table = grammar.wrapIdentifier(definition.tableName);
-    final schema = definition.schema;
-    if (schema == null || schema.isEmpty) {
-      return table;
-    }
-    return '${grammar.wrapIdentifier(schema)}.$table';
   }
 
   String _nextAlias(String prefix) => '${prefix}_${_aliasCounter++}';
@@ -1838,7 +1869,7 @@ class _SelectCompilation {
         if (includedPivots.add(pivotAlias)) {
           joins
             ..write('JOIN ')
-            ..write(grammar.wrapIdentifier(segment.pivotTable!))
+            ..write(_qualifiedPivotTable(segment.pivotTable!))
             ..write(' AS ')
             ..write(pivotAlias)
             ..write(' ON ')

@@ -31,7 +31,6 @@ class DataSourceOptions {
     this.tablePrefix = '',
     this.defaultSchema,
     this.codecs = const {},
-    this.synchronize = false,
     this.logging = false,
     this.logFilePath,
     this.carbonTimezone = 'UTC',
@@ -79,10 +78,6 @@ class DataSourceOptions {
   /// Additional value codecs to register beyond the standard set.
   final Map<String, ValueCodec<dynamic>> codecs;
 
-  /// Whether to automatically synchronize the database schema.
-  /// WARNING: Not recommended for production use.
-  final bool synchronize;
-
   /// Whether to enable query logging and default contextual query logs.
   final bool logging;
 
@@ -116,7 +111,6 @@ class DataSourceOptions {
     String? tablePrefix,
     String? defaultSchema,
     Map<String, ValueCodec<dynamic>>? codecs,
-    bool? synchronize,
     bool? logging,
     String? logFilePath,
     String? carbonTimezone,
@@ -132,7 +126,6 @@ class DataSourceOptions {
     tablePrefix: tablePrefix ?? this.tablePrefix,
     defaultSchema: defaultSchema ?? this.defaultSchema,
     codecs: codecs ?? this.codecs,
-    synchronize: synchronize ?? this.synchronize,
     logging: logging ?? this.logging,
     logFilePath: logFilePath ?? this.logFilePath,
     carbonTimezone: carbonTimezone ?? this.carbonTimezone,

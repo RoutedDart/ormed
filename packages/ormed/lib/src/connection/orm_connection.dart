@@ -370,6 +370,7 @@ class OrmConnection implements ConnectionResolver {
     final ledger = SqlMigrationLedger(
       _driver,
       tableName: tableName ?? 'orm_migrations',
+      tablePrefix: config.tablePrefix,
     );
     await ledger.ensureInitialized();
   }

@@ -161,6 +161,34 @@ void main() {
       expect(builder.columnType('users', 'email'), equals('TEXT'));
       expect(builder.tableListing(schemaQualified: false), contains('users'));
     });
+
+    test('applies table prefix to schema mutations', () {
+      final builder = SchemaBuilder(tablePrefix: 'app_');
+      builder.create('users', (table) {
+        table.id();
+      });
+      builder.rename('users', 'accounts');
+      builder.drop('sessions');
+
+      final plan = builder.build();
+      expect(plan.mutations, hasLength(3));
+      expect(plan.mutations[0].table, 'app_users');
+      expect(plan.mutations[1].rename?.from, 'app_users');
+      expect(plan.mutations[1].rename?.to, 'app_accounts');
+      expect(plan.mutations[2].dropOptions?.table, 'app_sessions');
+    });
+
+    test('skips prefix for schema-qualified tables', () {
+      final builder = SchemaBuilder(tablePrefix: 'app_');
+      builder.create('users', (table) {
+        table.id();
+      }, schema: 'public');
+
+      final plan = builder.build();
+      expect(plan.mutations, hasLength(1));
+      expect(plan.mutations.first.table, 'users');
+      expect(plan.mutations.first.blueprint?.schema, 'public');
+    });
   });
 
   test('migration descriptor computes deterministic checksum', () {

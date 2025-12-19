@@ -18,6 +18,7 @@ class RelationLoader {
   ValueCodecRegistry get _codecRegistry => context.codecRegistry;
 
   String get _driverName => context.driver.metadata.name;
+  String? get _tablePrefix => context.connectionTablePrefix;
 
   /// Populates [parents] with the relations declared in [relations].
   ///
@@ -118,6 +119,7 @@ class RelationLoader {
     final childPlan = QueryPlan(
       definition: targetDefinition,
       driverName: _driverName,
+      tablePrefix: _tablePrefix,
       filters: [
         FilterClause(
           field: foreignKey,
@@ -177,6 +179,7 @@ class RelationLoader {
     final targetPlan = QueryPlan(
       definition: targetDefinition,
       driverName: _driverName,
+      tablePrefix: _tablePrefix,
       filters: [
         FilterClause(
           field: ownerKey,
@@ -238,6 +241,7 @@ class RelationLoader {
     final pivotPlan = QueryPlan(
       definition: pivotDefinition,
       driverName: _driverName,
+      tablePrefix: _tablePrefix,
       filters: [
         FilterClause(
           field: pivotParentColumn,
@@ -271,6 +275,7 @@ class RelationLoader {
     final targetPlan = QueryPlan(
       definition: targetDefinition,
       driverName: _driverName,
+      tablePrefix: _tablePrefix,
       filters: [
         FilterClause(
           field: targetKey,
@@ -331,6 +336,7 @@ class RelationLoader {
     final childPlan = QueryPlan(
       definition: targetDefinition,
       driverName: _driverName,
+      tablePrefix: _tablePrefix,
       filters: [
         FilterClause(
           field: foreignKey,
