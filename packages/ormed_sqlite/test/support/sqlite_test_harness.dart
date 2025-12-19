@@ -70,9 +70,6 @@ Future<SqliteTestHarness> createSqliteTestHarness({
   );
 
   await dataSource.init();
-  if (logging) {
-    dataSource.enableQueryLog();
-  }
 
   setUpOrmed(
     dataSource: dataSource,

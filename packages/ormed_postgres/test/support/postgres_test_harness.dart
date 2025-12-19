@@ -164,9 +164,6 @@ Future<PostgresTestHarness> createPostgresTestHarness({
   );
 
   await dataSource.init();
-  if (logging) {
-    dataSource.enableQueryLog();
-  }
 
   setUpOrmed(
     dataSource: dataSource,

@@ -138,10 +138,6 @@ Future<MariaDbTestHarness> createMariaDbTestHarness({
 
   await dataSource.init();
 
-  if (logging) {
-    dataSource.enableQueryLog();
-  }
-
   setUpOrmed(
     dataSource: dataSource,
     migrationDescriptors: driverTestMigrationEntries

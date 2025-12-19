@@ -8,6 +8,7 @@
 /// or QueryContext.
 library;
 
+import 'package:contextual/contextual.dart' as contextual;
 import 'package:driver_tests/driver_tests.dart';
 import 'package:ormed/ormed.dart';
 import 'package:test/test.dart';
@@ -134,6 +135,26 @@ void main() {
       expect(events.first.sql, isNotEmpty);
       expect(events.first.time, greaterThanOrEqualTo(0));
       expect(events.first.connection, same(connection));
+    });
+
+    test('default contextual logger emits query logs', () async {
+      final logger = contextual.Logger(defaultChannelEnabled: false);
+      final entries = <contextual.LogEntry>[];
+      final subscription = logger.onRecord.listen(entries.add);
+
+      connection.attachDefaultContextualLogger(logger: logger);
+      await connection.query<Author>().get();
+      await Future<void>.delayed(const Duration(milliseconds: 1));
+
+      expect(entries, hasLength(1));
+      final entry = entries.single;
+      expect(entry.record.message, contains('<in-memory>'));
+      final context = entry.record.context.visible();
+      expect(context['connection'], 'test');
+      expect(context['duration_ms'], isNotNull);
+      expect(context['succeeded'], isTrue);
+
+      await subscription.cancel();
     });
 
     test('enableQueryLog captures queries', () async {

@@ -33,6 +33,7 @@ class DataSourceOptions {
     this.codecs = const {},
     this.synchronize = false,
     this.logging = false,
+    this.logFilePath,
     this.carbonTimezone = 'UTC',
     this.carbonLocale = 'en_US',
     this.enableNamedTimezones = false,
@@ -82,8 +83,14 @@ class DataSourceOptions {
   /// WARNING: Not recommended for production use.
   final bool synchronize;
 
-  /// Whether to enable query logging.
+  /// Whether to enable query logging and default contextual query logs.
   final bool logging;
+
+  /// Optional base file path for contextual logging output.
+  ///
+  /// When set, query logs are written to daily rotating log files at this path.
+  /// Example: "logs/ormed" yields "logs/ormed-YYYY-MM-DD.log".
+  final String? logFilePath;
 
   /// Default timezone for Carbon date/time instances.
   /// Defaults to 'UTC'. Use 'America/New_York', 'Europe/London', etc.
@@ -111,6 +118,7 @@ class DataSourceOptions {
     Map<String, ValueCodec<dynamic>>? codecs,
     bool? synchronize,
     bool? logging,
+    String? logFilePath,
     String? carbonTimezone,
     String? carbonLocale,
     bool? enableNamedTimezones,
@@ -126,6 +134,7 @@ class DataSourceOptions {
     codecs: codecs ?? this.codecs,
     synchronize: synchronize ?? this.synchronize,
     logging: logging ?? this.logging,
+    logFilePath: logFilePath ?? this.logFilePath,
     carbonTimezone: carbonTimezone ?? this.carbonTimezone,
     carbonLocale: carbonLocale ?? this.carbonLocale,
     enableNamedTimezones: enableNamedTimezones ?? this.enableNamedTimezones,
@@ -295,6 +304,9 @@ class DataSource {
     // Enable logging if requested
     if (options.logging) {
       _connection!.enableQueryLog();
+      _connection!.attachDefaultContextualLogger(
+        logFilePath: options.logFilePath,
+      );
     }
 
     // Mark as initialized BEFORE registering (registration may access connection)

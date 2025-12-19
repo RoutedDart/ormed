@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:contextual/contextual.dart' as contextual;
 import 'package:ormed/src/model/model.dart';
 
 import '../contracts.dart';
@@ -109,6 +110,7 @@ class OrmConnection implements ConnectionResolver {
   bool _loggingQueries = false;
   bool _includeLogParameters = true;
   double _totalQueryDuration = 0.0;
+  void Function()? _defaultContextualLoggerUnsubscribe;
 
   final List<QueryLogEntry> _queryLog = [];
 
@@ -175,6 +177,61 @@ class OrmConnection implements ConnectionResolver {
     if (clear) {
       _queryLog.clear();
     }
+  }
+
+  /// Attaches the default contextual logger for query events.
+  ///
+  /// This is used when [DataSourceOptions.logging] is enabled to emit
+  /// structured query logs without requiring user callbacks.
+  void attachDefaultContextualLogger({
+    contextual.Logger? logger,
+    String? logFilePath,
+  }) {
+    if (_defaultContextualLoggerUnsubscribe != null) {
+      return;
+    }
+    final resolvedLogger =
+        logger ?? _buildDefaultContextualLogger(logFilePath: logFilePath);
+    _defaultContextualLoggerUnsubscribe = listen((event) {
+      final context = contextual.Context({
+        'connection': name,
+        if (database != null) 'database': database,
+        'duration_ms': event.time,
+        'succeeded': event.succeeded,
+        if (event.rowCount != null) 'row_count': event.rowCount,
+      });
+      if (event.error != null) {
+        context.add('error', event.error.toString());
+      }
+      if (event.stackTrace != null) {
+        context.add('stack_trace', event.stackTrace.toString());
+      }
+
+      if (event.succeeded) {
+        resolvedLogger.info(event.sql, context);
+      } else {
+        resolvedLogger.error(event.sql, context);
+      }
+    });
+  }
+
+  contextual.Logger _buildDefaultContextualLogger({String? logFilePath}) {
+    final logger = contextual.Logger()
+      ..withContext({'prefix': 'ormed'})
+      ..addChannel(
+        'console',
+        contextual.ConsoleLogDriver(),
+        formatter: contextual.PrettyLogFormatter(),
+      );
+    final resolvedPath = logFilePath?.trim();
+    if (resolvedPath != null && resolvedPath.isNotEmpty) {
+      logger.addChannel(
+        'file',
+        contextual.DailyFileLogDriver(resolvedPath),
+        formatter: contextual.PlainTextLogFormatter(),
+      );
+    }
+    return logger;
   }
 
   /// Disables query logging and optionally clears existing entries.
