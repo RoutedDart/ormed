@@ -5,12 +5,16 @@ import 'dart:math' as math;
 
 import 'package:artisan_args/src/style/color.dart';
 import 'package:artisan_args/src/style/style.dart';
+import 'package:artisan_args/src/tui/view.dart';
+import 'package:artisan_args/src/tui/uv/cursor.dart';
+import 'package:artisan_args/src/tui/uv/geometry.dart';
 import '../component.dart';
 import '../msg.dart';
 import '../cmd.dart';
 import '../key.dart';
 import 'key_binding.dart';
 import 'runeutil.dart';
+import 'cursor.dart';
 import '../../unicode/grapheme.dart' as uni;
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -38,18 +42,20 @@ class LineInfo {
 }
 
 class _DisplayLine {
-  _DisplayLine(this.text, {this.hasCursor = false, this.rowIndex = 0});
+  _DisplayLine(this.text,
+      {this.hasCursor = false, this.rowIndex = 0, this.charOffset = 0});
 
   final String text;
   final bool hasCursor;
   final int rowIndex;
+  final int charOffset;
 }
 
 typedef PromptInfo = ({int lineIndex, bool isFocused, int row, int col});
 typedef PromptFunc = String Function(PromptInfo info);
 
-class TextAreaStyle {
-  TextAreaStyle({
+class TextAreaStyleState {
+  TextAreaStyleState({
     Style? base,
     Style? cursorLine,
     Style? cursorLineNumber,
@@ -67,16 +73,25 @@ class TextAreaStyle {
        prompt = prompt ?? Style(),
        text = text ?? Style();
 
-  final Style base;
-  final Style cursorLine;
-  final Style cursorLineNumber;
-  final Style endOfBuffer;
-  final Style lineNumber;
-  final Style placeholder;
-  final Style prompt;
-  final Style text;
+  Style base;
+  Style cursorLine;
+  Style cursorLineNumber;
+  Style endOfBuffer;
+  Style lineNumber;
+  Style placeholder;
+  Style prompt;
+  Style text;
 
-  TextAreaStyle copyWith({
+  Style get computedCursorLine => cursorLine.inherit(base).inline(true);
+  Style get computedCursorLineNumber =>
+      cursorLineNumber.inherit(computedCursorLine).inherit(base).inline(true);
+  Style get computedEndOfBuffer => endOfBuffer.inherit(base).inline(true);
+  Style get computedLineNumber => lineNumber.inherit(base).inline(true);
+  Style get computedPlaceholder => placeholder.inherit(base).inline(true);
+  Style get computedPrompt => prompt.inherit(base).inline(true);
+  Style get computedText => text.inherit(base).inline(true);
+
+  TextAreaStyleState copyWith({
     Style? base,
     Style? cursorLine,
     Style? cursorLineNumber,
@@ -86,7 +101,7 @@ class TextAreaStyle {
     Style? prompt,
     Style? text,
   }) {
-    return TextAreaStyle(
+    return TextAreaStyleState(
       base: base ?? this.base,
       cursorLine: cursorLine ?? this.cursorLine,
       cursorLineNumber: cursorLineNumber ?? this.cursorLineNumber,
@@ -99,25 +114,61 @@ class TextAreaStyle {
   }
 }
 
-TextAreaStyle defaultFocusedStyle() => TextAreaStyle(
-  cursorLine: Style().background(const AnsiColor(0)),
-  cursorLineNumber: Style().foreground(const AnsiColor(240)),
-  endOfBuffer: Style().foreground(const AnsiColor(0)),
-  lineNumber: Style().foreground(const AnsiColor(249)),
-  placeholder: Style().foreground(const AnsiColor(240)),
-  prompt: Style().foreground(const AnsiColor(7)),
-  text: Style(),
-);
+class TextAreaCursorStyle {
+  TextAreaCursorStyle({
+    this.color,
+    this.shape = CursorShape.block,
+    this.blink = true,
+    this.blinkSpeed = const Duration(milliseconds: 500),
+  });
 
-TextAreaStyle defaultBlurredStyle() => TextAreaStyle(
-  cursorLine: Style().foreground(const AnsiColor(245)),
-  cursorLineNumber: Style().foreground(const AnsiColor(249)),
-  endOfBuffer: Style().foreground(const AnsiColor(0)),
-  lineNumber: Style().foreground(const AnsiColor(249)),
-  placeholder: Style().foreground(const AnsiColor(240)),
-  prompt: Style().foreground(const AnsiColor(7)),
-  text: Style().foreground(const AnsiColor(245)),
-);
+  Color? color;
+  CursorShape shape;
+  bool blink;
+  Duration blinkSpeed;
+}
+
+class TextAreaStyles {
+  TextAreaStyles({
+    TextAreaStyleState? focused,
+    TextAreaStyleState? blurred,
+    TextAreaCursorStyle? cursor,
+  }) : focused = focused ?? TextAreaStyleState(),
+       blurred = blurred ?? TextAreaStyleState(),
+       cursor = cursor ?? TextAreaCursorStyle();
+
+  TextAreaStyleState focused;
+  TextAreaStyleState blurred;
+  TextAreaCursorStyle cursor;
+}
+
+TextAreaStyles defaultTextAreaStyles() {
+  return TextAreaStyles(
+    focused: TextAreaStyleState(
+      cursorLine: Style().background(const AnsiColor(0)),
+      cursorLineNumber: Style().foreground(const AnsiColor(240)),
+      endOfBuffer: Style().foreground(const AnsiColor(0)),
+      lineNumber: Style().foreground(const AnsiColor(249)),
+      placeholder: Style().foreground(const AnsiColor(240)),
+      prompt: Style().foreground(const AnsiColor(7)),
+      text: Style(),
+    ),
+    blurred: TextAreaStyleState(
+      cursorLine: Style().foreground(const AnsiColor(245)),
+      cursorLineNumber: Style().foreground(const AnsiColor(249)),
+      endOfBuffer: Style().foreground(const AnsiColor(0)),
+      lineNumber: Style().foreground(const AnsiColor(249)),
+      placeholder: Style().foreground(const AnsiColor(240)),
+      prompt: Style().foreground(const AnsiColor(7)),
+      text: Style().foreground(const AnsiColor(245)),
+    ),
+    cursor: TextAreaCursorStyle(
+      color: const AnsiColor(7),
+      shape: CursorShape.block,
+      blink: true,
+    ),
+  );
+}
 
 class TextAreaPasteMsg implements Msg {
   TextAreaPasteMsg(this.content);
@@ -353,11 +404,17 @@ class TextAreaModel extends ViewComponent {
     this.softWrap = false,
     int width = 0,
     int height = 6,
+    this.useVirtualCursor = true,
     TextAreaKeyMap? keyMap,
+    CursorModel? cursor,
+    TextAreaStyles? styles,
   }) : keyMap = keyMap ?? TextAreaKeyMap(),
+       cursor = cursor ?? CursorModel(),
+       styles = styles ?? defaultTextAreaStyles(),
        _width = width,
        _height = height {
     _lines = [[]];
+    _updateVirtualCursorStyle();
   }
 
   String prompt;
@@ -368,8 +425,15 @@ class TextAreaModel extends ViewComponent {
   bool softWrap;
   TextAreaKeyMap keyMap;
 
-  TextAreaStyle focusedStyle = defaultFocusedStyle();
-  TextAreaStyle blurredStyle = defaultBlurredStyle();
+  /// Whether to use a virtual cursor. If false, use [terminalCursor] to return
+  /// a real cursor for rendering.
+  bool useVirtualCursor;
+
+  /// Cursor model.
+  CursorModel cursor;
+
+  /// Styles for the textarea.
+  TextAreaStyles styles;
 
   bool _focused = false;
   late List<List<String>> _lines;
@@ -440,12 +504,71 @@ class TextAreaModel extends ViewComponent {
   /// Focuses the textarea.
   Cmd? focus() {
     _focused = true;
-    return null;
+    final (newCursor, cmd) = cursor.focus();
+    cursor = newCursor;
+    _updateVirtualCursorStyle();
+    return cmd;
   }
 
   /// Blurs the textarea.
   void blur() {
     _focused = false;
+    cursor = cursor.blur();
+    _updateVirtualCursorStyle();
+  }
+
+  /// Returns the appropriate style state based on focus.
+  TextAreaStyleState activeStyle() => _focused ? styles.focused : styles.blurred;
+
+  /// Returns a [Cursor] for rendering a real cursor in a TUI program.
+  /// This requires that [useVirtualCursor] is set to false.
+  Cursor? get terminalCursor {
+    if (useVirtualCursor || !_focused) return null;
+
+    // This is a simplified calculation. Real textarea would need to account
+    // for scrolling, line numbers, and soft wrapping.
+    final promptWidth = _getPromptWidth(0);
+    final x = _col + promptWidth;
+    final y = _row;
+
+    return Cursor(
+      position: Position(x, y),
+      color: styles.cursor.color,
+      shape: styles.cursor.shape,
+      blink: styles.cursor.blink,
+    );
+  }
+
+  void _updateVirtualCursorStyle() {
+    if (!useVirtualCursor) {
+      final (newCursor, _) = cursor.setMode(CursorMode.hide);
+      cursor = newCursor;
+      return;
+    }
+
+    cursor = cursor.copyWith(
+      style: Style().foreground(styles.cursor.color!),
+    );
+
+    if (styles.cursor.blink) {
+      final (newCursor, _) = cursor.setMode(CursorMode.blink);
+      cursor = newCursor;
+    } else {
+      final (newCursor, _) = cursor.setMode(CursorMode.static);
+      cursor = newCursor;
+    }
+  }
+
+  int _getPromptWidth(int lineIndex) {
+    if (_promptWidth != null) return _promptWidth!;
+    if (promptFunc != null) {
+      return stringWidth(
+        promptFunc!(
+          (lineIndex: lineIndex, isFocused: _focused, row: _row, col: _col),
+        ),
+      );
+    }
+    return stringWidth(prompt);
   }
 
   /// Returns whether the textarea is focused.
@@ -796,11 +919,10 @@ class TextAreaModel extends ViewComponent {
   }
 
   @override
-  String view() {
-    final style = _focused ? focusedStyle : blurredStyle;
+  Object view() {
+    final style = activeStyle();
     final lineNumberDigits = showLineNumbers ? '${_lines.length}'.length : 0;
     final displayLines = _softWrappedLines(lineNumberDigits);
-    final lines = displayLines;
     final buffer = StringBuffer();
 
     if (value.isEmpty && placeholder.isNotEmpty) {
@@ -811,11 +933,11 @@ class TextAreaModel extends ViewComponent {
             col: _col
           )) ??
           prompt;
-      final ph = style.placeholder.render(placeholder);
-      buffer.write('${style.prompt.render(p)}$ph');
+      final ph = style.computedPlaceholder.render(placeholder);
+      buffer.write('${style.computedPrompt.render(p)}$ph');
     } else {
-      for (var i = 0; i < lines.length; i++) {
-        final displayLine = lines[i];
+      for (var i = 0; i < displayLines.length; i++) {
+        final displayLine = displayLines[i];
         final p = promptFunc?.call((
               lineIndex: i,
               isFocused: _focused,
@@ -825,7 +947,7 @@ class TextAreaModel extends ViewComponent {
             prompt;
 
         final lnNumber = showLineNumbers
-            ? style.lineNumber.render(
+            ? style.computedLineNumber.render(
                 '${(displayLine.rowIndex + 1).toString().padLeft(lineNumberDigits)} ',
               )
             : '';
@@ -858,35 +980,68 @@ class TextAreaModel extends ViewComponent {
             endX = endX.clamp(0, lineBody.length);
 
             if (startX < endX) {
-              final selectionStyle = Style().background(const AnsiColor(7)).foreground(const AnsiColor(0));
+              final selectionStyle = Style()
+                  .background(const AnsiColor(7))
+                  .foreground(const AnsiColor(0));
               final before = lineBody.substring(0, startX);
-              final selected = selectionStyle.render(lineBody.substring(startX, endX));
+              final selected =
+                  selectionStyle.render(lineBody.substring(startX, endX));
               final after = lineBody.substring(endX);
               lineBody = '$before$selected$after';
             }
           }
         }
 
-        final renderedLine = displayLine.hasCursor
-            ? style.cursorLine.render(lineBody)
+        if (displayLine.hasCursor && useVirtualCursor) {
+          final cursorCol =
+              (_col - displayLine.charOffset).clamp(0, lineBody.length);
+          final gs = uni.graphemes(lineBody).toList();
+          var rendered = '';
+          for (var j = 0; j < gs.length; j++) {
+            if (j == cursorCol) {
+              cursor = cursor.setChar(gs[j]);
+              rendered += cursor.view();
+            } else {
+              rendered += style.computedText.render(gs[j]);
+            }
+          }
+          if (cursorCol >= gs.length) {
+            cursor = cursor.setChar(' ');
+            rendered += cursor.view();
+          }
+          lineBody = rendered;
+        } else {
+          lineBody = style.computedText.render(lineBody);
+        }
+
+        final renderedLine = displayLine.hasCursor && !useVirtualCursor
+            ? style.computedCursorLine.render(lineBody)
             : lineBody;
+
         buffer.writeln(
-          '${style.prompt.render(p)}$lnNumber${style.text.render(renderedLine)}',
+          '${style.computedPrompt.render(p)}$lnNumber$renderedLine',
         );
       }
 
       // end of buffer indicator
-      final remaining = (_height - lines.length);
+      final remaining = (_height - displayLines.length);
       if (remaining > 0) {
-        final eob = style.endOfBuffer.render('~');
+        final eob = style.computedEndOfBuffer.render('~');
         for (var i = 0; i < remaining; i++) {
           buffer.writeln(eob);
         }
       }
     }
 
-    final str = buffer.toString().trimRight();
-    return str.isEmpty ? style.prompt.render(prompt) : str;
+    final content = buffer.toString().trimRight();
+    if (useVirtualCursor || !_focused) {
+      return content;
+    }
+
+    return View(
+      content: content,
+      cursor: terminalCursor,
+    );
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -916,6 +1071,7 @@ class TextAreaModel extends ViewComponent {
           line.join(),
           hasCursor: rowIndex == _row,
           rowIndex: rowIndex,
+          charOffset: 0,
         ));
         continue;
       }
@@ -941,13 +1097,15 @@ class TextAreaModel extends ViewComponent {
         final hasCursor =
             _row == rowIndex && cursorCol >= start && cursorCol <= end;
 
-        result.add(_DisplayLine(segment, hasCursor: hasCursor, rowIndex: rowIndex));
+        result.add(_DisplayLine(segment,
+            hasCursor: hasCursor, rowIndex: rowIndex, charOffset: start));
         start = end;
       }
 
       if (line.isEmpty) {
         // Preserve empty lines when soft wrapping is on.
-        result.add(_DisplayLine('', hasCursor: rowIndex == _row, rowIndex: rowIndex));
+        result.add(_DisplayLine('',
+            hasCursor: rowIndex == _row, rowIndex: rowIndex, charOffset: 0));
       }
     }
 

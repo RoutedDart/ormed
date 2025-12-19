@@ -2,6 +2,7 @@ import 'package:artisan_args/src/tui/bubbles/textarea.dart';
 import 'package:artisan_args/src/tui/component.dart';
 import 'package:artisan_args/src/tui/key.dart';
 import 'package:artisan_args/src/tui/msg.dart';
+import 'package:artisan_args/src/terminal/ansi.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -337,7 +338,7 @@ void main() {
       test('soft wrap splits long lines', () {
         final textarea = TextAreaModel(softWrap: true, width: 10, height: 4);
         textarea.insertString('long line of text');
-        final view = textarea.view();
+        final view = textarea.view() as String;
         expect(view.split('\n').length, greaterThan(1));
       });
     });
@@ -345,13 +346,13 @@ void main() {
     group('View', () {
       test('shows prompt', () {
         final textarea = TextAreaModel(prompt: '> ');
-        final view = textarea.view();
+        final view = textarea.view() as String;
         expect(view, contains('>'));
       });
 
       test('shows placeholder when empty', () {
         final textarea = TextAreaModel(placeholder: 'Type here');
-        final view = textarea.view();
+        final view = textarea.view() as String;
         // Placeholder is styled, so check for partial match
         expect(view.contains('ype here') || view.contains('Type'), isTrue);
       });
@@ -359,14 +360,14 @@ void main() {
       test('shows content when not empty', () {
         final textarea = TextAreaModel(placeholder: 'Type here');
         textarea.insertString('content');
-        final view = textarea.view();
-        expect(view, contains('content'));
+        final view = textarea.view() as String;
+        expect(Ansi.stripAnsi(view), contains('content'));
       });
 
       test('shows line numbers when enabled', () {
         final textarea = TextAreaModel(showLineNumbers: true);
         textarea.value = 'line1\nline2';
-        final view = textarea.view();
+        final view = textarea.view() as String;
         expect(view, contains('1'));
       });
     });
@@ -505,25 +506,20 @@ void main() {
     });
   });
 
-  group('TextAreaStyle', () {
+  group('TextAreaStyles', () {
     test('creates with defaults', () {
-      final style = TextAreaStyle();
-      expect(style.base, isNotNull);
-      expect(style.cursorLine, isNotNull);
-      expect(style.lineNumber, isNotNull);
-      expect(style.text, isNotNull);
+      final styles = TextAreaStyles();
+      expect(styles.focused, isNotNull);
+      expect(styles.blurred, isNotNull);
+      expect(styles.cursor, isNotNull);
     });
   });
 
   group('Default Styles', () {
-    test('provides focused style', () {
-      final style = defaultFocusedStyle();
-      expect(style, isNotNull);
-    });
-
-    test('provides blurred style', () {
-      final style = defaultBlurredStyle();
-      expect(style, isNotNull);
+    test('provides focused and blurred styles', () {
+      final styles = defaultTextAreaStyles();
+      expect(styles.focused, isNotNull);
+      expect(styles.blurred, isNotNull);
     });
   });
 

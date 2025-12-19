@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:artisan_args/src/terminal/ansi.dart';
 import 'package:artisan_args/src/tui/bubbles/filepicker.dart';
 import 'package:artisan_args/src/tui/key.dart';
 import 'package:artisan_args/src/tui/msg.dart';
@@ -287,7 +288,7 @@ void main() {
       test('shows empty directory message when no files', () {
         final picker = FilePickerModel(currentDirectory: '/tmp', height: 5);
         final view = picker.view();
-        expect(view, contains('Folder is empty'));
+        expect(Ansi.stripAnsi(view), contains('Bummer. No Files Found.'));
       });
 
       test('renders files', () {

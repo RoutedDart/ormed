@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:artisan_args/src/style/style.dart';
 import 'package:artisan_args/src/style/color.dart';
+import 'package:artisan_args/src/style/blending.dart' as blending;
 import 'package:artisan_args/src/tui/harmonica.dart' as hz;
 
 import '../cmd.dart';
@@ -114,12 +115,13 @@ class ProgressModel extends ViewComponent {
   /// Creates a new progress bar model.
   ProgressModel({
     this.width = _defaultWidth,
-    this.full = defaultFullCharFullBlock,
+    this.full = defaultFullCharHalfBlock,
     this.fullColor = '#7571F9',
     this.empty = defaultEmptyCharBlock,
     this.emptyColor = '#606060',
     this.showPercentage = true,
     this.percentFormat = ' %3.0f%%',
+    Style? percentageStyle,
     this.frequency = _defaultFrequency,
     this.damping = _defaultDamping,
     this.useGradient = false,
@@ -138,7 +140,8 @@ class ProgressModel extends ViewComponent {
     double pulseOffset = 0,
     int? id,
     int tag = 0,
-  }) : _spring = _Spring(frequency: frequency, damping: damping),
+  }) : percentageStyle = percentageStyle ?? Style(),
+       _spring = _Spring(frequency: frequency, damping: damping),
        _percentShown = percentShown,
        _targetPercent = targetPercent,
        _velocity = velocity,
@@ -166,6 +169,9 @@ class ProgressModel extends ViewComponent {
 
   /// Format string for the percentage (e.g., " %3.0f%%").
   final String percentFormat;
+
+  /// Style for the percentage text.
+  final Style percentageStyle;
 
   /// Spring frequency (speed).
   final double frequency;
@@ -260,6 +266,14 @@ class ProgressModel extends ViewComponent {
     );
   }
 
+  /// Returns a copy of the model with the given color function.
+  ProgressModel withColorFunc(ColorFunc fn) {
+    return copyWith(
+      colorFunc: fn,
+      blend: [],
+    );
+  }
+
   /// Whether the progress bar is currently animating.
   bool get isAnimating {
     if (indeterminate) return true;
@@ -292,6 +306,7 @@ class ProgressModel extends ViewComponent {
     String? emptyColor,
     bool? showPercentage,
     String? percentFormat,
+    Style? percentageStyle,
     bool? useGradient,
     String? gradientColorA,
     String? gradientColorB,
@@ -318,6 +333,7 @@ class ProgressModel extends ViewComponent {
       emptyColor: emptyColor ?? this.emptyColor,
       showPercentage: showPercentage ?? this.showPercentage,
       percentFormat: percentFormat ?? this.percentFormat,
+      percentageStyle: percentageStyle ?? this.percentageStyle,
       useGradient: useGradient ?? this.useGradient,
       gradientColorA: gradientColorA ?? this.gradientColorA,
       gradientColorB: gradientColorB ?? this.gradientColorB,
@@ -410,82 +426,79 @@ class ProgressModel extends ViewComponent {
 
   /// Renders the progress bar at the given percentage (static rendering).
   String viewAs(double percent) {
+    final sb = StringBuffer();
     final percentView = indeterminate ? '' : _percentageView(percent);
-    final barView = _barView(percent, percentView.length);
-    return '$barView$percentView';
+    _barView(sb, percent, Style.visibleLength(percentView));
+    sb.write(percentView);
+    return sb.toString();
   }
 
-  String _barView(double percent, int textWidth) {
-    final tw = math.max(0, width - textWidth); // total bar width
+  void _barView(StringBuffer b, double percent, int textWidth) {
+    final tw = math.max(0, width - textWidth);
+    if (tw <= 0) return;
 
     if (indeterminate) {
-      return _indeterminateBarView(tw, percent);
+      _renderIndeterminate(b, tw, percent);
+      return;
     }
 
-    if (tw <= 0) return '';
+    var fw = (tw * percent).round();
+    fw = math.max(0, math.min(tw, fw));
 
-    var fw = (tw * percent).round(); // filled width
-    fw = fw.clamp(0, tw);
-
-    final buffer = StringBuffer();
     final isHalfBlock = full == defaultFullCharHalfBlock;
 
     if (colorFunc != null) {
       final halfBlockPerc = 0.5 / tw;
       for (var i = 0; i < fw; i++) {
         final current = i / tw;
-        final fg = colorFunc!(percent, current);
-        var style = Style().foreground(fg);
+        var style = Style().foreground(colorFunc!(percent, current));
         if (isHalfBlock) {
-          final bg = colorFunc!(percent, math.min(current + halfBlockPerc, 1.0));
-          style = style.background(bg);
+          style = style.background(
+              colorFunc!(percent, math.min(current + halfBlockPerc, 1.0)));
         }
-        buffer.write(style.render(full));
+        b.write(style.render(full));
       }
     } else if (blend.isNotEmpty || useGradient) {
-      final colors = blend.isNotEmpty ? blend : [gradientColorA, gradientColorB];
-      final scale = blend.isNotEmpty ? scaleBlend : scaleGradient;
-      final multiplier = isHalfBlock ? 2 : 1;
-      final totalSteps = (scale ? fw : tw) * multiplier;
+      final colors = blend.isNotEmpty
+          ? blend.map((c) => BasicColor(c)).toList()
+          : [BasicColor(gradientColorA), BasicColor(gradientColorB)];
 
+      final multiplier = isHalfBlock ? 2 : 1;
+      final scale = blend.isNotEmpty ? scaleBlend : scaleGradient;
+      final blendCount = scale ? fw * multiplier : tw * multiplier;
+
+      final blended = blending.blend1D(
+        math.max(1, blendCount),
+        colors,
+        hasDarkBackground: true,
+      );
+
+      var blendIndex = 0;
       for (var i = 0; i < fw; i++) {
         if (!isHalfBlock) {
-          final p = i / (totalSteps > 1 ? totalSteps - 1 : 1);
-          final color = _interpolateColors(colors, p);
-          buffer.write(_colorize(full, color));
-        } else {
-          final p1 = (i * 2) / (totalSteps > 1 ? totalSteps - 1 : 1);
-          final p2 = (i * 2 + 1) / (totalSteps > 1 ? totalSteps - 1 : 1);
-          final fg = _interpolateColors(colors, p1);
-          final bg = _interpolateColors(colors, p2);
-          buffer.write(
-            Style()
-                .foreground(BasicColor(fg))
-                .background(BasicColor(bg))
-                .render(full),
-          );
+          b.write(Style().foreground(blended[i]).render(full));
+          continue;
         }
+
+        b.write(Style()
+            .foreground(blended[blendIndex])
+            .background(blended[blendIndex + 1])
+            .render(full));
+        blendIndex += 2;
       }
     } else {
       // Solid fill
-      final colored = _colorize(full, fullColor);
-      for (var i = 0; i < fw; i++) {
-        buffer.write(colored);
-      }
+      b.write(Style().foreground(BasicColor(fullColor)).render(full * fw));
     }
 
     // Empty fill
-    final emptyColored = _colorize(empty, emptyColor);
-    final emptyCount = math.max(0, tw - fw);
-    for (var i = 0; i < emptyCount; i++) {
-      buffer.write(emptyColored);
+    final n = math.max(0, tw - fw);
+    if (n > 0) {
+      b.write(Style().foreground(BasicColor(emptyColor)).render(empty * n));
     }
-
-    return buffer.toString();
   }
 
-  String _indeterminateBarView(int tw, double offset) {
-    final buffer = StringBuffer();
+  void _renderIndeterminate(StringBuffer b, int tw, double offset) {
     final pw = (tw * pulseWidth).round().clamp(1, tw);
     final start = (tw * offset).round();
     final isHalfBlock = full == defaultFullCharHalfBlock;
@@ -502,16 +515,15 @@ class ProgressModel extends ViewComponent {
       if (inPulse) {
         if (colorFunc != null) {
           final current = i / tw;
-          final fg = colorFunc!(1.0, current);
-          var style = Style().foreground(fg);
+          var style = Style().foreground(colorFunc!(1.0, current));
           if (isHalfBlock) {
-            final bg = colorFunc!(1.0, math.min(current + 0.5 / tw, 1.0));
-            style = style.background(bg);
+            style = style.background(colorFunc!(1.0, math.min(current + 0.5 / tw, 1.0)));
           }
-          buffer.write(style.render(full));
+          b.write(style.render(full));
         } else if (blend.isNotEmpty || useGradient) {
-          final colors =
-              blend.isNotEmpty ? blend : [gradientColorA, gradientColorB];
+          final colors = blend.isNotEmpty
+              ? blend.map((c) => BasicColor(c)).toList()
+              : [BasicColor(gradientColorA), BasicColor(gradientColorB)];
           // Calculate relative position in pulse for gradient
           var rel = 0.0;
           if (i >= start) {
@@ -521,26 +533,24 @@ class ProgressModel extends ViewComponent {
           }
 
           if (!isHalfBlock) {
-            final color = _interpolateColors(colors, rel);
-            buffer.write(_colorize(full, color));
+            final blended = blending.blend1D(pw, colors, hasDarkBackground: true);
+            final idx = (rel * (pw - 1)).round().clamp(0, pw - 1);
+            b.write(Style().foreground(blended[idx]).render(full));
           } else {
-            final fg = _interpolateColors(colors, rel);
-            final bg = _interpolateColors(colors, math.min(rel + 1.0 / pw, 1.0));
-            buffer.write(
-              Style()
-                  .foreground(BasicColor(fg))
-                  .background(BasicColor(bg))
-                  .render(full),
-            );
+            final blended = blending.blend1D(pw * 2, colors, hasDarkBackground: true);
+            final idx = (rel * (pw * 2 - 1)).round().clamp(0, pw * 2 - 2);
+            b.write(Style()
+                .foreground(blended[idx])
+                .background(blended[idx + 1])
+                .render(full));
           }
         } else {
-          buffer.write(_colorize(full, fullColor));
+          b.write(Style().foreground(BasicColor(fullColor)).render(full));
         }
       } else {
-        buffer.write(_colorize(empty, emptyColor));
+        b.write(Style().foreground(BasicColor(emptyColor)).render(empty));
       }
     }
-    return buffer.toString();
   }
 
   String _percentageView(double percent) {
@@ -550,50 +560,7 @@ class ProgressModel extends ViewComponent {
     var result = percentFormat;
     final value = (clamped * 100).toStringAsFixed(0);
     result = result.replaceFirst('%3.0f', value.padLeft(3));
-    return result;
-  }
-
-  /// Applies color to text using the Style class.
-  String _colorize(String text, String hexColor) {
-    return Style().foreground(BasicColor(hexColor)).render(text);
-  }
-
-  /// Parses a hex color to RGB.
-  (int, int, int)? _hexToRgb(String hex) {
-    hex = hex.replaceFirst('#', '');
-    if (hex.length != 6) return null;
-    final r = int.tryParse(hex.substring(0, 2), radix: 16);
-    final g = int.tryParse(hex.substring(2, 4), radix: 16);
-    final b = int.tryParse(hex.substring(4, 6), radix: 16);
-    if (r == null || g == null || b == null) return null;
-    return (r, g, b);
-  }
-
-  /// Interpolates between multiple hex colors.
-  String _interpolateColors(List<String> colors, double p) {
-    if (colors.isEmpty) return fullColor;
-    if (colors.length == 1) return colors[0];
-
-    final count = colors.length - 1;
-    final segment = (p * count).floor().clamp(0, count - 1);
-    final segmentP = (p * count) - segment;
-
-    return _interpolateColor(colors[segment], colors[segment + 1], segmentP);
-  }
-
-  /// Interpolates between two hex colors.
-  String _interpolateColor(String colorA, String colorB, double t) {
-    final rgbA = _hexToRgb(colorA);
-    final rgbB = _hexToRgb(colorB);
-    if (rgbA == null || rgbB == null) return colorA;
-
-    final r = (rgbA.$1 + (rgbB.$1 - rgbA.$1) * t).round().clamp(0, 255);
-    final g = (rgbA.$2 + (rgbB.$2 - rgbA.$2) * t).round().clamp(0, 255);
-    final b = (rgbA.$3 + (rgbB.$3 - rgbA.$3) * t).round().clamp(0, 255);
-
-    return '#${r.toRadixString(16).padLeft(2, '0')}'
-        '${g.toRadixString(16).padLeft(2, '0')}'
-        '${b.toRadixString(16).padLeft(2, '0')}';
+    return percentageStyle.inline(true).render(result);
   }
 }
 

@@ -10,7 +10,7 @@ void main() {
       test('creates with default values', () {
         final progress = ProgressModel();
         expect(progress.width, 40);
-        expect(progress.full, '█');
+        expect(progress.full, '▌');
         expect(progress.empty, '░');
         expect(progress.showPercentage, isTrue);
         expect(progress.percent, 0);

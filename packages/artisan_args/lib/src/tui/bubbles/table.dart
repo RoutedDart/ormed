@@ -8,10 +8,13 @@ library;
 
 import '../../style/style.dart';
 import '../../style/color.dart';
+import '../../style/properties.dart';
+import '../../layout/layout.dart';
 import '../tui.dart';
 import 'key_binding.dart';
 import 'runeutil.dart';
 import 'viewport.dart';
+import 'help.dart';
 
 /// Table column definition.
 class Column {
@@ -178,12 +181,14 @@ class TableModel extends ViewComponent {
     bool focused = false,
     TableKeyMap? keyMap,
     TableStyles? styles,
+    HelpModel? help,
   }) : _columns = columns ?? [],
        _rows = rows ?? [],
        _cursor = 0,
        _focused = focused,
        keyMap = keyMap ?? TableKeyMap(),
-       styles = styles ?? TableStyles.defaults() {
+       styles = styles ?? TableStyles.defaults(),
+       help = help ?? HelpModel() {
     _viewport = ViewportModel(width: 0, height: 20);
     if (height != null) setHeight(height);
     if (width != null) setWidth(width);
@@ -192,6 +197,9 @@ class TableModel extends ViewComponent {
 
   /// Key bindings.
   TableKeyMap keyMap;
+
+  /// Help model.
+  HelpModel help;
 
   /// Table styles.
   TableStyles styles;
@@ -399,9 +407,7 @@ class TableModel extends ViewComponent {
       final rendered = widthStyle.render(truncate(col.title, col.width, '…'));
       cells.add(styles.header.render(rendered));
     }
-    final headerLine = cells.join();
-    final underline = '─' * Style.visibleLength(headerLine);
-    return '$headerLine\n$underline';
+    return Layout.joinHorizontal(VerticalAlign.top, cells);
   }
 
   String _renderRow(int r) {
@@ -419,7 +425,7 @@ class TableModel extends ViewComponent {
       cells.add(styles.cell.render(rendered));
     }
 
-    final row = cells.join();
+    final row = Layout.joinHorizontal(VerticalAlign.top, cells);
 
     if (r == _cursor) {
       return styles.selected.render(row);
@@ -467,10 +473,6 @@ class TableModel extends ViewComponent {
 
   /// Returns the help view for the keymap.
   String helpView() {
-    // Simple help view - could integrate with HelpModel
-    final bindings = keyMap.shortHelp();
-    return bindings
-        .map((b) => '${b.keys.first}: ${b.help.desc}')
-        .join(' \u2022 ');
+    return help.view(keyMap);
   }
 }

@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:artisan_args/artisan_args.dart' show AnsiColor, Style;
+import 'package:artisan_args/src/tui/bubbles/textinput.dart' show defaultTextInputStyles;
 import 'package:artisan_args/tui.dart' as tui;
 
 const _reposUrl = 'https://api.github.com/orgs/charmbracelet/repos';
@@ -120,8 +121,7 @@ AutocompleteModel _initialModel() {
   final ti = tui.TextInputModel(
     placeholder: 'repository',
     prompt: Style().foreground(const AnsiColor(63)).render('charmbracelet/'),
-    textStyle: Style(),
-    completionStyle: Style().foreground(const AnsiColor(63)),
+    styles: defaultTextInputStyles(),
     charLimit: 50,
     width: 20,
     showSuggestions: true,

@@ -1,7 +1,6 @@
 import 'package:artisan_args/src/tui/bubbles/viewport.dart';
 import 'package:artisan_args/src/style/style.dart';
 import 'package:artisan_args/src/style/color.dart';
-import 'package:artisan_args/src/style/ranges.dart' as ranges;
 import 'package:artisan_args/src/tui/component.dart';
 import 'package:artisan_args/src/tui/msg.dart';
 import 'package:test/test.dart';
@@ -121,14 +120,10 @@ void main() {
       test('highlights apply styles', () {
         final viewport = ViewportModel(
           width: 20,
-          highlights: [
-            ranges.StyleRange(
-              0,
-              4,
-              Style().foreground(const AnsiColor(1)),
-            ),
-          ],
-        ).setContent('test line');
+          highlightStyle: Style().foreground(const AnsiColor(1)),
+        ).setContent('test line').setHighlights([
+          [0, 4],
+        ]);
         final view = viewport.view();
         expect(view, contains('\x1b[38;5;1mtest\x1b[m'));
       });
@@ -136,7 +131,7 @@ void main() {
       test('leftGutterFunc customizes gutter', () {
         final viewport = ViewportModel(
           width: 20,
-          leftGutterFunc: (i) => '[${i + 1}] ',
+          leftGutterFunc: (i) => '[${i.index + 1}] ',
         ).setContent('line1');
         final view = viewport.view();
         expect(view, contains('[1] '));
@@ -331,21 +326,23 @@ void main() {
         final content = 'Line 1\n' * 10 + 'Target\n' + 'Line 2\n' * 10;
         final style = Style().bold();
 
-        // Find the cell index of "Target"
+        // Find the index of "Target" in the full content.
         final targetIndex = content.indexOf('Target');
 
         var viewport = ViewportModel(
           width: 20,
           height: 5,
-          highlights: [ranges.StyleRange(targetIndex, targetIndex + 6, style)],
-        ).setContent(content);
+          highlightStyle: style,
+        ).setContent(content).setHighlights([
+          [targetIndex, targetIndex + 6],
+        ]);
 
-        expect(viewport.yOffset, 0);
+        // setHighlights() ensures the current highlight is visible.
+        expect(viewport.yOffset, anyOf(10, 11));
 
         viewport = viewport.highlightNext();
 
-        // Should have scrolled to the line containing "Target"
-        // "Target" is on line 10 (0-indexed)
+        // With only one highlight, highlightNext keeps it selected.
         expect(viewport.yOffset, anyOf(10, 11));
       });
 
@@ -359,16 +356,19 @@ void main() {
         var viewport = ViewportModel(
           width: 20,
           height: 5,
-          highlights: [
-            ranges.StyleRange(t1Idx, t1Idx + 8, style),
-            ranges.StyleRange(t2Idx, t2Idx + 8, style),
-          ],
-        ).setContent(content).setYOffset(10);
+          highlightStyle: style,
+        ).setContent(content).setHighlights([
+          [t1Idx, t1Idx + 8],
+          [t2Idx, t2Idx + 8],
+        ]).setYOffset(10);
 
+        final startYOffset = viewport.yOffset; // clamped to maxYOffset
         viewport = viewport.highlightPrev();
 
-        // Should have scrolled to Target 1 (line 0)
-        expect(viewport.yOffset, 0);
+        // Starting on the first highlight, highlightPrev wraps to the last
+        // highlight ("Target 2"). It's already visible at the bottom, so the
+        // yOffset should remain unchanged.
+        expect(viewport.yOffset, startYOffset);
       });
     });
 
@@ -474,8 +474,9 @@ void main() {
 
         expect(lines[0].trim(), 'This is a very long');
         expect(lines[1].trim(), 'line that should be');
-        expect(lines[2].trim(), 'wrapped by the');
-        expect(lines[3].trim(), 'viewport.');
+        // Note: softWrap is fixed-width segmentation (not word wrap).
+        expect(lines[2].trim(), 'wrapped by the viewp');
+        expect(lines[3].trim(), 'ort.');
       });
 
       test('leftGutterFunc provides dynamic gutters', () {
@@ -483,7 +484,7 @@ void main() {
         final viewport = ViewportModel(
           width: 20,
           height: 5,
-          leftGutterFunc: (i) => '${i + 1} | ',
+          leftGutterFunc: (ctx) => '${ctx.index + 1} | ',
         ).setContent(content);
 
         final view = viewport.view();
@@ -500,8 +501,10 @@ void main() {
         final viewport = ViewportModel(
           width: 20,
           height: 5,
-          highlights: [ranges.StyleRange(6, 11, style)],
-        ).setContent(content);
+          highlightStyle: style,
+        ).setContent(content).setHighlights([
+          [6, 11],
+        ]);
 
         final view = viewport.view();
         // "World" should be styled
@@ -582,6 +585,29 @@ void main() {
         ));
 
         expect(v2.getSelectedText(), equals('Hello'));
+      });
+
+      test('renders selection with highlight style', () {
+        var viewport = ViewportModel(width: 20, height: 5).setContent('Hello World');
+
+        // Select "Hello".
+        final (v1, _) = viewport.update(const MouseMsg(
+          action: MouseAction.press,
+          button: MouseButton.left,
+          x: 0,
+          y: 0,
+        ));
+        final (v2, _) = v1.update(const MouseMsg(
+          action: MouseAction.motion,
+          button: MouseButton.left,
+          x: 5,
+          y: 0,
+        ));
+
+        final view = v2.view();
+        final selectionStyle =
+            Style().background(const AnsiColor(7)).foreground(const AnsiColor(0));
+        expect(view, contains(selectionStyle.render('Hello')));
       });
 
       test('double click selects word', () {

@@ -83,15 +83,25 @@ class CursorModel extends ViewComponent {
     this.blinkSpeed = const Duration(milliseconds: 530),
     CursorMode mode = CursorMode.blink,
     String char = ' ',
+    Style? style,
+    Style? textStyle,
   }) : _mode = mode,
        _char = char,
        _id = _nextCursorId(),
        _blink = true,
        _focus = false,
-       _blinkTag = 0;
+       _blinkTag = 0,
+       style = style ?? Style(),
+       textStyle = textStyle ?? Style();
 
   /// The speed at which the cursor blinks.
   final Duration blinkSpeed;
+
+  /// Style for the cursor itself (when visible).
+  final Style style;
+
+  /// Style for the text under the cursor.
+  final Style textStyle;
 
   final CursorMode _mode;
   final String _char;
@@ -126,6 +136,8 @@ class CursorModel extends ViewComponent {
     bool? blink,
     bool? focus,
     int? blinkTag,
+    Style? style,
+    Style? textStyle,
   }) {
     // Copy internal state using a workaround since fields are final
     return CursorModel._internal(
@@ -136,6 +148,8 @@ class CursorModel extends ViewComponent {
       blink: blink ?? _blink,
       focus: focus ?? _focus,
       blinkTag: blinkTag ?? _blinkTag,
+      style: style ?? this.style,
+      textStyle: textStyle ?? this.textStyle,
     );
   }
 
@@ -147,6 +161,8 @@ class CursorModel extends ViewComponent {
     required bool blink,
     required bool focus,
     required int blinkTag,
+    required this.style,
+    required this.textStyle,
   }) : _mode = mode,
        _char = char,
        _id = id,
@@ -244,7 +260,12 @@ class CursorModel extends ViewComponent {
     final id = _id;
     final tag = _blinkTag;
 
+    // Cancel previous timer if any
+    _blinkTimer?.cancel();
+
     return Cmd(() async {
+      // We use a Completer to allow cancellation if needed,
+      // but for now Future.delayed is fine as long as we check tags.
       await Future.delayed(blinkSpeed);
       return CursorBlinkMsg(id: id, tag: tag);
     });
@@ -252,11 +273,11 @@ class CursorModel extends ViewComponent {
 
   @override
   String view() {
-    if (_blink) {
-      // Cursor is in "off" state - show character normally
-      return _char;
+    if (_blink || _mode == CursorMode.hide) {
+      // Cursor is in "off" state or hidden - show character with text style
+      return textStyle.inline(true).render(_char);
     }
-    // Cursor is in "on" state - show with reverse video (highlighted)
-    return Style().inverse().render(_char);
+    // Cursor is in "on" state - show with cursor style and inverse
+    return style.inline(true).inverse().render(_char);
   }
 }

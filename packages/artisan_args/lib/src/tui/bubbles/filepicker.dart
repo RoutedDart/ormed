@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:artisan_args/src/style/color.dart';
 import 'package:artisan_args/src/style/style.dart';
@@ -293,6 +294,7 @@ class FilePickerModel extends ViewComponent {
     bool showPermissions = true,
     bool showSize = true,
     int height = 10,
+    bool autoHeight = true,
     String cursor = '> ',
     FilePickerKeyMap? keyMap,
     FilePickerStyles? styles,
@@ -304,6 +306,7 @@ class FilePickerModel extends ViewComponent {
        _showPermissions = showPermissions,
        _showSize = showSize,
        _height = height,
+       _autoHeight = autoHeight,
        _cursor = cursor,
        _keyMap = keyMap ?? FilePickerKeyMap(),
        _styles = styles ?? FilePickerStyles(),
@@ -326,6 +329,7 @@ class FilePickerModel extends ViewComponent {
     required bool showPermissions,
     required bool showSize,
     required int height,
+    required bool autoHeight,
     required String cursor,
     required FilePickerKeyMap keyMap,
     required FilePickerStyles styles,
@@ -345,6 +349,7 @@ class FilePickerModel extends ViewComponent {
        _showPermissions = showPermissions,
        _showSize = showSize,
        _height = height,
+       _autoHeight = autoHeight,
        _cursor = cursor,
        _keyMap = keyMap,
        _styles = styles,
@@ -369,6 +374,7 @@ class FilePickerModel extends ViewComponent {
   bool _showPermissions;
   bool _showSize;
   int _height;
+  bool _autoHeight;
   String _cursor;
   FilePickerKeyMap _keyMap;
   FilePickerStyles _styles;
@@ -409,6 +415,9 @@ class FilePickerModel extends ViewComponent {
   /// The visible height of the file list.
   int get height => _height;
 
+  /// Whether the height is automatically adjusted.
+  bool get autoHeight => _autoHeight;
+
   /// The cursor string.
   String get cursor => _cursor;
 
@@ -447,6 +456,7 @@ class FilePickerModel extends ViewComponent {
     bool? showPermissions,
     bool? showSize,
     int? height,
+    bool? autoHeight,
     String? cursor,
     FilePickerKeyMap? keyMap,
     FilePickerStyles? styles,
@@ -470,6 +480,7 @@ class FilePickerModel extends ViewComponent {
       showPermissions: showPermissions ?? _showPermissions,
       showSize: showSize ?? _showSize,
       height: height ?? _height,
+      autoHeight: autoHeight ?? _autoHeight,
       cursor: cursor ?? _cursor,
       keyMap: keyMap ?? _keyMap,
       styles: styles ?? _styles,
@@ -526,6 +537,13 @@ class FilePickerModel extends ViewComponent {
         if (msg.id != _id) return (this, null);
         return (copyWith(errorMessage: msg.error), null);
 
+      case WindowSizeMsg():
+        if (_autoHeight) {
+          final newHeight = msg.height - 5; // marginBottom = 5
+          return (copyWith(height: newHeight, max: newHeight - 1), null);
+        }
+        return (copyWith(max: _height - 1), null);
+
       case KeyMsg():
         return _handleKeyMsg(msg);
 
@@ -535,21 +553,14 @@ class FilePickerModel extends ViewComponent {
   }
 
   (FilePickerModel, Cmd?) _handleReadDir(FilePickerReadDirMsg msg) {
-    final entries = <FileEntry>[];
-
-    for (final entity in msg.entries) {
-      // Filter hidden files
-      final name = p.basename(entity.path);
-      if (!_showHidden && name.startsWith('.')) continue;
-
+    final entries = msg.entries.map((e) {
       try {
-        final stat = entity.statSync();
-        entries.add(FileEntry(entity: entity, stat: stat));
+        final stat = e.statSync();
+        return FileEntry(entity: e, stat: stat);
       } catch (_) {
-        // Skip files we can't stat
-        entries.add(FileEntry(entity: entity));
+        return FileEntry(entity: e);
       }
-    }
+    }).toList();
 
     // Sort: directories first, then by name
     entries.sort((a, b) {
@@ -561,9 +572,7 @@ class FilePickerModel extends ViewComponent {
     return (
       copyWith(
         files: entries,
-        selected: 0,
-        min: 0,
-        max: _height - 1,
+        max: math.max(_max, _height - 1),
         clearError: true,
       ),
       null,
@@ -830,7 +839,15 @@ class FilePickerModel extends ViewComponent {
     return Cmd(() async {
       try {
         final dir = Directory(path);
-        final entities = await dir.list().toList();
+        var entities = await dir.list().toList();
+
+        if (!showHidden) {
+          entities = entities.where((e) {
+            final name = p.basename(e.path);
+            return !name.startsWith('.');
+          }).toList();
+        }
+
         return FilePickerReadDirMsg(_id, entities);
       } catch (e) {
         return FilePickerErrorMsg(_id, e.toString());
@@ -927,7 +944,7 @@ class FilePickerModel extends ViewComponent {
       return _styles.emptyDirectory
           .height(_height)
           .maxHeight(_height)
-          .render('Folder is empty');
+          .render('Bummer. No Files Found.');
     }
 
     final buffer = StringBuffer();
@@ -949,14 +966,9 @@ class FilePickerModel extends ViewComponent {
     }
 
     // Pad with empty lines to fill height
-    final visibleCount = (_max - _min + 1).clamp(0, _files.length);
-    for (var i = visibleCount; i < _height; i++) {
+    final lines = buffer.toString().split('\n');
+    for (var i = lines.length; i <= _height; i++) {
       buffer.writeln();
-    }
-
-    final err = _errorMessage;
-    if (err != null && err.isNotEmpty) {
-      buffer.writeln(_styles.disabledFile.render(err));
     }
 
     return buffer.toString();

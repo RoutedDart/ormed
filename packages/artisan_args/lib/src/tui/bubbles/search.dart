@@ -1,6 +1,7 @@
 import '../cmd.dart';
 import '../component.dart';
 import '../msg.dart';
+import '../view.dart';
 import '../../style/style.dart';
 import '../../style/color.dart';
 import 'key_binding.dart';
@@ -555,7 +556,9 @@ class SearchModel<T> extends ViewComponent {
     }
 
     // Search input
-    buffer.writeln(_input.view().trimRight());
+    final inputView = _input.view();
+    final inputContent = inputView is View ? inputView.content : inputView.toString();
+    buffer.writeln(inputContent.trimRight());
 
     // Results
     if (_filteredItems.isEmpty) {

@@ -1514,6 +1514,7 @@ class Style {
   ({int width, int height}) get getFrameSize =>
       (width: getHorizontalFrameSize, height: getVerticalFrameSize);
 
+
   /// Gets the transform function if set.
   String Function(String)? get getTransform =>
       _hasFlag(_PropBits.transform) ? _transform : null;
@@ -1537,6 +1538,11 @@ class Style {
       _hasFlag(_PropBits.dim) ||
       _hasFlag(_PropBits.inverse) ||
       _hasFlag(_PropBits.blink);
+
+  /// Whether this style has no active properties.
+  ///
+  /// This matches the internal early-return condition used by `render()`.
+  bool get isEmpty => _props == 0 && _props2 == 0;
 
   /// Whether any color is set.
   bool get hasColors =>

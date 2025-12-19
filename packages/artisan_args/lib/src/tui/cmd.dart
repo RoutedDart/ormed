@@ -233,6 +233,14 @@ class Cmd {
 
   static Future<Msg?> _quit() async => const QuitMsg();
 
+  /// Sends a message after a delay.
+  static Cmd delayed(Duration duration, Msg? Function() callback) {
+    return Cmd(() async {
+      await Future<void>.delayed(duration);
+      return callback();
+    });
+  }
+
   /// A command that forces a repaint of the view.
   ///
   /// This bypasses the skip-if-unchanged optimization and forces

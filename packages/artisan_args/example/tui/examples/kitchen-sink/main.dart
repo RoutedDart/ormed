@@ -108,6 +108,7 @@ class _KitchenSinkModel extends tui.Model {
   final tui.TextAreaModel textarea;
   tui.ViewportModel viewport;
   tui.TextModel text;
+  _SelectionLayout _selectionLayout = const _SelectionLayout();
 
   _ListSelectionState listSelection;
   final List<String> _eventLog = <String>[];
@@ -463,6 +464,20 @@ class _KitchenSinkModel extends tui.Model {
   }
 }
 
+final class _SelectionLayout {
+  const _SelectionLayout({
+    this.viewportTop = 0,
+    this.textAreaTop = 0,
+    this.textInputTop = 0,
+    this.textTop = 0,
+  });
+
+  final int viewportTop;
+  final int textAreaTop;
+  final int textInputTop;
+  final int textTop;
+}
+
 final class _TabHit {
   const _TabHit({
     required this.pageIndex,
@@ -528,17 +543,17 @@ final class _InputPage extends _KitchenSinkPage {
 
   @override
   String view(_KitchenSinkModel m) {
-    final left = <String>[
-      m._style(Style()).bold().render('Input controls'),
-      '',
-      'TextInput:',
-      '  ${m.textInput.view()}',
-      '',
-      'TextArea:',
-      m.textarea.view(),
-      '',
-      m._style(Style()).dim().render('Recent events (newest last):'),
-    ];
+      final left = <String>[
+        m._style(Style()).bold().render('Input controls'),
+        '',
+        'TextInput:',
+        '  ${m.textInput.view()}',
+        '',
+        'TextArea:',
+        m.textarea.view() as String,
+        '',
+        m._style(Style()).dim().render('Recent events (newest last):'),
+      ];
 
     final maxLog = (m._height - 18).clamp(3, 9999);
     final logLines = m._eventLog.length <= maxLog
@@ -2477,23 +2492,42 @@ The selection will persist even if you scroll the viewport.
 
   @override
   String view(_KitchenSinkModel m) {
-    return [
-      m._style(Style()).bold().render('1. Viewport (Scrollable & Selectable)'),
-      m.viewport.view(),
-      '',
-      m._style(Style()).bold().render('2. TextArea (Multi-line Input)'),
-      m.textarea.view(),
-      '',
-      m._style(Style()).bold().render('3. TextInput (Single-line Input)'),
-      m.textInput.view(),
-      '',
-      m._style(Style()).bold().render('4. Text (Auto-height & Selectable)'),
-      m.text.view(),
-      '',
+    final out = <String>[];
+
+    out.add(m._style(Style()).bold().render('1. Viewport (Scrollable & Selectable)'));
+    final vpTop = out.length;
+    out.addAll(m.viewport.view().split('\n'));
+    out.add('');
+
+    out.add(m._style(Style()).bold().render('2. TextArea (Multi-line Input)'));
+    final taTop = out.length;
+    out.addAll((m.textarea.view() as String).split('\n'));
+    out.add('');
+
+    out.add(m._style(Style()).bold().render('3. TextInput (Single-line Input)'));
+    final tiTop = out.length;
+    out.addAll((m.textInput.view() as String).split('\n'));
+    out.add('');
+
+    out.add(m._style(Style()).bold().render('4. Text (Auto-height & Selectable)'));
+    final txTop = out.length;
+    out.addAll(m.text.view().split('\n'));
+    out.add('');
+
+    out.add(
       m._style(Style()).dim().render(
             'Tip: Use your mouse to select text. Press Ctrl+C to copy to clipboard.',
           ),
-    ].join('\n');
+    );
+
+    m._selectionLayout = _SelectionLayout(
+      viewportTop: vpTop,
+      textAreaTop: taTop,
+      textInputTop: tiTop,
+      textTop: txTop,
+    );
+
+    return out.join('\n');
   }
 
   @override
@@ -2505,10 +2539,10 @@ The selection will persist even if you scroll the viewport.
 
     if (msg is tui.MouseMsg) {
       final pageY = msg.y - m._headerLines;
-      vpMsg = msg.copyWith(y: pageY - 1);
-      taMsg = msg.copyWith(y: pageY - 13);
-      tiMsg = msg.copyWith(y: pageY - 21);
-      txMsg = msg.copyWith(y: pageY - 24);
+      vpMsg = msg.copyWith(y: pageY - m._selectionLayout.viewportTop);
+      taMsg = msg.copyWith(y: pageY - m._selectionLayout.textAreaTop);
+      tiMsg = msg.copyWith(y: pageY - m._selectionLayout.textInputTop);
+      txMsg = msg.copyWith(y: pageY - m._selectionLayout.textTop);
     }
 
     // Update Viewport

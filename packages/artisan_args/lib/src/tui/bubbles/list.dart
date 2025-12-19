@@ -16,6 +16,7 @@ import 'key_binding.dart';
 import 'paginator.dart';
 import 'spinner.dart';
 import 'textinput.dart';
+import 'help.dart';
 
 /// Item interface for list items.
 abstract class ListItem {
@@ -219,6 +220,7 @@ class ListKeyMap implements KeyMap {
     KeyBinding? acceptWhileFiltering,
     KeyBinding? cancelWhileFiltering,
     KeyBinding? quit,
+    KeyBinding? forceQuit,
     KeyBinding? showFullHelp,
     KeyBinding? closeFullHelp,
   }) : cursorUp =
@@ -284,8 +286,13 @@ class ListKeyMap implements KeyMap {
        quit =
            quit ??
            KeyBinding(
-             keys: ['q', 'ctrl+c'],
+             keys: ['q'],
              help: Help(key: 'q', desc: 'quit'),
+           ),
+       forceQuit =
+           forceQuit ??
+           KeyBinding(
+             keys: ['ctrl+c'],
            ),
        showFullHelp =
            showFullHelp ??
@@ -333,6 +340,9 @@ class ListKeyMap implements KeyMap {
   /// Quit the list.
   final KeyBinding quit;
 
+  /// Force quit the list.
+  final KeyBinding forceQuit;
+
   /// Show full help.
   final KeyBinding showFullHelp;
 
@@ -348,7 +358,7 @@ class ListKeyMap implements KeyMap {
     [nextPage, prevPage],
     [goToStart, goToEnd],
     [filter, clearFilter],
-    [quit],
+    [quit, forceQuit],
   ];
 }
 
@@ -363,12 +373,15 @@ class ListStyles {
     Style? statusBar,
     Style? statusEmpty,
     Style? statusBarActiveFilter,
+    Style? statusBarFilterCount,
     Style? noItems,
     Style? paginationStyle,
     Style? helpStyle,
     String? activePaginationDot,
     String? inactivePaginationDot,
+    Style? arabicPagination,
     Style? spinner,
+    Style? dividerDot,
   }) : title = title ?? Style(),
        titleBar = titleBar ?? Style(),
        filterPrompt = filterPrompt ?? Style(),
@@ -376,12 +389,15 @@ class ListStyles {
        statusBar = statusBar ?? Style(),
        statusEmpty = statusEmpty ?? Style(),
        statusBarActiveFilter = statusBarActiveFilter ?? Style(),
+       statusBarFilterCount = statusBarFilterCount ?? Style(),
        noItems = noItems ?? Style(),
        paginationStyle = paginationStyle ?? Style(),
        helpStyle = helpStyle ?? Style(),
        activePaginationDot = activePaginationDot,
        inactivePaginationDot = inactivePaginationDot,
-       spinner = spinner ?? Style();
+       arabicPagination = arabicPagination ?? Style(),
+       spinner = spinner ?? Style(),
+       dividerDot = dividerDot ?? Style();
 
   /// Title style.
   final Style title;
@@ -404,6 +420,9 @@ class ListStyles {
   /// Active filter status style.
   final Style statusBarActiveFilter;
 
+  /// Filter count status style.
+  final Style statusBarFilterCount;
+
   /// No items message style.
   final Style noItems;
 
@@ -419,8 +438,14 @@ class ListStyles {
   /// Inactive pagination dot.
   final String? inactivePaginationDot;
 
+  /// Arabic pagination style.
+  final Style arabicPagination;
+
   /// Spinner style.
   final Style spinner;
+
+  /// Divider dot style.
+  final Style dividerDot;
 
   /// Creates default styles.
   factory ListStyles.defaults() => ListStyles(
@@ -431,11 +456,13 @@ class ListStyles {
     statusBar: Style().foreground(AnsiColor(241)), // Gray
     statusEmpty: Style().foreground(AnsiColor(240)), // Dark gray
     statusBarActiveFilter: Style().foreground(AnsiColor(62)), // Purple
+    statusBarFilterCount: Style().foreground(AnsiColor(240)), // Dark gray
     noItems: Style().foreground(AnsiColor(240)), // Dark gray
     paginationStyle: Style().foreground(AnsiColor(241)),
     helpStyle: Style().foreground(AnsiColor(241)),
     activePaginationDot: Style().foreground(AnsiColor(62)).render('●'),
     inactivePaginationDot: Style().foreground(AnsiColor(241)).render('○'),
+    dividerDot: Style().foreground(AnsiColor(240)).padding(0, 1),
   );
 }
 
@@ -505,6 +532,7 @@ class ListModel extends ViewComponent {
     );
     _filterInput = TextInputModel(prompt: 'Filter: ', charLimit: 64);
     _spinner = SpinnerModel(spinner: Spinners.line);
+    _help = HelpModel();
     _updatePagination();
   }
 
@@ -554,6 +582,7 @@ class ListModel extends ViewComponent {
   late PaginatorModel _paginator;
   late TextInputModel _filterInput;
   late SpinnerModel _spinner;
+  late HelpModel _help;
   int _cursor = 0;
   int _width;
   int _height;
@@ -561,6 +590,7 @@ class ListModel extends ViewComponent {
   List<FilteredItem> _filteredItems = [];
   String _statusMessage = '';
   bool _showSpinner = false;
+  bool _disableQuitKeybindings = false;
 
   /// Gets the items.
   List<ListItem> get items => _items;
@@ -573,6 +603,7 @@ class ListModel extends ViewComponent {
       _runFilter();
     }
     _updatePagination();
+    updateKeybindings();
   }
 
   /// Sets the items (parity with bubbles).
@@ -584,13 +615,31 @@ class ListModel extends ViewComponent {
   void insertItem(int index, ListItem item) {
     _items.insert(index, item);
     _updatePagination();
+    updateKeybindings();
   }
 
   /// Removes an item at the given index.
   void removeItem(int index) {
     if (index >= 0 && index < _items.length) {
       _items.removeAt(index);
+      if (_filterState != FilterState.unfiltered) {
+        _filteredItems.removeWhere((f) => f.index == index);
+        // Update indices of remaining filtered items
+        for (var i = 0; i < _filteredItems.length; i++) {
+          if (_filteredItems[i].index > index) {
+            _filteredItems[i] = FilteredItem(
+              index: _filteredItems[i].index - 1,
+              item: _filteredItems[i].item,
+              matches: _filteredItems[i].matches,
+            );
+          }
+        }
+        if (_filteredItems.isEmpty) {
+          _resetFiltering();
+        }
+      }
       _updatePagination();
+      updateKeybindings();
     }
   }
 
@@ -598,12 +647,17 @@ class ListModel extends ViewComponent {
   void setItem(int index, ListItem item) {
     if (index >= 0 && index < _items.length) {
       _items[index] = item;
+      if (_filterState != FilterState.unfiltered) {
+        _runFilter();
+      }
+      _updatePagination();
     }
   }
 
   /// Sets whether filtering is enabled.
   void setFilteringEnabled(bool enabled) {
     filteringEnabled = enabled;
+    updateKeybindings();
   }
 
   /// Sets whether to show the title.
@@ -637,12 +691,82 @@ class ListModel extends ViewComponent {
   /// Gets the height.
   int get height => _height;
 
+  /// Sets the width.
+  void setWidth(int width) {
+    setSize(width, _height);
+  }
+
+  /// Sets the height.
+  void setHeight(int height) {
+    setSize(_width, height);
+  }
+
   /// Sets the size.
   void setSize(int width, int height) {
     _width = width;
     _height = height;
+    _help = _help.copyWith(width: width);
+    // Update filter input width
+    final promptWidth = styles.title.render(_filterInput.prompt).length;
+    _filterInput.width = width - promptWidth;
     _updatePagination();
+    updateKeybindings();
   }
+
+  /// Gets the spinner model.
+  SpinnerModel get spinner => _spinner;
+
+  /// Whether the spinner is currently showing.
+  bool get isShowingSpinner => _showSpinner;
+
+  /// Gets the current status message.
+  String get statusMessage => _statusMessage;
+
+  /// Sets the spinner model.
+  set spinner(SpinnerModel value) => _spinner = value;
+
+  /// Sets the spinner animation.
+  void setSpinner(Spinner s) {
+    _spinner = _spinner.copyWith(spinner: s);
+  }
+
+  /// Starts the spinner.
+  Cmd? startSpinner() {
+    _showSpinner = true;
+    return _spinner.tick();
+  }
+
+  /// Stops the spinner.
+  void stopSpinner() {
+    _showSpinner = false;
+  }
+
+  /// Toggles the spinner.
+  Cmd? toggleSpinner() {
+    if (_showSpinner) {
+      stopSpinner();
+      return null;
+    }
+    return startSpinner();
+  }
+
+  /// Gets the filter input model.
+  TextInputModel get filterInput => _filterInput;
+
+  /// Sets the filter input model.
+  set filterInput(TextInputModel value) => _filterInput = value;
+
+  /// Gets the paginator model.
+  PaginatorModel get paginator => _paginator;
+
+  /// Sets the paginator model.
+  set paginator(PaginatorModel value) => _paginator = value;
+
+  /// Gets the help model.
+  HelpModel get help => _help;
+
+  /// Sets the help model.
+  set help(HelpModel value) => _help = value;
 
   /// Gets visible items (filtered or all).
   List<ListItem> get visibleItems {
@@ -771,22 +895,71 @@ class ListModel extends ViewComponent {
     _resetFiltering();
   }
 
-  /// Start the spinner.
-  Cmd startSpinner() {
-    _showSpinner = true;
-    return _spinner.tick();
+  /// Disable quit keybindings.
+  void disableQuitKeybindings() {
+    _disableQuitKeybindings = true;
+    keyMap.quit.disable();
+    keyMap.forceQuit.disable();
   }
 
-  /// Stop the spinner.
-  void stopSpinner() {
-    _showSpinner = false;
+  /// Enables quit keybindings.
+  void enableQuitKeybindings() {
+    _disableQuitKeybindings = false;
+    keyMap.quit.enable();
+    keyMap.forceQuit.enable();
   }
 
   /// Set a status message.
   Cmd? newStatusMessage(String message) {
     _statusMessage = message;
-    // In a real implementation, you'd return a command that clears after timeout
-    return null;
+    return Cmd.delayed(statusMessageLifetime, () => StatusMessageTimeoutMsg());
+  }
+
+  /// Hide the status message.
+  void hideStatusMessage() {
+    _statusMessage = '';
+  }
+
+  /// Update keybindings based on state.
+  void updateKeybindings() {
+    switch (_filterState) {
+      case FilterState.filtering:
+        keyMap.cursorUp.disable();
+        keyMap.cursorDown.disable();
+        keyMap.nextPage.disable();
+        keyMap.prevPage.disable();
+        keyMap.goToStart.disable();
+        keyMap.goToEnd.disable();
+        keyMap.filter.disable();
+        keyMap.clearFilter.disable();
+        keyMap.cancelWhileFiltering.enable();
+        keyMap.acceptWhileFiltering.enabled = _filterInput.value.isNotEmpty;
+        keyMap.quit.disable();
+        keyMap.showFullHelp.disable();
+        keyMap.closeFullHelp.disable();
+        break;
+
+      default:
+        final hasItems = _items.isNotEmpty;
+        keyMap.cursorUp.enabled = hasItems;
+        keyMap.cursorDown.enabled = hasItems;
+
+        final hasPages = _paginator.totalPages > 1;
+        keyMap.nextPage.enabled = hasPages;
+        keyMap.prevPage.enabled = hasPages;
+
+        keyMap.goToStart.enabled = hasItems;
+        keyMap.goToEnd.enabled = hasItems;
+
+        keyMap.filter.enabled = filteringEnabled && hasItems;
+        keyMap.clearFilter.enabled = _filterState == FilterState.filterApplied;
+        keyMap.cancelWhileFiltering.disable();
+        keyMap.acceptWhileFiltering.disable();
+        keyMap.quit.enabled = !_disableQuitKeybindings;
+        keyMap.showFullHelp.enable();
+        keyMap.closeFullHelp.enable();
+        break;
+    }
   }
 
   int _maxCursorIndex() {
@@ -799,6 +972,7 @@ class ListModel extends ViewComponent {
     _filterInput.reset();
     _filteredItems = [];
     _updatePagination();
+    updateKeybindings();
   }
 
   void _runFilter() {
@@ -865,19 +1039,25 @@ class ListModel extends ViewComponent {
   (ListModel, Cmd?) update(Msg msg) {
     final cmds = <Cmd>[];
 
+    if (msg is KeyMsg) {
+      if (keyMatches(msg.key, [keyMap.forceQuit])) {
+        return (this, Cmd.quit());
+      }
+    }
+
     if (msg is FilterMatchesMsg) {
       _filteredItems = msg.matches;
       return (this, null);
     }
 
-    if (msg is SpinnerTickMsg && _showSpinner) {
+    if (msg is SpinnerTickMsg) {
       final (newSpinner, cmd) = _spinner.update(msg);
       _spinner = newSpinner;
-      if (cmd != null) cmds.add(cmd);
+      if (_showSpinner && cmd != null) cmds.add(cmd);
     }
 
     if (msg is StatusMessageTimeoutMsg) {
-      _statusMessage = '';
+      hideStatusMessage();
     }
 
     if (_filterState == FilterState.filtering) {
@@ -897,6 +1077,8 @@ class ListModel extends ViewComponent {
     if (msg is KeyMsg) {
       if (keyMatches(msg.key, [keyMap.clearFilter])) {
         _resetFiltering();
+      } else if (keyMatches(msg.key, [keyMap.quit])) {
+        return Cmd.quit();
       } else if (keyMatches(msg.key, [keyMap.cursorUp])) {
         cursorUp();
       } else if (keyMatches(msg.key, [keyMap.cursorDown])) {
@@ -909,8 +1091,12 @@ class ListModel extends ViewComponent {
         goToStart();
       } else if (keyMatches(msg.key, [keyMap.goToEnd])) {
         goToEnd();
+      } else if (keyMatches(msg.key, [keyMap.showFullHelp]) ||
+          keyMatches(msg.key, [keyMap.closeFullHelp])) {
+        _help = _help.copyWith(showAll: !_help.showAll);
+        _updatePagination();
       } else if (keyMatches(msg.key, [keyMap.filter]) && filteringEnabled) {
-        _statusMessage = '';
+        hideStatusMessage();
         if (_filterInput.value.isEmpty) {
           _filteredItems = _items
               .asMap()
@@ -920,8 +1106,10 @@ class ListModel extends ViewComponent {
         }
         goToStart();
         _filterState = FilterState.filtering;
+        _filterInput.cursorEnd();
         final focusCmd = _filterInput.focus();
         if (focusCmd != null) cmds.add(focusCmd);
+        updateKeybindings();
       }
     }
 
@@ -940,7 +1128,7 @@ class ListModel extends ViewComponent {
       if (keyMatches(msg.key, [keyMap.cancelWhileFiltering])) {
         _resetFiltering();
       } else if (keyMatches(msg.key, [keyMap.acceptWhileFiltering])) {
-        _statusMessage = '';
+        hideStatusMessage();
         if (_items.isEmpty) {
           return Cmd.batch(cmds);
         }
@@ -950,6 +1138,7 @@ class ListModel extends ViewComponent {
         }
         _filterInput.blur();
         _filterState = FilterState.filterApplied;
+        updateKeybindings();
         if (_filterInput.value.isEmpty) {
           _resetFiltering();
         }
@@ -962,6 +1151,7 @@ class ListModel extends ViewComponent {
         // If changed, re-run filter
         if (_filterInput.value != oldValue) {
           _runFilter();
+          updateKeybindings();
         }
       }
     }
@@ -1014,91 +1204,152 @@ class ListModel extends ViewComponent {
   }
 
   String _titleView() {
-    final buffer = StringBuffer();
+    var view = '';
+    var titleBarStyle = styles.titleBar;
 
-    if (showTitle) {
-      buffer.write(styles.titleBar.render(styles.title.render(' $title ')));
-    }
+    final spinnerView = _spinner.view();
+    final spinnerWidth = spinnerView.length;
+    const spinnerLeftGap = ' ';
+    final spinnerOnLeft = titleBarStyle.getPaddingLeft >=
+            spinnerWidth + spinnerLeftGap.length &&
+        _showSpinner;
 
-    if (showFilter &&
-        filteringEnabled &&
-        _filterState == FilterState.filtering) {
-      if (_showSpinner) {
-        buffer.write(' ${_spinner.view()} ');
+    if (showFilter && _filterState == FilterState.filtering) {
+      view += _filterInput.view() as String;
+    } else if (showTitle) {
+      if (_showSpinner && spinnerOnLeft) {
+        view += spinnerView + spinnerLeftGap;
+        final titleBarGap = titleBarStyle.getPaddingLeft;
+        titleBarStyle = titleBarStyle.paddingLeft(
+          titleBarGap - spinnerWidth - spinnerLeftGap.length,
+        );
       }
-      buffer.write(_filterInput.view());
+
+      view += styles.title.render(title);
+
+      // Status message
+      if (_filterState != FilterState.filtering && _statusMessage.isNotEmpty) {
+        view += '  $_statusMessage';
+        // Truncate if needed (simplified)
+        if (view.length > _width - spinnerWidth) {
+          view = view.substring(0, math.max(0, _width - spinnerWidth - 1)) + '…';
+        }
+      }
     }
 
-    return buffer.toString();
+    // Spinner on right
+    if (_showSpinner && !spinnerOnLeft) {
+      final renderedView = titleBarStyle.render(view);
+      final availSpace = _width - renderedView.length;
+      if (availSpace > spinnerWidth) {
+        view += ' ' * (availSpace - spinnerWidth);
+        view += spinnerView;
+      }
+    }
+
+    if (view.isNotEmpty) {
+      return titleBarStyle.render(view);
+    }
+    return view;
   }
 
   String _statusView() {
-    final buffer = StringBuffer();
+    var status = '';
 
-    if (_statusMessage.isNotEmpty) {
-      buffer.write(styles.statusBar.render(_statusMessage));
-    } else {
-      final items = visibleItems;
-      final total = _items.length;
-      final visible = items.length;
+    final totalItems = _items.length;
+    final visibleItemsCount = visibleItems.length;
 
-      if (total == 0) {
-        buffer.write(styles.statusBar.render('No ${itemNamePlural}'));
-      } else if (_filterState == FilterState.filterApplied) {
-        buffer.write(
-          styles.statusBar.render(
-            '$visible of $total ${visible == 1 ? itemNameSingular : itemNamePlural} ',
-          ),
-        );
-        buffer.write(styles.statusBarActiveFilter.render('(filtered)'));
+    final itemName = visibleItemsCount != 1 ? itemNamePlural : itemNameSingular;
+    final itemsDisplay = '$visibleItemsCount $itemName';
+
+    if (_filterState == FilterState.filtering) {
+      if (visibleItemsCount == 0) {
+        status = styles.statusEmpty.render('Nothing matched');
       } else {
-        buffer.write(
-          styles.statusBar.render(
-            '$total ${total == 1 ? itemNameSingular : itemNamePlural}',
-          ),
-        );
+        status = itemsDisplay;
       }
+    } else if (_items.isEmpty) {
+      status = styles.statusEmpty.render('No $itemNamePlural');
+    } else {
+      final filtered = _filterState == FilterState.filterApplied;
+      if (filtered) {
+        var f = _filterInput.value.trim();
+        if (f.length > 10) f = f.substring(0, 9) + '…';
+        status += '“$f” ';
+      }
+      status += itemsDisplay;
     }
 
-    return buffer.toString();
+    final numFiltered = totalItems - visibleItemsCount;
+    if (numFiltered > 0) {
+      status += styles.dividerDot.render('•');
+      status += styles.statusBarFilterCount.render('$numFiltered filtered');
+    }
+
+    return styles.statusBar.render(status);
   }
 
   String _paginationView() {
-    return _paginator.view();
+    if (_paginator.totalPages < 2) {
+      return '';
+    }
+
+    var s = _paginator.view();
+
+    // If the dot pagination is wider than the width of the window
+    // use the arabic paginator.
+    if (s.length > _width) {
+      final oldType = _paginator.type;
+      _paginator = _paginator.copyWith(type: PaginationType.arabic);
+      s = styles.arabicPagination.render(_paginator.view());
+      _paginator = _paginator.copyWith(type: oldType);
+    }
+
+    var style = styles.paginationStyle;
+    if (_delegate.spacing == 0 && style.getMarginTop == 0) {
+      style = style.marginTop(1);
+    }
+
+    return style.render(s);
   }
 
   String _helpView() {
-    final bindings = _filterState == FilterState.filtering
-        ? [keyMap.acceptWhileFiltering, keyMap.cancelWhileFiltering]
-        : keyMap.shortHelp();
-
-    final helpText = bindings
-        .map((b) => '${b.keys.first} ${b.help.desc}')
-        .join(' • ');
-
-    return styles.helpStyle.render(helpText);
+    return styles.helpStyle.render(_help.view(keyMap));
   }
 
   String _populatedView(int height) {
     final items = visibleItems;
 
     if (items.isEmpty) {
-      return styles.noItems.render('No ${itemNamePlural}');
+      if (_filterState == FilterState.filtering) {
+        return '';
+      }
+      return styles.noItems.render('No $itemNamePlural.');
     }
 
+    final buffer = StringBuffer();
     final start = _paginator.page * _paginator.perPage;
     final end = math.min(start + _paginator.perPage, items.length);
+    final docs = items.sublist(start, end);
 
-    final lines = <String>[];
-    for (var i = start; i < end; i++) {
-      lines.add(_delegate.render(this, i, items[i]));
+    for (var i = 0; i < docs.length; i++) {
+      buffer.write(_delegate.render(this, i + start, docs[i]));
+      if (i != docs.length - 1) {
+        buffer.write('\n' * (_delegate.spacing + 1));
+      }
     }
 
     // Pad to fill available height
-    while (lines.length < height) {
-      lines.add('');
+    final itemsOnPage = _paginator.itemsOnPage(items.length);
+    if (itemsOnPage < _paginator.perPage) {
+      var n = (_paginator.perPage - itemsOnPage) *
+          (_delegate.height + _delegate.spacing);
+      if (items.isEmpty) {
+        n -= _delegate.height - 1;
+      }
+      buffer.write('\n' * math.max(0, n));
     }
 
-    return lines.take(height).join('\n');
+    return buffer.toString();
   }
 }

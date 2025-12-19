@@ -11,6 +11,9 @@ import 'dart:math' as math;
 import 'package:artisan_args/src/tui/tui.dart';
 import 'package:artisan_args/src/style/style.dart';
 import 'package:artisan_args/src/style/color.dart';
+import 'package:artisan_args/src/tui/view.dart';
+import 'package:artisan_args/src/tui/uv/cursor.dart';
+import 'package:artisan_args/src/tui/uv/geometry.dart';
 
 import 'cursor.dart';
 import 'key_binding.dart';
@@ -31,6 +34,77 @@ enum EchoMode {
 
 /// Validation function that returns an error message if input is invalid.
 typedef ValidateFunc = String? Function(String value);
+
+/// Style state for focused and blurred states.
+class TextInputStyleState {
+  TextInputStyleState({
+    Style? text,
+    Style? placeholder,
+    Style? suggestion,
+    Style? prompt,
+  }) : text = text ?? Style(),
+       placeholder = placeholder ?? Style(),
+       suggestion = suggestion ?? Style(),
+       prompt = prompt ?? Style();
+
+  Style text;
+  Style placeholder;
+  Style suggestion;
+  Style prompt;
+}
+
+/// Style for the cursor.
+class TextInputCursorStyle {
+  TextInputCursorStyle({
+    this.color,
+    this.shape = CursorShape.block,
+    this.blink = true,
+    this.blinkSpeed = const Duration(milliseconds: 500),
+  });
+
+  Color? color;
+  CursorShape shape;
+  bool blink;
+  Duration blinkSpeed;
+}
+
+/// Styles for the text input.
+class TextInputStyles {
+  TextInputStyles({
+    TextInputStyleState? focused,
+    TextInputStyleState? blurred,
+    TextInputCursorStyle? cursor,
+  }) : focused = focused ?? TextInputStyleState(),
+       blurred = blurred ?? TextInputStyleState(),
+       cursor = cursor ?? TextInputCursorStyle();
+
+  TextInputStyleState focused;
+  TextInputStyleState blurred;
+  TextInputCursorStyle cursor;
+}
+
+/// Returns the default styles for the text input.
+TextInputStyles defaultTextInputStyles({bool isDark = true}) {
+  return TextInputStyles(
+    focused: TextInputStyleState(
+      placeholder: Style().foreground(AnsiColor(240)),
+      suggestion: Style().foreground(AnsiColor(240)),
+      prompt: Style().foreground(AnsiColor(7)),
+      text: Style(),
+    ),
+    blurred: TextInputStyleState(
+      placeholder: Style().foreground(AnsiColor(240)),
+      suggestion: Style().foreground(AnsiColor(240)),
+      prompt: Style().foreground(AnsiColor(7)),
+      text: Style().foreground(isDark ? AnsiColor(7) : AnsiColor(245)),
+    ),
+    cursor: TextInputCursorStyle(
+      color: AnsiColor(7),
+      shape: CursorShape.block,
+      blink: true,
+    ),
+  );
+}
 
 /// Key map for text input navigation and editing.
 class TextInputKeyMap implements KeyMap {
@@ -274,19 +348,16 @@ class TextInputModel extends ViewComponent {
     this.charLimit = 0,
     this.width = 0,
     this.showSuggestions = false,
+    this.useVirtualCursor = true,
     TextInputKeyMap? keyMap,
     CursorModel? cursor,
     this.validate,
-    Style? promptStyle,
-    Style? textStyle,
-    Style? placeholderStyle,
-    Style? completionStyle,
+    TextInputStyles? styles,
   }) : keyMap = keyMap ?? TextInputKeyMap(),
        cursor = cursor ?? CursorModel(),
-       _promptStyle = promptStyle ?? Style(),
-       _textStyle = textStyle ?? Style(),
-       _placeholderStyle = placeholderStyle ?? Style().foreground(AnsiColor(8)),
-       _completionStyle = completionStyle ?? Style().foreground(AnsiColor(8));
+       styles = styles ?? defaultTextInputStyles() {
+    _updateVirtualCursorStyle();
+  }
 
   /// Prompt displayed before input.
   String prompt;
@@ -309,29 +380,24 @@ class TextInputModel extends ViewComponent {
   /// Whether to show suggestions.
   bool showSuggestions;
 
+  /// Whether to use a virtual cursor. If false, use [terminalCursor] to return
+  /// a real cursor for rendering.
+  bool useVirtualCursor;
+
   /// Key bindings.
   TextInputKeyMap keyMap;
 
   /// Cursor model.
   CursorModel cursor;
 
+  /// Styles for the text input.
+  TextInputStyles styles;
+
   /// Validation function.
   ValidateFunc? validate;
 
   /// Current validation error.
   String? error;
-
-  /// Style for the prompt.
-  final Style _promptStyle;
-
-  /// Style for the text.
-  final Style _textStyle;
-
-  /// Style for placeholder text.
-  final Style _placeholderStyle;
-
-  /// Style for completion text.
-  final Style _completionStyle;
 
   // Internal state
   List<String> _value = <String>[];
@@ -414,6 +480,7 @@ class TextInputModel extends ViewComponent {
     _focused = true;
     final (newCursor, cmd) = cursor.focus();
     cursor = newCursor;
+    _updateVirtualCursorStyle();
     return cmd;
   }
 
@@ -430,6 +497,49 @@ class TextInputModel extends ViewComponent {
   void blur() {
     _focused = false;
     cursor = cursor.blur();
+    _updateVirtualCursorStyle();
+  }
+
+  /// Returns the appropriate style state based on focus.
+  TextInputStyleState activeStyle() => _focused ? styles.focused : styles.blurred;
+
+  /// Returns a [Cursor] for rendering a real cursor in a TUI program.
+  /// This requires that [useVirtualCursor] is set to false.
+  Cursor? get terminalCursor {
+    if (useVirtualCursor || !_focused) return null;
+
+    final promptWidth = stringWidth(prompt);
+    var xOffset = _pos - _offset + promptWidth;
+    if (width > 0) {
+      xOffset = math.min(xOffset, width + promptWidth);
+    }
+
+    return Cursor(
+      position: Position(xOffset, 0),
+      color: styles.cursor.color,
+      shape: styles.cursor.shape,
+      blink: styles.cursor.blink,
+    );
+  }
+
+  void _updateVirtualCursorStyle() {
+    if (!useVirtualCursor) {
+      final (newCursor, _) = cursor.setMode(CursorMode.hide);
+      cursor = newCursor;
+      return;
+    }
+
+    cursor = cursor.copyWith(
+      style: Style().foreground(styles.cursor.color!),
+    );
+
+    if (styles.cursor.blink) {
+      final (newCursor, _) = cursor.setMode(CursorMode.blink);
+      cursor = newCursor;
+    } else {
+      final (newCursor, _) = cursor.setMode(CursorMode.static);
+      cursor = newCursor;
+    }
   }
 
   /// Reset the input to empty.
@@ -859,13 +969,14 @@ class TextInputModel extends ViewComponent {
   }
 
   @override
-  String view() {
+  Object view() {
     // Placeholder text
     if (_value.isEmpty && placeholder.isNotEmpty) {
       return _placeholderView();
     }
 
-    String styleText(String s) => _textStyle.render(s);
+    final styles = activeStyle();
+    String styleText(String s) => styles.text.inline(true).render(s);
 
     final visibleValue = _value.sublist(_offset, _offsetRight);
     final pos = math.max(0, _pos - _offset);
@@ -886,7 +997,8 @@ class TextInputModel extends ViewComponent {
     }
 
     var v = '';
-    final selectionStyle = Style().background(const AnsiColor(7)).foreground(const AnsiColor(0));
+    final selectionStyle =
+        Style().background(const AnsiColor(7)).foreground(const AnsiColor(0));
 
     for (var i = 0; i < visibleValue.length; i++) {
       final char = _echoTransform(visibleValue[i]);
@@ -932,19 +1044,30 @@ class TextInputModel extends ViewComponent {
       v += styleText(' ' * padding);
     }
 
-    final styledPrompt = _promptStyle.render(prompt);
+    final styledPrompt = styles.prompt.render(prompt);
+    final content = '$styledPrompt$v';
 
-    return '$styledPrompt$v';
+    if (useVirtualCursor || !_focused) {
+      return content;
+    }
+
+    return View(
+      content: content,
+      cursor: terminalCursor,
+    );
   }
 
-  String _placeholderView() {
+  Object _placeholderView() {
+    final styles = activeStyle();
     final result = firstGraphemeCluster(placeholder);
     cursor = cursor.setChar(result.first);
-    var v = cursor.view();
+    var v = cursor.view().toString();
 
     if (width < 1 && stringWidth(result.rest) <= 1) {
-      final styledPrompt = _promptStyle.render(prompt);
-      return '$styledPrompt$v';
+      final styledPrompt = styles.prompt.render(prompt);
+      final content = '$styledPrompt$v';
+      if (useVirtualCursor || !_focused) return content;
+      return View(content: content, cursor: terminalCursor);
     }
 
     if (width > 0) {
@@ -954,21 +1077,23 @@ class TextInputModel extends ViewComponent {
       final placeholderRest = truncate(result.rest, availWidth, '…');
       final restWidth = stringWidth(placeholderRest);
       final paddingWidth = math.max(0, availWidth - restWidth);
-      v += _placeholderStyle.render(placeholderRest) + (' ' * paddingWidth);
+      v += styles.placeholder.render(placeholderRest) + (' ' * paddingWidth);
     } else {
-      v += _placeholderStyle.render(result.rest);
+      v += styles.placeholder.render(result.rest);
     }
 
-    final styledPrompt = _promptStyle.render(prompt);
+    final styledPrompt = styles.prompt.render(prompt);
+    final content = '$styledPrompt$v';
 
-    return '$styledPrompt$v';
+    if (useVirtualCursor || !_focused) return content;
+    return View(content: content, cursor: terminalCursor);
   }
 
   String _completionView(int offset) {
     if (_canAcceptSuggestion()) {
       final suggestion = _matchedSuggestions[_currentSuggestionIndex];
       if (_value.length < suggestion.length) {
-        return _completionStyle.render(
+        return activeStyle().suggestion.inline(true).render(
           suggestion.sublist(_value.length + offset).join(),
         );
       }

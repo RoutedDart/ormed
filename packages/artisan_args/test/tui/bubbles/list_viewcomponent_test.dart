@@ -67,7 +67,42 @@ void main() {
         list.resetFilter();
         expect(list.isFiltered, isFalse);
       });
+
+      test('status message auto-clear', () {
+        final list = ListModel();
+        final cmd = list.newStatusMessage('test');
+        expect(list.statusMessage, equals('test'));
+        expect(cmd, isNotNull);
+        // Simulate timeout
+        final (updated, _) = list.update(StatusMessageTimeoutMsg());
+        expect(updated.statusMessage, isEmpty);
+      });
+
+      test('quit-unbind behavior', () {
+        final list = ListModel();
+        expect(list.keyMap.quit.enabled, isTrue);
+
+        list.disableQuitKeybindings();
+        expect(list.keyMap.quit.enabled, isFalse);
+
+        list.enableQuitKeybindings();
+        expect(list.keyMap.quit.enabled, isTrue);
+      });
+
+      test('spinner parity', () {
+        final list = ListModel();
+        expect(list.isShowingSpinner, isFalse);
+
+        final cmd = list.startSpinner();
+        expect(list.isShowingSpinner, isTrue);
+        expect(cmd, isNotNull);
+
+        list.stopSpinner();
+        expect(list.isShowingSpinner, isFalse);
+
+        list.toggleSpinner();
+        expect(list.isShowingSpinner, isTrue);
+      });
     });
   });
 }
-

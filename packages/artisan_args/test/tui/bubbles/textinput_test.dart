@@ -1,5 +1,6 @@
 import 'package:artisan_args/src/tui/bubbles/textinput.dart';
 import 'package:artisan_args/src/tui/component.dart';
+import 'package:artisan_args/src/terminal/ansi.dart';
 import 'package:artisan_args/tui.dart' show Key, KeyMsg, KeyType, MouseAction, MouseButton, MouseMsg;
 import 'package:test/test.dart';
 
@@ -197,8 +198,8 @@ void main() {
       test('normal mode shows text', () {
         final input = TextInputModel(echoMode: EchoMode.normal);
         input.value = 'hello';
-        final view = input.view();
-        expect(view, contains('hello'));
+        final view = input.view() as String;
+        expect(Ansi.stripAnsi(view), contains('hello'));
       });
 
       test('password mode shows mask', () {
@@ -207,9 +208,9 @@ void main() {
           echoCharacter: '*',
         );
         input.value = 'hello';
-        final view = input.view();
+        final view = input.view() as String;
         // Should contain echo character
-        expect(view, isNot(contains('hello')));
+        expect(Ansi.stripAnsi(view), isNot(contains('hello')));
       });
     });
 
@@ -222,7 +223,7 @@ void main() {
 
       test('shows placeholder when empty', () {
         final input = TextInputModel(placeholder: 'Type here');
-        final view = input.view();
+        final view = input.view() as String;
         // Placeholder is styled, so check without exact match
         expect(view.contains('ype here') || view.contains('Type'), isTrue);
       });
@@ -230,8 +231,8 @@ void main() {
       test('shows value when not empty', () {
         final input = TextInputModel(placeholder: 'Type here');
         input.value = 'hello';
-        final view = input.view();
-        expect(view, contains('hello'));
+        final view = input.view() as String;
+        expect(Ansi.stripAnsi(view), contains('hello'));
       });
     });
 

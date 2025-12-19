@@ -4,6 +4,7 @@ import '../cmd.dart';
 import '../key.dart';
 import '../component.dart';
 import '../msg.dart';
+import '../view.dart' as tui_view;
 import '../program.dart';
 import '../terminal.dart';
 import 'anticipate.dart';
@@ -273,7 +274,11 @@ class _PasswordPromptModel extends ViewComponent {
   }
 
   @override
-  String view() => _model.view();
+  String view() {
+    final Object v = _model.view();
+    if (v is tui_view.View) return v.content;
+    return v.toString();
+  }
 }
 
 class _PasswordConfirmPromptModel extends ViewComponent {
@@ -305,7 +310,11 @@ class _PasswordConfirmPromptModel extends ViewComponent {
   }
 
   @override
-  String view() => _model.view();
+  String view() {
+    final Object v = _model.view();
+    if (v is tui_view.View) return v.content;
+    return v.toString();
+  }
 }
 
 class _ConfirmPromptModel extends ViewComponent {
@@ -337,7 +346,11 @@ class _ConfirmPromptModel extends ViewComponent {
   }
 
   @override
-  String view() => _model.view();
+  String view() {
+    final Object v = _model.view();
+    if (v is tui_view.View) return v.content;
+    return v.toString();
+  }
 }
 
 class _SelectPromptModel<T> extends ViewComponent {
@@ -369,7 +382,11 @@ class _SelectPromptModel<T> extends ViewComponent {
   }
 
   @override
-  String view() => _model.view();
+  String view() {
+    final Object v = _model.view();
+    if (v is tui_view.View) return v.content;
+    return v.toString();
+  }
 }
 
 class _SearchPromptModel<T> extends ViewComponent {
@@ -401,7 +418,11 @@ class _SearchPromptModel<T> extends ViewComponent {
   }
 
   @override
-  String view() => _model.view();
+  String view() {
+    final Object v = _model.view();
+    if (v is tui_view.View) return v.content;
+    return v.toString();
+  }
 }
 
 class _AnticipatePromptModel extends ViewComponent {
@@ -443,7 +464,11 @@ class _AnticipatePromptModel extends ViewComponent {
   }
 
   @override
-  String view() => _model.view();
+  String view() {
+    final Object v = _model.view();
+    if (v is tui_view.View) return v.content;
+    return v.toString();
+  }
 }
 
 class _TextInputPromptModel extends ViewComponent {
@@ -480,7 +505,11 @@ class _TextInputPromptModel extends ViewComponent {
   }
 
   @override
-  String view() => _model.view();
+  String view() {
+    final Object v = _model.view();
+    if (v is tui_view.View) return v.content;
+    return v.toString();
+  }
 }
 
 class _MultiSelectPromptModel<T> extends ViewComponent {
@@ -512,7 +541,11 @@ class _MultiSelectPromptModel<T> extends ViewComponent {
   }
 
   @override
-  String view() => _model.view();
+  String view() {
+    final Object v = _model.view();
+    if (v is tui_view.View) return v.content;
+    return v.toString();
+  }
 }
 
 class _TextAreaPromptModel extends ViewComponent {
@@ -552,7 +585,11 @@ class _TextAreaPromptModel extends ViewComponent {
   }
 
   @override
-  String view() => _model.view();
+  String view() {
+    final Object v = _model.view();
+    if (v is tui_view.View) return v.content;
+    return v.toString();
+  }
 }
 
 class _WizardPromptModel extends ViewComponent {

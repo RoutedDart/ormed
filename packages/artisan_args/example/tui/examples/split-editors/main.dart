@@ -209,13 +209,13 @@ tui.TextAreaModel _newTextarea() {
     placeholder: 'Type something',
     showLineNumbers: true,
   );
-  ta.focusedStyle = tui.TextAreaStyle(
+  ta.styles.focused = ta.styles.focused.copyWith(
     base: _focusedBorderStyle,
     cursorLine: _cursorLineStyle,
     placeholder: _focusedPlaceholderStyle,
     endOfBuffer: _endOfBufferStyle,
   );
-  ta.blurredStyle = tui.TextAreaStyle(
+  ta.styles.blurred = ta.styles.blurred.copyWith(
     base: _blurredBorderStyle,
     placeholder: _placeholderStyle,
     endOfBuffer: _endOfBufferStyle,
