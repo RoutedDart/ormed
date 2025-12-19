@@ -1,5 +1,6 @@
 import 'package:artisan_args/src/tui/uv/geometry.dart';
 import 'package:artisan_args/src/tui/uv/layer.dart';
+import 'package:artisan_args/src/tui/uv/styled_string.dart';
 import 'package:test/test.dart';
 
 // Behavior parity reference:
@@ -8,10 +9,10 @@ import 'package:test/test.dart';
 void main() {
   group('Compositor behavior', () {
     test('renders layers in z-index order (top-most wins)', () {
-      final bottom = Layer('A')
+      final bottom = newLayer('A')
         ..setId('a')
         ..setZ(0);
-      final top = Layer('B')
+      final top = newLayer('B')
         ..setId('b')
         ..setZ(1);
       final compositor = Compositor([bottom, top]);
@@ -21,10 +22,10 @@ void main() {
     });
 
     test('hit ignores layers with empty IDs', () {
-      final bottom = Layer('A')
+      final bottom = newLayer('A')
         ..setId('a')
         ..setZ(0);
-      final top = Layer('B')
+      final top = newLayer('B')
         ..setZ(1); // empty ID, should be ignored by hit test
       final compositor = Compositor([bottom, top]);
 
@@ -32,8 +33,8 @@ void main() {
     });
 
     test('bounds include positioned layers and render respects offsets', () {
-      final a = Layer('AA')..setId('a');
-      final b = Layer('B')
+      final a = newLayer('AA')..setId('a');
+      final b = newLayer('B')
         ..setId('b')
         ..setX(3)
         ..setY(1);
@@ -48,11 +49,11 @@ void main() {
     });
 
     test('refresh recomputes bounds after content changes', () {
-      final layer = Layer('A')..setId('a');
+      final layer = newLayer('A')..setId('a');
       final compositor = Compositor([layer]);
       expect(compositor.render(), 'A');
 
-      layer.content = 'AA';
+      layer.drawable = StyledString('AA');
       compositor.refresh();
       expect(compositor.render(), 'AA');
     });

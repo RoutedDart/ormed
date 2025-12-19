@@ -960,6 +960,13 @@ final class EventDecoder {
 
     final data = String.fromCharCodes(buf.sublist(start, end));
     switch (cmd) {
+      case 4:
+        final parts = data.split(';');
+        if (parts.length >= 2) {
+          final index = int.tryParse(parts[0]) ?? 0;
+          return (i, ColorPaletteEvent(index, _xParseColor(parts[1])));
+        }
+        break;
       case 10:
         return (i, ForegroundColorEvent(_xParseColor(data)));
       case 11:

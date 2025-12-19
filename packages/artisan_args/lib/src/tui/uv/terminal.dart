@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:image/image.dart' as img;
 import 'buffer.dart';
 import 'cancelreader.dart';
 import 'capabilities.dart';
@@ -8,7 +9,10 @@ import 'cell.dart';
 import 'event.dart';
 import 'environ.dart';
 import 'geometry.dart';
+import 'iterm2_drawable.dart';
+import 'kitty_drawable.dart';
 import 'screen.dart';
+import 'sixel_drawable.dart';
 import 'terminal_reader.dart';
 import 'terminal_renderer.dart';
 import '../../unicode/width.dart';
@@ -25,7 +29,8 @@ class Terminal implements Screen, FillAreaScreen, ClearableScreen, CloneableScre
   }) : _input = input ?? stdin,
        _output = output ?? stdout,
        _env = env ?? Platform.environment.entries.map((e) => '${e.key}=${e.value}').toList(),
-       _buf = Buffer.create(0, 0) {
+       _buf = Buffer.create(0, 0),
+       capabilities = TerminalCapabilities(env: env ?? Platform.environment.entries.map((e) => '${e.key}=${e.value}').toList()) {
     final isTty = _output is Stdout && (_output).hasTerminal;
     _renderer = TerminalRenderer(_output, env: _env, isTty: isTty);
     _reader = TerminalReader(
@@ -44,7 +49,7 @@ class Terminal implements Screen, FillAreaScreen, ClearableScreen, CloneableScre
   late final SizeNotifier _winch;
   
   final Buffer _buf;
-  final TerminalCapabilities capabilities = TerminalCapabilities();
+  final TerminalCapabilities capabilities;
   bool _running = false;
   bool _inAltScreen = false;
   bool _mouseEnabled = false;
@@ -87,6 +92,7 @@ class Terminal implements Screen, FillAreaScreen, ClearableScreen, CloneableScre
       if (event is WindowSizeEvent) {
         resize(event.width, event.height);
       }
+      capabilities.updateFromEvent(event);
       _eventController.add(event);
     });
 
@@ -231,6 +237,7 @@ class Terminal implements Screen, FillAreaScreen, ClearableScreen, CloneableScre
     _renderer.queryPrimaryDeviceAttributes();
     _renderer.queryKittyGraphics();
     _renderer.queryKeyboardEnhancements();
+    _renderer.queryBackgroundColor();
     _renderer.flush();
   }
 
@@ -297,6 +304,21 @@ class Terminal implements Screen, FillAreaScreen, ClearableScreen, CloneableScre
     _inAltScreen = false;
     _renderer.exitAltScreen();
     _renderer.flush();
+  }
+
+  /// Returns the best [Drawable] for the given image based on terminal capabilities.
+  Drawable bestImageDrawable(img.Image image, {int? columns, int? rows}) {
+    if (capabilities.hasKittyGraphics) {
+      return KittyImageDrawable(image, columns: columns, rows: rows);
+    }
+    if (capabilities.hasITerm2) {
+      return ITerm2ImageDrawable(image, columns: columns, rows: rows);
+    }
+    if (capabilities.hasSixel) {
+      return SixelImageDrawable(image, columns: columns, rows: rows);
+    }
+    // Fallback to nothing or a block-based renderer if we had one.
+    return KittyImageDrawable(image, columns: columns, rows: rows);
   }
 
   // NOTE: environment variable lookups are handled by [Environ].

@@ -352,6 +352,15 @@ final class BackgroundColorEvent extends Event {
   String toString() => colorToHex(color);
 }
 
+final class ColorPaletteEvent extends Event {
+  const ColorPaletteEvent(this.index, this.color);
+  final int index;
+  final UvRgb? color;
+
+  @override
+  String toString() => 'ColorPaletteEvent($index, ${colorToHex(color)})';
+}
+
 final class CursorColorEvent extends Event {
   const CursorColorEvent(this.color);
   final UvRgb? color;

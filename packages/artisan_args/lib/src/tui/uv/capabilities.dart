@@ -1,8 +1,21 @@
+import 'environ.dart';
 import 'event.dart';
+import 'cell.dart';
 
 /// Terminal capabilities discovered via ANSI queries.
 final class TerminalCapabilities {
-  TerminalCapabilities();
+  TerminalCapabilities({List<String>? env}) {
+    if (env != null) {
+      final environ = Environ(env);
+      final termProg = environ.getenv('TERM_PROGRAM');
+      final lcTerm = environ.getenv('LC_TERMINAL');
+      if (termProg.contains('iTerm') ||
+          termProg.contains('WezTerm') ||
+          lcTerm.contains('iTerm')) {
+        hasITerm2 = true;
+      }
+    }
+  }
 
   /// Whether the terminal supports Kitty Graphics Protocol.
   bool hasKittyGraphics = false;
@@ -18,6 +31,12 @@ final class TerminalCapabilities {
 
   /// The primary device attributes reported by the terminal.
   List<int> primaryAttributes = [];
+
+  /// The terminal background color.
+  UvRgb? backgroundColor;
+
+  /// The terminal color palette.
+  final Map<int, UvRgb> palette = {};
 
   /// Updates capabilities based on an event.
   /// 
@@ -39,6 +58,14 @@ final class TerminalCapabilities {
       final oldSixel = hasSixel;
       hasSixel = event.attrs.contains(4);
       return oldSixel != hasSixel;
+    } else if (event is BackgroundColorEvent) {
+      backgroundColor = event.color;
+      return true;
+    } else if (event is ColorPaletteEvent) {
+      if (event.color != null) {
+        palette[event.index] = event.color!;
+        return true;
+      }
     } else if (event is SecondaryDeviceAttributesEvent) {
       // iTerm2 often identifies itself in secondary DA or via environment.
       // We also check environment in Terminal.

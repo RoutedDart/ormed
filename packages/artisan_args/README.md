@@ -146,16 +146,8 @@ io.table(
 ### Progress Bars
 
 ```dart
-final bar = io.createProgressBar(max: 100);
-bar.start();
-for (var i = 0; i < 100; i++) {
-  await Future.delayed(Duration(milliseconds: 10));
-  bar.advance();
-}
-bar.finish();
-
-// Or iterate with progress
-for (final item in io.progressIterate(items)) {
+// Iterate with progress (CLI output)
+for (final item in io.progressIterate(items, max: items.length)) {
   // process item
 }
 ```

@@ -230,6 +230,16 @@ final class TerminalRenderer {
     _buf.write('\x1b_Gi=31,s=1,v=1,a=q,t=d,f=24;AAAA\x1b\\');
   }
 
+  /// Queries the terminal background color.
+  void queryBackgroundColor() {
+    _buf.write('\x1b]11;?\x1b\\');
+  }
+
+  /// Queries a color from the terminal palette.
+  void queryColorPalette(int index) {
+    _buf.write('\x1b]4;$index;?\x1b\\');
+  }
+
   void erase() {
     _clear = true;
   }

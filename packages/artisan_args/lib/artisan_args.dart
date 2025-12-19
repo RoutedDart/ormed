@@ -74,6 +74,7 @@ export 'src/terminal/terminal.dart'
         StringTerminal,
         RawModeGuard,
         Ansi,
+        KittyImage,
         Key,
         KeyType,
         Keys;
