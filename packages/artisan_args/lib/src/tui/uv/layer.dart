@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'canvas.dart';
+import 'drawable.dart';
 import 'geometry.dart';
 import 'screen.dart';
 import 'styled_string.dart';

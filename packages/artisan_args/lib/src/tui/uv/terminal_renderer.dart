@@ -4,8 +4,10 @@ import 'dart:io' show Platform;
 import 'ansi.dart';
 import 'buffer.dart';
 import 'cell.dart';
+import 'drawable.dart';
 import 'environ.dart';
 import 'geometry.dart';
+import 'screen.dart';
 import 'style_ops.dart' as style_ops;
 import 'tabstop.dart';
 import '../../unicode/width.dart';
@@ -84,6 +86,7 @@ final class TerminalRenderer {
     _cur = _Cursor(x: -1, y: -1);
     _saved = _cur.clone();
     _profile = _detectProfile(_env, isTty);
+    _screen = _RendererScreen(this);
   }
 
   final StringSink _writer;
@@ -92,6 +95,10 @@ final class TerminalRenderer {
 
   final StringBuffer _buf = StringBuffer();
   Buffer? _curbuf;
+  late final Screen _screen;
+
+  int width() => _curbuf?.width() ?? 0;
+  int height() => _curbuf?.height() ?? 0;
 
   int _flags = 0;
   int _caps;
@@ -578,17 +585,17 @@ final class TerminalRenderer {
     _cur.y++;
   }
 
-  void _putCell(Buffer newbuf, Cell? cell) {
-    final w = newbuf.width();
-    final h = newbuf.height();
-    if (fullscreen() && _cur.x == w - 1 && _cur.y == h - 1) {
+  void _putCell(Buffer? newbuf, Cell? cell) {
+    final w = newbuf?.width() ?? width();
+    final h = newbuf?.height() ?? height();
+    if (w > 0 && h > 0 && fullscreen() && _cur.x == w - 1 && _cur.y == h - 1) {
       _putCellLR(newbuf, cell);
     } else {
       _putAttrCell(newbuf, cell);
     }
   }
 
-  void _putAttrCell(Buffer newbuf, Cell? cell) {
+  void _putAttrCell(Buffer? newbuf, Cell? cell) {
     if (cell != null && cell.isZero) return;
 
     if (_atPhantom) {
@@ -598,17 +605,23 @@ final class TerminalRenderer {
 
     _updatePen(cell);
 
-    final rawWidth = cell?.width;
-    final cellWidth = (rawWidth == null || rawWidth <= 0) ? 1 : rawWidth;
-    _buf.write(cell?.content ?? ' ');
+    if (cell?.drawable != null) {
+      final drawable = cell!.drawable as Drawable;
+      drawable.draw(_screen, rect(_cur.x, _cur.y, cell.width, 1));
+    } else {
+      final rawWidth = cell?.width;
+      final cellWidth = (rawWidth == null || rawWidth <= 0) ? 1 : rawWidth;
+      _buf.write(cell?.content ?? ' ');
 
-    _cur.x += cellWidth;
-    if (_cur.x >= newbuf.width()) {
+      _cur.x += cellWidth;
+    }
+
+    if (_cur.x >= (newbuf?.width() ?? width())) {
       _atPhantom = true;
     }
   }
 
-  void _putCellLR(Buffer newbuf, Cell? cell) {
+  void _putCellLR(Buffer? newbuf, Cell? cell) {
     final curX = _cur.x;
     if (cell == null || !cell.isZero) {
       _buf.write(UvAnsi.resetModeAutoWrap);
@@ -1504,4 +1517,24 @@ bool _notLocal(int cols, int fx, int fy, int tx, int ty) {
   }
 
   return (seq: seq, scrollHeight: scrollHeight);
+}
+
+final class _RendererScreen implements Screen {
+  _RendererScreen(this.renderer);
+  final TerminalRenderer renderer;
+
+  @override
+  Rectangle bounds() => rect(0, 0, renderer.width(), renderer.height());
+
+  @override
+  Cell? cellAt(int x, int y) => null;
+
+  @override
+  void setCell(int x, int y, Cell? cell) {
+    renderer._move(null, x, y);
+    renderer._putCell(null, cell);
+  }
+
+  @override
+  WidthMethod widthMethod() => WidthMethod.grapheme;
 }

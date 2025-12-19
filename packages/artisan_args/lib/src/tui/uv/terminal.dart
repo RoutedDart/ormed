@@ -6,6 +6,7 @@ import 'buffer.dart';
 import 'cancelreader.dart';
 import 'capabilities.dart';
 import 'cell.dart';
+import 'drawable.dart';
 import 'event.dart';
 import 'environ.dart';
 import 'geometry.dart';
@@ -18,10 +19,22 @@ import 'terminal_renderer.dart';
 import '../../unicode/width.dart';
 import 'winch.dart';
 
+export 'buffer.dart';
+export 'capabilities.dart';
+export 'cell.dart';
+export 'event.dart';
+export 'geometry.dart';
+export 'screen.dart';
+export 'drawable.dart';
+export 'styled_string.dart';
+export 'kitty_drawable.dart';
+export 'iterm2_drawable.dart';
+export 'sixel_drawable.dart';
+
 /// Terminal represents a terminal screen that can be manipulated and drawn to.
 ///
 /// Upstream: `third_party/ultraviolet/terminal.go` (`Terminal`).
-class Terminal implements Screen, FillAreaScreen, ClearableScreen, CloneableScreen, CloneAreaScreen {
+class Terminal implements Screen, FillableScreen, FillAreaScreen, ClearableScreen, CloneableScreen, CloneAreaScreen {
   Terminal({
     Stream<List<int>>? input,
     IOSink? output,
@@ -274,6 +287,11 @@ class Terminal implements Screen, FillAreaScreen, ClearableScreen, CloneableScre
   }
 
   @override
+  void fill(Cell? cell) {
+    _buf.fill(cell);
+  }
+
+  @override
   void fillArea(Cell? cell, Rectangle area) {
     _buf.fillArea(cell, area);
   }
@@ -307,7 +325,12 @@ class Terminal implements Screen, FillAreaScreen, ClearableScreen, CloneableScre
   }
 
   /// Returns the best [Drawable] for the given image based on terminal capabilities.
-  Drawable bestImageDrawable(img.Image image, {int? columns, int? rows}) {
+  static Drawable bestImageDrawable(
+    img.Image image, {
+    required TerminalCapabilities capabilities,
+    int? columns,
+    int? rows,
+  }) {
     if (capabilities.hasKittyGraphics) {
       return KittyImageDrawable(image, columns: columns, rows: rows);
     }
@@ -317,8 +340,13 @@ class Terminal implements Screen, FillAreaScreen, ClearableScreen, CloneableScre
     if (capabilities.hasSixel) {
       return SixelImageDrawable(image, columns: columns, rows: rows);
     }
-    // Fallback to nothing or a block-based renderer if we had one.
-    return KittyImageDrawable(image, columns: columns, rows: rows);
+    // Safe fallback: do nothing rather than emitting unknown escape sequences.
+    return EmptyDrawable();
+  }
+
+  /// Returns the best [Drawable] for the given image based on this terminal's capabilities.
+  Drawable bestImageDrawableForTerminal(img.Image image, {int? columns, int? rows}) {
+    return bestImageDrawable(image, capabilities: capabilities, columns: columns, rows: rows);
   }
 
   // NOTE: environment variable lookups are handled by [Environ].

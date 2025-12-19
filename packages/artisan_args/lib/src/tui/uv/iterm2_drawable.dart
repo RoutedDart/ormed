@@ -1,5 +1,6 @@
 import 'package:image/image.dart' as img;
 import 'cell.dart';
+import 'drawable.dart';
 import 'geometry.dart';
 import 'screen.dart';
 import '../../terminal/iterm2.dart';

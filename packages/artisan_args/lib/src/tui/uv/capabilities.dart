@@ -7,12 +7,22 @@ final class TerminalCapabilities {
   TerminalCapabilities({List<String>? env}) {
     if (env != null) {
       final environ = Environ(env);
+      final term = environ.getenv('TERM');
       final termProg = environ.getenv('TERM_PROGRAM');
       final lcTerm = environ.getenv('LC_TERMINAL');
-      if (termProg.contains('iTerm') ||
-          termProg.contains('WezTerm') ||
-          lcTerm.contains('iTerm')) {
+
+      // iTerm2 Image Protocol is specific to iTerm2-compatible terminals.
+      if (termProg.contains('iTerm') || lcTerm.contains('iTerm')) {
         hasITerm2 = true;
+      }
+
+      // Kitty graphics is supported by Kitty itself and some other terminals
+      // (e.g. WezTerm). Treat TERM hints as "best effort" (queries are the
+      // source of truth).
+      if (term.contains('kitty') ||
+          environ.getenv('KITTY_WINDOW_ID').isNotEmpty ||
+          termProg.contains('WezTerm')) {
+        hasKittyGraphics = true;
       }
     }
   }
@@ -37,6 +47,12 @@ final class TerminalCapabilities {
 
   /// The terminal color palette.
   final Map<int, UvRgb> palette = {};
+
+  /// Whether the terminal has reported its background color.
+  bool get hasBackgroundColor => backgroundColor != null;
+
+  /// Whether the terminal has reported any color palette entries.
+  bool get hasColorPalette => palette.isNotEmpty;
 
   /// Updates capabilities based on an event.
   /// 

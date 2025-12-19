@@ -158,6 +158,7 @@ final class Cell {
     this.content = '',
     this.style = const Style(),
     this.link = const Link(),
+    this.drawable,
     int? width,
   }) : width = width ?? (content.isEmpty ? 0 : 1);
 
@@ -165,15 +166,16 @@ final class Cell {
   Style style;
   Link link;
   int width;
+  Object? drawable;
 
   bool get isZero =>
-      content.isEmpty && width == 0 && style.isZero && link.isZero;
+      content.isEmpty && width == 0 && style.isZero && link.isZero && drawable == null;
 
   bool get isEmpty =>
-      content == ' ' && width == 1 && style.isZero && link.isZero;
+      content == ' ' && width == 1 && style.isZero && link.isZero && drawable == null;
 
   Cell clone() =>
-      Cell(content: content, style: style, link: link, width: width);
+      Cell(content: content, style: style, link: link, width: width, drawable: drawable);
 
   void empty() {
     content = ' ';

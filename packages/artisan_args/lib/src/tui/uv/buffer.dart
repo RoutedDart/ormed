@@ -1,5 +1,6 @@
 import 'ansi.dart';
 import 'cell.dart';
+import 'drawable.dart';
 import 'geometry.dart';
 import 'screen.dart';
 import 'style_ops.dart' as style_ops;

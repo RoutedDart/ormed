@@ -53,11 +53,3 @@ abstract class CloneableScreen implements Screen {
 abstract class CloneAreaScreen implements Screen {
   Object? cloneArea(Rectangle area);
 }
-
-/// Drawable can draw itself into a [Screen].
-///
-/// Upstream: `third_party/ultraviolet/buffer.go` (`Drawable`).
-abstract class Drawable {
-  void draw(Screen screen, Rectangle area);
-  Rectangle bounds();
-}
