@@ -44,6 +44,9 @@ final class Border implements Drawable {
   final Side bottomLeft;
   final Side bottomRight;
 
+  @override
+  Rectangle bounds() => const Rectangle(minX: 0, minY: 0, maxX: 0, maxY: 0);
+
   /// Returns a new [Border] with [style] applied to all sides.
   ///
   /// Upstream: `Border.Style`.

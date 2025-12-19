@@ -298,7 +298,17 @@ final class KeyboardEnhancementsEvent extends Event {
   const KeyboardEnhancementsEvent(this.flags);
   final int flags;
 
+  static const int disambiguateEscapeCodes = 0x01;
+  static const int reportEventTypes = 0x02;
+  static const int reportAlternateKeys = 0x04;
+  static const int reportAllKeysAsEscapeCodes = 0x08;
+  static const int reportAssociatedText = 0x10;
+
   bool contains(int enhancements) => (flags & enhancements) == enhancements;
+
+  bool get supportsKeyDisambiguation => contains(disambiguateEscapeCodes);
+  bool get supportsKeyReleases => contains(reportEventTypes);
+  bool get supportsUniformKeyLayout => contains(reportAllKeysAsEscapeCodes);
 }
 
 final class PrimaryDeviceAttributesEvent extends Event {

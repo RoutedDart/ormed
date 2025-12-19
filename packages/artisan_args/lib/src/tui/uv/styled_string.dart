@@ -11,7 +11,7 @@ import '../../unicode/grapheme.dart' as uni;
 /// lines and cells.
 ///
 /// Upstream: `third_party/ultraviolet/styled.go` (`StyledString`).
-final class StyledString {
+final class StyledString implements Drawable {
   StyledString(this.text, {this.wrap = false, this.tail = ''});
 
   final String text;
@@ -25,6 +25,7 @@ final class StyledString {
 
   Rectangle bounds() => styledStringBounds(text, WidthMethod.grapheme);
 
+  @override
   void draw(Screen screen, Rectangle area) {
     // Clear the area before drawing.
     for (var y = area.minY; y < area.maxY; y++) {

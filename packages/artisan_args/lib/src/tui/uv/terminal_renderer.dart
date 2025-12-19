@@ -204,6 +204,32 @@ final class TerminalRenderer {
     _buf.write(UvAnsi.disableFocusReporting);
   }
 
+  /// Pushes keyboard enhancements (Kitty Keyboard Protocol).
+  void pushKeyboardEnhancements(int flags) {
+    _buf.write('\x1b[>${flags}u');
+  }
+
+  /// Pops keyboard enhancements (Kitty Keyboard Protocol).
+  void popKeyboardEnhancements() {
+    _buf.write('\x1b[<u');
+  }
+
+  /// Queries keyboard enhancements (Kitty Keyboard Protocol).
+  void queryKeyboardEnhancements() {
+    _buf.write('\x1b[?u');
+  }
+
+  /// Queries primary device attributes.
+  void queryPrimaryDeviceAttributes() {
+    _buf.write('\x1b[?c');
+  }
+
+  /// Queries Kitty Graphics support.
+  void queryKittyGraphics() {
+    // Use a random id=31 to query support.
+    _buf.write('\x1b_Gi=31,s=1,v=1,a=q,t=d,f=24;AAAA\x1b\\');
+  }
+
   void erase() {
     _clear = true;
   }

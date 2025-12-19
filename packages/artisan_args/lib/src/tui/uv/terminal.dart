@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'buffer.dart';
 import 'cancelreader.dart';
+import 'capabilities.dart';
 import 'cell.dart';
 import 'event.dart';
 import 'environ.dart';
@@ -43,16 +44,19 @@ class Terminal implements Screen, FillAreaScreen, ClearableScreen, CloneableScre
   late final SizeNotifier _winch;
   
   final Buffer _buf;
+  final TerminalCapabilities capabilities = TerminalCapabilities();
   bool _running = false;
   bool _inAltScreen = false;
   bool _mouseEnabled = false;
   bool _bracketedPasteEnabled = false;
   bool _focusReportingEnabled = false;
   bool _cursorHidden = false;
+  int _keyboardEnhancements = 0;
   
   final _eventController = StreamController<Event>.broadcast();
   StreamSubscription? _readerSubscription;
   StreamSubscription? _winchSubscription;
+  StreamSubscription? _sigintSubscription;
 
   /// Returns a stream of events from the terminal.
   Stream<Event> get events => _eventController.stream;
@@ -71,6 +75,12 @@ class Terminal implements Screen, FillAreaScreen, ClearableScreen, CloneableScre
         }
       } catch (_) {}
     }
+
+    // Handle SIGINT to ensure terminal state is restored.
+    _sigintSubscription = ProcessSignal.sigint.watch().listen((_) {
+      stop();
+      exit(0);
+    });
 
     _reader.start();
     _readerSubscription = _reader.events.listen((event) {
@@ -91,6 +101,9 @@ class Terminal implements Screen, FillAreaScreen, ClearableScreen, CloneableScre
     _buf.resize(size.width, size.height);
     _renderer.resize(size.width, size.height);
     _eventController.add(WindowSizeEvent(width: size.width, height: size.height));
+
+    // Query capabilities.
+    queryCapabilities();
   }
 
   /// Stops the terminal and restores the original state.
@@ -99,6 +112,7 @@ class Terminal implements Screen, FillAreaScreen, ClearableScreen, CloneableScre
     _running = false;
 
     // Restore terminal state in reverse order.
+    if (_keyboardEnhancements != 0) disableKeyboardEnhancements();
     if (_mouseEnabled) disableMouse();
     if (_bracketedPasteEnabled) disableBracketedPaste();
     if (_focusReportingEnabled) disableFocusReporting();
@@ -117,6 +131,7 @@ class Terminal implements Screen, FillAreaScreen, ClearableScreen, CloneableScre
 
     await _readerSubscription?.cancel();
     await _winchSubscription?.cancel();
+    await _sigintSubscription?.cancel();
     _winch.stop();
     await _reader.close();
   }
@@ -194,6 +209,28 @@ class Terminal implements Screen, FillAreaScreen, ClearableScreen, CloneableScre
   void disableFocusReporting() {
     _focusReportingEnabled = false;
     _renderer.disableFocusReporting();
+    _renderer.flush();
+  }
+
+  /// Enables keyboard enhancements (Kitty Keyboard Protocol).
+  void enableKeyboardEnhancements(int flags) {
+    _keyboardEnhancements = flags;
+    _renderer.pushKeyboardEnhancements(flags);
+    _renderer.flush();
+  }
+
+  /// Disables keyboard enhancements (Kitty Keyboard Protocol).
+  void disableKeyboardEnhancements() {
+    _keyboardEnhancements = 0;
+    _renderer.popKeyboardEnhancements();
+    _renderer.flush();
+  }
+
+  /// Queries terminal capabilities.
+  void queryCapabilities() {
+    _renderer.queryPrimaryDeviceAttributes();
+    _renderer.queryKittyGraphics();
+    _renderer.queryKeyboardEnhancements();
     _renderer.flush();
   }
 

@@ -1,22 +1,21 @@
 import 'dart:math' as math;
 
-import 'buffer.dart' show styledStringBounds;
 import 'canvas.dart';
 import 'geometry.dart';
 import 'screen.dart';
 import 'styled_string.dart';
-import '../../unicode/width.dart';
 
 /// Layer represents a visual layer with content and positioning.
 ///
 /// Upstream: `third_party/lipgloss/layer.go` (`Layer`).
 final class Layer {
-  Layer(this.content, [List<Layer> layers = const []]) : _layers = [...layers] {
+  Layer(this.drawable, [List<Layer> layers = const []])
+    : _layers = [...layers] {
     _recomputeSize();
   }
 
   String id = '';
-  String content;
+  Drawable drawable;
   int x = 0;
   int y = 0;
   int z = 0;
@@ -84,18 +83,29 @@ final class Layer {
     final absX = x + parentX;
     final absY = y + parentY;
 
-    final bounds = styledStringBounds(content, WidthMethod.grapheme);
+    final b = drawable.bounds();
     var area = Rectangle(
       minX: absX,
       minY: absY,
-      maxX: absX + bounds.width,
-      maxY: absY + bounds.height,
+      maxX: absX + b.width,
+      maxY: absY + b.height,
     );
 
     for (final child in _layers) {
       area = area.union(child._boundsWithOffset(absX, absY));
     }
     return area;
+  }
+}
+
+/// Creates a new [Layer] from a [String] or [Drawable].
+Layer newLayer(Object content, [List<Layer> layers = const []]) {
+  if (content is Drawable) {
+    return Layer(content, layers);
+  } else if (content is String) {
+    return Layer(StyledString(content), layers);
+  } else {
+    throw ArgumentError('content must be a String or Drawable');
   }
 }
 
@@ -128,7 +138,7 @@ final class _CompositeLayer {
 /// Upstream: `third_party/lipgloss/layer.go` (`Compositor`).
 final class Compositor implements Drawable {
   Compositor([List<Layer> layers = const []])
-    : _root = Layer('')..addLayers(layers) {
+    : _root = Layer(StyledString(''))..addLayers(layers) {
     // Upstream: `third_party/lipgloss/layer.go` (`NewCompositor`) flattens on
     // construction so `Bounds`, `Hit`, and `GetLayer` work immediately.
     _flatten();
@@ -147,6 +157,7 @@ final class Compositor implements Drawable {
     _flatten();
   }
 
+  @override
   Rectangle bounds() => _bounds;
 
   Layer? getLayer(String id) => _index[id];
@@ -167,8 +178,7 @@ final class Compositor implements Drawable {
     if (_layers.isEmpty) _flatten();
     for (final cl in _layers) {
       if (cl.bounds.overlaps(area)) {
-        final content = newStyledString(cl.layer.content);
-        content.draw(scr, cl.bounds);
+        cl.layer.drawable.draw(scr, cl.bounds);
       }
     }
   }
@@ -190,7 +200,7 @@ final class Compositor implements Drawable {
     void recurse(Layer layer, int parentX, int parentY) {
       final absX = layer.x + parentX;
       final absY = layer.y + parentY;
-      final b = styledStringBounds(layer.content, WidthMethod.grapheme);
+      final b = layer.drawable.bounds();
       final bounds = Rectangle(
         minX: absX,
         minY: absY,
