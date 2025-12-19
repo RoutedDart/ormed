@@ -41,6 +41,9 @@ library;
 // ANSI escape sequences
 export 'ansi.dart' show Ansi;
 
+// Kitty Graphics Protocol
+export 'kitty.dart' show KittyImage;
+
 // Key types and constants
 export 'keys.dart' show Key, KeyType, Keys;
 

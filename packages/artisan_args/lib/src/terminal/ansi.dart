@@ -87,6 +87,9 @@ abstract final class Ansi {
   /// The Operating System Command introducer (ESC ]).
   static const osc = '\x1b]';
 
+  /// The Application Program Command introducer (ESC _).
+  static const apc = '\x1b_';
+
   /// The String Terminator (ESC \).
   static const st = '\x1b\\';
 
