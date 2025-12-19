@@ -21,10 +21,10 @@ void main() {
       .child('Mac')
       .child('Milk')
       .enumerator(TreeEnumerator.rounded)
-      .branchStyle(enumeratorStyle)
+      .enumeratorStyle(enumeratorStyle)
+      .indenterStyle(enumeratorStyle)
       .rootStyle(rootStyle)
-      .fileStyle(itemStyle)
-      .directoryStyle(itemStyle);
+      .itemStyle(itemStyle);
 
   print(t.render());
 }

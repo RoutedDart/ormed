@@ -49,9 +49,12 @@ void _styledTree() {
       .root('🌳 Projects')
       .enumerator(TreeEnumerator.rounded)
       .rootStyle(rootStyle)
-      .directoryStyle(dirStyle)
-      .fileStyle(fileStyle)
-      .branchStyle(branchStyle)
+      .itemStyleFunc((children, index) {
+        final node = children[index];
+        return node.childrenNodes.isNotEmpty ? dirStyle : fileStyle;
+      })
+      .enumeratorStyle(branchStyle)
+      .indenterStyle(branchStyle)
       .child(
         Tree()
             .root('📁 dart_packages')
@@ -75,9 +78,11 @@ void _fileSystemTree() {
   final tree = Tree()
       .root('lib/')
       .enumerator(TreeEnumerator.normal)
-      .itemStyleFunc((item, depth, isLast) {
+      .itemStyleFunc((children, index) {
+        final node = children[index];
+        final item = node.value;
         // Color files differently than directories
-        final isFile = item.toString().endsWith('.dart');
+        final isFile = item.endsWith('.dart');
         if (isFile) {
           return Style().foreground(BasicColor('#73F59F'));
         }

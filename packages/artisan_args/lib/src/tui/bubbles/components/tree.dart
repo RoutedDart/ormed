@@ -488,13 +488,6 @@ class Tree extends DisplayComponent implements TreeNode {
   final List<TreeNode> _children = <TreeNode>[];
   bool _showRoot;
 
-  // Convenience styles (kept for existing Dart examples).
-  Style? _directoryStyle;
-  Style? _fileStyle;
-
-  // Legacy per-item style hook (kept for existing API).
-  TreeStyleFunc? _legacyItemStyleFunc;
-
   _TreeRenderer? _renderer; // null => inherit parent renderer
 
   _TreeRenderer _ensureRenderer() => _renderer ??= _TreeRenderer();
@@ -669,7 +662,10 @@ class Tree extends DisplayComponent implements TreeNode {
     return this;
   }
 
-  Tree enumeratorStyleAt(TreeNodeStyleFunc fn) {
+  /// Sets the enumeration style function. Use this for conditional styling.
+  ///
+  /// This mirrors `lipgloss` v2 `EnumeratorStyleFunc`.
+  Tree enumeratorStyleFunc(TreeNodeStyleFunc fn) {
     _ensureRenderer().style.enumeratorStyle = fn;
     return this;
   }
@@ -679,7 +675,10 @@ class Tree extends DisplayComponent implements TreeNode {
     return this;
   }
 
-  Tree indenterStyleAt(TreeNodeStyleFunc fn) {
+  /// Sets the indentation style function. Use this for conditional styling.
+  ///
+  /// This mirrors `lipgloss` v2 `IndenterStyleFunc`.
+  Tree indenterStyleFunc(TreeNodeStyleFunc fn) {
     _ensureRenderer().style.indenterStyle = fn;
     return this;
   }
@@ -689,64 +688,12 @@ class Tree extends DisplayComponent implements TreeNode {
     return this;
   }
 
-  Tree itemStyleAt(TreeNodeStyleFunc fn) {
+  /// Sets the item style function. Use this for conditional styling.
+  ///
+  /// This mirrors `lipgloss` v2 `ItemStyleFunc`.
+  Tree itemStyleFunc(TreeNodeStyleFunc fn) {
     _ensureRenderer().style.itemStyle = fn;
     return this;
-  }
-
-  // ─────────────────────────────────────────────────────────────────────────
-  // Existing Dart convenience APIs (mapped onto v2 style funcs)
-  // ─────────────────────────────────────────────────────────────────────────
-
-  Tree directoryStyle(Style style) {
-    _directoryStyle = style;
-    _syncConvenienceItemStyles();
-    return this;
-  }
-
-  Tree fileStyle(Style style) {
-    _fileStyle = style;
-    _syncConvenienceItemStyles();
-    return this;
-  }
-
-  Tree branchStyle(Style style) {
-    // In v2, both the enumerator and indenter are "branches".
-    enumeratorStyle(style);
-    indenterStyle(style);
-    return this;
-  }
-
-  Tree enumeratorStyleFunc(TreeEnumeratorStyleFunc fn) {
-    enumeratorStyleAt((children, index) {
-      final style = fn(children, index);
-      return style ?? Style();
-    });
-    return this;
-  }
-
-  Tree itemStyleFunc(TreeStyleFunc func) {
-    _legacyItemStyleFunc = func;
-    _syncConvenienceItemStyles();
-    return this;
-  }
-
-  void _syncConvenienceItemStyles() {
-    itemStyleAt((children, index) {
-      final node = children[index];
-      final isDir = node.childrenNodes.isNotEmpty;
-
-      // Legacy hook has priority.
-      final legacy = _legacyItemStyleFunc;
-      if (legacy != null) {
-        final s = legacy(node.value, 0, isDir);
-        if (s != null) return s;
-      }
-
-      if (isDir && _directoryStyle != null) return _directoryStyle!;
-      if (!isDir && _fileStyle != null) return _fileStyle!;
-      return Style();
-    });
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -914,8 +861,13 @@ extension TreeFactory on Tree {
   static Tree fileTree(Map<String, dynamic> structure, {String? root}) {
     return fromMap(structure, root: root)
       ..enumerator(TreeEnumerator.normal)
-      ..directoryStyle(Style().bold().foreground(Colors.info))
-      ..fileStyle(Style().foreground(Colors.white));
+      ..itemStyleFunc((children, index) {
+        final node = children[index];
+        if (node.childrenNodes.isNotEmpty) {
+          return Style().bold().foreground(Colors.info);
+        }
+        return Style().foreground(Colors.white);
+      });
   }
 
   /// Creates a rounded tree.
@@ -955,8 +907,10 @@ extension TreeFactory on Tree {
     return Tree()
       ..root(rootLabel)
       ..enumerator(TreeEnumerator.rounded)
-      ..itemStyleFunc((item, depth, isDir) {
-        final colorIndex = depth % colors.length;
+      ..itemStyleFunc((children, index) {
+        final node = children[index];
+        final isDir = node.childrenNodes.isNotEmpty;
+        final colorIndex = index % colors.length;
         final style = Style().foreground(colors[colorIndex]);
         if (isDir) return style.bold();
         return style;
@@ -968,8 +922,15 @@ extension TreeFactory on Tree {
     return Tree()
       ..root(rootLabel)
       ..enumerator(TreeEnumerator.normal)
-      ..directoryStyle(Style().bold().foreground(Colors.info))
-      ..branchStyle(Style().dim());
+      ..itemStyleFunc((children, index) {
+        final node = children[index];
+        if (node.childrenNodes.isNotEmpty) {
+          return Style().bold().foreground(Colors.info);
+        }
+        return Style();
+      })
+      ..enumeratorStyle(Style().dim())
+      ..indenterStyle(Style().dim());
   }
 
   /// Creates a tree with muted styling.
@@ -978,8 +939,8 @@ extension TreeFactory on Tree {
       ..root(rootLabel)
       ..enumerator(TreeEnumerator.normal)
       ..rootStyle(Style().dim())
-      ..directoryStyle(Style().dim())
-      ..fileStyle(Style().dim())
-      ..branchStyle(Style().dim());
+      ..itemStyle(Style().dim())
+      ..enumeratorStyle(Style().dim())
+      ..indenterStyle(Style().dim());
   }
 }

@@ -10,7 +10,19 @@ import 'package:artisan_args/src/style/list.dart';
 import 'package:test/test.dart';
 
 String _readGolden(String relativePath) {
-  return File(relativePath).readAsStringSync().replaceAll('\r\n', '\n');
+  // We now use local testdata
+  final localPath = relativePath.replaceFirst(
+    'test/testdata/tree/',
+    'test/testdata/tree/',
+  );
+  var file = File(localPath);
+  if (!file.existsSync()) {
+    // Try going up to find the workspace root if run from package dir
+    // but wait, if we are in package dir, 'test/testdata' should work.
+    // If we are in root, 'packages/artisan_args/test/testdata' should work.
+    file = File('packages/artisan_args/$localPath');
+  }
+  return file.readAsStringSync().replaceAll('\r\n', '\n');
 }
 
 void _expectGolden(String relativePath, String actual) {
@@ -42,12 +54,12 @@ void main() {
 
     test('TestTree (before)', () {
       final tr = _testTree();
-      _expectGolden('third_party/lipgloss/tree/testdata/TestTree/before.golden', tr.render());
+      _expectGolden('test/testdata/tree/TestTree/before.golden', tr.render());
     });
 
     test('TestTree (after)', () {
       final tr = _testTree()..enumerator(TreeEnumerator.rounded);
-      _expectGolden('third_party/lipgloss/tree/testdata/TestTree/after.golden', tr.render());
+      _expectGolden('test/testdata/tree/TestTree/after.golden', tr.render());
     });
 
     test('TestTreeHidden', () {
@@ -68,12 +80,12 @@ void main() {
         )
         ..child('Baz');
 
-      _expectGolden('third_party/lipgloss/tree/testdata/TestTreeHidden.golden', tr.render());
+      _expectGolden('test/testdata/tree/TestTreeHidden.golden', tr.render());
     });
 
     test('TestTreeAllHidden', () {
       final tr = (_testTree()..root(''))..hide(true);
-      _expectGolden('third_party/lipgloss/tree/testdata/TestTreeAllHidden.golden', tr.render());
+      _expectGolden('test/testdata/tree/TestTreeAllHidden.golden', tr.render());
     });
 
     test('TestTreeRoot', () {
@@ -83,14 +95,14 @@ void main() {
         ..child(Tree(renderConfig: cfg)..root('Bar')..child('Qux')..child('Quuux'))
         ..child('Baz');
 
-      _expectGolden('third_party/lipgloss/tree/testdata/TestTreeRoot.golden', tr.render());
+      _expectGolden('test/testdata/tree/TestTreeRoot.golden', tr.render());
     });
 
     test('TestTreeStartsWithSubtree', () {
       final tr = Tree(renderConfig: cfg)
         ..child(Tree(renderConfig: cfg)..root('Bar')..child('Qux')..child('Quuux'))
         ..child('Baz');
-      _expectGolden('third_party/lipgloss/tree/testdata/TestTreeStartsWithSubtree.golden', tr.render());
+      _expectGolden('test/testdata/tree/TestTreeStartsWithSubtree.golden', tr.render());
     });
 
     test('TestTreeAddTwoSubTreesWithoutName', () {
@@ -101,7 +113,7 @@ void main() {
         ..child(Tree(renderConfig: cfg)..children(['Quux', 'Quux', 'Quux', 'Quux', 'Quux']))
         ..child('Baz');
 
-      _expectGolden('third_party/lipgloss/tree/testdata/TestTreeAddTwoSubTreesWithoutName.golden', tr.render());
+      _expectGolden('test/testdata/tree/TestTreeAddTwoSubTreesWithoutName.golden', tr.render());
     });
 
     test('TestTreeLastNodeIsSubTree', () {
@@ -114,7 +126,7 @@ void main() {
             ..child(Tree(renderConfig: cfg)..root('Quux')..child('Foo')..child('Bar'))
             ..child('Quuux'),
         );
-      _expectGolden('third_party/lipgloss/tree/testdata/TestTreeLastNodeIsSubTree.golden', tr.render());
+      _expectGolden('test/testdata/tree/TestTreeLastNodeIsSubTree.golden', tr.render());
     });
 
     test('TestTreeNil', () {
@@ -128,7 +140,7 @@ void main() {
             ..child('Quuux'),
         )
         ..child('Baz');
-      _expectGolden('third_party/lipgloss/tree/testdata/TestTreeNil.golden', tr.render());
+      _expectGolden('test/testdata/tree/TestTreeNil.golden', tr.render());
     });
 
     test('TestTreeCustom', () {
@@ -143,7 +155,7 @@ void main() {
         ..enumeratorFunc((_, __) => '->')
         ..indenterFunc((_, __) => '->');
 
-      _expectGolden('third_party/lipgloss/tree/testdata/TestTreeCustom.golden', tr.render());
+      _expectGolden('test/testdata/tree/TestTreeCustom.golden', tr.render());
     });
 
     test('TestTreeMultilineNode', () {
@@ -159,7 +171,7 @@ void main() {
         )
         ..child('Baz\nLine 2');
 
-      _expectGolden('third_party/lipgloss/tree/testdata/TestTreeMultilineNode.golden', tr.render());
+      _expectGolden('test/testdata/tree/TestTreeMultilineNode.golden', tr.render());
     });
 
     test('TestTreeSubTreeWithCustomEnumerator', () {
@@ -170,13 +182,13 @@ void main() {
             ..root('Parent')
             ..child('child 1')
             ..child('child 2')
-            ..itemStyleAt((_, __) => Style().setString('*'))
-            ..enumeratorStyleAt((_, __) => Style().setString('+').paddingRight(1)),
+            ..itemStyleFunc((_, __) => Style().setString('*'))
+            ..enumeratorStyleFunc((_, __) => Style().setString('+').paddingRight(1)),
         )
         ..child('Baz');
 
       _expectGolden(
-        'third_party/lipgloss/tree/testdata/TestTreeSubTreeWithCustomEnumerator.golden',
+        'test/testdata/tree/TestTreeSubTreeWithCustomEnumerator.golden',
         tr.render(),
       );
     });
@@ -195,14 +207,14 @@ void main() {
             ..children(['Foo', 'Foo', 'Foo', 'Foo', 'Foo']))
           .enumeratorFunc((_, i) => romans[i + 1] ?? '');
 
-      _expectGolden('third_party/lipgloss/tree/testdata/TestTreeMixedEnumeratorSize.golden', tr.render());
+      _expectGolden('test/testdata/tree/TestTreeMixedEnumeratorSize.golden', tr.render());
     });
 
     test('TestTreeStyleNilFuncs', () {
       final tr = (Tree(renderConfig: cfg)..root('Silly')..children(['Willy ', 'Nilly']))
-        ..itemStyleAt((_, __) => Style())
-        ..enumeratorStyleAt((_, __) => Style());
-      _expectGolden('third_party/lipgloss/tree/testdata/TestTreeStyleNilFuncs.golden', tr.render());
+        ..itemStyleFunc((_, __) => Style())
+        ..enumeratorStyleFunc((_, __) => Style());
+      _expectGolden('test/testdata/tree/TestTreeStyleNilFuncs.golden', tr.render());
     });
 
     test('TestTreeStyleAt', () {
@@ -215,7 +227,7 @@ void main() {
             return '-';
           });
 
-      _expectGolden('third_party/lipgloss/tree/testdata/TestTreeStyleAt.golden', tr.render());
+      _expectGolden('test/testdata/tree/TestTreeStyleAt.golden', tr.render());
     });
 
     test('TestRootStyle (strip ANSI)', () {
@@ -227,7 +239,7 @@ void main() {
           .itemStyle(Style().background(const BasicColor('#04B575')));
 
       _expectGolden(
-        'third_party/lipgloss/tree/testdata/TestRootStyle.golden',
+        'test/testdata/tree/TestRootStyle.golden',
         Ansi.stripAnsi(tr.render()),
       );
     });
@@ -247,7 +259,7 @@ void main() {
         ..filter((index) => index != 3);
 
       final tr = Tree(renderConfig: cfg)..root('Root')..child(data);
-      _expectGolden('third_party/lipgloss/tree/testdata/TestFilter.golden', tr.render());
+      _expectGolden('test/testdata/tree/TestFilter.golden', tr.render());
 
       expect(data.at(1)?.value, equals('Bar'));
       expect(data.at(10), isNull);
@@ -274,7 +286,7 @@ void main() {
         )
         ..child('Qux');
 
-      _expectGolden('third_party/lipgloss/tree/testdata/TestTreeTable.golden', tr.render());
+      _expectGolden('test/testdata/tree/TestTreeTable.golden', tr.render());
     });
 
     test('TestAddItemWithAndWithoutRoot/with_root', () {
@@ -284,7 +296,7 @@ void main() {
         ..child(Tree(renderConfig: cfg)..child('Baz'))
         ..child('Qux');
       _expectGolden(
-        'third_party/lipgloss/tree/testdata/TestAddItemWithAndWithoutRoot/with_root.golden',
+        'test/testdata/tree/TestAddItemWithAndWithoutRoot/with_root.golden',
         tr.render(),
       );
     });
@@ -295,7 +307,7 @@ void main() {
         ..child(Tree(renderConfig: cfg)..root('Bar')..child('Baz'))
         ..child('Qux');
       _expectGolden(
-        'third_party/lipgloss/tree/testdata/TestAddItemWithAndWithoutRoot/without_root.golden',
+        'test/testdata/tree/TestAddItemWithAndWithoutRoot/without_root.golden',
         tr.render(),
       );
     });
@@ -311,7 +323,7 @@ void main() {
               .enumerator(ListEnumerators.alphabet),
         );
 
-      _expectGolden('third_party/lipgloss/tree/testdata/TestEmbedListWithinTree.golden', tr.render());
+      _expectGolden('test/testdata/tree/TestEmbedListWithinTree.golden', tr.render());
     });
 
     test('TestMultilinePrefix', () {
@@ -324,7 +336,7 @@ void main() {
             ..child('Bar Document\nThe Bar Files')
             ..child('Baz Document\nThe Baz Files'));
 
-      _expectGolden('third_party/lipgloss/tree/testdata/TestMultilinePrefix.golden', tr.render());
+      _expectGolden('test/testdata/tree/TestMultilinePrefix.golden', tr.render());
     });
 
     test('TestMultilinePrefixSubtree', () {
@@ -344,7 +356,7 @@ void main() {
         ..child(subtree)
         ..child('Qux');
 
-      _expectGolden('third_party/lipgloss/tree/testdata/TestMultilinePrefixSubtree.golden', tr.render());
+      _expectGolden('test/testdata/tree/TestMultilinePrefixSubtree.golden', tr.render());
     });
 
     test('TestMultilinePrefixInception', () {
@@ -369,7 +381,7 @@ void main() {
             )
             ..child('Baz Document\nThe Baz Files'));
 
-      _expectGolden('third_party/lipgloss/tree/testdata/TestMultilinePrefixInception.golden', tr.render());
+      _expectGolden('test/testdata/tree/TestMultilinePrefixInception.golden', tr.render());
     });
 
     test('TestTypes', () {
@@ -379,7 +391,7 @@ void main() {
         ..child(['Foo', 'Bar'])
         ..child(['Qux', 'Quux', 'Quuux']);
 
-      _expectGolden('third_party/lipgloss/tree/testdata/TestTypes.golden', tr.render());
+      _expectGolden('test/testdata/tree/TestTypes.golden', tr.render());
     });
   });
 }

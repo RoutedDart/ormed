@@ -35,9 +35,10 @@ void main() {
 
   final t = Tree()
       .root(pwd)
-      .branchStyle(enumeratorStyle)
+      .enumeratorStyle(enumeratorStyle)
+      .indenterStyle(enumeratorStyle)
       .rootStyle(itemStyle)
-      .fileStyle(itemStyle);
+      .itemStyle(itemStyle);
 
   addBranches(t, '.');
 

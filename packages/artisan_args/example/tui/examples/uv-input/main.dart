@@ -111,8 +111,16 @@ class _LogModel implements tui.Model {
         );
         return (this, null);
 
-      case tui.TerminalColorMsg(:final kind, :final hex):
-        _log('TerminalColorMsg(kind: $kind, hex: $hex)');
+      case tui.BackgroundColorMsg(:final hex):
+        _log('BackgroundColorMsg(hex: $hex)');
+        return (this, null);
+
+      case tui.ForegroundColorMsg(:final hex):
+        _log('ForegroundColorMsg(hex: $hex)');
+        return (this, null);
+
+      case tui.CursorColorMsg(:final hex):
+        _log('CursorColorMsg(hex: $hex)');
         return (this, null);
 
       case tui.UvEventMsg(:final event):

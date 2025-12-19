@@ -220,18 +220,17 @@ final class ClipboardMsg extends Msg {
 /// Terminal-reported color kinds.
 enum TerminalColorKind { foreground, background, cursor }
 
-/// Terminal color report message (OSC 10/11/12).
+/// Message containing the terminal's background color.
 ///
 /// Only emitted when UV input decoding is enabled and the terminal reports a
-/// color payload (e.g. OSC 11 background report).
-final class TerminalColorMsg extends Msg {
-  const TerminalColorMsg({required this.kind, required this.hex});
+/// background color (OSC 11).
+final class BackgroundColorMsg extends Msg {
+  const BackgroundColorMsg({required this.hex});
 
-  final TerminalColorKind kind;
+  /// The background color reported by the terminal (hex string).
+  final String hex;
 
-  /// Hex color in `#rrggbb` form, or `null` if unavailable.
-  final String? hex;
-
+  /// Whether the background color is dark.
   bool get isDark {
     final rgb = _parseHexRgb(hex);
     if (rgb == null) return true;
@@ -246,7 +245,35 @@ final class TerminalColorMsg extends Msg {
   }
 
   @override
-  String toString() => 'TerminalColorMsg(kind: $kind, hex: $hex)';
+  String toString() => 'BackgroundColorMsg($hex)';
+}
+
+/// Message containing the terminal's foreground color.
+///
+/// Only emitted when UV input decoding is enabled and the terminal reports a
+/// foreground color (OSC 10).
+final class ForegroundColorMsg extends Msg {
+  const ForegroundColorMsg({required this.hex});
+
+  /// The foreground color reported by the terminal (hex string).
+  final String hex;
+
+  @override
+  String toString() => 'ForegroundColorMsg($hex)';
+}
+
+/// Message containing the terminal's cursor color.
+///
+/// Only emitted when UV input decoding is enabled and the terminal reports a
+/// cursor color (OSC 12).
+final class CursorColorMsg extends Msg {
+  const CursorColorMsg({required this.hex});
+
+  /// The cursor color reported by the terminal (hex string).
+  final String hex;
+
+  @override
+  String toString() => 'CursorColorMsg($hex)';
 }
 
 ({int r, int g, int b})? _parseHexRgb(String? hex) {

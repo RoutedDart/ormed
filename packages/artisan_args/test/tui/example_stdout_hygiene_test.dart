@@ -4,7 +4,10 @@ import 'package:test/test.dart';
 
 void main() {
   test('tui examples avoid direct stdout/stderr writes', () {
-    final root = Directory('packages/artisan_args/example/tui');
+    var root = Directory('packages/artisan_args/example/tui');
+    if (!root.existsSync()) {
+      root = Directory('example/tui');
+    }
     expect(root.existsSync(), isTrue, reason: 'Missing ${root.path}');
 
     const allowMarker = 'tui:allow-stdout';

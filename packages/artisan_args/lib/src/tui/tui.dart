@@ -87,7 +87,7 @@ library;
 
 // Terminal abstraction
 export 'terminal.dart'
-    show TuiTerminal, StdioTerminal, TerminalState, AnsiCodes;
+    show TuiTerminal, StdioTerminal, TerminalState;
 
 // Components
 export 'component.dart' show ViewComponent, StaticComponent, ComponentHost;
@@ -102,8 +102,9 @@ export 'msg.dart'
         KeyMsg,
         ClipboardMsg,
         ClipboardSelection,
-        TerminalColorMsg,
-        TerminalColorKind,
+        BackgroundColorMsg,
+        ForegroundColorMsg,
+        CursorColorMsg,
         MouseMsg,
         MouseButton,
         MouseAction,

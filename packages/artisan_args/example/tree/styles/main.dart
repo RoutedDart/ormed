@@ -14,11 +14,13 @@ void main() {
         Tree()
             .root('Nyx')
             .children(['Lip Gloss', 'Foundation'])
-            .branchStyle(pink),
+            .enumeratorStyle(pink)
+            .indenterStyle(pink),
         'Mac',
         'Milk',
       ])
-      .branchStyle(purple);
+      .enumeratorStyle(purple)
+      .indenterStyle(purple);
 
   print(t);
 }

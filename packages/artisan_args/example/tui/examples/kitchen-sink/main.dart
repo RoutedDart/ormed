@@ -225,8 +225,18 @@ class _KitchenSinkModel extends tui.Model {
         _height = height;
         return (this, null);
 
-      case tui.TerminalColorMsg(kind: final kind, hex: final hex):
-        _log('TerminalColorMsg(kind: $kind, hex: $hex)');
+      case tui.BackgroundColorMsg(:final hex):
+        _log('BackgroundColorMsg(hex: $hex)');
+        _theme = _theme.update(msg);
+        return (this, null);
+
+      case tui.ForegroundColorMsg(:final hex):
+        _log('ForegroundColorMsg(hex: $hex)');
+        _theme = _theme.update(msg);
+        return (this, null);
+
+      case tui.CursorColorMsg(:final hex):
+        _log('CursorColorMsg(hex: $hex)');
         _theme = _theme.update(msg);
         return (this, null);
 
@@ -722,8 +732,9 @@ final class _LipglossPage extends _KitchenSinkPage {
                 ..bold()
                 ..foreground(Colors.sky),
             )
-            .branchStyle(m._style(Style()).dim())
-            .itemStyleAt((children, index) {
+            .enumeratorStyle(m._style(Style()).dim())
+            .indenterStyle(m._style(Style()).dim())
+            .itemStyleFunc((children, index) {
               final v = children[index].value.toString();
               if (v.contains('🍞')) return m._style(Style()).foreground(Colors.rose);
               if (v.contains('🥬')) return m._style(Style()).foreground(Colors.lime);
@@ -741,8 +752,9 @@ final class _LipglossPage extends _KitchenSinkPage {
               ..child('trim-end'))
             .offset(1, 1)
             .enumerator(TreeEnumerator.doubleLine)
-            .branchStyle(m._style(Style()).dim())
-            .itemStyleAt((children, index) {
+            .enumeratorStyle(m._style(Style()).dim())
+            .indenterStyle(m._style(Style()).dim())
+            .itemStyleFunc((children, index) {
               final v = children[index].value.toString();
               if (v.contains('shown A')) {
                 return m._style(Style()).foreground(Colors.teal);

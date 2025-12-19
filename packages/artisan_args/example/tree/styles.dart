@@ -17,11 +17,13 @@ void main() {
             .root('Nyx')
             .child('Lip Gloss')
             .child('Foundation')
-            .branchStyle(pink),
+            .enumeratorStyle(pink)
+            .indenterStyle(pink),
       )
       .child('Mac')
       .child('Milk')
-      .branchStyle(purple);
+      .enumeratorStyle(purple)
+      .indenterStyle(purple);
 
   print(t.render());
 }

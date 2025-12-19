@@ -38,6 +38,24 @@ String stringForProfile(String input, ColorProfile profile) {
   return cp_downsample.downsampleSgr(input, p);
 }
 
+int Print(Object? v1, [Object? v2, Object? v3, Object? v4, Object? v5, Object? v6]) =>
+    PrintAll([v1, v2, v3, v4, v5, v6].where((it) => it != null));
+
+int Println([Object? v1, Object? v2, Object? v3, Object? v4, Object? v5, Object? v6]) =>
+    PrintlnAll([v1, v2, v3, v4, v5, v6].where((it) => it != null));
+
+int Printf(String format, [Object? v1, Object? v2, Object? v3, Object? v4, Object? v5, Object? v6]) =>
+    PrintfAll(format, [v1, v2, v3, v4, v5, v6].where((it) => it != null).toList());
+
+String Sprint(Object? v1, [Object? v2, Object? v3, Object? v4, Object? v5, Object? v6]) =>
+    SprintAll([v1, v2, v3, v4, v5, v6].where((it) => it != null));
+
+String Sprintln([Object? v1, Object? v2, Object? v3, Object? v4, Object? v5, Object? v6]) =>
+    SprintlnAll([v1, v2, v3, v4, v5, v6].where((it) => it != null));
+
+String Sprintf(String format, [Object? v1, Object? v2, Object? v3, Object? v4, Object? v5, Object? v6]) =>
+    SprintfAll(format, [v1, v2, v3, v4, v5, v6].where((it) => it != null).toList());
+
 int PrintAll(Iterable<Object?> values) {
   final out = _join(values, sep: '');
   Writer.write(stringForProfile(out, Writer.colorProfile));
@@ -50,10 +68,7 @@ int PrintlnAll(Iterable<Object?> values) {
   return out.length + 1;
 }
 
-int Print(Object? value) => PrintAll([value]);
-int Println([Object? value]) => PrintlnAll(value == null ? const [] : [value]);
-
-int Printf(String format, List<Object?> args) {
+int PrintfAll(String format, List<Object?> args) {
   final out = _sprintf(format, args);
   Writer.write(stringForProfile(out, Writer.colorProfile));
   return out.length;
@@ -65,7 +80,7 @@ String SprintAll(Iterable<Object?> values) =>
 String SprintlnAll(Iterable<Object?> values) =>
     stringForProfile('${_join(values, sep: ' ')}\n', Writer.colorProfile);
 
-String Sprintf(String format, List<Object?> args) =>
+String SprintfAll(String format, List<Object?> args) =>
     stringForProfile(_sprintf(format, args), Writer.colorProfile);
 
 int Fprint(io.IOSink sink, Iterable<Object?> values) {

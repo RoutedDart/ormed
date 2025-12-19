@@ -315,7 +315,11 @@ void main() {
       .child('test/')
       .child('pubspec.yaml')
       .enumerator(TreeEnumerator.rounded)
-      .itemStyleFunc((item, depth, isDirectory) {
+      .itemStyleFunc((children, index) {
+        final node = children[index];
+        final item = node.value;
+        final isDirectory = node.childrenNodes.isNotEmpty;
+
         if (isDirectory) {
           return Style().bold().foreground(Colors.blue);
         }
@@ -325,7 +329,7 @@ void main() {
         if (item.endsWith('.yaml')) {
           return Style().foreground(Colors.yellow);
         }
-        return null;
+        return Style();
       });
 
   print(styledTree.render());

@@ -349,7 +349,7 @@ void main() {
           ..headerStyle(Style().bold().underline());
         final output = list.render();
         expect(output, contains('\x1B['));
-        expect(output, contains('Header'));
+        expect(Ansi.stripAnsi(output), contains('Header'));
       });
 
       test('defaults to bold header', () {

@@ -281,9 +281,9 @@ class LipList {
         return _enumerator(listItems, i);
       })
       ..indenterFunc((sibs, i) => _indenter(listItems, i))
-      ..itemStyleAt((sibs, i) => _itemStyleFunc(listItems, i))
-      ..enumeratorStyleAt((sibs, i) => _enumeratorStyleFunc(listItems, i))
-      ..indenterStyleAt((sibs, i) => _indenterStyleFunc(listItems, i));
+      ..itemStyleFunc((sibs, i) => _itemStyleFunc(listItems, i))
+      ..enumeratorStyleFunc((sibs, i) => _enumeratorStyleFunc(listItems, i))
+      ..indenterStyleFunc((sibs, i) => _indenterStyleFunc(listItems, i));
   }
 
   @override

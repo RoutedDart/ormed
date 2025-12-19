@@ -27,8 +27,9 @@ void main() {
         ]),
       )
       .child(Tree().root('Veggies').children(['Leek', 'Artichoke']))
-      .fileStyle(itemStyle)
-      .branchStyle(enumeratorStyle)
+      .itemStyle(itemStyle)
+      .enumeratorStyle(enumeratorStyle)
+      .indenterStyle(enumeratorStyle)
       .enumerator(TreeEnumerator.rounded);
 
   print(t.render());

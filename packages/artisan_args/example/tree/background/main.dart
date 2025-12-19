@@ -17,9 +17,9 @@ void main() {
   final t = Tree()
       .root('# Table of Contents')
       .rootStyle(itemStyle)
-      .fileStyle(itemStyle)
-      .directoryStyle(itemStyle)
-      .branchStyle(enumeratorStyle)
+      .itemStyle(itemStyle)
+      .enumeratorStyle(enumeratorStyle)
+      .indenterStyle(enumeratorStyle)
       .child(
         Tree().root('## Chapter 1').child('Chapter 1.1').child('Chapter 1.2'),
       )

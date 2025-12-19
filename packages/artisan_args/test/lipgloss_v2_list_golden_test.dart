@@ -8,7 +8,16 @@ import 'package:artisan_args/src/tui/bubbles/components/tree.dart';
 import 'package:test/test.dart';
 
 String _readGolden(String relativePath) {
-  return File(relativePath).readAsStringSync().replaceAll('\r\n', '\n');
+  // We now use local testdata
+  final localPath = relativePath.replaceFirst(
+    'test/testdata/list/',
+    'test/testdata/list/',
+  );
+  var file = File(localPath);
+  if (!file.existsSync()) {
+    file = File('packages/artisan_args/$localPath');
+  }
+  return file.readAsStringSync().replaceAll('\r\n', '\n');
 }
 
 void _expectGolden(String relativePath, String actual) {
@@ -22,12 +31,12 @@ void main() {
     test('TestList', () {
       final l =
           LipList(renderConfig: cfg)..item('Foo')..item('Bar')..item('Baz');
-      _expectGolden('third_party/lipgloss/list/testdata/TestList.golden', l.render());
+      _expectGolden('test/testdata/list/TestList.golden', l.render());
     });
 
     test('TestListItems', () {
       final l = LipList(renderConfig: cfg)..items(['Foo', 'Bar', 'Baz']);
-      _expectGolden('third_party/lipgloss/list/testdata/TestListItems.golden', l.render());
+      _expectGolden('test/testdata/list/TestListItems.golden', l.render());
     });
 
     test('TestSublist', () {
@@ -39,7 +48,7 @@ void main() {
               .enumerator(ListEnumerators.roman),
         )
         ..item('Qux');
-      _expectGolden('third_party/lipgloss/list/testdata/TestSublist.golden', l.render());
+      _expectGolden('test/testdata/list/TestSublist.golden', l.render());
     });
 
     test('TestSublistItems', () {
@@ -51,7 +60,7 @@ void main() {
             .enumerator(ListEnumerators.roman),
         'G',
       ], renderConfig: cfg);
-      _expectGolden('third_party/lipgloss/list/testdata/TestSublistItems.golden', l.render());
+      _expectGolden('test/testdata/list/TestSublistItems.golden', l.render());
     });
 
     test('TestComplexSublist', () {
@@ -128,7 +137,7 @@ void main() {
         )
         ..item('Baz');
 
-      _expectGolden('third_party/lipgloss/list/testdata/TestComplexSublist.golden', l.render());
+      _expectGolden('test/testdata/list/TestComplexSublist.golden', l.render());
     });
 
     test('TestMultiline', () {
@@ -136,12 +145,12 @@ void main() {
         ..item('Item1\nline 2\nline 3')
         ..item('Item2\nline 2\nline 3')
         ..item('3');
-      _expectGolden('third_party/lipgloss/list/testdata/TestMultiline.golden', l.render());
+      _expectGolden('test/testdata/list/TestMultiline.golden', l.render());
     });
 
     test('TestListIntegers', () {
       final l = LipList(renderConfig: cfg)..item('1')..item('2')..item('3');
-      _expectGolden('third_party/lipgloss/list/testdata/TestListIntegers.golden', l.render());
+      _expectGolden('test/testdata/list/TestListIntegers.golden', l.render());
     });
 
     test('TestEnumerators/alphabet', () {
@@ -150,7 +159,7 @@ void main() {
         ..item('Foo')
         ..item('Bar')
         ..item('Baz');
-      _expectGolden('third_party/lipgloss/list/testdata/TestEnumerators/alphabet.golden', l.render());
+      _expectGolden('test/testdata/list/TestEnumerators/alphabet.golden', l.render());
     });
 
     test('TestEnumerators/arabic', () {
@@ -159,7 +168,7 @@ void main() {
         ..item('Foo')
         ..item('Bar')
         ..item('Baz');
-      _expectGolden('third_party/lipgloss/list/testdata/TestEnumerators/arabic.golden', l.render());
+      _expectGolden('test/testdata/list/TestEnumerators/arabic.golden', l.render());
     });
 
     test('TestEnumerators/roman', () {
@@ -168,7 +177,7 @@ void main() {
         ..item('Foo')
         ..item('Bar')
         ..item('Baz');
-      _expectGolden('third_party/lipgloss/list/testdata/TestEnumerators/roman.golden', l.render());
+      _expectGolden('test/testdata/list/TestEnumerators/roman.golden', l.render());
     });
 
     test('TestEnumerators/bullet', () {
@@ -177,7 +186,7 @@ void main() {
         ..item('Foo')
         ..item('Bar')
         ..item('Baz');
-      _expectGolden('third_party/lipgloss/list/testdata/TestEnumerators/bullet.golden', l.render());
+      _expectGolden('test/testdata/list/TestEnumerators/bullet.golden', l.render());
     });
 
     test('TestEnumerators/asterisk', () {
@@ -186,7 +195,7 @@ void main() {
         ..item('Foo')
         ..item('Bar')
         ..item('Baz');
-      _expectGolden('third_party/lipgloss/list/testdata/TestEnumerators/asterisk.golden', l.render());
+      _expectGolden('test/testdata/list/TestEnumerators/asterisk.golden', l.render());
     });
 
     test('TestEnumerators/dash', () {
@@ -195,7 +204,7 @@ void main() {
         ..item('Foo')
         ..item('Bar')
         ..item('Baz');
-      _expectGolden('third_party/lipgloss/list/testdata/TestEnumerators/dash.golden', l.render());
+      _expectGolden('test/testdata/list/TestEnumerators/dash.golden', l.render());
     });
 
     test('TestEnumeratorsTransform/alphabet lower', () {
@@ -208,7 +217,7 @@ void main() {
         ..item('Bar')
         ..item('Baz');
       _expectGolden(
-        'third_party/lipgloss/list/testdata/TestEnumeratorsTransform/alphabet_lower.golden',
+        'test/testdata/list/TestEnumeratorsTransform/alphabet_lower.golden',
         l.render(),
       );
     });
@@ -223,7 +232,7 @@ void main() {
         ..item('Bar')
         ..item('Baz');
       _expectGolden(
-        'third_party/lipgloss/list/testdata/TestEnumeratorsTransform/arabic).golden',
+        'test/testdata/list/TestEnumeratorsTransform/arabic).golden',
         l.render(),
       );
     });
@@ -241,7 +250,7 @@ void main() {
         ..item('Bar')
         ..item('Baz');
       _expectGolden(
-        'third_party/lipgloss/list/testdata/TestEnumeratorsTransform/roman_within_().golden',
+        'test/testdata/list/TestEnumeratorsTransform/roman_within_().golden',
         l.render(),
       );
     });
@@ -254,7 +263,7 @@ void main() {
         ..item('Bar')
         ..item('Baz');
       _expectGolden(
-        'third_party/lipgloss/list/testdata/TestEnumeratorsTransform/bullet_is_dash.golden',
+        'test/testdata/list/TestEnumeratorsTransform/bullet_is_dash.golden',
         l.render(),
       );
     });
@@ -295,7 +304,7 @@ void main() {
         l.item('Foo');
       }
       _expectGolden(
-        'third_party/lipgloss/list/testdata/TestEnumeratorsAlign.golden',
+        'test/testdata/list/TestEnumeratorsAlign.golden',
         l.render(),
       );
     });
@@ -309,7 +318,7 @@ void main() {
         'Parent 2',
         LipList(renderConfig: cfg)..item('I like fuzzy socks'),
       ]);
-      _expectGolden('third_party/lipgloss/list/testdata/TestSubListItems2.golden', l.render());
+      _expectGolden('test/testdata/list/TestSubListItems2.golden', l.render());
     });
   });
 }

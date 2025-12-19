@@ -378,9 +378,8 @@ class Layout {
     required VerticalAlign vertical,
     required String content,
     WhitespaceOptions? whitespace,
-    @Deprecated('Use whitespace parameter instead') String fillChar = ' ',
   }) {
-    final ws = whitespace ?? WhitespaceOptions(chars: fillChar);
+    final ws = whitespace ?? WhitespaceOptions(chars: ' ');
     // First place horizontally, then vertically (like Go)
     final horizontalPlaced = _placeHorizontal(width, horizontal, content, ws);
     return _placeVertical(height, vertical, horizontalPlaced, ws);

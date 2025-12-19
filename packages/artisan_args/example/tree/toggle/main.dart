@@ -58,7 +58,8 @@ void main() {
   final t = Tree()
       .root(Dir('~/charm', true, s).toString())
       .enumerator(TreeEnumerator.rounded)
-      .branchStyle(s.enumerator)
+      .enumeratorStyle(s.enumerator)
+      .indenterStyle(s.enumerator)
       .children([
         Dir('ayman', false, s).toString(),
         Tree()

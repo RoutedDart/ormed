@@ -110,32 +110,17 @@ List<Msg> _eventToMsgs(uvev.Event ev) {
 
   if (ev is uvev.ForegroundColorEvent) {
     final hex = ev.toString();
-    return [
-      TerminalColorMsg(
-        kind: TerminalColorKind.foreground,
-        hex: hex.isEmpty ? null : hex,
-      ),
-    ];
+    return [ForegroundColorMsg(hex: hex)];
   }
 
   if (ev is uvev.BackgroundColorEvent) {
     final hex = ev.toString();
-    return [
-      TerminalColorMsg(
-        kind: TerminalColorKind.background,
-        hex: hex.isEmpty ? null : hex,
-      ),
-    ];
+    return [BackgroundColorMsg(hex: hex)];
   }
 
   if (ev is uvev.CursorColorEvent) {
     final hex = ev.toString();
-    return [
-      TerminalColorMsg(
-        kind: TerminalColorKind.cursor,
-        hex: hex.isEmpty ? null : hex,
-      ),
-    ];
+    return [CursorColorMsg(hex: hex)];
   }
 
   if (ev is uvev.MouseClickEvent)

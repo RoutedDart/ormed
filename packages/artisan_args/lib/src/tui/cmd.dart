@@ -295,7 +295,8 @@ class Cmd {
   /// plus DA1 as a follow-up.
   ///
   /// When UV input decoding is enabled, these are translated to
-  /// [TerminalColorMsg] instances by the UV adapter.
+  /// [BackgroundColorMsg], [ForegroundColorMsg], or [CursorColorMsg]
+  /// instances by the UV adapter.
   static Cmd requestTerminalColors() => writeRaw(
     term_ansi.Ansi.requestForegroundColor +
         term_ansi.Ansi.requestBackgroundColor +
@@ -579,6 +580,27 @@ class Cmd {
       return callback(DateTime.now());
     });
   }
+
+  /// Requests the terminal's foreground color.
+  ///
+  /// This sends OSC 10 ? to the terminal. The terminal will respond with an
+  /// OSC 10 sequence which is decoded into a [ForegroundColorMsg].
+  static Cmd requestForegroundColor() =>
+      Cmd(() async => WriteRawMsg(term_ansi.Ansi.requestForegroundColor));
+
+  /// Requests the terminal's background color.
+  ///
+  /// This sends OSC 11 ? to the terminal. The terminal will respond with an
+  /// OSC 11 sequence which is decoded into a [BackgroundColorMsg].
+  static Cmd requestBackgroundColor() =>
+      Cmd(() async => WriteRawMsg(term_ansi.Ansi.requestBackgroundColor));
+
+  /// Requests the terminal's cursor color.
+  ///
+  /// This sends OSC 12 ? to the terminal. The terminal will respond with an
+  /// OSC 12 sequence which is decoded into a [CursorColorMsg].
+  static Cmd requestCursorColor() =>
+      Cmd(() async => WriteRawMsg(term_ansi.Ansi.requestCursorColor));
 
   /// A command that sends a message immediately.
   ///
