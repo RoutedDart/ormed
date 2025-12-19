@@ -152,17 +152,26 @@ String sgrColor({
       if (ansi16 != null) rgb = _ansi16Palette[ansi16.clamp(0, 15)];
     }
     if (rgb == null) return '';
-    final p = underline ? 58 : (background ? 48 : 38);
+    if (underline) {
+      // SGR 58 uses xterm-style colon parameters for underline color.
+      // Example: ESC[58:2::R:G:Bm
+      return '\x1B[58:2::${rgb.r}:${rgb.g}:${rgb.b}m';
+    }
+    final p = background ? 48 : 38;
     return '\x1B[$p;2;${rgb.r};${rgb.g};${rgb.b}m';
   }
 
   if (profile == Profile.ansi256) {
-    final p = underline ? 58 : (background ? 48 : 38);
     final idx =
         ansi256 ??
         (rgb != null
             ? rgbToAnsi256(rgb.r, rgb.g, rgb.b)
             : (ansi16 != null ? _ansi16ToAnsi256(ansi16) : 0));
+    if (underline) {
+      // SGR 58 uses colon parameters for underline color.
+      return '\x1B[58:5:${idx}m';
+    }
+    final p = background ? 48 : 38;
     return '\x1B[$p;5;${idx}m';
   }
 
@@ -174,7 +183,8 @@ String sgrColor({
         (rgb != null
             ? rgbToAnsi256(rgb.r, rgb.g, rgb.b)
             : (ansi16 != null ? _ansi16ToAnsi256(ansi16) : 0));
-    return '\x1B[58;5;${idx}m';
+    // SGR 58 uses colon parameters for underline color.
+    return '\x1B[58:5:${idx}m';
   }
 
   final idx16 =

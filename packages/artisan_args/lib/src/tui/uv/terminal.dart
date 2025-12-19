@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:image/image.dart' as img;
+import 'package:artisan_args/src/colorprofile/profile.dart' as cp;
+import 'ansi.dart';
 import 'buffer.dart';
 import 'cancelreader.dart';
 import 'capabilities.dart';
@@ -70,6 +72,7 @@ class Terminal implements Screen, FillableScreen, FillAreaScreen, ClearableScree
   bool _focusReportingEnabled = false;
   bool _cursorHidden = false;
   int _keyboardEnhancements = 0;
+  final List<String> _prepend = [];
   
   final _eventController = StreamController<Event>.broadcast();
   StreamSubscription? _readerSubscription;
@@ -111,15 +114,25 @@ class Terminal implements Screen, FillableScreen, FillAreaScreen, ClearableScree
 
     _winch.start();
     _winchSubscription = _winch.stream.listen((_) async {
-      final size = await getSize();
-      _eventController.add(WindowSizeEvent(width: size.width, height: size.height));
+      final size = _winch.getWindowSize();
+      _eventController.add(WindowSizeEvent(
+        width: size.cells.width,
+        height: size.cells.height,
+        widthPx: size.pixels.width,
+        heightPx: size.pixels.height,
+      ));
     });
 
     // Initial size.
-    final size = await getSize();
-    _buf.resize(size.width, size.height);
-    _renderer.resize(size.width, size.height);
-    _eventController.add(WindowSizeEvent(width: size.width, height: size.height));
+    final size = _winch.getWindowSize();
+    _buf.resize(size.cells.width, size.cells.height);
+    _renderer.resize(size.cells.width, size.cells.height);
+    _eventController.add(WindowSizeEvent(
+      width: size.cells.width,
+      height: size.cells.height,
+      widthPx: size.pixels.width,
+      heightPx: size.pixels.height,
+    ));
 
     // Query capabilities.
     queryCapabilities();
@@ -136,7 +149,15 @@ class Terminal implements Screen, FillableScreen, FillAreaScreen, ClearableScree
     if (_bracketedPasteEnabled) disableBracketedPaste();
     if (_focusReportingEnabled) disableFocusReporting();
     if (_cursorHidden) showCursor();
-    if (_inAltScreen) exitAltScreen();
+    
+    if (_inAltScreen) {
+      exitAltScreen();
+    } else {
+      // Go to the bottom of the screen.
+      _renderer.moveTo(0, _buf.height() - 1);
+      _renderer.writeString('\r${UvAnsi.eraseScreenBelow}');
+      _renderer.flush();
+    }
 
     // Restore terminal mode.
     if (_input == stdin) {
@@ -157,12 +178,13 @@ class Terminal implements Screen, FillableScreen, FillAreaScreen, ClearableScree
 
   /// Returns the current size of the terminal.
   Future<Size> getSize() async {
-    if (_output == stdout && stdout.hasTerminal) {
-      return Size(width: stdout.terminalColumns, height: stdout.terminalLines);
-    }
-    // Fallback to winch or default.
-    final (w, h) = _winch.getSize();
-    return Size(width: w, height: h);
+    final size = _winch.getWindowSize();
+    return Size(
+      width: size.cells.width,
+      height: size.cells.height,
+      widthPx: size.pixels.width,
+      heightPx: size.pixels.height,
+    );
   }
 
   /// Resizes the terminal buffer.
@@ -268,7 +290,79 @@ class Terminal implements Screen, FillableScreen, FillAreaScreen, ClearableScree
   /// Draws the current buffer to the terminal.
   void draw() {
     _renderer.render(_buf);
+    if (_prepend.isNotEmpty) {
+      for (final s in _prepend) {
+        _prependLine(s);
+      }
+      _prepend.clear();
+    }
     _renderer.flush();
+  }
+
+  void _prependLine(String line) {
+    final lines = line.split('\n');
+    final width = _buf.width();
+    for (var i = 0; i < lines.length; i++) {
+      // Simple truncation for now.
+      // TODO: use a proper ANSI-aware truncate if needed.
+      if (lines[i].length > width && width > 0) {
+        lines[i] = lines[i].substring(0, width);
+      }
+    }
+    _renderer.prependString(_buf, lines.join('\n'));
+  }
+
+  /// Adds the given string to the top of the terminal screen.
+  ///
+  /// Upstream: `third_party/ultraviolet/terminal.go` (`Terminal.PrependString`).
+  void prependString(String s) {
+    _prepend.add(s);
+  }
+
+  /// Sets whether to use backspace as a movement optimization.
+  void setBackspace(bool v) {
+    _renderer.setBackspace(v);
+  }
+
+  /// Sets whether to use hard tabs as a movement optimization.
+  void setHasTab(bool v) {
+    _renderer.setHasTab(v);
+  }
+
+  /// Sets the tab stops for the terminal and enables hard tabs movement optimizations.
+  void setTabStops(int width) {
+    _renderer.setTabStops(width);
+  }
+
+  /// Sets the color profile to use for downsampling colors.
+  void setColorProfile(cp.Profile profile) {
+    _renderer.setColorProfile(profile);
+  }
+
+  /// Sets whether the terminal is in fullscreen mode.
+  void setFullscreen(bool v) {
+    _renderer.setFullscreen(v);
+  }
+
+  /// Sets whether to use relative cursor movements.
+  void setRelativeCursor(bool v) {
+    _renderer.setRelativeCursor(v);
+  }
+
+  /// Sets whether to use scroll optimizations.
+  void setScrollOptim(bool v) {
+    _renderer.setScrollOptim(v);
+  }
+
+  /// Sets the logger for debugging.
+  void setLogger(void Function(String message)? logger) {
+    _renderer.setLogger(logger);
+    _reader.setLogger(logger);
+  }
+
+  /// Sets the escape sequence timeout.
+  void setEscTimeout(Duration d) {
+    _reader.escTimeout = d;
   }
 
   /// Returns the terminal buffer.

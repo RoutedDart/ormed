@@ -2067,18 +2067,6 @@ class Style {
       }
     }
 
-    if (_hasFlag2(_PropBits.underlineColor) && _underlineColor != null) {
-      final ansi = _underlineColor!.toAnsi(
-        colorProfile,
-        underline: true,
-        hasDarkBackground: hasDarkBackground,
-      );
-      if (ansi.isNotEmpty) {
-        styled = '$ansi$styled\x1b[59m';
-        hasAnsi = true;
-      }
-    }
-
     final chalk = Chalk();
 
     // Apply text attributes
@@ -2104,7 +2092,22 @@ class Style {
           UnderlineStyle.dashed => '\x1b[4:5m',
         };
         if (start.isNotEmpty) {
-          styled = '$start$styled\x1b[24m';
+          // Underline color must be applied *within* the underline span.
+          // If we emit 58/59 outside, the 59 reset would occur before 4m/4:xm.
+          var ulPrefix = '';
+          var ulSuffix = '';
+          if (_hasFlag2(_PropBits.underlineColor) && _underlineColor != null) {
+            final ansi = _underlineColor!.toAnsi(
+              colorProfile,
+              underline: true,
+              hasDarkBackground: hasDarkBackground,
+            );
+            if (ansi.isNotEmpty) {
+              ulPrefix = ansi;
+              ulSuffix = '\x1b[59m';
+            }
+          }
+          styled = '$start$ulPrefix$styled$ulSuffix\x1b[24m';
           hasAnsi = true;
         }
       }

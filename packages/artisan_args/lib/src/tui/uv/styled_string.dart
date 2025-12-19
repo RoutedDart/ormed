@@ -186,9 +186,14 @@ void readStyle(List<_SgrParam> params, StyleState out) {
         style = style.copyWith(clearFg: true);
       case 49:
         style = style.copyWith(clearBg: true);
+      case 59:
+        style = style.copyWith(clearUnderlineColor: true);
 
       // Extended colors, semicolon form:
       // 38;5;<n>, 48;5;<n>, 38;2;r;g;b, 48;2;r;g;b
+      // Underline color:
+      // - 58;5;<n>, 58;2;r;g;b
+      // - 58:5:<n>, 58:2::r:g:b
       case 38 || 48:
         final isFg = param == 38;
 
@@ -228,6 +233,47 @@ void readStyle(List<_SgrParam> params, StyleState out) {
           style = isFg
               ? style.copyWith(fg: UvColor.rgb(r, g, b))
               : style.copyWith(bg: UvColor.rgb(r, g, b));
+          i += 4;
+        }
+      case 58:
+        // Underline color (SGR 58). Supports both semicolon and colon forms.
+        // - Semicolon: 58;5;<n> or 58;2;r;g;b
+        // - Colon: 58:5:<n> or 58:2::r:g:b
+        if (p.hasSub) {
+          if (p.sub.isEmpty) break;
+          final mode = p.sub[0];
+          if (mode == 5 && p.sub.length >= 2) {
+            style = style.copyWith(underlineColor: UvColor.indexed256(p.sub[1]));
+          } else if (mode == 2) {
+            // 58:2::r:g:b  -> sub = [2,0,r,g,b]
+            // 58:2:r:g:b   -> sub = [2,r,g,b]
+            if (p.sub.length >= 5) {
+              final r = p.sub[2];
+              final g = p.sub[3];
+              final b = p.sub[4];
+              style = style.copyWith(underlineColor: UvColor.rgb(r, g, b));
+            } else if (p.sub.length >= 4) {
+              final r = p.sub[1];
+              final g = p.sub[2];
+              final b = p.sub[3];
+              style = style.copyWith(underlineColor: UvColor.rgb(r, g, b));
+            }
+          }
+          break;
+        }
+
+        if (i + 1 >= params.length) break;
+        final mode = params[i + 1].value;
+        if (mode == 5 && i + 2 < params.length) {
+          style = style.copyWith(
+            underlineColor: UvColor.indexed256(params[i + 2].value),
+          );
+          i += 2;
+        } else if (mode == 2 && i + 4 < params.length) {
+          final r = params[i + 2].value;
+          final g = params[i + 3].value;
+          final b = params[i + 4].value;
+          style = style.copyWith(underlineColor: UvColor.rgb(r, g, b));
           i += 4;
         }
     }

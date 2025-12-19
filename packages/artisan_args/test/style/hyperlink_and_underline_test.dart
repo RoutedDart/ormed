@@ -3,6 +3,28 @@ import 'package:test/test.dart';
 
 void main() {
   group('Style hyperlink + underline variants', () {
+    int _expectUnderlinedColorSegment(
+      String rendered,
+      String char, {
+      required String underlineStart,
+      int startAt = 0,
+    }) {
+      final charIndex = rendered.indexOf(char, startAt);
+      expect(charIndex, greaterThanOrEqualTo(0), reason: 'Missing "$char"');
+
+      final u = rendered.lastIndexOf(underlineStart, charIndex);
+      final c58 = rendered.lastIndexOf('\x1b[58', charIndex);
+      expect(u, greaterThanOrEqualTo(0), reason: 'Missing underline start');
+      expect(c58, greaterThan(u), reason: 'Underline color must be inside span');
+
+      final c59 = rendered.indexOf('\x1b[59m', charIndex);
+      final uOff = rendered.indexOf('\x1b[24m', charIndex);
+      expect(c59, greaterThan(charIndex), reason: 'Missing underline color reset');
+      expect(uOff, greaterThan(c59), reason: 'Underline must end after color reset');
+
+      return charIndex + 1;
+    }
+
     test('hyperlink wraps rendered output with OSC 8 open/close', () {
       final style = Style().hyperlink('https://example.com');
       final rendered = style.render('Hello');
@@ -50,6 +72,51 @@ void main() {
       // For BasicColor('1'), it should be 58:5:1m or similar depending on profile.
       expect(rendered, contains('\x1b[58'));
       expect(rendered, contains('\x1b[59m'));
+      expect(rendered, contains('\x1b[58:')); // xterm-style underline color params
+
+      // Ordering matters: underline color must be inside the underline span.
+      // Rendering is applied per grapheme/rune, so check each character segment.
+      var cursor = 0;
+      cursor = _expectUnderlinedColorSegment(
+        rendered,
+        'H',
+        underlineStart: '\x1b[4m',
+        startAt: cursor,
+      );
+      cursor = _expectUnderlinedColorSegment(
+        rendered,
+        'i',
+        underlineStart: '\x1b[4m',
+        startAt: cursor,
+      );
+      expect(Style.stripAnsi(rendered), equals('Hi'));
+    });
+
+    test('curly underline color is applied within underline span', () {
+      final style = Style()
+          .bold()
+          .underlineStyle(UnderlineStyle.curly)
+          .underlineColor(const BasicColor('1'));
+      final rendered = style.render('Hi');
+      expect(rendered, contains('\x1b[4:3m'));
+      expect(rendered, contains('\x1b[58'));
+      expect(rendered, contains('\x1b[59m'));
+      expect(rendered, contains('\x1b[24m'));
+
+      var cursor = 0;
+      cursor = _expectUnderlinedColorSegment(
+        rendered,
+        'H',
+        underlineStart: '\x1b[4:3m',
+        startAt: cursor,
+      );
+      cursor = _expectUnderlinedColorSegment(
+        rendered,
+        'i',
+        underlineStart: '\x1b[4:3m',
+        startAt: cursor,
+      );
+      expect(Style.stripAnsi(rendered), equals('Hi'));
     });
   });
 
@@ -65,4 +132,3 @@ void main() {
     });
   });
 }
-

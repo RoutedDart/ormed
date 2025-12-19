@@ -30,11 +30,12 @@ class TerminalReader {
 
   final CancelReader _reader;
   final String term;
-  final Duration escTimeout;
+  Duration escTimeout;
   final bool useTerminfo;
   final LegacyKeyEncoding _legacy;
   final UvEventStreamParser _parser;
   late final Map<String, Key> _table;
+  void Function(String message)? _logger;
 
   final _eventController = StreamController<Event>.broadcast();
   Timer? _escTimer;
@@ -42,6 +43,11 @@ class TerminalReader {
 
   /// Returns a stream of events from the terminal.
   Stream<Event> get events => _eventController.stream;
+
+  /// Sets the logger for debugging.
+  void setLogger(void Function(String message)? logger) {
+    _logger = logger;
+  }
 
   /// Starts the event loop.
   void start() {

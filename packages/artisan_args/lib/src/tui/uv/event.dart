@@ -69,22 +69,41 @@ final class MultiEvent extends Event {
 }
 
 final class Size extends Event {
-  const Size({required this.width, required this.height});
+  const Size({
+    required this.width,
+    required this.height,
+    this.widthPx = 0,
+    this.heightPx = 0,
+  });
   final int width;
   final int height;
-
-  Rectangle bounds() => Rectangle(minX: 0, minY: 0, maxX: width, maxY: height);
-}
-
-final class WindowSizeEvent extends Event {
-  const WindowSizeEvent({required this.width, required this.height});
-  final int width;
-  final int height;
+  final int widthPx;
+  final int heightPx;
 
   Rectangle bounds() => Rectangle(minX: 0, minY: 0, maxX: width, maxY: height);
 
   @override
-  String toString() => 'WindowSizeEvent($width, $height)';
+  String toString() =>
+      'Size(width: $width, height: $height, widthPx: $widthPx, heightPx: $heightPx)';
+}
+
+final class WindowSizeEvent extends Event {
+  const WindowSizeEvent({
+    required this.width,
+    required this.height,
+    this.widthPx = 0,
+    this.heightPx = 0,
+  });
+  final int width;
+  final int height;
+  final int widthPx;
+  final int heightPx;
+
+  Rectangle bounds() => Rectangle(minX: 0, minY: 0, maxX: width, maxY: height);
+
+  @override
+  String toString() =>
+      'WindowSizeEvent(width: $width, height: $height, widthPx: $widthPx, heightPx: $heightPx)';
 }
 
 final class WindowPixelSizeEvent extends Event {

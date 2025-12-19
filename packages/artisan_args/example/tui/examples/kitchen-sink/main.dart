@@ -78,6 +78,7 @@ class _KitchenSinkModel extends tui.Model {
       textInput = tui.TextInputModel(prompt: 'search: ', width: 32),
       textarea = tui.TextAreaModel(width: 48, height: 6, prompt: ''),
       listSelection = _ListSelectionState.initial(),
+      emojiEnabled = _defaultEmojiEnabled(io.Platform.environment),
       capabilities = TerminalCapabilities(
         env: io.Platform.environment.entries
             .map((e) => '${e.key}=${e.value}')
@@ -86,6 +87,7 @@ class _KitchenSinkModel extends tui.Model {
 
   final bool useUvInput;
   final bool useUvRenderer;
+  bool emojiEnabled;
   final TerminalCapabilities capabilities;
 
   int _width = 80;
@@ -168,6 +170,16 @@ class _KitchenSinkModel extends tui.Model {
       (_) => const _TickMsg(),
     );
   }
+
+  static bool _defaultEmojiEnabled(Map<String, String> env) {
+    final v = env['ARTISAN_EMOJI'];
+    if (v == '1' || v == 'true') return true;
+    final nv = env['ARTISAN_NO_EMOJI'] ?? env['NO_EMOJI'];
+    if (nv == '1' || nv == 'true') return false;
+    return true;
+  }
+
+  String emoji(String emoji, String fallback) => emojiEnabled ? emoji : fallback;
 
   @override
   tui.Cmd? init() {
@@ -294,6 +306,12 @@ class _KitchenSinkModel extends tui.Model {
         // widgets can prevent global navigation shortcuts.
         final consumed = _activePage.onKey(this, key, cmds);
 
+        // Emoji toggle for terminals without emoji fonts.
+        if (!consumed && (key.isChar('e') || key.isChar('E'))) {
+          emojiEnabled = !emojiEnabled;
+          return (this, null);
+        }
+
         // Global page navigation.
         if (!consumed && key.type == tui.KeyType.tab) {
           _setActivePage(
@@ -380,7 +398,7 @@ class _KitchenSinkModel extends tui.Model {
 
     final title = _style(Style()).bold().render('Kitchen Sink');
     final mode = _style(Style()).dim().render(
-      'input=${useUvInput ? 'uv' : 'legacy'}  renderer=${useUvRenderer ? 'uv' : 'default'}  size=${_width}x${_height}  bg=${_theme.backgroundHex ?? '(unknown)'}  dark=${_theme.hasDarkBackground ?? '(unknown)'}',
+      'input=${useUvInput ? 'uv' : 'legacy'}  renderer=${useUvRenderer ? 'uv' : 'default'}  size=${_width}x${_height}  bg=${_theme.backgroundHex ?? '(unknown)'}  dark=${_theme.hasDarkBackground ?? '(unknown)'}  emoji=${emojiEnabled ? 'on' : 'off'}',
     );
 
     final tabs = <String>[];
@@ -410,7 +428,7 @@ class _KitchenSinkModel extends tui.Model {
 
   String _renderHelp() {
     final help =
-        'q quit • click tabs • Tab switch pages • 1-9 (0=10) jump • ? toggle help';
+        'q quit • click tabs • Tab switch pages • 1-9 (0=10) jump • ? toggle help • e toggle emoji';
     final pageHelp = _activePage.help;
     return _style(Style()).dim().render('$help\n$pageHelp');
   }
@@ -567,7 +585,7 @@ final class _ListSelectPage extends _KitchenSinkPage {
     final subtitle = m._style(Style()).dim().render(
       'Selected: ${m.listSelection.selected ?? '(none)'}  (Enter should select)',
     );
-    return [title, subtitle, '', m.listSelection.view()].join('\n');
+    return [title, subtitle, '', m.listSelection.view(m)].join('\n');
   }
 
   @override
@@ -1227,12 +1245,15 @@ final class _UnicodePage extends _KitchenSinkPage {
     final title = m._style(
       Style(),
     ).bold().render('Unicode width + grapheme clusters');
+    final hint = m._style(Style()).dim().render(
+      'If you see boxes, your terminal font lacks emoji glyphs. Press "e" to toggle emoji samples.',
+    );
     final samples = <String>[
       'ASCII: hello',
       'CJK: 漢字かなカナ',
-      'Emoji: 🍕🍔🌮',
-      'Flags: 🇺🇸🇯🇵🇫🇷',
-      'ZWJ: 👩‍💻👨‍👩‍👧‍👦',
+      'Emoji: ${m.emoji('🍕🍔🌮', '[pizza][burger][taco]')}',
+      'Flags: ${m.emoji('🇺🇸🇯🇵🇫🇷', '[US][JP][FR]')}',
+      'ZWJ: ${m.emoji('👩‍💻👨‍👩‍👧‍👦', '[coder][family]')}',
       'Combining: e\u0301  a\u0308  n\u0303',
     ];
 
@@ -1248,7 +1269,7 @@ final class _UnicodePage extends _KitchenSinkPage {
       'The widths above use ANSI-aware display width and grapheme iteration; compare with resize + renderer.',
     );
 
-    return [title, '', ...rows, '', explain].join('\n');
+    return [title, hint, '', ...rows, '', explain].join('\n');
   }
 }
 
@@ -1998,20 +2019,20 @@ final class _ListSelectionState {
 
   factory _ListSelectionState.initial() => const _ListSelectionState(
     items: [
-      '🍕 Pizza',
-      '🍔 Burger',
-      '🌮 Tacos',
-      '🍜 Ramen',
-      '🥗 Salad',
-      '🍣 Sushi',
-      '🥪 Sandwich',
-      '🍝 Pasta',
+      _EmojiItem(emoji: '🍕', fallback: '[P]', label: 'Pizza'),
+      _EmojiItem(emoji: '🍔', fallback: '[B]', label: 'Burger'),
+      _EmojiItem(emoji: '🌮', fallback: '[T]', label: 'Tacos'),
+      _EmojiItem(emoji: '🍜', fallback: '[R]', label: 'Ramen'),
+      _EmojiItem(emoji: '🥗', fallback: '[S]', label: 'Salad'),
+      _EmojiItem(emoji: '🍣', fallback: '[S]', label: 'Sushi'),
+      _EmojiItem(emoji: '🥪', fallback: '[S]', label: 'Sandwich'),
+      _EmojiItem(emoji: '🍝', fallback: '[P]', label: 'Pasta'),
     ],
     cursor: 0,
     selected: null,
   );
 
-  final List<String> items;
+  final List<_EmojiItem> items;
   final int cursor;
   final String? selected;
 
@@ -2027,7 +2048,7 @@ final class _ListSelectionState {
         null,
       ),
 
-      _ when key.isAccept => (copyWith(selected: items[cursor]), null),
+      _ when key.isAccept => (copyWith(selected: items[cursor].label), null),
 
       _ when key.isChar('r') => (_ListSelectionState.initial(), null),
 
@@ -2043,7 +2064,7 @@ final class _ListSelectionState {
     );
   }
 
-  String view() {
+  String view(_KitchenSinkModel m) {
     final buf = StringBuffer();
     buf.writeln();
     buf.writeln('  What would you like?');
@@ -2053,12 +2074,14 @@ final class _ListSelectionState {
       final isSelected = i == cursor;
       final prefix = isSelected ? '▸ ' : '  ';
       final item = items[i];
+      final icon = m.emoji(item.emoji, item.fallback);
+      final line = '  $prefix$icon ${item.label}';
       buf.writeln(
         isSelected
             ? Style()
                   .foreground(const BasicColor('14'))
-                  .render('  $prefix$item')
-            : '  $prefix$item',
+                  .render(line)
+            : line,
       );
     }
 
@@ -2068,6 +2091,14 @@ final class _ListSelectionState {
     );
     return buf.toString();
   }
+}
+
+final class _EmojiItem {
+  const _EmojiItem({required this.emoji, required this.fallback, required this.label});
+
+  final String emoji;
+  final String fallback;
+  final String label;
 }
 
 String _clipToWidth(String s, int maxWidth) {
@@ -2240,6 +2271,24 @@ class _LipglossV2Page extends _KitchenSinkPage {
         .underlineColor(Colors.error)
         .bold();
     buffer.writeln('${labelStyle.render('Underline Color:')} ${ulColorStyle.render('Curly red underline on bold text')}');
+    buffer.writeln(
+      '${labelStyle.render('Underline Stress:')} '
+      '${Style().underline().underlineColor(Colors.error).render('single')}  '
+      '${Style().underlineStyle(UnderlineStyle.double).underline().underlineColor(Colors.warning).render('double')}  '
+      '${Style().underlineStyle(UnderlineStyle.dotted).underline().underlineColor(Colors.info).render('dotted')}  '
+      '${Style().underlineStyle(UnderlineStyle.dashed).underline().underlineColor(Colors.success).render('dashed')}',
+    );
+    buffer.writeln(
+      '${labelStyle.render('Underline 256:')} '
+      '${Style().underlineStyle(UnderlineStyle.curly).underline().underlineColor(const AnsiColor(196)).render('idx196')}  '
+      '${Style().underlineStyle(UnderlineStyle.curly).underline().underlineColor(const AnsiColor(21)).render('idx21')}',
+    );
+    buffer.writeln(
+      '${labelStyle.render('Underline RGB:')} '
+      '${Style().underlineStyle(UnderlineStyle.curly).underline().underlineColor(const BasicColor('#ff0000')).render('#ff0000')}  '
+      '${Style().underlineStyle(UnderlineStyle.curly).underline().underlineColor(const BasicColor('#00ff00')).render('#00ff00')}  '
+      '${Style().underlineStyle(UnderlineStyle.curly).underline().underlineColor(const BasicColor('#0000ff')).render('#0000ff')}',
+    );
 
     // 2. Padding Character
     final padCharStyle = Style()
@@ -2277,6 +2326,20 @@ class _LipglossV2Page extends _KitchenSinkPage {
     // 7. Multi-string Render
     final multiStyle = Style().bold().foreground(Colors.warning);
     buffer.writeln('${labelStyle.render('Multi-string Render:')} ${multiStyle.render(['Joined', 'with', 'spaces'])}');
+
+    // 7b. A noisy ANSI line to stress state transitions in the UV renderer.
+    final ulA = Style().underline().underlineColor(Colors.error);
+    final ulB = Style().underlineStyle(UnderlineStyle.curly).underline().underlineColor(Colors.warning);
+    final ulC = Style().underlineStyle(UnderlineStyle.dotted).underline().underlineColor(Colors.info);
+    buffer.writeln(
+      '${labelStyle.render('ANSI Stress:')} '
+      '${ulA.render('A')}'
+      '${Style().bold().render('B')}'
+      '${ulB.render('C')}'
+      '${Style().italic().render('D')}'
+      '${ulC.render('E')}'
+      '${Style().render('F')}',
+    );
 
     // 8. Table BaseStyle
     final baseStyle = Style().foreground(Colors.muted).italic();

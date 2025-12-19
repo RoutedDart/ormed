@@ -221,7 +221,11 @@ class AnsiColor extends Color {
       );
     }
 
-    final p = underline ? 58 : (background ? 48 : 38);
+    if (underline) {
+      // SGR 58 uses xterm-style colon parameters for underline color.
+      return '\x1B[58:5:${code}m';
+    }
+    final p = background ? 48 : 38;
     return '\x1B[$p;5;${code}m';
   }
 

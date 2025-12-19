@@ -273,20 +273,24 @@ String? _colorCode(UvColor? c, _ColorTarget target) {
           final base = bright ? 100 : 40;
           return '${base + index}';
         case _ColorTarget.underline:
-          // Underline color uses 58;5;idx.
-          return '58;5;$idx16';
+          // Underline color uses xterm-style colon parameters.
+          // Example: ESC[58:5:idxm
+          return '58:5:$idx16';
       }
     case UvIndexed256(:final index):
       return switch (target) {
         _ColorTarget.fg => '38;5;$index',
         _ColorTarget.bg => '48;5;$index',
-        _ColorTarget.underline => '58;5;$index',
+        // Underline color uses xterm-style colon parameters.
+        _ColorTarget.underline => '58:5:$index',
       };
     case UvRgb(:final r, :final g, :final b):
       return switch (target) {
         _ColorTarget.fg => '38;2;$r;$g;$b',
         _ColorTarget.bg => '48;2;$r;$g;$b',
-        _ColorTarget.underline => '58;2;$r;$g;$b',
+        // Underline color uses xterm-style colon parameters.
+        // Example: ESC[58:2::r:g:bm
+        _ColorTarget.underline => '58:2::$r:$g:$b',
       };
   }
 }
