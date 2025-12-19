@@ -23,11 +23,11 @@ import 'package:html/dom.dart' as dom;
 import 'package:html/parser.dart' as html;
 
 import 'border.dart';
+import 'blending.dart' as blend;
 import 'color.dart';
 import 'properties.dart';
 import '../terminal/ansi.dart';
 import '../unicode/grapheme.dart' as uni;
-import '../unicode/width.dart';
 import '../tui/uv/wrap.dart' as uv_wrap;
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -82,6 +82,9 @@ class _PropBits {
   static const int wrapAnsi = 1 << 9;
   static const int underlineStyle = 1 << 10;
   static const int hyperlink = 1 << 11;
+  static const int colorWhitespace = 1 << 12;
+  static const int borderForegroundBlend = 1 << 13;
+  static const int borderForegroundBlendOffset = 1 << 14;
 }
 
 /// Fluent, chainable style builder for terminal output.
@@ -173,6 +176,9 @@ class Style {
   Color? _borderBottomBackground;
   Color? _borderLeftBackground;
 
+  List<Color> _borderForegroundBlend = const [];
+  int _borderForegroundBlendOffset = 0;
+
   /// Bitfield for per-side border color properties.
   int _borderProps = 0;
   static const int _borderTopFg = 1 << 0;
@@ -246,6 +252,11 @@ class Style {
 
   /// Whether to strikethrough spaces.
   bool _strikethroughSpaces = false;
+
+  /// Whether to apply background styling to whitespace outside the core text.
+  ///
+  /// Lipgloss v2 parity: defaults to true.
+  bool _colorWhitespace = true;
 
   String? _hyperlinkUrl;
   String _hyperlinkParams = '';
@@ -446,6 +457,25 @@ class Style {
   Style borderLeftBackground(Color color) {
     _borderLeftBackground = color;
     _borderProps |= _borderLeftBg;
+    return this;
+  }
+
+  /// Sets a foreground color gradient for the border.
+  ///
+  /// Lipgloss v2 parity: if fewer than 2 colors are provided, blending is
+  /// effectively disabled and the regular border foreground colors apply.
+  Style borderForegroundBlend(List<Color> colors) {
+    _borderForegroundBlend = colors;
+    _setFlag2(_PropBits.borderForegroundBlend);
+    return this;
+  }
+
+  /// Sets the border blend offset (in cells along the perimeter).
+  ///
+  /// Positive offsets move the gradient start backward (matching lipgloss v2).
+  Style borderForegroundBlendOffset(int value) {
+    _borderForegroundBlendOffset = value;
+    _setFlag2(_PropBits.borderForegroundBlendOffset);
     return this;
   }
 
@@ -835,6 +865,19 @@ class Style {
   Style marginBackground(Color color) {
     _marginBackground = color;
     _setFlag2(_PropBits.marginBackground);
+    return this;
+  }
+
+  /// Sets whether to color whitespace outside the core text (padding/alignment).
+  ///
+  /// Lipgloss v2 parity: defaults to true.
+  ///
+  /// When false, background color (and other whitespace styling) will not be
+  /// applied to padding/alignment fill. Foreground color is never applied to
+  /// whitespace unless inverse mode is enabled.
+  Style colorWhitespace([bool value = true]) {
+    _colorWhitespace = value;
+    _setFlag2(_PropBits.colorWhitespace);
     return this;
   }
 
@@ -1339,6 +1382,18 @@ class Style {
   Color? get getBorderLeftBackground =>
       (_borderProps & _borderLeftBg) != 0 ? _borderLeftBackground : null;
 
+  /// Gets the border foreground blend stops, if set.
+  List<Color> get getBorderForegroundBlend =>
+      _hasFlag2(_PropBits.borderForegroundBlend)
+      ? _borderForegroundBlend
+      : const [];
+
+  /// Gets the border foreground blend offset, if set.
+  int get getBorderForegroundBlendOffset =>
+      _hasFlag2(_PropBits.borderForegroundBlendOffset)
+      ? _borderForegroundBlendOffset
+      : 0;
+
   /// Gets the horizontal frame size (border + padding).
   int get getHorizontalFrameSize {
     var size = _padding.horizontal;
@@ -1433,6 +1488,8 @@ class Style {
     s._borderBottomBackground = _borderBottomBackground;
     s._borderLeftForeground = _borderLeftForeground;
     s._borderLeftBackground = _borderLeftBackground;
+    s._borderForegroundBlend = _borderForegroundBlend;
+    s._borderForegroundBlendOffset = _borderForegroundBlendOffset;
     s._borderProps = _borderProps;
     s._width = _width;
     s._height = _height;
@@ -1453,6 +1510,7 @@ class Style {
     s._tabWidth = _tabWidth;
     s._underlineSpaces = _underlineSpaces;
     s._strikethroughSpaces = _strikethroughSpaces;
+    s._colorWhitespace = _colorWhitespace;
     s._hyperlinkUrl = _hyperlinkUrl;
     s._hyperlinkParams = _hyperlinkParams;
     s._marginBackground = _marginBackground;
@@ -1648,6 +1706,18 @@ class Style {
       _strikethroughSpaces = other._strikethroughSpaces;
       _setFlag2(_PropBits.strikethroughSpaces);
     }
+    if (other._hasFlag2(_PropBits.colorWhitespace)) {
+      _colorWhitespace = other._colorWhitespace;
+      _setFlag2(_PropBits.colorWhitespace);
+    }
+    if (other._hasFlag2(_PropBits.borderForegroundBlend)) {
+      _borderForegroundBlend = other._borderForegroundBlend;
+      _setFlag2(_PropBits.borderForegroundBlend);
+    }
+    if (other._hasFlag2(_PropBits.borderForegroundBlendOffset)) {
+      _borderForegroundBlendOffset = other._borderForegroundBlendOffset;
+      _setFlag2(_PropBits.borderForegroundBlendOffset);
+    }
     if (other._hasFlag2(_PropBits.marginBackground)) {
       _marginBackground = other._marginBackground;
       _setFlag2(_PropBits.marginBackground);
@@ -1730,7 +1800,9 @@ class Style {
         _hasFlag(_PropBits.transform) ||
         hasSpacing;
 
-    if (colorProfile == ColorProfile.ascii && !hasTextAttributes && !hasLayout) {
+    if (colorProfile == ColorProfile.ascii &&
+        !hasTextAttributes &&
+        !hasLayout) {
       return text;
     }
 
@@ -1739,46 +1811,6 @@ class Style {
     // Apply transform first
     if (_hasFlag(_PropBits.transform) && _transform != null) {
       result = _transform!(result);
-    }
-
-    // lipgloss v2 compatibility: when styling with *foreground only* and
-    // applying padding, the padding whitespace should not inherit the
-    // foreground color. In upstream lipgloss this is achieved by styling the
-    // core text first, then applying padding with a whitespace styler that only
-    // includes background (unless in reverse mode).
-    //
-    // Our general pipeline applies padding before coloring, so we special-case
-    // this common scenario (enumerators/indenters) for parity.
-    final fgOnly =
-        _hasFlag(_PropBits.foreground) &&
-        _foreground != null &&
-        (!_hasFlag(_PropBits.background) || _background == null) &&
-        (!_hasFlag(_PropBits.inverse) || !_inverse);
-    final hasOnlyPaddingLayout =
-        !_inline &&
-        !_padding.isZero &&
-        _margin.isZero &&
-        !_hasFlag(_PropBits.width) &&
-        !_hasFlag(_PropBits.height) &&
-        !_hasFlag(_PropBits.maxWidth) &&
-        !_hasFlag(_PropBits.maxHeight) &&
-        !_hasFlag(_PropBits.border) &&
-        !_hasFlag(_PropBits.align);
-    if (fgOnly && hasOnlyPaddingLayout) {
-      final leftPad = ' ' * _padding.left;
-      final rightPad = ' ' * _padding.right;
-      final lines = result.split('\n');
-      final out = <String>[];
-      for (var i = 0; i < _padding.top; i++) {
-        out.add('');
-      }
-      for (final line in lines) {
-        out.add('$leftPad${_applyTextStyles(line)}$rightPad');
-      }
-      for (var i = 0; i < _padding.bottom; i++) {
-        out.add('');
-      }
-      return out.join('\n');
     }
 
     // If inline, skip layout processing
@@ -1805,6 +1837,13 @@ class Style {
       contentWidth = wrapAt > 0 ? wrapAt : _width;
     }
 
+    // Render core text (styled content) before padding/alignment/border.
+    //
+    // Lipgloss v2 parity: padding/alignment whitespace should not inherit
+    // foreground color by default, and background styling on whitespace is
+    // controlled by `colorWhitespace`.
+    lines = lines.map(_applyTextStyles).toList();
+
     // Apply padding (fixed spaces, alignment fills to width later)
     if (!_padding.isZero) {
       lines = _applyPadding(lines);
@@ -1827,10 +1866,6 @@ class Style {
     if (_hasFlag(_PropBits.border) && _border != null && _border!.isVisible) {
       lines = _applyBorder(lines, contentWidth);
     }
-
-    // Apply text styles to content lines BEFORE margin
-    // (margin is outside the styled area)
-    lines = lines.map(_applyTextStyles).toList();
 
     // Apply fixed height (affects the styled box, margin is applied after)
     if (_hasFlag(_PropBits.height) && _height > 0) {
@@ -1945,6 +1980,63 @@ class Style {
     return hasAnsi ? '$styled\x1b[m' : styled;
   }
 
+  bool get _styleWhitespaceEnabled {
+    final reverse = _hasFlag(_PropBits.inverse) && _inverse;
+    final hasBg = _hasFlag(_PropBits.background) && _background != null;
+    return reverse || (_colorWhitespace && hasBg);
+  }
+
+  /// Styles whitespace outside the core text (padding/alignment fill).
+  ///
+  /// Lipgloss v2 parity:
+  /// - Foreground is not applied to whitespace unless inverse is enabled.
+  /// - Background is applied to whitespace only when `colorWhitespace` is true.
+  String _styleWhitespace(String text) {
+    if (text.isEmpty) return text;
+    if (colorProfile == ColorProfile.ascii) return text;
+    if (!_styleWhitespaceEnabled) return text;
+
+    final reverse = _hasFlag(_PropBits.inverse) && _inverse;
+
+    var styled = text;
+    var hasAnsi = false;
+
+    // Apply background only if colorWhitespace is enabled.
+    if (_colorWhitespace &&
+        _hasFlag(_PropBits.background) &&
+        _background != null) {
+      final ansi = _background!.toAnsi(
+        colorProfile,
+        background: true,
+        hasDarkBackground: hasDarkBackground,
+      );
+      if (ansi.isNotEmpty) {
+        styled = '$ansi$styled';
+        hasAnsi = true;
+      }
+    }
+
+    // Apply foreground to whitespace only in reverse mode.
+    if (reverse && _hasFlag(_PropBits.foreground) && _foreground != null) {
+      final ansi = _foreground!.toAnsi(
+        colorProfile,
+        background: false,
+        hasDarkBackground: hasDarkBackground,
+      );
+      if (ansi.isNotEmpty) {
+        styled = '$ansi$styled';
+        hasAnsi = true;
+      }
+    }
+
+    if (reverse) {
+      styled = '\x1b[7m$styled';
+      hasAnsi = true;
+    }
+
+    return hasAnsi ? '$styled\x1b[m' : styled;
+  }
+
   // ─────────────────────────────────────────────────────────────────────────────
   // Layout Helpers
   // ─────────────────────────────────────────────────────────────────────────────
@@ -1993,12 +2085,6 @@ class Style {
   static int visibleLength(String text) {
     return Ansi.visibleLength(text);
   }
-
-  /// Calculates the display width of a string, accounting for double-width characters.
-  ///
-  /// This is retained as an internal helper for code paths that need line-only
-  /// widths without ANSI stripping.
-  static int _displayWidth(String text) => stringWidth(text);
 
   int _getMaxLineWidth(List<String> lines) {
     if (lines.isEmpty) return 0;
@@ -2210,15 +2296,21 @@ class Style {
 
       if (shortAmount <= 0) return line;
 
+      String ws(int n) {
+        if (n <= 0) return '';
+        final raw = ' ' * n;
+        return _styleWhitespace(raw);
+      }
+
       switch (_align) {
         case HorizontalAlign.left:
-          return '$line${' ' * shortAmount}';
+          return '$line${ws(shortAmount)}';
         case HorizontalAlign.center:
           final left = shortAmount ~/ 2;
           final right = shortAmount - left;
-          return '${' ' * left}$line${' ' * right}';
+          return '${ws(left)}$line${ws(right)}';
         case HorizontalAlign.right:
-          return '${' ' * shortAmount}$line';
+          return '${ws(shortAmount)}$line';
       }
     }).toList();
   }
@@ -2437,8 +2529,8 @@ class Style {
   /// Like lipgloss, padding adds fixed space characters - alignment fills to width later.
   List<String> _applyPadding(List<String> lines) {
     final result = <String>[];
-    final leftPad = ' ' * _padding.left;
-    final rightPad = ' ' * _padding.right;
+    final leftPad = _styleWhitespace(' ' * _padding.left);
+    final rightPad = _styleWhitespace(' ' * _padding.right);
 
     // Top padding - empty lines (will be filled by alignment)
     for (var i = 0; i < _padding.top; i++) {
@@ -2463,48 +2555,156 @@ class Style {
     final b = _border!;
     final sides = _borderSides;
 
-    // Compute border styling
-    String styleBorder(String text) {
-      if (!_hasFlag(_PropBits.borderForeground) &&
-          !_hasFlag(_PropBits.borderBackground)) {
-        return text;
-      }
+    Color? resolveBorderFg(int sideMask, Color? sideColor) =>
+        (_borderProps & sideMask) != 0 ? sideColor : getBorderForeground;
+    Color? resolveBorderBg(int sideMask, Color? sideColor) =>
+        (_borderProps & sideMask) != 0 ? sideColor : getBorderBackground;
 
-      var styled = text;
-      if (_hasFlag(_PropBits.borderBackground) && _borderBackground != null) {
-        final ansi = _borderBackground!.toAnsi(
+    final topBg = resolveBorderBg(_borderTopBg, _borderTopBackground);
+    final rightBg = resolveBorderBg(_borderRightBg, _borderRightBackground);
+    final bottomBg = resolveBorderBg(_borderBottomBg, _borderBottomBackground);
+    final leftBg = resolveBorderBg(_borderLeftBg, _borderLeftBackground);
+
+    final topFg = resolveBorderFg(_borderTopFg, _borderTopForeground);
+    final rightFg = resolveBorderFg(_borderRightFg, _borderRightForeground);
+    final bottomFg = resolveBorderFg(_borderBottomFg, _borderBottomForeground);
+    final leftFg = resolveBorderFg(_borderLeftFg, _borderLeftForeground);
+
+    bool canStyle() =>
+        colorProfile != ColorProfile.ascii &&
+        colorProfile != ColorProfile.noColor;
+
+    String styleBorderSolid(String text, {Color? fg, Color? bg}) {
+      if (!canStyle()) return text;
+      if (text.isEmpty) return text;
+      if (fg == null && bg == null) return text;
+
+      final buf = StringBuffer();
+      if (bg != null) {
+        final bgAnsi = bg.toAnsi(
           colorProfile,
           background: true,
           hasDarkBackground: hasDarkBackground,
         );
-        if (ansi.isNotEmpty) {
-          styled = '$ansi$styled\x1B[49m';
-        }
+        if (bgAnsi.isNotEmpty) buf.write(bgAnsi);
       }
-      if (_hasFlag(_PropBits.borderForeground) && _borderForeground != null) {
-        final ansi = _borderForeground!.toAnsi(
+      if (fg != null) {
+        final fgAnsi = fg.toAnsi(
           colorProfile,
           background: false,
           hasDarkBackground: hasDarkBackground,
         );
-        if (ansi.isNotEmpty) {
-          styled = '$ansi$styled\x1B[39m';
-        }
+        if (fgAnsi.isNotEmpty) buf.write(fgAnsi);
       }
-      return styled;
+      buf.write(text);
+      buf.write('\x1b[m');
+      return buf.toString();
+    }
+
+    String styleBorderBlend(
+      String border,
+      List<Color> fgGradient, {
+      Color? bg,
+    }) {
+      if (!canStyle()) return border;
+      if (border.isEmpty) return border;
+      if (fgGradient.isEmpty && bg == null) return border;
+
+      final buf = StringBuffer();
+      if (bg != null) {
+        final bgAnsi = bg.toAnsi(
+          colorProfile,
+          background: true,
+          hasDarkBackground: hasDarkBackground,
+        );
+        if (bgAnsi.isNotEmpty) buf.write(bgAnsi);
+      }
+
+      var i = 0;
+      for (final g in uni.graphemes(border)) {
+        if (fgGradient.isNotEmpty) {
+          final fg =
+              fgGradient[i < fgGradient.length ? i : fgGradient.length - 1];
+          final fgAnsi = fg.toAnsi(
+            colorProfile,
+            background: false,
+            hasDarkBackground: hasDarkBackground,
+          );
+          if (fgAnsi.isNotEmpty) buf.write(fgAnsi);
+        }
+        buf.write(g);
+        i++;
+      }
+      buf.write('\x1b[m');
+      return buf.toString();
+    }
+
+    final useBlend =
+        _hasFlag2(_PropBits.borderForegroundBlend) &&
+        _borderForegroundBlend.length >= 2;
+
+    _BorderBlend? blendState;
+    if (useBlend) {
+      final width = contentWidth;
+      final height = lines.length;
+      final steps = (height + width + 2) * 2;
+      final gradient = blend.blend1D(
+        steps,
+        _borderForegroundBlend,
+        hasDarkBackground: hasDarkBackground,
+      );
+      if (gradient.length == steps) {
+        final rotated = _rotateGradient(
+          gradient,
+          _hasFlag2(_PropBits.borderForegroundBlendOffset)
+              ? _borderForegroundBlendOffset
+              : 0,
+        );
+        var offset = 0;
+        List<Color> take(int n) {
+          final out = rotated.sublist(offset, offset + n);
+          offset += n;
+          return out;
+        }
+
+        blendState = _BorderBlend(
+          top: take(width + 2),
+          right: take(height),
+          bottom: take(width + 2).reversed.toList(growable: false),
+          left: take(height).reversed.toList(growable: false),
+        );
+      }
     }
 
     // Top border
     if (sides.top) {
       final left = sides.left ? b.topLeft : '';
       final right = sides.right ? b.topRight : '';
-      result.add(styleBorder('$left${b.top * contentWidth}$right'));
+      final raw = '$left${b.top * contentWidth}$right';
+      if (blendState != null) {
+        result.add(styleBorderBlend(raw, blendState.top, bg: topBg));
+      } else {
+        result.add(styleBorderSolid(raw, fg: topFg, bg: topBg));
+      }
     }
 
     // Content lines with side borders
-    for (final line in lines) {
-      final left = sides.left ? styleBorder(b.left) : '';
-      final right = sides.right ? styleBorder(b.right) : '';
+    for (var i = 0; i < lines.length; i++) {
+      final line = lines[i];
+      final left = sides.left
+          ? (blendState != null
+                ? styleBorderSolid(b.left, fg: blendState.left[i], bg: leftBg)
+                : styleBorderSolid(b.left, fg: leftFg, bg: leftBg))
+          : '';
+      final right = sides.right
+          ? (blendState != null
+                ? styleBorderSolid(
+                    b.right,
+                    fg: blendState.right[i],
+                    bg: rightBg,
+                  )
+                : styleBorderSolid(b.right, fg: rightFg, bg: rightBg))
+          : '';
       result.add('$left$line$right');
     }
 
@@ -2512,7 +2712,12 @@ class Style {
     if (sides.bottom) {
       final left = sides.left ? b.bottomLeft : '';
       final right = sides.right ? b.bottomRight : '';
-      result.add(styleBorder('$left${b.bottom * contentWidth}$right'));
+      final raw = '$left${b.bottom * contentWidth}$right';
+      if (blendState != null) {
+        result.add(styleBorderBlend(raw, blendState.bottom, bg: bottomBg));
+      } else {
+        result.add(styleBorderSolid(raw, fg: bottomFg, bg: bottomBg));
+      }
     }
 
     return result;
@@ -2575,6 +2780,34 @@ class Style {
     if (_hasFlag(_PropBits.border)) parts.add('border:$_border');
     return 'Style(${parts.join(', ')})';
   }
+}
+
+final class _BorderBlend {
+  const _BorderBlend({
+    required this.top,
+    required this.right,
+    required this.bottom,
+    required this.left,
+  });
+
+  final List<Color> top;
+  final List<Color> right;
+  final List<Color> bottom;
+  final List<Color> left;
+}
+
+List<T> _rotateGradient<T>(List<T> gradient, int offset) {
+  if (gradient.isEmpty) return gradient;
+  if (offset == 0) return gradient;
+
+  // lipgloss v2 parity: rotate left by (-offset).
+  var r = -offset;
+  final n = gradient.length;
+  r %= n;
+  if (r < 0) r += n;
+  if (r == 0) return gradient;
+
+  return [...gradient.sublist(r), ...gradient.sublist(0, r)];
 }
 
 /// Styles individual runes in a string using a styler function.
