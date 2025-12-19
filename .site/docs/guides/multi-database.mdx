@@ -104,6 +104,20 @@ Transactions cannot span multiple databases. If you need cross-database workflow
 ```dart file=../../examples/lib/multi_db/multi_database.dart#multi-db-manager
 ```
 
+Connection resolution for static helpers follows this order:
+1. A custom resolver registered via `Model.bindConnectionResolver(...)`.
+2. The default connection in `ConnectionManager` (set by `DataSource.init()` or `dataSource.setAsDefault()`).
+
+If you need per-request routing, bind a resolver and return the correct `QueryContext`:
+
+```dart
+Model.bindConnectionResolver(
+  resolveConnection: (name) => tenantResolver(name),
+  connectionManager: ConnectionManager.instance,
+  defaultConnection: 'primary',
+);
+```
+
 ## Best Practices
 
 1. **Name connections clearly** - Use descriptive names like 'primary', 'analytics', 'cache'

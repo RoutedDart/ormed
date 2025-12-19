@@ -20,6 +20,10 @@ Use `schema.create()` to define a new table:
 ```dart file=../../examples/lib/schema/schema_builder.dart#schema-create
 ```
 
+:::note Table prefixing
+If `DataSourceOptions.tablePrefix` is set, schema operations automatically prefix unqualified table names (create/alter/drop/rename). Schema‑qualified names (e.g., `public.users`) are not prefixed.
+:::
+
 ## Column Types
 
 <Tabs groupId="schema-column-types" defaultValue="primary-keys">

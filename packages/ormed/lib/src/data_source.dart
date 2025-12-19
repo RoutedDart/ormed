@@ -605,7 +605,22 @@ class DataSource {
       return;
     }
 
-    await _connection!.driver.close();
+    final manager = ConnectionManager.instance;
+    final shouldClearDefault =
+        _defaultDataSource == this ||
+        manager.defaultConnectionName == options.name;
+
+    if (shouldClearDefault) {
+      _defaultDataSource = null;
+      manager.clearDefault();
+      Model.unbindConnectionResolver();
+    }
+
+    if (manager.isRegistered(options.name)) {
+      await manager.unregister(options.name);
+    } else {
+      await _connection!.driver.close();
+    }
     _connection = null;
     _initialized = false;
   }

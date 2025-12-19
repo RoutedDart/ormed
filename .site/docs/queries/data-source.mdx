@@ -23,7 +23,7 @@ The `DataSource` class provides a modern, declarative API for configuring and us
 | `registry` | `ModelRegistry?` | `null` | Generated registry (includes type aliases). If provided and `entities` is empty, models are taken from the registry. |
 | `name` | `String` | `'default'` | Logical name for the connection |
 | `database` | `String?` | `null` | Database/catalog identifier for observability |
-| `tablePrefix` | `String` | `''` | Prefix applied to table names |
+| `tablePrefix` | `String` | `''` | Prefix applied to unqualified table names (queries, joins, pivots, and schema operations). Schema-qualified names are not prefixed. |
 | `defaultSchema` | `String?` | `null` | Default schema for ad-hoc queries |
 | `codecs` | `Map<String, ValueCodec>` | `{}` | Custom value codecs to register |
 | `logging` | `bool` | `false` | Enable query logging |
@@ -50,6 +50,30 @@ The `init()` method:
 Once initialized, the first `DataSource` automatically becomes the default. This enables using generated model helper classes (like `Users` / `Posts`) without threading a `DataSource` everywhere.
 
 ```dart file=../../examples/lib/datasource.dart#datasource-static-helpers
+```
+
+### ConnectionManager + Resolver Binding
+
+Static helpers resolve connections in this order:
+1. A custom resolver set via `Model.bindConnectionResolver(...)`.
+2. The default `ConnectionManager` registration (set by `init()` or `setAsDefault()`).
+
+If you need complete control (multi-tenant, sharded, per-request routing), bind your own resolver:
+
+```dart
+Model.bindConnectionResolver(
+  resolveConnection: (_) => myQueryContext,
+  connectionManager: ConnectionManager.instance,
+  defaultConnection: 'primary',
+);
+```
+
+To clear static bindings (tests or teardown):
+
+```dart
+Model.unbindConnectionResolver();
+ConnectionManager.instance.clearDefault();
+DataSource.clearDefault();
 ```
 
 ## Querying Data
@@ -160,6 +184,8 @@ Query through the `DataSource` you want (or pass `connection:` to static helpers
 
 ```dart file=../../examples/lib/datasource.dart#datasource-lifecycle
 ```
+
+Disposing a default `DataSource` unregisters it from `ConnectionManager` and clears static helper bindings, so subsequent static calls require a new default to be set.
 
 ### Access Underlying Components
 

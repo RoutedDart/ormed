@@ -35,6 +35,10 @@ Default connection resolution is handled through `ConnectionManager`.
   </TabItem>
 </Tabs>
 
+## Table Prefixing
+
+If `DataSourceOptions.tablePrefix` is set, Ormed automatically prefixes all **unqualified** table references (base tables, joins, relation/pivot tables, and ad‑hoc `table()` calls). Schema‑qualified names like `public.users` are left untouched.
+
 ## Selecting Data
 
 ### Get All Records

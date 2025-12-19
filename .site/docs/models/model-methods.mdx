@@ -172,3 +172,4 @@ Notes:
 - Default connection is set when you `await dataSource.init()` (first one auto-defaults) or when you call `dataSource.setAsDefault()` (stored in `ConnectionManager`).
 - For multi-database / multi-tenant flows, prefer explicit `DataSource`/`QueryContext`, or pass a connection name to the helper (`Users.query('analytics')`).
 - If multiple connections register the same model type, always pass `connection:` to avoid relying on implicit resolution.
+- You can override resolution by calling `Model.bindConnectionResolver(...)`. Clear it with `Model.unbindConnectionResolver()` (useful in tests or teardown).

@@ -142,6 +142,24 @@ void main() {
       expect(dataSource.isInitialized, isFalse);
     });
 
+    test('dispose clears default registration', () async {
+      DataSource.clearDefault();
+      ConnectionManager.instance.clearDefault();
+      Model.unbindConnectionResolver();
+
+      dataSource = DataSource(
+        DataSourceOptions(driver: driver, registry: registry, name: 'default'),
+      );
+      await dataSource.init();
+      dataSource.setAsDefault();
+
+      await dataSource.dispose();
+
+      expect(DataSource.getDefault(), isNull);
+      expect(ConnectionManager.instance.hasDefaultConnection, isFalse);
+      expect(() => Model.query<ActiveUser>(), throwsStateError);
+    });
+
     test('dispose is idempotent', () async {
       dataSource = DataSource(
         DataSourceOptions(driver: driver, registry: registry),
