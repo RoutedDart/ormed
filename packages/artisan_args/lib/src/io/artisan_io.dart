@@ -165,6 +165,14 @@ class ArtisanIO {
   // Formatted Output
   // ─────────────────────────────────────────────────────────────────────────────
 
+  /// Displays an ASCII art logo.
+  void logo(String ascii, {Style? style}) {
+    final s = style ?? this.style.foreground(Colors.info).bold();
+    for (final line in ascii.split('\n')) {
+      writeln(s.render(line));
+    }
+  }
+
   /// Outputs a title with underline.
   void title(String message) {
     final trimmed = message.trimRight();
@@ -557,6 +565,21 @@ class ArtisanIO {
     );
     final result = await runMultiSelectPrompt(model, terminal);
     return result ?? [];
+  }
+
+  /// Displays a persistent menu and returns the selected choice.
+  Future<T?> menu<T>(
+    String title, {
+    required List<T> choices,
+    int? defaultIndex,
+    String Function(T)? display,
+  }) async {
+    return selectChoice(
+      title,
+      choices: choices,
+      defaultIndex: defaultIndex,
+      display: display,
+    );
   }
 
   // ─────────────────────────────────────────────────────────────────────────────

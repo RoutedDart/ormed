@@ -111,15 +111,20 @@ class ProgressModel extends ViewComponent {
     this.gradientColorA = '#5A56E0',
     this.gradientColorB = '#EE6FF8',
     this.scaleGradient = false,
+    this.indeterminate = false,
+    this.pulseWidth = 0.2,
+    this.startTime,
     double percentShown = 0,
     double targetPercent = 0,
     double velocity = 0,
+    double pulseOffset = 0,
     int? id,
     int tag = 0,
   }) : _spring = _Spring(frequency: frequency, damping: damping),
        _percentShown = percentShown,
        _targetPercent = targetPercent,
        _velocity = velocity,
+       _pulseOffset = pulseOffset,
        _id = id ?? _nextProgressId(),
        _tag = tag;
 
@@ -156,10 +161,20 @@ class ProgressModel extends ViewComponent {
   /// Whether to scale the gradient to the filled portion.
   final bool scaleGradient;
 
+  /// Whether the progress bar is in indeterminate mode.
+  final bool indeterminate;
+
+  /// Width of the pulse in indeterminate mode (as a fraction of total width).
+  final double pulseWidth;
+
+  /// When the progress started (for ETA calculation).
+  final DateTime? startTime;
+
   final _Spring _spring;
   final double _percentShown;
   final double _targetPercent;
   final double _velocity;
+  final double _pulseOffset;
   final int _id;
   final int _tag;
 
@@ -169,6 +184,9 @@ class ProgressModel extends ViewComponent {
   /// The target percentage.
   double get percent => _targetPercent;
 
+  /// The current pulse offset (for indeterminate mode).
+  double get pulseOffset => _pulseOffset;
+
   /// The progress bar's unique ID.
   int get id => _id;
 
@@ -177,8 +195,25 @@ class ProgressModel extends ViewComponent {
 
   /// Whether the progress bar is currently animating.
   bool get isAnimating {
+    if (indeterminate) return true;
     final dist = (_percentShown - _targetPercent).abs();
     return !(dist < 0.001 && _velocity < 0.01);
+  }
+
+  /// Returns the estimated time remaining as a string (MM:SS).
+  String get eta {
+    final start = startTime;
+    if (start == null || _targetPercent <= 0) return '--:--';
+    final elapsed = DateTime.now().difference(start);
+    if (_targetPercent >= 1.0) return '00:00';
+
+    final totalEstimatedMs = elapsed.inMilliseconds / _targetPercent;
+    final remainingMs = totalEstimatedMs - elapsed.inMilliseconds;
+
+    final duration = Duration(milliseconds: remainingMs.round());
+    final minutes = duration.inMinutes;
+    final seconds = duration.inSeconds % 60;
+    return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
   }
 
   /// Creates a copy with the given fields replaced.
@@ -194,9 +229,13 @@ class ProgressModel extends ViewComponent {
     String? gradientColorA,
     String? gradientColorB,
     bool? scaleGradient,
+    bool? indeterminate,
+    double? pulseWidth,
+    DateTime? startTime,
     double? percentShown,
     double? targetPercent,
     double? velocity,
+    double? pulseOffset,
     int? tag,
     double? frequency,
     double? damping,
@@ -213,9 +252,13 @@ class ProgressModel extends ViewComponent {
       gradientColorA: gradientColorA ?? this.gradientColorA,
       gradientColorB: gradientColorB ?? this.gradientColorB,
       scaleGradient: scaleGradient ?? this.scaleGradient,
+      indeterminate: indeterminate ?? this.indeterminate,
+      pulseWidth: pulseWidth ?? this.pulseWidth,
+      startTime: startTime ?? this.startTime,
       percentShown: percentShown ?? _percentShown,
       targetPercent: targetPercent ?? _targetPercent,
       velocity: velocity ?? _velocity,
+      pulseOffset: pulseOffset ?? _pulseOffset,
       id: _id,
       tag: tag ?? _tag,
       frequency: frequency ?? _spring.frequency,
@@ -270,6 +313,13 @@ class ProgressModel extends ViewComponent {
       return (this, null);
     }
 
+    if (indeterminate) {
+      // Update pulse offset
+      final nextOffset = (_pulseOffset + 0.02) % 1.0;
+      final newModel = copyWith(pulseOffset: nextOffset, tag: _tag);
+      return (newModel, newModel._nextFrame());
+    }
+
     // Update spring animation
     final (newPercent, newVelocity) = _spring.update(
       _percentShown,
@@ -283,17 +333,22 @@ class ProgressModel extends ViewComponent {
   }
 
   @override
-  String view() => viewAs(_percentShown);
+  String view() => viewAs(indeterminate ? _pulseOffset : _percentShown);
 
   /// Renders the progress bar at the given percentage (static rendering).
   String viewAs(double percent) {
-    final percentView = _percentageView(percent);
+    final percentView = indeterminate ? '' : _percentageView(percent);
     final barView = _barView(percent, percentView.length);
     return '$barView$percentView';
   }
 
   String _barView(double percent, int textWidth) {
     final tw = math.max(0, width - textWidth); // total bar width
+
+    if (indeterminate) {
+      return _indeterminateBarView(tw, percent);
+    }
+
     var fw = (tw * percent).round(); // filled width
     fw = fw.clamp(0, tw);
 
@@ -328,6 +383,41 @@ class ProgressModel extends ViewComponent {
       buffer.write(emptyColored);
     }
 
+    return buffer.toString();
+  }
+
+  String _indeterminateBarView(int tw, double offset) {
+    final buffer = StringBuffer();
+    final pw = (tw * pulseWidth).round().clamp(1, tw);
+    final start = (tw * offset).round();
+
+    for (var i = 0; i < tw; i++) {
+      // Check if i is within the pulse (wrapping around)
+      var inPulse = false;
+      if (start + pw <= tw) {
+        inPulse = i >= start && i < start + pw;
+      } else {
+        inPulse = i >= start || i < (start + pw) % tw;
+      }
+
+      if (inPulse) {
+        if (useGradient) {
+          // Calculate relative position in pulse for gradient
+          var rel = 0.0;
+          if (i >= start) {
+            rel = (i - start) / (pw - 1);
+          } else {
+            rel = (tw - start + i) / (pw - 1);
+          }
+          final color = _interpolateColor(gradientColorA, gradientColorB, rel);
+          buffer.write(_colorize(full, color));
+        } else {
+          buffer.write(_colorize(full, fullColor));
+        }
+      } else {
+        buffer.write(_colorize(empty, emptyColor));
+      }
+    }
     return buffer.toString();
   }
 
@@ -370,5 +460,81 @@ class ProgressModel extends ViewComponent {
     return '#${r.toRadixString(16).padLeft(2, '0')}'
         '${g.toRadixString(16).padLeft(2, '0')}'
         '${b.toRadixString(16).padLeft(2, '0')}';
+  }
+}
+
+/// A model for managing multiple progress bars simultaneously.
+class MultiProgressModel extends ViewComponent {
+  /// Creates a new multi-progress model.
+  MultiProgressModel({
+    Map<String, ProgressModel>? bars,
+    this.width = _defaultWidth,
+  }) : bars = bars ?? {};
+
+  /// The map of progress bars, keyed by a unique identifier.
+  final Map<String, ProgressModel> bars;
+
+  /// Default width for new progress bars.
+  final int width;
+
+  /// Adds a new progress bar with the given key.
+  MultiProgressModel add(String key, {ProgressModel? model}) {
+    final newBars = Map<String, ProgressModel>.from(bars);
+    newBars[key] = model ?? ProgressModel(width: width);
+    return MultiProgressModel(bars: newBars, width: width);
+  }
+
+  /// Removes the progress bar with the given key.
+  MultiProgressModel remove(String key) {
+    final newBars = Map<String, ProgressModel>.from(bars);
+    newBars.remove(key);
+    return MultiProgressModel(bars: newBars, width: width);
+  }
+
+  /// Updates the percentage for a specific bar.
+  (MultiProgressModel, Cmd?) setPercent(
+    String key,
+    double p, {
+    bool animate = true,
+  }) {
+    final bar = bars[key];
+    if (bar == null) return (this, null);
+
+    final (newBar, cmd) = bar.setPercent(p, animate: animate);
+    final newBars = Map<String, ProgressModel>.from(bars);
+    newBars[key] = newBar;
+    return (MultiProgressModel(bars: newBars, width: width), cmd);
+  }
+
+  @override
+  Cmd? init() => null;
+
+  @override
+  (MultiProgressModel, Cmd?) update(Msg msg) {
+    if (msg is! ProgressFrameMsg) return (this, null);
+
+    final cmds = <Cmd>[];
+    final newBars = Map<String, ProgressModel>.from(bars);
+    var changed = false;
+
+    for (final entry in bars.entries) {
+      final (newBar, cmd) = entry.value.update(msg);
+      if (newBar != entry.value) {
+        newBars[entry.key] = newBar;
+        changed = true;
+      }
+      if (cmd != null) cmds.add(cmd);
+    }
+
+    if (!changed && cmds.isEmpty) return (this, null);
+    return (
+      MultiProgressModel(bars: newBars, width: width),
+      cmds.isEmpty ? null : Cmd.batch(cmds),
+    );
+  }
+
+  @override
+  String view() {
+    return bars.entries.map((e) => '${e.key}: ${e.value.view()}').join('\n');
   }
 }

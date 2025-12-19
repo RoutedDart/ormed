@@ -2571,6 +2571,17 @@ class Style {
   }
 
   String _colorAnsi(String color, bool foreground) {
+    final lower = color.toLowerCase();
+
+    // Handle hex colors
+    if (lower.startsWith('#')) {
+      return BasicColor(lower).toAnsi(
+        colorProfile,
+        background: !foreground,
+        hasDarkBackground: hasDarkBackground,
+      );
+    }
+
     final map = <String, int>{
       'black': 0,
       'red': 1,
@@ -2584,14 +2595,27 @@ class Style {
       'gray': 7,
       'grey': 7,
     };
-    final lower = color.toLowerCase();
+
     final bright = lower.startsWith('bright-');
     final name = bright ? lower.substring(7) : lower;
     final code = map[name];
-    if (code == null) return '';
-    final base = foreground ? 30 : 40;
-    final value = bright ? base + 60 + code : base + code;
-    return '\x1B[${value}m';
+
+    if (code != null) {
+      final base = foreground ? 30 : 40;
+      final value = bright ? base + 60 + code : base + code;
+      return '\x1B[${value}m';
+    }
+
+    // Try parsing as ANSI code (0-255)
+    final ansiCode = int.tryParse(lower);
+    if (ansiCode != null && ansiCode >= 0 && ansiCode <= 255) {
+      return AnsiColor(ansiCode).toAnsi(
+        colorProfile,
+        background: !foreground,
+      );
+    }
+
+    return '';
   }
 
   String _optionsAnsi(String opts) {
@@ -2602,6 +2626,12 @@ class Style {
         case 'bold':
           codes.add(1);
           break;
+        case 'dim':
+          codes.add(2);
+          break;
+        case 'italic':
+          codes.add(3);
+          break;
         case 'underscore':
         case 'underline':
           codes.add(4);
@@ -2610,10 +2640,15 @@ class Style {
           codes.add(5);
           break;
         case 'reverse':
+        case 'inverse':
           codes.add(7);
           break;
         case 'conceal':
+        case 'hidden':
           codes.add(8);
+          break;
+        case 'strikethrough':
+          codes.add(9);
           break;
       }
     }
