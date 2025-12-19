@@ -266,7 +266,7 @@ class TableModel extends ViewComponent {
   bool get focused => _focused;
 
   /// Gets the viewport height.
-  int get height => _viewport.height;
+  int get height => _viewport.height ?? 0;
 
   /// Gets the viewport width.
   int get width => _viewport.width;
@@ -311,15 +311,15 @@ class TableModel extends ViewComponent {
       _viewport = _viewport.copyWith(
         yOffset: _viewport.yOffset.clamp(0, _cursor),
       );
-    } else if (_start < _viewport.height) {
+    } else if (_start < (_viewport.height ?? 0)) {
       _viewport = _viewport.copyWith(
         yOffset: (_viewport.yOffset + n)
             .clamp(0, _cursor)
-            .clamp(0, _viewport.height),
+            .clamp(0, _viewport.height ?? 0),
       );
     } else if (_viewport.yOffset >= 1) {
       _viewport = _viewport.copyWith(
-        yOffset: (_viewport.yOffset + n).clamp(1, _viewport.height),
+        yOffset: (_viewport.yOffset + n).clamp(1, _viewport.height ?? 0),
       );
     }
     updateViewport();
@@ -332,7 +332,7 @@ class TableModel extends ViewComponent {
 
     if (_end == _rows.length && _viewport.yOffset > 0) {
       _viewport = _viewport.copyWith(
-        yOffset: (_viewport.yOffset - n).clamp(1, _viewport.height),
+        yOffset: (_viewport.yOffset - n).clamp(1, _viewport.height ?? 0),
       );
     } else if (_cursor > (_end - _start) ~/ 2 && _viewport.yOffset > 0) {
       _viewport = _viewport.copyWith(
@@ -340,7 +340,7 @@ class TableModel extends ViewComponent {
       );
     } else if (_viewport.yOffset > 1) {
       // Keep current offset
-    } else if (_cursor > _viewport.yOffset + _viewport.height - 1) {
+    } else if (_cursor > (_viewport.yOffset + (_viewport.height ?? 0) - 1)) {
       _viewport = _viewport.copyWith(
         yOffset: (_viewport.yOffset + 1).clamp(0, 1),
       );
@@ -374,11 +374,11 @@ class TableModel extends ViewComponent {
     final renderedRows = <String>[];
 
     if (_cursor >= 0) {
-      _start = (_cursor - _viewport.height).clamp(0, _cursor);
+      _start = (_cursor - (_viewport.height ?? 0)).clamp(0, _cursor);
     } else {
       _start = 0;
     }
-    _end = (_cursor + _viewport.height).clamp(_cursor, _rows.length);
+    _end = (_cursor + (_viewport.height ?? 0)).clamp(_cursor, _rows.length);
 
     for (var i = _start; i < _end; i++) {
       renderedRows.add(_renderRow(i));
@@ -443,13 +443,13 @@ class TableModel extends ViewComponent {
       } else if (keyMatches(msg.key, [keyMap.lineDown])) {
         moveDown(1);
       } else if (keyMatches(msg.key, [keyMap.pageUp])) {
-        moveUp(_viewport.height);
+        moveUp(_viewport.height ?? 0);
       } else if (keyMatches(msg.key, [keyMap.pageDown])) {
-        moveDown(_viewport.height);
+        moveDown(_viewport.height ?? 0);
       } else if (keyMatches(msg.key, [keyMap.halfPageUp])) {
-        moveUp(_viewport.height ~/ 2);
+        moveUp((_viewport.height ?? 0) ~/ 2);
       } else if (keyMatches(msg.key, [keyMap.halfPageDown])) {
-        moveDown(_viewport.height ~/ 2);
+        moveDown((_viewport.height ?? 0) ~/ 2);
       } else if (keyMatches(msg.key, [keyMap.gotoTop])) {
         gotoTop();
       } else if (keyMatches(msg.key, [keyMap.gotoBottom])) {

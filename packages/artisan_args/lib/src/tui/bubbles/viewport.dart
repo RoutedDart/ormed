@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import '../../style/ranges.dart' as ranges;
 import '../../style/style.dart';
+import '../../style/color.dart';
 import '../cmd.dart';
 import '../component.dart';
 import '../msg.dart';
@@ -19,6 +20,7 @@ class ViewportKeyMap implements KeyMap {
     KeyBinding? up,
     KeyBinding? left,
     KeyBinding? right,
+    KeyBinding? copy,
   }) : pageDown =
            pageDown ??
            KeyBinding.withHelp(['pgdown', ' ', 'f'], 'f/pgdn', 'page down'),
@@ -32,7 +34,8 @@ class ViewportKeyMap implements KeyMap {
        down = down ?? KeyBinding.withHelp(['down', 'j'], '↓/j', 'down'),
        up = up ?? KeyBinding.withHelp(['up', 'k'], '↑/k', 'up'),
        left = left ?? KeyBinding.withHelp(['left', 'h'], '←/h', 'left'),
-       right = right ?? KeyBinding.withHelp(['right', 'l'], '→/l', 'right');
+       right = right ?? KeyBinding.withHelp(['right', 'l'], '→/l', 'right'),
+       copy = copy ?? KeyBinding.withHelp(['ctrl+c', 'y'], 'y', 'copy');
 
   final KeyBinding pageDown;
   final KeyBinding pageUp;
@@ -42,14 +45,15 @@ class ViewportKeyMap implements KeyMap {
   final KeyBinding up;
   final KeyBinding left;
   final KeyBinding right;
+  final KeyBinding copy;
 
   @override
-  List<KeyBinding> shortHelp() => [up, down, pageUp, pageDown];
+  List<KeyBinding> shortHelp() => [up, down, pageUp, pageDown, copy];
 
   @override
   List<List<KeyBinding>> fullHelp() => [
     [up, down, pageUp, pageDown],
-    [halfPageUp, halfPageDown, left, right],
+    [halfPageUp, halfPageDown, left, right, copy],
   ];
 }
 
@@ -116,6 +120,8 @@ class ViewportModel extends ViewComponent {
     this.leftGutterFunc,
     this.highlights = const [],
     this.currentHighlightIndex = -1,
+    this.selectionStart,
+    this.selectionEnd,
     ViewportKeyMap? keyMap,
     List<String>? lines,
     List<String>? wrappedLines,
@@ -128,8 +134,9 @@ class ViewportModel extends ViewComponent {
   /// Width of the viewport in columns.
   final int width;
 
-  /// Height of the viewport in rows.
-  final int height;
+  /// Height of the viewport in rows. If null, the viewport will show all
+  /// lines and will not scroll vertically.
+  final int? height;
 
   /// Left gutter (spaces) applied to each rendered line. Also reduces
   /// available content width.
@@ -167,6 +174,12 @@ class ViewportModel extends ViewComponent {
   /// The index of the currently focused highlight.
   final int currentHighlightIndex;
 
+  /// The start of the selection (x, y) in content coordinates.
+  final (int, int)? selectionStart;
+
+  /// The end of the selection (x, y) in content coordinates.
+  final (int, int)? selectionEnd;
+
   /// Key bindings for navigation.
   final ViewportKeyMap keyMap;
 
@@ -177,6 +190,15 @@ class ViewportModel extends ViewComponent {
 
   /// The content lines.
   List<String> get lines => softWrap ? _wrappedLines : _lines;
+
+  /// Internal lines (unwrapped).
+  List<String> get internalLines => _lines;
+
+  /// Internal wrapped lines.
+  List<String> get internalWrappedLines => _wrappedLines;
+
+  /// Internal original lines (before styling).
+  List<String> get internalOriginalLines => _originalLines;
 
   int get _contentWidth => math.max(0, width - gutter);
 
@@ -197,6 +219,8 @@ class ViewportModel extends ViewComponent {
     String Function(int lineIndex)? leftGutterFunc,
     List<ranges.StyleRange>? highlights,
     int? currentHighlightIndex,
+    (int, int)? selectionStart,
+    (int, int)? selectionEnd,
   }) {
     final newWidth = width ?? this.width;
     final newGutter = gutter ?? this.gutter;
@@ -239,6 +263,8 @@ class ViewportModel extends ViewComponent {
       leftGutterFunc: leftGutterFunc ?? this.leftGutterFunc,
       highlights: newHighlights,
       currentHighlightIndex: currentHighlightIndex ?? this.currentHighlightIndex,
+      selectionStart: selectionStart ?? this.selectionStart,
+      selectionEnd: selectionEnd ?? this.selectionEnd,
     );
     newModel._longestLineWidth = _findLongestLineWidth(styledLines);
     return newModel;
@@ -259,7 +285,8 @@ class ViewportModel extends ViewComponent {
   }
 
   /// Maximum Y offset based on content and height.
-  int get _maxYOffset => math.max(0, lines.length - height);
+  int get _maxYOffset =>
+      height == null ? 0 : math.max(0, lines.length - height!);
 
   /// Whether the viewport is at the top.
   bool get atTop => yOffset <= 0;
@@ -272,9 +299,9 @@ class ViewportModel extends ViewComponent {
 
   /// Returns the scroll percentage (0.0 to 1.0).
   double get scrollPercent {
-    if (height >= lines.length) return 1.0;
+    if (height == null || height! >= lines.length) return 1.0;
     final y = yOffset.toDouble();
-    final h = height.toDouble();
+    final h = height!.toDouble();
     final t = lines.length.toDouble();
     final v = y / (t - h);
     return v.clamp(0.0, 1.0);
@@ -333,7 +360,9 @@ class ViewportModel extends ViewComponent {
     if (lines.isEmpty) return [];
 
     final top = math.max(0, yOffset);
-    final bottom = (yOffset + height).clamp(top, lines.length);
+    final bottom = height == null
+        ? lines.length
+        : (yOffset + height!).clamp(top, lines.length);
     var visible = lines.sublist(top, bottom);
 
     final contentWidth = _contentWidth;
@@ -388,26 +417,26 @@ class ViewportModel extends ViewComponent {
 
   /// Moves down by one page.
   ViewportModel pageDown() {
-    if (atBottom) return this;
-    return scrollDown(height);
+    if (atBottom || height == null) return this;
+    return scrollDown(height!);
   }
 
   /// Moves up by one page.
   ViewportModel pageUp() {
-    if (atTop) return this;
-    return scrollUp(height);
+    if (atTop || height == null) return this;
+    return scrollUp(height!);
   }
 
   /// Moves down by half a page.
   ViewportModel halfPageDown() {
-    if (atBottom) return this;
-    return scrollDown(height ~/ 2);
+    if (atBottom || height == null) return this;
+    return scrollDown(height! ~/ 2);
   }
 
   /// Moves up by half a page.
   ViewportModel halfPageUp() {
-    if (atTop) return this;
-    return scrollUp(height ~/ 2);
+    if (atTop || height == null) return this;
+    return scrollUp(height! ~/ 2);
   }
 
   /// Goes to the top of the content.
@@ -419,6 +448,52 @@ class ViewportModel extends ViewComponent {
   /// Goes to the bottom of the content.
   ViewportModel gotoBottom() {
     return setYOffset(_maxYOffset);
+  }
+
+  /// Returns the currently selected text.
+  String getSelectedText() {
+    if (selectionStart == null || selectionEnd == null) return '';
+
+    final (x1, y1) = selectionStart!;
+    final (x2, y2) = selectionEnd!;
+
+    final startY = math.min(y1, y2);
+    final endY = math.max(y1, y2);
+
+    if (startY < 0 || endY >= lines.length) return '';
+
+    final sb = StringBuffer();
+    for (var y = startY; y <= endY; y++) {
+      final line = lines[y];
+      final plain = Style.stripAnsi(line);
+
+      int startX, endX;
+      if (startY == endY) {
+        startX = math.min(x1, x2);
+        endX = math.max(x1, x2);
+      } else if (y == startY) {
+        startX = y1 < y2 ? x1 : x2;
+        endX = plain.length;
+      } else if (y == endY) {
+        startX = 0;
+        endX = y1 < y2 ? x2 : x1;
+      } else {
+        startX = 0;
+        endX = plain.length;
+      }
+
+      startX = startX.clamp(0, plain.length);
+      endX = endX.clamp(0, plain.length);
+
+      if (startX < endX) {
+        sb.write(plain.substring(startX, endX));
+      }
+      if (y < endY) {
+        sb.write('\n');
+      }
+    }
+
+    return sb.toString();
   }
 
   @override
@@ -454,9 +529,40 @@ class ViewportModel extends ViewComponent {
             return (scrollRight(horizontalStep), null);
           }
         }
+        if (key.matchesSingle(keyMap.copy)) {
+          final text = getSelectedText();
+          if (text.isNotEmpty) {
+            return (this, Cmd.setClipboard(text));
+          }
+        }
         return (this, null);
 
-      case MouseMsg(:final button, :final action, :final shift):
+      case MouseMsg(:final button, :final action, :final x, :final y, :final shift):
+        if (action == MouseAction.press && button == MouseButton.left) {
+          // Start selection
+          final contentX = x - gutter + xOffset;
+          final contentY = y + yOffset;
+          return (
+            copyWith(
+              selectionStart: (contentX, contentY),
+              selectionEnd: (contentX, contentY),
+            ),
+            null,
+          );
+        }
+
+        if (action == MouseAction.motion && selectionStart != null) {
+          // Update selection
+          final contentX = x - gutter + xOffset;
+          final contentY = y + yOffset;
+          return (copyWith(selectionEnd: (contentX, contentY)), null);
+        }
+
+        if (action == MouseAction.release && button == MouseButton.left) {
+          // Finalize selection (keep it for copying)
+          return (this, null);
+        }
+
         if (!mouseWheelEnabled || action != MouseAction.press) {
           return (this, null);
         }
@@ -519,14 +625,54 @@ class ViewportModel extends ViewComponent {
       } else if (w > contentWidth && !softWrap) {
         line = ranges.cutAnsiByCells(line, xOffset, xOffset + contentWidth);
       }
+
+      // Apply selection style if needed
+      if (selectionStart != null && selectionEnd != null) {
+        final (x1, y1) = selectionStart!;
+        final (x2, y2) = selectionEnd!;
+        final startY = math.min(y1, y2);
+        final endY = math.max(y1, y2);
+
+        if (lineIndex >= startY && lineIndex <= endY) {
+          final plain = Style.stripAnsi(line);
+          int startX, endX;
+
+          if (startY == endY) {
+            startX = math.min(x1, x2);
+            endX = math.max(x1, x2);
+          } else if (lineIndex == startY) {
+            startX = y1 < y2 ? x1 : x2;
+            endX = plain.length;
+          } else if (lineIndex == endY) {
+            startX = 0;
+            endX = y1 < y2 ? x2 : x1;
+          } else {
+            startX = 0;
+            endX = plain.length;
+          }
+
+          startX = (startX - xOffset).clamp(0, contentWidth);
+          endX = (endX - xOffset).clamp(0, contentWidth);
+
+          if (startX < endX) {
+            final selectionStyle = Style().background(const AnsiColor(7)).foreground(const AnsiColor(0));
+            line = ranges.styleRanges(line, [
+              ranges.StyleRange(startX, endX, selectionStyle)
+            ]);
+          }
+        }
+      }
+
       paddedLines.add('$gutterStr$line');
     }
 
     // Pad height if content is shorter
-    while (paddedLines.length < height) {
-      final lineIndex = top + paddedLines.length;
-      final gutterStr = leftGutterFunc?.call(lineIndex) ?? (' ' * gutter);
-      paddedLines.add('$gutterStr${' ' * contentWidth}');
+    if (height != null) {
+      while (paddedLines.length < height!) {
+        final lineIndex = top + paddedLines.length;
+        final gutterStr = leftGutterFunc?.call(lineIndex) ?? (' ' * gutter);
+        paddedLines.add('$gutterStr${' ' * contentWidth}');
+      }
     }
 
     return paddedLines.join('\n');

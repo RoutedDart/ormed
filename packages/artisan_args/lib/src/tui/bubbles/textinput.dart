@@ -49,6 +49,7 @@ class TextInputKeyMap implements KeyMap {
     KeyBinding? lineStart,
     KeyBinding? lineEnd,
     KeyBinding? paste,
+    KeyBinding? copy,
     KeyBinding? acceptSuggestion,
     KeyBinding? nextSuggestion,
     KeyBinding? prevSuggestion,
@@ -130,6 +131,12 @@ class TextInputKeyMap implements KeyMap {
              keys: ['ctrl+v'],
              help: Help(key: '^v', desc: 'Paste'),
            ),
+       copy =
+           copy ??
+           KeyBinding(
+             keys: ['ctrl+c'],
+             help: Help(key: '^c', desc: 'Copy'),
+           ),
        acceptSuggestion =
            acceptSuggestion ??
            KeyBinding(
@@ -188,6 +195,9 @@ class TextInputKeyMap implements KeyMap {
   /// Paste from clipboard.
   final KeyBinding paste;
 
+  /// Copy to clipboard.
+  final KeyBinding copy;
+
   /// Accept current suggestion.
   final KeyBinding acceptSuggestion;
 
@@ -215,7 +225,7 @@ class TextInputKeyMap implements KeyMap {
       deleteWordForward,
     ],
     [deleteBeforeCursor, deleteAfterCursor],
-    [paste, acceptSuggestion, nextSuggestion, prevSuggestion],
+    [paste, copy, acceptSuggestion, nextSuggestion, prevSuggestion],
   ];
 }
 
@@ -330,6 +340,10 @@ class TextInputModel extends ViewComponent {
   int _offset = 0;
   int _offsetRight = 0;
 
+  // Selection
+  int? _selectionStart;
+  int? _selectionEnd;
+
   // Suggestions
   List<List<String>> _suggestions = <List<String>>[];
   List<List<String>> _matchedSuggestions = <List<String>>[];
@@ -397,6 +411,15 @@ class TextInputModel extends ViewComponent {
     final (newCursor, cmd) = cursor.focus();
     cursor = newCursor;
     return cmd;
+  }
+
+  /// Returns the currently selected text.
+  String getSelectedText() {
+    if (_selectionStart == null || _selectionEnd == null) return '';
+    final start = math.min(_selectionStart!, _selectionEnd!);
+    final end = math.max(_selectionStart!, _selectionEnd!);
+    if (start == end) return '';
+    return _value.sublist(start, end).join();
   }
 
   /// Blur (unfocus) the input.
@@ -672,6 +695,29 @@ class TextInputModel extends ViewComponent {
       return (this, null);
     }
 
+    final oldPos = _pos;
+    final cmds = <Cmd>[];
+
+    if (msg is MouseMsg) {
+      final promptWidth = stringWidth(prompt);
+      final x = msg.x - promptWidth + _offset;
+
+      if (msg.action == MouseAction.press && msg.button == MouseButton.left) {
+        position = x;
+        _selectionStart = _pos;
+        _selectionEnd = _pos;
+      } else if (msg.action == MouseAction.motion &&
+          msg.button == MouseButton.left) {
+        position = x;
+        _selectionEnd = _pos;
+      } else if (msg.action == MouseAction.release) {
+        if (_selectionStart == _selectionEnd) {
+          _selectionStart = null;
+          _selectionEnd = null;
+        }
+      }
+    }
+
     // Check for suggestion acceptance first
     if (msg is KeyMsg && keyMatches(msg.key, [keyMap.acceptSuggestion])) {
       if (_canAcceptSuggestion()) {
@@ -681,10 +727,14 @@ class TextInputModel extends ViewComponent {
       }
     }
 
-    final oldPos = _pos;
-    final cmds = <Cmd>[];
-
     if (msg is KeyMsg) {
+      if (keyMatches(msg.key, [keyMap.copy])) {
+        final selected = getSelectedText();
+        if (selected.isNotEmpty) {
+          return (this, Cmd.setClipboard(selected));
+        }
+      }
+
       if (msg.key.type == KeyType.space) {
         _insertRunes([0x20]);
         return (this, null);
@@ -772,17 +822,42 @@ class TextInputModel extends ViewComponent {
     final visibleValue = _value.sublist(_offset, _offsetRight);
     final pos = math.max(0, _pos - _offset);
 
-    var v = styleText(_echoTransform(visibleValue.sublist(0, pos).join()));
+    // Selection range in visible space
+    int? selStart, selEnd;
+    if (_selectionStart != null && _selectionEnd != null) {
+      final start = math.min(_selectionStart!, _selectionEnd!);
+      final end = math.max(_selectionStart!, _selectionEnd!);
 
-    if (pos < visibleValue.length) {
-      final char = _echoTransform(visibleValue[pos]);
-      cursor = cursor.setChar(char);
-      v += cursor.view(); // Cursor and text under it
-      v += styleText(
-        _echoTransform(visibleValue.sublist(pos + 1).join()),
-      ); // Text after cursor
-      v += _completionView(0); // Suggested completion
-    } else {
+      selStart = math.max(0, start - _offset);
+      selEnd = math.min(visibleValue.length, end - _offset);
+
+      if (selStart >= visibleValue.length || selEnd <= 0) {
+        selStart = null;
+        selEnd = null;
+      }
+    }
+
+    var v = '';
+    final selectionStyle = Style().background(const AnsiColor(7)).foreground(const AnsiColor(0));
+
+    for (var i = 0; i < visibleValue.length; i++) {
+      final char = _echoTransform(visibleValue[i]);
+      final isSelected = selStart != null && i >= selStart && i < selEnd!;
+
+      if (i == pos) {
+        cursor = cursor.setChar(char);
+        var cv = cursor.view();
+        if (isSelected) {
+          cv = selectionStyle.render(cv);
+        }
+        v += cv;
+      } else {
+        final rendered = styleText(char);
+        v += isSelected ? selectionStyle.render(rendered) : rendered;
+      }
+    }
+
+    if (pos >= visibleValue.length) {
       if (_focused && _canAcceptSuggestion()) {
         final suggestion = _matchedSuggestions[_currentSuggestionIndex];
         if (_value.length < suggestion.length) {

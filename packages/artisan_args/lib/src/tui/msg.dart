@@ -436,6 +436,27 @@ class MouseMsg extends Msg {
   /// Whether any modifier key is held.
   bool get hasModifier => ctrl || alt || shift;
 
+  /// Creates a copy of this message with some fields replaced.
+  MouseMsg copyWith({
+    MouseAction? action,
+    MouseButton? button,
+    int? x,
+    int? y,
+    bool? ctrl,
+    bool? alt,
+    bool? shift,
+  }) {
+    return MouseMsg(
+      action: action ?? this.action,
+      button: button ?? this.button,
+      x: x ?? this.x,
+      y: y ?? this.y,
+      ctrl: ctrl ?? this.ctrl,
+      alt: alt ?? this.alt,
+      shift: shift ?? this.shift,
+    );
+  }
+
   @override
   String toString() {
     final mods = [if (ctrl) 'Ctrl', if (alt) 'Alt', if (shift) 'Shift'];

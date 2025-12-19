@@ -61,7 +61,8 @@ enum _Page {
   capabilities('Capabilities'),
   keyboard('Keyboard'),
   lipglossV2('Lipgloss v2'),
-  compositor('Compositor');
+  compositor('Compositor'),
+  selection('Selection');
 
   const _Page(this.title);
   final String title;
@@ -77,6 +78,8 @@ class _KitchenSinkModel extends tui.Model {
       progress = tui.ProgressModel(width: 44, useGradient: true),
       textInput = tui.TextInputModel(prompt: 'search: ', width: 32),
       textarea = tui.TextAreaModel(width: 48, height: 6, prompt: ''),
+      viewport = tui.ViewportModel(width: 60, height: 10),
+      text = tui.TextModel(width: 60),
       listSelection = _ListSelectionState.initial(),
       emojiEnabled = _defaultEmojiEnabled(io.Platform.environment),
       capabilities = TerminalCapabilities(
@@ -103,6 +106,8 @@ class _KitchenSinkModel extends tui.Model {
   tui.ProgressModel progress;
   final tui.TextInputModel textInput;
   final tui.TextAreaModel textarea;
+  tui.ViewportModel viewport;
+  tui.TextModel text;
 
   _ListSelectionState listSelection;
   final List<String> _eventLog = <String>[];
@@ -125,6 +130,7 @@ class _KitchenSinkModel extends tui.Model {
         _Page.keyboard: () => const _KeyboardPage(),
         _Page.lipglossV2: () => const _LipglossV2Page(),
         _Page.compositor: () => const _CompositorPage(),
+        _Page.selection: () => const _SelectionPage(),
       };
 
   late final Map<_Page, _KitchenSinkPage> _pages = <_Page, _KitchenSinkPage>{
@@ -1024,7 +1030,9 @@ final class _ScrollPane {
         final (x, y) = p;
         if (x != barX0) return false;
         final yIn = y - topRow0;
-        return yIn >= 0 && yIn < viewport.height;
+        final h = viewport.height;
+        if (h == null) return false;
+        return yIn >= 0 && yIn < h;
       }
 
       switch (msg.action) {
@@ -1072,7 +1080,8 @@ final class _ScrollPane {
     ];
     for (final (x, y) in candidates) {
       final yIn = y - topRow0;
-      if (yIn < 0 || yIn >= viewport.height) continue;
+      final h = viewport.height ?? viewport.lines.length;
+      if (yIn < 0 || yIn >= h) continue;
       // Ignore clicks on the scrollbar column.
       if (x == barX0) continue;
       return viewport.yOffset + yIn;
@@ -1089,7 +1098,8 @@ final class _ScrollPane {
     ];
     for (final (x, y) in candidates) {
       final yIn = y - topRow0;
-      if (yIn < 0 || yIn >= viewport.height) continue;
+      final h = viewport.height ?? viewport.lines.length;
+      if (yIn < 0 || yIn >= h) continue;
       if (x == barX0) continue;
       if (x < 0 || x >= viewport.width) continue;
       return (viewport.yOffset + yIn, viewport.xOffset + x);
@@ -1098,14 +1108,16 @@ final class _ScrollPane {
   }
 
   void _scrollToMouseY(List<(int x, int y)> candidates) {
-    final maxOffset = math.max(0, viewport.lines.length - viewport.height);
+    final h = viewport.height;
+    if (h == null) return;
+    final maxOffset = math.max(0, viewport.lines.length - h);
     if (maxOffset == 0) return;
 
     for (final (x, y) in candidates) {
       if (x != barX0) continue;
       final yIn = y - topRow0;
-      if (yIn < 0 || yIn >= viewport.height) continue;
-      final denom = math.max(1, viewport.height - 1);
+      if (yIn < 0 || yIn >= h) continue;
+      final denom = math.max(1, h - 1);
       final pct = (yIn / denom).clamp(0.0, 1.0);
       final off = (pct * maxOffset).round().clamp(0, maxOffset);
       viewport = viewport.setYOffset(off);
@@ -2417,5 +2429,103 @@ final class _CompositorPage extends _KitchenSinkPage {
     ].join('\n');
 
     return [title, info].join('\n');
+  }
+}
+
+final class _SelectionPage extends _KitchenSinkPage {
+  const _SelectionPage()
+    : super(
+        help:
+            'Selection: Click and drag to select text in any component below. Press Ctrl+C to copy.',
+      );
+
+  @override
+  void onActivate(_KitchenSinkModel m, List<tui.Cmd> cmds) {
+    if (m.viewport.lines.isEmpty) {
+      m.viewport = m.viewport.setContent('''
+Text Selection Demo
+===================
+
+This page demonstrates the new text selection and clipboard features.
+
+1. Viewport Selection:
+   You can click and drag anywhere in this scrollable area to select text.
+   Once selected, press 'Ctrl+C' or 'y' to copy it to your system clipboard.
+
+2. Multi-line TextArea:
+   The box below is a TextArea. It supports multi-line selection,
+   soft-wrapping, and standard editing shortcuts.
+
+3. Single-line TextInput:
+   The search box at the bottom also supports selection.
+
+Try selecting this paragraph and copying it!
+The selection will persist even if you scroll the viewport.
+''');
+    }
+
+    if (m.text.lines.isEmpty) {
+      m.text = m.text.setContent('''
+4. Text Component (Auto-height):
+   This is a TextModel component. It is built on top of ViewportModel
+   but defaults to auto-height (no scrolling) and soft-wrapping.
+   It also supports selection and copying just like the Viewport.
+''');
+    }
+  }
+
+  @override
+  String view(_KitchenSinkModel m) {
+    return [
+      m._style(Style()).bold().render('1. Viewport (Scrollable & Selectable)'),
+      m.viewport.view(),
+      '',
+      m._style(Style()).bold().render('2. TextArea (Multi-line Input)'),
+      m.textarea.view(),
+      '',
+      m._style(Style()).bold().render('3. TextInput (Single-line Input)'),
+      m.textInput.view(),
+      '',
+      m._style(Style()).bold().render('4. Text (Auto-height & Selectable)'),
+      m.text.view(),
+      '',
+      m._style(Style()).dim().render(
+            'Tip: Use your mouse to select text. Press Ctrl+C to copy to clipboard.',
+          ),
+    ].join('\n');
+  }
+
+  @override
+  void onMsg(_KitchenSinkModel m, tui.Msg msg, List<tui.Cmd> cmds) {
+    var vpMsg = msg;
+    var taMsg = msg;
+    var tiMsg = msg;
+    var txMsg = msg;
+
+    if (msg is tui.MouseMsg) {
+      final pageY = msg.y - m._headerLines;
+      vpMsg = msg.copyWith(y: pageY - 1);
+      taMsg = msg.copyWith(y: pageY - 13);
+      tiMsg = msg.copyWith(y: pageY - 21);
+      txMsg = msg.copyWith(y: pageY - 25);
+    }
+
+    // Update Viewport
+    final (newVp, vpCmd) = m.viewport.update(vpMsg);
+    m.viewport = newVp;
+    if (vpCmd != null) cmds.add(vpCmd);
+
+    // Update TextArea
+    final (_, taCmd) = m.textarea.update(taMsg);
+    if (taCmd != null) cmds.add(taCmd);
+
+    // Update TextInput
+    final (_, tiCmd) = m.textInput.update(tiMsg);
+    if (tiCmd != null) cmds.add(tiCmd);
+
+    // Update Text
+    final (newTx, txCmd) = m.text.update(txMsg);
+    m.text = newTx;
+    if (txCmd != null) cmds.add(txCmd);
   }
 }

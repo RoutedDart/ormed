@@ -157,6 +157,7 @@ class TextAreaKeyMap implements KeyMap {
     KeyBinding? uppercaseWordForward,
     KeyBinding? lowercaseWordForward,
     KeyBinding? capitalizeWordForward,
+    KeyBinding? copy,
   }) : characterForward =
            characterForward ??
            KeyBinding.withHelp(['right', 'ctrl+f'], '→', 'character forward'),
@@ -221,7 +222,8 @@ class TextAreaKeyMap implements KeyMap {
            KeyBinding.withHelp(['alt+l'], 'alt+l', 'lowercase word'),
        capitalizeWordForward =
            capitalizeWordForward ??
-           KeyBinding.withHelp(['alt+c'], 'alt+c', 'capitalize word');
+           KeyBinding.withHelp(['alt+c'], 'alt+c', 'capitalize word'),
+       copy = copy ?? KeyBinding.withHelp(['ctrl+c'], 'ctrl+c', 'copy');
 
   final KeyBinding characterForward;
   final KeyBinding characterBackward;
@@ -245,6 +247,7 @@ class TextAreaKeyMap implements KeyMap {
   final KeyBinding uppercaseWordForward;
   final KeyBinding lowercaseWordForward;
   final KeyBinding capitalizeWordForward;
+  final KeyBinding copy;
 
   TextAreaKeyMap copyWith({
     KeyBinding? characterForward,
@@ -269,6 +272,7 @@ class TextAreaKeyMap implements KeyMap {
     KeyBinding? uppercaseWordForward,
     KeyBinding? lowercaseWordForward,
     KeyBinding? capitalizeWordForward,
+    KeyBinding? copy,
   }) {
     return TextAreaKeyMap(
       characterForward: characterForward ?? this.characterForward,
@@ -296,6 +300,7 @@ class TextAreaKeyMap implements KeyMap {
       lowercaseWordForward: lowercaseWordForward ?? this.lowercaseWordForward,
       capitalizeWordForward:
           capitalizeWordForward ?? this.capitalizeWordForward,
+      copy: copy ?? this.copy,
     );
   }
 
@@ -373,6 +378,9 @@ class TextAreaModel extends ViewComponent {
   int _width;
   int _height;
   int? _promptWidth;
+
+  (int, int)? _selectionStart;
+  (int, int)? _selectionEnd;
 
   bool get focused => _focused;
   int get line => _row;
@@ -621,6 +629,12 @@ class TextAreaModel extends ViewComponent {
           _capitalizeWordForward();
           return (this, null);
         }
+        if (key.matchesSingle(keyMap.copy)) {
+          final text = getSelectedText();
+          if (text.isNotEmpty) {
+            return (this, Cmd.setClipboard(text));
+          }
+        }
 
         // Fallback direct modifier checks for common combos.
         if (key.type == KeyType.delete && key.alt) {
@@ -672,7 +686,81 @@ class TextAreaModel extends ViewComponent {
         }
     }
 
+    if (msg is MouseMsg) {
+      final action = msg.action;
+      final button = msg.button;
+      final x = msg.x;
+      final y = msg.y;
+
+      if (action == MouseAction.press && button == MouseButton.left) {
+        // Start selection
+        final contentX = x - (_promptWidth ?? 0);
+        final contentY = y;
+        _selectionStart = (contentX, contentY);
+        _selectionEnd = (contentX, contentY);
+        return (this, null);
+      }
+
+      if (action == MouseAction.motion && _selectionStart != null) {
+        // Update selection
+        final contentX = x - (_promptWidth ?? 0);
+        final contentY = y;
+        _selectionEnd = (contentX, contentY);
+        return (this, null);
+      }
+
+      if (action == MouseAction.release && button == MouseButton.left) {
+        // Finalize selection
+        return (this, null);
+      }
+    }
+
     return (this, null);
+  }
+
+  /// Returns the currently selected text.
+  String getSelectedText() {
+    if (_selectionStart == null || _selectionEnd == null) return '';
+
+    final (x1, y1) = _selectionStart!;
+    final (x2, y2) = _selectionEnd!;
+
+    final startY = math.min(y1, y2);
+    final endY = math.max(y1, y2);
+
+    if (startY < 0 || endY >= _lines.length) return '';
+
+    final sb = StringBuffer();
+    for (var y = startY; y <= endY; y++) {
+      final line = _lines[y];
+      int startX, endX;
+
+      if (startY == endY) {
+        startX = math.min(x1, x2);
+        endX = math.max(x1, x2);
+      } else if (y == startY) {
+        startX = y1 < y2 ? x1 : x2;
+        endX = line.length;
+      } else if (y == endY) {
+        startX = 0;
+        endX = y1 < y2 ? x2 : x1;
+      } else {
+        startX = 0;
+        endX = line.length;
+      }
+
+      startX = startX.clamp(0, line.length);
+      endX = endX.clamp(0, line.length);
+
+      if (startX < endX) {
+        sb.write(line.sublist(startX, endX).join());
+      }
+      if (y < endY) {
+        sb.write('\n');
+      }
+    }
+
+    return sb.toString();
   }
 
   @override
@@ -709,7 +797,44 @@ class TextAreaModel extends ViewComponent {
                 '${(displayLine.rowIndex + 1).toString().padLeft(lineNumberDigits)} ',
               )
             : '';
-        final lineBody = displayLine.text;
+        var lineBody = displayLine.text;
+
+        // Apply selection style
+        if (_selectionStart != null && _selectionEnd != null) {
+          final (x1, y1) = _selectionStart!;
+          final (x2, y2) = _selectionEnd!;
+          final startY = math.min(y1, y2);
+          final endY = math.max(y1, y2);
+
+          if (displayLine.rowIndex >= startY && displayLine.rowIndex <= endY) {
+            int startX, endX;
+            if (startY == endY) {
+              startX = math.min(x1, x2);
+              endX = math.max(x1, x2);
+            } else if (displayLine.rowIndex == startY) {
+              startX = y1 < y2 ? x1 : x2;
+              endX = lineBody.length;
+            } else if (displayLine.rowIndex == endY) {
+              startX = 0;
+              endX = y1 < y2 ? x2 : x1;
+            } else {
+              startX = 0;
+              endX = lineBody.length;
+            }
+
+            startX = startX.clamp(0, lineBody.length);
+            endX = endX.clamp(0, lineBody.length);
+
+            if (startX < endX) {
+              final selectionStyle = Style().background(const AnsiColor(7)).foreground(const AnsiColor(0));
+              final before = lineBody.substring(0, startX);
+              final selected = selectionStyle.render(lineBody.substring(startX, endX));
+              final after = lineBody.substring(endX);
+              lineBody = '$before$selected$after';
+            }
+          }
+        }
+
         final renderedLine = displayLine.hasCursor
             ? style.cursorLine.render(lineBody)
             : lineBody;
