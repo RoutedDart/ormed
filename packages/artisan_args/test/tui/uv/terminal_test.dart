@@ -3,8 +3,6 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:test/test.dart';
 import 'package:artisan_args/src/tui/uv/terminal.dart';
-import 'package:artisan_args/src/tui/uv/event.dart';
-import 'package:artisan_args/src/tui/uv/cell.dart';
 
 void main() {
   group('Terminal', () {

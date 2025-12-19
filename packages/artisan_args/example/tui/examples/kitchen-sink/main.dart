@@ -72,7 +72,11 @@ class _KitchenSinkModel extends tui.Model {
       textInput = tui.TextInputModel(prompt: 'search: ', width: 32),
       textarea = tui.TextAreaModel(width: 48, height: 6, prompt: ''),
       listSelection = _ListSelectionState.initial(),
-      capabilities = TerminalCapabilities();
+      capabilities = TerminalCapabilities(
+        env: io.Platform.environment.entries
+            .map((e) => '${e.key}=${e.value}')
+            .toList(growable: false),
+      );
 
   final bool useUvInput;
   final bool useUvRenderer;
@@ -170,6 +174,15 @@ class _KitchenSinkModel extends tui.Model {
     if (useUvInput) {
       // Request background color so we can adapt styles to light/dark themes.
       cmds.add(tui.Cmd.requestBackgroundColorReport());
+      // Capability probing (best-effort; replies arrive as UV events).
+      cmds.add(
+        tui.Cmd.writeRaw('\x1b_Gi=31,s=1,v=1,a=q,t=d,f=24;AAAA\x1b\\'),
+      ); // Kitty graphics query
+      cmds.add(tui.Cmd.writeRaw('\x1b[?u')); // Kitty keyboard enhancements query
+      // Query a handful of palette entries (enough to know it's supported).
+      for (var i = 0; i < 8; i++) {
+        cmds.add(tui.Cmd.writeRaw('\x1b]4;$i;?\x1b\\'));
+      }
     }
     final focus = textInput.focus();
     if (focus != null) cmds.add(focus);

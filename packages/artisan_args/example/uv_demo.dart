@@ -1,6 +1,4 @@
 import 'dart:async';
-import 'package:artisan_args/src/tui/uv/cell.dart';
-import 'package:artisan_args/src/tui/uv/event.dart';
 import 'package:artisan_args/src/tui/uv/terminal.dart';
 
 void main() async {

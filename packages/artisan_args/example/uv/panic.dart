@@ -1,7 +1,5 @@
 import 'dart:async';
-import 'package:artisan_args/src/tui/uv/event.dart';
 import 'package:artisan_args/src/tui/uv/terminal.dart';
-import 'package:artisan_args/src/tui/uv/styled_string.dart';
 
 void main() async {
   final terminal = Terminal();

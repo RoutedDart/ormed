@@ -20,8 +20,11 @@ final class TerminalCapabilities {
       // (e.g. WezTerm). Treat TERM hints as "best effort" (queries are the
       // source of truth).
       if (term.contains('kitty') ||
+          term.contains('ghostty') ||
           environ.getenv('KITTY_WINDOW_ID').isNotEmpty ||
-          termProg.contains('WezTerm')) {
+          termProg.contains('WezTerm') ||
+          termProg.toLowerCase().contains('ghostty') ||
+          lcTerm.toLowerCase().contains('ghostty')) {
         hasKittyGraphics = true;
       }
     }

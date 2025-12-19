@@ -1,7 +1,5 @@
 import 'dart:async';
 import 'dart:math';
-import 'package:artisan_args/src/tui/uv/cell.dart';
-import 'package:artisan_args/src/tui/uv/event.dart';
 import 'package:artisan_args/src/tui/uv/terminal.dart';
 
 List<List<UvColor>> setupColors(int width, int height) {

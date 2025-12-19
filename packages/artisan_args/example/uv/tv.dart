@@ -1,7 +1,4 @@
-import 'package:artisan_args/src/tui/uv/cell.dart';
-import 'package:artisan_args/src/tui/uv/event.dart';
 import 'package:artisan_args/src/tui/uv/terminal.dart';
-import 'package:artisan_args/src/tui/uv/geometry.dart';
 
 final gray = UvColor.rgb(104, 104, 104);
 final white = UvColor.rgb(180, 180, 180);
