@@ -100,7 +100,48 @@ void main() {
       test('hasColors returns true when colors are set', () {
         expect(Style().foreground(Colors.red).hasColors, isTrue);
         expect(Style().background(Colors.blue).hasColors, isTrue);
+        expect(Style().underlineColor(Colors.green).hasColors, isTrue);
         expect(Style().hasColors, isFalse);
+      });
+
+      test('Lipgloss v2 parity features', () {
+        final style = Style()
+            .underlineColor(Colors.red)
+            .paddingChar('.')
+            .marginChar('#')
+            .marginBackground(Colors.blue)
+            .underlineSpaces(true)
+            .strikethroughSpaces(true);
+
+        expect(style.getUnderlineColor, equals(Colors.red));
+        expect(style.getPaddingChar, equals('.'));
+        expect(style.getMarginChar, equals('#'));
+        expect(style.getMarginBackground, equals(Colors.blue));
+        expect(style.getUnderlineSpaces, isTrue);
+        expect(style.getStrikethroughSpaces, isTrue);
+        expect(style.hasColors, isTrue);
+
+        style
+            .unsetUnderlineColor()
+            .unsetPaddingChar()
+            .unsetMarginChar()
+            .unsetMarginBackground()
+            .unsetUnderlineSpaces()
+            .unsetStrikethroughSpaces();
+
+        expect(style.getUnderlineColor, isNull);
+        expect(style.getPaddingChar, equals(' '));
+        expect(style.getMarginChar, equals(' '));
+        expect(style.getMarginBackground, isNull);
+        expect(style.getUnderlineSpaces, isFalse);
+        expect(style.getStrikethroughSpaces, isFalse);
+      });
+
+      test('render with list of strings', () {
+        final style = Style().bold();
+        final result = style.render(['a', 'b', 'c']);
+        expect(result, contains('a b c'));
+        expect(result, contains('\x1b[1m'));
       });
 
       test('hasSpacing returns true when padding or margin is set', () {

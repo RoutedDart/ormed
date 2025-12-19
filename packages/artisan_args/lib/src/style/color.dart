@@ -56,10 +56,12 @@ abstract class Color {
   ///
   /// [profile] indicates the terminal's color capabilities.
   /// [background] if true, produces background color sequence.
+  /// [underline] if true, produces underline color sequence (SGR 58).
   /// [hasDarkBackground] hints whether terminal has dark background (for adaptive colors).
   String toAnsi(
     ColorProfile profile, {
     bool background = false,
+    bool underline = false,
     bool hasDarkBackground = true,
   });
 
@@ -113,6 +115,7 @@ class BasicColor extends Color {
   String toAnsi(
     ColorProfile profile, {
     bool background = false,
+    bool underline = false,
     bool hasDarkBackground = true,
   }) {
     if (isHex) {
@@ -124,6 +127,7 @@ class BasicColor extends Color {
       return cp.sgrColor(
         profile: _toInternalProfile(profile),
         background: background,
+        underline: underline,
         rgb: cp.Rgb(rgb.$1, rgb.$2, rgb.$3),
       );
     } else {
@@ -135,7 +139,8 @@ class BasicColor extends Color {
       final code = (int.tryParse(value) ?? 0).clamp(0, 255);
 
       // lipgloss v2 parity: prefer 16-color SGR codes when possible.
-      if (code <= 15) {
+      // Note: Underline color (SGR 58) does not have 16-color variants.
+      if (code <= 15 && !underline) {
         final base = background ? 40 : 30;
         final brightBase = background ? 100 : 90;
         if (code < 8) {
@@ -147,6 +152,7 @@ class BasicColor extends Color {
       return cp.sgrColor(
         profile: _toInternalProfile(profile),
         background: background,
+        underline: underline,
         ansi256: code,
       );
     }
@@ -198,6 +204,7 @@ class AnsiColor extends Color {
   String toAnsi(
     ColorProfile profile, {
     bool background = false,
+    bool underline = false,
     bool hasDarkBackground = true,
   }) {
     if (profile == ColorProfile.ascii || profile == ColorProfile.noColor) {
@@ -209,15 +216,13 @@ class AnsiColor extends Color {
       return cp.sgrColor(
         profile: cp.Profile.ansi,
         background: background,
+        underline: underline,
         ansi16: cp.ansi256ToAnsi16(code),
       );
     }
 
-    if (background) {
-      return '\x1B[48;5;${code}m';
-    } else {
-      return '\x1B[38;5;${code}m';
-    }
+    final p = underline ? 58 : (background ? 48 : 38);
+    return '\x1B[$p;5;${code}m';
   }
 
   @override
@@ -256,12 +261,14 @@ class AdaptiveColor extends Color {
   String toAnsi(
     ColorProfile profile, {
     bool background = false,
+    bool underline = false,
     bool hasDarkBackground = true,
   }) {
     final color = hasDarkBackground ? dark : light;
     return color.toAnsi(
       profile,
       background: background,
+      underline: underline,
       hasDarkBackground: hasDarkBackground,
     );
   }
@@ -310,6 +317,7 @@ class CompleteColor extends Color {
   String toAnsi(
     ColorProfile profile, {
     bool background = false,
+    bool underline = false,
     bool hasDarkBackground = true,
   }) {
     switch (profile) {
@@ -319,11 +327,13 @@ class CompleteColor extends Color {
       case ColorProfile.ansi:
         if (ansi != null) {
           final code = int.tryParse(ansi!) ?? 0;
-          if (background) {
-            return '\x1B[${40 + code}m';
-          } else {
-            return '\x1B[${30 + code}m';
+          final p = underline ? 58 : (background ? 40 : 30);
+          // Note: Underline color (SGR 58) does not have 16-color variants,
+          // but we use 58;5;N as a fallback if needed.
+          if (underline) {
+            return '\x1B[58;5;${code}m';
           }
+          return '\x1B[${p + code}m';
         }
         // Fall through to ansi256
         continue ansi256Case;
@@ -331,11 +341,8 @@ class CompleteColor extends Color {
       case ColorProfile.ansi256:
         if (ansi256 != null) {
           final code = int.tryParse(ansi256!) ?? 0;
-          if (background) {
-            return '\x1B[48;5;${code}m';
-          } else {
-            return '\x1B[38;5;${code}m';
-          }
+          final p = underline ? 58 : (background ? 48 : 38);
+          return '\x1B[$p;5;${code}m';
         }
         // Fall through to trueColor
         continue trueColorCase;
@@ -344,6 +351,7 @@ class CompleteColor extends Color {
         return BasicColor(trueColor).toAnsi(
           profile,
           background: background,
+          underline: underline,
           hasDarkBackground: hasDarkBackground,
         );
     }
@@ -399,12 +407,14 @@ class CompleteAdaptiveColor extends Color {
   String toAnsi(
     ColorProfile profile, {
     bool background = false,
+    bool underline = false,
     bool hasDarkBackground = true,
   }) {
     final color = hasDarkBackground ? dark : light;
     return color.toAnsi(
       profile,
       background: background,
+      underline: underline,
       hasDarkBackground: hasDarkBackground,
     );
   }
@@ -451,6 +461,7 @@ class NoColor extends Color {
   String toAnsi(
     ColorProfile profile, {
     bool background = false,
+    bool underline = false,
     bool hasDarkBackground = true,
   }) => '';
 

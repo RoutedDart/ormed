@@ -260,6 +260,12 @@ export 'src/tui/bubbles/components/table.dart'
         TableStyleFunc,
         TableFactory;
 
+// UV Compositor
+export 'src/tui/uv/canvas.dart' show Canvas;
+export 'src/tui/uv/layer.dart' show Layer, Compositor;
+export 'src/tui/uv/styled_string.dart' show StyledString;
+export 'src/tui/uv/geometry.dart' show Rectangle, Position, rect;
+
 // Component System - Styled Block (Legacy + Fluent)
 export 'src/tui/bubbles/components/styled_block.dart'
     show

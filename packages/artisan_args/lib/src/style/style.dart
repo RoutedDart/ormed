@@ -85,6 +85,9 @@ class _PropBits {
   static const int colorWhitespace = 1 << 12;
   static const int borderForegroundBlend = 1 << 13;
   static const int borderForegroundBlendOffset = 1 << 14;
+  static const int underlineColor = 1 << 15;
+  static const int paddingChar = 1 << 16;
+  static const int marginChar = 1 << 17;
 }
 
 /// Fluent, chainable style builder for terminal output.
@@ -264,6 +267,15 @@ class Style {
   /// Background color for margin areas.
   Color? _marginBackground;
 
+  /// Underline color.
+  Color? _underlineColor;
+
+  /// Character used for padding.
+  String _paddingChar = ' ';
+
+  /// Character used for margins.
+  String _marginChar = ' ';
+
   /// Individual border side visibility.
   bool _borderTopVisible = true;
   bool _borderRightVisible = true;
@@ -312,6 +324,13 @@ class Style {
     return this;
   }
 
+  /// Sets whether spaces should be underlined.
+  Style underlineSpaces([bool value = true]) {
+    _underlineSpaces = value;
+    _setFlag2(_PropBits.underlineSpaces);
+    return this;
+  }
+
   /// Sets the underline style variant.
   ///
   /// This enables underline when the style is not [UnderlineStyle.none].
@@ -344,10 +363,144 @@ class Style {
     return this;
   }
 
+  /// Removes bold styling.
+  Style unsetBold() {
+    _bold = false;
+    _clearFlag(_PropBits.bold);
+    return this;
+  }
+
+  /// Removes italic styling.
+  Style unsetItalic() {
+    _italic = false;
+    _clearFlag(_PropBits.italic);
+    return this;
+  }
+
+  /// Removes underline styling.
+  Style unsetUnderline() {
+    _underline = false;
+    _clearFlag(_PropBits.underline);
+    _clearFlag2(_PropBits.underlineStyle);
+    _clearFlag2(_PropBits.underlineColor);
+    return this;
+  }
+
+  /// Removes strikethrough styling.
+  Style unsetStrikethrough() {
+    _strikethrough = false;
+    _clearFlag(_PropBits.strikethrough);
+    return this;
+  }
+
+  /// Removes dimmed styling.
+  Style unsetDim() {
+    _dim = false;
+    _clearFlag(_PropBits.dim);
+    return this;
+  }
+
+  /// Alias for [unsetDim].
+  Style unsetFaint() => unsetDim();
+
+  /// Removes inverse styling.
+  Style unsetInverse() {
+    _inverse = false;
+    _clearFlag(_PropBits.inverse);
+    return this;
+  }
+
+  /// Alias for [unsetInverse].
+  Style unsetReverse() => unsetInverse();
+
+  /// Removes blink styling.
+  Style unsetBlink() {
+    _blink = false;
+    _clearFlag(_PropBits.blink);
+    return this;
+  }
+
+  /// Removes foreground color.
+  Style unsetForeground() {
+    _foreground = null;
+    _clearFlag(_PropBits.foreground);
+    return this;
+  }
+
+  /// Removes background color.
+  Style unsetBackground() {
+    _background = null;
+    _clearFlag(_PropBits.background);
+    return this;
+  }
+
+  /// Removes width constraint.
+  Style unsetWidth() {
+    _width = 0;
+    _clearFlag(_PropBits.width);
+    return this;
+  }
+
+  /// Removes height constraint.
+  Style unsetHeight() {
+    _height = 0;
+    _clearFlag(_PropBits.height);
+    return this;
+  }
+
+  /// Removes alignment.
+  Style unsetAlign() {
+    _align = HorizontalAlign.left;
+    _alignVertical = VerticalAlign.top;
+    _clearFlag(_PropBits.align);
+    _clearFlag(_PropBits.alignVertical);
+    return this;
+  }
+
+  /// Removes padding.
+  Style unsetPadding() {
+    _padding = Padding.zero;
+    _clearFlag(_PropBits.padding);
+    _clearFlag(_PropBits.paddingTop);
+    _clearFlag(_PropBits.paddingRight);
+    _clearFlag(_PropBits.paddingBottom);
+    _clearFlag(_PropBits.paddingLeft);
+    _clearFlag2(_PropBits.paddingChar);
+    return this;
+  }
+
+  /// Removes underline color.
+  Style unsetUnderlineColor() {
+    _underlineColor = null;
+    _clearFlag2(_PropBits.underlineColor);
+    return this;
+  }
+
+  /// Removes padding character.
+  Style unsetPaddingChar() {
+    _paddingChar = ' ';
+    _clearFlag2(_PropBits.paddingChar);
+    return this;
+  }
+
+  /// Removes margin character.
+  Style unsetMarginChar() {
+    _marginChar = ' ';
+    _clearFlag2(_PropBits.marginChar);
+    return this;
+  }
+
   /// Sets strikethrough text.
   Style strikethrough([bool value = true]) {
     _strikethrough = value;
     _setFlag(_PropBits.strikethrough);
+    return this;
+  }
+
+  /// Sets whether spaces should have strikethrough.
+  Style strikethroughSpaces([bool value = true]) {
+    _strikethroughSpaces = value;
+    _setFlag2(_PropBits.strikethroughSpaces);
     return this;
   }
 
@@ -358,12 +511,18 @@ class Style {
     return this;
   }
 
+  /// Alias for [dim].
+  Style faint([bool value = true]) => dim(value);
+
   /// Sets inverse/reverse video.
   Style inverse([bool value = true]) {
     _inverse = value;
     _setFlag(_PropBits.inverse);
     return this;
   }
+
+  /// Alias for [inverse].
+  Style reverse([bool value = true]) => inverse(value);
 
   /// Sets blinking text (limited terminal support).
   Style blink([bool value = true]) {
@@ -387,6 +546,13 @@ class Style {
   Style background(Color color) {
     _background = color;
     _setFlag(_PropBits.background);
+    return this;
+  }
+
+  /// Sets the underline color.
+  Style underlineColor(Color color) {
+    _underlineColor = color;
+    _setFlag2(_PropBits.underlineColor);
     return this;
   }
 
@@ -568,6 +734,13 @@ class Style {
     return this;
   }
 
+  /// Sets the character used for padding.
+  Style paddingChar(String char) {
+    _paddingChar = char;
+    _setFlag2(_PropBits.paddingChar);
+    return this;
+  }
+
   // ─────────────────────────────────────────────────────────────────────────────
   // Margin
   // ─────────────────────────────────────────────────────────────────────────────
@@ -622,6 +795,13 @@ class Style {
   Style marginLeft(int value) {
     _margin = _margin.copyWith(left: value);
     _setFlag(_PropBits.marginLeft);
+    return this;
+  }
+
+  /// Sets the character used for margins.
+  Style marginChar(String char) {
+    _marginChar = char;
+    _setFlag2(_PropBits.marginChar);
     return this;
   }
 
@@ -781,8 +961,12 @@ class Style {
   /// print('Item 1${divider}Item 2${divider}Item 3');
   /// // Output: Item 1 • Item 2 • Item 3
   /// ```
-  Style setString(String value) {
-    _string = value;
+  Style setString(Object? value) {
+    if (value is List) {
+      _string = value.map((e) => e?.toString() ?? '').join(' ');
+    } else {
+      _string = value?.toString();
+    }
     _setFlag2(_PropBits.stringValue);
     return this;
   }
@@ -847,20 +1031,6 @@ class Style {
     return this;
   }
 
-  /// Sets whether to underline spaces.
-  Style underlineSpaces([bool value = true]) {
-    _underlineSpaces = value;
-    _setFlag2(_PropBits.underlineSpaces);
-    return this;
-  }
-
-  /// Sets whether to strikethrough spaces.
-  Style strikethroughSpaces([bool value = true]) {
-    _strikethroughSpaces = value;
-    _setFlag2(_PropBits.strikethroughSpaces);
-    return this;
-  }
-
   /// Sets the background color for margin areas.
   Style marginBackground(Color color) {
     _marginBackground = color;
@@ -885,75 +1055,6 @@ class Style {
   // UNSET METHODS
   // ═══════════════════════════════════════════════════════════════════════════
 
-  /// Unsets bold.
-  Style unsetBold() {
-    _bold = false;
-    _clearFlag(_PropBits.bold);
-    return this;
-  }
-
-  /// Unsets italic.
-  Style unsetItalic() {
-    _italic = false;
-    _clearFlag(_PropBits.italic);
-    return this;
-  }
-
-  /// Unsets underline.
-  Style unsetUnderline() {
-    _underline = false;
-    _clearFlag(_PropBits.underline);
-    _underlineStyle = UnderlineStyle.single;
-    _clearFlag2(_PropBits.underlineStyle);
-    return this;
-  }
-
-  /// Unsets strikethrough.
-  Style unsetStrikethrough() {
-    _strikethrough = false;
-    _clearFlag(_PropBits.strikethrough);
-    return this;
-  }
-
-  /// Unsets foreground color.
-  Style unsetForeground() {
-    _foreground = null;
-    _clearFlag(_PropBits.foreground);
-    return this;
-  }
-
-  /// Unsets background color.
-  Style unsetBackground() {
-    _background = null;
-    _clearFlag(_PropBits.background);
-    return this;
-  }
-
-  /// Unsets width.
-  Style unsetWidth() {
-    _width = 0;
-    _clearFlag(_PropBits.width);
-    return this;
-  }
-
-  /// Unsets height.
-  Style unsetHeight() {
-    _height = 0;
-    _clearFlag(_PropBits.height);
-    return this;
-  }
-
-  /// Unsets padding.
-  Style unsetPadding() {
-    _padding = Padding.zero;
-    _clearFlag(_PropBits.padding);
-    _clearFlag(_PropBits.paddingTop);
-    _clearFlag(_PropBits.paddingRight);
-    _clearFlag(_PropBits.paddingBottom);
-    _clearFlag(_PropBits.paddingLeft);
-    return this;
-  }
-
   /// Unsets margin.
   Style unsetMargin() {
     _margin = Margin.zero;
@@ -976,27 +1077,6 @@ class Style {
   Style unsetTransform() {
     _transform = null;
     _clearFlag(_PropBits.transform);
-    return this;
-  }
-
-  /// Unsets dim.
-  Style unsetDim() {
-    _dim = false;
-    _clearFlag(_PropBits.dim);
-    return this;
-  }
-
-  /// Unsets blink.
-  Style unsetBlink() {
-    _blink = false;
-    _clearFlag(_PropBits.blink);
-    return this;
-  }
-
-  /// Unsets reverse (inverse colors).
-  Style unsetReverse() {
-    _inverse = false;
-    _clearFlag(_PropBits.inverse);
     return this;
   }
 
@@ -1243,6 +1323,22 @@ class Style {
   Color? get getMarginBackground =>
       _hasFlag2(_PropBits.marginBackground) ? _marginBackground : null;
 
+  /// Gets the underline color if set.
+  Color? get getUnderlineColor =>
+      _hasFlag2(_PropBits.underlineColor) ? _underlineColor : null;
+
+  /// Gets the character used for padding.
+  String get getPaddingChar => _paddingChar;
+
+  /// Gets the character used for margins.
+  String get getMarginChar => _marginChar;
+
+  /// Gets whether spaces are underlined.
+  bool get getUnderlineSpaces => _underlineSpaces;
+
+  /// Gets whether spaces have strikethrough.
+  bool get getStrikethroughSpaces => _strikethroughSpaces;
+
   /// Gets whether top border is visible.
   bool get getBorderTop =>
       _hasFlag2(_PropBits.borderTop) ? _borderTopVisible : true;
@@ -1444,7 +1540,10 @@ class Style {
 
   /// Whether any color is set.
   bool get hasColors =>
-      _hasFlag(_PropBits.foreground) || _hasFlag(_PropBits.background);
+      _hasFlag(_PropBits.foreground) ||
+      _hasFlag(_PropBits.background) ||
+      _hasFlag2(_PropBits.underlineColor) ||
+      _hasFlag2(_PropBits.marginBackground);
 
   /// Whether any spacing (padding or margin) is set.
   bool get hasSpacing =>
@@ -1757,7 +1856,16 @@ class Style {
   /// Renders the given text with this style applied.
   ///
   /// This produces an ANSI-escaped string ready for terminal output.
-  String render(String text) {
+  ///
+  /// If [text] is a [List], its elements are joined with spaces.
+  String render([Object? text]) {
+    String content;
+    if (text is List) {
+      content = text.map((e) => e?.toString() ?? '').join(' ');
+    } else {
+      content = text?.toString() ?? '';
+    }
+
     // lipgloss v2 compatibility: if this style has a pre-set string value,
     // render it *in addition to* any provided text.
     //
@@ -1766,13 +1874,13 @@ class Style {
     // prefix markers via `setString()`).
     final preset = _string;
     if (preset != null && preset.isNotEmpty) {
-      if (text.isEmpty) {
-        text = preset;
+      if (content.isEmpty) {
+        content = preset;
       } else {
-        text = '$preset $text';
+        content = '$preset $content';
       }
     }
-    return _renderComposed(text);
+    return _renderComposed(content);
   }
 
   String _renderComposed(String text) {
@@ -1894,12 +2002,43 @@ class Style {
     return result;
   }
 
+  bool get _useSpaceStyler {
+    final underline = _hasFlag(_PropBits.underline) && _underline;
+    final strikethrough = _hasFlag(_PropBits.strikethrough) && _strikethrough;
+    final underlineSpaces =
+        _hasFlag2(_PropBits.underlineSpaces) && _underlineSpaces;
+    final strikethroughSpaces =
+        _hasFlag2(_PropBits.strikethroughSpaces) && _strikethroughSpaces;
+
+    return (underline && !underlineSpaces) ||
+        (strikethrough && !strikethroughSpaces) ||
+        underlineSpaces ||
+        strikethroughSpaces;
+  }
+
   /// Applies ANSI text styling to a string.
   String _applyTextStyles(String text) {
     if (colorProfile == ColorProfile.ascii) {
       return text;
     }
 
+    if (!_useSpaceStyler) {
+      return _applyStylesToString(text);
+    }
+
+    final buf = StringBuffer();
+    for (var i = 0; i < text.length; i++) {
+      final char = text[i];
+      if (char == ' ' || char == '\t' || char == '\u00A0') {
+        buf.write(_applyStylesToString(char, isSpace: true));
+      } else {
+        buf.write(_applyStylesToString(char, isSpace: false));
+      }
+    }
+    return buf.toString();
+  }
+
+  String _applyStylesToString(String text, {bool isSpace = false}) {
     var styled = text;
     var hasAnsi = false;
 
@@ -1928,6 +2067,18 @@ class Style {
       }
     }
 
+    if (_hasFlag2(_PropBits.underlineColor) && _underlineColor != null) {
+      final ansi = _underlineColor!.toAnsi(
+        colorProfile,
+        underline: true,
+        hasDarkBackground: hasDarkBackground,
+      );
+      if (ansi.isNotEmpty) {
+        styled = '$ansi$styled\x1b[59m';
+        hasAnsi = true;
+      }
+    }
+
     final chalk = Chalk();
 
     // Apply text attributes
@@ -1940,23 +2091,31 @@ class Style {
       hasAnsi = true;
     }
     if (_hasFlag(_PropBits.underline) && _underline) {
-      final style = getUnderlineStyle;
-      final start = switch (style) {
-        UnderlineStyle.none => '',
-        UnderlineStyle.single => '\x1b[4m',
-        UnderlineStyle.double => '\x1b[21m',
-        UnderlineStyle.curly => '\x1b[4:3m',
-        UnderlineStyle.dotted => '\x1b[4:4m',
-        UnderlineStyle.dashed => '\x1b[4:5m',
-      };
-      if (start.isNotEmpty) {
-        styled = '$start$styled\x1b[24m';
-        hasAnsi = true;
+      final underlineSpaces =
+          _hasFlag2(_PropBits.underlineSpaces) && _underlineSpaces;
+      if (!isSpace || underlineSpaces) {
+        final style = getUnderlineStyle;
+        final start = switch (style) {
+          UnderlineStyle.none => '',
+          UnderlineStyle.single => '\x1b[4m',
+          UnderlineStyle.double => '\x1b[21m',
+          UnderlineStyle.curly => '\x1b[4:3m',
+          UnderlineStyle.dotted => '\x1b[4:4m',
+          UnderlineStyle.dashed => '\x1b[4:5m',
+        };
+        if (start.isNotEmpty) {
+          styled = '$start$styled\x1b[24m';
+          hasAnsi = true;
+        }
       }
     }
     if (_hasFlag(_PropBits.strikethrough) && _strikethrough) {
-      styled = chalk.strikethrough(styled);
-      hasAnsi = true;
+      final strikethroughSpaces =
+          _hasFlag2(_PropBits.strikethroughSpaces) && _strikethroughSpaces;
+      if (!isSpace || strikethroughSpaces) {
+        styled = chalk.strikethrough(styled);
+        hasAnsi = true;
+      }
     }
     if (_hasFlag(_PropBits.dim) && _dim) {
       styled = chalk.dim(styled);
@@ -2298,7 +2457,7 @@ class Style {
 
       String ws(int n) {
         if (n <= 0) return '';
-        final raw = ' ' * n;
+        final raw = _paddingChar * n;
         return _styleWhitespace(raw);
       }
 
@@ -2529,8 +2688,8 @@ class Style {
   /// Like lipgloss, padding adds fixed space characters - alignment fills to width later.
   List<String> _applyPadding(List<String> lines) {
     final result = <String>[];
-    final leftPad = _styleWhitespace(' ' * _padding.left);
-    final rightPad = _styleWhitespace(' ' * _padding.right);
+    final leftPad = _styleWhitespace(_paddingChar * _padding.left);
+    final rightPad = _styleWhitespace(_paddingChar * _padding.right);
 
     // Top padding - empty lines (will be filled by alignment)
     for (var i = 0; i < _padding.top; i++) {
@@ -2725,9 +2884,9 @@ class Style {
 
   List<String> _applyMargin(List<String> lines, int contentWidth) {
     final result = <String>[];
-    final leftMargin = ' ' * _margin.left;
-    final rightMargin = ' ' * _margin.right;
-    final horizontalFill = ' ' * contentWidth;
+    final leftMargin = _styleMargin(_marginChar * _margin.left);
+    final rightMargin = _styleMargin(_marginChar * _margin.right);
+    final horizontalFill = _styleMargin(_marginChar * contentWidth);
 
     // Top margin
     for (var i = 0; i < _margin.top; i++) {
@@ -2745,6 +2904,21 @@ class Style {
     }
 
     return result;
+  }
+
+  String _styleMargin(String text) {
+    if (text.isEmpty) return text;
+    if (colorProfile == ColorProfile.ascii) return text;
+    if (!_hasFlag2(_PropBits.marginBackground) || _marginBackground == null) {
+      return text;
+    }
+
+    final ansi = _marginBackground!.toAnsi(
+      colorProfile,
+      background: true,
+      hasDarkBackground: hasDarkBackground,
+    );
+    return ansi.isNotEmpty ? '$ansi$text\x1b[m' : text;
   }
 
   List<String> _applyHeight(List<String> lines, int targetHeight) {

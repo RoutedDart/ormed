@@ -483,4 +483,64 @@ void main() {
       expect(result.contains('A'), isFalse);
     });
   });
+
+  group('Table styling and inheritance', () {
+    test('baseStyle is applied to all cells', () {
+      final base = Style().foreground(const BasicColor('1')).bold(); // Basic Red
+      final table = Table()
+          .headers(['A', 'B'])
+          .row(['1', '2'])
+          .baseStyle(base);
+
+      final result = table.render();
+      expect(result, contains('\x1b[1m'));
+      expect(result, contains('31')); // Basic red
+    });
+
+    test('headerStyle overrides baseStyle for headers', () {
+      final base = Style().foreground(const BasicColor('1')); // Red
+      final header = Style().foreground(const BasicColor('4')); // Blue
+      final table = Table()
+          .headers(['HDR'])
+          .row(['CELL'])
+          .baseStyle(base)
+          .headerStyle(header);
+
+      final result = table.render();
+      expect(result, contains('34')); // Blue for header
+      expect(result, contains('31')); // Red for cell
+    });
+
+    test('styleFunc overrides baseStyle', () {
+      final base = Style().foreground(const BasicColor('1')); // Red
+      final table = Table()
+          .headers(['A'])
+          .row(['OK'])
+          .row(['ERR'])
+          .baseStyle(base)
+          .styleFunc((row, col, data) {
+            if (data == 'OK') return Style().foreground(const BasicColor('2')); // Green
+            return null;
+          });
+
+      final result = table.render();
+      expect(result, contains('32')); // Green for OK
+      expect(result, contains('31')); // Red for ERR (from baseStyle)
+    });
+
+    test('cellStyle overrides baseStyle for data cells', () {
+      final base = Style().foreground(const BasicColor('1')); // Red
+      final cell = Style().foreground(const BasicColor('2')); // Green
+      final table = Table()
+          .headers(['HDR'])
+          .row(['CELL'])
+          .baseStyle(base)
+          .headerStyle(Style()) // Explicitly empty header style to use base
+          .cellStyle(cell);
+
+      final result = table.render();
+      expect(result, contains('31')); // Red for header (from baseStyle)
+      expect(result, contains('32')); // Green for cell (from cellStyle)
+    });
+  });
 }

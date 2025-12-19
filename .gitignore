@@ -1,6 +1,7 @@
 .dart_tool/
 pubspec.lock
 .idea/
- openspec/
+.agent/
+.gemini/
 third_party/
 build/

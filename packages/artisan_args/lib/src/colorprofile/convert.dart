@@ -134,7 +134,8 @@ int ansi256ToAnsi16(int index) {
 
 String sgrColor({
   required Profile profile,
-  required bool background,
+  bool background = false,
+  bool underline = false,
   int? ansi16,
   int? ansi256,
   Rgb? rgb,
@@ -151,12 +152,12 @@ String sgrColor({
       if (ansi16 != null) rgb = _ansi16Palette[ansi16.clamp(0, 15)];
     }
     if (rgb == null) return '';
-    final p = background ? 48 : 38;
+    final p = underline ? 58 : (background ? 48 : 38);
     return '\x1B[$p;2;${rgb.r};${rgb.g};${rgb.b}m';
   }
 
   if (profile == Profile.ansi256) {
-    final p = background ? 48 : 38;
+    final p = underline ? 58 : (background ? 48 : 38);
     final idx =
         ansi256 ??
         (rgb != null
@@ -166,6 +167,16 @@ String sgrColor({
   }
 
   // Profile.ansi
+  if (underline) {
+    // Underline color doesn't have 16-color SGR codes, use 256-color fallback
+    final idx =
+        ansi256 ??
+        (rgb != null
+            ? rgbToAnsi256(rgb.r, rgb.g, rgb.b)
+            : (ansi16 != null ? _ansi16ToAnsi256(ansi16) : 0));
+    return '\x1B[58;5;${idx}m';
+  }
+
   final idx16 =
       ansi16 ??
       (ansi256 != null

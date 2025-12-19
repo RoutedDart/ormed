@@ -214,6 +214,7 @@ class Table extends DisplayComponent {
   Style? _headerStyle;
   Style? _borderStyle;
   Style? _cellStyle;
+  Style? _baseStyle;
 
   // Border visibility flags
   bool _borderTop = true;
@@ -225,17 +226,31 @@ class Table extends DisplayComponent {
   bool _borderRow = false;
 
   Style? _styleForCell(int row, int col, String raw) {
+    Style? s;
+
     if (_styleFunc != null) {
-      final style = _styleFunc!(row, col, raw);
-      if (style != null) return _renderConfig.configureStyle(style);
+      s = _styleFunc!(row, col, raw);
     }
 
-    if (row == headerRow && _headerStyle != null) {
-      return _renderConfig.configureStyle(_headerStyle!);
+    if (s == null) {
+      if (row == headerRow && _headerStyle != null) {
+        s = _headerStyle;
+      } else if (_cellStyle != null) {
+        s = _cellStyle;
+      }
     }
 
-    if (_cellStyle != null) {
-      return _renderConfig.configureStyle(_cellStyle!);
+    if (_baseStyle != null) {
+      if (s == null) {
+        s = _baseStyle;
+      } else {
+        // Inherit from base style
+        s = _baseStyle!.copy()..inherit(s);
+      }
+    }
+
+    if (s != null) {
+      return _renderConfig.configureStyle(s);
     }
 
     return null;
@@ -297,6 +312,12 @@ class Table extends DisplayComponent {
   /// Sets the style for the table borders.
   Table borderStyle(Style style) {
     _borderStyle = style;
+    return this;
+  }
+
+  /// Sets the base style for the whole table.
+  Table baseStyle(Style style) {
+    _baseStyle = style;
     return this;
   }
 

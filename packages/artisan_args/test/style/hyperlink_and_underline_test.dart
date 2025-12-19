@@ -40,6 +40,17 @@ void main() {
       expect(rendered, contains('\x1b[4m'));
       expect(rendered, contains('\x1b[24m'));
     });
+
+    test('underlineColor emits SGR 58/59 sequences', () {
+      final style = Style().underline().underlineColor(const BasicColor('1')); // Red
+      final rendered = style.render('Hi');
+
+      // SGR 58:2:1m (TrueColor) or 58:5:1m (256) or 58:1m (Basic)
+      // Our implementation uses sgrColor which handles the profile.
+      // For BasicColor('1'), it should be 58:5:1m or similar depending on profile.
+      expect(rendered, contains('\x1b[58'));
+      expect(rendered, contains('\x1b[59m'));
+    });
   });
 
   group('Style.styleRunes', () {

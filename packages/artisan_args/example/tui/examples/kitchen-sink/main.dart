@@ -34,7 +34,11 @@ import 'package:artisan_args/artisan_args.dart'
         Table,
         Tree,
         TreeEnumerator,
-        VerticalAlign;
+        UnderlineStyle,
+        VerticalAlign,
+        Compositor,
+        Layer,
+        StyledString;
 import 'package:artisan_args/src/unicode/grapheme.dart' as uni;
 import 'package:artisan_args/tui.dart' as tui;
 import 'package:image/image.dart' as img;
@@ -55,7 +59,9 @@ enum _Page {
   neofetch('Neofetch'),
   graphics('Graphics'),
   capabilities('Capabilities'),
-  keyboard('Keyboard');
+  keyboard('Keyboard'),
+  lipglossV2('Lipgloss v2'),
+  compositor('Compositor');
 
   const _Page(this.title);
   final String title;
@@ -115,6 +121,8 @@ class _KitchenSinkModel extends tui.Model {
         _Page.graphics: () => const _GraphicsPage(),
         _Page.capabilities: () => const _CapabilitiesPage(),
         _Page.keyboard: () => const _KeyboardPage(),
+        _Page.lipglossV2: () => const _LipglossV2Page(),
+        _Page.compositor: () => const _CompositorPage(),
       };
 
   late final Map<_Page, _KitchenSinkPage> _pages = <_Page, _KitchenSinkPage>{
@@ -463,6 +471,8 @@ final class _OverviewPage extends _KitchenSinkPage {
       '• Graphics: Kitty/iTerm2/Sixel protocol detection (Graphics tab)',
       '• Capabilities: ANSI query results (Capabilities tab)',
       '• Keyboard: Enhanced keyboard protocol (Keyboard tab)',
+      '• Lipgloss v2: Underline colors, padding chars, table inheritance (Lipgloss v2 tab)',
+      '• Compositor: UV layering and canvas composition (Compositor tab)',
       '• Writer: ANSI downsampling (Writer tab)',
       '• Unicode width: emoji/CJK/grapheme clusters (Unicode tab)',
       '',
@@ -2196,4 +2206,141 @@ Options:
       useUltravioletRenderer: uvRenderer,
     ),
   );
+}
+
+class _LipglossV2Page extends _KitchenSinkPage {
+  const _LipglossV2Page() : super(help: 'Lipgloss v2 parity features');
+
+  @override
+  String view(_KitchenSinkModel model) {
+    final buffer = StringBuffer();
+
+    final titleStyle = Style().bold().foreground(Colors.success);
+    final labelStyle = Style().foreground(Colors.muted).width(20);
+
+    buffer.writeln(titleStyle.render('Lipgloss v2 Parity Features'));
+    buffer.writeln();
+
+    // 1. Underline Color
+    final ulColorStyle = Style()
+        .underline()
+        .underlineStyle(UnderlineStyle.curly)
+        .underlineColor(Colors.error)
+        .bold();
+    buffer.writeln('${labelStyle.render('Underline Color:')} ${ulColorStyle.render('Curly red underline on bold text')}');
+
+    // 2. Padding Character
+    final padCharStyle = Style()
+        .background(Colors.muted)
+        .padding(1, 2)
+        .paddingChar('.')
+        .foreground(Colors.white);
+    buffer.writeln('${labelStyle.render('Padding Char:')} ${padCharStyle.render('Dots as padding')}');
+
+    // 3. Margin Character & Background
+    final marginStyle = Style()
+        .background(Colors.success)
+        .margin(1, 2)
+        .marginChar('#')
+        .marginBackground(Colors.warning)
+        .foreground(Colors.white);
+    buffer.writeln('${labelStyle.render('Margin Char/Bg:')}');
+    buffer.writeln(marginStyle.render('Styled box with hash margins on yellow background'));
+
+    // 4. Underline Spaces
+    final ulSpacesStyle = Style().underline().underlineSpaces(true);
+    final noUlSpacesStyle = Style().underline().underlineSpaces(false);
+    buffer.writeln('${labelStyle.render('Underline Spaces:')} ${ulSpacesStyle.render('Underlined  Spaces')} vs ${noUlSpacesStyle.render('No  Underlined  Spaces')}');
+
+    // 5. Strikethrough Spaces
+    final stSpacesStyle = Style().strikethrough().strikethroughSpaces(true);
+    final noStSpacesStyle = Style().strikethrough().strikethroughSpaces(false);
+    buffer.writeln('${labelStyle.render('Strikethrough Spaces:')} ${stSpacesStyle.render('Strikethrough  Spaces')} vs ${noStSpacesStyle.render('No  Strikethrough  Spaces')}');
+
+    // 6. Faint & Reverse Aliases
+    final faintStyle = Style().faint();
+    final reverseStyle = Style().reverse();
+    buffer.writeln('${labelStyle.render('Faint/Reverse:')} ${faintStyle.render('Faint text')} and ${reverseStyle.render('Reverse text')}');
+
+    // 7. Multi-string Render
+    final multiStyle = Style().bold().foreground(Colors.warning);
+    buffer.writeln('${labelStyle.render('Multi-string Render:')} ${multiStyle.render(['Joined', 'with', 'spaces'])}');
+
+    // 8. Table BaseStyle
+    final baseStyle = Style().foreground(Colors.muted).italic();
+    final table = Table()
+        .headers(['Feature', 'Status'])
+        .row(['BaseStyle', 'Inherited'])
+        .row(['StyleFunc', 'Overrides'])
+        .baseStyle(baseStyle)
+        .styleFunc((row, col, data) {
+          if (data == 'Overrides') return Style().foreground(Colors.success).bold().unsetItalic();
+          return null;
+        })
+        .border(Border.rounded);
+    
+    buffer.writeln();
+    buffer.writeln(titleStyle.render('Table BaseStyle Inheritance'));
+    buffer.writeln(table.render());
+
+    return buffer.toString();
+  }
+}
+
+final class _CompositorPage extends _KitchenSinkPage {
+  const _CompositorPage() : super(help: 'Compositor: demonstrates UV layering and canvas composition');
+
+  @override
+  String view(_KitchenSinkModel m) {
+    final title = m._style(Style()).bold().render('UV Compositor & Layering');
+
+    // Create some styled content.
+    final bgBox = Style()
+        .background(Colors.muted)
+        .width(40)
+        .height(10)
+        .render('');
+    
+    final foregroundBox = Style()
+        .background(Colors.indigo)
+        .foreground(Colors.white)
+        .padding(1, 2)
+        .border(Border.rounded)
+        .render('I am a floating layer');
+
+    final textLayer = StyledString(
+      m._style(Style()).bold().foreground(Colors.warning).render('Topmost Text'),
+    );
+
+    // Build a composition.
+    final comp = Compositor([
+      Layer(StyledString(bgBox)).setId('bg').setZ(0),
+      Layer(StyledString(foregroundBox))
+          .setId('fg')
+          .setX(5)
+          .setY(2)
+          .setZ(10),
+      Layer(textLayer)
+          .setId('text')
+          .setX(15)
+          .setY(4)
+          .setZ(20),
+    ]);
+
+    final rendered = comp.render();
+
+    final info = [
+      '',
+      'The Compositor allows you to:',
+      '- Layer multiple [Drawable]s with Z-index',
+      '- Position elements with X/Y offsets',
+      '- Perform hit-testing (useful for mouse interaction)',
+      '- Render to a [Canvas] for final output',
+      '',
+      'Composition Result:',
+      rendered,
+    ].join('\n');
+
+    return [title, info].join('\n');
+  }
 }
