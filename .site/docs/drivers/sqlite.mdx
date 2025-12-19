@@ -30,6 +30,19 @@ driver:
 ```dart file=../../examples/lib/drivers/sqlite.dart#sqlite-datasource
 ```
 
+## SQLite Migrations Helpers
+
+Import the SQLite migrations entrypoint to use SQLite-specific column aliases:
+
+```dart
+import 'package:ormed_sqlite/migrations.dart';
+```
+
+Available helpers:
+- `blob()` → BLOB (alias for `binary()`)
+- `real()` → REAL (alias for `float()`)
+- `numeric()` → NUMERIC (alias for `decimal()`)
+
 ### In-memory (tests)
 
 ```dart file=../../examples/lib/drivers/sqlite.dart#sqlite-inmemory
