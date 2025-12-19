@@ -282,6 +282,24 @@ class Table extends DisplayComponent {
     return this;
   }
 
+  /// Sets the default style for all cells.
+  Table style(Style style) {
+    _cellStyle = style;
+    return this;
+  }
+
+  /// Sets the style for the header row.
+  Table headerStyle(Style style) {
+    _headerStyle = style;
+    return this;
+  }
+
+  /// Sets the style for the table borders.
+  Table borderStyle(Style style) {
+    _borderStyle = style;
+    return this;
+  }
+
   /// Sets the border style.
   Table border(style_border.Border border) {
     _border = border;
@@ -315,18 +333,6 @@ class Table extends DisplayComponent {
   /// Sets whether text should wrap in cells.
   Table wrap(bool value) {
     _wrap = value;
-    return this;
-  }
-
-  /// Sets the header row style.
-  Table headerStyle(Style style) {
-    _headerStyle = style;
-    return this;
-  }
-
-  /// Sets the border text style.
-  Table borderStyle(Style style) {
-    _borderStyle = style;
     return this;
   }
 

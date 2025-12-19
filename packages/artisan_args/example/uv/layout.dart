@@ -1,8 +1,6 @@
 import 'dart:io';
 import 'dart:math';
-import 'package:artisan_args/src/tui/uv/terminal.dart';
-import 'package:artisan_args/src/tui/uv/event.dart';
-import 'package:artisan_args/src/tui/uv/styled_string.dart';
+import 'package:artisan_args/src/tui/uv/terminal.dart' hide Style;
 import 'package:artisan_args/src/style/style.dart';
 import 'package:artisan_args/src/style/color.dart';
 import 'package:artisan_args/src/style/border.dart';

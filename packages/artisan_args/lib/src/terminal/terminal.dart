@@ -43,6 +43,8 @@ export 'ansi.dart' show Ansi;
 
 // Kitty Graphics Protocol
 export 'kitty.dart' show KittyImage;
+export 'iterm2.dart' show ITerm2Image;
+export 'sixel.dart' show SixelImage;
 
 // Key types and constants
 export 'keys.dart' show Key, KeyType, Keys;

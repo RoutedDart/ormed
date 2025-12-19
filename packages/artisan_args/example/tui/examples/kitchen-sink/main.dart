@@ -37,6 +37,10 @@ import 'package:artisan_args/artisan_args.dart'
         VerticalAlign;
 import 'package:artisan_args/src/unicode/grapheme.dart' as uni;
 import 'package:artisan_args/tui.dart' as tui;
+import 'package:image/image.dart' as img;
+import 'package:artisan_args/src/tui/uv/capabilities.dart';
+import 'package:artisan_args/src/tui/uv/event.dart' as uvev;
+import 'package:artisan_args/src/tui/uv/terminal.dart' as uvt;
 
 enum _Page {
   overview('Overview'),
@@ -48,7 +52,10 @@ enum _Page {
   writer('Writer'),
   unicode('Unicode'),
   widgets('Widgets'),
-  neofetch('Neofetch');
+  neofetch('Neofetch'),
+  graphics('Graphics'),
+  capabilities('Capabilities'),
+  keyboard('Keyboard');
 
   const _Page(this.title);
   final String title;
@@ -64,10 +71,12 @@ class _KitchenSinkModel extends tui.Model {
       progress = tui.ProgressModel(width: 44, useGradient: true),
       textInput = tui.TextInputModel(prompt: 'search: ', width: 32),
       textarea = tui.TextAreaModel(width: 48, height: 6, prompt: ''),
-      listSelection = _ListSelectionState.initial();
+      listSelection = _ListSelectionState.initial(),
+      capabilities = TerminalCapabilities();
 
   final bool useUvInput;
   final bool useUvRenderer;
+  final TerminalCapabilities capabilities;
 
   int _width = 80;
   int _height = 24;
@@ -99,6 +108,9 @@ class _KitchenSinkModel extends tui.Model {
         _Page.unicode: () => const _UnicodePage(),
         _Page.widgets: () => _WidgetsPage(),
         _Page.neofetch: () => const _NeofetchPage(),
+        _Page.graphics: () => const _GraphicsPage(),
+        _Page.capabilities: () => const _CapabilitiesPage(),
+        _Page.keyboard: () => const _KeyboardPage(),
       };
 
   late final Map<_Page, _KitchenSinkPage> _pages = <_Page, _KitchenSinkPage>{
@@ -283,6 +295,9 @@ class _KitchenSinkModel extends tui.Model {
 
       case tui.UvEventMsg(:final event):
         _log('UvEventMsg(${event.runtimeType}): $event');
+        if (event is uvev.Event) {
+          capabilities.updateFromEvent(event);
+        }
     }
 
     _activePage.onMsg(this, msg, cmds);
@@ -432,6 +447,9 @@ final class _OverviewPage extends _KitchenSinkPage {
       '• UV renderer: dynamic updates (Renderer tab), tables/trees/lists (Tree/List/Table tab)',
       '• UV input decoder: Enter/Tab/arrows/paste/mouse (Input + List tabs)',
       '• Terminal theme: background detection + adaptive colors (Colors tab)',
+      '• Graphics: Kitty/iTerm2/Sixel protocol detection (Graphics tab)',
+      '• Capabilities: ANSI query results (Capabilities tab)',
+      '• Keyboard: Enhanced keyboard protocol (Keyboard tab)',
       '• Writer: ANSI downsampling (Writer tab)',
       '• Unicode width: emoji/CJK/grapheme clusters (Unicode tab)',
       '',
@@ -1071,8 +1089,10 @@ final class _ColorsPage extends _KitchenSinkPage {
   @override
   String view(_KitchenSinkModel m) {
     final title = m._style(Style()).bold().render('Colors + theme detection');
+    final bg = m.capabilities.backgroundColor;
+    final bgStr = bg != null ? 'rgb(${bg.r},${bg.g},${bg.b})' : '(unknown)';
     final detected = m._style(Style()).dim().render(
-      'background=${m._theme.backgroundHex ?? '(unknown)'}  dark=${m._theme.hasDarkBackground ?? '(unknown)'}',
+      'background=${m._theme.backgroundHex ?? '(unknown)'} (UV: $bgStr)  dark=${m._theme.hasDarkBackground ?? '(unknown)'}',
     );
 
     final adaptive = m._style(Style())
@@ -1824,6 +1844,113 @@ final class _NeofetchPage extends _KitchenSinkPage {
     ]);
 
     return [title, '', columns].join('\n');
+  }
+}
+
+final class _GraphicsPage extends _KitchenSinkPage {
+  const _GraphicsPage()
+    : super(help: 'Graphics: demonstrates Kitty/iTerm2/Sixel image support');
+
+  @override
+  String view(_KitchenSinkModel m) {
+    final title = m._style(Style()).bold().render('Graphics (Image Protocols)');
+
+    final caps = m.capabilities;
+    final best = uvt.Terminal.bestImageDrawable(
+      img.Image(width: 1, height: 1),
+      capabilities: caps,
+    );
+
+    final protocolName = switch (best.runtimeType.toString()) {
+      'KittyImageDrawable' => 'Kitty Graphics Protocol',
+      'ITerm2ImageDrawable' => 'iTerm2 Inline Images',
+      'SixelImageDrawable' => 'Sixel Graphics',
+      _ => 'None (Fallback to ASCII)',
+    };
+
+    return [
+      title,
+      '',
+      'Your terminal supports the following image protocols:',
+      '',
+      '  Kitty Graphics: ${caps.hasKittyGraphics ? "✅" : "❌"}',
+      '  iTerm2 Images:  ${caps.hasITerm2 ? "✅" : "❌"}',
+      '  Sixel Graphics: ${caps.hasSixel ? "✅" : "❌"}',
+      '',
+      'Best available: $protocolName',
+      '',
+      'Note: To see real images, check out the dedicated image demos:',
+      '  - example/compositor_image_demo.dart',
+      '  - example/uv/image.dart',
+    ].join('\n');
+  }
+}
+
+final class _CapabilitiesPage extends _KitchenSinkPage {
+  const _CapabilitiesPage()
+    : super(help: 'Capabilities: shows detected terminal features');
+
+  @override
+  String view(_KitchenSinkModel m) {
+    final title = m._style(Style()).bold().render('Terminal Capabilities');
+
+    final caps = m.capabilities;
+
+    String boolIcon(bool b) => b ? '✅' : '❌';
+
+    final rows = [
+      ['Kitty Graphics', boolIcon(caps.hasKittyGraphics)],
+      ['Sixel Graphics', boolIcon(caps.hasSixel)],
+      ['iTerm2 Images', boolIcon(caps.hasITerm2)],
+      ['Keyboard Protocol', boolIcon(caps.hasKeyboardEnhancements)],
+      ['Color Palette', boolIcon(caps.hasColorPalette)],
+      ['Background Color', boolIcon(caps.hasBackgroundColor)],
+    ];
+
+    final table = Table()
+      ..border(Border.rounded)
+      ..style(m._style(Style()).foreground(Colors.cyan))
+      ..headerStyle(m._style(Style()).bold())
+      ..headers(['Feature', 'Supported'])
+      ..rows(rows);
+
+    final details = [
+      'Terminal: ${io.Platform.environment['TERM'] ?? 'unknown'}',
+      'Program: ${io.Platform.environment['TERM_PROGRAM'] ?? 'unknown'}',
+      '',
+      'These capabilities are discovered via ANSI queries (DA1, DA2, etc.)',
+      'and environment variable hints.',
+    ].join('\n');
+
+    return [title, '', table.render(), '', details].join('\n');
+  }
+}
+
+final class _KeyboardPage extends _KitchenSinkPage {
+  const _KeyboardPage()
+    : super(help: 'Keyboard: demonstrates enhanced keyboard protocol');
+
+  @override
+  String view(_KitchenSinkModel m) {
+    final title = m._style(Style()).bold().render('Keyboard Enhancements');
+
+    final caps = m.capabilities;
+
+    final info = [
+      'Enhanced Protocol: ${caps.hasKeyboardEnhancements ? "Enabled ✅" : "Disabled ❌"}',
+      '',
+      'If enabled, you can detect:',
+      '- Release events (KeyUp)',
+      '- Modifier keys (Super, Hyper, Meta)',
+      '- Distinguish between Esc and Alt+key',
+      '',
+      'Try pressing keys with various modifiers!',
+    ].join('\n');
+
+    final logTitle = m._style(Style()).bold().render('Recent Events:');
+    final log = m._eventLog.reversed.take(10).join('\n');
+
+    return [title, '', info, '', logTitle, log].join('\n');
   }
 }
 
