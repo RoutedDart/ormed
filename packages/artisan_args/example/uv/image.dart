@@ -1,10 +1,42 @@
 import 'dart:io';
 import 'package:artisan_args/src/tui/uv/terminal.dart';
+import 'package:image/image.dart' as img;
+import 'package:path/path.dart' as p;
 
-void main() async {
+void main(List<String> args) async {
   final t = Terminal();
   if (!stdin.hasTerminal) {
     print('Not a TTY');
+    return;
+  }
+
+  String? imagePath;
+  if (args.isNotEmpty) {
+    imagePath = args[0];
+  } else {
+    // Try to find a default image in the workspace.
+    final possiblePaths = [
+      'example/tui/examples/timer/timer.gif',
+      'packages/artisan_args/example/tui/examples/timer/timer.gif',
+      '../example/tui/examples/timer/timer.gif',
+    ];
+    for (final path in possiblePaths) {
+      if (File(path).existsSync()) {
+        imagePath = path;
+        break;
+      }
+    }
+  }
+
+  if (imagePath == null || !File(imagePath).existsSync()) {
+    print('Please provide an image path as an argument.');
+    return;
+  }
+
+  final bytes = await File(imagePath).readAsBytes();
+  final image = img.decodeImage(bytes);
+  if (image == null) {
+    print('Failed to decode image: $imagePath');
     return;
   }
 
@@ -14,26 +46,37 @@ void main() async {
 
   try {
     void render() {
-      final view = '''
+      t.clear();
+      
+      final header = '''
 Image Example
 =============
-
-This example demonstrates image rendering in the terminal.
-In the Go version, this supports:
-- Kitty Graphics Protocol
-- Sixel
-- iTerm2 Inline Images
-- Half-block character fallback
-
-Currently, the Dart port of Ultraviolet supports decoding these
-protocols in the EventDecoder, but high-level rendering utilities
-for encoding images into these protocols are still under development.
+File: ${p.basename(imagePath!)}
+Protocol: ${t.capabilities.hasKittyGraphics ? 'Kitty' : t.capabilities.hasITerm2 ? 'iTerm2' : t.capabilities.hasSixel ? 'Sixel' : 'Half-block fallback'}
 
 Press 'q' to exit.
 ''';
-      final ss = StyledString(view);
-      t.clear();
-      ss.draw(t, t.bounds());
+      final ss = StyledString(header);
+      final headerBounds = ss.bounds();
+      ss.draw(t, Rectangle(minX: 0, minY: 0, maxX: t.bounds().width, maxY: headerBounds.height));
+
+      // Render image below header.
+      final imgArea = Rectangle(
+        minX: 2,
+        minY: headerBounds.height + 1,
+        maxX: t.bounds().width - 2,
+        maxY: t.bounds().height - 1,
+      );
+
+      if (imgArea.width > 0 && imgArea.height > 0) {
+        final drawable = t.bestImageDrawableForTerminal(
+          image,
+          columns: imgArea.width,
+          rows: imgArea.height,
+        );
+        drawable.draw(t, imgArea);
+      }
+
       t.draw();
     }
 
@@ -49,10 +92,14 @@ Press 'q' to exit.
       if (event is WindowSizeEvent) {
         render();
       }
+      // Re-render if capabilities change (e.g. after query responses).
+      if (event is KittyGraphicsEvent || event is PrimaryDeviceAttributesEvent) {
+        render();
+      }
     }
   } finally {
     t.exitAltScreen();
     t.showCursor();
-    t.stop();
+    await t.stop();
   }
 }

@@ -16,6 +16,7 @@ import 'iterm2_drawable.dart';
 import 'kitty_drawable.dart';
 import 'screen.dart';
 import 'sixel_drawable.dart';
+import 'halfblock_drawable.dart';
 import 'terminal_reader.dart';
 import 'terminal_renderer.dart';
 import '../../unicode/width.dart';
@@ -32,6 +33,7 @@ export 'styled_string.dart';
 export 'kitty_drawable.dart';
 export 'iterm2_drawable.dart';
 export 'sixel_drawable.dart';
+export 'halfblock_drawable.dart';
 
 /// Terminal represents a terminal screen that can be manipulated and drawn to.
 ///
@@ -429,8 +431,8 @@ class Terminal implements Screen, FillableScreen, FillAreaScreen, ClearableScree
     if (capabilities.hasSixel) {
       return SixelImageDrawable(image, columns: columns, rows: rows);
     }
-    // Safe fallback: do nothing rather than emitting unknown escape sequences.
-    return EmptyDrawable();
+    // Fallback to half-block rendering.
+    return HalfBlockImageDrawable(image, columns: columns, rows: rows);
   }
 
   /// Returns the best [Drawable] for the given image based on this terminal's capabilities.
