@@ -45,6 +45,7 @@ const sidebars: SidebarsConfig = {
         'core-concepts/messages',
         'core-concepts/commands',
         'core-concepts/program',
+        'core-concepts/rendering',
       ],
     },
     {

@@ -8,8 +8,10 @@ class TextareaModel implements tui.Model {
   TextareaModel({required this.textarea, this.error, this.initCmd});
 
   factory TextareaModel.initial() {
+    // #region textarea_usage
     final ta = tui.TextAreaModel(placeholder: 'Once upon a time...');
     final focusCmd = ta.focus();
+    // #endregion
     return TextareaModel(textarea: ta, initCmd: focusCmd);
   }
 

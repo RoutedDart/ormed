@@ -6,11 +6,14 @@ library;
 
 import 'package:artisanal/tui.dart';
 
+// #region custom_msg
 /// Message fired every second.
 class TickMsg extends Msg {
   const TickMsg();
 }
+// #endregion
 
+// #region cmd_tick
 class SimpleModel implements Model {
   const SimpleModel(this.seconds, {this.quitting = false});
 
@@ -19,6 +22,7 @@ class SimpleModel implements Model {
 
   @override
   Cmd? init() => Cmd.tick(const Duration(seconds: 1), (_) => const TickMsg());
+// #endregion
 
   @override
   (Model, Cmd?) update(Msg msg) {

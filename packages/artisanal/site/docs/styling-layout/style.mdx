@@ -23,18 +23,12 @@ The `Style` class supports a wide range of methods for customizing text appearan
 
 Styles can inherit properties from other styles using the `inherit` method. This is useful for creating base styles and specializing them.
 
-```dart
-final baseStyle = Style().foreground(Colors.gray);
-final highlightStyle = Style().bold().inherit(baseStyle);
+```dart file=../../../example/fluent_style_example.dart#inheritance_example
 ```
 
 ## Hyperlinks
 
 Artisanal supports terminal hyperlinks (OSC 8) via the `hyperlink` method.
 
-```dart
-final linkStyle = Style()
-  .foreground(Colors.blue)
-  .underline()
-  .hyperlink("https://github.com/kingwill101/ormed");
+```dart file=../../../example/doc_examples.dart#hyperlink_style_example
 ```

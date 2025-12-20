@@ -6,26 +6,7 @@ Artisanal provides components for visual feedback during long-running operations
 
 The `Spinner` bubble displays an animated loading indicator.
 
-```dart
-import 'package:artisanal/tui.dart';
-import 'package:artisanal/bubbles.dart';
-
-class MyModel implements Model {
-  SpinnerModel spinner = SpinnerModel(spinner: Spinners.dot);
-
-  @override
-  Cmd? init() => spinner.init();
-
-  @override
-  (Model, Cmd?) update(Msg msg) {
-    final (newSpinner, cmd) = spinner.update(msg);
-    spinner = newSpinner;
-    return (this, cmd);
-  }
-
-  @override
-  String view() => '${spinner.view()} Loading...';
-}
+```dart file=../../../example/tui/examples/spinner/main.dart#spinner_usage
 ```
 
 ### Predefined Spinners
@@ -44,31 +25,7 @@ Artisanal includes many predefined spinner animations in the `Spinners` class:
 
 The `Progress` bubble displays a horizontal progress bar.
 
-```dart
-import 'package:artisanal/tui.dart';
-import 'package:artisanal/bubbles.dart';
-
-class MyModel implements Model {
-  ProgressModel progress = ProgressModel();
-
-  @override
-  Cmd? init() => null;
-
-  @override
-  (Model, Cmd?) update(Msg msg) {
-    // Update progress percentage (0.0 to 1.0)
-    if (msg is ProgressMsg) {
-      return (this, progress.setPercent(msg.percent));
-    }
-    
-    final (newProgress, cmd) = progress.update(msg);
-    progress = newProgress;
-    return (this, cmd);
-  }
-
-  @override
-  String view() => progress.view();
-}
+```dart file=../../../example/tui/examples/progress-animated/main.dart#progress_usage
 ```
 
 ### Features

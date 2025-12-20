@@ -9,6 +9,7 @@ class DownloadMsg extends tui.Msg {
   final double percent;
 }
 
+// #region progress_usage
 class ProgressAnimatedModel implements tui.Model {
   ProgressAnimatedModel({double percent = 0, tui.ProgressModel? progress})
     : percent = percent.clamp(0, 1),
@@ -85,6 +86,7 @@ class ProgressAnimatedModel implements tui.Model {
     return '\n$bar\n\n$help';
   }
 }
+// #endregion
 
 Future<void> main() async {
   await tui.runProgram(

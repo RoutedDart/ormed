@@ -15,18 +15,12 @@ There are four standard verbosity levels:
 
 The `Console` class respects the current verbosity level.
 
-```dart
-final console = Console(verbosity: Verbosity.verbose);
-
-console.write('Normal message'); // Always shown unless quiet
-console.verbose('Detailed message'); // Only shown in verbose or debug mode
-console.debug('Internal state: ...'); // Only shown in debug mode
+```dart file=../../../example/doc_examples.dart#verbosity_usage_example
 ```
 
 ## Global Verbosity
 
 You can also set a global verbosity level that is used by default.
 
-```dart
-Verbosity.current = Verbosity.quiet;
+```dart file=../../../example/doc_examples.dart#global_verbosity_example
 ```

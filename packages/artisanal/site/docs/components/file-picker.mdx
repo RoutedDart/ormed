@@ -4,31 +4,7 @@ The `FilePicker` bubble provides a terminal-based file and directory browser.
 
 ## Basic Usage
 
-```dart
-import 'package:artisanal/tui.dart';
-import 'package:artisanal/bubbles.dart';
-
-class MyModel implements Model {
-  FilePickerModel picker = FilePickerModel();
-
-  @override
-  Cmd? init() => picker.init();
-
-  @override
-  (Model, Cmd?) update(Msg msg) {
-    final (newPicker, cmd) = picker.update(msg);
-    picker = newPicker;
-    
-    if (msg is FilePickerSelectMsg) {
-      print('Selected: ${msg.path}');
-    }
-    
-    return (this, cmd);
-  }
-
-  @override
-  String view() => picker.view();
-}
+```dart file=../../../example/tui/examples/file-picker/main.dart#file_picker_usage
 ```
 
 ## Features

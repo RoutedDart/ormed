@@ -7,6 +7,7 @@ final _baseStyle = Style()
     .border(Border.normal)
     .borderForeground(const AnsiColor(240));
 
+// #region table_usage
 class TableDemoModel implements tui.Model {
   TableDemoModel(this.table);
 
@@ -47,6 +48,7 @@ class TableDemoModel implements tui.Model {
   @override
   String view() => '${_baseStyle.render(table.view())}\n';
 }
+// #endregion
 
 Future<void> main() async {
   final columns = [

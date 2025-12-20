@@ -24,20 +24,5 @@ abstract interface class Model {
 
 It is highly recommended to keep your models immutable. When the state changes, you should return a new instance of the model from the `update` method. This makes your application easier to reason about and test.
 
-```dart
-class MyModel implements Model {
-  final String status;
-  
-  const MyModel(this.status);
-
-  @override
-  (Model, Cmd?) update(Msg msg) {
-    if (msg is StatusUpdateMsg) {
-      return (MyModel(msg.newStatus), null);
-    }
-    return (this, null);
-  }
-  
-  // ...
-}
+```dart file=../../../example/tui/counter.dart#model_example
 ```

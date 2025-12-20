@@ -6,25 +6,14 @@ The `Program` is the runtime that manages the event loop, handles input/output, 
 
 The easiest way to start an Artisanal application is using the `runProgram` helper:
 
-```dart
-void main() async {
-  await runProgram(MyModel());
-}
+```dart file=../../../example/tui/counter.dart#program_example
 ```
 
 ## Program Options
 
 You can customize the program's behavior using `ProgramOptions`:
 
-```dart
-await runProgram(
-  MyModel(),
-  options: ProgramOptions(
-    altScreen: true,      // Use the alternate screen buffer
-    mouseSupport: true,   // Enable mouse event tracking
-    fps: 60,              // Set the target frames per second
-  ),
-);
+```dart file=../../../example/doc_examples.dart#program_options_example
 ```
 
 ## Lifecycle
@@ -42,7 +31,5 @@ await runProgram(
 
 For more control, you can instantiate the `Program` class directly:
 
-```dart
-final program = Program(MyModel());
-await program.run();
+```dart file=../../../example/doc_examples.dart#program_direct_usage_example
 ```

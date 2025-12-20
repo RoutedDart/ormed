@@ -7,6 +7,7 @@ import 'package:artisanal/tui.dart' as tui;
 const _listHeight = 14;
 const _defaultWidth = 20;
 
+// #region list_usage
 class ListSimpleModel implements tui.Model {
   const ListSimpleModel({
     required this.list,
@@ -70,6 +71,7 @@ class ListSimpleModel implements tui.Model {
     return '\n${list.view()}';
   }
 }
+// #endregion
 
 tui.ListModel _buildList() {
   final items = <tui.ListItem>[

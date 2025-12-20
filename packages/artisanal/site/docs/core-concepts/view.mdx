@@ -12,36 +12,21 @@ String view()
 
 The simplest view returns a plain string:
 
-```dart
-@override
-String view() => 'Hello, Artisanal!';
+```dart file=../../../example/tui/counter.dart#view_example
 ```
 
 ## Using Styles
 
 You can use the `Style` API to add colors, borders, and padding to your view:
 
-```dart
-@override
-String view() {
-  final style = Style().foreground(Color.blue).bold();
-  return style.render('Hello, Styled World!');
-}
+```dart file=../../../example/doc_examples.dart#styled_view_example
 ```
 
 ## Layout Primitives
 
 Artisanal provides layout primitives like `joinHorizontal` and `joinVertical` to combine multiple strings:
 
-```dart
-@override
-String view() {
-  return joinVertical([
-    'Header',
-    joinHorizontal(['Left Column', 'Right Column']),
-    'Footer',
-  ]);
-}
+```dart file=../../../example/doc_examples.dart#layout_view_example
 ```
 
 ## Advanced Rendering (UV)

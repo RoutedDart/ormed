@@ -69,6 +69,7 @@ Press 'q' to exit.
         maxY: t.bounds().height - 1,
       );
 
+// #region image_rendering_usage
       if (imgArea.width > 0 && imgArea.height > 0) {
         final drawable = t.bestImageDrawableForTerminal(
           image,
@@ -77,6 +78,7 @@ Press 'q' to exit.
         );
         drawable.draw(t, imgArea);
       }
+// #endregion
 
       t.draw();
     }

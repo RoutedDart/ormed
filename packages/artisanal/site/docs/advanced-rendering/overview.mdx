@@ -10,34 +10,16 @@ Unlike traditional TUI rendering which often repaints the entire screen, UV main
 2.  **Optimizes Movement**: Calculates the most efficient ANSI sequences to move the cursor and update only the changed cells.
 3.  **Scroll Optimization**: Detects when lines have been shifted and uses terminal scrolling commands (`IL`/`DL`) to move existing content.
 
-## Enabling UV
+## UV by Default
 
-You can enable the UV renderer in your `ProgramOptions`:
+The Ultraviolet renderer is enabled by default. You can customize its behavior in your `ProgramOptions`:
 
-```dart
-final program = tui.Program(
-  myModel,
-  options: tui.ProgramOptions(
-    useUltravioletRenderer: true,
-  ),
-);
+```dart file=../../../example/doc_examples.dart#enabling_uv_example
 ```
 
 ## Compositor and Layers
 
 UV includes a powerful composition system that allows you to build your UI using overlapping layers.
 
-```dart
-final compositor = Compositor();
-compositor.addLayer(Layer(
-  id: 'background',
-  drawable: myBackground,
-));
-compositor.addLayer(Layer(
-  id: 'popup',
-  drawable: myPopup,
-  x: 10,
-  y: 5,
-  z: 100, // Higher Z-index renders on top
-));
+```dart file=../../../example/doc_examples.dart#compositor_layers_example
 ```

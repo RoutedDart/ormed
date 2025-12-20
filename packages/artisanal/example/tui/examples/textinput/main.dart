@@ -3,6 +3,7 @@ library;
 
 import 'package:artisanal/tui.dart';
 
+// #region text_input_usage
 class TextInputExampleModel implements Model {
   TextInputExampleModel({TextInputModel? input})
     : input = input ?? _buildInput();
@@ -46,6 +47,7 @@ class TextInputExampleModel implements Model {
         '(esc to quit)\n';
   }
 }
+// #endregion
 
 Future<void> main() async {
   await runProgram(

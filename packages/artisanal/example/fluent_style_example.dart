@@ -3,6 +3,7 @@
 /// Run with: dart run example/fluent_style_example.dart
 library;
 
+import 'package:artisanal/artisanal.dart';
 import 'package:artisanal/style.dart';
 import 'package:artisanal/tui.dart';
 
@@ -13,6 +14,7 @@ void main() {
   // Basic Styling
   // ─────────────────────────────────────────────────────────────────────────
 
+  // #region basic_style
   print('--- Basic Styling ---');
 
   // Simple text styles
@@ -24,6 +26,7 @@ void main() {
 
   final combinedStyle = Style().bold().italic().foreground(Colors.cyan);
   print(combinedStyle.render('Bold, italic, and cyan!'));
+  // #endregion
 
   print('');
 
@@ -31,6 +34,7 @@ void main() {
   // Semantic Colors
   // ─────────────────────────────────────────────────────────────────────────
 
+  // #region semantic_colors
   print('--- Semantic Colors ---');
 
   final successStyle = Style().bold().foreground(Colors.success);
@@ -42,6 +46,7 @@ void main() {
   print(errorStyle.render('✗ Error: Something went wrong'));
   print(warningStyle.render('⚠ Warning: Check your configuration'));
   print(infoStyle.render('ℹ Info: Starting process...'));
+  // #endregion
 
   print('');
 
@@ -49,6 +54,7 @@ void main() {
   // Width and Alignment
   // ─────────────────────────────────────────────────────────────────────────
 
+  // #region alignment_example
   print('--- Width and Alignment ---');
 
   final leftAligned = Style().width(30).align(HorizontalAlign.left);
@@ -58,13 +64,13 @@ void main() {
   print('[${leftAligned.render("Left")}]');
   print('[${centered.render("Center")}]');
   print('[${rightAligned.render("Right")}]');
+  // #endregion
 
   print('');
 
   // ─────────────────────────────────────────────────────────────────────────
   // Padding
-  // ─────────────────────────────────────────────────────────────────────────
-
+  // #region padding_example
   print('--- Padding ---');
 
   final paddedStyle = Style()
@@ -73,13 +79,13 @@ void main() {
       .padding(1, 3); // 1 vertical, 3 horizontal
 
   print(paddedStyle.render('Padded Box'));
+  // #endregion
 
   print('');
 
   // ─────────────────────────────────────────────────────────────────────────
   // Borders
-  // ─────────────────────────────────────────────────────────────────────────
-
+  // #region border_example
   print('--- Borders ---');
 
   final roundedBox = Style().border(Border.rounded).padding(0, 1);
@@ -90,13 +96,13 @@ void main() {
 
   final asciiBox = Style().border(Border.ascii).padding(0, 1);
   print(asciiBox.render('ASCII Border'));
+  // #endregion
 
   print('');
 
   // ─────────────────────────────────────────────────────────────────────────
   // Style Composition with inherit()
-  // ─────────────────────────────────────────────────────────────────────────
-
+  // #region inheritance_example
   print('--- Style Composition ---');
 
   // Base style for all messages
@@ -112,6 +118,9 @@ void main() {
 
   print(successBox.render('Inherited success styling'));
   print(errorBox.render('Inherited error styling'));
+  // #endregion
+  print(successBox.render('Inherited success styling'));
+  print(errorBox.render('Inherited error styling'));
 
   print('');
 
@@ -119,6 +128,7 @@ void main() {
   // Layout Utilities
   // ─────────────────────────────────────────────────────────────────────────
 
+  // #region layout_horizontal
   print('--- Layout: Join Horizontal ---');
 
   final leftPanel = Style()
@@ -134,9 +144,11 @@ void main() {
       .render('Right Panel');
 
   print(Layout.joinHorizontal(VerticalAlign.top, [leftPanel, rightPanel]));
+  // #endregion
 
   print('');
 
+  // #region layout_vertical
   print('--- Layout: Join Vertical ---');
 
   final header = Style()
@@ -151,6 +163,7 @@ void main() {
   final footer = Style().dim().width(40).alignCenter().render('Footer text');
 
   print(Layout.joinVertical(HorizontalAlign.center, [header, content, footer]));
+  // #endregion
 
   print('');
 
@@ -171,8 +184,7 @@ void main() {
 
   // ─────────────────────────────────────────────────────────────────────────
   // Adaptive Colors (for light/dark terminals)
-  // ─────────────────────────────────────────────────────────────────────────
-
+  // #region adaptive_colors
   print('--- Adaptive Colors ---');
 
   final adaptiveText = AdaptiveColor(
@@ -182,6 +194,7 @@ void main() {
 
   final adaptiveStyle = Style().foreground(adaptiveText);
   print(adaptiveStyle.render('This adapts to terminal background'));
+  // #endregion
 
   print('');
 
@@ -337,3 +350,24 @@ void main() {
 
   print('\n=== Demo Complete ===');
 }
+
+// #region verbosity_usage
+void demonstrateVerbosity(Console console) {
+  console.writeln('This is a normal message');
+
+  console.info('This is an info message (shown in normal/verbose/debug)');
+
+  // The following only show if verbosity is set appropriately
+  console.verbose('This is a verbose message (shown in verbose/debug)');
+  console.debug('This is a debug message (only shown in debug)');
+}
+// #endregion
+
+// #region writer_usage
+void demonstrateWriter() {
+  Println(Style().bold().render("Important Message"));
+
+  final msg = Sprintf("User %s logged in", ["admin"]);
+  Println(Style().foreground(Colors.green).render(msg));
+}
+// #endregion

@@ -4,31 +4,7 @@ The `Viewport` bubble provides a scrollable window into a larger piece of conten
 
 ## Basic Usage
 
-```dart
-import 'package:artisanal/tui.dart';
-import 'package:artisanal/bubbles.dart';
-
-class MyModel implements Model {
-  late ViewportModel viewport;
-
-  MyModel() {
-    viewport = ViewportModel(width: 30, height: 10);
-    viewport.setContent('Line 1\nLine 2\n...\nLine 100');
-  }
-
-  @override
-  Cmd? init() => null;
-
-  @override
-  (Model, Cmd?) update(Msg msg) {
-    final (newViewport, cmd) = viewport.update(msg);
-    viewport = newViewport;
-    return (this, cmd);
-  }
-
-  @override
-  String view() => viewport.view();
-}
+```dart file=../../../example/tui/examples/pager/main.dart#viewport_usage
 ```
 
 ## Features

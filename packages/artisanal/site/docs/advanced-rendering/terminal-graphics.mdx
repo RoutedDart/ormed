@@ -6,9 +6,7 @@ Artisanal and Ultraviolet support advanced terminal graphics, including high-res
 
 Artisanal includes built-in support for the **Kitty Graphics Protocol**, which allows displaying high-quality images directly in the terminal.
 
-```dart
-final image = KittyImage.fromFile('path/to/image.png');
-terminal.drawImage(image, x: 10, y: 5);
+```dart file=../../../example/uv/image.dart#image_rendering_usage
 ```
 
 ## Sixel Support
@@ -19,21 +17,12 @@ terminal.drawImage(image, x: 10, y: 5);
 
 For terminals that don't support image protocols, Artisanal provides a `Canvas` API that uses Braille characters to render high-resolution vector graphics (2x4 dots per character).
 
-```dart
-final canvas = Canvas(width: 160, height: 100);
-canvas.drawLine(0, 0, 160, 100);
-canvas.drawCircle(80, 50, 30);
-
-// Render canvas to a string using Braille characters
-String output = canvas.render();
+```dart file=../../../example/doc_examples.dart#canvas_example
 ```
 
 ## Half-Block Graphics
 
 Another common technique for terminal graphics is using half-block characters (`▀`, `▄`) to double the vertical resolution.
 
-```dart
-final hb = HalfBlockBuffer(width: 80, height: 48); // 48 logical rows in 24 terminal rows
-hb.setPixel(10, 20, Color.red);
-String output = hb.render();
+```dart file=../../../example/doc_examples.dart#half_block_example
 ```

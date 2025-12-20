@@ -96,16 +96,16 @@ const config: Config = {
           title: 'Documentation',
           items: [
             {
-              label: 'Getting Started',
-              to: '/docs/',
+              label: 'Introduction',
+              to: '/docs/intro',
             },
             {
-              label: 'Migrations',
-              to: '/docs/migrations/overview',
+              label: 'Quick Start',
+              to: '/docs/getting-started/quick-start',
             },
             {
-              label: 'Schema Builder',
-              to: '/docs/migrations/schema-builder',
+              label: 'Core Concepts',
+              to: '/docs/core-concepts/model',
             },
           ],
         },
@@ -114,11 +114,11 @@ const config: Config = {
           items: [
             {
               label: 'pub.dev',
-              href: 'https://pub.dev/packages/ormed',
+              href: 'https://pub.dev/packages/artisanal',
             },
             {
               label: 'API Reference',
-              href: 'https://pub.dev/documentation/ormed/latest/',
+              href: 'https://pub.dev/documentation/artisanal/latest/',
             },
           ],
         },
@@ -136,7 +136,7 @@ const config: Config = {
           ],
         },
       ],
-      copyright: `Copyright © ${new Date().getFullYear()} Ormed. Built with Docusaurus.`,
+      copyright: `Copyright © ${new Date().getFullYear()} Artisanal. Built with Docusaurus.`,
     },
     prism: {
       theme: prismThemes.github,

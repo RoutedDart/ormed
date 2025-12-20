@@ -6,6 +6,7 @@ library;
 import 'package:artisanal/artisanal.dart';
 import 'package:artisanal/tui.dart';
 
+// #region spinner_usage
 class SpinnerExampleModel implements Model {
   SpinnerExampleModel({SpinnerModel? spinner, this.quitting = false})
     : spinner = spinner ?? SpinnerModel(spinner: Spinners.dot);
@@ -48,6 +49,7 @@ class SpinnerExampleModel implements Model {
         '$quittingSuffix';
   }
 }
+// #endregion
 
 Future<void> main() async {
   await runProgram(

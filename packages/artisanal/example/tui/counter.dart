@@ -8,6 +8,7 @@ library;
 
 import 'package:artisanal/tui.dart';
 
+// #region model_example
 /// The counter model.
 class CounterModel implements Model {
   /// Creates a counter with the given value.
@@ -19,6 +20,7 @@ class CounterModel implements Model {
   @override
   Cmd? init() => null; // No initialization needed
 
+  // #region update_example
   @override
   (Model, Cmd?) update(Msg msg) {
     return switch (msg) {
@@ -57,7 +59,9 @@ class CounterModel implements Model {
       _ => (this, null),
     };
   }
+  // #endregion
 
+  // #region view_example
   @override
   String view() {
     // Create a simple visual representation
@@ -81,6 +85,7 @@ class CounterModel implements Model {
 
 ''';
   }
+  // #endregion
 
   /// Creates a visual bar representation of the count.
   String _createBar(int value) {
@@ -100,10 +105,24 @@ class CounterModel implements Model {
     }
   }
 }
+// #endregion
 
+// #region program_example
 void main() async {
   await runProgram(
     const CounterModel(),
     options: const ProgramOptions(altScreen: true),
   );
 }
+// #endregion
+
+// #region fps_optimization_usage
+void runWithFpsLimit() async {
+  await runProgram(
+    const CounterModel(),
+    options: const ProgramOptions(
+      fps: 30, // Limit to 30 FPS
+    ),
+  );
+}
+// #endregion

@@ -15,28 +15,12 @@ The `Border` class provides several predefined border styles:
 
 You can apply a border to a `Style`.
 
-```dart
-final style = Style()
-  .border(Border.rounded)
-  .borderColor(Colors.blue)
-  .padding(1);
-
-print(style.render("This is inside a box!"));
+```dart file=../../../example/fluent_style_example.dart#border_example
 ```
 
 ## Custom Borders
 
 You can also define custom borders by specifying the characters for each side and corner.
 
-```dart
-final customBorder = Border(
-  top: '-',
-  bottom: '-',
-  left: '|',
-  right: '|',
-  topLeft: '+',
-  topRight: '+',
-  bottomLeft: '+',
-  bottomRight: '+',
-);
+```dart file=../../../example/doc_examples.dart#custom_border_example
 ```

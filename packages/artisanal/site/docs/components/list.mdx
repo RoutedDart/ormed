@@ -4,36 +4,7 @@ The `List` bubble provides a filterable list of items with support for selection
 
 ## Basic Usage
 
-```dart
-import 'package:artisanal/tui.dart';
-import 'package:artisanal/bubbles.dart';
-
-class MyModel implements Model {
-  late ListModel list;
-
-  MyModel() {
-    list = ListModel(
-      items: [
-        ListItem(title: 'Item 1', description: 'Description for item 1'),
-        ListItem(title: 'Item 2', description: 'Description for item 2'),
-        ListItem(title: 'Item 3', description: 'Description for item 3'),
-      ],
-    );
-  }
-
-  @override
-  Cmd? init() => null;
-
-  @override
-  (Model, Cmd?) update(Msg msg) {
-    final (newList, cmd) = list.update(msg);
-    list = newList;
-    return (this, cmd);
-  }
-
-  @override
-  String view() => list.view();
-}
+```dart file=../../../example/tui/examples/list-simple/main.dart#list_usage
 ```
 
 ## Features

@@ -26,12 +26,5 @@ While the `Style` API is recommended for most use cases, you can generate raw AN
 
 ## Usage
 
-```dart
-import 'package:artisanal/terminal.dart';
-import 'dart:io';
-
-stdout.write(Ansi.cursorTo(0, 0));
-stdout.write(Ansi.bold);
-stdout.write('Top Left Bold');
-stdout.write(Ansi.reset);
+```dart file=../../../example/main.dart#ansi_usage
 ```

@@ -3,50 +3,42 @@ import 'dart:io' as dartio;
 import 'package:artisanal/artisanal.dart';
 import 'package:artisanal/tui.dart';
 
-extension DisplayComponentPrinter on DisplayComponent {
-  void writelnTo(Console io) {
-    for (final line in render().split('\n')) {
-      io.writeln(line);
-    }
-  }
+// #region verbosity_usage
+void demonstrateVerbosity(Console console) {
+  console.writeln('This is a normal message');
+  
+  console.info('This is an info message (shown in normal/verbose/debug)');
+  
+  // The following only show if verbosity is set appropriately
+  console.verbose('This is a verbose message (shown in verbose/debug)');
+  console.debug('This is a debug message (only shown in debug)');
 }
+// #endregion
 
+// #region ansi_usage
+void demonstrateAnsi() {
+  dartio.stdout.write(Ansi.cursorTo(0, 0));
+  dartio.stdout.write(Ansi.bold);
+  dartio.stdout.write('Top Left Bold');
+  dartio.stdout.write(Ansi.reset);
+  dartio.stdout.writeln();
+}
+// #endregion
+
+// #region command_runner_usage
 Future<void> main(List<String> args) async {
   final runner =
       CommandRunner<void>('artisanal-demo', 'artisanal demo CLI')
         ..addCommand(DemoCommand())
         ..addCommand(UiTaskCommand())
-        ..addCommand(UiTableCommand())
-        ..addCommand(UiPromptsCommand())
-        ..addCommand(UiProgressCommand())
-        ..addCommand(UiComponentsCommand())
-        ..addCommand(UiSecretCommand())
-        ..addCommand(UiSelectCommand())
-        ..addCommand(UiMultiSelectCommand())
-        ..addCommand(UiSpinCommand())
-        ..addCommand(UiSpinnerCommand())
-        ..addCommand(UiPanelCommand())
-        ..addCommand(UiTreeCommand())
-        ..addCommand(UiSearchCommand())
-        ..addCommand(UiPauseCommand())
-        ..addCommand(UiChalkCommand())
-        ..addCommand(UiValidatorsCommand())
-        ..addCommand(UiExceptionCommand())
-        ..addCommand(UiHorizontalTableCommand())
-        ..addCommand(UiPasswordCommand())
-        ..addCommand(UiBlockCommand())
-        ..addCommand(UiColumnsCommand())
-        ..addCommand(UiTerminalCommand())
-        ..addCommand(UiAnticipateCommand())
-        ..addCommand(UiTextareaCommand())
-        ..addCommand(UiWizardCommand())
-        ..addCommand(UiLinkCommand())
-        ..addCommand(UiComponentSystemCommand())
+        // ...
         ..addCommand(UiAllCommand());
 
   await runner.run(args);
 }
+// #endregion
 
+// #region command_definition_usage
 class DemoCommand extends Command<void> {
   @override
   String get name => 'demo';
@@ -80,11 +72,12 @@ class DemoCommand extends Command<void> {
       'Run a sample task',
       run: () async {
         await Future<void>.delayed(const Duration(milliseconds: 40));
-        return .success;
+        return TaskResult.success;
       },
     );
   }
 }
+// #endregion
 
 class UiTaskCommand extends Command<void> {
   UiTaskCommand() {

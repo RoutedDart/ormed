@@ -6,31 +6,19 @@ The `Console` class is the primary entry point for high-level terminal I/O in Ar
 
 You can use `Console` to write styled text to the terminal.
 
-```dart
-import 'package:artisanal/artisanal.dart';
-
-final console = Console();
-
-console.write('Hello, ');
-console.writeln('Artisanal!', style: Style().bold().foreground(Colors.green));
+```dart file=../../../example/doc_examples.dart#console_output_example
 ```
 
 ## Task Indicators
 
 `Console` can run asynchronous tasks and display a spinner or status indicator while they are running.
 
-```dart
-await console.task('Downloading data...', () async {
-  await Future.delayed(Duration(seconds: 2));
-  return TaskResult.success('Done!');
-});
+```dart file=../../../example/doc_examples.dart#console_task_example
 ```
 
 ## Interactive Prompts
 
 The `Components` class (accessible via `console.components`) provides interactive prompts for user input.
 
-```dart
-final name = await console.components.ask('What is your name?');
-final confirmed = await console.components.confirm('Are you sure?');
+```dart file=../../../example/doc_examples.dart#console_components_example
 ```

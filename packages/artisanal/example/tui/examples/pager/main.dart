@@ -7,6 +7,7 @@ import 'package:artisanal/style.dart';
 import 'package:artisanal/tui.dart';
 import 'package:artisanal/tui.dart' as tui;
 
+// #region viewport_usage
 class PagerModel implements tui.Model {
   PagerModel({required this.content, tui.ViewportModel? viewport})
     : viewport = viewport ?? tui.ViewportModel();
@@ -91,6 +92,7 @@ class PagerModel implements tui.Model {
     return '${_headerView()}\n${viewport.view()}\n${_footerView()}';
   }
 }
+// #endregion
 
 class _PagerState extends PagerModel {
   _PagerState({

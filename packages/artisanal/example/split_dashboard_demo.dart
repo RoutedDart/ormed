@@ -3,7 +3,6 @@ import 'dart:math' as math;
 
 import 'package:artisanal/style.dart';
 import 'package:artisanal/tui.dart' as tui;
-import 'package:artisanal/uv.dart' as uv;
 import 'package:artisanal/src/tui/harmonica.dart' as hz;
 
 /// Helper class to read real system info from /proc/ (Linux)
@@ -193,6 +192,10 @@ class LogMsg extends tui.Msg {
   final String text;
 }
 
+class SysInfoMsg extends tui.Msg {
+  const SysInfoMsg();
+}
+
 class DashboardModel implements tui.Model {
   DashboardModel()
       : cpuProgress = tui.ProgressModel(width: 20, fullColor: '#AF87FF'),
@@ -214,7 +217,7 @@ class DashboardModel implements tui.Model {
   int width = 0;
   int height = 0;
   double splitRatio = 0.55;
-  int logIntervalMs = 0;
+  int logIntervalMs = 50;
   bool autoScroll = true; // Track if at bottom for indicator
   
   /// Scroll offset for logs (0 = show oldest, max = show newest)
@@ -237,6 +240,7 @@ class DashboardModel implements tui.Model {
 
   // Precomputed view string (computed in update, returned in view)
   String _cachedView = 'Initializing...';
+  bool _viewDirty = true;
 
   // Cached styles (created once)
   static final _headerStyle = Style().foreground(Colors.cyan).bold();
@@ -258,7 +262,14 @@ class DashboardModel implements tui.Model {
   @override
   tui.Cmd? init() {
     // Only schedule log generation - frame ticks are automatic via ProgramOptions.frameTick
-    return _generateLog();
+    return tui.Cmd.batch([
+      _generateLog(),
+      _scheduleSysInfoUpdate(),
+    ]);
+  }
+
+  tui.Cmd _scheduleSysInfoUpdate() {
+    return tui.Cmd.tick(const Duration(milliseconds: 500), (_) => const SysInfoMsg());
   }
 
   tui.Cmd _generateLog() {
@@ -272,36 +283,40 @@ class DashboardModel implements tui.Model {
   (tui.Model, tui.Cmd?) update(tui.Msg msg) {
     final cmds = <tui.Cmd>[];
 
+    // Handle debug overlay updates first
+    final debugUpdate = debugOverlay.update(msg);
+    debugOverlay = debugUpdate.model;
+    if (debugUpdate.consumed) {
+      return (this, debugUpdate.cmd);
+    }
+
     switch (msg) {
       case tui.RenderMetricsMsg():
-        debugOverlay = debugOverlay.update(msg).model;
-        _rebuildView();
-        break;
+        // Metrics updated in debugOverlay.update - no view rebuild needed
+        return (this, null);
 
       case tui.WindowSizeMsg(:final width, :final height):
         this.width = width;
         this.height = height;
-        debugOverlay = debugOverlay.update(msg).model;
         final progressWidth = (width - 12).clamp(10, 200);
         cpuProgress = cpuProgress.copyWith(width: progressWidth);
         memProgress = memProgress.copyWith(width: progressWidth);
         netProgress = netProgress.copyWith(width: progressWidth);
         dskProgress = dskProgress.copyWith(width: progressWidth);
-        _rebuildView();
+        _viewDirty = true;
         break;
 
       case tui.MouseMsg(:final button, :final action):
-        // Handle debug overlay first
-        final res = debugOverlay.update(msg);
-        debugOverlay = res.model;
-        if (!res.consumed && action == tui.MouseAction.press) {
+        if (action == tui.MouseAction.press || action == tui.MouseAction.wheel) {
           // Handle mouse wheel scroll - scrolls entire screen
           if (button == tui.MouseButton.wheelUp) {
             _scrollOffset -= 3;
             autoScroll = false; // User is scrolling, disable auto-scroll
+            _viewDirty = true;
           } else if (button == tui.MouseButton.wheelDown) {
             _scrollOffset += 3;
             // autoScroll will be re-enabled in _rebuildView if at bottom
+            _viewDirty = true;
           }
         }
         break;
@@ -312,15 +327,14 @@ class DashboardModel implements tui.Model {
         }
         if (key.isChar('u')) {
           debugOverlay = debugOverlay.toggle();
-          _rebuildView();
         }
         if (key.isChar('+')) {
           splitRatio = (splitRatio + 0.05).clamp(0.1, 0.9);
-          _rebuildView();
+          _viewDirty = true;
         }
         if (key.isChar('-')) {
           splitRatio = (splitRatio - 0.05).clamp(0.1, 0.9);
-          _rebuildView();
+          _viewDirty = true;
         }
         if (key.isChar('m')) {
           logIntervalMs = (logIntervalMs - 10).clamp(1, 1000);
@@ -332,33 +346,45 @@ class DashboardModel implements tui.Model {
         if (key.type == tui.KeyType.up || key.isChar('k')) {
           _scrollOffset -= 1;
           autoScroll = false;
+          _viewDirty = true;
         }
         if (key.type == tui.KeyType.down || key.isChar('j')) {
           _scrollOffset += 1;
+          _viewDirty = true;
         }
         if (key.type == tui.KeyType.pageUp) {
           _scrollOffset -= (height ~/ 2);
           autoScroll = false;
+          _viewDirty = true;
         }
         if (key.type == tui.KeyType.pageDown) {
           _scrollOffset += (height ~/ 2);
+          _viewDirty = true;
         }
         if (key.type == tui.KeyType.home || key.isChar('g')) {
           // Go to top of scrollback (oldest logs)
           _scrollOffset = 0;
           autoScroll = false;
+          _viewDirty = true;
         }
         if (key.type == tui.KeyType.end || key.isChar('G')) {
           // Jump back to live panel (bottom) and re-enable auto-scroll
           autoScroll = true;
-          // _scrollOffset will be set to maxOffset in _rebuildView when autoScroll is true
+          _viewDirty = true;
         }
         break;
 
       case LogMsg(:final text):
         logs.add(text);
+        if (logs.length > 2000) logs.removeAt(0);
         cmds.add(_generateLog());
-        _rebuildView();
+        // Mark dirty so view rebuilds on next frame tick
+        _viewDirty = true;
+        break;
+
+      case SysInfoMsg():
+        sysInfo.update();
+        cmds.add(_scheduleSysInfoUpdate());
         break;
 
       case tui.FrameTickMsg(:final time):
@@ -416,8 +442,7 @@ class DashboardModel implements tui.Model {
           verticalBars[i] = 0.5 + 0.5 * math.sin(time.millisecondsSinceEpoch / 200.0 + i * 0.8);
         }
 
-        // Update system info and progress bars with real values
-        sysInfo.update();
+        // Update progress bars with real values (sysInfo updated via SysInfoMsg)
         final (newCpu, cpuCmd) = cpuProgress.setPercent(sysInfo.cpuPercent / 100.0);
         final (newMem, memCmd) = memProgress.setPercent(sysInfo.memPercent / 100.0);
         // Network bar shows relative activity (capped at 10MB/s for full bar)
@@ -435,9 +460,8 @@ class DashboardModel implements tui.Model {
         if (netCmd != null) cmds.add(netCmd);
         if (dskCmd != null) cmds.add(dskCmd);
 
-        // Rebuild view with updated animation state
-        _rebuildView();
-        // No manual tick needed - FrameTickMsg is automatic
+        // Mark dirty - view will be rebuilt lazily in view()
+        _viewDirty = true;
         break;
     }
 
@@ -478,8 +502,7 @@ class DashboardModel implements tui.Model {
     
     // Build complete content buffer: logs + separator + panels
     // This is the "virtual document" that we scroll through
-    final allContent = <String>[
-      ...logs,
+    final panelLines = [
       title,
       ...animPanel.split('\n'),
       ...sysPanel.split('\n'),
@@ -487,7 +510,7 @@ class DashboardModel implements tui.Model {
       footer,
     ];
     
-    final totalLines = allContent.length;
+    final totalLines = logs.length + panelLines.length;
     final maxOffset = (totalLines - height).clamp(0, totalLines);
     
     // Auto-scroll: when at bottom, keep scroll offset at max so new content is visible
@@ -505,35 +528,26 @@ class DashboardModel implements tui.Model {
       autoScroll = true;
     }
     
-    // Extract visible window
-    final startLine = _scrollOffset;
-    final endLine = (startLine + height).clamp(0, totalLines);
-    final visibleLines = allContent.sublist(startLine, endLine);
+    // Extract visible window without copying the whole logs list
+    final visibleLines = <String>[];
+    for (var i = 0; i < height; i++) {
+      final idx = _scrollOffset + i;
+      if (idx < logs.length) {
+        visibleLines.add(logs[idx]);
+      } else {
+        final pIdx = idx - logs.length;
+        if (pIdx < panelLines.length) {
+          visibleLines.add(panelLines[pIdx]);
+        }
+      }
+    }
     
     // Pad if needed (when content is shorter than screen)
     while (visibleLines.length < height) {
       visibleLines.insert(0, '');
     }
     
-    final visibleContent = visibleLines.join('\n');
-    
-    // Add debug overlay on top if enabled
-    if (debugOverlay.enabled) {
-      final debugPanel = debugOverlay.panel();
-      final debugLines = debugPanel.split('\n');
-      final debugH = debugLines.length;
-      final debugW = debugLines.fold<int>(0, (m, l) => math.max(m, Style.visibleLength(l)));
-      final debugX = debugOverlay.panelX ?? (width - debugW - debugOverlay.marginRight);
-      final debugY = debugOverlay.panelY ?? (height - debugH - debugOverlay.marginBottom);
-      
-      final layers = <uv.Layer>[
-        uv.newLayer(visibleContent)..setId('content')..setY(0)..setZ(0),
-        uv.newLayer(debugPanel)..setId('debug')..setX(debugX)..setY(debugY)..setZ(10),
-      ];
-      _cachedView = uv.Compositor(layers).render();
-    } else {
-      _cachedView = visibleContent;
-    }
+    _cachedView = visibleLines.join('\n');
   }
 
   String _buildAnimationPanel(int w, int h) {
@@ -641,7 +655,21 @@ class DashboardModel implements tui.Model {
   }
 
   @override
-  String view() => _cachedView;
+  String view() {
+    if (width == 0 || height == 0) return 'Initializing...';
+    
+    // Only rebuild content if dirty
+    if (_viewDirty) {
+      _rebuildView();
+      _viewDirty = false;
+    }
+    
+    // Only apply debug overlay when enabled (it shows live metrics)
+    if (debugOverlay.enabled) {
+      return debugOverlay.compose(_cachedView);
+    }
+    return _cachedView;
+  }
 }
 
 void main() async {

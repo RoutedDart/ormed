@@ -4,6 +4,7 @@ import 'package:artisanal/uv.dart';
 
 
 
+// #region uv_basic_usage
 void main() async {
   final terminal = Terminal();
 
@@ -54,3 +55,4 @@ void main() async {
     await terminal.stop();
   }
 }
+// #endregion

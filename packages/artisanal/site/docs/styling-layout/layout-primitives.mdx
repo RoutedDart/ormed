@@ -8,48 +8,26 @@ Artisanal provides several primitives for combining and aligning multiple styled
 
 Joins multiple strings horizontally. You can specify the vertical alignment of the strings.
 
-```dart
-final output = joinHorizontal([
-  style1.render('Left'),
-  style2.render('Middle'),
-  style3.render('Right'),
-], align: VerticalAlign.top);
+```dart file=../../../example/fluent_style_example.dart#layout_horizontal
 ```
 
 ### `joinVertical`
 
 Joins multiple strings vertically. You can specify the horizontal alignment of the strings.
 
-```dart
-final output = joinVertical([
-  'Header',
-  'Content',
-  'Footer',
-], align: HorizontalAlign.center);
+```dart file=../../../example/fluent_style_example.dart#layout_vertical
 ```
 
 ## Alignment
 
 The `align` and `alignVertical` methods on `Style` allow you to position text within a fixed-size box.
 
-```dart
-final box = Style()
-  .width(20)
-  .height(5)
-  .align(HorizontalAlign.center)
-  .alignVertical(VerticalAlign.center)
-  .border(Border.normal);
-
-print(box.render('Centered Text'));
+```dart file=../../../example/doc_examples.dart#alignment_usage_example
 ```
 
 ## Stacking
 
 The `stack` function allows you to overlay multiple strings on top of each other (useful for backgrounds or watermarks).
 
-```dart
-final output = stack([
-  background,
-  foreground,
-]);
+```dart file=../../../example/doc_examples.dart#stack_example
 ```

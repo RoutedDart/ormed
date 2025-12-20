@@ -4,26 +4,7 @@ The `TextInput` bubble provides a single-line text entry field with support for 
 
 ## Basic Usage
 
-```dart
-import 'package:artisanal/tui.dart';
-import 'package:artisanal/bubbles.dart';
-
-class MyModel implements Model {
-  TextInputModel input = TextInputModel(placeholder: 'Enter your name...');
-
-  @override
-  Cmd? init() => TextInputModel.focus(input);
-
-  @override
-  (Model, Cmd?) update(Msg msg) {
-    final (newInput, cmd) = input.update(msg);
-    input = newInput;
-    return (this, cmd);
-  }
-
-  @override
-  String view() => 'Name: ${input.view()}';
-}
+```dart file=../../../example/tui/examples/textinput/main.dart#text_input_usage
 ```
 
 ## Features

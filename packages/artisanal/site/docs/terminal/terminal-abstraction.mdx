@@ -20,12 +20,5 @@ The `Terminal` interface defines common operations:
 
 ## Usage
 
-```dart
-import 'package:artisanal/terminal.dart';
-
-final terminal = StdioTerminal();
-terminal.hideCursor();
-terminal.write(Ansi.clearScreen);
-// ...
-terminal.showCursor();
+```dart file=../../../example/uv/helloworld.dart#uv_basic_usage
 ```

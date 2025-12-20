@@ -25,15 +25,7 @@ Artisanal provides several built-in message types:
 
 You can define your own messages to represent application-specific events:
 
-```dart
-class IncrementMsg extends Msg {
-  const IncrementMsg();
-}
-
-class UserDataReceivedMsg extends Msg {
-  final UserData data;
-  const UserDataReceivedMsg(this.data);
-}
+```dart file=../../../example/tui/examples/simple/main.dart#custom_msg
 ```
 
 ## Message Flow

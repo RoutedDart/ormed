@@ -25,8 +25,5 @@ UV tracks the current terminal style (colors, bold, etc.) and only sends style c
 
 The `Program` runtime can be configured with a target FPS (default is 60). This prevents the application from consuming excessive CPU by rendering more frames than necessary.
 
-```dart
-options: ProgramOptions(
-  fps: 30, // Limit to 30 FPS
-)
+```dart file=../../../example/tui/counter.dart#fps_optimization_usage
 ```

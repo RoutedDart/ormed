@@ -28,38 +28,19 @@ Artisanal comes with several built-in themes:
 
 You can use the theme colors in your styles:
 
-```dart
-final theme = ThemePalette.nord;
-
-final titleStyle = Style()
-    .foreground(theme.primary)
-    .background(theme.background)
-    .bold();
-
-final errorStyle = Style().foreground(theme.error);
+```dart file=../../../example/doc_examples.dart#theme_usage_example
 ```
 
 ## Adaptive Colors
 
 Themes use `AdaptiveColor`, which can automatically switch between light and dark variants based on the terminal's color profile.
 
-```dart
-final adaptiveColor = AdaptiveColor(
-  light: Color.black,
-  dark: Color.white,
-);
+```dart file=../../../example/doc_examples.dart#adaptive_color_example
 ```
 
 ## Custom Themes
 
 You can create your own `ThemePalette`:
 
-```dart
-final myTheme = ThemePalette(
-  primary: Color.hex('#ff00ff'),
-  secondary: Color.hex('#00ffff'),
-  background: Color.black,
-  foreground: Color.white,
-  // ...
-);
+```dart file=../../../example/doc_examples.dart#custom_theme_example
 ```

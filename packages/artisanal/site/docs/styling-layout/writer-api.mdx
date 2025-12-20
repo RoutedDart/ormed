@@ -18,11 +18,5 @@ The `Sprint` family of functions returns the styled string instead of printing i
 
 ## Usage
 
-```dart
-import 'package:artisanal/style.dart';
-
-Println(Style().bold().render("Important Message"));
-
-final msg = Sprintf("User %s logged in", ["admin"]);
-Println(Style().foreground(Colors.green).render(msg));
+```dart file=../../../example/fluent_style_example.dart#writer_usage
 ```

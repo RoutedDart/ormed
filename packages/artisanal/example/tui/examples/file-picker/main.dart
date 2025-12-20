@@ -12,6 +12,7 @@ class ClearErrorMsg extends tui.Msg {
 tui.Cmd _clearErrorAfter(Duration d) =>
     tui.Cmd.tick(d, (_) => const ClearErrorMsg());
 
+// #region file_picker_usage
 class FilePickerExampleModel implements tui.Model {
   FilePickerExampleModel({
     required this.filepicker,
@@ -105,6 +106,7 @@ class FilePickerExampleModel implements tui.Model {
     return buffer.toString();
   }
 }
+// #endregion
 
 tui.Cmd? _batch(List<tui.Cmd?> cmds) {
   final filtered = cmds.whereType<tui.Cmd>().toList();

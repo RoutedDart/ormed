@@ -8,22 +8,17 @@ The `Color` class is the base for all colors in Artisanal.
 
 ### Basic Colors (16 colors)
 
-```dart
-final red = BasicColor.red;
-final brightBlue = BasicColor.brightBlue;
+```dart file=../../../example/doc_examples.dart#basic_color_example
 ```
 
 ### ANSI Colors (256 colors)
 
-```dart
-final orange = AnsiColor(208);
+```dart file=../../../example/doc_examples.dart#ansi_color_example
 ```
 
 ### TrueColor (RGB)
 
-```dart
-final custom = Color.rgb(255, 100, 50);
-final hex = Color.hex('#ff6432');
+```dart file=../../../example/doc_examples.dart#true_color_example
 ```
 
 ## Color Profiles
@@ -39,11 +34,7 @@ Artisanal can automatically detect the terminal's color capabilities and downgra
 
 `AdaptiveColor` allows you to define different colors for light and dark terminal backgrounds.
 
-```dart
-final text = AdaptiveColor(
-  light: Color.black,
-  dark: Color.white,
-);
+```dart file=../../../example/fluent_style_example.dart#adaptive_colors
 ```
 
 ## Predefined Colors

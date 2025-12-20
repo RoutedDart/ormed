@@ -6,6 +6,7 @@ import 'package:artisanal/src/uv/layer.dart';
 import 'package:artisanal/src/uv/styled_string.dart';
 import 'package:image/image.dart' as img;
 
+// #region compositor_usage
 void main() {
   final io = Console(
     out: (s) => stdout.write(s),
@@ -40,3 +41,4 @@ void main() {
   io.write(canvas.render());
   io.write('\nDone.\n');
 }
+// #endregion

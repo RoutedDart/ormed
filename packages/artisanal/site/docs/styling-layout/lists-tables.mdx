@@ -6,31 +6,14 @@ Artisanal provides utilities for rendering structured data like lists and tables
 
 The `LipList` class allows you to create styled bulleted or numbered lists.
 
-```dart
-final list = LipList([
-  'First item',
-  'Second item',
-  'Third item',
-])
-.enumerator(ListEnumerators.bullet)
-.style(Style().foreground(Colors.cyan));
-
-print(list.render());
+```dart file=../../../example/doc_examples.dart#lipgloss_list_example
 ```
 
 ## Tables
 
 The `Table` class (from `style.dart`) is used for rendering static data in a grid.
 
-```dart
-final table = Table()
-  .header(['ID', 'Name', 'Status'])
-  .row(['1', 'Kasm', 'Running'])
-  .row(['2', 'Vault', 'Stopped'])
-  .border(Border.rounded)
-  .style(Style().padding(0, 1));
-
-print(table.render());
+```dart file=../../../example/doc_examples.dart#lipgloss_table_example
 ```
 
 Note: For interactive tables in a TUI, use the `TableModel` from `bubbles.dart`.

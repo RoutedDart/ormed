@@ -22,13 +22,5 @@ When mouse tracking is enabled, the decoder produces `MouseMsg` events:
 
 The `EventDecoder` (from `uv.dart`) is the low-level engine used by the TUI runtime to handle input. It supports advanced protocols like the Kitty Keyboard Protocol for disambiguated key events.
 
-```dart
-final decoder = EventDecoder();
-final events = decoder.decode(bytes);
-
-for (final event in events) {
-  if (event is KeyEvent) {
-    print('Key pressed: ${event.key}');
-  }
-}
+```dart file=../../../example/tui/examples/uv-input/main.dart#input_decoding_usage
 ```

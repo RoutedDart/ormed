@@ -19,7 +19,7 @@ function HomepageHeader() {
         <div className={styles.buttons}>
           <Link
             className="button button--secondary button--lg"
-            to="/docs/">
+            to="/docs/intro">
             Get Started →
           </Link>
         </div>
@@ -35,28 +35,28 @@ function FeatureList() {
         <div className="row">
           <div className="col col--4">
             <div className="text--center padding-horiz--md">
-              <h3>Type-Safe</h3>
+              <h3>Polished I/O</h3>
               <p>
-                Compile-time type checking with generated code ensures your
-                database operations are safe and refactorable.
+                Laravel-style console output with titles, sections, and semantic blocks
+                for building professional CLI tools.
               </p>
             </div>
           </div>
           <div className="col col--4">
             <div className="text--center padding-horiz--md">
-              <h3>Fluent API</h3>
+              <h3>Interactive TUIs</h3>
               <p>
-                Eloquent-inspired query builder with chainable methods for
-                intuitive database interactions.
+                Built on the Elm Architecture (TEA) for complex, stateful terminal
+                applications with reusable components.
               </p>
             </div>
           </div>
           <div className="col col--4">
             <div className="text--center padding-horiz--md">
-              <h3>Multi-Database</h3>
+              <h3>Fluent Styling</h3>
               <p>
-                Write once, run anywhere with support for SQLite, PostgreSQL,
-                and MySQL through driver adapters.
+                Lip Gloss-inspired styling system with a chainable API for
+                beautiful terminal layouts and colors.
               </p>
             </div>
           </div>
@@ -71,7 +71,7 @@ export default function Home(): ReactNode {
   return (
     <Layout
       title="Home"
-      description="A strongly-typed ORM for Dart">
+      description="A sophisticated TUI framework for Dart">
       <HomepageHeader />
       <main>
         <FeatureList />

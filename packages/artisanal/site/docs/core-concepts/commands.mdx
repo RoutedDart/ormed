@@ -26,33 +26,19 @@ Artisanal provides several built-in commands:
 
 You can create custom commands to perform any asynchronous task:
 
-```dart
-Cmd fetchData() {
-  return Cmd(() async {
-    try {
-      final data = await api.getData();
-      return DataReceivedMsg(data);
-    } catch (e) {
-      return ErrorMsg(e.toString());
-    }
-  });
-}
+```dart file=../../../example/doc_examples.dart#custom_cmd_example
 ```
 
 ## Batching Commands
 
 If you need to run multiple commands at once, use `Cmd.batch`:
 
-```dart
-@override
-(Model, Cmd?) update(Msg msg) {
-  return (this, Cmd.batch([
-    saveData(),
-    startTimer(),
-  ]));
-}
+```dart file=../../../example/doc_examples.dart#batch_cmd_example
 ```
 
 ## The `init` Command
 
 The `init` method of your model returns the initial command to run when the application starts. This is often used to trigger initial data loading or start background processes.
+
+```dart file=../../../example/tui/examples/simple/main.dart#cmd_tick
+```

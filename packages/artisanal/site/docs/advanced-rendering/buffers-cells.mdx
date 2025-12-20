@@ -14,14 +14,7 @@ A `Cell` represents a single character position on the terminal. It contains:
 
 A `Buffer` is a 2D grid of cells. UV uses two buffers: the "current" buffer (what is currently on the screen) and the "next" buffer (what we want to display).
 
-```dart
-final buffer = Buffer(width: 80, height: 24);
-
-// Set a cell at (x, y)
-buffer.setCell(10, 5, Cell(
-  content: 'A',
-  style: UvStyle(fg: UvColor.ansi(1)),
-));
+```dart file=../../../example/uv/helloworld.dart#uv_basic_usage
 ```
 
 ## Wide Characters

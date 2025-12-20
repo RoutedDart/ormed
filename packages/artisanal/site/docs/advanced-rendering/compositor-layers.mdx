@@ -12,31 +12,14 @@ A `Layer` is an independent drawing surface with its own:
 - **Opacity**: Supports transparency (if the terminal supports it or via blending).
 - **Drawable**: A function or object that knows how to render into the layer's buffer.
 
-```dart
-final layer = Layer(
-  id: 'sidebar',
-  x: 0,
-  y: 0,
-  width: 20,
-  height: 24,
-  z: 10,
-);
+```dart file=../../../example/doc_examples.dart#layer_example
 ```
 
 ## The Compositor
 
 The `Compositor` maintains a list of layers and handles the rendering process.
 
-```dart
-final compositor = Compositor(width: 80, height: 24);
-
-// Add layers
-compositor.addLayer(backgroundLayer);
-compositor.addLayer(sidebarLayer);
-compositor.addLayer(modalLayer);
-
-// Render all layers into a target buffer
-compositor.render(targetBuffer);
+```dart file=../../../example/doc_examples.dart#compositor_example
 ```
 
 ## Benefits of Composition
