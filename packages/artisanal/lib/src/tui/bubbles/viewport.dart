@@ -1098,7 +1098,14 @@ class ViewportModel extends ViewComponent {
         .height(contentHeight)
         .render(contents);
 
-    return style.unsetWidth().unsetHeight().render(contents);
+    var rendered = style.unsetWidth().unsetHeight().render(contents);
+    // Defensive: ensure we don't leak any active SGR state to whatever gets
+    // rendered after this component (e.g. when wrapping + height truncation
+    // drops a trailing reset).
+    if (rendered.contains(Ansi.escape)) {
+      rendered = '$rendered${Ansi.reset}';
+    }
+    return rendered;
   }
 
   static int _findLongestLineWidth(List<String> lines) {

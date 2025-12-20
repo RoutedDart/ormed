@@ -361,8 +361,8 @@ class _KitchenSinkModel extends tui.Model {
   @override
   String view() {
     final header = _renderHeader();
-    // +1 for the newline added by join('\n') between header and body.
-    _headerLines = header.split('\n').length + 1;
+    // Header line count (0-based mouse rows subtract this to get page-relative y).
+    _headerLines = header.split('\n').length;
 
     final footer = _showHelp ? _renderHelp() : '';
     _footerLines = footer.isEmpty ? 0 : footer.split('\n').length;

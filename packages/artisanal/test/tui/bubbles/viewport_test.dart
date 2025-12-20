@@ -141,6 +141,24 @@ void main() {
         final view = viewport.view();
         expect(view, contains('[1] '));
       });
+
+      test('view terminates ANSI when wrapping + height truncates', () {
+        // Regression: when a styled segment spans wrapped lines, height
+        // truncation can drop the trailing reset; the viewport output must not
+        // leak styles into subsequent renders.
+        var viewport = ViewportModel(width: 10, height: 1).setContent(
+          'this is a very long selected line that will wrap',
+        );
+        // Select the entire first (and only) content line.
+        viewport = viewport.copyWith(
+          selectionStart: (0, 0),
+          selectionEnd: (Style.visibleLength(viewport.lines.first), 0),
+        );
+
+        final view = viewport.view();
+        expect(view, contains('\x1b[')); // selection styling emits SGR codes
+        expect(view, endsWith(Ansi.reset));
+      });
     });
 
     group('HorizontalStep', () {
