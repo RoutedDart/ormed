@@ -20,6 +20,7 @@
 /// - `package:artisanal/args.dart`: Command-line argument parsing and runners.
 /// - `package:artisanal/style.dart`: Full Lip Gloss-style styling system.
 /// - `package:artisanal/tui.dart`: Interactive TUI framework (Elm Architecture).
+/// - `package:artisanal/bubbles.dart`: Reusable interactive TUI components.
 /// - `package:artisanal/uv.dart`: Low-level cell-buffer rendering engine.
 library artisanal;
 
