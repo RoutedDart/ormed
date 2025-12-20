@@ -1,0 +1,53 @@
+# Table
+
+The `Table` bubble provides an interactive data grid with support for columns, rows, selection, and custom styling.
+
+## Basic Usage
+
+```dart
+import 'package:artisanal/tui.dart';
+import 'package:artisanal/bubbles.dart';
+
+class MyModel implements Model {
+  late TableModel table;
+
+  MyModel() {
+    table = TableModel(
+      columns: [
+        Column(title: 'ID', width: 5),
+        Column(title: 'Name', width: 20),
+        Column(title: 'Status', width: 10),
+      ],
+      rows: [
+        ['1', 'Project A', 'Active'],
+        ['2', 'Project B', 'Pending'],
+        ['3', 'Project C', 'Completed'],
+      ],
+    );
+  }
+
+  @override
+  Cmd? init() => null;
+
+  @override
+  (Model, Cmd?) update(Msg msg) {
+    final (newTable, cmd) = table.update(msg);
+    table = newTable;
+    return (this, cmd);
+  }
+
+  @override
+  String view() => table.view();
+}
+```
+
+## Features
+
+- **Selection**: Navigate through rows using arrow keys.
+- **Custom Rendering**: Define how cells are rendered based on their content.
+- **Styling**: Customize headers, borders, and selected row styles.
+- **Dynamic Data**: Easily add, remove, or update rows and columns.
+
+## Example
+
+See the [table_demo.dart](https://github.com/kingwill101/ormed/blob/main/packages/artisanal/example/tui/table_demo.dart) for a complete example.

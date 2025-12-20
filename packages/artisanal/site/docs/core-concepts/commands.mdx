@@ -1,0 +1,58 @@
+# Commands
+
+Commands (`Cmd`) are used to perform asynchronous operations and side effects in Artisanal. They are returned by the `init` and `update` methods.
+
+## The Cmd Class
+
+A `Cmd` is essentially a wrapper around a function that returns a `Future<Msg?>`.
+
+```dart
+class Cmd {
+  final Future<Msg?> Function() execute;
+  // ...
+}
+```
+
+## Built-in Commands
+
+Artisanal provides several built-in commands:
+
+- **Cmd.quit()**: Exits the application.
+- **Cmd.tick(duration, callback)**: Triggers a message after a certain duration.
+- **Cmd.batch(commands)**: Runs multiple commands in parallel.
+- **Cmd.none()**: Does nothing.
+
+## Custom Commands
+
+You can create custom commands to perform any asynchronous task:
+
+```dart
+Cmd fetchData() {
+  return Cmd(() async {
+    try {
+      final data = await api.getData();
+      return DataReceivedMsg(data);
+    } catch (e) {
+      return ErrorMsg(e.toString());
+    }
+  });
+}
+```
+
+## Batching Commands
+
+If you need to run multiple commands at once, use `Cmd.batch`:
+
+```dart
+@override
+(Model, Cmd?) update(Msg msg) {
+  return (this, Cmd.batch([
+    saveData(),
+    startTimer(),
+  ]));
+}
+```
+
+## The `init` Command
+
+The `init` method of your model returns the initial command to run when the application starts. This is often used to trigger initial data loading or start background processes.

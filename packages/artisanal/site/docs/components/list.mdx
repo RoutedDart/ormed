@@ -1,0 +1,49 @@
+# List
+
+The `List` bubble provides a filterable list of items with support for selection, pagination, and custom item rendering.
+
+## Basic Usage
+
+```dart
+import 'package:artisanal/tui.dart';
+import 'package:artisanal/bubbles.dart';
+
+class MyModel implements Model {
+  late ListModel list;
+
+  MyModel() {
+    list = ListModel(
+      items: [
+        ListItem(title: 'Item 1', description: 'Description for item 1'),
+        ListItem(title: 'Item 2', description: 'Description for item 2'),
+        ListItem(title: 'Item 3', description: 'Description for item 3'),
+      ],
+    );
+  }
+
+  @override
+  Cmd? init() => null;
+
+  @override
+  (Model, Cmd?) update(Msg msg) {
+    final (newList, cmd) = list.update(msg);
+    list = newList;
+    return (this, cmd);
+  }
+
+  @override
+  String view() => list.view();
+}
+```
+
+## Features
+
+- **Filtering**: Built-in support for fuzzy filtering of items.
+- **Pagination**: Automatically handles large lists with pagination.
+- **Custom Items**: Define custom rendering for list items.
+- **Key Bindings**: Standard navigation keys (Up/Down, Enter to select).
+- **Status Bar**: Displays current selection and filter status.
+
+## Example
+
+See the [list_demo.dart](https://github.com/kingwill101/ormed/blob/main/packages/artisanal/example/tui/list_demo.dart) for a complete example.

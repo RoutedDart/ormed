@@ -1,0 +1,47 @@
+# Compositor & Layers
+
+The `Compositor` is a high-level API in Ultraviolet that manages multiple overlapping `Layer`s and blends them into a single output buffer.
+
+## Layers
+
+A `Layer` is an independent drawing surface with its own:
+- **ID**: A unique identifier.
+- **Position**: (x, y) coordinates relative to the compositor.
+- **Size**: Width and height.
+- **Z-Index**: Determines the stacking order (higher values are on top).
+- **Opacity**: Supports transparency (if the terminal supports it or via blending).
+- **Drawable**: A function or object that knows how to render into the layer's buffer.
+
+```dart
+final layer = Layer(
+  id: 'sidebar',
+  x: 0,
+  y: 0,
+  width: 20,
+  height: 24,
+  z: 10,
+);
+```
+
+## The Compositor
+
+The `Compositor` maintains a list of layers and handles the rendering process.
+
+```dart
+final compositor = Compositor(width: 80, height: 24);
+
+// Add layers
+compositor.addLayer(backgroundLayer);
+compositor.addLayer(sidebarLayer);
+compositor.addLayer(modalLayer);
+
+// Render all layers into a target buffer
+compositor.render(targetBuffer);
+```
+
+## Benefits of Composition
+
+- **Modularity**: Each part of your UI can be managed as a separate layer.
+- **Efficiency**: Only layers that have changed need to be re-rendered.
+- **Overlays**: Easily implement popups, tooltips, and modals by placing them on higher Z-indexed layers.
+- **Clipping**: Layers automatically clip their content to their defined boundaries.

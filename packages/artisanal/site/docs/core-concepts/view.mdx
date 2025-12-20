@@ -1,0 +1,49 @@
+# View
+
+The `view` function is responsible for rendering your `Model` into a visual representation. In Artisanal, this is typically a `String` that will be printed to the terminal.
+
+## The View Signature
+
+```dart
+String view()
+```
+
+## Rendering Strings
+
+The simplest view returns a plain string:
+
+```dart
+@override
+String view() => 'Hello, Artisanal!';
+```
+
+## Using Styles
+
+You can use the `Style` API to add colors, borders, and padding to your view:
+
+```dart
+@override
+String view() {
+  final style = Style().foreground(Color.blue).bold();
+  return style.render('Hello, Styled World!');
+}
+```
+
+## Layout Primitives
+
+Artisanal provides layout primitives like `joinHorizontal` and `joinVertical` to combine multiple strings:
+
+```dart
+@override
+String view() {
+  return joinVertical([
+    'Header',
+    joinHorizontal(['Left Column', 'Right Column']),
+    'Footer',
+  ]);
+}
+```
+
+## Advanced Rendering (UV)
+
+For more complex UIs, you can use the **Ultraviolet (UV)** renderer, which provides a cell-buffer based approach with layers and compositing. See the [Advanced Rendering](../advanced-rendering/overview) section for more details.

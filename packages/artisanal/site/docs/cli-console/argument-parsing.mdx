@@ -1,0 +1,52 @@
+# Argument Parsing
+
+Artisanal provides a powerful command-line argument parsing system built on top of `package:args`. It adds support for nested commands, automatic help generation with Lip Gloss styling, and integration with the `Console`.
+
+## CommandRunner
+
+The `CommandRunner` is the main class for managing commands and subcommands.
+
+```dart
+import 'package:artisanal/args.dart';
+
+void main(List<String> args) {
+  final runner = CommandRunner('my-cli', 'A sophisticated CLI tool');
+  
+  runner.addCommand(BuildCommand());
+  runner.addCommand(DeployCommand());
+  
+  runner.run(args);
+}
+```
+
+## Defining Commands
+
+To create a command, extend the `Command` class.
+
+```dart
+class BuildCommand extends Command {
+  @override
+  String get name => 'build';
+
+  @override
+  String get description => 'Build the project';
+
+  BuildCommand() {
+    argParser.addFlag('release', abbr: 'r', help: 'Build in release mode');
+  }
+
+  @override
+  void run() {
+    final isRelease = argResults?['release'] as bool;
+    print('Building in ${isRelease ? 'release' : 'debug'} mode...');
+  }
+}
+```
+
+## Automatic Help
+
+Artisanal automatically generates beautiful, styled help messages for your CLI.
+
+```bash
+$ my-cli --help
+```
