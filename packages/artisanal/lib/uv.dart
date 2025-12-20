@@ -56,5 +56,6 @@ export 'src/uv/geometry.dart' show Position, Rectangle, rect;
 export 'src/uv/capabilities.dart' show TerminalCapabilities;
 export 'src/uv/styled_string.dart' show StyledString, newStyledString,LinkState,StyleState,readLink,readStyle;
 export 'src/uv/layer.dart' show Layer, Compositor, newLayer,LayerHit;
+export 'src/uv/canvas.dart' show Canvas;
 export 'src/uv/layout.dart' show splitHorizontal, splitVertical, Fixed, Percent;
 export 'src/uv/screen.dart' show Screen;

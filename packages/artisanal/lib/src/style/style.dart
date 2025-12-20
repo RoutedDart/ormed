@@ -26,6 +26,8 @@ import 'border.dart';
 import 'blending.dart' as blend;
 import 'color.dart';
 import 'properties.dart';
+import '../layout/layout.dart';
+import '../renderer/renderer.dart';
 import '../terminal/ansi.dart';
 import '../unicode/grapheme.dart' as uni;
 import '../uv/wrap.dart' as uv_wrap;
@@ -1889,6 +1891,30 @@ class Style {
     return _renderComposed(content);
   }
 
+  /// Renders the given text using the settings from the provided [renderer].
+  ///
+  /// This method temporarily updates this style's [colorProfile] and
+  /// [hasDarkBackground] to match the [renderer], renders the text, and then
+  /// restores the original settings.
+  ///
+  /// The rendered text is also written to the [renderer].
+  String renderTo(Renderer renderer, [Object? text]) {
+    final oldProfile = colorProfile;
+    final oldDark = hasDarkBackground;
+
+    colorProfile = renderer.colorProfile;
+    hasDarkBackground = renderer.hasDarkBackground;
+
+    try {
+      final result = render(text);
+      renderer.write(result);
+      return result;
+    } finally {
+      colorProfile = oldProfile;
+      hasDarkBackground = oldDark;
+    }
+  }
+
   String _renderComposed(String text) {
     text = _applyConsoleTags(text);
 
@@ -2253,6 +2279,12 @@ class Style {
   static int visibleLength(String text) {
     return Ansi.visibleLength(text);
   }
+
+  /// Stacks multiple blocks of text on top of each other.
+  ///
+  /// Higher layers (later in the list) overlay lower layers. Spaces in higher
+  /// layers are treated as transparent, allowing the layer below to show through.
+  static String stack(List<String> blocks) => Layout.stack(blocks);
 
   int _getMaxLineWidth(List<String> lines) {
     if (lines.isEmpty) return 0;

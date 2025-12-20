@@ -27,6 +27,8 @@
 /// ```
 library;
 
+import 'dart:math' as math;
+
 import '../terminal/ansi.dart';
 import '../style/properties.dart';
 import '../style/color.dart';
@@ -707,4 +709,71 @@ class Layout {
   static String wrapLines(String content, int maxWidth) {
     return content.split('\n').map((l) => wrap(l, maxWidth)).join('\n');
   }
-}
+  /// Stacks multiple blocks of text on top of each other.
+  ///
+  /// Higher layers (later in the list) overlay lower layers. Spaces in higher
+  /// layers are treated as transparent, allowing the layer below to show through.
+  ///
+  /// ```dart
+  /// final result = Layout.stack([background, foreground]);
+  /// ```
+  static String stack(List<String> blocks) {
+    if (blocks.isEmpty) return '';
+    if (blocks.length == 1) return blocks.first;
+
+    // Split each block into lines
+    final allLines = blocks.map((b) => b.split('\n')).toList();
+
+    // Find the maximum dimensions
+    var maxWidth = 0;
+    var maxHeight = 0;
+    for (final lines in allLines) {
+      if (lines.length > maxHeight) maxHeight = lines.length;
+      for (final line in lines) {
+        final w = visibleLength(line);
+        if (w > maxWidth) maxWidth = w;
+      }
+    }
+
+    // Initialize the result buffer with the first block (padded)
+    final resultLines = List<String>.filled(maxHeight, '');
+    for (var i = 0; i < maxHeight; i++) {
+      final line = i < allLines[0].length ? allLines[0][i] : '';
+      resultLines[i] = pad(line, maxWidth);
+    }
+
+    // Overlay subsequent blocks
+    for (var b = 1; b < allLines.length; b++) {
+      final lines = allLines[b];
+      for (var i = 0; i < maxHeight; i++) {
+        if (i >= lines.length) continue;
+        resultLines[i] = _overlayLine(resultLines[i], lines[i]);
+      }
+    }
+
+    return resultLines.join('\n');
+  }
+
+  /// Overlays [top] onto [bottom]. Spaces in [top] are transparent.
+  static String _overlayLine(String bottom, String top) {
+    final bottomGraphemes = uni.graphemes(bottom).toList();
+    final topGraphemes = uni.graphemes(top).toList();
+
+    final result = <String>[];
+    final len = math.max(bottomGraphemes.length, topGraphemes.length);
+
+    for (var i = 0; i < len; i++) {
+      final b = i < bottomGraphemes.length ? bottomGraphemes[i] : ' ';
+      final t = i < topGraphemes.length ? topGraphemes[i] : ' ';
+
+      // If top is a space (and not part of an ANSI sequence), use bottom
+      // Note: This is a simplified check. Proper ANSI-aware stacking is complex.
+      if (t == ' ' || t == '\t') {
+        result.add(b);
+      } else {
+        result.add(t);
+      }
+    }
+
+    return result.join('');
+  }}

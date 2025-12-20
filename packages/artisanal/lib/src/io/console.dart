@@ -266,6 +266,20 @@ class Console {
   void caution(Object message) =>
       _labeledBlock('CAUTION', message, _style.bold().foreground(Colors.error));
 
+  /// Outputs a verbose message (only if verbosity >= verbose).
+  void verbose(Object message) {
+    if (verbosity.index >= Verbosity.verbose.index) {
+      _labeledBlock('VERBOSE', message, _style.bold().foreground(Colors.muted));
+    }
+  }
+
+  /// Outputs a debug message (only if verbosity >= debug).
+  void debug(Object message) {
+    if (verbosity.index >= Verbosity.debug.index) {
+      _labeledBlock('DEBUG', message, _style.bold().foreground(Colors.muted));
+    }
+  }
+
   /// Outputs an alert box.
   void alert(Object message) {
     final warningStyle = _style.bold().foreground(Colors.warning);
@@ -637,4 +651,16 @@ String _formatDuration(Duration duration) {
   if (ms < 1000) return '${ms}ms';
   final seconds = ms / 1000;
   return '${seconds.toStringAsFixed(seconds < 10 ? 1 : 0)}s';
+}
+
+/// Extension to allow [DisplayComponent]s to be written directly to a [Console].
+extension DisplayComponentExtension on DisplayComponent {
+  /// Renders the component and writes it to the console.
+  void writelnTo(Console io) {
+    final output = render();
+    if (output.isEmpty) return;
+    for (final line in output.split('\n')) {
+      io.writeln(line);
+    }
+  }
 }

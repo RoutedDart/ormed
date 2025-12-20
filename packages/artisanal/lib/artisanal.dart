@@ -27,7 +27,7 @@ library artisanal;
 import 'src/io/console.dart' show Console;
 
 // I/O
-export 'src/io/console.dart' show Console, TaskResult;
+export 'src/io/console.dart';
 
 export 'src/io/components.dart' show Components;
 export 'src/io/validators.dart' show Validators;
