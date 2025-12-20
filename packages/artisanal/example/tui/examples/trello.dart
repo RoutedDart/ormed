@@ -6,10 +6,12 @@ library;
 
 import 'dart:math' as math;
 
-import 'package:artisanal/artisanal.dart' show AnsiColor, Style;
+import 'package:artisanal/style.dart'
+    show Colors, Style, ThemePalette, Color, NoColor;
 import 'package:artisanal/tui.dart' as tui;
 import 'package:artisanal/src/style/ranges.dart' as ranges;
 import 'package:artisanal/src/tui/view.dart' show View;
+import 'package:artisanal/src/tui/bubbles/debug_overlay.dart';
 import 'package:artisanal/src/uv/uv.dart' as uv;
 
 const _colWidth = 26;
@@ -18,13 +20,7 @@ const _cardPanelHeight = 3;
 const _cardGap = 1;
 const _boardTop = 2;
 
-final _accentColors = <AnsiColor>[
-  const AnsiColor(220), // yellow
-  const AnsiColor(45), // cyan
-  const AnsiColor(213), // magenta
-  const AnsiColor(41), // green
-  const AnsiColor(208), // orange
-];
+// Accents are derived from the active theme palette.
 
 final class _BoardColumn {
   const _BoardColumn({required this.title, required this.cards});
@@ -127,6 +123,8 @@ final class TrelloModel implements tui.Model {
     required this.colScroll,
     required this.drag,
     required this.modal,
+    required this.debug,
+    required this.theme,
   });
 
   factory TrelloModel.initial() {
@@ -164,6 +162,11 @@ final class TrelloModel implements tui.Model {
       colScroll: const [0, 0, 0],
       drag: null,
       modal: null,
+      debug: DebugOverlayModel.initial(
+        title: 'Render Metrics',
+        rendererLabel: 'UV',
+      ),
+      theme: 'dark',
     );
   }
 
@@ -175,6 +178,8 @@ final class TrelloModel implements tui.Model {
   final List<int> colScroll;
   final _DragState? drag;
   final _ModalState? modal;
+  final DebugOverlayModel debug;
+  final String theme;
 
   TrelloModel copyWith({
     List<_BoardColumn>? columns,
@@ -185,6 +190,8 @@ final class TrelloModel implements tui.Model {
     List<int>? colScroll,
     Object? drag = _undefined,
     Object? modal = _undefined,
+    DebugOverlayModel? debug,
+    String? theme,
   }) {
     return TrelloModel(
       columns: columns ?? this.columns,
@@ -195,17 +202,41 @@ final class TrelloModel implements tui.Model {
       colScroll: colScroll ?? this.colScroll,
       drag: drag == _undefined ? this.drag : drag as _DragState?,
       modal: modal == _undefined ? this.modal : modal as _ModalState?,
+      debug: debug ?? this.debug,
+      theme: theme ?? this.theme,
     );
   }
+
+  ThemePalette get _palette => ThemePalette.byName(theme);
+
+  Style _accentBoldStyle() => Style().foreground(_palette.accentBold).bold();
+  Style _textDimStyle() => Style().foreground(_palette.textDim).dim();
+  Style _borderStyle() => Style().foreground(_palette.border).dim();
+
+  List<Color> _accentColors() => [
+        _palette.accent,
+        _palette.info,
+        _palette.highlight,
+        _palette.success,
+        _palette.warning,
+      ];
 
   @override
   tui.Cmd? init() => null;
 
   @override
   (tui.Model, tui.Cmd?) update(tui.Msg msg) {
+    final debugUpdate = debug.update(msg);
+    final nextDebug = debugUpdate.model;
+    if (debugUpdate.consumed) {
+      return (copyWith(debug: nextDebug), debugUpdate.cmd);
+    }
+
     switch (msg) {
       case tui.WindowSizeMsg(:final width, :final height):
-        final base = copyWith(width: width, height: height)._clampScrolls();
+        final base =
+            copyWith(width: width, height: height, debug: nextDebug)
+                ._clampScrolls();
         final m = base.modal;
         if (m == null) return (base, null);
         final nextModal = base._layoutModal(
@@ -213,9 +244,23 @@ final class TrelloModel implements tui.Model {
         );
         return (base.copyWith(modal: nextModal), null);
 
+      case tui.FrameTickMsg():
+        // FrameTickMsg drives the debug overlay updates automatically
+        return (copyWith(debug: nextDebug), null);
+
       case tui.KeyMsg(:final key):
+        if (key.isChar('d') || key.isChar('D')) {
+          final toggled = nextDebug.toggle();
+          return (copyWith(debug: toggled), null);
+        }
+        if (key.isChar('c') || key.isChar('C')) {
+          final themes = ThemePalette.names;
+          final idx = themes.indexOf(theme);
+          final next = themes[(idx + 1) % themes.length];
+          return (copyWith(debug: nextDebug, theme: next), null);
+        }
         if (key.isChar('q') || key == tui.Keys.ctrlC) {
-          return (this, tui.Cmd.quit());
+          return (copyWith(debug: nextDebug), tui.Cmd.quit());
         }
 
         if (modal case final m?) {
@@ -225,7 +270,7 @@ final class TrelloModel implements tui.Model {
         if (key.type == tui.KeyType.escape) {
           // Escape cancels a drag (if any) but does not quit.
           if (drag != null) return (copyWith(drag: null), null);
-          return (this, null);
+          return (copyWith(debug: nextDebug), null);
         }
 
         if (key.type == tui.KeyType.enter || key.isChar(' ')) {
@@ -246,12 +291,9 @@ final class TrelloModel implements tui.Model {
         if (modal case final m?) {
           if (action == tui.MouseAction.press) {
             final next = _modalPress(m, x, y);
-            if (next.modal == null) {
-              return (next, tui.Cmd.clearScreen());
-            }
-            return (next, null);
+            return (next.copyWith(debug: nextDebug), null);
           }
-          return (this, null);
+          return (copyWith(debug: nextDebug), null);
         }
 
         if (action == tui.MouseAction.wheel ||
@@ -264,11 +306,11 @@ final class TrelloModel implements tui.Model {
           (tui.MouseAction.press, tui.MouseButton.left) => (_onMousePress(x, y), null),
           (tui.MouseAction.motion, tui.MouseButton.left) => (_onMouseMotion(x, y), null),
           (tui.MouseAction.release, tui.MouseButton.left) => (_onMouseRelease(x, y), null),
-          _ => (this, null),
+          _ => (copyWith(debug: nextDebug), null),
         };
 
       default:
-        return (this, null);
+        return (copyWith(debug: nextDebug), null);
     }
   }
 
@@ -407,11 +449,7 @@ final class TrelloModel implements tui.Model {
         input: input,
       ),
     );
-    // Force a clear when entering modal mode. This avoids occasional terminal
-    // diff artifacts on some emulators when a large overlay is introduced.
-    final cmds = <tui.Cmd>[tui.Cmd.clearScreen()];
-    if (focusCmd != null) cmds.add(focusCmd);
-    return (copyWith(modal: modal, drag: null), tui.Cmd.batch(cmds));
+    return (copyWith(modal: modal, drag: null), focusCmd);
   }
 
   _ModalState _layoutModal(_ModalState m) {
@@ -426,14 +464,14 @@ final class TrelloModel implements tui.Model {
 
   (tui.Model, tui.Cmd?) _updateModal(_ModalState m, tui.Key key) {
     if (key.type == tui.KeyType.escape) {
-      return (copyWith(modal: null), tui.Cmd.clearScreen());
+      return (copyWith(modal: null), null);
     }
 
     if (key.type == tui.KeyType.enter || key.isEnterLike) {
       final title = m.input.value.trim();
       if (title.isEmpty) return (this, null);
       final updated = _insertCard(m.targetCol, m.insertIndex, title);
-      return (updated.copyWith(modal: null), tui.Cmd.clearScreen());
+      return (updated.copyWith(modal: null), null);
     }
 
     final (nextInput, cmd) = m.input.update(tui.KeyMsg(key));
@@ -446,6 +484,8 @@ final class TrelloModel implements tui.Model {
     if (!inside) return copyWith(modal: null);
     return this;
   }
+
+  
 
   TrelloModel _insertCard(int col, int insertAt, String title) {
     final out = columns.map((c) => c.copyWith(cards: List.of(c.cards))).toList();
@@ -477,8 +517,24 @@ final class TrelloModel implements tui.Model {
   }
 
   TrelloModel _onMousePress(int x, int y) {
+    // Click on column header to focus the column.
+    if (y == _boardTop) {
+      final col = _columnAt(x);
+      if (col != null) {
+        return copyWith(focusCol: col, focusIndex: 0, drag: null)
+            ._ensureFocusVisible();
+      }
+    }
+
     final hit = _hitCardAt(x, y);
-    if (hit == null) return copyWith(drag: null);
+    if (hit == null) {
+      final col = _columnAt(x);
+      if (col != null) {
+        return copyWith(focusCol: col, focusIndex: 0, drag: null)
+            ._ensureFocusVisible();
+      }
+      return copyWith(drag: null);
+    }
 
     final (col, idx) = hit;
     final card = columns[col].cards[idx];
@@ -624,17 +680,17 @@ final class TrelloModel implements tui.Model {
 
   @override
   Object view() {
-    final title = Style()
-        .bold()
-        .foreground(const AnsiColor(45))
-        .render('Trello Board');
-    final help = Style().dim().render(
-      'mouse: drag/drop • tab/shift+tab: column • ↑/↓: move • enter/space: pickup/drop • n: new card • q: quit',
+    final title = _accentBoldStyle().render('Trello Board');
+    final help = _textDimStyle().render(
+      'mouse: drag/drop • tab/shift+tab: column • ↑/↓: move • enter/space: pickup/drop • n: new card • c: theme • d: debug • q: quit',
     );
 
     final base = [title, help, _renderColumns()].join('\n');
     final m = modal;
-    if (m == null) return _padToScreen(base);
+    if (m == null) {
+      final composed = debug.compose(_padToScreen(base));
+      return _padToScreen(composed);
+    }
 
     final (modalPanel, cursor) = _renderModal(m);
     final comp = uv.Compositor([
@@ -645,11 +701,12 @@ final class TrelloModel implements tui.Model {
           .setY(m.y)
           .setZ(10),
     ]);
-    return View(content: _padToScreen(comp.render()), cursor: cursor);
+    final composed = debug.compose(_padToScreen(comp.render()));
+    return View(content: _padToScreen(composed), cursor: cursor);
   }
 
   (String, uv.Cursor?) _renderModal(_ModalState m) {
-    final prompt = Style().dim().render('Enter to add • Esc to cancel');
+    final prompt = _textDimStyle().render('Enter to add • Esc to cancel');
     final inputObj = m.input.view();
     final inputLine = switch (inputObj) {
       View(:final content) => content,
@@ -739,17 +796,25 @@ final class TrelloModel implements tui.Model {
 
   List<String> _renderColumn(int col, int boardH) {
     final isFocusedCol = col == focusCol;
-    final accent = _accentColors[col % _accentColors.length];
-    final headerStyle = Style()
-        .bold()
-        .foreground(const AnsiColor(0))
-        .background(isFocusedCol ? accent : const AnsiColor(238))
-        .padding(0, 1)
-        .width(_colWidth);
+    final accents = _accentColors();
+    final accent = accents[col % accents.length];
+    final headerStyle = isFocusedCol
+        ? Style()
+            .bold()
+            .foreground(Colors.black)
+            .background(accent)
+            .padding(0, 1)
+            .width(_colWidth)
+        : Style()
+            .bold()
+            .foreground(_palette.textBold)
+            .background(_palette.border)
+            .padding(0, 1)
+            .width(_colWidth);
 
     final lines = <String>[
       headerStyle.render(columns[col].title),
-      Style().foreground(const AnsiColor(240)).render('─' * _colWidth),
+      _borderStyle().render('─' * _colWidth),
     ];
 
     final d = drag;
@@ -827,10 +892,14 @@ final class TrelloModel implements tui.Model {
     required bool focused,
     required bool placeholder,
     required bool dropTarget,
-    required AnsiColor accent,
+    required Color accent,
   }) {
-    final fg = focused ? const AnsiColor(15) : const AnsiColor(252);
-    final bg = focused ? const AnsiColor(235) : const AnsiColor(234);
+    final fg = focused ? Colors.black : _palette.text;
+    final bg = focused ? accent : _palette.background;
+    var textStyle = Style().foreground(fg);
+    if (bg != null && bg is! NoColor) {
+      textStyle = textStyle.background(bg);
+    }
     final marker = Style().foreground(accent).render('▌');
 
     final chars = dropTarget
@@ -848,7 +917,7 @@ final class TrelloModel implements tui.Model {
     }
 
     final clipped = _ellipsize(text, _colWidth - 4);
-    final content = Style().foreground(fg).background(bg).render('$marker $clipped');
+    final content = textStyle.render('$marker $clipped');
     return tui.PanelComponent(
       content: content,
       padding: 0,
@@ -879,6 +948,7 @@ Future<void> main(List<String> args) async {
       bracketedPaste: true,
       useUltravioletRenderer: uvRenderer,
       useUltravioletInputDecoder: uvInput,
+      metricsInterval: const Duration(milliseconds: 250),
     ),
   );
 }
