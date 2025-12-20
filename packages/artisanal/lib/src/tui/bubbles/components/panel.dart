@@ -24,6 +24,7 @@ class PanelComponent extends DisplayComponent {
     this.chars = PanelBoxChars.rounded,
     this.padding = 1,
     this.width,
+    this.borderStyle,
     this.renderConfig = const RenderConfig(),
   });
 
@@ -34,14 +35,15 @@ class PanelComponent extends DisplayComponent {
   final PanelBoxCharSet chars;
   final int padding;
   final int? width;
+  final Style? borderStyle;
   final RenderConfig renderConfig;
 
   @override
   String render() {
     final lines = _normalizeLines(content);
-    final borderStyle = renderConfig.configureStyle(Style().dim());
+    final effectiveBorderStyle = renderConfig.configureStyle(borderStyle ?? Style().dim());
     final titleStyle = renderConfig.configureStyle(Style().bold());
-    final border = (String s) => borderStyle.render(s);
+    final border = (String s) => effectiveBorderStyle.render(s);
     final titleFn = (String s) => titleStyle.render(s);
 
     // Calculate width
