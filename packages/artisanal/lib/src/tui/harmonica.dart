@@ -104,6 +104,28 @@ class Spring {
   }
 }
 
+/// A simple friction integrator mirroring harmonica/friction.go.
+class Friction {
+  Friction(this.deltaTime, this.friction) {
+    _coef = math.exp(-friction * deltaTime);
+  }
+
+  final double deltaTime;
+  final double friction;
+  late final double _coef;
+
+  /// Update position/velocity.
+  (double, double) update(double pos, double vel) {
+    final newVel = vel * _coef;
+    // If friction is very small, use linear approximation to avoid division by zero
+    if (friction.abs() < 1e-6) {
+      return (pos + vel * deltaTime, newVel);
+    }
+    final newPos = pos + (vel * (1 - _coef) / friction);
+    return (newPos, newVel);
+  }
+}
+
 /// A simple projectile integrator mirroring harmonica/projectile.go.
 class Projectile {
   Projectile(

@@ -122,6 +122,7 @@ export 'msg.dart'
         ColorProfileMsg,
         InterruptMsg,
         RepaintMsg,
+        RenderMetricsMsg,
         UvEventMsg;
 
 // Terminal theme helper (background/dark-mode)
@@ -175,7 +176,8 @@ export 'renderer.dart'
         BufferedTuiRenderer,
         NullTuiRenderer,
         StringSinkTuiRenderer,
-        TuiTerminalRendererExtension;
+        TuiTerminalRendererExtension,
+        RenderMetrics;
 
 // Program runtime
 export 'program.dart'

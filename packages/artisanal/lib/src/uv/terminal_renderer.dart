@@ -15,6 +15,161 @@ import '../unicode/width.dart';
 import 'package:artisanal/src/colorprofile/detect.dart' as cp_detect;
 import 'package:artisanal/src/colorprofile/profile.dart' as cp;
 
+/// Tracks render performance metrics including FPS, frame times, and render durations.
+///
+/// This class maintains a rolling window of frame samples to calculate
+/// accurate averages and detect performance issues.
+final class RenderMetrics {
+  /// Creates a new [RenderMetrics] instance.
+  ///
+  /// [sampleSize] determines how many frames are kept for averaging (default: 60).
+  RenderMetrics({int sampleSize = 60}) : _sampleSize = sampleSize;
+
+  final int _sampleSize;
+
+  // Frame timing
+  final List<Duration> _frameTimes = [];
+  final List<Duration> _renderTimes = [];
+  DateTime? _lastFrameTime;
+  int _frameCount = 0;
+  int _skippedFrames = 0;
+
+  // Render timing (how long render() takes)
+  Stopwatch? _renderStopwatch;
+  Duration _lastRenderDuration = Duration.zero;
+
+  /// Total number of frames rendered since creation or last reset.
+  int get frameCount => _frameCount;
+
+  /// Number of frames that were skipped (no changes to render).
+  int get skippedFrames => _skippedFrames;
+
+  /// Duration of the last frame (time between renders).
+  Duration get lastFrameTime =>
+      _frameTimes.isEmpty ? Duration.zero : _frameTimes.last;
+
+  /// Duration of the last render() call.
+  Duration get lastRenderDuration => _lastRenderDuration;
+
+  /// Average frame time over the sample window.
+  Duration get averageFrameTime {
+    if (_frameTimes.isEmpty) return Duration.zero;
+    final total = _frameTimes.fold<int>(
+      0,
+      (sum, d) => sum + d.inMicroseconds,
+    );
+    return Duration(microseconds: total ~/ _frameTimes.length);
+  }
+
+  /// Average render duration over the sample window.
+  Duration get averageRenderDuration {
+    if (_renderTimes.isEmpty) return Duration.zero;
+    final total = _renderTimes.fold<int>(
+      0,
+      (sum, d) => sum + d.inMicroseconds,
+    );
+    return Duration(microseconds: total ~/ _renderTimes.length);
+  }
+
+  /// Current FPS based on the last frame time.
+  double get currentFps {
+    final ft = lastFrameTime;
+    if (ft.inMicroseconds == 0) return 0.0;
+    return 1000000.0 / ft.inMicroseconds;
+  }
+
+  /// Average FPS over the sample window.
+  double get averageFps {
+    final avg = averageFrameTime;
+    if (avg.inMicroseconds == 0) return 0.0;
+    return 1000000.0 / avg.inMicroseconds;
+  }
+
+  /// Minimum FPS in the sample window (slowest frame).
+  double get minFps {
+    if (_frameTimes.isEmpty) return 0.0;
+    final maxTime = _frameTimes.reduce(
+      (a, b) => a.inMicroseconds > b.inMicroseconds ? a : b,
+    );
+    if (maxTime.inMicroseconds == 0) return 0.0;
+    return 1000000.0 / maxTime.inMicroseconds;
+  }
+
+  /// Maximum FPS in the sample window (fastest frame).
+  double get maxFps {
+    if (_frameTimes.isEmpty) return 0.0;
+    final minTime = _frameTimes.reduce(
+      (a, b) => a.inMicroseconds < b.inMicroseconds ? a : b,
+    );
+    if (minTime.inMicroseconds == 0) return double.infinity;
+    return 1000000.0 / minTime.inMicroseconds;
+  }
+
+  /// Percentage of time spent in render() vs total frame time.
+  double get renderTimePercentage {
+    final avg = averageFrameTime.inMicroseconds;
+    if (avg == 0) return 0.0;
+    return (averageRenderDuration.inMicroseconds / avg) * 100.0;
+  }
+
+  /// Call this at the start of each frame (before render).
+  void beginFrame() {
+    final now = DateTime.now();
+    if (_lastFrameTime != null) {
+      final frameTime = now.difference(_lastFrameTime!);
+      _frameTimes.add(frameTime);
+      if (_frameTimes.length > _sampleSize) {
+        _frameTimes.removeAt(0);
+      }
+    }
+    _lastFrameTime = now;
+
+    _renderStopwatch = Stopwatch()..start();
+  }
+
+  /// Call this at the end of render().
+  void endFrame({bool skipped = false}) {
+    _frameCount++;
+    if (skipped) {
+      _skippedFrames++;
+    }
+
+    if (_renderStopwatch != null) {
+      _renderStopwatch!.stop();
+      _lastRenderDuration = _renderStopwatch!.elapsed;
+      _renderTimes.add(_lastRenderDuration);
+      if (_renderTimes.length > _sampleSize) {
+        _renderTimes.removeAt(0);
+      }
+    }
+  }
+
+  /// Resets all metrics to initial state.
+  void reset() {
+    _frameTimes.clear();
+    _renderTimes.clear();
+    _lastFrameTime = null;
+    _frameCount = 0;
+    _skippedFrames = 0;
+    _lastRenderDuration = Duration.zero;
+  }
+
+  /// Returns a summary string of current metrics.
+  String summary() {
+    return 'FPS: ${averageFps.toStringAsFixed(1)} '
+        '(${minFps.toStringAsFixed(1)}-${maxFps.toStringAsFixed(1)}) | '
+        'Frame: ${averageFrameTime.inMilliseconds}ms | '
+        'Render: ${averageRenderDuration.inMicroseconds}µs '
+        '(${renderTimePercentage.toStringAsFixed(1)}%) | '
+        'Frames: $_frameCount (skipped: $_skippedFrames)';
+  }
+
+  @override
+  String toString() => 'RenderMetrics(fps: ${averageFps.toStringAsFixed(1)}, '
+      'frameTime: ${averageFrameTime.inMilliseconds}ms, '
+      'renderTime: ${averageRenderDuration.inMicroseconds}µs)';
+}
+
 // Upstream references:
 // - `third_party/ultraviolet/terminal_renderer.go`
 // - `third_party/ultraviolet/terminal_renderer_hardscroll.go`
@@ -100,6 +255,15 @@ final class UvTerminalRenderer {
   final StringBuffer _buf = StringBuffer();
   Buffer? _curbuf;
   late final Screen _screen;
+
+  /// Render performance metrics (FPS, frame times, render durations).
+  ///
+  /// Access this to monitor rendering performance:
+  /// ```dart
+  /// print(renderer.metrics.averageFps);
+  /// print(renderer.metrics.summary());
+  /// ```
+  final RenderMetrics metrics = RenderMetrics();
 
   int width() => _curbuf?.width() ?? 0;
   int height() => _curbuf?.height() ?? 0;
@@ -388,8 +552,13 @@ final class UvTerminalRenderer {
   }
 
   void render(Buffer newbuf) {
+    metrics.beginFrame();
+
     final touchedLines = _touched(newbuf);
-    if (!_clear && touchedLines == 0) return;
+    if (!_clear && touchedLines == 0) {
+      metrics.endFrame(skipped: true);
+      return;
+    }
 
     _curbuf ??= Buffer.create(newbuf.width(), newbuf.height());
 
@@ -483,6 +652,8 @@ final class UvTerminalRenderer {
 
     // Reset pen after rendering to avoid style/link bleed.
     _updatePen(null);
+
+    metrics.endFrame();
   }
 
   // --- Cursor movement ------------------------------------------------------
@@ -892,6 +1063,15 @@ final class UvTerminalRenderer {
 
     // Clear the rest of the line if it can be cleared with EL.
     if (lastBlank != null && _canClearWith(lastBlank)) {
+      // Ensure the cursor is positioned at the first trailing blank cell before
+      // issuing EL. Relying on the cursor position after emitting cells is
+      // incorrect when wide-cell placeholders or phantom-wrap handling affects
+      // cursor advancement, and can leave stale content behind (e.g. when
+      // hiding an overlay).
+      final width = newbuf.width();
+      if (nLast + 1 < width) {
+        _move(newbuf, nLast + 1, y);
+      }
       _clearToEnd(newbuf, lastBlank, false);
     }
 

@@ -76,6 +76,9 @@ export 'filepicker.dart';
 export 'prompt.dart';
 export 'pause.dart';
 
+// Debug helpers
+export 'debug_overlay.dart';
+
 // Interactive selection components
 export 'select.dart';
 export 'password.dart';

@@ -51,10 +51,10 @@ export 'src/uv/event.dart'
 export 'src/uv/mouse.dart' show MouseMode, MouseButton;
 export 'src/uv/border.dart' show UvBorder;
 export 'src/uv/decoder.dart' show EventDecoder, LegacyKeyEncoding;
-export 'src/uv/terminal_renderer.dart' show UvTerminalRenderer;
+export 'src/uv/terminal_renderer.dart' show UvTerminalRenderer, RenderMetrics;
 export 'src/uv/geometry.dart' show Position, Rectangle, rect;
 export 'src/uv/capabilities.dart' show TerminalCapabilities;
-export 'src/uv/styled_string.dart' show StyledString, newStyledString;
-export 'src/uv/layer.dart' show Layer, Compositor;
+export 'src/uv/styled_string.dart' show StyledString, newStyledString,LinkState,StyleState,readLink,readStyle;
+export 'src/uv/layer.dart' show Layer, Compositor, newLayer,LayerHit;
 export 'src/uv/layout.dart' show splitHorizontal, splitVertical, Fixed, Percent;
 export 'src/uv/screen.dart' show Screen;

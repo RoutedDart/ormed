@@ -126,12 +126,14 @@ final class _CompositeLayer {
     required this.absX,
     required this.absY,
     required this.bounds,
+    required this.order,
   });
 
   final Layer layer;
   final int absX;
   final int absY;
   final Rectangle bounds;
+  final int order;
 }
 
 /// Compositor manages layer composition, drawing and hit testing.
@@ -198,6 +200,7 @@ final class Compositor implements Drawable {
     _index.clear();
     _bounds = const Rectangle(minX: 0, minY: 0, maxX: 0, maxY: 0);
 
+    var order = 0;
     void recurse(Layer layer, int parentX, int parentY) {
       final absX = layer.x + parentX;
       final absY = layer.y + parentY;
@@ -210,7 +213,13 @@ final class Compositor implements Drawable {
       );
 
       _layers.add(
-        _CompositeLayer(layer: layer, absX: absX, absY: absY, bounds: bounds),
+        _CompositeLayer(
+          layer: layer,
+          absX: absX,
+          absY: absY,
+          bounds: bounds,
+          order: order++,
+        ),
       );
 
       if (layer.id.isNotEmpty) {
@@ -223,7 +232,14 @@ final class Compositor implements Drawable {
     }
 
     recurse(_root, 0, 0);
-    _layers.sort((a, b) => a.layer.z.compareTo(b.layer.z));
+    // Upstream sorts by z-index. Dart's `sort` is not stable, which can cause
+    // equal z-index layers to reorder across refreshes and produce surprising
+    // draw ordering. Tie-break on traversal order for deterministic layering.
+    _layers.sort((a, b) {
+      final z = a.layer.z.compareTo(b.layer.z);
+      if (z != 0) return z;
+      return a.order.compareTo(b.order);
+    });
 
     if (_layers.isNotEmpty) {
       var b = _layers.first.bounds;

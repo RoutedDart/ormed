@@ -1,4 +1,5 @@
 import '../style/color.dart';
+import '../uv/terminal_renderer.dart' show RenderMetrics;
 import 'key.dart';
 
 /// Base class for all messages in the TUI runtime.
@@ -569,6 +570,40 @@ class RepaintMsg extends Msg {
 
   @override
   String toString() => 'RepaintMsg()';
+}
+
+/// Message sent periodically with renderer performance metrics.
+///
+/// When enabled via [ProgramOptions.metricsInterval], the Program sends
+/// this message at the specified interval with current FPS, frame times,
+/// and render durations.
+///
+/// ## Example
+///
+/// ```dart
+/// @override
+/// (Model, Cmd?) update(Msg msg) {
+///   return switch (msg) {
+///     RenderMetricsMsg(:final metrics) => (
+///       copyWith(
+///         fps: metrics.averageFps,
+///         frameTime: metrics.averageFrameTime,
+///       ),
+///       null,
+///     ),
+///     _ => (this, null),
+///   };
+/// }
+/// ```
+class RenderMetricsMsg extends Msg {
+  /// Creates a render metrics message.
+  const RenderMetricsMsg(this.metrics);
+
+  /// The current render performance metrics.
+  final RenderMetrics metrics;
+
+  @override
+  String toString() => 'RenderMetricsMsg(fps: ${metrics.averageFps.toStringAsFixed(1)})';
 }
 
 /// Message wrapper for custom user-defined messages.

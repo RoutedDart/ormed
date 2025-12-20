@@ -54,9 +54,12 @@ class PanelComponent extends DisplayComponent {
       titleWidth,
       10,
     ].reduce((a, b) => a > b ? a : b);
-    final boxWidth = (width ?? minWidth + padding * 2 + 2).clamp(
-      minWidth + padding * 2 + 2,
-      renderConfig.terminalWidth,
+    // Ensure minBound doesn't exceed maxBound for clamp
+    final minBound = minWidth + padding * 2 + 2;
+    final maxBound = renderConfig.terminalWidth;
+    final boxWidth = (width ?? minBound).clamp(
+      minBound < maxBound ? minBound : maxBound,
+      maxBound,
     );
     final innerWidth = boxWidth - 2;
 
