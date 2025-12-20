@@ -6,6 +6,8 @@ import '../uv/buffer.dart' as uv_buffer;
 import '../uv/styled_string.dart' as uv_styled;
 import '../uv/terminal_renderer.dart' as uv_term;
 
+export '../uv/terminal_renderer.dart' show RenderMetrics;
+
 /// Abstract renderer interface for TUI output.
 ///
 /// Renderers are responsible for displaying the view string
@@ -25,6 +27,9 @@ abstract class TuiRenderer {
 
   /// Disposes of renderer resources.
   void dispose();
+
+  /// Returns render performance metrics, or null if not supported.
+  uv_term.RenderMetrics? get metrics;
 }
 
 /// Options for configuring the renderer.
@@ -82,6 +87,11 @@ class FullScreenTuiRenderer implements TuiRenderer {
   /// Whether the renderer has been initialized.
   bool _initialized = false;
 
+  final uv_term.RenderMetrics _metrics = uv_term.RenderMetrics();
+
+  @override
+  uv_term.RenderMetrics? get metrics => _metrics;
+
   /// Initializes the renderer.
   ///
   /// Sets up the terminal for fullscreen rendering.
@@ -100,6 +110,8 @@ class FullScreenTuiRenderer implements TuiRenderer {
 
   @override
   void render(Object view) {
+    _metrics.beginFrame();
+
     if (!_initialized) {
       initialize();
     }
@@ -118,12 +130,14 @@ class FullScreenTuiRenderer implements TuiRenderer {
       final elapsed = DateTime.now().difference(_lastRenderTime!);
       if (elapsed < _options.frameTime) {
         // Skip this frame
+        _metrics.endFrame(skipped: true);
         return;
       }
     }
 
     // Skip if view hasn't changed
     if (content == _lastView) {
+      _metrics.endFrame(skipped: true);
       return;
     }
 
@@ -137,6 +151,7 @@ class FullScreenTuiRenderer implements TuiRenderer {
 
     _lastView = content;
     _lastRenderTime = DateTime.now();
+    _metrics.endFrame();
   }
 
   /// Clears remaining content after the view.
@@ -211,8 +226,15 @@ class InlineTuiRenderer implements TuiRenderer {
   /// Whether we've rendered at least once.
   bool _hasRendered = false;
 
+  final uv_term.RenderMetrics _metrics = uv_term.RenderMetrics();
+
+  @override
+  uv_term.RenderMetrics? get metrics => _metrics;
+
   @override
   void render(Object view) {
+    _metrics.beginFrame();
+
     final String content;
     if (view is String) {
       content = view;
@@ -224,6 +246,7 @@ class InlineTuiRenderer implements TuiRenderer {
     if (_lastRenderTime != null) {
       final elapsed = DateTime.now().difference(_lastRenderTime!);
       if (elapsed < _options.frameTime) {
+        _metrics.endFrame(skipped: true);
         return;
       }
     }
@@ -253,6 +276,7 @@ class InlineTuiRenderer implements TuiRenderer {
     _lastLineCount = content.split('\n').length;
     _lastRenderTime = DateTime.now();
     _hasRendered = true;
+    _metrics.endFrame();
   }
 
   /// Clears the previous output by moving up and clearing lines.
@@ -302,6 +326,9 @@ class BufferedTuiRenderer implements TuiRenderer {
 
   /// Whether we have pending output.
   bool _dirty = false;
+
+  @override
+  uv_term.RenderMetrics? get metrics => inner.metrics;
 
   @override
   void render(Object view) {
@@ -361,6 +388,9 @@ class UltravioletTuiRenderer implements TuiRenderer {
   uv_term.UvTerminalRenderer? _renderer;
 
   DateTime? _lastRenderTime;
+
+  /// Returns the render metrics from the underlying UV renderer.
+  uv_term.RenderMetrics? get metrics => _renderer?.metrics;
 
   void printLine(String text) {
     _initialize();
@@ -469,7 +499,11 @@ class UltravioletTuiRenderer implements TuiRenderer {
 
     if (_lastRenderTime != null) {
       final elapsed = DateTime.now().difference(_lastRenderTime!);
-      if (elapsed < _options.frameTime) return;
+      // Only skip if the view hasn't changed; otherwise we must render or the
+      // terminal can get stuck with stale overlay content.
+      if (elapsed < _options.frameTime && content == _pendingView) {
+        return;
+      }
     }
 
     _pendingView = _composeView(content);
@@ -564,6 +598,9 @@ class NullTuiRenderer implements TuiRenderer {
   final List<Object> views = [];
 
   @override
+  uv_term.RenderMetrics? get metrics => null;
+
+  @override
   void render(Object view) {
     lastView = view;
     views.add(view);
@@ -590,6 +627,9 @@ class SimpleTuiRenderer implements TuiRenderer {
 
   final TuiTerminal terminal;
   final TuiRendererOptions _options;
+
+  @override
+  uv_term.RenderMetrics? get metrics => null;
 
   @override
   void render(Object view) {
@@ -650,6 +690,9 @@ class StringSinkTuiRenderer implements TuiRenderer {
 
   /// The sink to write to.
   final StringSink sink;
+
+  @override
+  uv_term.RenderMetrics? get metrics => null;
 
   @override
   void render(Object view) {

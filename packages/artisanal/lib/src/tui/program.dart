@@ -80,6 +80,7 @@ class ProgramOptions {
     this.mouse = false,
     this.mouseMode = MouseMode.none,
     this.fps = 60,
+    this.frameTick = true,
     this.hideCursor = true,
     this.bracketedPaste = false,
     this.inputTimeout = const Duration(milliseconds: 50),
@@ -99,7 +100,7 @@ class ProgramOptions {
     this.environment,
     this.inputTTY = false,
     this.movementCapsOverride,
-    this.shutdownSharedStdinOnExit = true,
+    this.shutdownSharedStdinOnExit = true, this.metricsInterval = const Duration(seconds: 1),
   }) : assert(fps >= 1 && fps <= 120, 'fps must be between 1 and 120');
 
   /// Whether to use the alternate screen buffer (fullscreen mode).
@@ -125,6 +126,30 @@ class ProgramOptions {
   /// Limits how often the screen can be redrawn.
   /// Value is clamped to the range 1-120.
   final int fps;
+
+  /// Whether to automatically send [FrameTickMsg] at the configured [fps].
+  ///
+  /// When true (default), the runtime sends [FrameTickMsg] messages at
+  /// regular intervals based on the [fps] setting. This drives animations
+  /// and continuous updates without requiring each application to set up
+  /// its own tick loop.
+  ///
+  /// When false, no automatic ticks are sent. This is useful for static
+  /// UIs that only update in response to user input, reducing CPU usage.
+  ///
+  /// ## Example
+  ///
+  /// ```dart
+  /// // Dynamic UI with animations (default)
+  /// final program = Program(MyAnimatedModel());
+  ///
+  /// // Static UI that only updates on input
+  /// final program = Program(
+  ///   MyStaticModel(),
+  ///   options: ProgramOptions(frameTick: false),
+  /// );
+  /// ```
+  final bool frameTick;
 
   /// Whether to hide the cursor during program execution.
   final bool hideCursor;
@@ -259,6 +284,8 @@ class ProgramOptions {
   /// When enabled, program shutdown cancels the underlying stdin subscription
   /// so the process can exit cleanly on real TTYs.
   final bool shutdownSharedStdinOnExit;
+  
+   final Duration metricsInterval;
 
   /// Creates a copy with the given fields replaced.
   ProgramOptions copyWith({
@@ -266,6 +293,7 @@ class ProgramOptions {
     bool? mouse,
     MouseMode? mouseMode,
     int? fps,
+    bool? frameTick,
     bool? hideCursor,
     bool? bracketedPaste,
     Duration? inputTimeout,
@@ -292,6 +320,7 @@ class ProgramOptions {
       mouse: mouse ?? this.mouse,
       mouseMode: mouseMode ?? this.mouseMode,
       fps: fps ?? this.fps,
+      frameTick: frameTick ?? this.frameTick,
       hideCursor: hideCursor ?? this.hideCursor,
       bracketedPaste: bracketedPaste ?? this.bracketedPaste,
       inputTimeout: inputTimeout ?? this.inputTimeout,
@@ -343,6 +372,7 @@ class ProgramOptions {
     altScreen: altScreen,
     mouse: mouse,
     fps: fps,
+    frameTick: frameTick,
     hideCursor: hideCursor,
     bracketedPaste: bracketedPaste,
     inputTimeout: inputTimeout,
@@ -386,6 +416,19 @@ class ProgramOptions {
   /// Creates options that enable mouse all motion tracking.
   ProgramOptions withMouseAllMotion() =>
       copyWith(mouseMode: MouseMode.allMotion);
+
+  /// Creates options that disable automatic frame ticks.
+  ///
+  /// Use this for static UIs that only update in response to user input,
+  /// which reduces CPU usage since no periodic timer is running.
+  ///
+  /// ```dart
+  /// final program = Program(
+  ///   MyStaticModel(),
+  ///   options: ProgramOptions().withoutFrameTick(),
+  /// );
+  /// ```
+  ProgramOptions withoutFrameTick() => copyWith(frameTick: false);
 }
 
 /// Error thrown when a program is cancelled via an external signal.
@@ -491,6 +534,12 @@ class Program {
   final KeyParser _keyParser = KeyParser();
   final UvTuiInputParser _uvInputParser = UvTuiInputParser();
   Timer? _uvInputTimeoutTimer;
+  Timer? _metricsTimer;
+  Timer? _frameTickTimer;
+
+  /// Frame tick state for FrameTickMsg.
+  int _frameNumber = 0;
+  DateTime? _lastFrameTime;
 
   StartupProbeRunner? _startupProbes;
   StartupProbeContext? _startupProbeContext;
@@ -795,11 +844,63 @@ class Program {
 
     _startupProbes?.drain(_processMessage);
 
+    // Start metrics timer
+    _startMetricsTimer();
+
+    // Start frame tick timer for automatic animation updates
+    _startFrameTickTimer();
+
     // Execute init command
     final initCmd = _model!.init();
     if (initCmd != null) {
       await _executeCommand(initCmd);
     }
+  }
+
+  /// Starts a periodic timer to send render metrics to the model.
+  void _startMetricsTimer() {
+    if (_options.metricsInterval <= Duration.zero) return;
+
+    _metricsTimer = Timer.periodic(_options.metricsInterval, (_) {
+      final metrics = _renderer?.metrics;
+      if (metrics != null) {
+        send(RenderMetricsMsg(metrics));
+      }
+    });
+  }
+
+  /// Starts the automatic frame tick timer.
+  ///
+  /// When [ProgramOptions.frameTick] is enabled, this sends [FrameTickMsg]
+  /// at regular intervals based on the configured [ProgramOptions.fps].
+  void _startFrameTickTimer() {
+    if (!_options.frameTick) return;
+
+    // Calculate interval from fps
+    final intervalMs = (1000 / _options.fps).round();
+    final interval = Duration(milliseconds: intervalMs);
+
+    // Initialize frame tick state
+    _frameNumber = 0;
+    _lastFrameTime = DateTime.now();
+
+    _frameTickTimer = Timer.periodic(interval, (_) {
+      if (!_running) return;
+
+      final now = DateTime.now();
+      final delta = _lastFrameTime != null
+          ? now.difference(_lastFrameTime!)
+          : interval;
+
+      _frameNumber++;
+      _lastFrameTime = now;
+
+      send(FrameTickMsg(
+        time: now,
+        frameNumber: _frameNumber,
+        delta: delta,
+      ));
+    });
   }
 
   /// Sets up signal handlers for graceful shutdown and resize.
@@ -1196,6 +1297,8 @@ class Program {
     // Stop input listening temporarily.
     _uvInputTimeoutTimer?.cancel();
     _uvInputTimeoutTimer = null;
+    _metricsTimer?.cancel();
+    _metricsTimer = null;
     _uvInputParser.clear();
 
     try {
@@ -1290,9 +1393,11 @@ class Program {
     // Save terminal state
     _renderer?.dispose();
 
-    // Stop input listening temporarily.
+    // Stop input listening and timers temporarily.
     _uvInputTimeoutTimer?.cancel();
     _uvInputTimeoutTimer = null;
+    _metricsTimer?.cancel();
+    _metricsTimer = null;
     _uvInputParser.clear();
     unawaited(_inputSubscription?.cancel());
     _inputSubscription = null;
@@ -1348,6 +1453,9 @@ class Program {
 
     // Restart input.
     _startInputListener();
+
+    // Restart metrics timer.
+    _startMetricsTimer();
 
     // Send resume message
     _processMessage(const ResumeMsg());
@@ -1629,6 +1737,12 @@ class Program {
 
     _uvInputTimeoutTimer?.cancel();
     _uvInputTimeoutTimer = null;
+    _metricsTimer?.cancel();
+    _metricsTimer = null;
+    _frameTickTimer?.cancel();
+    _frameTickTimer = null;
+    _frameNumber = 0;
+    _lastFrameTime = null;
 
     // Cancel input subscription
     try {

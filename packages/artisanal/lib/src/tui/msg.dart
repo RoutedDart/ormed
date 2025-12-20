@@ -159,6 +159,81 @@ class TickMsg extends Msg {
   int get hashCode => Object.hash(time, id);
 }
 
+/// Message sent automatically by the TUI runtime every frame.
+///
+/// When [ProgramOptions.frameTick] is enabled (default), the runtime
+/// sends this message at the configured [ProgramOptions.fps] rate.
+/// This drives animations and continuous updates without requiring
+/// each application to set up its own tick loop.
+///
+/// The message contains:
+/// - [time] - When the frame tick occurred
+/// - [frameNumber] - Monotonically increasing frame counter
+/// - [delta] - Time since the last frame (useful for smooth animations)
+///
+/// ## Example
+///
+/// ```dart
+/// @override
+/// (Model, Cmd?) update(Msg msg) {
+///   return switch (msg) {
+///     FrameTickMsg(:final time, :final delta) => (
+///       copyWith(
+///         animationProgress: animationProgress + delta.inMilliseconds / 1000.0,
+///         lastFrameTime: time,
+///       ),
+///       null,
+///     ),
+///     _ => (this, null),
+///   };
+/// }
+/// ```
+///
+/// ## Disabling Frame Ticks
+///
+/// For static UIs that don't need continuous updates, disable frame ticks:
+///
+/// ```dart
+/// final program = Program(
+///   MyModel(),
+///   options: ProgramOptions(frameTick: false),
+/// );
+/// ```
+class FrameTickMsg extends Msg {
+  /// Creates a frame tick message.
+  const FrameTickMsg({
+    required this.time,
+    required this.frameNumber,
+    required this.delta,
+  });
+
+  /// The time when this frame tick occurred.
+  final DateTime time;
+
+  /// Monotonically increasing frame counter.
+  final int frameNumber;
+
+  /// Duration since the last frame tick.
+  ///
+  /// Useful for frame-rate-independent animations.
+  final Duration delta;
+
+  @override
+  String toString() =>
+      'FrameTickMsg(frame: $frameNumber, delta: ${delta.inMilliseconds}ms)';
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is FrameTickMsg &&
+          time == other.time &&
+          frameNumber == other.frameNumber &&
+          delta == other.delta);
+
+  @override
+  int get hashCode => Object.hash(time, frameNumber, delta);
+}
+
 /// Internal message signaling that the program should quit.
 ///
 /// This is typically not created directly. Instead, use [Cmd.quit()]

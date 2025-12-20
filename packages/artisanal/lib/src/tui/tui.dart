@@ -111,6 +111,7 @@ export 'msg.dart'
         MouseMode,
         WindowSizeMsg,
         TickMsg,
+        FrameTickMsg,
         QuitMsg,
         BatchMsg,
         FocusMsg,
@@ -176,8 +177,7 @@ export 'renderer.dart'
         BufferedTuiRenderer,
         NullTuiRenderer,
         StringSinkTuiRenderer,
-        TuiTerminalRendererExtension,
-        RenderMetrics;
+        TuiTerminalRendererExtension;
 
 // Program runtime
 export 'program.dart'
