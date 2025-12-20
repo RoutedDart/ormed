@@ -83,4 +83,4 @@ export 'src/style/writer.dart'
         Fprint,
         Fprintln,
         Fprintf,
-        stringForProfile;
+        stringForProfile;export 'src/style/theme.dart' show ThemePalette;
