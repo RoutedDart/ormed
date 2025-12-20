@@ -1,0 +1,60 @@
+/// Artisanal: A polished CLI framework for Dart.
+///
+/// This library provides the core CLI experience, including:
+/// - [Console] for rich terminal output and interactive prompts.
+/// - [Verbosity] levels for controlling output detail.
+/// - Unified [Terminal] abstraction for raw mode and ANSI handling.
+///
+/// ## Functional Areas
+///
+/// - **I/O**: [Console] provides a high-level API for writing to stdout/stderr,
+///   handling verbosity, and running tasks with status indicators.
+/// - **Terminal**: [Terminal] and [StdioTerminal] handle raw mode, cursor
+///   positioning, and input event decoding.
+/// - **Styling**: [Style] and [Color] provide a fluent API for terminal text
+///   formatting (Lip Gloss-inspired).
+///
+/// ## Modular Exports
+///
+/// For specific functionality, you may want to import the modular libraries:
+/// - `package:artisanal/args.dart`: Command-line argument parsing and runners.
+/// - `package:artisanal/style.dart`: Full Lip Gloss-style styling system.
+/// - `package:artisanal/tui.dart`: Interactive TUI framework (Elm Architecture).
+/// - `package:artisanal/uv.dart`: Low-level cell-buffer rendering engine.
+library artisanal;
+
+// I/O
+export 'src/io/console.dart' show Console, TaskResult;
+export 'src/io/components.dart' show Components;
+export 'src/io/validators.dart' show Validators;
+
+// Terminal utilities
+export 'src/terminal/terminal.dart'
+    show
+        Terminal,
+        StdioTerminal,
+        StringTerminal,
+        RawModeGuard,
+        Ansi,
+        KittyImage,
+        Key,
+        KeyType,
+        Keys;
+
+// Style - Verbosity
+export 'src/style/verbosity.dart' show Verbosity;
+export 'src/style/style.dart' show Style;
+export 'src/style/color.dart' show Color, AnsiColor, BasicColor, Colors, ColorProfile;
+
+// Renderer
+export 'src/renderer/renderer.dart'
+    show
+        Renderer,
+        TerminalRenderer,
+        StringRenderer,
+        NullRenderer,
+        defaultRenderer,
+        resetDefaultRenderer;
+
+// Layout
+export 'src/layout/layout.dart' show Layout;
