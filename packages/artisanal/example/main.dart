@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io' as dartio;
 import 'package:artisanal/artisanal.dart';
+import 'package:artisanal/src/renderer/renderer.dart';
 import 'package:artisanal/tui.dart';
 import 'package:artisanal/args.dart';
 

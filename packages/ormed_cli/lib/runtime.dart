@@ -4,7 +4,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:artisan_args/artisan_args.dart';
+import 'package:artisanal/artisanal.dart';
 import 'package:meta/meta.dart';
 import 'package:ormed/ormed.dart';
 
@@ -69,7 +69,7 @@ Future<void> runSeedRegistryEntrypoint({
   // Build a small Artisan runner around `run` and `info` commands so we get
   // global flags, better help, and consistent IO.
   final runner =
-      ArtisanCommandRunner<void>(
+      CommandRunner<void>(
           'seeds',
           'Seed registry entrypoint',
           ansi: stdout.supportsAnsiEscapes,
@@ -93,7 +93,7 @@ Future<void> runSeedRegistryEntrypoint({
   await runner.run(forwarded);
 }
 
-class _SeedRegistryRunCommand extends ArtisanCommand<void> {
+class _SeedRegistryRunCommand extends Command<void> {
   _SeedRegistryRunCommand({required this.seeds, this.beforeRun})
     : super(aliases: const ['r']) {
     // Configure options in constructor so they appear in help
@@ -172,7 +172,7 @@ class _SeedRegistryRunCommand extends ArtisanCommand<void> {
   }
 }
 
-class _SeedRegistryInfoCommand extends ArtisanCommand<void> {
+class _SeedRegistryInfoCommand extends Command<void> {
   _SeedRegistryInfoCommand({required this.seeds}) {
     // Configure options in constructor so they appear in help
     argParser.addFlag(
@@ -242,7 +242,7 @@ Future<void> runMigrationRegistryEntrypoint({
     return;
   }
 
-  final runner = ArtisanCommandRunner<void>(
+  final runner = CommandRunner<void>(
     'migrations',
     'Migration registry entrypoint',
     ansi: stdout.supportsAnsiEscapes,
@@ -311,7 +311,7 @@ SchemaSnapshot _emptySnapshot() => SchemaSnapshot(
   foreignKeys: const [],
 );
 
-class _MigrationRegistryInfoCommand extends ArtisanCommand<void> {
+class _MigrationRegistryInfoCommand extends Command<void> {
   _MigrationRegistryInfoCommand({required this.migrations}) {
     argParser.addFlag(
       'json',
@@ -365,7 +365,7 @@ class _MigrationRegistryInfoCommand extends ArtisanCommand<void> {
   }
 }
 
-class _MigrationRegistryRunCommand extends ArtisanCommand<void> {
+class _MigrationRegistryRunCommand extends Command<void> {
   _MigrationRegistryRunCommand({
     required this.migrations,
     required this.buildPlan,

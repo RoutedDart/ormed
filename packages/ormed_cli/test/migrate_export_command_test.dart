@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:artisan_args/artisan_args.dart';
+import 'package:artisanal/args.dart';
 import 'package:ormed/ormed.dart';
 import 'package:ormed_cli/src/commands/migrate/export_command.dart';
 import 'package:ormed_cli/src/commands/migrate/migrate_command.dart';
@@ -114,7 +114,7 @@ environment:
     });
 
     Future<void> runOrm(List<String> args) async {
-      final runner = ArtisanCommandRunner<void>('orm', 'ORM CLI')
+      final runner = CommandRunner<void>('orm', 'ORM CLI')
         ..addCommand(ApplyCommand())
         ..addCommand(ExportCommand());
       await runner.run([

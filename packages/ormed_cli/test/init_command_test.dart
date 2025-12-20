@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:artisan_args/artisan_args.dart';
+import 'package:artisanal/artisanal.dart';
 import 'package:ormed_cli/src/commands/base/init_command.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
@@ -43,7 +43,7 @@ environment:
     });
 
     Future<void> runInit(List<String> args, {String Function()? readLine}) async {
-      final runner = ArtisanCommandRunner<void>('orm', 'ORM CLI', ansi: false, readLine: readLine)
+      final runner = CommandRunner<void>('orm', 'ORM CLI', ansi: false, readLine: readLine)
         ..addCommand(InitCommand());
       await runner.run(args);
     }

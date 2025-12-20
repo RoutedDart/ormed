@@ -1,4 +1,4 @@
-import 'package:artisan_args/artisan_args.dart';
+import 'package:artisanal/args.dart';
 import 'package:ormed/ormed.dart';
 
 import 'event_reporter.dart';
@@ -6,7 +6,7 @@ import 'shared.dart';
 
 export 'event_reporter.dart';
 
-abstract class RunnerCommand extends ArtisanCommand<void> {
+abstract class RunnerCommand extends Command<void> {
   RunnerCommand() {
     argParser.addOption(
       'config',

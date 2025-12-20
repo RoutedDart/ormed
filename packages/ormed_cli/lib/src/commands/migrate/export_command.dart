@@ -1,13 +1,13 @@
 import 'dart:io';
 
-import 'package:artisan_args/artisan_args.dart';
+import 'package:artisanal/args.dart';
 import 'package:ormed/ormed.dart';
 import 'package:path/path.dart' as p;
 
 import '../../config.dart';
 import '../base/shared.dart';
 
-class ExportCommand extends ArtisanCommand<void> {
+class ExportCommand extends Command<void> {
   ExportCommand() {
     argParser
       ..addOption(

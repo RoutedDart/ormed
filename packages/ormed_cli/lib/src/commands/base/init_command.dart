@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:artisanal/artisanal.dart';
-import 'package:artisanal/args.dart';
 import 'package:path/path.dart' as p;
 
 import '../../config.dart';
@@ -276,7 +275,7 @@ bool _hasDartFiles(Directory dir) {
 }
 
 Future<void> _populateExisting({
-  required ArtisanIO io,
+  required Console io,
   required Directory root,
   required OrmProjectConfig config,
   required Directory migrationsDir,

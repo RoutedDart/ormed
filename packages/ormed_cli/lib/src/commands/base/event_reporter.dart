@@ -1,13 +1,13 @@
-import 'package:artisan_args/artisan_args.dart';
+import 'package:artisanal/artisanal.dart';
 import 'package:ormed/ormed.dart';
 
 /// Subscribes to core events and mirrors them to CLI output.
 class CliEventReporter {
-  CliEventReporter({required ArtisanIO io, EventBus? events})
+  CliEventReporter({required Console io, EventBus? events})
     : _io = io,
       _events = events ?? EventBus.instance;
 
-  final ArtisanIO _io;
+  final Console _io;
   final EventBus _events;
   final List<void Function()> _subscriptions = [];
 

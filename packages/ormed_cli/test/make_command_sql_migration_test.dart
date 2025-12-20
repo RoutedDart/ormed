@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:artisan_args/artisan_args.dart';
+import 'package:artisanal/artisanal.dart';
 import 'package:ormed_cli/src/commands/make/make_command.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
@@ -87,7 +87,7 @@ void main(List<String> args) {
     });
 
     Future<void> runMake(List<String> args) async {
-      final runner = ArtisanCommandRunner<void>('orm', 'ORM CLI')
+      final runner = CommandRunner<void>('orm', 'ORM CLI')
         ..addCommand(MakeCommand());
       await runner.run([
         'make',

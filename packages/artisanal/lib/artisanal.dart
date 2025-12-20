@@ -23,8 +23,11 @@
 /// - `package:artisanal/uv.dart`: Low-level cell-buffer rendering engine.
 library artisanal;
 
+import 'src/io/console.dart' show Console;
+
 // I/O
 export 'src/io/console.dart' show Console, TaskResult;
+
 export 'src/io/components.dart' show Components;
 export 'src/io/validators.dart' show Validators;
 
@@ -43,7 +46,7 @@ export 'src/terminal/terminal.dart'
 
 // Style - Verbosity
 export 'src/style/verbosity.dart' show Verbosity;
-export 'src/style/style.dart' show Style;
+export 'src/style/style.dart';
 export 'src/style/color.dart' show Color, AnsiColor, BasicColor, Colors, ColorProfile;
 
 // Renderer
@@ -58,3 +61,6 @@ export 'src/renderer/renderer.dart'
 
 // Layout
 export 'src/layout/layout.dart' show Layout;
+
+// Args Aliases
+export 'args.dart' show Command, CommandRunner;

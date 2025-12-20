@@ -28,7 +28,7 @@
 /// ```
 library artisanal.style;
 
-export 'src/style/style.dart' show Style, styleRunes;
+export 'src/style/style.dart';
 export 'src/layout/layout.dart' show Layout;
 export 'src/style/properties.dart'
     show

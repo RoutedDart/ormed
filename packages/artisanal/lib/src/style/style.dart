@@ -3043,3 +3043,21 @@ String styleRunes(String s, Style Function(int rune, int index) styler) {
   }
   return out.toString();
 }
+
+/// Convenience extensions for common semantic styles.
+extension StyleConvenienceExtensions on Style {
+  /// Renders text with the muted color.
+  String muted(Object? text) => copy().foreground(Colors.muted).render(text);
+
+  /// Renders text with bold formatting.
+  String emphasize(Object? text) => copy().bold().render(text);
+
+  /// Renders text with the success color.
+  String success(Object? text) => copy().foreground(Colors.success).render(text);
+
+  /// Renders text with the error color.
+  String error(Object? text) => copy().foreground(Colors.error).render(text);
+
+  /// Renders text with the info color.
+  String info(Object? text) => copy().foreground(Colors.info).render(text);
+}

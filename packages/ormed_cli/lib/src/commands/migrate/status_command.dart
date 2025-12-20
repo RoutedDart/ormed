@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:artisanal/artisanal.dart';
 import 'package:ormed/ormed.dart';
 
 import '../base/runner_command.dart';
