@@ -13,7 +13,7 @@ import 'components/panel.dart';
 /// - call [compose] to overlay it above your main view
 /// - use [toggle] to show/hide (the caller decides which key)
 final class DebugOverlayModel {
-  const DebugOverlayModel({
+  DebugOverlayModel({
     required this.enabled,
     required this.terminalWidth,
     required this.terminalHeight,
@@ -30,6 +30,12 @@ final class DebugOverlayModel {
     this.title = 'Render Metrics',
     this.rendererLabel = 'UV',
   });
+
+  // Cached panel render - only rebuild when metrics change
+  String? _cachedPanel;
+  int _cachedPanelWidth = 0;
+  int _cachedPanelHeight = 0;
+  int? _cachedMetricsFrame;
 
   factory DebugOverlayModel.initial({
     bool enabled = false,
@@ -208,10 +214,19 @@ final class DebugOverlayModel {
     }
   }
 
-  /// Renders just the debug panel.
+  /// Renders just the debug panel (cached for performance).
   String panel({int? terminalWidthOverride}) {
-    final label = Style().foreground(Colors.yellow).bold();
     final m = metrics;
+    final currentFrame = m?.frameCount ?? 0;
+    
+    // Use cached panel if metrics haven't changed
+    if (_cachedPanel != null && 
+        _cachedMetricsFrame == currentFrame &&
+        _cachedPanelWidth == panelWidth) {
+      return _cachedPanel!;
+    }
+    
+    final label = Style().foreground(Colors.yellow).bold();
     final avgFps = m?.averageFps ?? 0.0;
     final avgFrameTimeUs = m?.averageFrameTime.inMicroseconds ?? 0;
     final avgRenderTimeUs = m?.averageRenderDuration.inMicroseconds ?? 0;
@@ -227,42 +242,153 @@ final class DebugOverlayModel {
         '${label.render('Cells:')} ${terminalWidth * terminalHeight}\n'
         '${label.render('Renderer:')} $rendererLabel';
 
-    return PanelComponent(
+    final rendered = PanelComponent(
       title: title,
       content: content,
       width: panelWidth,
       renderConfig: RenderConfig(terminalWidth: terminalWidthOverride ?? terminalWidth),
     ).render();
+    
+    // Cache the result
+    _cachedPanel = rendered;
+    _cachedMetricsFrame = currentFrame;
+    _cachedPanelWidth = panelWidth;
+    final lines = rendered.split('\n');
+    _cachedPanelHeight = lines.length;
+    
+    return rendered;
   }
 
-  /// Overlays the debug panel above [base] using the UV compositor.
+  /// Overlays the debug panel above [base] using direct string manipulation.
   ///
   /// If not enabled, returns [base] unchanged.
+  /// 
+  /// This is a lightweight alternative to using the UV Compositor, avoiding
+  /// the overhead of Canvas allocation and cell-by-cell rendering.
   String compose(String base) {
     if (!enabled) return base;
     final p = panel();
-    // Compute size from the already-rendered panel (avoids double render)
-    final lines = p.split('\n');
-    final h = lines.length;
-    final w = lines.fold<int>(0, (m, l) => mathMax(m, Style.visibleLength(l)));
-    final x = panelX ?? (terminalWidth - w - marginRight);
-    final y = panelY ?? (terminalHeight - h - marginBottom);
+    // Use cached dimensions from panel() call
+    final panelH = _cachedPanelHeight;
+    final x = panelX ?? (terminalWidth - panelWidth - marginRight);
+    final y = panelY ?? (terminalHeight - panelH - marginBottom);
     
-    final mainLayer = uv.newLayer(base)..setId('main')..setZ(0);
-    final debugLayer =
-        uv.newLayer(p)..setId('debug')..setX(x)..setY(y)..setZ(10);
-    return uv.Compositor([mainLayer, debugLayer]).render();
+    // Fast path: overlay panel onto base using string manipulation
+    return _overlayStrings(base, p, x, y, terminalWidth, terminalHeight);
+  }
+  
+  /// Overlays [overlay] onto [base] at position (x, y) using string manipulation.
+  /// Much faster than Compositor for simple overlays.
+  static String _overlayStrings(String base, String overlay, int x, int y, int screenW, int screenH) {
+    final baseLines = base.split('\n');
+    final overlayLines = overlay.split('\n');
+    
+    // Ensure we have enough base lines
+    while (baseLines.length < screenH) {
+      baseLines.add('');
+    }
+    
+    // Overlay each line
+    for (var i = 0; i < overlayLines.length && (y + i) < baseLines.length; i++) {
+      final targetY = y + i;
+      if (targetY < 0) continue;
+      
+      final baseLine = baseLines[targetY];
+      final overlayLine = overlayLines[i];
+      
+      baseLines[targetY] = _overlayLine(baseLine, overlayLine, x, screenW);
+    }
+    
+    return baseLines.join('\n');
+  }
+  
+  /// Overlays [overlay] onto [base] at column [x].
+  static String _overlayLine(String base, String overlay, int x, int screenW) {
+    // Pad base to reach x position if needed
+    final baseVisLen = Style.visibleLength(base);
+    final overlayVisLen = Style.visibleLength(overlay);
+    
+    if (x >= screenW) return base;
+    
+    // Build the result: [prefix][overlay][suffix]
+    final buf = StringBuffer();
+    
+    // Get prefix (content before x)
+    if (x > 0) {
+      if (baseVisLen <= x) {
+        // Base is shorter than x, use base + padding
+        buf.write(base);
+        buf.write(' ' * (x - baseVisLen));
+      } else {
+        // Truncate base at position x (respecting ANSI)
+        buf.write(_truncateAtVisiblePos(base, x));
+      }
+    }
+    
+    // Add the overlay
+    buf.write(overlay);
+    
+    // Add suffix if base extends past overlay
+    final endX = x + overlayVisLen;
+    if (baseVisLen > endX) {
+      buf.write(_substringFromVisiblePos(base, endX));
+    }
+    
+    return buf.toString();
+  }
+  
+  /// Truncates a string at the given visible position, preserving ANSI codes.
+  static String _truncateAtVisiblePos(String s, int visPos) {
+    final buf = StringBuffer();
+    var visible = 0;
+    var i = 0;
+    
+    while (i < s.length && visible < visPos) {
+      if (s[i] == '\x1B' && i + 1 < s.length && s[i + 1] == '[') {
+        // ANSI escape sequence - copy it entirely
+        final start = i;
+        i += 2;
+        while (i < s.length && s[i] != 'm') {
+          i++;
+        }
+        if (i < s.length) i++; // include 'm'
+        buf.write(s.substring(start, i));
+      } else {
+        buf.write(s[i]);
+        visible++;
+        i++;
+      }
+    }
+    
+    return buf.toString();
+  }
+  
+  /// Returns substring starting from the given visible position.
+  static String _substringFromVisiblePos(String s, int visPos) {
+    var visible = 0;
+    var i = 0;
+    
+    while (i < s.length && visible < visPos) {
+      if (s[i] == '\x1B' && i + 1 < s.length && s[i + 1] == '[') {
+        // ANSI escape sequence - skip it (don't count as visible)
+        i += 2;
+        while (i < s.length && s[i] != 'm') {
+          i++;
+        }
+        if (i < s.length) i++; // skip 'm'
+      } else {
+        visible++;
+        i++;
+      }
+    }
+    
+    return i < s.length ? s.substring(i) : '';
   }
 
   ({int w, int h}) _panelSize() {
-    final p = panel();
-    final lines = p.split('\n');
-    final h = lines.length;
-    final w = lines.fold<int>(
-      0,
-      (m, l) => mathMax(m, Style.visibleLength(l)),
-    );
-    return (w: w, h: h);
+    // Ensure panel is rendered to populate cache
+    panel();
+    return (w: panelWidth, h: _cachedPanelHeight);
   }
 
   ({int x, int y, int w, int h}) _panelRect() {
