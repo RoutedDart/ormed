@@ -8,8 +8,8 @@ void main() {
       final progress = ProgressModel(width: 10, indeterminate: true);
       final view = progress.view();
       // Should contain some full and some empty characters
-      expect(view, contains('█'));
-      expect(view, contains('░'));
+      expect(view, contains(progress.full));
+      expect(view, contains(progress.empty));
       expect(Style.visibleLength(view), equals(10));
     });
 

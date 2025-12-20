@@ -53,6 +53,70 @@ abstract final class Ansi {
     return text.replaceAll('\t', ' ' * tabWidth);
   }
 
+  /// If [text] contains an ANSI escape sequence starting at [index], returns
+  /// the index immediately after the sequence; otherwise returns [index].
+  ///
+  /// This is intentionally *byte-ish* (ASCII) parsing for terminal control
+  /// sequences and is independent of Unicode/grapheme helpers.
+  ///
+  /// Supported:
+  /// - CSI: `ESC [ ... <final>`
+  /// - OSC: `ESC ] ... (BEL|ST)`
+  /// - DCS/APC/PM/SOS: `ESC P|_|^|X ... ST`
+  /// - 2-byte ESC sequences (fallback)
+  static int consumeEscapeSequence(String text, int index) {
+    if (index < 0 || index >= text.length) return index;
+    if (text.codeUnitAt(index) != 0x1b) return index;
+    if (index + 1 >= text.length) return index + 1;
+
+    final next = text.codeUnitAt(index + 1);
+
+    // CSI: ESC [
+    if (next == 0x5b) {
+      var j = index + 2;
+      while (j < text.length) {
+        final cu = text.codeUnitAt(j);
+        if (cu >= 0x40 && cu <= 0x7e) return j + 1;
+        j++;
+      }
+      return text.length;
+    }
+
+    // OSC: ESC ] ... (BEL or ST terminator)
+    if (next == 0x5d) {
+      var j = index + 2;
+      while (j < text.length) {
+        final cu = text.codeUnitAt(j);
+        if (cu == 0x07) return j + 1; // BEL
+        if (cu == 0x1b &&
+            j + 1 < text.length &&
+            text.codeUnitAt(j + 1) == 0x5c) {
+          return j + 2; // ST (ESC \)
+        }
+        j++;
+      }
+      return text.length;
+    }
+
+    // DCS/APC/PM/SOS: ESC P / ESC _ / ESC ^ / ESC X ... ST
+    if (next == 0x50 || next == 0x5f || next == 0x5e || next == 0x58) {
+      var j = index + 2;
+      while (j < text.length) {
+        final cu = text.codeUnitAt(j);
+        if (cu == 0x1b &&
+            j + 1 < text.length &&
+            text.codeUnitAt(j + 1) == 0x5c) {
+          return j + 2; // ST
+        }
+        j++;
+      }
+      return text.length;
+    }
+
+    // Simple 2-byte ESC sequences.
+    return (index + 2).clamp(0, text.length);
+  }
+
   /// Request primary device attributes (DA1).
   ///
   /// Terminal responds with `ESC [ ? <attrs> c`.

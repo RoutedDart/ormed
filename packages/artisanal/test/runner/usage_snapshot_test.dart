@@ -1,5 +1,4 @@
 import 'package:artisanal/artisanal.dart';
-import 'package:artisanal/args.dart';
 import 'package:test/test.dart';
 
 class _NoopCommand extends Command<void> {

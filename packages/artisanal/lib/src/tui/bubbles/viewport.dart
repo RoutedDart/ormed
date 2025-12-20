@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import '../../style/ranges.dart' as ranges;
 import '../../style/color.dart';
 import '../../style/style.dart';
+import '../../terminal/ansi.dart';
 import '../../layout/layout.dart';
 import '../../unicode/grapheme.dart' as uni;
 import '../cmd.dart';
@@ -448,7 +449,7 @@ class ViewportModel extends ViewComponent {
     newModel._longestLineWidth = _findLongestLineWidth(newLines);
 
     // Adjust offset if content is shorter
-    if (newModel.yOffset > newLines.length - 1) {
+    if (newModel.yOffset > newModel._maxYOffset) {
       return newModel.gotoBottom();
     }
     return newModel;
@@ -540,20 +541,45 @@ class ViewportModel extends ViewComponent {
   ViewportModel ensureVisible(int line, int colstart, int colend) {
     final maxWidth = _maxWidth();
     var newModel = this;
-    if (colend <= maxWidth) {
+    if (softWrap) {
+      // In soft-wrap mode, horizontal scrolling isn't meaningful: instead we map
+      // the target to a virtual y-offset (wrapped subline).
+      newModel = newModel.setXOffset(0);
+    } else if (colend <= maxWidth) {
       newModel = newModel.setXOffset(0);
     } else {
       newModel = newModel.setXOffset(colstart - horizontalStep);
     }
 
-    if (line < yOffset || line >= yOffset + _maxHeight()) {
-      newModel = newModel.setYOffset(line);
+    final targetYOffset = softWrap
+        ? _virtualYOffsetFor(line, colstart, maxWidth)
+        : line;
+    if (targetYOffset < yOffset || targetYOffset >= yOffset + _maxHeight()) {
+      newModel = newModel.setYOffset(targetYOffset);
     }
     return newModel;
   }
 
+  int _virtualYOffsetFor(int line, int colstart, int maxWidth) {
+    if (!softWrap) return line;
+    if (_lines.isEmpty) return 0;
+    if (maxWidth <= 0) return 0;
+
+    final clampedLine = line.clamp(0, _lines.length);
+    var total = 0;
+    for (var i = 0; i < clampedLine; i++) {
+      final lineWidth = Style.visibleLength(_lines[i]);
+      total += math.max(1, (lineWidth / maxWidth).ceil());
+    }
+
+    // Scroll to the wrapped segment that contains colstart.
+    final seg = (colstart / maxWidth).floor();
+    return total + math.max(0, seg);
+  }
+
   /// Returns the horizontal scroll percentage (0.0 to 1.0).
   double get horizontalScrollPercent {
+    if (softWrap) return 1.0;
     final contentWidth = _contentWidth;
     if (contentWidth <= 0 || _longestLineWidth <= contentWidth) return 1.0;
     if (xOffset >= _longestLineWidth - contentWidth) return 1.0;
@@ -781,6 +807,10 @@ class ViewportModel extends ViewComponent {
 
   /// Sets the X offset (clamped to valid range).
   ViewportModel setXOffset(int n) {
+    if (softWrap) {
+      // In soft-wrap mode horizontal scrolling doesn't apply.
+      return xOffset == 0 ? this : copyWith(xOffset: 0);
+    }
     final maxXOffset = _longestLineWidth - _contentWidth;
     return copyWith(xOffset: n.clamp(0, maxXOffset > 0 ? maxXOffset : 0));
   }
@@ -805,11 +835,13 @@ class ViewportModel extends ViewComponent {
 
   /// Scrolls left by the given number of columns.
   ViewportModel scrollLeft(int n) {
+    if (softWrap) return this;
     return setXOffset(xOffset - n);
   }
 
   /// Scrolls right by the given number of columns.
   ViewportModel scrollRight(int n) {
+    if (softWrap) return this;
     return setXOffset(xOffset + n);
   }
 
@@ -927,10 +959,10 @@ class ViewportModel extends ViewComponent {
           return (scrollUp(1), null);
         }
         if (horizontalStep > 0) {
-          if (key.matchesSingle(keyMap.left)) {
+          if (!softWrap && key.matchesSingle(keyMap.left)) {
             return (scrollLeft(horizontalStep), null);
           }
-          if (key.matchesSingle(keyMap.right)) {
+          if (!softWrap && key.matchesSingle(keyMap.right)) {
             return (scrollRight(horizontalStep), null);
           }
         }
@@ -1013,25 +1045,25 @@ class ViewportModel extends ViewComponent {
 
         switch (button) {
           case MouseButton.wheelUp:
-            if (shift && horizontalStep > 0) {
+            if (!softWrap && shift && horizontalStep > 0) {
               return (scrollLeft(horizontalStep), null);
             }
             return (scrollUp(mouseWheelDelta), null);
 
           case MouseButton.wheelDown:
-            if (shift && horizontalStep > 0) {
+            if (!softWrap && shift && horizontalStep > 0) {
               return (scrollRight(horizontalStep), null);
             }
             return (scrollDown(mouseWheelDelta), null);
 
           case MouseButton.wheelLeft:
-            if (horizontalStep > 0) {
+            if (!softWrap && horizontalStep > 0) {
               return (scrollLeft(horizontalStep), null);
             }
             return (this, null);
 
           case MouseButton.wheelRight:
-            if (horizontalStep > 0) {
+            if (!softWrap && horizontalStep > 0) {
               return (scrollRight(horizontalStep), null);
             }
             return (this, null);
@@ -1125,6 +1157,10 @@ List<HighlightInfo> _parseMatches(String content, List<List<int>> matches) {
     // find the beginning of this byte range, setup current line and
     // grapheme position.
     while (byteStart > bytePos && bytePos < content.length) {
+      if (content.codeUnitAt(bytePos) == 0x1b) {
+        bytePos = Ansi.consumeEscapeSequence(content, bytePos);
+        continue;
+      }
       final (:grapheme, :nextIndex) = uni.readGraphemeAt(content, bytePos);
       if (grapheme == '\n') {
         previousLinesOffset = graphemePos + 1;
@@ -1139,6 +1175,10 @@ List<HighlightInfo> _parseMatches(String content, List<List<int>> matches) {
 
     // loop until we find the end
     while (byteEnd > bytePos && bytePos < content.length) {
+      if (content.codeUnitAt(bytePos) == 0x1b) {
+        bytePos = Ansi.consumeEscapeSequence(content, bytePos);
+        continue;
+      }
       final (:grapheme, :nextIndex) = uni.readGraphemeAt(content, bytePos);
 
       // if it ends with a new line, add the range, increase line, and continue

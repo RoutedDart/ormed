@@ -1,5 +1,4 @@
 import 'package:artisanal/artisanal.dart';
-import 'package:artisanal/src/renderer/renderer.dart';
 import 'package:test/test.dart';
 
 void main() {

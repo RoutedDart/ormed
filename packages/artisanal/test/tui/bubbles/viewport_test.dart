@@ -3,6 +3,7 @@ import 'package:artisanal/src/style/style.dart';
 import 'package:artisanal/src/style/color.dart';
 import 'package:artisanal/src/tui/component.dart';
 import 'package:artisanal/src/tui/msg.dart';
+import 'package:artisanal/src/terminal/ansi.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -487,6 +488,83 @@ void main() {
         expect(lines[3].trim(), 'ort.');
       });
 
+      test('softWrap disables horizontal scrolling', () {
+        final viewport = ViewportModel(
+          width: 10,
+          height: 2,
+          softWrap: true,
+        ).setContent('0123456789abcdef');
+
+        final scrolled = viewport.setXOffset(5).scrollRight(5);
+        expect(scrolled.xOffset, 0);
+      });
+
+      test('ensureVisible maps to the correct wrapped segment', () {
+        // maxWidth = 10, highlight at colstart ~ 25 should land on segment 2.
+        final viewport = ViewportModel(
+          width: 10,
+          height: 2,
+          softWrap: true,
+        ).setContent('0123456789abcdefghijABCDEFGHIJ');
+
+        final updated = viewport.ensureVisible(0, 25, 26);
+        // height=2 means maxYOffset=1, which still makes segment 2 visible.
+        expect(updated.yOffset, 1);
+        expect(updated.xOffset, 0);
+      });
+
+      test('gotoBottom uses virtual line count when softWrap is enabled', () {
+        // 25 chars at width 10 => 3 virtual lines. height=2 => maxYOffset=1.
+        final viewport = ViewportModel(
+          width: 10,
+          height: 2,
+          softWrap: true,
+        ).setContent('0123456789abcdefghijABCDE');
+
+        expect(viewport.gotoBottom().yOffset, 1);
+      });
+
+      test(
+        'setContent clamps yOffset using virtual maxYOffset under softWrap',
+        () {
+          final viewport = ViewportModel(
+            width: 10,
+            height: 2,
+            softWrap: true,
+          ).setContent('0123456789abcdefghijABCDE').setYOffset(2);
+
+          // Now shrink content so there are no extra virtual lines.
+          final updated = viewport.setContent('short');
+          expect(updated.yOffset, 0);
+        },
+      );
+
+      test('leftGutterFunc receives soft=true for wrapped continuations', () {
+        final viewport = ViewportModel(
+          width: 8,
+          height: 3,
+          softWrap: true,
+          leftGutterFunc: (ctx) => ctx.soft ? '> ' : '| ',
+        ).setContent('0123456789ABCDEF');
+
+        final lines = viewport.view().split('\n');
+        expect(lines[0], startsWith('| '));
+        expect(lines[1], startsWith('> '));
+      });
+
+      test('gutter is preserved during horizontal scrolling', () {
+        final viewport = ViewportModel(
+          width: 10,
+          height: 1,
+          softWrap: false,
+          leftGutterFunc: (_) => '| ',
+        ).setContent('0123456789abcdef').setXOffset(5);
+
+        final view = viewport.view();
+        expect(view, startsWith('| '));
+        expect(Style.stripAnsi(view), contains('56789'));
+      });
+
       test('leftGutterFunc provides dynamic gutters', () {
         final content = 'Line 1\nLine 2\nLine 3';
         final viewport = ViewportModel(
@@ -518,6 +596,73 @@ void main() {
         final view = viewport.view();
         // "World" should be styled
         expect(view, contains(style.render('World')));
+      });
+
+      test('highlights handle ANSI prefixes without shifting columns', () {
+        final content = '${Ansi.csi}31mHello${Ansi.csi}0m World';
+        final start = content.indexOf('World');
+        final end = start + 'World'.length;
+
+        final style = Style()
+            .background(const AnsiColor(7))
+            .foreground(const AnsiColor(0));
+        final viewport =
+            ViewportModel(
+              width: 80,
+              height: 3,
+              highlightStyle: style,
+            ).setContent(content).setHighlights([
+              [start, end],
+            ]);
+
+        final view = viewport.view();
+        expect(view, contains(style.render('World')));
+      });
+
+      test(
+        'highlights handle wide graphemes (emoji) with correct cell widths',
+        () {
+          final content = 'a🙂b';
+          final start = content.indexOf('🙂');
+          final end = start + '🙂'.length;
+
+          final style = Style()
+              .background(const AnsiColor(7))
+              .foreground(const AnsiColor(0));
+          final viewport =
+              ViewportModel(
+                width: 10,
+                height: 2,
+                highlightStyle: style,
+              ).setContent(content).setHighlights([
+                [start, end],
+              ]);
+
+          final view = viewport.view();
+          expect(view, contains(style.render('🙂')));
+        },
+      );
+
+      test('highlights spanning newlines apply on each line', () {
+        final content = 'ab\ncd';
+        final start = content.indexOf('b');
+        final end = content.indexOf('d') + 1;
+
+        final style = Style()
+            .background(const AnsiColor(7))
+            .foreground(const AnsiColor(0));
+        final viewport =
+            ViewportModel(
+              width: 10,
+              height: 3,
+              highlightStyle: style,
+            ).setContent(content).setHighlights([
+              [start, end],
+            ]);
+
+        final view = viewport.view();
+        expect(view, contains('a${style.render('b')}'));
+        expect(view, contains(style.render('cd')));
       });
 
       test('pads lines to width', () {
