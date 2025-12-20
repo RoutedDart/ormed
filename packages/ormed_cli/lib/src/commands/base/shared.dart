@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:artisan_args/artisan_args.dart';
+import 'package:artisanal/artisanal.dart';
 import 'package:ormed/ormed.dart';
 // ignore: unused_import
 import 'package:ormed_mysql/ormed_mysql.dart';
@@ -468,13 +468,13 @@ void _bootstrapCliDrivers() {
   ensurePostgresDriverRegistration();
 }
 
-/// Shared ArtisanIO instance for CLI output.
-ArtisanIO get cliIO => _cliIO ??= ArtisanIO(
+/// Shared Console instance for CLI output.
+Console get cliIO => _cliIO ??= Console(
   renderer: TerminalRenderer(),
   out: stdout.writeln,
   err: stderr.writeln,
 );
-ArtisanIO? _cliIO;
+Console? _cliIO;
 
 void printMigrationPlanPreview({
   required MigrationDescriptor descriptor,

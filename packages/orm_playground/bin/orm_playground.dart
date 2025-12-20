@@ -1,12 +1,12 @@
 import 'dart:io';
 
-import 'package:artisan_args/artisan_args.dart' hide Comment;
+import 'package:artisanal/artisanal.dart';
 import 'package:orm_playground/orm_playground.dart';
 import 'package:orm_playground/src/database/seeders.dart' as playground_seeders;
 import 'package:ormed/ormed.dart';
 
 /// Shared CLI IO for styled output.
-final io = ArtisanIO(
+final io = Console(
   renderer: TerminalRenderer(),
   out: stdout.writeln,
   err: stderr.writeln,
@@ -34,7 +34,7 @@ Future<void> main(List<String> arguments) async {
     run: () async {
       ds = await database.dataSource();
       if (animate) await Future.delayed(Duration(milliseconds: 200));
-      return ArtisanTaskResult.success;
+      return TaskResult.success;
     },
   );
 
@@ -114,7 +114,7 @@ Future<void> _animatedSeed(
         );
         if (animate) await Future.delayed(Duration(milliseconds: 150));
       }
-      return ArtisanTaskResult.success;
+      return TaskResult.success;
     },
   );
 
@@ -125,7 +125,7 @@ Future<void> _animatedSeed(
         await playground_seeders.seedPlayground(ds.connection, names: ['tags']);
         if (animate) await Future.delayed(Duration(milliseconds: 100));
       }
-      return ArtisanTaskResult.success;
+      return TaskResult.success;
     },
   );
 
@@ -139,7 +139,7 @@ Future<void> _animatedSeed(
         );
         if (animate) await Future.delayed(Duration(milliseconds: 150));
       }
-      return ArtisanTaskResult.success;
+      return TaskResult.success;
     },
   );
 
@@ -151,7 +151,7 @@ Future<void> _animatedSeed(
         names: ['comments'],
       );
       if (animate) await Future.delayed(Duration(milliseconds: 100));
-      return ArtisanTaskResult.success;
+      return TaskResult.success;
     },
   );
 
@@ -255,7 +255,7 @@ Future<void> _runQueryBuilderShowcase(
           .get();
       if (animate) await Future.delayed(Duration(milliseconds: 100));
       io.twoColumnDetail('  Found', '${rows.length} posts');
-      return ArtisanTaskResult.success;
+      return TaskResult.success;
     },
   );
 
@@ -269,7 +269,7 @@ Future<void> _runQueryBuilderShowcase(
           .pluck<int>('id');
       if (animate) await Future.delayed(Duration(milliseconds: 100));
       io.twoColumnDetail('  Active IDs', activeUserIds.join(', '));
-      return ArtisanTaskResult.success;
+      return TaskResult.success;
     },
   );
 
@@ -282,7 +282,7 @@ Future<void> _runQueryBuilderShowcase(
           .firstOrNull();
       if (animate) await Future.delayed(Duration(milliseconds: 100));
       io.twoColumnDetail('  Latest', latestComment?.body ?? 'none yet');
-      return ArtisanTaskResult.success;
+      return TaskResult.success;
     },
   );
 }
@@ -369,7 +369,7 @@ Future<void> _runModelCrudShowcase(DataSource ds, {bool animate = true}) async {
           .whereEquals('name', demoName)
           .firstOrFail();
       if (animate) await Future.delayed(Duration(milliseconds: 100));
-      return ArtisanTaskResult.success;
+      return TaskResult.success;
     },
   );
   io.twoColumnDetail('  Tag ID', '${inserted!.id}');
@@ -387,7 +387,7 @@ Future<void> _runModelCrudShowcase(DataSource ds, {bool animate = true}) async {
       );
       await tagRepo.updateMany([renamed!]);
       if (animate) await Future.delayed(Duration(milliseconds: 100));
-      return ArtisanTaskResult.success;
+      return TaskResult.success;
     },
   );
   io.twoColumnDetail('  New name', renamed!.name);
@@ -399,7 +399,7 @@ Future<void> _runModelCrudShowcase(DataSource ds, {bool animate = true}) async {
         {'id': renamed!.id},
       ]);
       if (animate) await Future.delayed(Duration(milliseconds: 100));
-      return ArtisanTaskResult.success;
+      return TaskResult.success;
     },
   );
 }

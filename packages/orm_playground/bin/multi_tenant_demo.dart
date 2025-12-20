@@ -3,13 +3,13 @@ library;
 
 import 'dart:io';
 
-import 'package:artisan_args/artisan_args.dart' hide Comment;
+import 'package:artisanal/artisanal.dart';
 import 'package:orm_playground/src/database/seeders.dart' as playground_seeders;
 import 'package:ormed/ormed.dart';
 import 'package:orm_playground/orm_playground.dart';
 
 /// Shared CLI IO for styled output.
-final io = ArtisanIO(
+final io = Console(
   renderer: TerminalRenderer(),
   out: stdout.writeln,
   err: stderr.writeln,
@@ -37,15 +37,12 @@ Future<void> main(List<String> arguments) async {
     // Initialize and prepare each tenant
     io.section('Initializing Tenants');
     for (final tenant in tenants) {
-      await io.task(
-        'Connecting to "$tenant"',
-        run: () async {
-          final ds = await database.dataSource(tenant: tenant);
-          dataSources[tenant] = ds;
-          if (animate) await Future.delayed(Duration(milliseconds: 150));
-          return ArtisanTaskResult.success;
-        },
-      );
+      await io.task('Connecting to "$tenant"', run: () async {
+        final ds = await database.dataSource(tenant: tenant);
+        dataSources[tenant] = ds;
+        if (animate) await Future.delayed(Duration(milliseconds: 150));
+        return TaskResult.success;
+      });
 
       await _prepareTenant(
         dataSources[tenant]!,
@@ -86,14 +83,11 @@ Future<void> _prepareTenant(
   final hasData = await _hasUsers(ds);
 
   if (!hasData) {
-    await io.task(
-      'Seeding "$tenant"',
-      run: () async {
-        await playground_seeders.seedPlayground(ds.connection);
-        if (animate) await Future.delayed(Duration(milliseconds: 200));
-        return ArtisanTaskResult.success;
-      },
-    );
+    await io.task('Seeding "$tenant"', run: () async {
+      await playground_seeders.seedPlayground(ds.connection);
+      if (animate) await Future.delayed(Duration(milliseconds: 200));
+      return TaskResult.success;
+    });
   } else {
     io.writeln(
       '${io.style.foreground(Colors.muted).render('○')} Tenant ${io.style.bold().render(tenant)} already has data',
@@ -158,46 +152,39 @@ Future<void> _demonstrateTenantIsolation(
       final defaultUserCount = await defaultDs.query<User>().count();
       final analyticsUserCount = await analyticsDs.query<User>().count();
 
-      io.twoColumnDetail('  Default tenant users', '$defaultUserCount');
-      io.twoColumnDetail('  Analytics tenant users', '$analyticsUserCount');
-      if (animate) await Future.delayed(Duration(milliseconds: 100));
-      return ArtisanTaskResult.success;
-    },
-  );
+    io.twoColumnDetail('  Default tenant users', '$defaultUserCount');
+    io.twoColumnDetail('  Analytics tenant users', '$analyticsUserCount');
+    if (animate) await Future.delayed(Duration(milliseconds: 100));
+    return TaskResult.success;
+  });
 
   // Demonstrate using repo<T>() and query<T>() on different tenants
   io.newLine();
   io.info('Latest user from each tenant:');
 
-  await io.task(
-    'Querying latest user (default)',
-    run: () async {
-      final latestDefault = await defaultDs
-          .query<User>()
-          .orderBy('id', descending: true)
-          .firstOrNull();
-      if (latestDefault != null) {
-        io.twoColumnDetail('  Default', latestDefault.email);
-      }
-      if (animate) await Future.delayed(Duration(milliseconds: 100));
-      return ArtisanTaskResult.success;
-    },
-  );
+  await io.task('Querying latest user (default)', run: () async {
+    final latestDefault = await defaultDs
+        .query<User>()
+        .orderBy('id', descending: true)
+        .firstOrNull();
+    if (latestDefault != null) {
+      io.twoColumnDetail('  Default', latestDefault.email);
+    }
+    if (animate) await Future.delayed(Duration(milliseconds: 100));
+    return TaskResult.success;
+  });
 
-  await io.task(
-    'Querying latest user (analytics)',
-    run: () async {
-      final latestAnalytics = await analyticsDs
-          .query<User>()
-          .orderBy('id', descending: true)
-          .firstOrNull();
-      if (latestAnalytics != null) {
-        io.twoColumnDetail('  Analytics', latestAnalytics.email);
-      }
-      if (animate) await Future.delayed(Duration(milliseconds: 100));
-      return ArtisanTaskResult.success;
-    },
-  );
+  await io.task('Querying latest user (analytics)', run: () async {
+    final latestAnalytics = await analyticsDs
+        .query<User>()
+        .orderBy('id', descending: true)
+        .firstOrNull();
+    if (latestAnalytics != null) {
+      io.twoColumnDetail('  Analytics', latestAnalytics.email);
+    }
+    if (animate) await Future.delayed(Duration(milliseconds: 100));
+    return TaskResult.success;
+  });
 
   // Demonstrate transaction on specific tenant
   io.newLine();
@@ -222,16 +209,12 @@ Future<void> _demonstrateTenantIsolation(
           existsInAnalytics ? 'yes' : 'no',
         );
 
-        // Clean up
-        await defaultDs
-            .query<Tag>()
-            .whereEquals('name', tempTagName)
-            .forceDelete();
-      });
-      if (animate) await Future.delayed(Duration(milliseconds: 100));
-      return ArtisanTaskResult.success;
-    },
-  );
+      // Clean up
+      await defaultDs.query<Tag>().whereEquals('name', tempTagName).forceDelete();
+    });
+    if (animate) await Future.delayed(Duration(milliseconds: 100));
+    return TaskResult.success;
+  });
 
   io.success('Transaction completed - tenants remain isolated.');
 }

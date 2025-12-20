@@ -1,8 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:args/command_runner.dart';
-import 'package:artisan_args/artisan_args.dart';
+import 'package:artisanal/args.dart';
 import 'package:ormed/ormed.dart';
 import 'package:ormed_cli/src/commands/base/shared.dart';
 import 'package:ormed_cli/src/commands/migrate/migrate_command.dart';
@@ -153,7 +152,7 @@ environment:
       testSeederRunner = TestProjectSeederRunner();
       projectSeederRunner = testSeederRunner;
 
-      runner = ArtisanCommandRunner('orm', 'ORM CLI')
+      runner = CommandRunner('orm', 'ORM CLI')
         ..addCommand(ApplyCommand())
         ..addCommand(StatusCommand())
         ..addCommand(RollbackCommand())

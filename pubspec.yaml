@@ -7,7 +7,7 @@ workspace:
   - packages/ormed_postgres
   - packages/ormed_mysql
   - packages/ormed_cli
-  - packages/artisan_args
+  - packages/artisanal
   - packages/orm_playground
   - .site/examples
 

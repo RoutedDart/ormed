@@ -1,14 +1,14 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:artisan_args/artisan_args.dart';
+import 'package:artisanal/args.dart';
 import 'package:ormed/ormed.dart';
 import 'package:path/path.dart' as p;
 
 import '../../config.dart';
 import '../base/shared.dart';
 
-class SchemaDumpCommand extends ArtisanCommand<void> {
+class SchemaDumpCommand extends Command<void> {
   SchemaDumpCommand() {
     argParser.addOption(
       'config',
@@ -147,7 +147,7 @@ class SchemaDumpCommand extends ArtisanCommand<void> {
   }
 }
 
-class SchemaDescribeCommand extends ArtisanCommand<void> {
+class SchemaDescribeCommand extends Command<void> {
   SchemaDescribeCommand() {
     argParser.addOption(
       'config',

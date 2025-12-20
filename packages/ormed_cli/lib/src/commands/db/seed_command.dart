@@ -3,7 +3,7 @@ import 'package:artisan_args/artisan_args.dart';
 import '../../config.dart';
 import '../base/shared.dart';
 
-class SeedCommand extends ArtisanCommand<void> {
+class SeedCommand extends Command<void> {
   SeedCommand() {
     argParser
       ..addOption(

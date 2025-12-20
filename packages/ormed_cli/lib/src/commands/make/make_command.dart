@@ -1,13 +1,13 @@
 import 'dart:io';
 
 import 'package:args/command_runner.dart' show UsageException;
-import 'package:artisan_args/artisan_args.dart';
+import 'package:artisanal/args.dart';
 import 'package:path/path.dart' as p;
 
 import '../../config.dart';
 import '../base/shared.dart';
 
-class MakeCommand extends ArtisanCommand<void> {
+class MakeCommand extends Command<void> {
   MakeCommand() {
     argParser
       ..addOption('name', abbr: 'n', help: 'Slug for the migration/seeder.')
