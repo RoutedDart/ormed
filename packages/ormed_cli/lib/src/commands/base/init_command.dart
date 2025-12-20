@@ -224,18 +224,18 @@ void _writeFile({
     if (force) {
       file.writeAsStringSync(content);
       cliIO.writeln(
-        '${cliIO.style.warning('↻')} Recreated $label at ${tracker.relative(file.path)}',
+        '${cliIO.style.foreground(Colors.warning).render('↻')} Recreated $label at ${tracker.relative(file.path)}',
       );
     } else {
       cliIO.writeln(
-        '${cliIO.style.muted('○')} $label already exists ${cliIO.style.muted('(skipped)')}',
+        '${cliIO.style.foreground(Colors.muted).render('○')} $label already exists ${cliIO.style.foreground(Colors.muted).render('(skipped)')}',
       );
     }
     return;
   }
   file.writeAsStringSync(content);
   cliIO.writeln(
-    '${cliIO.style.success('✓')} Created $label at ${tracker.relative(file.path)}',
+    '${cliIO.style.foreground(Colors.success).render('✓')} Created $label at ${tracker.relative(file.path)}',
   );
 }
 
@@ -244,10 +244,10 @@ void _ensureDirectory(Directory dir, String label, _ArtifactTracker tracker) {
   if (!dir.existsSync()) {
     dir.createSync(recursive: true);
     cliIO.writeln(
-      '${cliIO.style.success('✓')} Created $label at ${tracker.relative(dir.path)}',
+      '${cliIO.style.foreground(Colors.success).render('✓')} Created $label at ${tracker.relative(dir.path)}',
     );
   } else {
-    cliIO.writeln('${cliIO.style.muted('○')} $label already exists');
+    cliIO.writeln('${cliIO.style.foreground(Colors.muted).render('○')} $label already exists');
   }
 }
 

@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:artisan_args/artisan_args.dart';
 import 'package:ormed/ormed.dart';
 import 'package:path/path.dart' as p;
 

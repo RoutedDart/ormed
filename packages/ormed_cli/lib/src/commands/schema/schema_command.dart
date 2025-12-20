@@ -189,7 +189,7 @@ class SchemaDescribeCommand extends ArtisanCommand<void> {
             cliIO.title('Database Schema');
             for (final table in metadata) {
               final name = table['name'];
-              cliIO.writeln(cliIO.style.emphasize('Table: $name'));
+              cliIO.writeln(cliIO.style.bold().render('Table: $name'));
               if (table['indexCount'] != null) {
                 cliIO.twoColumnDetail('  Indexes', '${table['indexCount']}');
               }

@@ -470,7 +470,7 @@ void _bootstrapCliDrivers() {
 
 /// Shared ArtisanIO instance for CLI output.
 ArtisanIO get cliIO => _cliIO ??= ArtisanIO(
-  style: ArtisanStyle(ansi: stdout.supportsAnsiEscapes),
+  renderer: TerminalRenderer(),
   out: stdout.writeln,
   err: stderr.writeln,
 );
@@ -496,16 +496,16 @@ void printMigrationPlanPreview({
       final symbol = entry.symbol;
       String styledEntry;
       if (symbol == '+') {
-        styledEntry = io.style.success('  $symbol ${entry.description}');
+        styledEntry = io.style.foreground(Colors.success).render('  $symbol ${entry.description}');
       } else if (symbol == '-') {
-        styledEntry = io.style.error('  $symbol ${entry.description}');
+        styledEntry = io.style.foreground(Colors.error).render('  $symbol ${entry.description}');
       } else {
-        styledEntry = io.style.warning('  $symbol ${entry.description}');
+        styledEntry = io.style.foreground(Colors.warning).render('  $symbol ${entry.description}');
       }
       io.writeln(styledEntry);
 
       for (final note in entry.notes) {
-        io.writeln(io.style.muted('      - $note'));
+        io.writeln(io.style.foreground(Colors.muted).render('      - $note'));
       }
     }
   }
@@ -515,7 +515,7 @@ void printMigrationPlanPreview({
   if (includeStatements && preview.statements.isNotEmpty) {
     io.newLine();
     for (final statement in preview.statements) {
-      io.writeln(io.style.muted('    ${statement.sql}'));
+      io.writeln(io.style.foreground(Colors.muted).render('    ${statement.sql}'));
     }
   }
 }

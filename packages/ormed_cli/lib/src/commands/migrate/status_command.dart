@@ -49,8 +49,8 @@ class StatusCommand extends RunnerCommand {
     final rows = filtered.map((status) {
       final batchStr = status.batch?.toString() ?? '-';
       final statusLabel = status.applied
-          ? cliIO.style.success('Applied')
-          : cliIO.style.warning('Pending');
+          ? cliIO.style.foreground(Colors.success).render('Applied')
+          : cliIO.style.foreground(Colors.warning).render('Pending');
       final appliedAt = status.applied
           ? (status.appliedAt?.toIso8601String() ?? 'unknown')
           : '-';

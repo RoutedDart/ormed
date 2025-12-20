@@ -3,14 +3,14 @@ library;
 
 import 'dart:io';
 
-import 'package:artisan_args/artisan_args.dart';
+import 'package:artisan_args/artisan_args.dart' hide Comment;
 import 'package:orm_playground/src/database/seeders.dart' as playground_seeders;
 import 'package:ormed/ormed.dart';
 import 'package:orm_playground/orm_playground.dart';
 
 /// Shared CLI IO for styled output.
 final io = ArtisanIO(
-  style: ArtisanStyle(ansi: stdout.supportsAnsiEscapes),
+  renderer: TerminalRenderer(),
   out: stdout.writeln,
   err: stderr.writeln,
   stdout: stdout,
@@ -96,14 +96,14 @@ Future<void> _prepareTenant(
     );
   } else {
     io.writeln(
-      '${io.style.muted('○')} Tenant ${io.style.emphasize(tenant)} already has data',
+      '${io.style.foreground(Colors.muted).render('○')} Tenant ${io.style.bold().render(tenant)} already has data',
     );
   }
 
   if (logSql) {
     ds.beforeExecuting((statement) {
       io.writeln(
-        io.style.muted('[Tenant $tenant SQL] ${statement.sqlWithBindings}'),
+        io.style.foreground(Colors.muted).render('[Tenant $tenant SQL] ${statement.sqlWithBindings}'),
       );
     });
   }

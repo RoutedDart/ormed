@@ -1,13 +1,13 @@
 import 'dart:io';
 
-import 'package:artisan_args/artisan_args.dart';
+import 'package:artisan_args/artisan_args.dart' hide Comment;
 import 'package:orm_playground/orm_playground.dart';
 import 'package:orm_playground/src/database/seeders.dart' as playground_seeders;
 import 'package:ormed/ormed.dart';
 
 /// Shared CLI IO for styled output.
 final io = ArtisanIO(
-  style: ArtisanStyle(ansi: stdout.supportsAnsiEscapes),
+  renderer: TerminalRenderer(),
   out: stdout.writeln,
   err: stderr.writeln,
   stdout: stdout,
@@ -66,7 +66,7 @@ Future<void> main(List<String> arguments) async {
     // Enable SQL logging if requested
     if (logSql) {
       ds!.beforeExecuting((statement) {
-        io.writeln(io.style.muted('[SQL] ${statement.sqlWithBindings}'));
+        io.writeln(io.style.foreground(Colors.muted).render('[SQL] ${statement.sqlWithBindings}'));
       });
     }
 
@@ -228,9 +228,9 @@ Future<void> _printPostSummaries(DataSource ds, {bool animate = true}) async {
         (row.row['comments_count'] as int?) ??
         row.relationList<Comment>('comments').length;
     io.writeln(
-      '${io.style.success('•')} ${io.style.emphasize(post.title)} '
+      '${io.style.foreground(Colors.success).render('•')} ${io.style.bold().render(post.title)} '
       'by ${post.author?.name ?? 'Unknown'} '
-      '${io.style.muted('($commentCount comments, tags: ${tagList.isEmpty ? 'none' : tagList})')}',
+      '${io.style.foreground(Colors.muted).render('($commentCount comments, tags: ${tagList.isEmpty ? 'none' : tagList})')}',
     );
     if (animate) await Future.delayed(Duration(milliseconds: 80));
   }
@@ -345,7 +345,7 @@ Future<void> _runPretendPreview(DataSource ds, {bool animate = true}) async {
 
   io.info('SQL that would be executed:');
   for (final entry in statements) {
-    io.writeln(io.style.muted('  ${entry.sql}'));
+    io.writeln(io.style.foreground(Colors.muted).render('  ${entry.sql}'));
     if (animate) await Future.delayed(Duration(milliseconds: 50));
   }
 }
@@ -422,7 +422,7 @@ Future<void> _runRelationQueryShowcase(DataSource ds) async {
     final count = row.row['comments_count'];
     final hasComments = row.row['has_comments'];
     io.writeln(
-      '${io.style.success('•')} ${io.style.emphasize(post.title)} → $count comments (exists: $hasComments)',
+      '${io.style.foreground(Colors.success).render('•')} ${io.style.bold().render(post.title)} → $count comments (exists: $hasComments)',
     );
   }
 
@@ -522,7 +522,7 @@ Future<void> _runTransactionShowcase(DataSource ds) async {
 
       // Clean up inside same transaction
       await ds.query<Tag>().whereEquals('name', tempTagName).forceDelete();
-      io.writeln('${io.style.success('✓')} Tag deleted in transaction');
+      io.writeln('${io.style.foreground(Colors.success).render('✓')} Tag deleted in transaction');
     });
     io.success('Transaction committed successfully');
   } catch (e) {
