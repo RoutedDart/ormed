@@ -1,3 +1,33 @@
+/// Renders configurable terminal borders and corners around a rectangular region.
+///
+/// {@category Ultraviolet}
+/// {@subCategory Rendering}
+///
+/// [UvBorder] draws edges and corner glyphs into a [Screen] within a target
+/// [Rectangle], making it easy to frame panels, dialogs, and sections. Use it
+/// directly with [Canvas] (immediate-mode composition) or any buffer-backed
+/// [Screen] to outline areas. Each side is a [Side] with `content`, [UvStyle],
+/// and optional [Link]; apply common styling via [UvBorder.style] and
+/// hyperlinks via [UvBorder.link]. For titles or badges, render a [StyledString]
+/// inside or atop the border region for rich, styled labels.
+///
+/// {@macro artisanal_uv_concept_overview}
+/// {@macro artisanal_uv_renderer_overview}
+/// {@macro artisanal_uv_events_overview}
+/// {@macro artisanal_uv_performance_tips}
+/// {@macro artisanal_uv_compatibility}
+///
+/// Example:
+/// ```dart
+/// // Compose a rounded border and a title onto a canvas.
+/// final canvas = Canvas(20, 5);
+/// final border = roundedBorder().style(const UvStyle(fg: UvColor.basic16(7)));
+/// canvas.compose(border);
+///
+/// // Draw a short label near the top edge.
+/// StyledString('Title').draw(canvas, rect(2, 0, 5, 1));
+/// final rendered = canvas.render(); // -> use in your renderer
+/// ```
 import 'cell.dart';
 import 'drawable.dart';
 import 'geometry.dart';

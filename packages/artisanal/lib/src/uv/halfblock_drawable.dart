@@ -1,3 +1,9 @@
+/// Support for half-block character graphics.
+///
+/// {@category Ultraviolet}
+/// {@subCategory Graphics}
+library artisanal.uv.halfblock;
+
 import 'package:image/image.dart' as img;
 import 'cell.dart';
 import 'drawable.dart';
@@ -5,7 +11,10 @@ import 'geometry.dart';
 import 'screen.dart';
 
 /// A [Drawable] that renders an image using half-block characters.
+///
 /// This is a fallback for terminals that do not support any graphics protocol.
+/// It uses the upper and lower half-block characters (▀, ▄) to simulate pixels,
+/// effectively doubling the vertical resolution of the terminal.
 final class HalfBlockImageDrawable implements Drawable {
   HalfBlockImageDrawable(this.image, {this.columns, this.rows});
 

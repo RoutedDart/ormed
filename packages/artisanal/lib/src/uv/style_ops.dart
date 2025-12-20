@@ -1,3 +1,14 @@
+/// Operations on [UvStyle] objects.
+///
+/// Includes utilities for converting styles to SGR sequences and adapting
+/// styles to different terminal color profiles.
+///
+/// {@category Ultraviolet}
+/// {@subCategory Styling}
+///
+/// {@macro artisanal_uv_renderer_overview}
+library;
+
 import 'package:artisanal/src/colorprofile/convert.dart' as cpconv;
 import 'package:artisanal/src/colorprofile/profile.dart' as cp;
 

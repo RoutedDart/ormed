@@ -1,5 +1,14 @@
 /// Tab stop management.
 ///
+/// Provides the [TabStops] class for tracking and calculating tab positions
+/// within a terminal buffer.
+///
+/// {@category Ultraviolet}
+/// {@subCategory Rendering}
+library;
+
+/// Tab stop management.
+///
 /// Upstream: `third_party/ultraviolet/tabstop.go`.
 final class TabStops {
   TabStops._(this.width, this.interval, this.stops);

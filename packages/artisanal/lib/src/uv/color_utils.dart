@@ -1,3 +1,12 @@
+/// Color conversion and manipulation utilities.
+///
+/// Includes helpers for converting between RGB and HSL, determining color
+/// brightness, and formatting colors for ANSI sequences.
+///
+/// {@category Ultraviolet}
+/// {@subCategory Styling}
+library;
+
 import 'cell.dart';
 
 int _shift16To8(int x) => x > 0xff ? (x >> 8) : x;

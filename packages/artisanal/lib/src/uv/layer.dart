@@ -1,3 +1,37 @@
+/// Composable 2D visual layers with z-ordering, hit-testing, and rendering.
+///
+/// {@category Ultraviolet}
+/// {@subCategory Composition}
+///
+/// {@macro artisanal_uv_concept_overview}
+/// {@macro artisanal_uv_renderer_overview}
+/// {@macro artisanal_uv_events_overview}
+/// {@macro artisanal_uv_performance_tips}
+/// {@macro artisanal_uv_compatibility}
+///
+/// A [Layer] wraps a [Drawable] with `x`, `y`, and `z` positioning, optional
+/// child layers, and a stable `id` for lookup and hits. The [Compositor]
+/// flattens the layer tree, computes aggregate bounds, maintains an `id` index,
+/// and draws in deterministic z-order (higher `z` above lower; ties broken by
+/// traversal order) onto a [Screen] or into a [Canvas].
+///
+/// Hit-testing returns the top-most match via [LayerHit], scanning from highest
+/// z-order down. Composition respects geometry unions to minimize overdraw,
+/// and [Compositor.render] uses a [Canvas] to produce a string snapshot.
+///
+/// Example:
+/// ```dart
+/// final base = newLayer('Hello').setId('greeting')..setZ(0);
+/// final badge = newLayer('!').setId('badge')..setX(5)..setZ(1);
+/// final comp = Compositor([base, badge]);
+///
+/// final hit = comp.hit(5, 0); // top-most at x=5, y=0
+/// assert(hit.id == 'badge');
+///
+/// // Compose to a canvas or draw onto a screen region.
+/// final rendered = comp.render();
+/// // void paint(Screen scr) => comp.draw(scr, comp.bounds());
+/// ```
 import 'dart:math' as math;
 
 import 'canvas.dart';

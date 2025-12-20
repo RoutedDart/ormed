@@ -1,6 +1,10 @@
-/// Environment variable helpers.
+/// Environment variable access and snapshotting.
 ///
-/// Upstream: `third_party/ultraviolet/environ.go`.
+/// Provides the [Environ] class for managing a snapshot of environment
+/// variables, allowing for consistent lookups across the UV subsystem.
+///
+/// {@category Ultraviolet}
+/// {@subCategory Utilities}
 library;
 
 /// An environment snapshot represented as `KEY=value` strings.

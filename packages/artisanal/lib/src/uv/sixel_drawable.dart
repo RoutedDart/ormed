@@ -1,3 +1,9 @@
+/// Support for Sixel Graphics.
+///
+/// {@category Ultraviolet}
+/// {@subCategory Graphics}
+library artisanal.uv.sixel;
+
 import 'package:image/image.dart' as img;
 import 'cell.dart';
 import 'drawable.dart';
@@ -6,6 +12,10 @@ import 'screen.dart';
 import '../terminal/sixel.dart';
 
 /// A [Drawable] that renders an image using Sixel Graphics.
+///
+/// Sixel is a legacy but widely supported bitmap graphics protocol for terminals.
+/// This drawable encodes the [image] into Sixel format and renders it within
+/// the specified [columns] and [rows].
 final class SixelImageDrawable implements Drawable {
   SixelImageDrawable(this.image, {this.columns, this.rows});
 

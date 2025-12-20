@@ -1,10 +1,28 @@
+/// Cursor position and state management.
+///
+/// Defines the [Cursor] class and [CursorShape] enum for controlling the
+/// appearance and location of the terminal cursor.
+///
+/// {@category Ultraviolet}
+/// {@subCategory Rendering}
+///
+/// {@macro artisanal_uv_renderer_overview}
+library;
+
 import 'geometry.dart';
 import '../style/color.dart';
 
 /// Cursor shape primitives.
 ///
 /// Upstream: `third_party/ultraviolet/cursor.go`.
-enum CursorShape { block, underline, bar }
+enum CursorShape {
+  /// A block cursor (█).
+  block,
+  /// An underline cursor (_).
+  underline,
+  /// A bar (I-beam) cursor (|).
+  bar
+}
 
 extension CursorShapeEncode on CursorShape {
   /// Returns the ANSI-encoded cursor shape code.
@@ -18,7 +36,9 @@ extension CursorShapeEncode on CursorShape {
   }
 }
 
-/// Cursor represents a cursor on the terminal screen.
+/// Represents a cursor on the terminal screen.
+///
+/// A cursor has a [position], an optional [color], a [shape], and a [blink] state.
 ///
 /// Upstream: `third_party/ultraviolet/uv.go` (`Cursor`).
 class Cursor {

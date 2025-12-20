@@ -1,3 +1,14 @@
+/// Adapts UV events to other TUI frameworks.
+///
+/// Provides a compatibility layer for translating Ultraviolet [Event]s into
+/// message types used by the core `artisanal` TUI framework.
+///
+/// {@category Ultraviolet}
+/// {@subCategory Compatibility}
+///
+/// {@macro artisanal_uv_compatibility}
+library;
+
 import '../../tui.dart';
 import '../terminal/keys.dart' as term;
 import '../unicode/grapheme.dart' as uni;

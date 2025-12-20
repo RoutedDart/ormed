@@ -1,3 +1,14 @@
+/// Reads and decodes terminal input events.
+///
+/// Orchestrates the [CancelReader] and [UvEventStreamParser] to provide a
+/// high-level stream of decoded terminal [Event]s.
+///
+/// {@category Ultraviolet}
+/// {@subCategory Input}
+///
+/// {@macro artisanal_uv_events_overview}
+library;
+
 import 'dart:async';
 
 import 'cancelreader.dart';

@@ -1,3 +1,30 @@
+/// Buffer, Line, and LineData for UV terminal screen state.
+///
+/// This module provides a 2D grid of [Cell]s organized as [Line]s and
+/// tracked via [LineData] to enable diffed, incremental rendering.
+/// It is optimized for partial updates and minimal terminal output.
+///
+/// {@category Ultraviolet}
+/// {@subCategory Rendering}
+///
+/// {@macro artisanal_uv_concept_overview}
+/// {@macro artisanal_uv_renderer_overview}
+/// {@macro artisanal_uv_performance_tips}
+///
+/// Integration points:
+/// - Feed [Buffer] frames to [UvTerminalRenderer.render] for efficient diffs.
+/// - Use [Screen] and [Canvas] to compose and present buffer contents.
+/// - Combine with [StyledString] to generate cells from ANSI/OSC text.
+///
+/// Example:
+/// ```dart
+/// final buf = Buffer.create(80, 24);
+/// buf.line(0)?.set(0, Cell(content: 'H'));
+/// buf.touch(0, 0);
+/// final renderer = UvTerminalRenderer(StringBuffer());
+/// renderer.render(buf);
+/// renderer.flush();
+/// ```
 import 'ansi.dart';
 import 'cell.dart';
 import 'drawable.dart';
@@ -20,9 +47,11 @@ final class LineData {
 /// A line is a fixed-width list of cells.
 ///
 /// Upstream: `third_party/ultraviolet/buffer.go` (`Line`, `Line.Set`).
+/// A single row of fixed-width [Cell]s.
 final class Line {
   Line._(this._cells);
 
+  /// Creates a line of [width] cells, initialized to spaces.
   factory Line.filled(int width) {
     final cells = List<Cell>.generate(width, (_) => Cell.emptyCell());
     return Line._(cells);
@@ -32,17 +61,20 @@ final class Line {
   ///
   /// This is primarily useful for porting upstream tests that include explicit
   /// wide-cell placeholder cells.
+  /// Creates a line from [cells] without applying wide-cell semantics.
   factory Line.fromCells(List<Cell> cells) {
     return Line._(cells.map((c) => c.clone()).toList(growable: false));
   }
 
   final List<Cell> _cells;
 
+  /// The number of cells in this line.
   int get length => _cells.length;
 
+  /// Returns the cell at [x], or null if out of bounds.
   Cell? at(int x) => (x < 0 || x >= _cells.length) ? null : _cells[x];
 
-  /// Sets the cell at x, applying wide-cell overwrite rules.
+  /// Sets the cell at [x], applying wide-cell overwrite rules.
   void set(int x, Cell? cell) {
     // Upstream: maxCellWidth = 5.
     const maxCellWidth = 5;
@@ -166,24 +198,31 @@ final class Buffer {
 
   List<LineData?> touched;
 
+  /// The buffer width in cells.
   int width() => lines.isEmpty ? 0 : lines[0].length;
+  /// The buffer height in cells.
   int height() => lines.length;
 
+  /// Returns the full buffer bounds as a [Rectangle].
   Rectangle bounds() => rect(0, 0, width(), height());
 
   /// Returns the line at [y], or null if out of bounds.
   ///
   /// Upstream: `third_party/ultraviolet/buffer.go` (`Buffer.Line`).
-  Line? line(int y) => (y < 0 || y >= lines.length) ? null : lines[y];
+    /// Returns the line at [y], or null if out of bounds.
+    Line? line(int y) => (y < 0 || y >= lines.length) ? null : lines[y];
 
-  Cell? cellAt(int x, int y) =>
+    /// Returns the cell at ([x], [y]), or null if out of bounds.
+    Cell? cellAt(int x, int y) =>
       (y < 0 || y >= lines.length) ? null : lines[y].at(x);
 
   /// Marks a single cell as dirty.
   ///
   /// Upstream: `third_party/ultraviolet/buffer_test.go` (`Touch`).
+  /// Marks the cell at ([x], [y]) as dirty.
   void touch(int x, int y) => touchLine(x, y, 1);
 
+  /// Sets the cell at ([x], [y]) and updates dirty tracking.
   void setCell(int x, int y, Cell? cell) {
     if (y < 0 || y >= lines.length) return;
     final current = cellAt(x, y);
@@ -195,6 +234,7 @@ final class Buffer {
     lines[y].set(x, cell);
   }
 
+  /// Resizes the buffer to [width] × [height], preserving content where possible.
   void resize(int width, int height) {
     if (width < 0 || height <= 0) {
       lines..clear();

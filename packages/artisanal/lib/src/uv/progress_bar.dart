@@ -1,6 +1,10 @@
-/// Terminal progress bar primitives (Windows Terminal sequences).
+/// Terminal progress bar component.
 ///
-/// Upstream: `third_party/ultraviolet/uv.go` (ProgressBarState/ProgressBar).
+/// Provides primitives for rendering progress bars using terminal-specific
+/// sequences (e.g., Windows Terminal progress ring).
+///
+/// {@category Ultraviolet}
+/// {@subCategory Components}
 library;
 
 /// Progress bar states.

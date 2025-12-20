@@ -1,3 +1,9 @@
+/// Support for the iTerm2 Image Protocol.
+///
+/// {@category Ultraviolet}
+/// {@subCategory Graphics}
+library artisanal.uv.iterm2;
+
 import 'package:image/image.dart' as img;
 import 'cell.dart';
 import 'drawable.dart';
@@ -6,6 +12,10 @@ import 'screen.dart';
 import '../terminal/iterm2.dart';
 
 /// A [Drawable] that renders an image using the iTerm2 Image Protocol.
+///
+/// This drawable uses the iTerm2 inline image protocol to display high-resolution
+/// images in compatible terminals. It supports scaling to a specific number of
+/// [columns] and [rows].
 final class ITerm2ImageDrawable implements Drawable {
   ITerm2ImageDrawable(this.image, {this.name, this.columns, this.rows});
 

@@ -1,3 +1,43 @@
+/// Discovers and tracks terminal features for UV rendering and input decoding.
+///
+/// {@category Ultraviolet}
+/// {@subCategory Device Capabilities}
+///
+/// {@macro artisanal_uv_concept_overview}
+/// {@macro artisanal_uv_renderer_overview}
+/// {@macro artisanal_uv_events_overview}
+/// {@macro artisanal_uv_performance_tips}
+/// {@macro artisanal_uv_compatibility}
+///
+/// The [TerminalCapabilities] model centralizes capability detection to guide
+/// renderer and input behavior (kitty/sixel graphics, keyboard enhancements,
+/// color palette/background, and device attributes). Initial hints come from an
+/// environment snapshot via [Environ], then are refined by ANSI reports such as
+/// [PrimaryDeviceAttributesEvent], [SecondaryDeviceAttributesEvent],
+/// [KittyGraphicsEvent], [KeyboardEnhancementsEvent], [BackgroundColorEvent],
+/// and [ColorPaletteEvent]. Colors are represented with [UvRgb].
+///
+/// Use [TerminalCapabilities] to gate feature use: prefer Kitty/Sixel paths
+/// only when available; enable enhanced keyboard decoding when reported; fall
+/// back to basic ANSI or palette-safe rendering on legacy terminals. Update
+/// capability state incrementally with [TerminalCapabilities.updateFromEvent].
+///
+/// Example:
+/// ```dart
+/// // Seed from environment, then refine with incoming [Event]s.
+/// final env = <String>['TERM=xterm-kitty', 'TERM_PROGRAM=WezTerm'];
+/// final caps = TerminalCapabilities(env: env);
+///
+/// // Later, as events arrive from the decoder:
+/// caps.updateFromEvent(PrimaryDeviceAttributesEvent([1, 2, 4])); // 4 -> Sixel
+/// caps.updateFromEvent(KeyboardEnhancementsEvent(
+///   KeyboardEnhancementsEvent.reportEventTypes,
+/// ));
+///
+/// if (caps.hasKittyGraphics || caps.hasSixel) {
+///   // Use graphics-capable renderer path
+/// }
+/// ```
 import 'environ.dart';
 import 'event.dart';
 import 'cell.dart';

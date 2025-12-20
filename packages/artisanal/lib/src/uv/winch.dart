@@ -1,3 +1,12 @@
+/// Window change (SIGWINCH) notification handling.
+///
+/// Listens for terminal resize signals and provides updates on the current
+/// terminal dimensions.
+///
+/// {@category Ultraviolet}
+/// {@subCategory Input}
+library;
+
 import 'dart:async';
 import 'dart:io';
 

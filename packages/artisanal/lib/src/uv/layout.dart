@@ -1,3 +1,38 @@
+/// Helpers for partitioning a terminal [Rectangle] into two view regions.
+///
+/// {@category Ultraviolet}
+/// {@subCategory Layout}
+///
+/// Use [splitHorizontal] and [splitVertical] to split a base [Rectangle]
+/// into left/right or top/bottom panes. The size of the first pane is
+/// controlled by a constraint: either [Fixed] for an absolute cell width/height
+/// or [Percent] for proportional sizing; the second pane gets the remainder.
+/// For convenience, use [ratio] as syntactic sugar for [Percent].
+///
+/// - [Fixed]: absolute cells (clamped to available space)
+/// - [Percent]: percentage of the available dimension (0–100)
+///
+/// {@macro artisanal_uv_concept_overview}
+/// {@macro artisanal_uv_renderer_overview}
+/// {@macro artisanal_uv_events_overview}
+/// {@macro artisanal_uv_performance_tips}
+/// {@macro artisanal_uv_compatibility}
+///
+/// Example:
+/// ```dart
+/// // Base area (80x24 terminal cells).
+/// final area = rect(0, 0, 80, 24);
+///
+/// // Left 20 columns; right gets the remainder.
+/// final cols = splitHorizontal(area, const Fixed(20));
+/// final left = cols.left;
+/// final right = cols.right;
+///
+/// // Top 30% rows; bottom gets the remainder.
+/// final rows = splitVertical(area, const Percent(30));
+/// final top = rows.top;
+/// final bottom = rows.bottom;
+/// ```
 import 'geometry.dart';
 
 /// Layout constraints.

@@ -1,3 +1,22 @@
+/// Mouse input modes and buttons for UV terminal interaction.
+///
+/// [MouseMode] controls how terminals report mouse activity (click/drag/motion),
+/// and [MouseButton] identifies physical buttons (left/middle/right, wheel,
+/// extra). Use with [EventDecoder] and [Terminal] to enable/disable reporting
+/// and to handle pointer input consistently across emulators.
+///
+/// {@category Ultraviolet}
+/// {@subCategory Input}
+///
+/// {@macro artisanal_uv_concept_overview}
+/// {@macro artisanal_uv_events_overview}
+/// {@macro artisanal_uv_performance_tips}
+///
+/// Example:
+/// ```dart
+/// final mode = MouseMode.drag;
+/// final name = MouseButton.toName(MouseButton.left); // "left"
+/// ```
 import 'key.dart';
 
 /// Mouse mode.
@@ -22,6 +41,7 @@ abstract final class MouseButton {
   static const int button10 = 10;
   static const int button11 = 11;
 
+  /// Returns a human-readable name for a mouse [button] code.
   static String toName(int button) {
     switch (button) {
       case none:

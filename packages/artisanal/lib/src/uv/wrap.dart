@@ -1,3 +1,14 @@
+/// Text wrapping utilities.
+///
+/// Provides ANSI-aware text wrapping that preserves SGR and OSC 8 state
+/// across line breaks.
+///
+/// {@category Ultraviolet}
+/// {@subCategory Styling}
+///
+/// {@macro artisanal_uv_performance_tips}
+library;
+
 import 'ansi.dart';
 import 'cell.dart';
 import '../unicode/width.dart';

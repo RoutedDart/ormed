@@ -1,3 +1,15 @@
+/// Stream utilities for terminal events.
+///
+/// Implements the [UvEventStreamParser] which handles the complexities of
+/// decoding ANSI sequences into structured [Event]s, including escape
+/// timeouts and bracketed paste handling.
+///
+/// {@category Ultraviolet}
+/// {@subCategory Input}
+///
+/// {@macro artisanal_uv_events_overview}
+library;
+
 import 'dart:convert' show utf8;
 
 import 'decoder.dart';

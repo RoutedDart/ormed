@@ -1,3 +1,39 @@
+/// Orchestrates a UV terminal’s lifecycle, capabilities, rendering, and input.
+/// 
+/// [Terminal] manages I/O, raw-mode state, resize handling, and a backing
+/// [Buffer] while exposing the high-level [Screen] API for mutation and draw.
+/// It adapts behavior using [TerminalCapabilities] (kitty/sixel/iTerm2, keyboard
+/// enhancements, background/palette) and performs diffed output via
+/// [UvTerminalRenderer]. Incoming bytes are normalized into typed events by
+/// [EventDecoder] and surfaced on [Terminal.events] for application loops.
+/// 
+/// {@category Ultraviolet}
+/// {@subCategory Runtime}
+/// 
+/// {@macro artisanal_uv_concept_overview}
+/// {@macro artisanal_uv_renderer_overview}
+/// {@macro artisanal_uv_events_overview}
+/// {@macro artisanal_uv_performance_tips}
+/// {@macro artisanal_uv_compatibility}
+/// 
+/// Lifecycle
+/// - Start: enter raw mode, subscribe to input/resize, query capabilities.
+/// - Operate: mutate the [Screen]/[Buffer], render frames, react to events.
+/// - Stop: restore modes, exit alt-screen, flush, detach streams.
+/// 
+/// Example
+/// ```dart
+/// import 'package:artisanal/uv.dart';
+/// 
+/// Future<void> main() async {
+///   final term = Terminal();
+///   await term.start();          // open: raw mode, size, capability queries
+///   term.enterAltScreen();       // optional: isolate UI
+///   term.setCell(0, 0, Cell(content: 'Hi'));
+///   term.draw();                 // render via [UvTerminalRenderer]
+///   await term.stop();           // close: restore terminal
+/// }
+/// ```
 import 'dart:async';
 import 'dart:io';
 
@@ -84,10 +120,13 @@ class Terminal implements Screen, FillableScreen, FillAreaScreen, ClearableScree
   StreamSubscription? _winchSubscription;
   StreamSubscription? _sigintSubscription;
 
-  /// Returns a stream of events from the terminal.
+  /// A stream of decoded terminal [Event]s.
   Stream<Event> get events => _eventController.stream;
 
-  /// Starts the terminal.
+  /// Starts the terminal session.
+  ///
+  /// This enters raw mode, initializes the renderer, starts listening for
+  /// input and resize events, and queries terminal capabilities.
   Future<void> start() async {
     if (_running) return;
     _running = true;
@@ -143,7 +182,10 @@ class Terminal implements Screen, FillableScreen, FillAreaScreen, ClearableScree
     queryCapabilities();
   }
 
-  /// Stops the terminal and restores the original state.
+  /// Stops the terminal session and restores the original state.
+  ///
+  /// This restores terminal modes, exits the alternate screen if active,
+  /// and cleans up event subscriptions.
   Future<void> stop() async {
     if (!_running) return;
     _running = false;
@@ -192,24 +234,24 @@ class Terminal implements Screen, FillableScreen, FillAreaScreen, ClearableScree
     );
   }
 
-  /// Resizes the terminal buffer.
+  /// Resizes the terminal buffer and renderer.
   void resize(int width, int height) {
     _buf.resize(width, height);
     _renderer.resize(width, height);
   }
-  /// Moves the cursor to the given position.
+  /// Moves the cursor to the given [x] and [y] position.
   void moveTo(int x, int y) {
     _renderer.moveTo(x, y);
   }
 
-  /// Hides the cursor.
+  /// Hides the terminal cursor.
   void hideCursor() {
     _cursorHidden = true;
     _renderer.hideCursor();
     _renderer.flush();
   }
 
-  /// Shows the cursor.
+  /// Shows the terminal cursor.
   void showCursor() {
     _cursorHidden = false;
     _renderer.showCursor();
@@ -258,7 +300,7 @@ class Terminal implements Screen, FillableScreen, FillAreaScreen, ClearableScree
     _renderer.flush();
   }
 
-  /// Enables keyboard enhancements (Kitty Keyboard Protocol).
+  /// Enables keyboard enhancements (Kitty Keyboard Protocol) with the specified [flags].
   void enableKeyboardEnhancements(int flags) {
     _keyboardEnhancements = flags;
     _renderer.pushKeyboardEnhancements(flags);
@@ -272,7 +314,7 @@ class Terminal implements Screen, FillableScreen, FillAreaScreen, ClearableScree
     _renderer.flush();
   }
 
-  /// Queries terminal capabilities.
+  /// Queries the terminal for its capabilities.
   void queryCapabilities() {
     _renderer.queryPrimaryDeviceAttributes();
     _renderer.queryKittyGraphics();
@@ -292,7 +334,7 @@ class Terminal implements Screen, FillableScreen, FillAreaScreen, ClearableScree
     _renderer.flush();
   }
 
-  /// Draws the current buffer to the terminal.
+  /// Draws the current buffer state to the terminal.
   void draw() {
     _renderer.render(_buf);
     if (_prepend.isNotEmpty) {
@@ -359,48 +401,55 @@ class Terminal implements Screen, FillableScreen, FillAreaScreen, ClearableScree
     _renderer.setScrollOptim(v);
   }
 
-  /// Sets the logger for debugging.
   /// Sets the escape sequence timeout.
   void setEscTimeout(Duration d) {
     _reader.escTimeout = d;
   }
 
-  /// Returns the terminal buffer.
+  /// The backing [Buffer] for this terminal.
   Buffer get buffer => _buf;
 
+  /// The bounding rectangle of the terminal screen.
   @override
   Rectangle bounds() => _buf.bounds();
 
+  /// Returns the [Cell] at the given [x] and [y] coordinates.
   @override
   Cell? cellAt(int x, int y) => _buf.cellAt(x, y);
 
-  /// Sets a cell in the buffer.
+  /// Sets the [cell] at the given [x] and [y] coordinates.
   @override
   void setCell(int x, int y, Cell? cell) {
     _buf.setCell(x, y, cell);
   }
 
+  /// Fills the entire terminal screen with the given [cell].
   @override
   void fill(Cell? cell) {
     _buf.fill(cell);
   }
 
+  /// Fills the specified [area] with the given [cell].
   @override
   void fillArea(Cell? cell, Rectangle area) {
     _buf.fillArea(cell, area);
   }
 
+  /// Clears the terminal buffer.
   @override
   void clear() {
     _buf.clear();
   }
 
+  /// Returns a clone of the current terminal buffer.
   @override
   Buffer clone() => _buf.clone();
 
+  /// Returns a clone of the specified [area] of the terminal buffer.
   @override
   Buffer? cloneArea(Rectangle area) => _buf.cloneArea(area);
 
+  /// The method used to calculate character widths.
   @override
   WidthMethod widthMethod() => WidthMethod.wcwidth;
 
@@ -418,7 +467,10 @@ class Terminal implements Screen, FillableScreen, FillAreaScreen, ClearableScree
     _renderer.flush();
   }
 
-  /// Returns the best [Drawable] for the given image based on terminal capabilities.
+  /// Returns the best [Drawable] for the given [image] based on terminal [capabilities].
+  ///
+  /// This selects between Kitty, iTerm2, Sixel, or half-block rendering
+  /// depending on what the terminal supports.
   static Drawable bestImageDrawable(
     img.Image image, {
     required TerminalCapabilities capabilities,
@@ -438,7 +490,7 @@ class Terminal implements Screen, FillableScreen, FillAreaScreen, ClearableScree
     return HalfBlockImageDrawable(image, columns: columns, rows: rows);
   }
 
-  /// Returns the best [Drawable] for the given image based on this terminal's capabilities.
+  /// Returns the best [Drawable] for the given [image] based on this terminal's capabilities.
   Drawable bestImageDrawableForTerminal(img.Image image, {int? columns, int? rows}) {
     return bestImageDrawable(image, capabilities: capabilities, columns: columns, rows: rows);
   }

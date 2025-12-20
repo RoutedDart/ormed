@@ -1,3 +1,14 @@
+/// Key code definitions and modifier constants.
+///
+/// Provides a comprehensive mapping of keyboard keys and modifiers,
+/// supporting both standard ANSI and extended protocols like Kitty.
+///
+/// {@category Ultraviolet}
+/// {@subCategory Input}
+///
+/// {@macro artisanal_uv_events_overview}
+library;
+
 import 'dart:math' as math;
 
 import '../unicode/grapheme.dart' as uni;

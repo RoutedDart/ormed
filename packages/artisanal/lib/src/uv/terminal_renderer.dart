@@ -1,3 +1,26 @@
+/// Diff-based terminal renderer for UV buffers with performance metrics.
+///
+/// [UvTerminalRenderer] computes minimal ANSI/OSC updates from a source
+/// [Buffer], tracking cursor, clears, scroll-optimization, and capability
+/// features detected via [TerminalCapabilities]. Use [RenderMetrics] to
+/// monitor throughput, frame times, and render durations.
+///
+/// {@category Ultraviolet}
+/// {@subCategory Rendering}
+///
+/// {@macro artisanal_uv_concept_overview}
+/// {@macro artisanal_uv_renderer_overview}
+/// {@macro artisanal_uv_performance_tips}
+///
+/// Example:
+/// ```dart
+/// final sink = StringBuffer();
+/// final renderer = UvTerminalRenderer(sink);
+/// final buf = Buffer.create(10, 3);
+/// buf.line(1)?.set(2, Cell(content: '★'));
+/// renderer.render(buf);
+/// renderer.flush();
+/// ```
 import 'dart:convert' show jsonEncode;
 import 'dart:io' show Platform;
 

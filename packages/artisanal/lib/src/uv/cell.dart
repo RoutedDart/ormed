@@ -1,12 +1,40 @@
+/// Cell model: glyph content, style, link, and display width.
+///
+/// A [Cell] holds a single grapheme (`content`), its `width`, a [UvStyle]
+/// (foreground/background color, underline, attributes), and an optional
+/// [Link] for terminals that support hyperlinks. Colors are represented by
+/// [UvColor] with palette variants [UvBasic16], [UvIndexed256], and true color
+/// [UvRgb].
+///
+/// {@category Ultraviolet}
+/// {@subCategory Cells & Colors}
+///
+/// {@macro artisanal_uv_concept_overview}
+/// {@macro artisanal_uv_renderer_overview}
+/// {@macro artisanal_uv_performance_tips}
+///
+/// Example:
+/// ```dart
+/// final cell = Cell(
+///   content: 'A',
+///   style: const UvStyle(fg: UvColor.rgb(255, 0, 0)),
+///   link: const Link(url: 'https://example.com'),
+/// );
+/// ```
 import '../unicode/width.dart';
 
 /// Upstream: `third_party/ultraviolet/cell.go` (`Link`).
+/// Terminal hyperlink metadata (OSC 8).
+///
+/// Carries a target [url] and optional [params] for terminals supporting
+/// OSC 8 hyperlinks.
 final class Link {
   const Link({this.url = '', this.params = ''});
 
   final String url;
   final String params;
 
+  /// Whether this link has no URL or parameters.
   bool get isZero => url.isEmpty && params.isEmpty;
 
   @override
@@ -21,6 +49,10 @@ final class Link {
 ///
 /// Upstream: `third_party/ultraviolet/cell.go` stores `color.Color` values and
 /// uses `x/ansi` helpers for named/indexed colors.
+/// Unified UV color representation across palettes and true color.
+///
+/// Use [UvBasic16] for 16-color palette, [UvIndexed256] for 256-color
+/// indexed palette, and [UvRgb] for 24-bit RGB.
 sealed class UvColor {
   const UvColor();
 
@@ -29,6 +61,7 @@ sealed class UvColor {
   const factory UvColor.rgb(int r, int g, int b, {int a}) = UvRgb;
 }
 
+/// 16-color palette index (optionally bright).
 final class UvBasic16 extends UvColor {
   const UvBasic16(this.index, {this.bright = false});
 
@@ -43,6 +76,7 @@ final class UvBasic16 extends UvColor {
   int get hashCode => Object.hash(index, bright);
 }
 
+/// 256-color indexed palette entry.
 final class UvIndexed256 extends UvColor {
   const UvIndexed256(this.index);
 
@@ -56,6 +90,7 @@ final class UvIndexed256 extends UvColor {
   int get hashCode => index.hashCode;
 }
 
+/// 24-bit RGBA color.
 final class UvRgb extends UvColor {
   const UvRgb(this.r, this.g, this.b, {this.a = 255});
 
@@ -96,6 +131,7 @@ abstract final class Attr {
 }
 
 /// Upstream: `third_party/ultraviolet/cell.go` (`UvStyle`).
+/// Style attributes for a terminal [Cell].
 final class UvStyle {
   const UvStyle({
     this.fg,
@@ -111,6 +147,7 @@ final class UvStyle {
   final UnderlineStyle underline;
   final int attrs;
 
+  /// Whether this style has no attributes or colors set.
   bool get isZero =>
       fg == null &&
       bg == null &&
@@ -118,6 +155,7 @@ final class UvStyle {
       underline == UnderlineStyle.none &&
       attrs == 0;
 
+  /// Returns a copy of this style with selected fields updated.
   UvStyle copyWith({
     UvColor? fg,
     bool clearFg = false,
@@ -159,6 +197,7 @@ final class UvStyle {
 /// for rendering images or complex graphics.
 ///
 /// Upstream: `third_party/ultraviolet/cell.go` (`Cell`, `EmptyCell`).
+/// A single cell in a terminal [Buffer].
 final class Cell {
   Cell({
     this.content = '',
@@ -174,22 +213,28 @@ final class Cell {
   int width;
   Object? drawable;
 
+  /// Whether this cell has no content, style, link, or drawable.
   bool get isZero =>
       content.isEmpty && width == 0 && style.isZero && link.isZero && drawable == null;
 
+  /// Whether this cell represents a plain space with no attributes.
   bool get isEmpty =>
       content == ' ' && width == 1 && style.isZero && link.isZero && drawable == null;
 
+  /// Returns a copy of this cell.
   Cell clone() =>
       Cell(content: content, style: style, link: link, width: width, drawable: drawable);
 
+  /// Sets this cell to a space with width 1.
   void empty() {
     content = ' ';
     width = 1;
   }
 
+  /// Creates a space cell with width 1.
   static Cell emptyCell() => Cell(content: ' ', width: 1);
 
+  /// Creates a new cell from a grapheme, computing its display width.
   static Cell newCell(WidthMethod method, String grapheme) {
     if (grapheme.isEmpty) return Cell();
     if (grapheme == ' ') return Cell.emptyCell();

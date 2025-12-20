@@ -1,3 +1,14 @@
+/// Mapping of escape sequences to keys.
+///
+/// Contains the logic for building lookup tables that map raw terminal
+/// escape sequences to high-level [Key] objects.
+///
+/// {@category Ultraviolet}
+/// {@subCategory Input}
+///
+/// {@macro artisanal_uv_events_overview}
+library;
+
 import 'key.dart';
 import 'decoder.dart';
 

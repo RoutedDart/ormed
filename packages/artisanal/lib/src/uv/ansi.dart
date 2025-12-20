@@ -1,4 +1,19 @@
-/// ANSI helpers used by the UV-style renderer.
+/// ANSI escape sequence constants and utilities for terminal control.
+///
+/// This library provides a comprehensive set of ANSI escape sequences used by
+/// the Ultraviolet renderer to control cursor position, screen clearing,
+/// mouse tracking, and more.
+///
+/// {@category Ultraviolet}
+/// {@subCategory Rendering}
+///
+/// {@macro artisanal_uv_renderer_overview}
+library;
+
+/// A collection of ANSI escape sequence constants and utilities.
+///
+/// This class provides static constants for common terminal control sequences
+/// such as cursor movement, screen clearing, and mode switching.
 ///
 /// Upstream: `github.com/charmbracelet/x/ansi` (used by `third_party/ultraviolet/*`).
 abstract final class UvAnsi {

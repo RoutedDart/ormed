@@ -1,3 +1,23 @@
+/// Parses and renders styled text (ANSI/OSC) into grid-aligned cells.
+///
+/// [StyledString] converts a string with terminal sequences into positioned
+/// [Cell]s and draws them into a [Screen] region, complementing [Buffer]
+/// rendering. During parsing, [readStyle] updates the active [StyleState]
+/// for SGR attributes and colors, while [readLink] updates [LinkState]
+/// for OSC 8 hyperlinks.
+///
+/// {@category Ultraviolet}
+/// {@subCategory Text Rendering}
+///
+/// {@macro artisanal_uv_concept_overview}
+/// {@macro artisanal_uv_renderer_overview}
+/// {@macro artisanal_uv_performance_tips}
+///
+/// Example:
+/// ```dart
+/// final s = StyledString('\x1b[1mHello\x1b[0m'); // bold Hello
+/// s.draw(screen, screen.bounds());
+/// ```
 import 'buffer.dart';
 import 'cell.dart';
 import 'drawable.dart';
@@ -20,13 +40,17 @@ final class StyledString implements Drawable {
   String tail;
 
   @override
+  /// Returns the original text content.
   String toString() => text;
 
+  /// The number of lines in the original text.
   int height() => text.split('\n').length;
 
+  /// Returns the bounds required to render [text] using grapheme widths.
   Rectangle bounds() => styledStringBounds(text, WidthMethod.grapheme);
 
   @override
+  /// Draws this styled string into [screen] inside [area], clearing first.
   void draw(Screen screen, Rectangle area) {
     // Clear the area before drawing.
     for (var y = area.minY; y < area.maxY; y++) {

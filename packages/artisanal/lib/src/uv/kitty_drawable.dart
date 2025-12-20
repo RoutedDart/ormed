@@ -1,3 +1,9 @@
+/// Support for the Kitty Graphics Protocol.
+///
+/// {@category Ultraviolet}
+/// {@subCategory Graphics}
+library artisanal.uv.kitty;
+
 import 'package:image/image.dart' as img;
 import 'cell.dart';
 import 'drawable.dart';
@@ -6,6 +12,10 @@ import 'screen.dart';
 import '../terminal/kitty.dart';
 
 /// A [Drawable] that renders an image using the Kitty Graphics Protocol.
+///
+/// This drawable uses the advanced Kitty graphics protocol to display
+/// high-resolution images. It supports unique image [id]s for caching and
+/// can be scaled to fit specific [columns] and [rows].
 final class KittyImageDrawable implements Drawable {
   KittyImageDrawable(this.image, {this.id, this.columns, this.rows});
 

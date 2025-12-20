@@ -1,3 +1,15 @@
+/// A cancelable reader for terminal input.
+///
+/// Provides an interface to read from [stdin] or other sources with the
+/// ability to cancel the operation, which is essential for responsive
+/// terminal applications.
+///
+/// {@category Ultraviolet}
+/// {@subCategory Input}
+///
+/// {@macro artisanal_uv_events_overview}
+library;
+
 import 'dart:async';
 import 'dart:io';
 

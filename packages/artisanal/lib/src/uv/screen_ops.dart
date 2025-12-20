@@ -1,3 +1,14 @@
+/// Operations on [Screen] objects.
+///
+/// Provides high-level utilities for clearing, filling, and cloning areas
+/// of a [Screen] or [Buffer].
+///
+/// {@category Ultraviolet}
+/// {@subCategory Rendering}
+///
+/// {@macro artisanal_uv_concept_overview}
+library;
+
 import 'buffer.dart';
 import 'cell.dart';
 import 'geometry.dart';
