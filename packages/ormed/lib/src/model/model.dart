@@ -823,6 +823,7 @@ abstract class Model<TModel extends Model<TModel>>
           excluded.contains(field.columnName)) {
         // Excluded fields are set to null (codec will handle validation/defaults)
         newAttributes[field.name] = null;
+        newAttributes[field.columnName] = null;
       }
     }
 
