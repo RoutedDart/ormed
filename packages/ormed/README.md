@@ -22,17 +22,17 @@ A strongly-typed ORM (Object-Relational Mapping) core for Dart, inspired by Eloq
 
 ```yaml
 dependencies:
-  ormed: ^0.1.0-dev+1
-  ormed_sqlite: ^0.1.0-dev+1 # Or ormed_postgres, ormed_mysql
+  ormed: ^0.1.0-dev+2
+  ormed_sqlite: ^0.1.0-dev+2 # Or ormed_postgres, ormed_mysql
 
 dev_dependencies:
-  ormed_cli: ^0.1.0-dev+1
+  ormed_cli: ^0.1.0-dev+2
   build_runner: ^2.4.0
 ```
 
 ## Getting Started
 
-The recommended way to use Ormed is via the `orm` CLI, which manages migrations, seeders, and project scaffolding.
+The recommended way to use Ormed is via the `ormed` CLI, which manages migrations, seeders, and project scaffolding.
 
 ### 1. Install the CLI
 
@@ -50,12 +50,12 @@ dart pub global activate ormed_cli
 Scaffold the configuration and directory structure:
 
 ```bash
-orm init
+ormed init
 ```
 
-(Or use `dart run ormed_cli:orm init` if not installed globally).
+(Or use `dart run ormed_cli:ormed init` if not installed globally).
 
-This creates `orm.yaml` and the `lib/src/database` directory.
+This creates `ormed.yaml` and the `lib/src/database` directory.
 
 ### 3. Define a Model
 
@@ -88,7 +88,7 @@ dart run build_runner build
 Generate a migration for your model:
 
 ```bash
-dart run ormed_cli:orm make --name create_users_table --create --table users
+dart run ormed_cli:ormed make --name create_users_table --create --table users
 ```
 
 Edit the generated migration in `lib/src/database/migrations/` to add columns:
@@ -107,7 +107,7 @@ void up(SchemaBuilder schema) {
 Apply the migration:
 
 ```bash
-dart run ormed_cli:orm migrate
+dart run ormed_cli:ormed migrate
 ```
 
 ### 5. Seed the Database
@@ -115,7 +115,7 @@ dart run ormed_cli:orm migrate
 Create a seeder:
 
 ```bash
-dart run ormed_cli:orm make --name UserSeeder --seeder
+dart run ormed_cli:ormed make --name UserSeeder --seeder
 ```
 
 Add data in `lib/src/database/seeders/user_seeder.dart`:
@@ -131,7 +131,7 @@ Future<void> run() async {
 Run the seeders:
 
 ```bash
-dart run ormed_cli:orm seed
+dart run ormed_cli:ormed seed
 ```
 
 ### 6. Bootstrap and Use
@@ -168,14 +168,14 @@ Ormed supports two migration formats, which can be mixed in the same project. Th
 Type-safe migrations using a fluent `SchemaBuilder`. Best for most use cases.
 
 ```bash
-dart run ormed_cli:orm make --name add_bio_to_users
+dart run ormed_cli:ormed make --name add_bio_to_users
 ```
 
 ### SQL Migrations
 Raw `.sql` files for complex schema changes or when porting existing SQL scripts.
 
 ```bash
-dart run ormed_cli:orm make --name add_bio_to_users --format sql
+dart run ormed_cli:ormed make --name add_bio_to_users --format sql
 ```
 
 This creates a directory with `up.sql` and `down.sql` files.

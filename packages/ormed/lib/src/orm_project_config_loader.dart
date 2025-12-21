@@ -1,4 +1,4 @@
-/// Loads `orm.yaml` into portable project configuration metadata.
+/// Loads `ormed.yaml` into portable project configuration metadata.
 library;
 
 import 'dart:io';
@@ -12,10 +12,10 @@ import 'orm_project_config.dart';
 /// Loads [OrmProjectConfig] from [file].
 ///
 /// Throws when the file is missing so callers can instruct users to run
-/// `orm init`.
+/// `ormed init`.
 OrmProjectConfig loadOrmProjectConfig(File file) {
   if (!file.existsSync()) {
-    throw StateError('Missing orm.yaml at ${file.path}. Run `orm init` first.');
+    throw StateError('Missing ormed.yaml at ${file.path}. Run `ormed init` first.');
   }
   final parsed = loadYaml(file.readAsStringSync());
   final env = _loadEnv(file.parent);

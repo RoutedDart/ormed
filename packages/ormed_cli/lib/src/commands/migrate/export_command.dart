@@ -13,7 +13,7 @@ class ExportCommand extends Command<void> {
       ..addOption(
         'config',
         abbr: 'c',
-        help: 'Path to orm.yaml (defaults to project root).',
+        help: 'Path to ormed.yaml (defaults to project root).',
       )
       ..addOption(
         'path',
@@ -33,7 +33,7 @@ class ExportCommand extends Command<void> {
       ..addOption(
         'connection',
         help:
-            'Select a specific connection block defined in orm.yaml (defaults to default_connection or the only entry).',
+            'Select a specific connection block defined in ormed.yaml (defaults to default_connection or the only entry).',
       )
       ..addOption(
         'out',

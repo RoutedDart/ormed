@@ -144,7 +144,7 @@ class ApplyCommand extends RunnerCommand {
     if ((argResults?['seed'] == true) || argResults?['seeder'] != null) {
       if (seeds == null) {
         usageException(
-          'orm.yaml missing seeds configuration. Add a `seeds` block before running --seed.',
+          'ormed.yaml missing seeds configuration. Add a `seeds` block before running --seed.',
         );
       }
       final seederOverride = argResults?['seeder'] as String?;

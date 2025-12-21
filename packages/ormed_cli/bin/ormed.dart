@@ -3,7 +3,7 @@ import 'package:artisanal/args.dart';
 import '../lib/src/commands.dart';
 
 Future<void> main(List<String> args) async {
-  final runner = CommandRunner<void>('orm', 'Routed ORM CLI')
+  final runner = CommandRunner<void>('ormed', 'Routed ORM CLI')
     ..addCommand(InitCommand())
     ..addCommand(MakeCommand())
     ..addCommand(ApplyCommand())

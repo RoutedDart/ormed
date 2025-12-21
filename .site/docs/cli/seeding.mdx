@@ -4,13 +4,13 @@ sidebar_position: 3
 
 # Seeding (CLI)
 
-Seeders are configured in `orm.yaml` and executed by running the seeder registry entrypoint you configured.
+Seeders are configured in `ormed.yaml` and executed by running the seeder registry entrypoint you configured.
 
 ## Run seeders
 
 ```bash
-dart run ormed_cli:orm seed
-dart run ormed_cli:orm seed --connection analytics
+dart run ormed_cli:ormed seed
+dart run ormed_cli:ormed seed --connection analytics
 ```
 
 ## Run specific seeders
@@ -18,8 +18,8 @@ dart run ormed_cli:orm seed --connection analytics
 Use `--class` (repeatable / comma-separated) to run specific seeder classes:
 
 ```bash
-dart run ormed_cli:orm seed --class UserSeeder
-dart run ormed_cli:orm seed --class UserSeeder,PostSeeder
+dart run ormed_cli:ormed seed --class UserSeeder
+dart run ormed_cli:ormed seed --class UserSeeder,PostSeeder
 ```
 
 ## Pretend mode
@@ -27,12 +27,12 @@ dart run ormed_cli:orm seed --class UserSeeder,PostSeeder
 Preview statements (when supported by the driver) without executing them:
 
 ```bash
-dart run ormed_cli:orm seed --pretend
+dart run ormed_cli:ormed seed --pretend
 ```
 
 ## Configuration reminder
 
-Your `orm.yaml` needs a `seeds` block:
+Your `ormed.yaml` needs a `seeds` block:
 
 ```yaml
 seeds:

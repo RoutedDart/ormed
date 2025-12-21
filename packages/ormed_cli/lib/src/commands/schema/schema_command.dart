@@ -13,7 +13,7 @@ class SchemaDumpCommand extends Command<void> {
     argParser.addOption(
       'config',
       abbr: 'c',
-      help: 'Path to orm.yaml (defaults to project root).',
+      help: 'Path to ormed.yaml (defaults to project root).',
     );
     argParser.addOption('database', help: 'The database connection to use.');
     argParser.addOption(
@@ -152,7 +152,7 @@ class SchemaDescribeCommand extends Command<void> {
     argParser.addOption(
       'config',
       abbr: 'c',
-      help: 'Path to orm.yaml (defaults to project root).',
+      help: 'Path to ormed.yaml (defaults to project root).',
     );
     argParser.addFlag(
       'json',

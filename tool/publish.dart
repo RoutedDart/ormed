@@ -5,6 +5,7 @@ import 'package:path/path.dart' as p;
 final packages = [
   'packages/artisanal',
   'packages/ormed',
+  'packages/driver_tests',
   'packages/ormed_sqlite',
   'packages/ormed_mysql',
   'packages/ormed_postgres',

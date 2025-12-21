@@ -10,7 +10,7 @@ Command-line interface for the ormed ORM. Provides migration management, schema 
 
 ### Global (Recommended)
 
-Install the CLI globally to use the `orm` command directly from anywhere:
+Install the CLI globally to use the `ormed` command directly from anywhere:
 
 ```bash
 dart pub global activate ormed_cli
@@ -22,19 +22,19 @@ Add it to your `dev_dependencies` in `pubspec.yaml`. This ensures you always hav
 
 ```yaml
 dev_dependencies:
-  ormed_cli: ^0.1.0-dev+1
+  ormed_cli: ^0.1.0-dev+2
 ```
 
 > **Note:** Adding `ormed_cli` as a local dependency will pull in all supported database drivers (SQLite, MySQL, Postgres) and their respective native dependencies. If you want to keep your project's dependency tree minimal, use the **Global** installation instead.
 
-The CLI is available as the `orm` executable:
+The CLI is available as the `ormed` executable:
 
 ```bash
 # If installed globally
-orm <command>
+ormed <command>
 
 # If using local dependency
-dart run ormed_cli:orm <command>
+dart run ormed_cli:ormed <command>
 ```
 
 ## Commands
@@ -44,81 +44,81 @@ For a complete walkthrough of setting up a project with the CLI, see the [Gettin
 ### Project Initialization
 
 ```bash
-# Scaffold orm.yaml, migration registry, and directories
-dart run ormed_cli:orm init
+# Scaffold ormed.yaml, migration registry, and directories
+ormed init
 
 # Overwrite existing files
-dart run ormed_cli:orm init --force
+ormed init --force
 
 # Scan and register existing migrations/seeders
-dart run ormed_cli:orm init --populate-existing
+ormed init --populate-existing
 ```
 
 ### Migration Management
 
 ```bash
 # Create a new migration
-dart run ormed_cli:orm make --name create_users_table
-dart run ormed_cli:orm make --name create_posts_table --create --table posts
-dart run ormed_cli:orm make --name add_column --format sql  # SQL format instead of Dart
+ormed make --name create_users_table
+ormed make --name create_posts_table --create --table posts
+ormed make --name add_column --format sql  # SQL format instead of Dart
 
 # Run pending migrations
-dart run ormed_cli:orm migrate
-dart run ormed_cli:orm migrate --pretend      # Preview SQL without executing
-dart run ormed_cli:orm migrate --step         # Apply one migration at a time
-dart run ormed_cli:orm migrate --seed         # Run default seeder after
-dart run ormed_cli:orm migrate --force        # Skip production confirmation
+ormed migrate
+ormed migrate --pretend      # Preview SQL without executing
+ormed migrate --step         # Apply one migration at a time
+ormed migrate --seed         # Run default seeder after
+ormed migrate --force        # Skip production confirmation
 
 # Rollback migrations
-dart run ormed_cli:orm migrate:rollback              # Rollback 1 migration
-dart run ormed_cli:orm migrate:rollback --steps 3    # Rollback 3 migrations
-dart run ormed_cli:orm migrate:rollback --batch 2    # Rollback specific batch
-dart run ormed_cli:orm migrate:rollback --pretend    # Preview rollback SQL
+ormed migrate:rollback              # Rollback 1 migration
+ormed migrate:rollback --steps 3    # Rollback 3 migrations
+ormed migrate:rollback --batch 2    # Rollback specific batch
+ormed migrate:rollback --pretend    # Preview rollback SQL
 
 # Reset/Refresh
-dart run ormed_cli:orm migrate:reset      # Rollback ALL migrations
-dart run ormed_cli:orm migrate:refresh    # Reset + re-migrate
-dart run ormed_cli:orm migrate:fresh      # Drop all tables + re-migrate
-dart run ormed_cli:orm migrate:fresh --seed
+ormed migrate:reset      # Rollback ALL migrations
+ormed migrate:refresh    # Reset + re-migrate
+ormed migrate:fresh      # Drop all tables + re-migrate
+ormed migrate:fresh --seed
 
 # Migration status
-dart run ormed_cli:orm migrate:status
-dart run ormed_cli:orm migrate:status --pending  # Only show pending
+ormed migrate:status
+ormed migrate:status --pending  # Only show pending
 
 # Export SQL files
-dart run ormed_cli:orm migrate:export        # Export pending migrations
-dart run ormed_cli:orm migrate:export --all  # Export all migrations
+ormed migrate:export        # Export pending migrations
+ormed migrate:export --all  # Export all migrations
 ```
 
 ### Database Operations
 
 ```bash
 # Run seeders
-dart run ormed_cli:orm seed
-dart run ormed_cli:orm seed --class UserSeeder  # Specific seeder
-dart run ormed_cli:orm seed --pretend           # Preview SQL
+dart run ormed_cli:ormed seed
+dart run ormed_cli:ormed seed --class UserSeeder  # Specific seeder
+dart run ormed_cli:ormed seed --pretend           # Preview SQL
 
 # Wipe database
-dart run ormed_cli:orm db:wipe --force
-dart run ormed_cli:orm db:wipe --drop-views
+dart run ormed_cli:ormed db:wipe --force
+dart run ormed_cli:ormed db:wipe --drop-views
 
 # Schema operations
-dart run ormed_cli:orm schema:dump
-dart run ormed_cli:orm schema:dump --prune  # Delete migration files after dump
-dart run ormed_cli:orm schema:describe
-dart run ormed_cli:orm schema:describe --json
+dart run ormed_cli:ormed schema:dump
+dart run ormed_cli:ormed schema:dump --prune  # Delete migration files after dump
+dart run ormed_cli:ormed schema:describe
+dart run ormed_cli:ormed schema:describe --json
 ```
 
 ### Multi-Database Support
 
 ```bash
 # Target specific connection
-dart run ormed_cli:orm migrate --connection analytics
-dart run ormed_cli:orm seed --connection analytics
-dart run ormed_cli:orm migrate:status --connection analytics
+dart run ormed_cli:ormed migrate --connection analytics
+dart run ormed_cli:ormed seed --connection analytics
+dart run ormed_cli:ormed migrate:status --connection analytics
 ```
 
-## Configuration (orm.yaml)
+## Configuration (ormed.yaml)
 
 The `init` command scaffolds this configuration file:
 
@@ -166,7 +166,7 @@ After running `init`:
 
 ```
 project/
-├── orm.yaml
+├── ormed.yaml
 ├── database/
 │   └── schema.sql
 └── lib/src/database/
@@ -186,7 +186,7 @@ Ormed supports both Dart and SQL migrations in the same project. The CLI automat
 Type-safe migrations using a fluent `SchemaBuilder`.
 
 ```bash
-dart run ormed_cli:orm make --name create_users_table
+dart run ormed_cli:ormed make --name create_users_table
 ```
 
 ```dart
@@ -211,7 +211,7 @@ class CreateUsersTable extends Migration {
 Raw `.sql` files for complex schema changes.
 
 ```bash
-dart run ormed_cli:orm make --name add_bio_to_users --format sql
+dart run ormed_cli:ormed make --name add_bio_to_users --format sql
 ```
 
 This creates a directory:
@@ -244,9 +244,9 @@ Most commands support these flags:
 
 | Flag | Description |
 |------|-------------|
-| `--config, -c` | Path to orm.yaml |
+| `--config, -c` | Path to ormed.yaml |
 | `--database, -d` | Override database connection |
-| `--connection` | Select connection from orm.yaml |
+| `--connection` | Select connection from ormed.yaml |
 | `--path` | Override migration registry path |
 | `--force, -f` | Skip production confirmation |
 | `--pretend` | Preview SQL without executing |
@@ -255,7 +255,7 @@ Most commands support these flags:
 ## Creating Seeders
 
 ```bash
-dart run ormed_cli:orm make --name UserSeeder --seeder
+dart run ormed_cli:ormed make --name UserSeeder --seeder
 ```
 
 ```dart

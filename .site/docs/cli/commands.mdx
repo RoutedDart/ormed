@@ -15,7 +15,7 @@ This page is a quick command index. For guides, start with:
 
 ## Global patterns
 
-- The CLI reads `orm.yaml` (auto-discovered, or use `--config`).
+- The CLI reads `ormed.yaml` (auto-discovered, or use `--config`).
 - Use `--connection <name>` to select a connection block.
 - Many commands support `--database` to override the driver database option.
 
@@ -23,10 +23,10 @@ This page is a quick command index. For guides, start with:
 
 ### `init`
 
-Scaffolds `orm.yaml` plus migration/seeder registries:
+Scaffolds `ormed.yaml` plus migration/seeder registries:
 
 ```bash
-dart run ormed_cli:orm init
+dart run ormed_cli:ormed init
 ```
 
 ### `make`
@@ -34,9 +34,9 @@ dart run ormed_cli:orm init
 Generates migrations or seeders:
 
 ```bash
-dart run ormed_cli:orm make --name create_users_table
-dart run ormed_cli:orm make --name create_users_table --format sql
-dart run ormed_cli:orm make --name UserSeeder --seeder
+dart run ormed_cli:ormed make --name create_users_table
+dart run ormed_cli:ormed make --name create_users_table --format sql
+dart run ormed_cli:ormed make --name UserSeeder --seeder
 ```
 
 ### `migrate`
@@ -44,9 +44,9 @@ dart run ormed_cli:orm make --name UserSeeder --seeder
 Applies pending migrations:
 
 ```bash
-dart run ormed_cli:orm migrate
-dart run ormed_cli:orm migrate --limit 5
-dart run ormed_cli:orm migrate --pretend
+dart run ormed_cli:ormed migrate
+dart run ormed_cli:ormed migrate --limit 5
+dart run ormed_cli:ormed migrate --pretend
 ```
 
 ### `migrate:export`
@@ -54,58 +54,58 @@ dart run ormed_cli:orm migrate --pretend
 Exports `up.sql` and `down.sql` for migrations:
 
 ```bash
-dart run ormed_cli:orm migrate:export --out database/migration_sql
-dart run ormed_cli:orm migrate:export --out database/migration_sql --all
+dart run ormed_cli:ormed migrate:export --out database/migration_sql
+dart run ormed_cli:ormed migrate:export --out database/migration_sql --all
 ```
 
 ### `migrate:status`
 
 ```bash
-dart run ormed_cli:orm migrate:status
-dart run ormed_cli:orm migrate:status --pending
+dart run ormed_cli:ormed migrate:status
+dart run ormed_cli:ormed migrate:status --pending
 ```
 
 ### `migrate:rollback`
 
 ```bash
-dart run ormed_cli:orm migrate:rollback
-dart run ormed_cli:orm migrate:rollback --steps 3
+dart run ormed_cli:ormed migrate:rollback
+dart run ormed_cli:ormed migrate:rollback --steps 3
 ```
 
 ### `migrate:fresh` / `migrate:reset` / `migrate:refresh`
 
 ```bash
-dart run ormed_cli:orm migrate:fresh
-dart run ormed_cli:orm migrate:reset
-dart run ormed_cli:orm migrate:refresh
+dart run ormed_cli:ormed migrate:fresh
+dart run ormed_cli:ormed migrate:reset
+dart run ormed_cli:ormed migrate:refresh
 ```
 
 ### `seed`
 
 ```bash
-dart run ormed_cli:orm seed
-dart run ormed_cli:orm seed --class UserSeeder
-dart run ormed_cli:orm seed --pretend
+dart run ormed_cli:ormed seed
+dart run ormed_cli:ormed seed --class UserSeeder
+dart run ormed_cli:ormed seed --pretend
 ```
 
 ### `schema:dump`
 
 ```bash
-dart run ormed_cli:orm schema:dump
-dart run ormed_cli:orm schema:dump --prune
+dart run ormed_cli:ormed schema:dump
+dart run ormed_cli:ormed schema:dump --prune
 ```
 
 ### `schema:describe`
 
 ```bash
-dart run ormed_cli:orm schema:describe
-dart run ormed_cli:orm schema:describe --json
+dart run ormed_cli:ormed schema:describe
+dart run ormed_cli:ormed schema:describe --json
 ```
 
 ### `db:wipe`
 
 ```bash
-dart run ormed_cli:orm db:wipe
-dart run ormed_cli:orm db:wipe --drop-views
+dart run ormed_cli:ormed db:wipe
+dart run ormed_cli:ormed db:wipe --drop-views
 ```
 

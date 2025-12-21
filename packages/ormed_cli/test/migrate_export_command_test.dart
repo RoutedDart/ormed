@@ -70,7 +70,7 @@ void main() {
       )..createSync(recursive: true);
 
       dbPath = p.join(scratchDir.path, 'test.sqlite');
-      ormConfig = File(p.join(scratchDir.path, 'orm.yaml'))
+      ormConfig = File(p.join(scratchDir.path, 'ormed.yaml'))
         ..writeAsStringSync('''
 driver:
   type: sqlite
@@ -114,7 +114,7 @@ environment:
     });
 
     Future<void> runOrm(List<String> args) async {
-      final runner = CommandRunner<void>('orm', 'ORM CLI')
+      final runner = CommandRunner<void>('ormed', 'ORM CLI')
         ..addCommand(ApplyCommand())
         ..addCommand(ExportCommand());
       await runner.run([

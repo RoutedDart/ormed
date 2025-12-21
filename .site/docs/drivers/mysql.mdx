@@ -19,9 +19,9 @@ dependencies:
   ormed_mysql: ^latest
 ```
 
-## Configure (orm.yaml)
+## Configure (ormed.yaml)
 
-<Tabs groupId="mysql-orm-yaml" defaultValue="url">
+<Tabs groupId="mysql-ormed-yaml" defaultValue="url">
 <TabItem value="url" label="URL">
 
 ```yaml
@@ -137,5 +137,5 @@ Ormed uses driver codecs to map some MySQL/MariaDB column types to richer Dart t
 
 - Uses `ON DUPLICATE KEY UPDATE` for upserts and supports JSON columns on MySQL 8+/MariaDB 10.5+.
 - Set `driver.type: mariadb` to target MariaDB specifically; the same options apply.
-- Migrations and seeds are configured separately in `orm.yaml`. See Getting Started → Configuration.
+- Migrations and seeds are configured separately in `ormed.yaml`. See Getting Started → Configuration.
 - For plan/previews/schema internals, see Drivers → Internals.

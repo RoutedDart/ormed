@@ -7,7 +7,7 @@ import TabItem from '@theme/TabItem';
 
 # CLI Overview
 
-The Ormed CLI manages migrations, seeds, and schema tooling for projects configured with `orm.yaml`.
+The Ormed CLI manages migrations, seeds, and schema tooling for projects configured with `ormed.yaml`.
 
 ## Running the CLI
 
@@ -17,9 +17,9 @@ The Ormed CLI manages migrations, seeds, and schema tooling for projects configu
 Use this if you have `ormed_cli` in your `dev_dependencies`. This ensures version parity with your project.
 
 ```bash
-dart run ormed_cli:orm --help
-dart run ormed_cli:orm init
-dart run ormed_cli:orm migrate
+dart run ormed_cli:ormed --help
+dart run ormed_cli:ormed init
+dart run ormed_cli:ormed migrate
 ```
 
 :::warning
@@ -29,7 +29,7 @@ Adding `ormed_cli` to your project will pull in all database drivers (SQLite, My
   </TabItem>
   <TabItem value="global" label="Global (optional)">
 
-Install the CLI globally to use the `orm` command directly:
+Install the CLI globally to use the `ormed` command directly:
 
 ```bash
 dart pub global activate ormed_cli
@@ -38,8 +38,8 @@ dart pub global activate ormed_cli
 Then you can run:
 
 ```bash
-orm --help
-orm migrate
+ormed --help
+ormed migrate
 ```
 
   </TabItem>
@@ -47,21 +47,21 @@ orm migrate
 
 ## Config discovery
 
-By default the CLI finds the nearest `orm.yaml` by walking up from the current directory.
+By default the CLI finds the nearest `ormed.yaml` by walking up from the current directory.
 
 Override the config path explicitly:
 
 ```bash
-dart run ormed_cli:orm migrate --config path/to/orm.yaml
+dart run ormed_cli:ormed migrate --config path/to/ormed.yaml
 ```
 
 ## Targeting connections
 
-If your `orm.yaml` contains multiple connections, target one with:
+If your `ormed.yaml` contains multiple connections, target one with:
 
 ```bash
-dart run ormed_cli:orm migrate --connection analytics
-dart run ormed_cli:orm seed --connection analytics
+dart run ormed_cli:ormed migrate --connection analytics
+dart run ormed_cli:ormed seed --connection analytics
 ```
 
 ## Production guard

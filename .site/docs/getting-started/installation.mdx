@@ -89,13 +89,13 @@ dart pub get
 Scaffold the default config, migration registry, and seed stubs:
 
 ```bash
-orm init
+ormed init
 ```
 
-(Or use `dart run ormed_cli:orm init` if not installed globally).
+(Or use `dart run ormed_cli:ormed init` if not installed globally).
 
 Key outputs:
-- `orm.yaml` — CLI + connection settings  
+- `ormed.yaml` — CLI + connection settings  
 - `lib/src/database/migrations.dart` — migration registry  
 - `lib/src/database/seeders.dart` — seeder registry
 
@@ -109,14 +109,14 @@ my_app/
 │   ├── src/
 │   │   ├── models/
 │   │   │   ├── user.dart
-│   │   │   ├── user.orm.dart  (generated)
+│   │   │   ├── user.ormed.dart  (generated)
 │   │   │   └── post.dart
 │   │   └── database/
 │   │       └── migrations/
 │   │           ├── migrations.dart
 │   │           └── m_20241201_create_users_table.dart
 │   └── main.dart
-├── orm.yaml           (CLI configuration)
+├── ormed.yaml           (CLI configuration)
 └── pubspec.yaml
 ```
 
@@ -132,7 +132,7 @@ dart run build_runner build
 dart run build_runner watch
 ```
 
-This generates `.orm.dart` files alongside your model files containing:
+This generates `.ormed.dart` files alongside your model files containing:
 - `$ModelName` - Tracked model class with change tracking
 - `ModelNameOrmDefinition` - Model metadata and static helpers
 - `$ModelNamePartial` - Partial entity for projections

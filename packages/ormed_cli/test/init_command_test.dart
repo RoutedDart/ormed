@@ -51,7 +51,7 @@ environment:
       String Function()? readLine,
     }) async {
       final runner = CommandRunner<void>(
-        'orm',
+        'ormed',
         'ORM CLI',
         ansi: false,
         readLine: readLine,
@@ -62,7 +62,7 @@ environment:
     test('scaffolds default files and directories', () async {
       await runInit(['init', '--no-interaction']);
 
-      final ormYaml = File(p.join(scratchDir.path, 'orm.yaml'));
+      final ormYaml = File(p.join(scratchDir.path, 'ormed.yaml'));
       expect(ormYaml.existsSync(), isTrue);
 
       final migrationsDir = Directory(
@@ -298,10 +298,10 @@ environment:
     });
 
     test(
-      'errors when registry path collides with directory (malformed orm.yaml)',
+      'errors when registry path collides with directory (malformed ormed.yaml)',
       () async {
-        // Write an orm.yaml where registry paths equal their directories.
-        File(p.join(scratchDir.path, 'orm.yaml'))..writeAsStringSync('''
+        // Write an ormed.yaml where registry paths equal their directories.
+        File(p.join(scratchDir.path, 'ormed.yaml'))..writeAsStringSync('''
 driver:
   type: sqlite
   options:

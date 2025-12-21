@@ -13,7 +13,7 @@ class MakeCommand extends Command<void> {
       ..addOption('name', abbr: 'n', help: 'Slug for the migration/seeder.')
       ..addOption(
         'format',
-        help: 'Migration authoring format (dart|sql). Defaults from orm.yaml.',
+        help: 'Migration authoring format (dart|sql). Defaults from ormed.yaml.',
         allowed: const ['dart', 'sql'],
       )
       ..addOption(
@@ -51,7 +51,7 @@ class MakeCommand extends Command<void> {
       ..addOption(
         'config',
         abbr: 'c',
-        help: 'Path to orm.yaml (defaults to project root).',
+        help: 'Path to ormed.yaml (defaults to project root).',
       );
   }
 
@@ -276,7 +276,7 @@ void _createSeeder({
   final seeds = config.seeds;
   if (seeds == null) {
     throw UsageException(
-      'orm.yaml missing seeds configuration. Update orm.yaml to include a seeds block.',
+      'ormed.yaml missing seeds configuration. Update ormed.yaml to include a seeds block.',
       usage,
     );
   }
@@ -303,7 +303,7 @@ void _createSeeder({
   final registry = File(registryPath);
   if (!registry.existsSync()) {
     throw StateError(
-      'Seeder registry $registryPath not found. Run `orm init`.',
+      'Seeder registry $registryPath not found. Run `ormed init`.',
     );
   }
   var content = registry.readAsStringSync();
@@ -422,7 +422,7 @@ void _createMigration({
   final registryPath = resolvePath(root, config.migrations.registry);
   final registry = File(registryPath);
   if (!registry.existsSync()) {
-    throw StateError('Registry file $registryPath not found. Run `orm init`.');
+    throw StateError('Registry file $registryPath not found. Run `ormed init`.');
   }
   var content = registry.readAsStringSync();
 

@@ -38,7 +38,10 @@ class PlaygroundDatabase {
   /// Creates a helper that manages playground database connections.
   factory PlaygroundDatabase({Directory? workspaceRoot}) {
     final root = workspaceRoot ?? Directory.current;
-    final configFile = File(p.join(root.path, 'orm.yaml'));
+    var configFile = File(p.join(root.path, 'ormed.yaml'));
+    if (!configFile.existsSync()) {
+      configFile = File(p.join(root.path, 'orm.yaml'));
+    }
     final config = loadOrmProjectConfig(configFile);
     final path = _deriveDatabasePath(root, config);
     return PlaygroundDatabase._(root: root, config: config, databasePath: path);

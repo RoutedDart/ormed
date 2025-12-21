@@ -7,7 +7,7 @@ import TabItem from '@theme/TabItem';
 
 # Migrations (CLI)
 
-Migrations are registered in a Dart registry file (configured in `orm.yaml`) and executed by the CLI via a schema-capable driver.
+Migrations are registered in a Dart registry file (configured in `ormed.yaml`) and executed by the CLI via a schema-capable driver.
 
 ## Registry paths matter
 
@@ -21,9 +21,9 @@ The CLI does not “discover” migrations by scanning a directory. It runs the 
 `migrate` applies pending migrations for the selected connection:
 
 ```bash
-dart run ormed_cli:orm migrate
-dart run ormed_cli:orm migrate --limit 5
-dart run ormed_cli:orm migrate --connection analytics
+dart run ormed_cli:ormed migrate
+dart run ormed_cli:ormed migrate --limit 5
+dart run ormed_cli:ormed migrate --connection analytics
 ```
 
 ### Preview (pretend)
@@ -31,7 +31,7 @@ dart run ormed_cli:orm migrate --connection analytics
 Show the SQL that would run without mutating the database:
 
 ```bash
-dart run ormed_cli:orm migrate --pretend
+dart run ormed_cli:ormed migrate --pretend
 ```
 
 ### Export SQL during preview
@@ -39,8 +39,8 @@ dart run ormed_cli:orm migrate --pretend
 When you already have Dart migrations but you want `up.sql`/`down.sql` files, you can export directly from the preview pipeline:
 
 ```bash
-dart run ormed_cli:orm migrate --pretend --write-sql
-dart run ormed_cli:orm migrate --pretend --write-sql --sql-out database/migration_sql
+dart run ormed_cli:ormed migrate --pretend --write-sql
+dart run ormed_cli:ormed migrate --pretend --write-sql --sql-out database/migration_sql
 ```
 
 This does **not** apply migrations.
@@ -50,8 +50,8 @@ This does **not** apply migrations.
 Use `migrate:export` to write `up.sql` and `down.sql` for migrations without applying them:
 
 ```bash
-dart run ormed_cli:orm migrate:export --out database/migration_sql
-dart run ormed_cli:orm migrate:export --out database/migration_sql --all
+dart run ormed_cli:ormed migrate:export --out database/migration_sql
+dart run ormed_cli:ormed migrate:export --out database/migration_sql --all
 ```
 
 Defaults:
@@ -76,15 +76,15 @@ Exported SQL comes from the active driver’s schema preview (`describeSchemaPla
 Rollback the most recent migration(s):
 
 ```bash
-dart run ormed_cli:orm migrate:rollback
-dart run ormed_cli:orm migrate:rollback --steps 3
+dart run ormed_cli:ormed migrate:rollback
+dart run ormed_cli:ormed migrate:rollback --steps 3
 ```
 
 ## Status
 
 ```bash
-dart run ormed_cli:orm migrate:status
-dart run ormed_cli:orm migrate:status --pending
+dart run ormed_cli:ormed migrate:status
+dart run ormed_cli:ormed migrate:status --pending
 ```
 
 ## Fresh / reset / refresh
@@ -92,9 +92,9 @@ dart run ormed_cli:orm migrate:status --pending
 These are development-focused helpers:
 
 ```bash
-dart run ormed_cli:orm migrate:fresh
-dart run ormed_cli:orm migrate:reset
-dart run ormed_cli:orm migrate:refresh
+dart run ormed_cli:ormed migrate:fresh
+dart run ormed_cli:ormed migrate:reset
+dart run ormed_cli:ormed migrate:refresh
 ```
 
 ## Generating migrations (Dart or SQL)
@@ -103,12 +103,12 @@ The `make` command can generate both Dart and SQL migrations.
 
 ### Dart Migrations (Default)
 ```bash
-dart run ormed_cli:orm make --name create_users_table
+dart run ormed_cli:ormed make --name create_users_table
 ```
 
 ### SQL Migrations
 ```bash
-dart run ormed_cli:orm make --name add_bio_to_users --format sql
+dart run ormed_cli:ormed make --name add_bio_to_users --format sql
 ```
 
 ### Simultaneous Support
@@ -120,20 +120,20 @@ Use `make` to scaffold a migration entry:
   <TabItem value="dart" label="Dart (default)">
 
 ```bash
-dart run ormed_cli:orm make --name create_users_table
+dart run ormed_cli:ormed make --name create_users_table
 ```
 
   </TabItem>
   <TabItem value="sql" label="SQL folder">
 
 ```bash
-dart run ormed_cli:orm make --name create_users_table --format sql
+dart run ormed_cli:ormed make --name create_users_table --format sql
 ```
 
   </TabItem>
 </Tabs>
 
-### Default authoring format (orm.yaml)
+### Default authoring format (ormed.yaml)
 
 You can select the default authoring format for the active connection:
 

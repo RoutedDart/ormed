@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.0-dev+2
+
+- Synchronized release with ormed_cli rebranding.
+
 ## 0.1.0-dev+1
 
 - Added automatic `snake_case` column name inference for model fields.

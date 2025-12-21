@@ -9,7 +9,7 @@ class SeedCommand extends Command<void> {
       ..addOption(
         'config',
         abbr: 'c',
-        help: 'Path to orm.yaml (defaults to project root).',
+        help: 'Path to ormed.yaml (defaults to project root).',
       )
       ..addOption(
         'database',
@@ -19,7 +19,7 @@ class SeedCommand extends Command<void> {
       ..addOption(
         'connection',
         help:
-            'Select a specific connection block defined in orm.yaml (defaults to default_connection or the only entry).',
+            'Select a specific connection block defined in ormed.yaml (defaults to default_connection or the only entry).',
       )
       ..addMultiOption(
         'class',
@@ -45,7 +45,7 @@ class SeedCommand extends Command<void> {
   String get name => 'seed';
 
   @override
-  String get description => 'Run database seeders defined in orm.yaml.';
+  String get description => 'Run database seeders defined in ormed.yaml.';
 
   @override
   Future<void> run() async {
@@ -66,7 +66,7 @@ class SeedCommand extends Command<void> {
     final seeds = config.seeds;
     if (seeds == null) {
       usageException(
-        'orm.yaml missing seeds configuration. Run `orm init` to scaffold seeds or add a `seeds` block.',
+        'ormed.yaml missing seeds configuration. Run `ormed init` to scaffold seeds or add a `seeds` block.',
       );
     }
 

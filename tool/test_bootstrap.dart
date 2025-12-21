@@ -81,7 +81,7 @@ Future<void> initOrm() async {
   print('Initializing ORM...');
   await run('dart', [
     'run',
-    'ormed_cli:orm',
+    'ormed_cli:ormed',
     'init',
     '--no-interaction',
   ], workingDirectory: testDir);
@@ -124,7 +124,7 @@ Future<void> createDartMigration() async {
   print('Creating a Dart migration...');
   await run('dart', [
     'run',
-    'ormed_cli:orm',
+    'ormed_cli:ormed',
     'make',
     '--name',
     'create_users_table',
@@ -153,7 +153,7 @@ Future<void> createSqlMigration() async {
   print('Creating a SQL migration...');
   await run('dart', [
     'run',
-    'ormed_cli:orm',
+    'ormed_cli:ormed',
     'make',
     '--name',
     'add_bio_to_users',
@@ -179,7 +179,7 @@ Future<void> runMigrations() async {
   print('Running migrations...');
   await run('dart', [
     'run',
-    'ormed_cli:orm',
+    'ormed_cli:ormed',
     'migrate',
   ], workingDirectory: testDir);
 }
@@ -188,7 +188,7 @@ Future<void> createSeeder() async {
   print('Creating a seeder...');
   await run('dart', [
     'run',
-    'ormed_cli:orm',
+    'ormed_cli:ormed',
     'make',
     '--name',
     'UserSeeder',
@@ -241,7 +241,7 @@ Future<void> runSeeders() async {
   print('Running seeders...');
   await run('dart', [
     'run',
-    'ormed_cli:orm',
+    'ormed_cli:ormed',
     'seed',
   ], workingDirectory: testDir);
 }

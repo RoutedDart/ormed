@@ -36,7 +36,7 @@ class InitCommand extends Command<void> {
 
   @override
   String get description =>
-      'Initialize orm.yaml and migration/seed registries.';
+      'Initialize ormed.yaml and migration/seed registries.';
 
   @override
   Future<void> run() async {
@@ -50,24 +50,28 @@ class InitCommand extends Command<void> {
 
     // If config exists, offer re-initialize
     if (!force) {
-      final configFile = File(p.join(root.path, 'orm.yaml'));
+      final configFile = File(p.join(root.path, 'ormed.yaml'));
+      final legacyFile = File(p.join(root.path, 'ormed.yaml'));
+
       if (configFile.existsSync()) {
-        cliIO.writeln(cliIO.style.info('Project already initialized.'));
-        // Ask whether to re-initialize
+        cliIO.writeln(cliIO.style.info('Project already initialized (ormed.yaml exists).'));
         if (!io.confirm('Do you want to re-initialize (overwrite files)?')) {
-          // Continue with population flow if requested, otherwise exit
-          if (!populateExisting) {
-            return;
-          }
+          if (!populateExisting) return;
+        }
+      } else if (legacyFile.existsSync()) {
+        cliIO.writeln(cliIO.style.warning('Found legacy ormed.yaml.'));
+        if (io.confirm('Do you want to rename it to ormed.yaml?')) {
+          legacyFile.renameSync(configFile.path);
+          cliIO.success('Renamed ormed.yaml to ormed.yaml');
         }
       }
     }
 
-    final configFile = File(p.join(root.path, 'orm.yaml'));
+    final configFile = File(p.join(root.path, 'ormed.yaml'));
     _writeFile(
       file: configFile,
       content: defaultOrmYaml,
-      label: 'orm.yaml',
+      label: 'ormed.yaml',
       force: force,
       tracker: tracker,
       interactive: true,

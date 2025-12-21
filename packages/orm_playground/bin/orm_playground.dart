@@ -52,8 +52,7 @@ Future<void> main(List<String> arguments) async {
       io.error('Schema not ready!');
       io.note(
         'Run the ORM CLI to apply migrations:\n'
-        '  dart run packages/orm/ormed_cli/bin/orm.dart migrate '
-        '--config orm_playground/orm.yaml',
+        '  ormed migrate',
       );
       return;
     }

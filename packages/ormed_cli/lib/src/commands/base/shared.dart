@@ -152,7 +152,7 @@ class ProcessProjectSeederRunner implements ProjectSeederRunner {
     final script = File(scriptPath);
     if (!script.existsSync()) {
       throw StateError(
-        'Seed registry ${script.path} not found. Run `orm init`.',
+        'Seed registry ${script.path} not found. Run `ormed init`.',
       );
     }
     final relativeScript = p.relative(script.path, from: project.root.path);
@@ -379,10 +379,12 @@ OrmProjectContext resolveOrmProject({String? configPath}) {
   }
 
   final root = findProjectRoot();
-  final fallback = File(p.join(root.path, 'orm.yaml'));
+  final fallback = File(p.join(root.path, 'ormed.yaml'));
   if (!fallback.existsSync()) {
+    final legacy = File(p.join(root.path, 'ormed.yaml'));
+    if (legacy.existsSync()) return OrmProjectContext(root: root, configFile: legacy);
     throw StateError(
-      'Missing orm.yaml. Run `orm init` or provide --config path.',
+      'Missing ormed.yaml. Run `ormed init` or provide --config path.',
     );
   }
   return OrmProjectContext(root: root, configFile: fallback);
@@ -391,9 +393,13 @@ OrmProjectContext resolveOrmProject({String? configPath}) {
 File? _findNearestOrmProjectConfig(Directory start) {
   var dir = start;
   while (true) {
-    final candidate = File(p.join(dir.path, 'orm.yaml'));
+    final candidate = File(p.join(dir.path, 'ormed.yaml'));
     if (candidate.existsSync()) {
       return candidate;
+    }
+    final legacy = File(p.join(dir.path, 'ormed.yaml'));
+    if (legacy.existsSync()) {
+      return legacy;
     }
     final parent = dir.parent;
     if (parent.path == dir.path) {

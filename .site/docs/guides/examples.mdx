@@ -38,17 +38,17 @@ This produces `lib/orm_registry.g.dart` with `bootstrapOrm()` (and other helpers
 ### 4. Bootstrap CLI
 
 ```bash
-dart run ormed_cli:orm init
+dart run ormed_cli:ormed init
 ```
 
-Creates `orm.yaml`, registry, and migrations directory.
+Creates `ormed.yaml`, registry, and migrations directory.
 
 ### 5. Create/Apply Migrations
 
 ```bash
-dart run ormed_cli:orm make --name create_users --create --table users
+dart run ormed_cli:ormed make --name create_users --create --table users
 # Edit the generated file
-dart run ormed_cli:orm migrate
+dart run ormed_cli:ormed migrate
 ```
 
 ### 6. Query

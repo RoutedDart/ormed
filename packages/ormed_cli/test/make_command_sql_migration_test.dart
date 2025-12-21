@@ -26,7 +26,7 @@ void main() {
         ),
       )..createSync(recursive: true);
 
-      ormConfig = File(p.join(scratchDir.path, 'orm.yaml'))
+      ormConfig = File(p.join(scratchDir.path, 'ormed.yaml'))
         ..writeAsStringSync('''
 driver:
   type: sqlite
@@ -87,7 +87,7 @@ void main(List<String> args) {
     });
 
     Future<void> runMake(List<String> args) async {
-      final runner = CommandRunner<void>('orm', 'ORM CLI')
+      final runner = CommandRunner<void>('ormed', 'ORM CLI')
         ..addCommand(MakeCommand());
       await runner.run([
         'make',
@@ -124,7 +124,7 @@ void main(List<String> args) {
       expect(registryText, contains("upPath: 'migrations/"));
     });
 
-    test('defaults to SQL when orm.yaml sets migrations.format: sql', () async {
+    test('defaults to SQL when ormed.yaml sets migrations.format: sql', () async {
       ormConfig.writeAsStringSync('''
 driver:
   type: sqlite

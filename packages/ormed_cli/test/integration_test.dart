@@ -123,7 +123,7 @@ void main() {
 
       dbPath = p.join(scratchDir.path, 'test.sqlite');
 
-      ormConfig = File(p.join(scratchDir.path, 'orm.yaml'))
+      ormConfig = File(p.join(scratchDir.path, 'ormed.yaml'))
         ..writeAsStringSync(
           _ormYaml(
             databasePath: p.relative(dbPath, from: scratchDir.path),
@@ -152,7 +152,7 @@ environment:
       testSeederRunner = TestProjectSeederRunner();
       projectSeederRunner = testSeederRunner;
 
-      runner = CommandRunner('orm', 'ORM CLI')
+      runner = CommandRunner('ormed', 'ORM CLI')
         ..addCommand(ApplyCommand())
         ..addCommand(StatusCommand())
         ..addCommand(RollbackCommand())

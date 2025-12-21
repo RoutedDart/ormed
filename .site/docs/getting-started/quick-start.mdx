@@ -14,20 +14,20 @@ This guide will walk you through creating a simple Ormed application with a User
 From your app root:
 
 ```bash
-dart run ormed_cli:orm init
+dart run ormed_cli:ormed init
 ```
 
 This creates:
-- `orm.yaml` with database + migration settings  
+- `ormed.yaml` with database + migration settings  
 - `lib/src/database/migrations.dart` (registry)  
 - `lib/src/database/seeders.dart` and `seeders/database_seeder.dart`
 
 Generated starter files:
 
-<Tabs groupId="quickstart-generated-files" defaultValue="orm-yaml">
-  <TabItem value="orm-yaml" label="orm.yaml">
+<Tabs groupId="quickstart-generated-files" defaultValue="ormed-yaml">
+  <TabItem value="ormed-yaml" label="ormed.yaml">
 
-```yaml file=../../examples/orm.yaml
+```yaml file=../../examples/ormed.yaml
 ```
 
   </TabItem>
@@ -79,14 +79,14 @@ Run the build runner:
 dart run build_runner build
 ```
 
-This creates `user.orm.dart` with the generated `$User` class and helpers.
+This creates `user.ormed.dart` with the generated `$User` class and helpers.
 
 ## Create a Migration
 
 Create a migration for your table:
 
 ```bash
-dart run ormed_cli:orm make --name create_users_table --create --table users
+dart run ormed_cli:ormed make --name create_users_table --create --table users
 ```
 
 Edit the generated file in `lib/src/database/migrations/` to add columns:
@@ -105,7 +105,7 @@ void up(SchemaBuilder schema) {
 Apply the migration:
 
 ```bash
-dart run ormed_cli:orm migrate
+dart run ormed_cli:ormed migrate
 ```
 
 ## Seed the Database
@@ -113,7 +113,7 @@ dart run ormed_cli:orm migrate
 Create a seeder:
 
 ```bash
-dart run ormed_cli:orm make --name UserSeeder --seeder
+dart run ormed_cli:ormed make --name UserSeeder --seeder
 ```
 
 Add data in `lib/src/database/seeders/user_seeder.dart`:
@@ -129,7 +129,7 @@ Future<void> run() async {
 Run the seeders:
 
 ```bash
-dart run ormed_cli:orm seed
+dart run ormed_cli:ormed seed
 ```
 
 ## Set Up the Database (SQLite)

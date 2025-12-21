@@ -21,13 +21,13 @@ A demonstration and sandbox package that exercises the ormed ORM end-to-end. Use
 cd packages/orm_playground
 
 # Apply migrations to default connection
-dart run ormed_cli:orm migrate
+ormed migrate
 
 # Check migration status
-dart run ormed_cli:orm migrate:status
+ormed migrate:status
 
 # Run seeders
-dart run ormed_cli:orm seed
+ormed seed
 ```
 
 ### 2. Run the Demo
@@ -132,7 +132,7 @@ void main() async {
 }
 ```
 
-## Configuration (orm.yaml)
+## Configuration (ormed.yaml)
 
 ```yaml
 default_connection: default
@@ -162,17 +162,17 @@ connections:
 
 ```bash
 # Migrate specific connection
-dart run ormed_cli:orm migrate --connection analytics
+dart run ormed_cli:ormed migrate --connection analytics
 
 # Seed specific connection
-dart run ormed_cli:orm seed --connection analytics
+dart run ormed_cli:ormed seed --connection analytics
 ```
 
 ## Directory Structure
 
 ```
 orm_playground/
-├── orm.yaml                 # ORM configuration
+├── ormed.yaml               # ORM configuration
 ├── bin/
 │   ├── orm_playground.dart  # Main demo
 │   └── multi_tenant_demo.dart

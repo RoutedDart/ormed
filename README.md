@@ -53,8 +53,8 @@ dart pub global activate ormed_cli
 
 ```yaml
 dependencies:
-  ormed: ^0.1.0-dev+1
-  ormed_sqlite: ^0.1.0-dev+1  # or your preferred driver
+  ormed: ^0.1.0-dev+2
+  ormed_sqlite: ^0.1.0-dev+2  # or your preferred driver
 
 dev_dependencies:
   build_runner: ^2.4.0
@@ -193,37 +193,39 @@ void main() async {
 
 ## 🛠️ CLI Commands
 
+> **Note:** These examples assume you have globally activated the CLI via `dart pub global activate ormed_cli`. If not, use `dart run ormed_cli:ormed` instead of `ormed`.
+
 ```bash
 # Initialize project structure
-dart run ormed_cli:orm init
+ormed init
 
 # Create a new migration
-dart run ormed_cli:orm make --name create_users_table
+ormed make --name create_users_table
 
 # Run pending migrations
-dart run ormed_cli:orm migrate
+ormed migrate
 
 # Preview migrations without executing
-dart run ormed_cli:orm migrate --pretend
+ormed migrate --pretend
 
 # Rollback migrations
-dart run ormed_cli:orm migrate:rollback --steps 1
+ormed migrate:rollback --steps 1
 
 # Reset and re-run all migrations
-dart run ormed_cli:orm migrate:fresh
+ormed migrate:fresh
 
 # Check migration status
-dart run ormed_cli:orm migrate:status
+ormed migrate:status
 
 # Describe current schema
-dart run ormed_cli:orm schema:describe
+ormed schema:describe
 
 # Run database seeders
-dart run ormed_cli:orm seed
-dart run ormed_cli:orm seed --class DemoContentSeeder
+dart run ormed_cli:ormed seed
+dart run ormed_cli:ormed seed --class DemoContentSeeder
 
 # Multi-tenant: apply to specific connection
-dart run ormed_cli:orm migrate --connection analytics
+dart run ormed_cli:ormed migrate --connection analytics
 ```
 
 See [ormed_cli](packages/ormed_cli) for complete documentation of all commands and options.

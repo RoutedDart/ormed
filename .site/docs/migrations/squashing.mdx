@@ -9,7 +9,7 @@ As your application grows, you may accumulate hundreds of migration files. Squas
 ## Creating a Schema Dump
 
 ```bash
-dart run orm schema:dump
+dart run ormed schema:dump
 ```
 
 This exports your current database schema to a SQL file (default: `database/schema.sql`).
@@ -19,7 +19,7 @@ This exports your current database schema to a SQL file (default: `database/sche
 After creating a dump, optionally delete all migration files:
 
 ```bash
-dart run orm schema:dump --prune
+dart run ormed schema:dump --prune
 ```
 
 This:
@@ -52,16 +52,16 @@ For multiple connections, create separate dumps:
 
 ```bash
 # Dump default database
-dart run orm schema:dump
+dart run ormed schema:dump
 
 # Dump testing database
-dart run orm schema:dump --database testing
+dart run ormed schema:dump --database testing
 ```
 
 ## Custom Output Path
 
 ```bash
-dart run orm schema:dump --path database/schema/production.sql
+dart run ormed schema:dump --path database/schema/production.sql
 ```
 
 ## Configuration

@@ -7,7 +7,7 @@ import TabItem from '@theme/TabItem';
 
 # Configuration
 
-Ormed uses `orm.yaml` for CLI + runtime configuration. Two shapes are supported: a single top-level connection (scaffold default) or a `connections:` map for multi-db setups.
+Ormed uses `ormed.yaml` for CLI + runtime configuration. Two shapes are supported: a single top-level connection (scaffold default) or a `connections:` map for multi-db setups.
 
 :::note Snippet context
 - YAML blocks show CLI/runtime config.
@@ -16,12 +16,12 @@ Ormed uses `orm.yaml` for CLI + runtime configuration. Two shapes are supported:
 
 ## Connection Shape
 
-<Tabs groupId="orm-yaml-shape" defaultValue="single">
+<Tabs groupId="ormed-yaml-shape" defaultValue="single">
   <TabItem value="single" label="Single (default)">
 
 CLI commands read these top-level blocks as the single active connection.
 
-Create `orm.yaml` in your project root:
+Create `ormed.yaml` in your project root:
 
 ```yaml
 driver:
@@ -110,7 +110,7 @@ connections:
 
 ## Registry Files (Why They Matter)
 
-Both `migrations.registry` and `seeds.registry` are **standalone Dart entrypoints**. The CLI shells out to these files, so keep their paths accurate in `orm.yaml`.
+Both `migrations.registry` and `seeds.registry` are **standalone Dart entrypoints**. The CLI shells out to these files, so keep their paths accurate in `ormed.yaml`.
 
 - **Migrations registry** (`migrations.registry`): exports `buildMigrations()` and a small `main` that supports flags like `--dump-json`/`--plan-json` for schema previews. You can run it directly:
 
@@ -118,7 +118,7 @@ Both `migrations.registry` and `seeds.registry` are **standalone Dart entrypoint
   dart run lib/src/database/migrations.dart --dump-json
   ```
 
-- **Seeds registry** (`seeds.registry`): lists `SeederRegistration`s and exposes `main` for `orm seed` / `orm migrate --seed`. You can execute it without the CLI wrapper:
+- **Seeds registry** (`seeds.registry`): lists `SeederRegistration`s and exposes `main` for `ormed seed` / `ormed migrate --seed`. You can execute it without the CLI wrapper:
 
   ```bash
   dart run lib/src/database/seeders.dart
@@ -146,10 +146,10 @@ Set the environment variable:
 
 ```bash
 export DATABASE_URL="postgres://user:pass@db.example.com:5432/myapp"
-dart run orm migrate:apply --connection production
+dart run ormed migrate:apply --connection production
 ```
 
-`.env` support: if a `.env` file sits next to `orm.yaml`, it is loaded automatically (merged with platform environment). Useful for local secrets without exporting them.
+`.env` support: if a `.env` file sits next to `ormed.yaml`, it is loaded automatically (merged with platform environment). Useful for local secrets without exporting them.
 
 ## Programmatic Configuration
 
@@ -192,4 +192,4 @@ migrations:
   format: sql # dart | sql
 ```
 
-This only affects generation defaults (what `orm make` produces). The migration registry can still contain both styles.
+This only affects generation defaults (what `ormed make` produces). The migration registry can still contain both styles.
