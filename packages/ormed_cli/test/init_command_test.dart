@@ -60,7 +60,7 @@ environment:
     }
 
     test('scaffolds default files and directories', () async {
-      await runInit(['init', '--no-interaction']);
+      await runInit(['init', '--no-interaction', '--skip-build']);
 
       final ormYaml = File(p.join(scratchDir.path, 'ormed.yaml'));
       expect(ormYaml.existsSync(), isTrue);
@@ -117,7 +117,7 @@ environment:
       final seederA = File(p.join(seedersDir.path, 'demo_seeder.dart'))
         ..writeAsStringSync('class DemoSeeder {}');
 
-      await runInit(['init', '--no-interaction', '--populate-existing']);
+      await runInit(['init', '--no-interaction', '--populate-existing', '--skip-build']);
 
       final migrationsReg = File(
         p.join(scratchDir.path, 'lib/src/database/migrations.dart'),
@@ -153,10 +153,10 @@ environment:
         seedText,
         contains("import 'seeders/${p.basename(seederA.path)}';"),
       );
-      expect(seedText, contains('final List<SeederRegistration> _seeders'));
+      expect(seedText, contains('final List<SeederRegistration> seeders'));
       expect(seedText, contains('TODO: Register seeder for demo_seeder'));
-      // Ensure entrypoint functions exist
-      expect(seedText, contains('runSeedRegistryEntrypoint'));
+      // Ensure helper function exists
+      expect(seedText, contains('runProjectSeeds'));
     });
 
     test(
@@ -186,7 +186,7 @@ environment:
           return '';
         }
 
-        await runInit(['init'], readLine: readLine);
+        await runInit(['init', '--skip-build'], readLine: readLine);
 
         final migrationsReg = File(
           p.join(scratchDir.path, 'lib/src/database/migrations.dart'),
@@ -230,7 +230,7 @@ environment:
       ).writeAsStringSync('class DeltaSeeder {}');
 
       String readLine() => 'n';
-      await runInit(['init'], readLine: readLine);
+      await runInit(['init', '--skip-build'], readLine: readLine);
 
       final migrationsReg = File(
         p.join(scratchDir.path, 'lib/src/database/migrations.dart'),
@@ -257,7 +257,7 @@ environment:
 
     test('--force overwrites existing registry files', () async {
       // First run to scaffold.
-      await runInit(['init', '--no-interaction']);
+      await runInit(['init', '--no-interaction', '--skip-build']);
 
       final migrationsReg = File(
         p.join(scratchDir.path, 'lib/src/database/migrations.dart'),
@@ -271,7 +271,7 @@ environment:
       seedersReg.writeAsStringSync('// SENTINEL: SEEDERS');
 
       // Re-run with --force should overwrite to a clean state.
-      await runInit(['init', '--no-interaction', '--force']);
+      await runInit(['init', '--no-interaction', '--force', '--skip-build']);
 
       final regText = migrationsReg.readAsStringSync();
       final seedText = seedersReg.readAsStringSync();
@@ -326,7 +326,7 @@ seeds:
 
         // Running init should attempt to write files to those registry paths and fail.
         await expectLater(
-          runInit(['init', '--no-interaction']),
+          runInit(['init', '--no-interaction', '--skip-build']),
           throwsA(isA<FileSystemException>()),
         );
       },

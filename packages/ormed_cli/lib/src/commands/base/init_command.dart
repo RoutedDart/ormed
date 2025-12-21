@@ -28,6 +28,12 @@ class InitCommand extends Command<void> {
         negatable: true,
         help:
             'Scan existing migrations/seeders and populate registries accordingly.',
+      )
+      ..addFlag(
+        'skip-build',
+        negatable: false,
+        hide: true,
+        help: 'Skip running build_runner (for testing).',
       );
   }
 
@@ -43,10 +49,11 @@ class InitCommand extends Command<void> {
     final force = argResults?['force'] == true;
     final showPaths = argResults?['paths'] == true;
     final populateExisting = argResults?['populate-existing'] == true;
+    final skipBuild = argResults?['skip-build'] == true;
     final root = findProjectRoot();
     final tracker = _ArtifactTracker(root);
 
-    await _ensureDependencies(root);
+    await _ensureDependencies(root, skipBuild: skipBuild);
 
     // If config exists, offer re-initialize
     if (!force) {
@@ -198,11 +205,61 @@ class InitCommand extends Command<void> {
       );
     }
 
+    // Run build_runner to generate orm_registry.g.dart
+    if (!skipBuild) {
+      await _runBuildRunner(root);
+    }
+
     cliIO.newLine();
     cliIO.success('Project initialized successfully.');
   }
 
-  Future<void> _ensureDependencies(Directory root) async {
+  Future<void> _runBuildRunner(Directory root) async {
+    // Check if build_runner is available by looking at pubspec.lock
+    final pubspecLock = File(p.join(root.path, 'pubspec.lock'));
+    if (!pubspecLock.existsSync()) {
+      // No lock file means deps not installed - run pub get first
+      cliIO.newLine();
+      cliIO.section('Installing Dependencies');
+      cliIO.writeln('Running dart pub get...');
+      final pubGetResult = await Process.run(
+        'dart',
+        ['pub', 'get'],
+        workingDirectory: root.path,
+      );
+      if (pubGetResult.exitCode != 0) {
+        cliIO.writeln(cliIO.style.warning(
+          'Failed to install dependencies. Run: dart pub get',
+        ));
+        return;
+      }
+      cliIO.success('Dependencies installed.');
+    }
+
+    cliIO.newLine();
+    cliIO.section('Code Generation');
+    cliIO.writeln('Running build_runner to generate ORM registry...');
+
+    final result = await Process.run(
+      'dart',
+      ['run', 'build_runner', 'build', '--delete-conflicting-outputs'],
+      workingDirectory: root.path,
+    );
+
+    if (result.exitCode == 0) {
+      cliIO.success('Code generation completed.');
+    } else {
+      cliIO.writeln(cliIO.style.warning(
+        'Code generation had issues (exit code ${result.exitCode}). '
+        'You may need to run: dart run build_runner build',
+      ));
+      if ((result.stderr as String).isNotEmpty) {
+        cliIO.writeln(cliIO.style.muted(result.stderr.toString().trim()));
+      }
+    }
+  }
+
+  Future<void> _ensureDependencies(Directory root, {bool skipBuild = false}) async {
     final pubspecFile = File(p.join(root.path, 'pubspec.yaml'));
     if (!pubspecFile.existsSync()) return;
 
@@ -457,34 +514,30 @@ Future<void> _populateExisting({
   }
 
   final seedRegistryContent = [
-    "import 'package:ormed_cli/runtime.dart';",
     "import 'package:ormed/ormed.dart';",
     "import 'package:$packageName/orm_registry.g.dart';",
     "",
     ...seedImports,
     "",
-    "final List<SeederRegistration> _seeders = <SeederRegistration>[",
+    "/// Registered seeders for this project.",
+    "final List<SeederRegistration> seeders = <SeederRegistration>[",
     ...seedRegistrations,
     "];",
     "",
-    "Future<void> seedPlayground(",
+    "/// Run project seeders on the given connection.",
+    "Future<void> runProjectSeeds(",
     "  OrmConnection connection, {",
     "  List<String>? names,",
     "  bool pretend = false,",
-    "}) => runSeedRegistryOnConnection(",
-    "  connection,",
-    "  _seeders,",
-    "  names: names,",
-    "  pretend: pretend,",
-    "  beforeRun: (conn) => bootstrapOrm(registry: conn.context.registry),",
-    ");",
-    "",
-    "Future<void> main(List<String> args) => runSeedRegistryEntrypoint(",
-    "  args: args,",
-    "  seeds: _seeders,",
-    "  beforeRun: (connection) =>",
-    "      bootstrapOrm(registry: connection.context.registry),",
-    ");",
+    "}) async {",
+    "  bootstrapOrm(registry: connection.context.registry);",
+    "  await SeederRunner().run(",
+    "    connection: connection,",
+    "    seeders: seeders,",
+    "    names: names,",
+    "    pretend: pretend,",
+    "  );",
+    "}",
   ].join('\n');
 
   if (seederFiles.isNotEmpty) {
