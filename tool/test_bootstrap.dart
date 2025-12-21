@@ -56,6 +56,8 @@ dependency_overrides:
   ormed_sqlite: { path: "$ormedRoot/packages/ormed_sqlite" }
   ormed_cli: { path: "$ormedRoot/packages/ormed_cli" }
   artisanal: { path: "$ormedRoot/packages/artisanal" }
+  ormed_postgres: { path: "$ormedRoot/packages/ormed_postgres" }
+  ormed_mysql: { path: "$ormedRoot/packages/ormed_mysql" }
 ''';
 
   pubspecFile.writeAsStringSync(content + '\n' + overrides);

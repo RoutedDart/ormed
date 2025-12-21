@@ -16,7 +16,7 @@ environment:
   sdk: ">=3.10.0 <4.0.0"
 
 dependencies:
-  ormed: ^0.1.0-dev
+  ormed: ^0.1.0-dev+1
   postgres: ^3.5.9
   carbonized: ^0.1.0
   decimal: ^3.2.4

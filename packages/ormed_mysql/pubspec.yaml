@@ -16,7 +16,7 @@ environment:
   sdk: ">=3.10.0 <4.0.0"
 
 dependencies:
-  ormed: ^0.1.0-dev
+  ormed: ^0.1.0-dev+1
   mysql_client_plus: ^0.1.2
   carbonized: ^0.1.0
   decimal: ^3.2.4

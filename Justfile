@@ -31,5 +31,9 @@ test-ormed_mongo:
 # Run all unit-test-only packages
 test-packages: test-ormed test-ormed_sqlite test-ormed_cli
 
+# Run the bootstrap E2E test
+test-bootstrap:
+	dart tool/test_bootstrap.dart
+
 # Run all tests, including database-backed suites (requires Docker)
 test-all: test-packages test-ormed_postgres test-ormed_mysql test-ormed_mongo

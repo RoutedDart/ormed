@@ -45,6 +45,9 @@ test-ormed-sqlite:
 test-orm-cli:
 	dart test packages/ormed_cli
 
+test-bootstrap:
+	dart tool/test_bootstrap.dart
+
 test-orm-mysql:
 	dart test packages/ormed_mysql
 
