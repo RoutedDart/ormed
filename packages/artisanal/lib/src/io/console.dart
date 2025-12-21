@@ -313,7 +313,7 @@ class Console {
   }) async {
     final desc = description.trimRight();
     final prefix = '  $desc ';
-    final terminal = _promptTerminal;
+    final terminal = promptTerminal;
     final supportsAnsi = (_stdout ?? io.stdout).hasTerminal;
     final animate = run != null && interactive && supportsAnsi;
 
@@ -422,13 +422,14 @@ class Console {
   // Progress
   // ─────────────────────────────────────────────────────────────────────────────
 
-  StdioTerminal get _promptTerminal =>
+  /// Terminal instance used for inline prompts and animations.
+  StdioTerminal get promptTerminal =>
       StdioTerminal(stdout: _stdout ?? io.stdout, stdin: _stdin ?? io.stdin);
 
   /// Creates a new progress bar.
   Iterable<T> progressIterate<T>(Iterable<T> iterable, {int? max}) sync* {
     final total = max ?? (iterable is List<T> ? iterable.length : 0);
-    final terminal = _promptTerminal;
+    final terminal = promptTerminal;
     final renderConfig = RenderConfig.fromRenderer(
       _renderer,
       terminalWidth: terminalWidth,
@@ -525,7 +526,7 @@ class Console {
       return _secretReader(question, fallback: fallback);
     }
 
-    final terminal = _promptTerminal;
+    final terminal = promptTerminal;
     final model = PasswordModel(prompt: question);
     final result = await runPasswordPrompt(model, terminal);
     if (result != null) return result;
@@ -604,7 +605,7 @@ class Console {
       throw StateError('Cannot prompt in non-interactive mode.');
     }
 
-    final terminal = _promptTerminal;
+    final terminal = promptTerminal;
     final model = SelectModel<T>(
       items: choices,
       title: question,
@@ -625,7 +626,7 @@ class Console {
       return defaultSelected.map((i) => choices[i]).toList();
     }
 
-    final terminal = _promptTerminal;
+    final terminal = promptTerminal;
     final validDefaults = defaultSelected
         .where((index) => index >= 0 && index < choices.length)
         .toSet();

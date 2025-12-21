@@ -146,8 +146,7 @@ void main(List<String> args) async {
                 useUltravioletRenderer: useUvRenderer,
                 useUltravioletInputDecoder: useUvInput,
               ),
-            )
-            as GoldenDemoModel;
+            );
 
     if (result.shouldQuit) break;
 

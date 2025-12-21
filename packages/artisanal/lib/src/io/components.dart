@@ -12,6 +12,10 @@ import '../tui/bubbles/components/two_column_detail.dart'
 import '../tui/bubbles/components/styled_block.dart' show CommentComponent;
 import '../tui/bubbles/components/exception.dart' show ExceptionComponent;
 import '../tui/bubbles/components/text.dart' show Rule;
+import '../tui/bubbles/prompt.dart'
+    show promptProgramOptions, runTextAreaPrompt;
+import '../tui/bubbles/textarea.dart' show TextAreaModel;
+import '../tui/program.dart' show ProgramOptions;
 import 'console.dart';
 
 /// Higher-level console UI components (Laravel-style).
@@ -199,6 +203,18 @@ class Components {
       );
       rethrow;
     }
+  }
+
+  /// Runs a multi-line text editor inline and returns the submitted value.
+  Future<String?> textArea(
+    TextAreaModel model, {
+    ProgramOptions? options,
+  }) async {
+    return runTextAreaPrompt(
+      model,
+      io.promptTerminal,
+      options: options ?? promptProgramOptions,
+    );
   }
 
   /// Displays a comment (dimmed text with // prefix).

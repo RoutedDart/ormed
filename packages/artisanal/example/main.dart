@@ -1633,13 +1633,11 @@ class UiTextareaCommand extends Command<void> {
     io.text('Multi-line input bubble (Ctrl+S to submit, Esc to cancel).');
     io.newLine();
 
-    final terminal = StdioTerminal(stdout: dartio.stdout, stdin: dartio.stdin);
-
     io.section('Simple Text Input');
     try {
       final model = TextAreaModel()
         ..value = 'This is the default content.\nYou can edit it.';
-      final text = await runTextAreaPrompt(model, terminal);
+      final text = await io.components.textArea(model);
 
       if (text != null && text.isNotEmpty) {
         io.success('Received ${text.split('\n').length} line(s):');

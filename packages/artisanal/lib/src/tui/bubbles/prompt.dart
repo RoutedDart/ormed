@@ -30,17 +30,21 @@ const promptProgramOptions = ProgramOptions(
   bracketedPaste: false,
   signalHandlers: false,
   sendInterrupt: false,
+  useUltravioletRenderer: false,
+  useUltravioletInputDecoder: false,
 );
 
 /// Dedicated defaults for full-screen text editing prompts.
 const textareaPromptOptions = ProgramOptions(
   altScreen: true,
-  hideCursor: false,
-  fps: 30,
+  hideCursor: true,
+  fps: 60,
   mouse: false,
   bracketedPaste: true,
   signalHandlers: false,
   sendInterrupt: false,
+  useUltravioletRenderer: true,
+  useUltravioletInputDecoder: true,
 );
 
 /// Runs a [PasswordModel] and resolves to the submitted password, or `null` if
@@ -582,9 +586,9 @@ class _TextAreaPromptModel extends ViewComponent {
       }
 
       // Ctrl+S to submit (mirrors common editor save shortcut).
-      if (msg.key.ctrl &&
-          msg.key.runes.isNotEmpty &&
-          (msg.key.runes.first == 0x73 || msg.key.runes.first == 0x13)) {
+      if (msg.key.runes.isNotEmpty &&
+          (msg.key.runes.first == 0x73 || msg.key.runes.first == 0x13) &&
+          (msg.key.ctrl || msg.key.runes.first == 0x13)) {
         _controller.complete(_model.value);
         return (this, Cmd.quit());
       }

@@ -11,7 +11,6 @@ import 'dart:math' as math;
 import 'package:artisanal/src/tui/tui.dart';
 import 'package:artisanal/src/style/style.dart';
 import 'package:artisanal/src/style/color.dart';
-import 'package:artisanal/src/tui/view.dart';
 
 
 import '../../uv/cursor.dart';

@@ -121,8 +121,7 @@ void main() async {
               useUltravioletRenderer: true,
               useUltravioletInputDecoder: true,
             ),
-          )
-          as ListModel;
+          );
 
   io.stdout.writeln( // tui:allow-stdout
     result.selected == null
