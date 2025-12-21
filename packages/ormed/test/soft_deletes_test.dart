@@ -20,9 +20,9 @@ void main() {
         'removed_on': removedOn,
       }, registry: registry);
 
-      expect(model.deletedAt, equals(removedOn));
+      expect(model.deletedAt?.toUtc().toDateTime(), equals(removedOn));
       final attrs = model as ModelAttributes;
-      expect(attrs.getAttribute<DateTime?>('removed_on'), equals(removedOn));
+      expect(attrs.getAttribute<DateTime?>('removed_on')?.toUtc(), equals(removedOn));
       expect(attrs.getSoftDeleteColumn(), equals('removed_on'));
     });
 

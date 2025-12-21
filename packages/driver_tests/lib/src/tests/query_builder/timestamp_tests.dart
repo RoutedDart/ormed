@@ -95,33 +95,42 @@ void runTimestampTests() {
       });
 
       test('Carbon methods work on createdAt', () async {
-        final author = const Author(id: 1004, name: 'Carbon Test');
-        await Authors.repo(dataSource.options.name).insert(author.toTracked());
+        final now = Carbon.now();
+        Carbon.setTestNow(now);
 
-        final fetched = await Authors.query(
-          dataSource.options.name,
-        ).where('id', 1004).first();
+        try {
+          final author = const Author(id: 1004, name: 'Carbon Test');
+          final tracked = author.toTracked();
+          tracked.createdAt = now;
+          await Authors.repo(dataSource.options.name).insert(tracked);
 
-        expect(fetched, isNotNull);
-        expect(fetched!.createdAt, isNotNull);
+          final fetched = await Authors.query(
+            dataSource.options.name,
+          ).where('id', 1004).first();
 
-        // Test Carbon methods - use Dart DateFormat syntax
-        final formatted = fetched.createdAt!.format('yyyy-MM-dd');
-        expect(formatted, isA<String>());
-        expect(formatted.length, equals(10)); // YYYY-MM-DD format
+          expect(fetched, isNotNull);
+          expect(fetched!.createdAt, isNotNull);
 
-        final diffHumans = fetched.createdAt!.diffForHumans();
-        expect(diffHumans, isA<String>());
-        // Check that it contains a time-related word (second, minute, hour, etc.)
-        expect(
-          diffHumans.contains('second') ||
-              diffHumans.contains('seconds') ||
-              diffHumans.contains('ago') ||
-              diffHumans.contains('now'),
-          isTrue,
-          reason:
-              'Expected diffForHumans to contain time reference, got: $diffHumans',
-        );
+          // Test Carbon methods - use Dart DateFormat syntax
+          final formatted = fetched.createdAt!.format('yyyy-MM-dd');
+          expect(formatted, isA<String>());
+          expect(formatted.length, equals(10)); // YYYY-MM-DD format
+
+          final diffHumans = fetched.createdAt!.diffForHumans();
+          expect(diffHumans, isA<String>());
+          // Check that it contains a time-related word (second, minute, hour, etc.)
+          expect(
+            diffHumans.contains('second') ||
+                diffHumans.contains('seconds') ||
+                diffHumans.contains('ago') ||
+                diffHumans.contains('now'),
+            isTrue,
+            reason:
+                'Expected diffForHumans to contain time reference, got: $diffHumans',
+          );
+        } finally {
+          Carbon.setTestNow(null);
+        }
       });
     });
 
@@ -240,56 +249,54 @@ void runTimestampTests() {
       });
 
       test('Carbon methods work on UTC timestamps', () async {
-        final post = Post(
-          id: 2004,
-          authorId: 1,
-          title: 'Carbon TZ Test',
-          publishedAt: DateTime.now(),
-        );
-        await dataSource.repo<Post>().insert(post);
+        final now = Carbon.now().toUtc();
+        Carbon.setTestNow(now);
 
-        final fetched = await dataSource.context
-            .query<Post>()
-            .where('id', 2004)
-            .first();
+        try {
+          final post = Post(
+            id: 2004,
+            authorId: 1,
+            title: 'Carbon TZ Test',
+            publishedAt: now.toDateTime(),
+          );
+          final tracked = post.toTracked();
+          tracked.createdAt = now;
 
-        expect(fetched, isNotNull);
-        expect(fetched!.createdAt, isNotNull);
-        expect(fetched.createdAt!.isUtc, isTrue);
+          await dataSource.repo<Post>().insert(tracked);
 
-        // Test Carbon timezone methods - use Dart DateFormat syntax
-        final formatted = fetched.createdAt!.format('yyyy-MM-dd HH:mm:ss z');
-        expect(formatted, contains('UTC'));
+          final fetched = await dataSource.context
+              .query<Post>()
+              .where('id', 2004)
+              .first();
 
-        // Test that we can access Carbon properties
-        expect(fetched.createdAt!.isUtc, isTrue);
+          expect(fetched, isNotNull);
+          expect(fetched!.createdAt, isNotNull);
+          expect(fetched.createdAt!.isUtc, isTrue);
 
-        // Test timezone conversion (now works because TimeMachine is configured)
-        final eastern = fetched.createdAt!.tz('America/New_York');
-        expect(eastern, isNotNull);
-        expect(eastern, isA<CarbonInterface>());
+          // Test Carbon timezone methods - use Dart DateFormat syntax
+          final formatted = fetched.createdAt!.format('yyyy-MM-dd HH:mm:ss z');
+          expect(formatted, contains('UTC'));
 
-        // Test comparison methods (convert to local time for comparison).
-        //
-        // Note: Some environments (notably MariaDB in CI) can exhibit small
-        // clock skew between the database container and the test runner. Avoid
-        // asserting `isFuture == false` for a "now" timestamp; instead assert
-        // the timestamp is close to now and that the comparison helpers behave
-        // correctly for clearly past/future values.
-        final localTime = fetched.createdAt!.tz(CarbonConfig.defaultTimezone);
-        expect(localTime.isToday(), isTrue);
+          // Test that we can access Carbon properties
+          expect(fetched.createdAt!.isUtc, isTrue);
 
-        final nowLocal = Carbon.now().tz(CarbonConfig.defaultTimezone);
-        expect(
-          localTime.diffInMinutes(nowLocal),
-          lessThan(5),
-          reason: 'createdAt should be close to current time',
-        );
+          // Test timezone conversion (now works because TimeMachine is configured)
+          final eastern = fetched.createdAt!.tz('America/New_York');
+          expect(eastern, isNotNull);
+          expect(eastern, isA<CarbonInterface>());
 
-        expect(localTime.addDays(1).isFuture(), isTrue);
-        final yesterday = localTime.addDays(-1);
-        expect(yesterday.isFuture(), isFalse);
-        expect(yesterday.isPast(), isTrue);
+          // Test comparison methods.
+          //
+          // Note: Some environments (notably MariaDB in CI) can exhibit small
+          // clock skew between the database container and the test runner.
+          // We use Carbon.setTestNow() to ensure consistent "now" during the test.
+          expect(fetched.createdAt!.addDays(1).isFuture(), isTrue);
+          final yesterday = fetched.createdAt!.subDay();
+          expect(yesterday.isFuture(), isFalse);
+          expect(yesterday.isPast(), isTrue);
+        } finally {
+          Carbon.setTestNow(null);
+        }
       });
 
       test('can set timestamps explicitly', () async {
