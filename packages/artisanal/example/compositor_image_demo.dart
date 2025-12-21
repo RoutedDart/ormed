@@ -8,10 +8,7 @@ import 'package:image/image.dart' as img;
 
 // #region compositor_usage
 void main() {
-  final io = Console(
-    out: (s) => stdout.write(s),
-    err: (s) => stderr.write(s),
-  );
+  final io = Console(out: (s) => stdout.write(s), err: (s) => stderr.write(s));
 
   // Create a simple gradient image
   final image = img.Image(width: 100, height: 100);
@@ -27,10 +24,11 @@ void main() {
     ..setX(5)
     ..setY(2);
 
-  final textLayer = newLayer(StyledString('\x1b[1;33mHello from Compositor!\x1b[0m'))
-    ..setId('text')
-    ..setX(2)
-    ..setY(1);
+  final textLayer =
+      newLayer(StyledString('\x1b[1;33mHello from Compositor!\x1b[0m'))
+        ..setId('text')
+        ..setX(2)
+        ..setY(1);
 
   final compositor = Compositor([imageLayer, textLayer]);
 
@@ -41,4 +39,5 @@ void main() {
   io.write(canvas.render());
   io.write('\nDone.\n');
 }
+
 // #endregion

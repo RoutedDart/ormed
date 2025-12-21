@@ -115,7 +115,8 @@ library artisanal.uv;
 
 export 'src/uv/terminal.dart' show Terminal;
 export 'src/uv/buffer.dart' show Buffer, Line, LineData;
-export 'src/uv/cell.dart' show Cell, Link, UvStyle, UvColor, UvBasic16, UvIndexed256, UvRgb;
+export 'src/uv/cell.dart'
+    show Cell, Link, UvStyle, UvColor, UvBasic16, UvIndexed256, UvRgb;
 export 'src/uv/event.dart'
     show
         Event,
@@ -135,8 +136,15 @@ export 'src/uv/decoder.dart' show EventDecoder, LegacyKeyEncoding;
 export 'src/uv/terminal_renderer.dart' show UvTerminalRenderer, RenderMetrics;
 export 'src/uv/geometry.dart' show Position, Rectangle, rect;
 export 'src/uv/capabilities.dart' show TerminalCapabilities;
-export 'src/uv/styled_string.dart' show StyledString, newStyledString,LinkState,StyleState,readLink,readStyle;
-export 'src/uv/layer.dart' show Layer, Compositor, newLayer,LayerHit;
+export 'src/uv/styled_string.dart'
+    show
+        StyledString,
+        newStyledString,
+        LinkState,
+        StyleState,
+        readLink,
+        readStyle;
+export 'src/uv/layer.dart' show Layer, Compositor, newLayer, LayerHit;
 export 'src/uv/canvas.dart' show Canvas;
 export 'src/uv/layout.dart' show splitHorizontal, splitVertical, Fixed, Percent;
 export 'src/uv/screen.dart' show Screen;

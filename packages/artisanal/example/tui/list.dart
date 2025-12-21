@@ -113,17 +113,17 @@ void main() async {
     ],
   );
 
-  final result =
-      await runProgramWithResult(
-            model,
-            options: const ProgramOptions(
-              altScreen: true,
-              useUltravioletRenderer: true,
-              useUltravioletInputDecoder: true,
-            ),
-          );
+  final result = await runProgramWithResult(
+    model,
+    options: const ProgramOptions(
+      altScreen: true,
+      useUltravioletRenderer: true,
+      useUltravioletInputDecoder: true,
+    ),
+  );
 
-  io.stdout.writeln( // tui:allow-stdout
+  io.stdout.writeln(
+    // tui:allow-stdout
     result.selected == null
         ? 'No selection made. Maybe next time!'
         : 'You selected: ${result.selected}',

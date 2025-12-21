@@ -4,7 +4,12 @@ import 'package:test/test.dart';
 void main() {
   group('tree: enumerator presets map to v2 funcs', () {
     String renderWith(TreeEnumerator e) {
-      return (Tree()..root('Root')..child('A')..child('B')).enumerator(e).render();
+      return (Tree()
+            ..root('Root')
+            ..child('A')
+            ..child('B'))
+          .enumerator(e)
+          .render();
     }
 
     test('ascii', () {
@@ -20,8 +25,10 @@ void main() {
     });
 
     test('doubleLine', () {
-      expect(renderWith(TreeEnumerator.doubleLine), equals('Root\n╠══ A\n╚══ B'));
+      expect(
+        renderWith(TreeEnumerator.doubleLine),
+        equals('Root\n╠══ A\n╚══ B'),
+      );
     });
   });
 }
-

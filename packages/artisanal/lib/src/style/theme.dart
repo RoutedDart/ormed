@@ -96,30 +96,12 @@ class ThemePalette {
   ///
   /// Uses adaptive colors that work on light backgrounds.
   static const light = ThemePalette(
-    accent: AdaptiveColor(
-      light: BasicColor('#0066cc'),
-      dark: Colors.blue,
-    ),
-    accentBold: AdaptiveColor(
-      light: BasicColor('#0066cc'),
-      dark: Colors.blue,
-    ),
-    text: AdaptiveColor(
-      light: BasicColor('#333333'),
-      dark: Colors.gray,
-    ),
-    textDim: AdaptiveColor(
-      light: BasicColor('#666666'),
-      dark: Colors.gray,
-    ),
-    textBold: AdaptiveColor(
-      light: Colors.black,
-      dark: Colors.white,
-    ),
-    border: AdaptiveColor(
-      light: BasicColor('#999999'),
-      dark: Colors.blue,
-    ),
+    accent: AdaptiveColor(light: BasicColor('#0066cc'), dark: Colors.blue),
+    accentBold: AdaptiveColor(light: BasicColor('#0066cc'), dark: Colors.blue),
+    text: AdaptiveColor(light: BasicColor('#333333'), dark: Colors.gray),
+    textDim: AdaptiveColor(light: BasicColor('#666666'), dark: Colors.gray),
+    textBold: AdaptiveColor(light: Colors.black, dark: Colors.white),
+    border: AdaptiveColor(light: BasicColor('#999999'), dark: Colors.blue),
     success: AdaptiveColor(
       light: BasicColor('#228B22'), // Forest green
       dark: Colors.green,
@@ -128,10 +110,7 @@ class ThemePalette {
       light: BasicColor('#DAA520'), // Goldenrod
       dark: Colors.yellow,
     ),
-    error: AdaptiveColor(
-      light: BasicColor('#CC0000'),
-      dark: Colors.red,
-    ),
+    error: AdaptiveColor(light: BasicColor('#CC0000'), dark: Colors.red),
     info: AdaptiveColor(
       light: BasicColor('#4169E1'), // Royal blue
       dark: Colors.blue,

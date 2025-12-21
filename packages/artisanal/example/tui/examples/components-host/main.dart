@@ -17,16 +17,13 @@ class _ProgressStepMsg extends tui.Msg {
 }
 
 class _ComponentsHostModel extends tui.Model {
-  _ComponentsHostModel({
-    required this.useUvInput,
-    required this.useUvRenderer,
-  }) : spinner = tui.SpinnerModel(spinner: tui.Spinners.miniDot),
-       progress = tui.ProgressModel(width: 44, useGradient: true),
-       paginator =
-           tui.PaginatorModel(
-             type: tui.PaginationType.dots,
-             perPage: 8,
-           ).setTotalPages(_items.length);
+  _ComponentsHostModel({required this.useUvInput, required this.useUvRenderer})
+    : spinner = tui.SpinnerModel(spinner: tui.Spinners.miniDot),
+      progress = tui.ProgressModel(width: 44, useGradient: true),
+      paginator = tui.PaginatorModel(
+        type: tui.PaginationType.dots,
+        perPage: 8,
+      ).setTotalPages(_items.length);
 
   static final List<String> _items = List<String>.generate(
     64,
@@ -44,10 +41,7 @@ class _ComponentsHostModel extends tui.Model {
 
   @override
   tui.Cmd? init() {
-    return tui.Cmd.batch([
-      spinner.tick(),
-      _scheduleProgressStep(),
-    ]);
+    return tui.Cmd.batch([spinner.tick(), _scheduleProgressStep()]);
   }
 
   tui.Cmd _scheduleProgressStep() {
@@ -102,8 +96,9 @@ class _ComponentsHostModel extends tui.Model {
     if (msg is _ProgressStepMsg) {
       cmds.add(_scheduleProgressStep());
       if (_auto) {
-        final double nextTarget =
-            progress.percent >= 1 ? 0.0 : (progress.percent + 0.04);
+        final double nextTarget = progress.percent >= 1
+            ? 0.0
+            : (progress.percent + 0.04);
         final (p, c) = progress.setPercent(nextTarget, animate: true);
         progress = p;
         if (c != null) cmds.add(c);

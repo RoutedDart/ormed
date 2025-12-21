@@ -7,9 +7,11 @@ class CounterComponent extends ViewComponent {
   @override
   (CounterComponent, Cmd?) update(Msg msg) {
     if (msg is KeyMsg && msg.key.type == KeyType.runes) {
-      if (msg.key.runes.first == 0x2b) { // '+'
+      if (msg.key.runes.first == 0x2b) {
+        // '+'
         count++;
-      } else if (msg.key.runes.first == 0x2d) { // '-'
+      } else if (msg.key.runes.first == 0x2d) {
+        // '-'
         count--;
       }
     }
@@ -50,7 +52,7 @@ void main() {
     test('CounterComponent updates state', () {
       var counter = CounterComponent();
       final msg = KeyMsg(Key(KeyType.runes, runes: [0x2b])); // '+'
-      
+
       final (newCounter, _) = counter.update(msg);
       expect((newCounter).count, 1);
     });
@@ -58,7 +60,7 @@ void main() {
     test('ParentModel delegates to child via ComponentHost', () {
       var model = ParentModel();
       final msg = KeyMsg(Key(KeyType.runes, runes: [0x2b])); // '+'
-      
+
       final (newModel, _) = model.update(msg);
       expect((newModel).counter.count, 1);
       expect(newModel.view(), contains('Count: 1'));
@@ -67,7 +69,7 @@ void main() {
     test('StaticComponent provides default update', () {
       final component = MyStatic();
       final (newComp, cmd) = component.update(KeyMsg(Key(KeyType.enter)));
-      
+
       expect(newComp, same(component));
       expect(cmd, isNull);
       expect(component.view(), 'Static');

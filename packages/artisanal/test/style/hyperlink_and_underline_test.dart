@@ -15,12 +15,24 @@ void main() {
       final u = rendered.lastIndexOf(underlineStart, charIndex);
       final c58 = rendered.lastIndexOf('\x1b[58', charIndex);
       expect(u, greaterThanOrEqualTo(0), reason: 'Missing underline start');
-      expect(c58, greaterThan(u), reason: 'Underline color must be inside span');
+      expect(
+        c58,
+        greaterThan(u),
+        reason: 'Underline color must be inside span',
+      );
 
       final c59 = rendered.indexOf('\x1b[59m', charIndex);
       final uOff = rendered.indexOf('\x1b[24m', charIndex);
-      expect(c59, greaterThan(charIndex), reason: 'Missing underline color reset');
-      expect(uOff, greaterThan(c59), reason: 'Underline must end after color reset');
+      expect(
+        c59,
+        greaterThan(charIndex),
+        reason: 'Missing underline color reset',
+      );
+      expect(
+        uOff,
+        greaterThan(c59),
+        reason: 'Underline must end after color reset',
+      );
 
       return charIndex + 1;
     }
@@ -64,7 +76,9 @@ void main() {
     });
 
     test('underlineColor emits SGR 58/59 sequences', () {
-      final style = Style().underline().underlineColor(const BasicColor('1')); // Red
+      final style = Style().underline().underlineColor(
+        const BasicColor('1'),
+      ); // Red
       final rendered = style.render('Hi');
 
       // SGR 58:2:1m (TrueColor) or 58:5:1m (256) or 58:1m (Basic)
@@ -72,7 +86,10 @@ void main() {
       // For BasicColor('1'), it should be 58:5:1m or similar depending on profile.
       expect(rendered, contains('\x1b[58'));
       expect(rendered, contains('\x1b[59m'));
-      expect(rendered, contains('\x1b[58:')); // xterm-style underline color params
+      expect(
+        rendered,
+        contains('\x1b[58:'),
+      ); // xterm-style underline color params
 
       // Ordering matters: underline color must be inside the underline span.
       // Rendering is applied per grapheme/rune, so check each character segment.

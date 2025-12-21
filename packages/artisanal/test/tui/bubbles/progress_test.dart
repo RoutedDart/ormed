@@ -298,10 +298,7 @@ void main() {
       });
 
       test('spring tuning', () {
-        final progress = ProgressModel(
-          frequency: 5.0,
-          damping: 0.5,
-        );
+        final progress = ProgressModel(frequency: 5.0, damping: 0.5);
         expect(progress.frequency, 5.0);
         expect(progress.damping, 0.5);
       });

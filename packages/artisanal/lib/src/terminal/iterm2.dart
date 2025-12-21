@@ -3,16 +3,16 @@ import 'package:image/image.dart' as img;
 import 'ansi.dart';
 
 /// Utilities for the iTerm2 Image Protocol.
-/// 
+///
 /// See: https://iterm2.com/documentation-images.html
 class ITerm2Image {
   /// Encodes an image into iTerm2 Image Protocol escape sequences.
-  /// 
+  ///
   /// [image] is the image to encode.
   /// [name] is an optional name for the image.
   /// [columns] is the number of terminal columns the image should occupy.
   /// [rows] is the number of terminal rows the image should occupy.
-  /// 
+  ///
   /// Returns a string containing the escape sequences to display the image.
   static String encode(
     img.Image image, {

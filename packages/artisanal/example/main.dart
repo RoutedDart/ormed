@@ -6,9 +6,9 @@ import 'package:artisanal/tui.dart';
 // #region verbosity_usage
 void demonstrateVerbosity(Console console) {
   console.writeln('This is a normal message');
-  
+
   console.info('This is an info message (shown in normal/verbose/debug)');
-  
+
   // The following only show if verbosity is set appropriately
   console.verbose('This is a verbose message (shown in verbose/debug)');
   console.debug('This is a debug message (only shown in debug)');
@@ -27,37 +27,36 @@ void demonstrateAnsi() {
 
 // #region command_runner_usage
 Future<void> main(List<String> args) async {
-  final runner =
-      CommandRunner<void>('artisanal-demo', 'artisanal demo CLI')
-        ..addCommand(DemoCommand())
-        ..addCommand(UiTaskCommand())
-        ..addCommand(UiTableCommand())
-        ..addCommand(UiPromptsCommand())
-        ..addCommand(UiProgressCommand())
-        ..addCommand(UiComponentsCommand())
-        ..addCommand(UiSecretCommand())
-        ..addCommand(UiSelectCommand())
-        ..addCommand(UiMultiSelectCommand())
-        ..addCommand(UiSpinCommand())
-        ..addCommand(UiSpinnerCommand())
-        ..addCommand(UiPanelCommand())
-        ..addCommand(UiTreeCommand())
-        ..addCommand(UiSearchCommand())
-        ..addCommand(UiPauseCommand())
-        ..addCommand(UiChalkCommand())
-        ..addCommand(UiValidatorsCommand())
-        ..addCommand(UiExceptionCommand())
-        ..addCommand(UiHorizontalTableCommand())
-        ..addCommand(UiPasswordCommand())
-        ..addCommand(UiBlockCommand())
-        ..addCommand(UiColumnsCommand())
-        ..addCommand(UiTerminalCommand())
-        ..addCommand(UiAnticipateCommand())
-        ..addCommand(UiTextareaCommand())
-        ..addCommand(UiWizardCommand())
-        ..addCommand(UiLinkCommand())
-        ..addCommand(UiComponentSystemCommand())
-        ..addCommand(UiAllCommand());
+  final runner = CommandRunner<void>('artisanal-demo', 'artisanal demo CLI')
+    ..addCommand(DemoCommand())
+    ..addCommand(UiTaskCommand())
+    ..addCommand(UiTableCommand())
+    ..addCommand(UiPromptsCommand())
+    ..addCommand(UiProgressCommand())
+    ..addCommand(UiComponentsCommand())
+    ..addCommand(UiSecretCommand())
+    ..addCommand(UiSelectCommand())
+    ..addCommand(UiMultiSelectCommand())
+    ..addCommand(UiSpinCommand())
+    ..addCommand(UiSpinnerCommand())
+    ..addCommand(UiPanelCommand())
+    ..addCommand(UiTreeCommand())
+    ..addCommand(UiSearchCommand())
+    ..addCommand(UiPauseCommand())
+    ..addCommand(UiChalkCommand())
+    ..addCommand(UiValidatorsCommand())
+    ..addCommand(UiExceptionCommand())
+    ..addCommand(UiHorizontalTableCommand())
+    ..addCommand(UiPasswordCommand())
+    ..addCommand(UiBlockCommand())
+    ..addCommand(UiColumnsCommand())
+    ..addCommand(UiTerminalCommand())
+    ..addCommand(UiAnticipateCommand())
+    ..addCommand(UiTextareaCommand())
+    ..addCommand(UiWizardCommand())
+    ..addCommand(UiLinkCommand())
+    ..addCommand(UiComponentSystemCommand())
+    ..addCommand(UiAllCommand());
 
   await runner.run(args);
 }
@@ -226,7 +225,10 @@ class UiProgressCommand extends Command<void> {
     final countRaw = argResults?['count'] as String? ?? '25';
     final count = int.tryParse(countRaw) ?? 25;
 
-    for (final _ in io.progressIterate(List<int>.filled(count, 0), max: count)) {
+    for (final _ in io.progressIterate(
+      List<int>.filled(count, 0),
+      max: count,
+    )) {
       await Future<void>.delayed(const Duration(milliseconds: 20));
     }
   }

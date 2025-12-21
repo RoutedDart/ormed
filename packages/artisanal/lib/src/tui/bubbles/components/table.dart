@@ -358,7 +358,8 @@ class Table extends DisplayComponent {
 
   /// Sets the border style.
   Table border(style_border.Border border) {
-    _border = border;    if (border == style_border.Border.none) {
+    _border = border;
+    if (border == style_border.Border.none) {
       _borderTop = false;
       _borderBottom = false;
       _borderLeft = false;
@@ -366,7 +367,8 @@ class Table extends DisplayComponent {
       _borderHeader = false;
       _borderColumn = false;
       _borderRow = false;
-    }    return this;
+    }
+    return this;
   }
 
   /// Sets the cell padding.

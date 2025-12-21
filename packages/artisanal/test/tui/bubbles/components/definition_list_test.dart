@@ -219,52 +219,60 @@ void main() {
 
     group('color profile', () {
       test('respects ASCII color profile', () {
-        final list = DefinitionList(
-          renderConfig: const RenderConfig(colorProfile: ColorProfile.ascii),
-        )
-          ..item('Key', 'Value')
-          ..termStyle(Style().bold().foreground(Colors.red));
+        final list =
+            DefinitionList(
+                renderConfig: const RenderConfig(
+                  colorProfile: ColorProfile.ascii,
+                ),
+              )
+              ..item('Key', 'Value')
+              ..termStyle(Style().bold().foreground(Colors.red));
         final output = list.render();
         expect(output.contains('\x1B['), isFalse);
       });
 
       test('respects trueColor profile', () {
-        final list = DefinitionList(
-          renderConfig: const RenderConfig(colorProfile: ColorProfile.trueColor),
-        )
-          ..item('Key', 'Value')
-          ..termStyle(Style().foreground(Colors.rgb(255, 100, 50)));
+        final list =
+            DefinitionList(
+                renderConfig: const RenderConfig(
+                  colorProfile: ColorProfile.trueColor,
+                ),
+              )
+              ..item('Key', 'Value')
+              ..termStyle(Style().foreground(Colors.rgb(255, 100, 50)));
         final output = list.render();
         expect(output, contains('\x1B['));
       });
 
       test('respects dark background setting', () {
-        final listLight = DefinitionList(
-          renderConfig: const RenderConfig(
-            colorProfile: ColorProfile.trueColor,
-            hasDarkBackground: true,
-          ),
-        )
-          ..item('Key', 'Value')
-          ..termStyle(
-            Style().foreground(
-              AdaptiveColor(light: Colors.black, dark: Colors.white),
-            ),
-          );
+        final listLight =
+            DefinitionList(
+                renderConfig: const RenderConfig(
+                  colorProfile: ColorProfile.trueColor,
+                  hasDarkBackground: true,
+                ),
+              )
+              ..item('Key', 'Value')
+              ..termStyle(
+                Style().foreground(
+                  AdaptiveColor(light: Colors.black, dark: Colors.white),
+                ),
+              );
         final output1 = listLight.render();
 
-        final listDark = DefinitionList(
-          renderConfig: const RenderConfig(
-            colorProfile: ColorProfile.trueColor,
-            hasDarkBackground: false,
-          ),
-        )
-          ..item('Key', 'Value')
-          ..termStyle(
-            Style().foreground(
-              AdaptiveColor(light: Colors.black, dark: Colors.white),
-            ),
-          );
+        final listDark =
+            DefinitionList(
+                renderConfig: const RenderConfig(
+                  colorProfile: ColorProfile.trueColor,
+                  hasDarkBackground: false,
+                ),
+              )
+              ..item('Key', 'Value')
+              ..termStyle(
+                Style().foreground(
+                  AdaptiveColor(light: Colors.black, dark: Colors.white),
+                ),
+              );
         final output2 = listDark.render();
 
         expect(output1, isNot(equals(output2)));
@@ -355,8 +363,7 @@ void main() {
       });
 
       test('defaults to bold header', () {
-        final list = GroupedDefinitionList()
-          ..group('Header', {'Key': 'Value'});
+        final list = GroupedDefinitionList()..group('Header', {'Key': 'Value'});
         final output = list.render();
         expect(output, contains('\x1B['));
       });

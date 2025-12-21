@@ -164,14 +164,14 @@ final class ProgressBarModel extends ViewComponent {
       ProgressBarSetMsg(:final id, :final current, :final total)
           when id == this.id =>
         (copyWith(current: current, total: total), null),
-      ProgressBarAdvanceMsg(:final id, :final step) when id == this.id =>
-        (
-          copyWith(
-            current:
-                total > 0 ? (current + step).clamp(0, total) : current + step,
-          ),
-          null,
+      ProgressBarAdvanceMsg(:final id, :final step) when id == this.id => (
+        copyWith(
+          current: total > 0
+              ? (current + step).clamp(0, total)
+              : current + step,
         ),
+        null,
+      ),
       _ => (this, null),
     };
   }

@@ -709,6 +709,7 @@ class Layout {
   static String wrapLines(String content, int maxWidth) {
     return content.split('\n').map((l) => wrap(l, maxWidth)).join('\n');
   }
+
   /// Stacks multiple blocks of text on top of each other.
   ///
   /// Higher layers (later in the list) overlay lower layers. Spaces in higher
@@ -776,4 +777,5 @@ class Layout {
     }
 
     return result.join('');
-  }}
+  }
+}

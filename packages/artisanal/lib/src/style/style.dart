@@ -1528,7 +1528,6 @@ class Style {
   ({int width, int height}) get getFrameSize =>
       (width: getHorizontalFrameSize, height: getVerticalFrameSize);
 
-
   /// Gets the transform function if set.
   String Function(String)? get getTransform =>
       _hasFlag(_PropBits.transform) ? _transform : null;
@@ -2662,10 +2661,7 @@ class Style {
     // Try parsing as ANSI code (0-255)
     final ansiCode = int.tryParse(lower);
     if (ansiCode != null && ansiCode >= 0 && ansiCode <= 255) {
-      return AnsiColor(ansiCode).toAnsi(
-        colorProfile,
-        background: !foreground,
-      );
+      return AnsiColor(ansiCode).toAnsi(colorProfile, background: !foreground);
     }
 
     return '';
@@ -3097,9 +3093,12 @@ extension StyleConvenienceExtensions on Style {
   String emphasize(Object? text) => copy().bold().render(text);
 
   /// Renders text with the success color.
-  String success(Object? text) => copy().foreground(Colors.success).render(text);
+  String success(Object? text) =>
+      copy().foreground(Colors.success).render(text);
+
   /// Renders text with the warning color.
-  String warning(Object? text) => copy().foreground(Colors.warning).render(text);
+  String warning(Object? text) =>
+      copy().foreground(Colors.warning).render(text);
 
   /// Renders text with the error color.
   String error(Object? text) => copy().foreground(Colors.error).render(text);

@@ -7,19 +7,21 @@ import 'package:image/image.dart' as img;
 
 void main() async {
   final terminal = Terminal();
-  
+
   stdout.writeln('Probing terminal capabilities (DA1/DA2/Kitty)...');
   await terminal.start();
-  
+
   // Wait for async responses to populate capabilities
   await Future.delayed(const Duration(milliseconds: 600));
-  
+
   final caps = terminal.capabilities;
   stdout.writeln('Capabilities discovered:');
   stdout.writeln('  Kitty Graphics: ${caps.hasKittyGraphics ? "YES" : "NO"}');
   stdout.writeln('  iTerm2 Images:  ${caps.hasITerm2 ? "YES" : "NO"}');
   stdout.writeln('  Sixel Graphics: ${caps.hasSixel ? "YES" : "NO"}');
-  stdout.writeln('  Keyboard Ext:   ${caps.hasKeyboardEnhancements ? "YES" : "NO"}');
+  stdout.writeln(
+    '  Keyboard Ext:   ${caps.hasKeyboardEnhancements ? "YES" : "NO"}',
+  );
   stdout.writeln('');
 
   final image = img.Image(width: 100, height: 50);
@@ -41,7 +43,11 @@ void main() async {
     // Kitty
     _write(terminal, 2, 1, 'Kitty Graphics Protocol');
     if (caps.hasKittyGraphics) {
-      KittyImageDrawable(image, columns: 20, rows: 10).draw(terminal, rect(2, 2, 20, 10));
+      KittyImageDrawable(
+        image,
+        columns: 20,
+        rows: 10,
+      ).draw(terminal, rect(2, 2, 20, 10));
     } else {
       _write(terminal, 2, 2, '[Not Supported]');
     }
@@ -49,7 +55,11 @@ void main() async {
     // iTerm2
     _write(terminal, 25, 1, 'iTerm2 Inline Images');
     if (caps.hasITerm2) {
-      ITerm2ImageDrawable(image, columns: 20, rows: 10).draw(terminal, rect(25, 2, 20, 10));
+      ITerm2ImageDrawable(
+        image,
+        columns: 20,
+        rows: 10,
+      ).draw(terminal, rect(25, 2, 20, 10));
     } else {
       _write(terminal, 25, 2, '[Not Supported]');
     }
@@ -57,13 +67,19 @@ void main() async {
     // Sixel
     _write(terminal, 48, 1, 'Sixel Graphics');
     if (caps.hasSixel) {
-      SixelImageDrawable(image, columns: 20, rows: 10).draw(terminal, rect(48, 2, 20, 10));
+      SixelImageDrawable(
+        image,
+        columns: 20,
+        rows: 10,
+      ).draw(terminal, rect(48, 2, 20, 10));
     } else {
       _write(terminal, 48, 2, '[Not Supported]');
     }
 
     _write(terminal, 2, 14, 'Best Fit (Auto-detected):');
-    terminal.bestImageDrawableForTerminal(image, columns: 20, rows: 10).draw(terminal, rect(2, 15, 20, 10));
+    terminal
+        .bestImageDrawableForTerminal(image, columns: 20, rows: 10)
+        .draw(terminal, rect(2, 15, 20, 10));
 
     _write(terminal, 2, 27, 'Press any key to exit...');
     terminal.draw();

@@ -330,53 +330,61 @@ void main() {
 
     group('color profile', () {
       test('respects ASCII color profile', () {
-        final box = BoxBuilder(
-          renderConfig: const RenderConfig(colorProfile: ColorProfile.ascii),
-        )
-          ..title('Title')
-          ..content('Content')
-          ..titleStyle(Style().bold().foreground(Colors.red));
+        final box =
+            BoxBuilder(
+                renderConfig: const RenderConfig(
+                  colorProfile: ColorProfile.ascii,
+                ),
+              )
+              ..title('Title')
+              ..content('Content')
+              ..titleStyle(Style().bold().foreground(Colors.red));
         final output = box.render();
         expect(output.contains('\x1B['), isFalse);
       });
 
       test('respects trueColor profile', () {
-        final box = BoxBuilder(
-          renderConfig: const RenderConfig(colorProfile: ColorProfile.trueColor),
-        )
-          ..content('Content')
-          ..contentStyle(Style().foreground(Colors.rgb(255, 100, 50)));
+        final box =
+            BoxBuilder(
+                renderConfig: const RenderConfig(
+                  colorProfile: ColorProfile.trueColor,
+                ),
+              )
+              ..content('Content')
+              ..contentStyle(Style().foreground(Colors.rgb(255, 100, 50)));
         final output = box.render();
         expect(output, contains('\x1B['));
       });
 
       test('respects dark background setting', () {
-        final boxLight = BoxBuilder(
-          renderConfig: const RenderConfig(
-            colorProfile: ColorProfile.trueColor,
-            hasDarkBackground: true,
-          ),
-        )
-          ..content('Content')
-          ..contentStyle(
-            Style().foreground(
-              AdaptiveColor(light: Colors.black, dark: Colors.white),
-            ),
-          );
+        final boxLight =
+            BoxBuilder(
+                renderConfig: const RenderConfig(
+                  colorProfile: ColorProfile.trueColor,
+                  hasDarkBackground: true,
+                ),
+              )
+              ..content('Content')
+              ..contentStyle(
+                Style().foreground(
+                  AdaptiveColor(light: Colors.black, dark: Colors.white),
+                ),
+              );
         final output1 = boxLight.render();
 
-        final boxDark = BoxBuilder(
-          renderConfig: const RenderConfig(
-            colorProfile: ColorProfile.trueColor,
-            hasDarkBackground: false,
-          ),
-        )
-          ..content('Content')
-          ..contentStyle(
-            Style().foreground(
-              AdaptiveColor(light: Colors.black, dark: Colors.white),
-            ),
-          );
+        final boxDark =
+            BoxBuilder(
+                renderConfig: const RenderConfig(
+                  colorProfile: ColorProfile.trueColor,
+                  hasDarkBackground: false,
+                ),
+              )
+              ..content('Content')
+              ..contentStyle(
+                Style().foreground(
+                  AdaptiveColor(light: Colors.black, dark: Colors.white),
+                ),
+              );
         final output2 = boxDark.render();
 
         expect(output1, isNot(equals(output2)));

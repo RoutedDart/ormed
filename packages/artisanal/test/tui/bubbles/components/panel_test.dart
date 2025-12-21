@@ -289,55 +289,63 @@ void main() {
 
     group('color profile', () {
       test('respects ASCII color profile', () {
-        final panel = Panel(
-          renderConfig: const RenderConfig(colorProfile: ColorProfile.ascii),
-        )
-          ..title('Title')
-          ..content('Content')
-          ..titleStyle(Style().bold().foreground(Colors.red));
+        final panel =
+            Panel(
+                renderConfig: const RenderConfig(
+                  colorProfile: ColorProfile.ascii,
+                ),
+              )
+              ..title('Title')
+              ..content('Content')
+              ..titleStyle(Style().bold().foreground(Colors.red));
         final output = panel.render();
         // Should not contain ANSI escape codes
         expect(output.contains('\x1B['), isFalse);
       });
 
       test('respects trueColor profile', () {
-        final panel = Panel(
-          renderConfig: const RenderConfig(colorProfile: ColorProfile.trueColor),
-        )
-          ..content('Content')
-          ..contentStyle(Style().foreground(Colors.rgb(255, 100, 50)));
+        final panel =
+            Panel(
+                renderConfig: const RenderConfig(
+                  colorProfile: ColorProfile.trueColor,
+                ),
+              )
+              ..content('Content')
+              ..contentStyle(Style().foreground(Colors.rgb(255, 100, 50)));
         final output = panel.render();
         // Should contain ANSI codes
         expect(output, contains('\x1B['));
       });
 
       test('respects dark background setting', () {
-        final panelLight = Panel(
-          renderConfig: const RenderConfig(
-            colorProfile: ColorProfile.trueColor,
-            hasDarkBackground: true,
-          ),
-        )
-          ..content('Content')
-          ..contentStyle(
-            Style().foreground(
-              AdaptiveColor(light: Colors.black, dark: Colors.white),
-            ),
-          );
+        final panelLight =
+            Panel(
+                renderConfig: const RenderConfig(
+                  colorProfile: ColorProfile.trueColor,
+                  hasDarkBackground: true,
+                ),
+              )
+              ..content('Content')
+              ..contentStyle(
+                Style().foreground(
+                  AdaptiveColor(light: Colors.black, dark: Colors.white),
+                ),
+              );
         final output1 = panelLight.render();
 
-        final panelDark = Panel(
-          renderConfig: const RenderConfig(
-            colorProfile: ColorProfile.trueColor,
-            hasDarkBackground: false,
-          ),
-        )
-          ..content('Content')
-          ..contentStyle(
-            Style().foreground(
-              AdaptiveColor(light: Colors.black, dark: Colors.white),
-            ),
-          );
+        final panelDark =
+            Panel(
+                renderConfig: const RenderConfig(
+                  colorProfile: ColorProfile.trueColor,
+                  hasDarkBackground: false,
+                ),
+              )
+              ..content('Content')
+              ..contentStyle(
+                Style().foreground(
+                  AdaptiveColor(light: Colors.black, dark: Colors.white),
+                ),
+              );
         final output2 = panelDark.render();
 
         // Outputs should differ based on background

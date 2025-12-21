@@ -41,7 +41,9 @@ class PanelComponent extends DisplayComponent {
   @override
   String render() {
     final lines = _normalizeLines(content);
-    final effectiveBorderStyle = renderConfig.configureStyle(borderStyle ?? Style().dim());
+    final effectiveBorderStyle = renderConfig.configureStyle(
+      borderStyle ?? Style().dim(),
+    );
     final titleStyle = renderConfig.configureStyle(Style().bold());
     final border = (String s) => effectiveBorderStyle.render(s);
     final titleFn = (String s) => titleStyle.render(s);

@@ -1,8 +1,5 @@
 import 'package:artisanal/uv.dart';
 
-
-
-
 final gray = UvColor.rgb(104, 104, 104);
 final white = UvColor.rgb(180, 180, 180);
 final yellow = UvColor.rgb(180, 180, 16);
@@ -43,24 +40,57 @@ void main() async {
     final botRowHeight = height - topRowHeight - midRowHeight;
 
     final barWidth = width ~/ 7;
-    
+
     // Top Row
     for (var j = 0; j < 7; j++) {
-      final bar = rect(j * barWidth, 0, (j == 6) ? width - j * barWidth : barWidth, topRowHeight);
-      terminal.fillArea(Cell(content: ' ', style: UvStyle(bg: rowColors[0][j])), bar);
+      final bar = rect(
+        j * barWidth,
+        0,
+        (j == 6) ? width - j * barWidth : barWidth,
+        topRowHeight,
+      );
+      terminal.fillArea(
+        Cell(
+          content: ' ',
+          style: UvStyle(bg: rowColors[0][j]),
+        ),
+        bar,
+      );
     }
 
     // Mid Row
     for (var j = 0; j < 7; j++) {
-      final bar = rect(j * barWidth, topRowHeight, (j == 6) ? width - j * barWidth : barWidth, midRowHeight);
-      terminal.fillArea(Cell(content: ' ', style: UvStyle(bg: rowColors[1][j])), bar);
+      final bar = rect(
+        j * barWidth,
+        topRowHeight,
+        (j == 6) ? width - j * barWidth : barWidth,
+        midRowHeight,
+      );
+      terminal.fillArea(
+        Cell(
+          content: ' ',
+          style: UvStyle(bg: rowColors[1][j]),
+        ),
+        bar,
+      );
     }
 
     // Bot Row
     final botBarWidth = width ~/ 6;
     for (var j = 0; j < 6; j++) {
-      final bar = rect(j * botBarWidth, topRowHeight + midRowHeight, (j == 5) ? width - j * botBarWidth : botBarWidth, botRowHeight);
-      terminal.fillArea(Cell(content: ' ', style: UvStyle(bg: rowColors[2][j])), bar);
+      final bar = rect(
+        j * botBarWidth,
+        topRowHeight + midRowHeight,
+        (j == 5) ? width - j * botBarWidth : botBarWidth,
+        botRowHeight,
+      );
+      terminal.fillArea(
+        Cell(
+          content: ' ',
+          style: UvStyle(bg: rowColors[2][j]),
+        ),
+        bar,
+      );
     }
 
     terminal.draw();

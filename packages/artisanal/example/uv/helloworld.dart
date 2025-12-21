@@ -1,9 +1,5 @@
 import 'package:artisanal/uv.dart';
 
-
-
-
-
 // #region uv_basic_usage
 void main() async {
   final terminal = Terminal();
@@ -19,7 +15,10 @@ void main() async {
     // Note: We need to make sure terminal.buffer can be used where Screen is expected,
     // or use terminal.buffer.fillArea if available.
     terminal.buffer.fillArea(
-      Cell(content: ' ', style: const UvStyle(fg: UvColor.rgb(255, 0, 0))), // Red
+      Cell(
+        content: ' ',
+        style: const UvStyle(fg: UvColor.rgb(255, 0, 0)),
+      ), // Red
       fixed,
     );
 
@@ -30,9 +29,9 @@ void main() async {
       12,
       1,
     );
-    
+
     ss.draw(terminal, carea);
-    
+
     terminal.draw();
   }
 
@@ -55,4 +54,5 @@ void main() async {
     await terminal.stop();
   }
 }
+
 // #endregion

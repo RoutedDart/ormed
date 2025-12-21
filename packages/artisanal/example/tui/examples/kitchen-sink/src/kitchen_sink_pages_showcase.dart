@@ -210,7 +210,10 @@ final class _LipglossPage extends _KitchenSinkPage {
       m._style(Style()).dim().render('tui.Tree (heavy + styled):'),
       tree2,
       '',
-      m._style(Style()).dim().render('tui.Tree (offset + hidden + double-line):'),
+      m
+          ._style(Style())
+          .dim()
+          .render('tui.Tree (offset + hidden + double-line):'),
       tree3,
     ].join('\n');
 

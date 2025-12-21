@@ -7,7 +7,7 @@ void main() {
     test('reads data from source', () async {
       final controller = StreamController<List<int>>();
       final reader = CancelReader(controller.stream);
-      
+
       final received = <int>[];
       reader.stream.listen((data) => received.addAll(data));
       reader.start();
@@ -27,7 +27,7 @@ void main() {
     test('cancel stops reading', () async {
       final controller = StreamController<List<int>>();
       final reader = CancelReader(controller.stream);
-      
+
       final received = <int>[];
       reader.stream.listen((data) => received.addAll(data));
       reader.start();
@@ -39,7 +39,7 @@ void main() {
       reader.cancel();
       controller.add([3, 4]);
       await Future.delayed(Duration.zero);
-      
+
       // Should not have received [3, 4]
       expect(received, equals([1, 2]));
 
@@ -50,7 +50,7 @@ void main() {
     test('isCanceled reflects state', () {
       final controller = StreamController<List<int>>();
       final reader = CancelReader(controller.stream);
-      
+
       expect(reader.isCanceled, isFalse);
       reader.cancel();
       expect(reader.isCanceled, isTrue);

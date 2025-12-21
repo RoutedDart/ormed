@@ -124,7 +124,8 @@ String _randomEmoji() {
 
 void _printUsage() {
   io.stdout.writeln('Usage: dart main.dart [-d] [-h]'); // tui:allow-stdout
-  io.stdout.writeln( // tui:allow-stdout
+  io.stdout.writeln(
+    // tui:allow-stdout
     '  -d   daemon mode (no TUI, but we still run tasks)',
   );
   io.stdout.writeln('  -h   show this help'); // tui:allow-stdout
@@ -147,8 +148,8 @@ Future<void> main(List<String> args) async {
   final options = tui.ProgramOptions(
     altScreen: !(daemonMode || !io.stdout.hasTerminal),
     hideCursor: !(daemonMode || !io.stdout.hasTerminal),
-  useUltravioletRenderer:  true ,
-  useUltravioletInputDecoder: true
+    useUltravioletRenderer: true,
+    useUltravioletInputDecoder: true,
   );
 
   await tui.runProgram(DaemonComboModel.initial(), options: options);

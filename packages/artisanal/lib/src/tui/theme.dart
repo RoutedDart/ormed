@@ -70,4 +70,3 @@ mixin TerminalThemeHost {
     terminalTheme = terminalTheme.update(msg);
   }
 }
-

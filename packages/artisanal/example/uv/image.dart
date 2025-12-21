@@ -48,18 +48,33 @@ void main(List<String> args) async {
   try {
     void render() {
       t.clear();
-      
-      final header = '''
+
+      final header =
+          '''
 Image Example
 =============
 File: ${p.basename(imagePath!)}
-Protocol: ${t.capabilities.hasKittyGraphics ? 'Kitty' : t.capabilities.hasITerm2 ? 'iTerm2' : t.capabilities.hasSixel ? 'Sixel' : 'Half-block fallback'}
+Protocol: ${t.capabilities.hasKittyGraphics
+              ? 'Kitty'
+              : t.capabilities.hasITerm2
+              ? 'iTerm2'
+              : t.capabilities.hasSixel
+              ? 'Sixel'
+              : 'Half-block fallback'}
 
 Press 'q' to exit.
 ''';
       final ss = StyledString(header);
       final headerBounds = ss.bounds();
-      ss.draw(t, Rectangle(minX: 0, minY: 0, maxX: t.bounds().width, maxY: headerBounds.height));
+      ss.draw(
+        t,
+        Rectangle(
+          minX: 0,
+          minY: 0,
+          maxX: t.bounds().width,
+          maxY: headerBounds.height,
+        ),
+      );
 
       // Render image below header.
       final imgArea = Rectangle(
@@ -69,7 +84,7 @@ Press 'q' to exit.
         maxY: t.bounds().height - 1,
       );
 
-// #region image_rendering_usage
+      // #region image_rendering_usage
       if (imgArea.width > 0 && imgArea.height > 0) {
         final drawable = t.bestImageDrawableForTerminal(
           image,
@@ -78,7 +93,7 @@ Press 'q' to exit.
         );
         drawable.draw(t, imgArea);
       }
-// #endregion
+      // #endregion
 
       t.draw();
     }
@@ -96,7 +111,8 @@ Press 'q' to exit.
         render();
       }
       // Re-render if capabilities change (e.g. after query responses).
-      if (event is KittyGraphicsEvent || event is PrimaryDeviceAttributesEvent) {
+      if (event is KittyGraphicsEvent ||
+          event is PrimaryDeviceAttributesEvent) {
         render();
       }
     }

@@ -45,16 +45,16 @@ final class _TermGrid {
     var i = 0;
     while (i < s.length) {
       final ch = s.codeUnitAt(i);
-      if (ch == 0x1b /* ESC */) {
+      if (ch == 0x1b /* ESC */ ) {
         i = _consumeEscape(s, i);
         continue;
       }
-      if (ch == 0x0d /* CR */) {
+      if (ch == 0x0d /* CR */ ) {
         _x = 0;
         i++;
         continue;
       }
-      if (ch == 0x0a /* LF */) {
+      if (ch == 0x0a /* LF */ ) {
         _y = (_y + 1).clamp(0, height - 1);
         i++;
         continue;
@@ -113,7 +113,7 @@ final class _TermGrid {
 
   void _applyCsi(int cmd, List<int> params) {
     // CUP (H/f): ESC [ <row> ; <col> H
-    if (cmd == 0x48 /* H */ || cmd == 0x66 /* f */) {
+    if (cmd == 0x48 /* H */ || cmd == 0x66 /* f */ ) {
       final row = (params.isEmpty ? 1 : params[0]).clamp(1, height);
       final col = (params.length < 2 ? 1 : params[1]).clamp(1, width);
       _y = row - 1;
@@ -122,14 +122,14 @@ final class _TermGrid {
     }
 
     // CHA (G): ESC [ <col> G
-    if (cmd == 0x47 /* G */) {
+    if (cmd == 0x47 /* G */ ) {
       final col = (params.isEmpty ? 1 : params[0]).clamp(1, width);
       _x = col - 1;
       return;
     }
 
     // VPA (d): ESC [ <row> d
-    if (cmd == 0x64 /* d */) {
+    if (cmd == 0x64 /* d */ ) {
       final row = (params.isEmpty ? 1 : params[0]).clamp(1, height);
       _y = row - 1;
       return;
@@ -217,57 +217,52 @@ void _writeAsciiText(uv_buffer.Buffer b, int x, int y, String text) {
 }
 
 void main() {
-  test(
-    'UvTerminalRenderer clears removed overlay content (no artifacts)',
-    () {
-      const w = 64;
-      const h = 18;
+  test('UvTerminalRenderer clears removed overlay content (no artifacts)', () {
+    const w = 64;
+    const h = 18;
 
-      final sink = _TakeSink();
-      final r = UvTerminalRenderer(
-        sink,
-        env: const ['TERM=xterm-256color', 'TTY_FORCE=1'],
-        isTty: true,
-      )
-        ..setFullscreen(true)
-        ..setRelativeCursor(false)
-        ..setMapNewline(true)
-        ..setScrollOptim(false)
-        ..erase();
+    final sink = _TakeSink();
+    final r =
+        UvTerminalRenderer(
+            sink,
+            env: const ['TERM=xterm-256color', 'TTY_FORCE=1'],
+            isTty: true,
+          )
+          ..setFullscreen(true)
+          ..setRelativeCursor(false)
+          ..setMapNewline(true)
+          ..setScrollOptim(false)
+          ..erase();
 
-      final grid = _TermGrid(w, h);
+    final grid = _TermGrid(w, h);
 
-      uv_buffer.Buffer base() {
-        final b = uv_buffer.Buffer.create(w, h)..touched = const [];
-        _writeAsciiText(b, 0, 0, 'HEADER');
-        _writeAsciiText(b, 0, h - 1, 'STATUS LINE');
-        for (var yy = 6; yy < 12; yy++) {
-          _writeAsciiText(b, 0, yy, 'left');
-        }
-        return b;
+    uv_buffer.Buffer base() {
+      final b = uv_buffer.Buffer.create(w, h)..touched = const [];
+      _writeAsciiText(b, 0, 0, 'HEADER');
+      _writeAsciiText(b, 0, h - 1, 'STATUS LINE');
+      for (var yy = 6; yy < 12; yy++) {
+        _writeAsciiText(b, 0, yy, 'left');
       }
+      return b;
+    }
 
-      final base1 = base();
-      r.render(base1);
-      r.flush();
-      grid.apply(sink.take());
+    final base1 = base();
+    r.render(base1);
+    r.flush();
+    grid.apply(sink.take());
 
-      final withOverlay = base();
-      _drawAsciiBox(withOverlay, 18, 6, 28, 6);
-      r.render(withOverlay);
-      r.flush();
-      grid.apply(sink.take());
+    final withOverlay = base();
+    _drawAsciiBox(withOverlay, 18, 6, 28, 6);
+    r.render(withOverlay);
+    r.flush();
+    grid.apply(sink.take());
 
-      final base2 = base();
-      r.render(base2);
-      r.flush();
-      grid.apply(sink.take());
+    final base2 = base();
+    r.render(base2);
+    r.flush();
+    grid.apply(sink.take());
 
-      expect(
-        grid.dump().contains('+--------------------------+'),
-        isFalse,
-      );
-      expect(grid.dump().contains('STATUS LINE'), isTrue);
-    },
-  );
+    expect(grid.dump().contains('+--------------------------+'), isFalse);
+    expect(grid.dump().contains('STATUS LINE'), isTrue);
+  });
 }

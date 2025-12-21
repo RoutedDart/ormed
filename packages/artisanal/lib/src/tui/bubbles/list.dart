@@ -289,11 +289,7 @@ class ListKeyMap implements KeyMap {
              keys: ['q'],
              help: Help(key: 'q', desc: 'quit'),
            ),
-       forceQuit =
-           forceQuit ??
-           KeyBinding(
-             keys: ['ctrl+c'],
-           ),
+       forceQuit = forceQuit ?? KeyBinding(keys: ['ctrl+c']),
        showFullHelp =
            showFullHelp ??
            KeyBinding(
@@ -1210,8 +1206,8 @@ class ListModel extends ViewComponent {
     final spinnerView = _spinner.view();
     final spinnerWidth = spinnerView.length;
     const spinnerLeftGap = ' ';
-    final spinnerOnLeft = titleBarStyle.getPaddingLeft >=
-            spinnerWidth + spinnerLeftGap.length &&
+    final spinnerOnLeft =
+        titleBarStyle.getPaddingLeft >= spinnerWidth + spinnerLeftGap.length &&
         _showSpinner;
 
     if (showFilter && _filterState == FilterState.filtering) {
@@ -1232,7 +1228,8 @@ class ListModel extends ViewComponent {
         view += '  $_statusMessage';
         // Truncate if needed (simplified)
         if (view.length > _width - spinnerWidth) {
-          view = view.substring(0, math.max(0, _width - spinnerWidth - 1)) + '…';
+          view =
+              view.substring(0, math.max(0, _width - spinnerWidth - 1)) + '…';
         }
       }
     }
@@ -1342,7 +1339,8 @@ class ListModel extends ViewComponent {
     // Pad to fill available height
     final itemsOnPage = _paginator.itemsOnPage(items.length);
     if (itemsOnPage < _paginator.perPage) {
-      var n = (_paginator.perPage - itemsOnPage) *
+      var n =
+          (_paginator.perPage - itemsOnPage) *
           (_delegate.height + _delegate.spacing);
       if (items.isEmpty) {
         n -= _delegate.height - 1;

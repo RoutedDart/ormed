@@ -21,37 +21,45 @@ void main() {
     test('selection works', () {
       final text = TextModel('Hello World');
       // Press at (0, 0)
-      var (v1, _) = text.update(const MouseMsg(
-        action: MouseAction.press,
-        button: MouseButton.left,
-        x: 0,
-        y: 0,
-      ));
+      var (v1, _) = text.update(
+        const MouseMsg(
+          action: MouseAction.press,
+          button: MouseButton.left,
+          x: 0,
+          y: 0,
+        ),
+      );
       // Drag to (5, 0)
-      var (v2, _) = v1.update(const MouseMsg(
-        action: MouseAction.motion,
-        button: MouseButton.left,
-        x: 5,
-        y: 0,
-      ));
+      var (v2, _) = v1.update(
+        const MouseMsg(
+          action: MouseAction.motion,
+          button: MouseButton.left,
+          x: 5,
+          y: 0,
+        ),
+      );
       expect(v2.getSelectedText(), equals('Hello'));
     });
 
     test('double click selects word', () {
       final text = TextModel('Hello World');
       // Click inside "Hello"
-      var (v1, _) = text.update(const MouseMsg(
-        action: MouseAction.press,
-        button: MouseButton.left,
-        x: 2,
-        y: 0,
-      ));
-      var (v2, _) = v1.update(const MouseMsg(
-        action: MouseAction.press,
-        button: MouseButton.left,
-        x: 2,
-        y: 0,
-      ));
+      var (v1, _) = text.update(
+        const MouseMsg(
+          action: MouseAction.press,
+          button: MouseButton.left,
+          x: 2,
+          y: 0,
+        ),
+      );
+      var (v2, _) = v1.update(
+        const MouseMsg(
+          action: MouseAction.press,
+          button: MouseButton.left,
+          x: 2,
+          y: 0,
+        ),
+      );
       expect(v2.getSelectedText(), equals('Hello'));
     });
   });

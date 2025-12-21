@@ -92,7 +92,12 @@ void main() {
       final tr = Tree(renderConfig: cfg)
         ..root('Root')
         ..child('Foo')
-        ..child(Tree(renderConfig: cfg)..root('Bar')..child('Qux')..child('Quuux'))
+        ..child(
+          Tree(renderConfig: cfg)
+            ..root('Bar')
+            ..child('Qux')
+            ..child('Quuux'),
+        )
         ..child('Baz');
 
       _expectGolden('test/testdata/tree/TestTreeRoot.golden', tr.render());
@@ -100,20 +105,37 @@ void main() {
 
     test('TestTreeStartsWithSubtree', () {
       final tr = Tree(renderConfig: cfg)
-        ..child(Tree(renderConfig: cfg)..root('Bar')..child('Qux')..child('Quuux'))
+        ..child(
+          Tree(renderConfig: cfg)
+            ..root('Bar')
+            ..child('Qux')
+            ..child('Quuux'),
+        )
         ..child('Baz');
-      _expectGolden('test/testdata/tree/TestTreeStartsWithSubtree.golden', tr.render());
+      _expectGolden(
+        'test/testdata/tree/TestTreeStartsWithSubtree.golden',
+        tr.render(),
+      );
     });
 
     test('TestTreeAddTwoSubTreesWithoutName', () {
       final tr = Tree(renderConfig: cfg)
         ..child('Bar')
         ..child('Foo')
-        ..child(Tree(renderConfig: cfg)..children(['Qux', 'Qux', 'Qux', 'Qux', 'Qux']))
-        ..child(Tree(renderConfig: cfg)..children(['Quux', 'Quux', 'Quux', 'Quux', 'Quux']))
+        ..child(
+          Tree(renderConfig: cfg)
+            ..children(['Qux', 'Qux', 'Qux', 'Qux', 'Qux']),
+        )
+        ..child(
+          Tree(renderConfig: cfg)
+            ..children(['Quux', 'Quux', 'Quux', 'Quux', 'Quux']),
+        )
         ..child('Baz');
 
-      _expectGolden('test/testdata/tree/TestTreeAddTwoSubTreesWithoutName.golden', tr.render());
+      _expectGolden(
+        'test/testdata/tree/TestTreeAddTwoSubTreesWithoutName.golden',
+        tr.render(),
+      );
     });
 
     test('TestTreeLastNodeIsSubTree', () {
@@ -123,10 +145,18 @@ void main() {
           Tree(renderConfig: cfg)
             ..root('Bar')
             ..child('Qux')
-            ..child(Tree(renderConfig: cfg)..root('Quux')..child('Foo')..child('Bar'))
+            ..child(
+              Tree(renderConfig: cfg)
+                ..root('Quux')
+                ..child('Foo')
+                ..child('Bar'),
+            )
             ..child('Quuux'),
         );
-      _expectGolden('test/testdata/tree/TestTreeLastNodeIsSubTree.golden', tr.render());
+      _expectGolden(
+        'test/testdata/tree/TestTreeLastNodeIsSubTree.golden',
+        tr.render(),
+      );
     });
 
     test('TestTreeNil', () {
@@ -136,7 +166,11 @@ void main() {
           Tree(renderConfig: cfg)
             ..root('Bar')
             ..child('Qux')
-            ..child(Tree(renderConfig: cfg)..root('Quux')..child('Bar'))
+            ..child(
+              Tree(renderConfig: cfg)
+                ..root('Quux')
+                ..child('Bar'),
+            )
             ..child('Quuux'),
         )
         ..child('Baz');
@@ -166,12 +200,20 @@ void main() {
           Tree(renderConfig: cfg)
             ..root('Bar')
             ..child('Line 1\nLine 2\nLine 3\nLine 4')
-            ..child(Tree(renderConfig: cfg)..root('Quux')..child('Foo')..child('Bar'))
+            ..child(
+              Tree(renderConfig: cfg)
+                ..root('Quux')
+                ..child('Foo')
+                ..child('Bar'),
+            )
             ..child('Quuux'),
         )
         ..child('Baz\nLine 2');
 
-      _expectGolden('test/testdata/tree/TestTreeMultilineNode.golden', tr.render());
+      _expectGolden(
+        'test/testdata/tree/TestTreeMultilineNode.golden',
+        tr.render(),
+      );
     });
 
     test('TestTreeSubTreeWithCustomEnumerator', () {
@@ -183,7 +225,9 @@ void main() {
             ..child('child 1')
             ..child('child 2')
             ..itemStyleFunc((_, __) => Style().setString('*'))
-            ..enumeratorStyleFunc((_, __) => Style().setString('+').paddingRight(1)),
+            ..enumeratorStyleFunc(
+              (_, __) => Style().setString('+').paddingRight(1),
+            ),
         )
         ..child('Baz');
 
@@ -202,41 +246,53 @@ void main() {
         5: 'V',
         6: 'VI',
       };
-      final tr = (Tree(renderConfig: cfg)
-            ..root('The Root Node™')
-            ..children(['Foo', 'Foo', 'Foo', 'Foo', 'Foo']))
-          .enumeratorFunc((_, i) => romans[i + 1] ?? '');
+      final tr =
+          (Tree(renderConfig: cfg)
+                ..root('The Root Node™')
+                ..children(['Foo', 'Foo', 'Foo', 'Foo', 'Foo']))
+              .enumeratorFunc((_, i) => romans[i + 1] ?? '');
 
-      _expectGolden('test/testdata/tree/TestTreeMixedEnumeratorSize.golden', tr.render());
+      _expectGolden(
+        'test/testdata/tree/TestTreeMixedEnumeratorSize.golden',
+        tr.render(),
+      );
     });
 
     test('TestTreeStyleNilFuncs', () {
-      final tr = (Tree(renderConfig: cfg)..root('Silly')..children(['Willy ', 'Nilly']))
-        ..itemStyleFunc((_, __) => Style())
-        ..enumeratorStyleFunc((_, __) => Style());
-      _expectGolden('test/testdata/tree/TestTreeStyleNilFuncs.golden', tr.render());
+      final tr =
+          (Tree(renderConfig: cfg)
+              ..root('Silly')
+              ..children(['Willy ', 'Nilly']))
+            ..itemStyleFunc((_, __) => Style())
+            ..enumeratorStyleFunc((_, __) => Style());
+      _expectGolden(
+        'test/testdata/tree/TestTreeStyleNilFuncs.golden',
+        tr.render(),
+      );
     });
 
     test('TestTreeStyleAt', () {
-      final tr = (Tree(renderConfig: cfg)
-            ..root('Root')
-            ..child('Foo')
-            ..child('Baz'))
-          .enumeratorFunc((children, i) {
-            if (children[i].value == 'Foo') return '>';
-            return '-';
-          });
+      final tr =
+          (Tree(renderConfig: cfg)
+                ..root('Root')
+                ..child('Foo')
+                ..child('Baz'))
+              .enumeratorFunc((children, i) {
+                if (children[i].value == 'Foo') return '>';
+                return '-';
+              });
 
       _expectGolden('test/testdata/tree/TestTreeStyleAt.golden', tr.render());
     });
 
     test('TestRootStyle (strip ANSI)', () {
-      final tr = (Tree(renderConfig: cfg)
-            ..root('Root')
-            ..child('Foo')
-            ..child('Baz'))
-          .rootStyle(Style().background(const BasicColor('#5A56E0')))
-          .itemStyle(Style().background(const BasicColor('#04B575')));
+      final tr =
+          (Tree(renderConfig: cfg)
+                ..root('Root')
+                ..child('Foo')
+                ..child('Baz'))
+              .rootStyle(Style().background(const BasicColor('#5A56E0')))
+              .itemStyle(Style().background(const BasicColor('#04B575')));
 
       _expectGolden(
         'test/testdata/tree/TestRootStyle.golden',
@@ -258,7 +314,9 @@ void main() {
       final data = (TreeFilter(TreeStringData(['Foo', 'Bar', 'Baz', 'Nope'])))
         ..filter((index) => index != 3);
 
-      final tr = Tree(renderConfig: cfg)..root('Root')..child(data);
+      final tr = Tree(renderConfig: cfg)
+        ..root('Root')
+        ..child(data);
       _expectGolden('test/testdata/tree/TestFilter.golden', tr.render());
 
       expect(data.at(1)?.value, equals('Bar'));
@@ -266,13 +324,14 @@ void main() {
     });
 
     test('TestTreeTable', () {
-      final table = (Table(renderConfig: cfg)
-            ..width(20)
-            ..styleFunc((_, __, ___) => Style().padding(0, 1))
-            ..headers(['Foo', 'Bar'])
-            ..row(['Qux', 'Baz'])
-            ..row(['Qux', 'Baz']))
-          .render();
+      final table =
+          (Table(renderConfig: cfg)
+                ..width(20)
+                ..styleFunc((_, __, ___) => Style().padding(0, 1))
+                ..headers(['Foo', 'Bar'])
+                ..row(['Qux', 'Baz'])
+                ..row(['Qux', 'Baz']))
+              .render();
 
       final tr = Tree(renderConfig: cfg)
         ..child('Foo')
@@ -304,7 +363,11 @@ void main() {
     test('TestAddItemWithAndWithoutRoot/without_root', () {
       final tr = Tree(renderConfig: cfg)
         ..child('Foo')
-        ..child(Tree(renderConfig: cfg)..root('Bar')..child('Baz'))
+        ..child(
+          Tree(renderConfig: cfg)
+            ..root('Bar')
+            ..child('Baz'),
+        )
         ..child('Qux');
       _expectGolden(
         'test/testdata/tree/TestAddItemWithAndWithoutRoot/without_root.golden',
@@ -315,40 +378,52 @@ void main() {
     test('TestEmbedListWithinTree', () {
       final tr = Tree(renderConfig: cfg)
         ..child(
-          LipList.create(['A', 'B', 'C'], renderConfig: cfg)
-              .enumerator(ListEnumerators.arabic),
+          LipList.create([
+            'A',
+            'B',
+            'C',
+          ], renderConfig: cfg).enumerator(ListEnumerators.arabic),
         )
         ..child(
-          LipList.create(['1', '2', '3'], renderConfig: cfg)
-              .enumerator(ListEnumerators.alphabet),
+          LipList.create([
+            '1',
+            '2',
+            '3',
+          ], renderConfig: cfg).enumerator(ListEnumerators.alphabet),
         );
 
-      _expectGolden('test/testdata/tree/TestEmbedListWithinTree.golden', tr.render());
+      _expectGolden(
+        'test/testdata/tree/TestEmbedListWithinTree.golden',
+        tr.render(),
+      );
     });
 
     test('TestMultilinePrefix', () {
       final paddingsStyle = Style().paddingLeft(1).paddingBottom(1);
       final tr = (Tree(renderConfig: cfg)
-            ..enumeratorFunc((_, i) => i == 1 ? '│\n│' : ' ')
-            ..indenterFunc((_, __) => ' ')
-            ..itemStyle(paddingsStyle)
-            ..child('Foo Document\nThe Foo Files')
-            ..child('Bar Document\nThe Bar Files')
-            ..child('Baz Document\nThe Baz Files'));
+        ..enumeratorFunc((_, i) => i == 1 ? '│\n│' : ' ')
+        ..indenterFunc((_, __) => ' ')
+        ..itemStyle(paddingsStyle)
+        ..child('Foo Document\nThe Foo Files')
+        ..child('Bar Document\nThe Bar Files')
+        ..child('Baz Document\nThe Baz Files'));
 
-      _expectGolden('test/testdata/tree/TestMultilinePrefix.golden', tr.render());
+      _expectGolden(
+        'test/testdata/tree/TestMultilinePrefix.golden',
+        tr.render(),
+      );
     });
 
     test('TestMultilinePrefixSubtree', () {
       final paddingsStyle = Style().padding(0, 0, 1, 1);
       final subtree = (Tree(renderConfig: cfg)
-            ..root('Baz')
-            ..enumeratorFunc((_, i) => i == 1 ? '│\n│' : ' ')
-            ..indenterFunc((_, __) => ' ')
-            ..itemStyle(paddingsStyle)
-            ..child('Foo Document\nThe Foo Files')
-            ..child('Bar Document\nThe Bar Files')
-            ..child('Baz Document\nThe Baz Files'));
+        ..root('Baz')
+        ..enumeratorFunc((_, i) => i == 1 ? '│\n│' : ' ')
+        ..indenterFunc((_, __) => ' ')
+        ..itemStyle(paddingsStyle)
+        ..child('Foo Document\nThe Foo Files')
+        ..child('Bar Document\nThe Bar Files')
+        ..child('Baz Document\nThe Baz Files'));
 
       final tr = Tree(renderConfig: cfg)
         ..child('Foo')
@@ -356,7 +431,10 @@ void main() {
         ..child(subtree)
         ..child('Qux');
 
-      _expectGolden('test/testdata/tree/TestMultilinePrefixSubtree.golden', tr.render());
+      _expectGolden(
+        'test/testdata/tree/TestMultilinePrefixSubtree.golden',
+        tr.render(),
+      );
     });
 
     test('TestMultilinePrefixInception', () {
@@ -365,23 +443,26 @@ void main() {
       final paddingsStyle = Style().paddingLeft(1).paddingBottom(1);
 
       final tr = (Tree(renderConfig: cfg)
+        ..enumeratorFunc(glowEnum)
+        ..indenterFunc(glowIndent)
+        ..itemStyle(paddingsStyle)
+        ..child('Foo Document\nThe Foo Files')
+        ..child('Bar Document\nThe Bar Files')
+        ..child(
+          Tree(renderConfig: cfg)
             ..enumeratorFunc(glowEnum)
             ..indenterFunc(glowIndent)
             ..itemStyle(paddingsStyle)
-            ..child('Foo Document\nThe Foo Files')
-            ..child('Bar Document\nThe Bar Files')
-            ..child(
-              Tree(renderConfig: cfg)
-                ..enumeratorFunc(glowEnum)
-                ..indenterFunc(glowIndent)
-                ..itemStyle(paddingsStyle)
-                ..child('Qux Document\nThe Qux Files')
-                ..child('Quux Document\nThe Quux Files')
-                ..child('Quuux Document\nThe Quuux Files'),
-            )
-            ..child('Baz Document\nThe Baz Files'));
+            ..child('Qux Document\nThe Qux Files')
+            ..child('Quux Document\nThe Quux Files')
+            ..child('Quuux Document\nThe Quuux Files'),
+        )
+        ..child('Baz Document\nThe Baz Files'));
 
-      _expectGolden('test/testdata/tree/TestMultilinePrefixInception.golden', tr.render());
+      _expectGolden(
+        'test/testdata/tree/TestMultilinePrefixInception.golden',
+        tr.render(),
+      );
     });
 
     test('TestTypes', () {

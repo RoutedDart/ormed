@@ -186,10 +186,7 @@ void main() {
           (updated, _) = stopwatch.update(
             StopwatchTickMsg(DateTime.now(), stopwatch.tag, stopwatch.id),
           );
-          expect(
-            (updated).elapsed,
-            Duration(milliseconds: 100),
-          );
+          expect((updated).elapsed, Duration(milliseconds: 100));
         });
 
         test('returns tick command when running', () {

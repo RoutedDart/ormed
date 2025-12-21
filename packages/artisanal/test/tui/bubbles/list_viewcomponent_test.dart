@@ -57,7 +57,9 @@ void main() {
       });
 
       test('resetFilter parity', () {
-        final list = ListModel(items: [StringItem('apple'), StringItem('banana')]);
+        final list = ListModel(
+          items: [StringItem('apple'), StringItem('banana')],
+        );
         // Start filtering
         list.update(const KeyMsg(Key(KeyType.runes, runes: [0x2f]))); // '/'
         list.update(const KeyMsg(Key(KeyType.runes, runes: [0x61]))); // 'a'

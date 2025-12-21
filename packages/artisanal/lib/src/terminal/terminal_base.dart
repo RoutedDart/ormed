@@ -960,7 +960,6 @@ class StdioTerminal implements Terminal {
   @override
   bool get isRawMode => _rawModeEnabled;
 
-
   // ─────────────────────────────────────────────────────────────────────────────
   // Mouse Tracking
   // ─────────────────────────────────────────────────────────────────────────────
@@ -1098,7 +1097,6 @@ class StdioTerminal implements Terminal {
   @override
   String? readLine() => _stdin.readLineSync();
 
-
   // ─────────────────────────────────────────────────────────────────────────────
   // Lifecycle
   // ─────────────────────────────────────────────────────────────────────────────
@@ -1220,8 +1218,9 @@ final class TtyTerminal implements Terminal {
   bool get isTerminal => true;
 
   @override
-  ColorProfile get colorProfile =>
-      ColorProfileConverter.fromProfile(cp_detect.detectForSink(_out, forceIsTty: true));
+  ColorProfile get colorProfile => ColorProfileConverter.fromProfile(
+    cp_detect.detectForSink(_out, forceIsTty: true),
+  );
 
   // ─────────────────────────────────────────────────────────────────────────────
   // Output Operations

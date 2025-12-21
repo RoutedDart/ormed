@@ -1,8 +1,6 @@
 import 'package:artisanal/uv.dart';
 import 'dart:async';
 
-
-
 void main() async {
   final terminal = Terminal();
 
@@ -13,7 +11,8 @@ void main() async {
   Timer? timer;
 
   void display() {
-    final view = 'Panicking after $counter seconds...\nPress "q" or "Ctrl+C" to exit.';
+    final view =
+        'Panicking after $counter seconds...\nPress "q" or "Ctrl+C" to exit.';
     final ss = StyledString(view);
     terminal.clear();
     ss.draw(terminal, terminal.bounds());

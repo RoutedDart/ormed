@@ -1,7 +1,5 @@
 import 'package:artisanal/uv.dart';
 
-
-
 void main() async {
   final terminal = Terminal();
 

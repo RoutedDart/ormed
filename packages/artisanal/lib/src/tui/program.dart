@@ -306,8 +306,8 @@ class ProgramOptions {
   /// When enabled, program shutdown cancels the underlying stdin subscription
   /// so the process can exit cleanly on real TTYs.
   final bool shutdownSharedStdinOnExit;
-  
-   final Duration metricsInterval;
+
+  final Duration metricsInterval;
 
   /// Creates a copy with the given fields replaced.
   ProgramOptions copyWith({
@@ -816,7 +816,10 @@ class Program<M extends Model> {
     );
 
     if (_options.disableRenderer) {
-      _renderer = SimpleTuiRenderer(terminal: _terminal!, options: rendererOptions);
+      _renderer = SimpleTuiRenderer(
+        terminal: _terminal!,
+        options: rendererOptions,
+      );
     } else if (_options.useUltravioletRenderer) {
       _renderer = UltravioletTuiRenderer(
         terminal: _terminal!,
@@ -923,11 +926,7 @@ class Program<M extends Model> {
       _frameNumber++;
       _lastFrameTime = now;
 
-      send(FrameTickMsg(
-        time: now,
-        frameNumber: _frameNumber,
-        delta: delta,
-      ));
+      send(FrameTickMsg(time: now, frameNumber: _frameNumber, delta: delta));
     });
   }
 
@@ -1370,7 +1369,10 @@ class Program<M extends Model> {
     );
 
     if (_options.disableRenderer) {
-      _renderer = SimpleTuiRenderer(terminal: _terminal!, options: rendererOptions);
+      _renderer = SimpleTuiRenderer(
+        terminal: _terminal!,
+        options: rendererOptions,
+      );
     } else if (_options.useUltravioletRenderer) {
       _renderer = UltravioletTuiRenderer(
         terminal: _terminal!,
@@ -1461,7 +1463,10 @@ class Program<M extends Model> {
       ansiCompress: _options.ansiCompress,
     );
     if (_options.disableRenderer) {
-      _renderer = SimpleTuiRenderer(terminal: _terminal!, options: rendererOptions);
+      _renderer = SimpleTuiRenderer(
+        terminal: _terminal!,
+        options: rendererOptions,
+      );
     } else if (_options.useUltravioletRenderer) {
       _renderer = UltravioletTuiRenderer(
         terminal: _terminal!,
@@ -1578,7 +1583,10 @@ class Program<M extends Model> {
 
     if (view.cursor != null) {
       // Move cursor to position
-      _terminal?.moveCursor(view.cursor!.position.y + 1, view.cursor!.position.x + 1);
+      _terminal?.moveCursor(
+        view.cursor!.position.y + 1,
+        view.cursor!.position.x + 1,
+      );
       // Set shape and blink
       final code = view.cursor!.shape.encode(blink: view.cursor!.blink);
       _terminal?.write('\x1b[${code} q');
@@ -1891,8 +1899,10 @@ Future<M> runProgramWithResult<M extends Model>(
 ///   await runProgramDebug(MyModel());
 /// }
 /// ```
-Future<void> runProgramDebug<M extends Model>(M model,
-    {ProgramOptions? options}) async {
+Future<void> runProgramDebug<M extends Model>(
+  M model, {
+  ProgramOptions? options,
+}) async {
   final opts = (options ?? const ProgramOptions()).withoutCatchPanics();
   final program = Program<M>(model, options: opts);
   await program.run();

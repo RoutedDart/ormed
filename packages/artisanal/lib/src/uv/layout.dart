@@ -204,5 +204,10 @@ Rectangle bottomCenterRect(Rectangle area, int width, int height) {
 ///
 /// Upstream: `BottomRightRect` in `third_party/ultraviolet/layout.go`.
 Rectangle bottomRightRect(Rectangle area, int width, int height) {
-  return rect(area.maxX - width, area.maxY - height, width, height).intersect(area);
+  return rect(
+    area.maxX - width,
+    area.maxY - height,
+    width,
+    height,
+  ).intersect(area);
 }

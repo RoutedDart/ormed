@@ -398,16 +398,16 @@ class BoxBuilder extends DisplayComponent {
     final b = _border;
 
     // Helper to style border characters
-  String styleBorder(String text) {
-    if (_borderStyle == null) return text;
-    return _renderConfig.configureStyle(_borderStyle!).render(text);
-  }
+    String styleBorder(String text) {
+      if (_borderStyle == null) return text;
+      return _renderConfig.configureStyle(_borderStyle!).render(text);
+    }
 
     // Helper to style title
-  String styleTitle(String text) {
-    if (_titleStyle == null) return text;
-    return _renderConfig.configureStyle(_titleStyle!).render(text);
-  }
+    String styleTitle(String text) {
+      if (_titleStyle == null) return text;
+      return _renderConfig.configureStyle(_titleStyle!).render(text);
+    }
 
     // Helper to style content
     String styleContent(String text, int lineIndex) {

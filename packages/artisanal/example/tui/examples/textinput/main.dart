@@ -52,6 +52,11 @@ class TextInputExampleModel implements Model {
 Future<void> main() async {
   await runProgram(
     TextInputExampleModel(),
-    options: const ProgramOptions(altScreen: false, hideCursor: false, useUltravioletInputDecoder: true, useUltravioletRenderer: true),
+    options: const ProgramOptions(
+      altScreen: false,
+      hideCursor: false,
+      useUltravioletInputDecoder: true,
+      useUltravioletRenderer: true,
+    ),
   );
 }

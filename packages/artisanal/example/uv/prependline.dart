@@ -1,9 +1,6 @@
 import 'package:artisanal/uv.dart';
 import 'dart:math';
 
-
-
-
 void main() async {
   final terminal = Terminal();
 
@@ -15,10 +12,14 @@ void main() async {
   terminal.resize(width, 1);
 
   var bgIndex = 1;
-  var style = UvStyle(bg: UvColor.basic16(bgIndex), fg: UvColor.basic16(0)); // Black FG
+  var style = UvStyle(
+    bg: UvColor.basic16(bgIndex),
+    fg: UvColor.basic16(0),
+  ); // Black FG
 
   void display() {
-    const hw = 'Hello, World! Press space to change color, enter to prepend line, q to quit.';
+    const hw =
+        'Hello, World! Press space to change color, enter to prepend line, q to quit.';
     terminal.fillArea(Cell(content: ' ', style: style), rect(0, 0, width, 1));
     for (var i = 0; i < hw.length && i < width; i++) {
       terminal.setCell(i, 0, Cell(content: hw[i], style: style));

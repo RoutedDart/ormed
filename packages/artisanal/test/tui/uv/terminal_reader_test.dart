@@ -29,7 +29,10 @@ void main() {
     setUp(() {
       controller = StreamController<List<int>>();
       mockReader = MockCancelReader(controller);
-      reader = TerminalReader(mockReader, escTimeout: Duration(milliseconds: 10));
+      reader = TerminalReader(
+        mockReader,
+        escTimeout: Duration(milliseconds: 10),
+      );
     });
 
     tearDown(() async {
@@ -40,7 +43,7 @@ void main() {
       reader.start();
       final eventFuture = reader.events.first;
       controller.add('a'.codeUnits);
-      
+
       final result = await eventFuture;
       expect(result, isA<KeyPressEvent>());
       expect((result as KeyPressEvent).key().code, 'a'.codeUnitAt(0));
@@ -50,7 +53,7 @@ void main() {
       reader.start();
       final eventFuture = reader.events.first;
       controller.add([0x1b]); // ESC
-      
+
       final result = await eventFuture;
       expect(result, isA<KeyPressEvent>());
       expect((result as KeyPressEvent).key().code, keyEscape);
@@ -60,7 +63,7 @@ void main() {
       reader.start();
       final eventFuture = reader.events.first;
       controller.add([0x1b, 'a'.codeUnitAt(0)]); // ESC a
-      
+
       final result = await eventFuture;
       expect(result, isA<KeyPressEvent>());
       final key = (result as KeyPressEvent).key();
@@ -72,7 +75,7 @@ void main() {
       reader.start();
       final eventFuture = reader.events.first;
       controller.add([0x1b, 0x5b, 0x41]); // ESC [ A (Up)
-      
+
       final result = await eventFuture;
       expect(result, isA<KeyPressEvent>());
       expect((result as KeyPressEvent).key().code, keyUp);
@@ -82,8 +85,8 @@ void main() {
       reader.start();
       final eventFuture = reader.events.first;
       // \x1b[Z is Shift+Tab in the table
-      controller.add([0x1b, 0x5b, 0x5a]); 
-      
+      controller.add([0x1b, 0x5b, 0x5a]);
+
       final result = await eventFuture;
       expect(result, isA<KeyPressEvent>());
       final key = (result as KeyPressEvent).key();

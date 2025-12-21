@@ -487,11 +487,10 @@ void main() {
 
   group('Table styling and inheritance', () {
     test('baseStyle is applied to all cells', () {
-      final base = Style().foreground(const BasicColor('1')).bold(); // Basic Red
-      final table = Table()
-          .headers(['A', 'B'])
-          .row(['1', '2'])
-          .baseStyle(base);
+      final base = Style()
+          .foreground(const BasicColor('1'))
+          .bold(); // Basic Red
+      final table = Table().headers(['A', 'B']).row(['1', '2']).baseStyle(base);
 
       final result = table.render();
       expect(result, contains('\x1b[1m'));
@@ -520,7 +519,8 @@ void main() {
           .row(['ERR'])
           .baseStyle(base)
           .styleFunc((row, col, data) {
-            if (data == 'OK') return Style().foreground(const BasicColor('2')); // Green
+            if (data == 'OK')
+              return Style().foreground(const BasicColor('2')); // Green
             return null;
           });
 

@@ -6,9 +6,10 @@ import 'package:artisanal/tui.dart';
 /// optimize terminal output.
 void main() async {
   // Demonstrate ANSI compression
-  final redundant = '\x1b[31mRed\x1b[31m Still Red\x1b[31m More Red\x1b[0m Reset';
+  final redundant =
+      '\x1b[31mRed\x1b[31m Still Red\x1b[31m More Red\x1b[0m Reset';
   final compressed = compressAnsi(redundant);
-  
+
   print('--- ANSI Compression Demo ---');
   print('Original:   "$redundant" (length: ${redundant.length})');
   print('Compressed: "$compressed" (length: ${compressed.length})');
@@ -38,7 +39,10 @@ class MetadataModel implements Model {
   (Model, Cmd?) update(Msg msg) {
     return switch (msg) {
       TickMsg() => _onTick(),
-      KeyMsg(key: Key(type: KeyType.runes, runes: [0x71])) => (this, Cmd.quit()),
+      KeyMsg(key: Key(type: KeyType.runes, runes: [0x71])) => (
+        this,
+        Cmd.quit(),
+      ),
       _ => (this, null),
     };
   }
@@ -56,7 +60,8 @@ class MetadataModel implements Model {
     // Returning a View object instead of a String allows us to provide metadata
     // that the Program runtime will apply to the terminal.
     return View(
-      content: '''
+      content:
+          '''
   Artisanal Metadata Demo
   =======================
   
@@ -73,7 +78,9 @@ class MetadataModel implements Model {
 ''',
       windowTitle: 'Artisanal: $progress% complete',
       progressBar: TerminalProgressBar(
-        state: progress < 100 ? TerminalProgressBarState.defaultState : TerminalProgressBarState.none,
+        state: progress < 100
+            ? TerminalProgressBarState.defaultState
+            : TerminalProgressBarState.none,
         value: progress,
       ),
     );

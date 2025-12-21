@@ -3,16 +3,13 @@ import 'package:artisanal/artisanal.dart';
 import 'package:image/image.dart' as img;
 
 void main() {
-  final io = Console(
-    out: stdout.writeln,
-    err: stderr.writeln,
-  );
+  final io = Console(out: stdout.writeln, err: stderr.writeln);
 
   io.title('Kitty Image Protocol Demo');
 
   // Create a simple test image (100x100)
   final image = img.Image(width: 100, height: 100);
-  
+
   // Fill with a gradient
   for (var y = 0; y < 100; y++) {
     for (var x = 0; x < 100; x++) {
@@ -38,6 +35,8 @@ void main() {
 
   io.writeln();
   io.writeln();
-  io.info('Note: This requires a terminal that supports the Kitty Graphics Protocol (like Kitty, WezTerm, or Konsole).');
+  io.info(
+    'Note: This requires a terminal that supports the Kitty Graphics Protocol (like Kitty, WezTerm, or Konsole).',
+  );
   io.success('Demo complete.');
 }

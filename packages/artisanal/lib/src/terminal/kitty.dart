@@ -25,7 +25,8 @@ class KittyImage {
     final buffer = StringBuffer();
 
     // Convert to RGBA if not already in a compatible format
-    final rgbaImage = (image.numChannels == 4 && image.format == img.Format.uint8)
+    final rgbaImage =
+        (image.numChannels == 4 && image.format == img.Format.uint8)
         ? image
         : image.convert(format: img.Format.uint8, numChannels: 4);
 

@@ -370,4 +370,5 @@ void demonstrateWriter() {
   final msg = Sprintf("User %s logged in", ["admin"]);
   Println(Style().foreground(Colors.green).render(msg));
 }
+
 // #endregion

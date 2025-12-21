@@ -76,7 +76,8 @@ export 'src/terminal/terminal.dart'
 // Style - Verbosity
 export 'src/style/verbosity.dart' show Verbosity;
 export 'src/style/style.dart';
-export 'src/style/color.dart' show Color, AnsiColor, BasicColor, Colors, ColorProfile;
+export 'src/style/color.dart'
+    show Color, AnsiColor, BasicColor, Colors, ColorProfile;
 
 // Renderer
 export 'src/renderer/renderer.dart'

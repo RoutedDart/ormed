@@ -12,7 +12,6 @@ import 'package:artisanal/src/tui/tui.dart';
 import 'package:artisanal/src/style/style.dart';
 import 'package:artisanal/src/style/color.dart';
 
-
 import '../../uv/cursor.dart';
 import '../../uv/geometry.dart';
 import 'cursor.dart';
@@ -502,7 +501,8 @@ class TextInputModel extends ViewComponent {
   }
 
   /// Returns the appropriate style state based on focus.
-  TextInputStyleState activeStyle() => _focused ? styles.focused : styles.blurred;
+  TextInputStyleState activeStyle() =>
+      _focused ? styles.focused : styles.blurred;
 
   /// Returns a [Cursor] for rendering a real cursor in a TUI program.
   /// This requires that [useVirtualCursor] is set to false.
@@ -530,9 +530,7 @@ class TextInputModel extends ViewComponent {
       return;
     }
 
-    cursor = cursor.copyWith(
-      style: Style().foreground(styles.cursor.color!),
-    );
+    cursor = cursor.copyWith(style: Style().foreground(styles.cursor.color!));
 
     if (styles.cursor.blink) {
       final (newCursor, _) = cursor.setMode(CursorMode.blink);
@@ -850,7 +848,8 @@ class TextInputModel extends ViewComponent {
         _focused = true;
         final now = DateTime.now();
         if (_lastClickTime != null &&
-            now.difference(_lastClickTime!) < const Duration(milliseconds: 500) &&
+            now.difference(_lastClickTime!) <
+                const Duration(milliseconds: 500) &&
             _lastClickPos == x) {
           // Double click: select word
           final (start, end) = _findWordAt(x);
@@ -1004,8 +1003,9 @@ class TextInputModel extends ViewComponent {
     }
 
     var v = '';
-    final selectionStyle =
-        Style().background(const AnsiColor(7)).foreground(const AnsiColor(0));
+    final selectionStyle = Style()
+        .background(const AnsiColor(7))
+        .foreground(const AnsiColor(0));
 
     for (var i = 0; i < visibleValue.length; i++) {
       final char = _echoTransform(visibleValue[i]);
@@ -1058,10 +1058,7 @@ class TextInputModel extends ViewComponent {
       return content;
     }
 
-    return View(
-      content: content,
-      cursor: terminalCursor,
-    );
+    return View(content: content, cursor: terminalCursor);
   }
 
   Object _placeholderView() {
@@ -1100,9 +1097,9 @@ class TextInputModel extends ViewComponent {
     if (_canAcceptSuggestion()) {
       final suggestion = _matchedSuggestions[_currentSuggestionIndex];
       if (_value.length < suggestion.length) {
-        return activeStyle().suggestion.inline(true).render(
-          suggestion.sublist(_value.length + offset).join(),
-        );
+        return activeStyle().suggestion
+            .inline(true)
+            .render(suggestion.sublist(_value.length + offset).join());
       }
     }
     return '';

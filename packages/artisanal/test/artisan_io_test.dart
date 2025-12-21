@@ -6,11 +6,7 @@ void main() {
     final out = StringBuffer();
     final err = StringBuffer();
     final renderer = StringRenderer(colorProfile: ColorProfile.ascii);
-    final io = Console(
-      renderer: renderer,
-      out: out.writeln,
-      err: err.writeln,
-    );
+    final io = Console(renderer: renderer, out: out.writeln, err: err.writeln);
 
     io.title('Hello');
 

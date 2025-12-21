@@ -43,8 +43,11 @@ class TextModel extends ViewportModel {
   });
 
   factory TextModel(String content, {int width = 80}) {
-    return TextModel.withOptions(width: width, softWrap: true, height: null)
-        .setContent(content);
+    return TextModel.withOptions(
+      width: width,
+      softWrap: true,
+      height: null,
+    ).setContent(content);
   }
 
   @override
@@ -95,7 +98,12 @@ class TextModel extends ViewportModel {
     }
 
     List<String>? newWrappedLines = wrappedLines ?? internalWrappedLines;
-    if (newSoftWrap && (lines != null || width != null || gutter != null || softWrap != null || styleRanges != null)) {
+    if (newSoftWrap &&
+        (lines != null ||
+            width != null ||
+            gutter != null ||
+            softWrap != null ||
+            styleRanges != null)) {
       final contentWidth = math.max(0, newWidth - newGutter);
       final content = styledLines.join('\n');
       final wrapped = uv_wrap.wrapAnsiPreserving(content, contentWidth);
@@ -124,10 +132,12 @@ class TextModel extends ViewportModel {
       leftGutterFunc: leftGutterFunc ?? this.leftGutterFunc,
       style: style ?? this.style,
       highlightStyle: highlightStyle ?? this.highlightStyle,
-      selectedHighlightStyle: selectedHighlightStyle ?? this.selectedHighlightStyle,
+      selectedHighlightStyle:
+          selectedHighlightStyle ?? this.selectedHighlightStyle,
       styleLineFunc: styleLineFunc ?? this.styleLineFunc,
       highlights: highlights ?? this.highlights,
-      currentHighlightIndex: currentHighlightIndex ?? this.currentHighlightIndex,
+      currentHighlightIndex:
+          currentHighlightIndex ?? this.currentHighlightIndex,
       selectionStart: newSelectionStart,
       selectionEnd: newSelectionEnd,
       lastClickTime: lastClickTime ?? this.lastClickTime,

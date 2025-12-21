@@ -260,7 +260,9 @@ final class LogViewerModel implements tui.Model {
           height: height - 10,
         );
         // Re-format logs for new width
-        final logLines = logs.map((e) => _formatLogEntry(e, nextViewport.width)).toList();
+        final logLines = logs
+            .map((e) => _formatLogEntry(e, nextViewport.width))
+            .toList();
         final updatedViewport = nextViewport.setContent(logLines.join('\n'));
 
         return (
@@ -286,13 +288,7 @@ final class LogViewerModel implements tui.Model {
 
         // Toggle live mode
         if (key.isChar('t') || key.isChar('T')) {
-          return (
-            copyWith(
-              liveMode: !liveMode,
-              debugOverlay: nextDebug,
-            ),
-            null,
-          );
+          return (copyWith(liveMode: !liveMode, debugOverlay: nextDebug), null);
         }
 
         // Tab switching
@@ -307,10 +303,7 @@ final class LogViewerModel implements tui.Model {
         if (key.isChar('G')) {
           final nextViewport = viewport.gotoBottom();
           return (
-            copyWith(
-              viewport: nextViewport,
-              debugOverlay: nextDebug,
-            ),
+            copyWith(viewport: nextViewport, debugOverlay: nextDebug),
             null,
           );
         }
@@ -319,10 +312,7 @@ final class LogViewerModel implements tui.Model {
         if (key.isChar('g')) {
           final nextViewport = viewport.gotoTop();
           return (
-            copyWith(
-              viewport: nextViewport,
-              debugOverlay: nextDebug,
-            ),
+            copyWith(viewport: nextViewport, debugOverlay: nextDebug),
             null,
           );
         }
@@ -330,10 +320,7 @@ final class LogViewerModel implements tui.Model {
         // Delegate other keys to viewport
         final (nextViewport, viewportCmd) = viewport.update(msg);
         return (
-          copyWith(
-            viewport: nextViewport,
-            debugOverlay: nextDebug,
-          ),
+          copyWith(viewport: nextViewport, debugOverlay: nextDebug),
           viewportCmd,
         );
 
@@ -346,10 +333,7 @@ final class LogViewerModel implements tui.Model {
         // Delegate to viewport
         final (nextViewport, viewportCmd) = viewport.update(msg);
         return (
-          copyWith(
-            viewport: nextViewport,
-            debugOverlay: nextDebug,
-          ),
+          copyWith(viewport: nextViewport, debugOverlay: nextDebug),
           viewportCmd,
         );
 
@@ -367,7 +351,9 @@ final class LogViewerModel implements tui.Model {
         }
 
         // Update viewport content
-        final logLines = newLogs.map((e) => _formatLogEntry(e, viewport.width)).toList();
+        final logLines = newLogs
+            .map((e) => _formatLogEntry(e, viewport.width))
+            .toList();
         var nextViewport = viewport.setContent(logLines.join('\n'));
 
         // Auto-scroll if it was at the bottom before adding the new log
@@ -387,12 +373,14 @@ final class LogViewerModel implements tui.Model {
         );
 
       case _TickMsg():
-        cmds.add(tui.Cmd.tick(const Duration(milliseconds: 16), (_) => const _TickMsg()));
-        return (
-          copyWith(
-            lastRenderTime: DateTime.now(),
-            debugOverlay: nextDebug,
+        cmds.add(
+          tui.Cmd.tick(
+            const Duration(milliseconds: 16),
+            (_) => const _TickMsg(),
           ),
+        );
+        return (
+          copyWith(lastRenderTime: DateTime.now(), debugOverlay: nextDebug),
           tui.Cmd.batch(cmds),
         );
 
@@ -449,11 +437,8 @@ final class LogViewerModel implements tui.Model {
   }
 
   String _buildHeader() {
-    final titleStyle = Style()
-        .foreground(Colors.cyan)
-        .bold();
-    final timeStyle = Style()
-        .foreground(Colors.gray);
+    final titleStyle = Style().foreground(Colors.cyan).bold();
+    final timeStyle = Style().foreground(Colors.gray);
 
     final title = titleStyle.render(' ◆ LOG VIEWER ');
     final time = timeStyle.render(_formatTime(lastRenderTime));
@@ -495,7 +480,8 @@ final class LogViewerModel implements tui.Model {
     final style = Style().foreground(Colors.gray).dim();
     final highlightStyle = Style().foreground(Colors.cyan);
 
-    final breadcrumb = '${style.render(' Monitoring')} → ${highlightStyle.render('Logs')}';
+    final breadcrumb =
+        '${style.render(' Monitoring')} → ${highlightStyle.render('Logs')}';
     final len = Style.visibleLength(breadcrumb);
     if (len < width) {
       return '$breadcrumb${' ' * (width - len)}';
@@ -511,7 +497,8 @@ final class LogViewerModel implements tui.Model {
     final countStyle = Style().foreground(Colors.cyan);
     final titleStyle = Style().foreground(Colors.cyan).bold();
 
-    final panelTitle = '${titleStyle.render('● LOGS')} '
+    final panelTitle =
+        '${titleStyle.render('● LOGS')} '
         '[${countStyle.render(logs.length.toString())}] '
         '$liveIndicator';
 
@@ -521,13 +508,11 @@ final class LogViewerModel implements tui.Model {
     // Scrollback indicator
     final followIndicator = viewport.atBottom
         ? Style().foreground(Colors.green).dim().render('● Following new logs')
-        : Style().foreground(Colors.yellow).render('▲ Scrollback mode - Press G to follow');
+        : Style()
+              .foreground(Colors.yellow)
+              .render('▲ Scrollback mode - Press G to follow');
 
-    final content = [
-      viewportContent,
-      '',
-      followIndicator,
-    ].join('\n');
+    final content = [viewportContent, '', followIndicator].join('\n');
 
     final panel = tui.PanelComponent(
       title: panelTitle,
@@ -536,9 +521,7 @@ final class LogViewerModel implements tui.Model {
       padding: 1,
       chars: tui.PanelBoxChars.rounded,
       borderStyle: Style().foreground(Colors.blue).dim(),
-      renderConfig: tui.RenderConfig(
-        terminalWidth: width,
-      ),
+      renderConfig: tui.RenderConfig(terminalWidth: width),
     );
 
     return panel.render().split('\n');
@@ -567,8 +550,8 @@ final class LogViewerModel implements tui.Model {
       final latencyStyle = ms > 500
           ? Style().foreground(Colors.red)
           : ms > 200
-              ? Style().foreground(Colors.yellow)
-              : Style().foreground(Colors.green);
+          ? Style().foreground(Colors.yellow)
+          : Style().foreground(Colors.green);
       latencyStr = ' ${latencyStyle.render('[$ms ms]')}';
     }
 

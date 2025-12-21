@@ -35,13 +35,17 @@ void main() {
 
     test('more options', () {
       final style = Style();
-      final output = style.render('<options=italic,strikethrough,dim>Styled</>');
+      final output = style.render(
+        '<options=italic,strikethrough,dim>Styled</>',
+      );
       expect(output, contains('\x1B[3;9;2mStyled\x1B[0m'));
     });
 
     test('nested tags', () {
       final style = Style();
-      final output = style.render('<fg=green>Green <fg=red>Red</> Back to Green</>');
+      final output = style.render(
+        '<fg=green>Green <fg=red>Red</> Back to Green</>',
+      );
       // The current implementation might not handle nesting perfectly if it just resets to \x1B[0m
       // Let's see what it does.
       print('Nested output: ${output.replaceAll('\x1B', 'ESC')}');

@@ -15,11 +15,8 @@ void main() {
 
     test('ETA calculation', () {
       final startTime = DateTime.now().subtract(const Duration(seconds: 10));
-      final progress = ProgressModel(
-        startTime: startTime,
-        targetPercent: 0.5,
-      );
-      
+      final progress = ProgressModel(startTime: startTime, targetPercent: 0.5);
+
       // 10 seconds for 50% means 10 seconds remaining
       final eta = progress.eta;
       expect(eta, equals('00:10'));
@@ -27,28 +24,20 @@ void main() {
 
     test('ETA calculation at 100%', () {
       final startTime = DateTime.now().subtract(const Duration(seconds: 10));
-      final progress = ProgressModel(
-        startTime: startTime,
-        targetPercent: 1.0,
-      );
-      
+      final progress = ProgressModel(startTime: startTime, targetPercent: 1.0);
+
       expect(progress.eta, equals('00:00'));
     });
 
     test('ETA calculation at 0%', () {
       final startTime = DateTime.now();
-      final progress = ProgressModel(
-        startTime: startTime,
-        targetPercent: 0.0,
-      );
-      
+      final progress = ProgressModel(startTime: startTime, targetPercent: 0.0);
+
       expect(progress.eta, equals('--:--'));
     });
 
     test('MultiProgressModel', () {
-      var multi = MultiProgressModel(width: 10)
-          .add('Task A')
-          .add('Task B');
+      var multi = MultiProgressModel(width: 10).add('Task A').add('Task B');
 
       expect(multi.bars.length, equals(2));
       expect(multi.view(), contains('Task A:'));

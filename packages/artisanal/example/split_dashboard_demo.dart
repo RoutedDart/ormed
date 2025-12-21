@@ -12,7 +12,7 @@ class SystemInfo {
   int _lastCpuIdle = 0;
   double cpuPercent = 0.0;
 
-  // Network tracking for rate calculation  
+  // Network tracking for rate calculation
   int _lastNetRx = 0;
   int _lastNetTx = 0;
   int netRxRate = 0; // bytes/sec
@@ -63,7 +63,12 @@ class SystemInfo {
     try {
       final stat = File('/proc/stat').readAsStringSync();
       final line = stat.split('\n').first; // cpu  user nice system idle ...
-      final parts = line.split(RegExp(r'\s+')).skip(1).take(7).map(int.parse).toList();
+      final parts = line
+          .split(RegExp(r'\s+'))
+          .skip(1)
+          .take(7)
+          .map(int.parse)
+          .toList();
       final idle = parts[3];
       final total = parts.reduce((a, b) => a + b);
 
@@ -88,11 +93,21 @@ class SystemInfo {
         if (parts.length >= 2) {
           final val = int.tryParse(parts[1]) ?? 0;
           switch (parts[0]) {
-            case 'MemTotal': total = val; break;
-            case 'MemAvailable': available = val; break;
-            case 'MemFree': free = val; break;
-            case 'Buffers': buffers = val; break;
-            case 'Cached': cached = val; break;
+            case 'MemTotal':
+              total = val;
+              break;
+            case 'MemAvailable':
+              available = val;
+              break;
+            case 'MemFree':
+              free = val;
+              break;
+            case 'Buffers':
+              buffers = val;
+              break;
+            case 'Cached':
+              cached = val;
+              break;
           }
         }
       }
@@ -165,14 +180,17 @@ class SystemInfo {
       final tcp = File('/proc/net/tcp').readAsStringSync();
       final tcp6 = File('/proc/net/tcp6').readAsStringSync();
       // Count established connections (state 01)
-      tcpConnections = tcp.split('\n').where((l) => l.contains(' 01 ')).length +
-                       tcp6.split('\n').where((l) => l.contains(' 01 ')).length;
+      tcpConnections =
+          tcp.split('\n').where((l) => l.contains(' 01 ')).length +
+          tcp6.split('\n').where((l) => l.contains(' 01 ')).length;
     } catch (_) {}
   }
 
   String formatBytes(int bytes) {
-    if (bytes >= 1024 * 1024 * 1024) return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)}G';
-    if (bytes >= 1024 * 1024) return '${(bytes / (1024 * 1024)).toStringAsFixed(1)}M';
+    if (bytes >= 1024 * 1024 * 1024)
+      return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)}G';
+    if (bytes >= 1024 * 1024)
+      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)}M';
     if (bytes >= 1024) return '${(bytes / 1024).toStringAsFixed(1)}K';
     return '${bytes}B';
   }
@@ -198,13 +216,13 @@ class SysInfoMsg extends tui.Msg {
 
 class DashboardModel implements tui.Model {
   DashboardModel()
-      : cpuProgress = tui.ProgressModel(width: 20, fullColor: '#AF87FF'),
-        memProgress = tui.ProgressModel(width: 20, fullColor: '#5F87FF'),
-        netProgress = tui.ProgressModel(width: 20, fullColor: '#00AFFF'),
-        dskProgress = tui.ProgressModel(width: 20, fullColor: '#FFAF00'),
-        blockSpring = hz.newSpringFromFps(60, 5.0, 0.5),
-        debugOverlay = tui.DebugOverlayModel.initial(rendererLabel: 'UV'),
-        sysInfo = SystemInfo();
+    : cpuProgress = tui.ProgressModel(width: 20, fullColor: '#AF87FF'),
+      memProgress = tui.ProgressModel(width: 20, fullColor: '#5F87FF'),
+      netProgress = tui.ProgressModel(width: 20, fullColor: '#00AFFF'),
+      dskProgress = tui.ProgressModel(width: 20, fullColor: '#FFAF00'),
+      blockSpring = hz.newSpringFromFps(60, 5.0, 0.5),
+      debugOverlay = tui.DebugOverlayModel.initial(rendererLabel: 'UV'),
+      sysInfo = SystemInfo();
 
   tui.ProgressModel cpuProgress;
   tui.ProgressModel memProgress;
@@ -219,14 +237,14 @@ class DashboardModel implements tui.Model {
   double splitRatio = 0.55;
   int logIntervalMs = 50;
   bool autoScroll = true; // Track if at bottom for indicator
-  
+
   /// Scroll offset for logs (0 = show oldest, max = show newest)
   int _scrollOffset = 0;
-  
+
   // Animation state
   double blockPos = 0.0;
   List<double> verticalBars = List.generate(10, (_) => 0.0);
-  
+
   // Spring state for blocks
   final hz.Spring blockSpring;
   List<double> blockSpringPos = List.generate(4, (_) => 0.0);
@@ -235,7 +253,7 @@ class DashboardModel implements tui.Model {
   int nextBlockIndex = 0;
   bool isMovingRight = true;
   int animationDelay = 0;
-  
+
   tui.DebugOverlayModel debugOverlay;
 
   // Precomputed view string (computed in update, returned in view)
@@ -262,20 +280,22 @@ class DashboardModel implements tui.Model {
   @override
   tui.Cmd? init() {
     // Only schedule log generation - frame ticks are automatic via ProgramOptions.frameTick
-    return tui.Cmd.batch([
-      _generateLog(),
-      _scheduleSysInfoUpdate(),
-    ]);
+    return tui.Cmd.batch([_generateLog(), _scheduleSysInfoUpdate()]);
   }
 
   tui.Cmd _scheduleSysInfoUpdate() {
-    return tui.Cmd.tick(const Duration(milliseconds: 500), (_) => const SysInfoMsg());
+    return tui.Cmd.tick(
+      const Duration(milliseconds: 500),
+      (_) => const SysInfoMsg(),
+    );
   }
 
   tui.Cmd _generateLog() {
     return tui.Cmd.tick(Duration(milliseconds: logIntervalMs), (_) {
       logCounter++;
-      return LogMsg('Test output $logCounter: This should appear above the renderer and scroll naturally');
+      return LogMsg(
+        'Test output $logCounter: This should appear above the renderer and scroll naturally',
+      );
     });
   }
 
@@ -307,7 +327,8 @@ class DashboardModel implements tui.Model {
         break;
 
       case tui.MouseMsg(:final button, :final action):
-        if (action == tui.MouseAction.press || action == tui.MouseAction.wheel) {
+        if (action == tui.MouseAction.press ||
+            action == tui.MouseAction.wheel) {
           // Handle mouse wheel scroll - scrolls entire screen
           if (button == tui.MouseButton.wheelUp) {
             _scrollOffset -= 3;
@@ -439,17 +460,28 @@ class DashboardModel implements tui.Model {
         }
 
         for (var i = 0; i < verticalBars.length; i++) {
-          verticalBars[i] = 0.5 + 0.5 * math.sin(time.millisecondsSinceEpoch / 200.0 + i * 0.8);
+          verticalBars[i] =
+              0.5 +
+              0.5 * math.sin(time.millisecondsSinceEpoch / 200.0 + i * 0.8);
         }
 
         // Update progress bars with real values (sysInfo updated via SysInfoMsg)
-        final (newCpu, cpuCmd) = cpuProgress.setPercent(sysInfo.cpuPercent / 100.0);
-        final (newMem, memCmd) = memProgress.setPercent(sysInfo.memPercent / 100.0);
+        final (newCpu, cpuCmd) = cpuProgress.setPercent(
+          sysInfo.cpuPercent / 100.0,
+        );
+        final (newMem, memCmd) = memProgress.setPercent(
+          sysInfo.memPercent / 100.0,
+        );
         // Network bar shows relative activity (capped at 10MB/s for full bar)
-        final netActivity = (sysInfo.netRxRate + sysInfo.netTxRate) / (10 * 1024 * 1024);
-        final (newNet, netCmd) = netProgress.setPercent(netActivity.clamp(0.0, 1.0));
-        final (newDsk, dskCmd) = dskProgress.setPercent(sysInfo.diskPercent / 100.0);
-        
+        final netActivity =
+            (sysInfo.netRxRate + sysInfo.netTxRate) / (10 * 1024 * 1024);
+        final (newNet, netCmd) = netProgress.setPercent(
+          netActivity.clamp(0.0, 1.0),
+        );
+        final (newDsk, dskCmd) = dskProgress.setPercent(
+          sysInfo.diskPercent / 100.0,
+        );
+
         cpuProgress = newCpu;
         memProgress = newMem;
         netProgress = newNet;
@@ -493,13 +525,19 @@ class DashboardModel implements tui.Model {
     }
 
     // Build live panel content
-    final title = _headerStyle.width(width).render(' ◆ SPLIT MODE DEMO - ANIMATED DASHBOARD ◆');
+    final title = _headerStyle
+        .width(width)
+        .render(' ◆ SPLIT MODE DEMO - ANIMATED DASHBOARD ◆');
     final animPanel = _buildAnimationPanel(width, 5);
     final sysPanel = _buildSystemMonitor(width);
     final statsPanel = _buildRealTimeStats(width);
-    final scrollIndicator = autoScroll ? '' : ' [SCROLLBACK - Press G to return]';
-    final footer = _footerStyle.render('[↑↓/jk] Scroll | [PgUp/Dn] Page | [g] Top | [G] Live | [U] Debug$scrollIndicator');
-    
+    final scrollIndicator = autoScroll
+        ? ''
+        : ' [SCROLLBACK - Press G to return]';
+    final footer = _footerStyle.render(
+      '[↑↓/jk] Scroll | [PgUp/Dn] Page | [g] Top | [G] Live | [U] Debug$scrollIndicator',
+    );
+
     // Build complete content buffer: logs + separator + panels
     // This is the "virtual document" that we scroll through
     final panelLines = [
@@ -509,25 +547,25 @@ class DashboardModel implements tui.Model {
       ...statsPanel.split('\n'),
       footer,
     ];
-    
+
     final totalLines = logs.length + panelLines.length;
     final maxOffset = (totalLines - height).clamp(0, totalLines);
-    
+
     // Auto-scroll: when at bottom, keep scroll offset at max so new content is visible
     if (autoScroll) {
       _scrollOffset = maxOffset;
     }
-    
+
     // Clamp scroll offset to valid range
     _scrollOffset = _scrollOffset.clamp(0, maxOffset);
-    
+
     // Check if we're at the bottom (for autoScroll state)
     final atBottom = _scrollOffset >= maxOffset;
     if (atBottom && !autoScroll) {
       // User scrolled back to bottom, re-enable auto-scroll
       autoScroll = true;
     }
-    
+
     // Extract visible window without copying the whole logs list
     final visibleLines = <String>[];
     for (var i = 0; i < height; i++) {
@@ -541,23 +579,23 @@ class DashboardModel implements tui.Model {
         }
       }
     }
-    
+
     // Pad if needed (when content is shorter than screen)
     while (visibleLines.length < height) {
       visibleLines.insert(0, '');
     }
-    
+
     _cachedView = visibleLines.join('\n');
   }
 
   String _buildAnimationPanel(int w, int h) {
     final contentHeight = (h - 2).clamp(1, 10);
     final grid = List.generate(contentHeight, (_) => List.filled(w - 2, ' '));
-    
+
     const blockStr = '███';
     final blockY = contentHeight - 1;
     final maxBlockX = (w - 20).clamp(0, w - 5);
-    
+
     for (var i = 0; i < blockSpringPos.length; i++) {
       var pos = (blockSpringPos[i] * maxBlockX).toInt().clamp(0, maxBlockX);
       final style = _blockColors[i % _blockColors.length];
@@ -596,20 +634,34 @@ class DashboardModel implements tui.Model {
     // Calculate available width for progress bars (w - borders - label - stats text)
     // Label ~5 chars, stats ~15 chars, borders 4 chars = ~24 overhead per line
     final barWidth = (w - 28).clamp(10, 100);
-    
+
     final cpuPct = sysInfo.cpuPercent.toStringAsFixed(0).padLeft(3);
     final memPct = sysInfo.memPercent.toStringAsFixed(0).padLeft(3);
     final netRx = sysInfo.formatBytes(sysInfo.netRxRate);
     final netTx = sysInfo.formatBytes(sysInfo.netTxRate);
     final dskPct = sysInfo.diskPercent.toStringAsFixed(0).padLeft(3);
-    
+
     // Create compact progress bars inline with gradient colors using blend1D
-    final cpuBar = _miniBar(sysInfo.cpuPercent / 100, barWidth, [Colors.purple, Colors.pink]);
-    final memBar = _miniBar(sysInfo.memPercent / 100, barWidth, [Colors.blue, Colors.sky]);
-    final netBar = _miniBar((sysInfo.netRxRate + sysInfo.netTxRate) / (10 * 1024 * 1024), barWidth, [Colors.teal, Colors.cyan]);
-    final dskBar = _miniBar(sysInfo.diskPercent / 100, barWidth, [Colors.orange, Colors.yellow]);
-    
-    final content = '${_cpuLabelStyle.render('CPU:')} $cpuBar $cpuPct%\n'
+    final cpuBar = _miniBar(sysInfo.cpuPercent / 100, barWidth, [
+      Colors.purple,
+      Colors.pink,
+    ]);
+    final memBar = _miniBar(sysInfo.memPercent / 100, barWidth, [
+      Colors.blue,
+      Colors.sky,
+    ]);
+    final netBar = _miniBar(
+      (sysInfo.netRxRate + sysInfo.netTxRate) / (10 * 1024 * 1024),
+      barWidth,
+      [Colors.teal, Colors.cyan],
+    );
+    final dskBar = _miniBar(sysInfo.diskPercent / 100, barWidth, [
+      Colors.orange,
+      Colors.yellow,
+    ]);
+
+    final content =
+        '${_cpuLabelStyle.render('CPU:')} $cpuBar $cpuPct%\n'
         '${_memLabelStyle.render('MEM:')} $memBar $memPct%\n'
         '${_netLabelStyle.render('NET:')} $netBar ↓$netRx ↑$netTx\n'
         '${_dskLabelStyle.render('DSK:')} $dskBar $dskPct%';
@@ -621,27 +673,30 @@ class DashboardModel implements tui.Model {
       renderConfig: tui.RenderConfig(terminalWidth: width),
     ).render();
   }
-  
+
   String _miniBar(double percent, int width, List<Color> stops) {
     final filled = (percent.clamp(0, 1) * width).round();
     final empty = width - filled;
-    
+
     if (filled == 0) {
       return Style().dim().render('░' * width);
     }
-    
+
     // Use blend1D for smooth gradient
     final grad = blend1D(filled, stops, hasDarkBackground: true);
     final bar = grad.map((c) => Style().foreground(c).render('█')).join();
-    
+
     return bar + Style().dim().render('░' * empty);
   }
 
   String _buildRealTimeStats(int w) {
-    final totalNet = sysInfo.formatBytes(sysInfo.totalNetRx + sysInfo.totalNetTx);
+    final totalNet = sysInfo.formatBytes(
+      sysInfo.totalNetRx + sysInfo.totalNetTx,
+    );
     final uptime = sysInfo.formatUptime(sysInfo.uptime);
-    
-    final content = '${_statsLabelStyle.render('NET TOTAL:')} $totalNet  '
+
+    final content =
+        '${_statsLabelStyle.render('NET TOTAL:')} $totalNet  '
         '${_statsLabelStyle.render('TCP:')} ${sysInfo.tcpConnections}  '
         '${_statsLabelStyle.render('PROC:')} ${sysInfo.processCount}  '
         '${_statsLabelStyle.render('UP:')} $uptime';
@@ -657,13 +712,13 @@ class DashboardModel implements tui.Model {
   @override
   String view() {
     if (width == 0 || height == 0) return 'Initializing...';
-    
+
     // Only rebuild content if dirty
     if (_viewDirty) {
       _rebuildView();
       _viewDirty = false;
     }
-    
+
     // Only apply debug overlay when enabled (it shows live metrics)
     if (debugOverlay.enabled) {
       return debugOverlay.compose(_cachedView);
@@ -678,7 +733,9 @@ void main() async {
     options: const tui.ProgramOptions(
       useUltravioletRenderer: true,
       altScreen: true,
-      metricsInterval: Duration(milliseconds: 250), // Update metrics 4x per second
+      metricsInterval: Duration(
+        milliseconds: 250,
+      ), // Update metrics 4x per second
       mouseMode: tui.MouseMode.allMotion, // Enable mouse for dragging
     ),
   );

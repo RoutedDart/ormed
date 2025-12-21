@@ -40,7 +40,9 @@ void main() {
         SearchModel<String>(items: const ['a', 'b']),
         SelectModel<String>(items: const ['a', 'b']),
         MultiSelectModel<String>(items: const ['a', 'b']),
-        WizardModel(steps: const [TextInputStep(key: 'name', prompt: 'Name')]),
+        WizardModel(
+          steps: const [TextInputStep(key: 'name', prompt: 'Name')],
+        ),
         FilePickerModel(currentDirectory: Directory.systemTemp.path),
       ];
 
@@ -53,4 +55,3 @@ void main() {
     });
   });
 }
-

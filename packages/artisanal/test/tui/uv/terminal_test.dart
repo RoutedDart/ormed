@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:test/test.dart';
 import 'package:artisanal/src/uv/uv.dart';
+
 void main() {
   group('Terminal', () {
     late StreamController<List<int>> inputController;
@@ -19,7 +20,9 @@ void main() {
     });
 
     test('start and stop', () async {
-      final eventFuture = terminal.events.firstWhere((e) => e is WindowSizeEvent);
+      final eventFuture = terminal.events.firstWhere(
+        (e) => e is WindowSizeEvent,
+      );
       await terminal.start();
       await eventFuture;
       await terminal.stop();
@@ -27,13 +30,15 @@ void main() {
 
     test('receives key events', () async {
       await terminal.start();
-      final eventFuture = terminal.events.where((e) => e is KeyPressEvent).first;
-      
+      final eventFuture = terminal.events
+          .where((e) => e is KeyPressEvent)
+          .first;
+
       inputController.add('a'.codeUnits);
-      
+
       final event = await eventFuture as KeyPressEvent;
       expect(event.key().code, 'a'.codeUnitAt(0));
-      
+
       await terminal.stop();
     });
 
@@ -42,7 +47,7 @@ void main() {
       terminal.resize(10, 10);
       terminal.setCell(0, 0, Cell(content: 'X'));
       terminal.draw();
-      
+
       expect(outputBuffer.toString(), isNotEmpty);
       await terminal.stop();
     });

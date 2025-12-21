@@ -29,8 +29,10 @@ void main() {
     const cfg = RenderConfig(colorProfile: ColorProfile.ansi256);
 
     test('TestList', () {
-      final l =
-          LipList(renderConfig: cfg)..item('Foo')..item('Bar')..item('Baz');
+      final l = LipList(renderConfig: cfg)
+        ..item('Foo')
+        ..item('Bar')
+        ..item('Baz');
       _expectGolden('test/testdata/list/TestList.golden', l.render());
     });
 
@@ -44,8 +46,11 @@ void main() {
         ..item('Foo')
         ..item('Bar')
         ..item(
-          LipList.create(['Hi', 'Hello', 'Halo'], renderConfig: cfg)
-              .enumerator(ListEnumerators.roman),
+          LipList.create([
+            'Hi',
+            'Hello',
+            'Halo',
+          ], renderConfig: cfg).enumerator(ListEnumerators.roman),
         )
         ..item('Qux');
       _expectGolden('test/testdata/list/TestSublist.golden', l.render());
@@ -56,8 +61,11 @@ void main() {
         'A',
         'B',
         'C',
-        LipList.create(['D', 'E', 'F'], renderConfig: cfg)
-            .enumerator(ListEnumerators.roman),
+        LipList.create([
+          'D',
+          'E',
+          'F',
+        ], renderConfig: cfg).enumerator(ListEnumerators.roman),
         'G',
       ], renderConfig: cfg);
       _expectGolden('test/testdata/list/TestSublistItems.golden', l.render());
@@ -65,7 +73,9 @@ void main() {
 
     test('TestComplexSublist', () {
       final style1 = Style().foreground(const BasicColor('99')).paddingRight(1);
-      final style2 = Style().foreground(const BasicColor('212')).paddingRight(1);
+      final style2 = Style()
+          .foreground(const BasicColor('212'))
+          .paddingRight(1);
 
       final l = LipList(renderConfig: cfg)
         ..item('Foo')
@@ -73,9 +83,10 @@ void main() {
         ..item(LipList.create(['foo2', 'bar2'], renderConfig: cfg))
         ..item('Qux')
         ..item(
-          LipList.create(['aaa', 'bbb'], renderConfig: cfg)
-              .enumeratorStyle(style1)
-              .enumerator(ListEnumerators.roman),
+          LipList.create(
+            ['aaa', 'bbb'],
+            renderConfig: cfg,
+          ).enumeratorStyle(style1).enumerator(ListEnumerators.roman),
         )
         ..item('Deep')
         ..item(
@@ -149,7 +160,10 @@ void main() {
     });
 
     test('TestListIntegers', () {
-      final l = LipList(renderConfig: cfg)..item('1')..item('2')..item('3');
+      final l = LipList(renderConfig: cfg)
+        ..item('1')
+        ..item('2')
+        ..item('3');
       _expectGolden('test/testdata/list/TestListIntegers.golden', l.render());
     });
 
@@ -159,7 +173,10 @@ void main() {
         ..item('Foo')
         ..item('Bar')
         ..item('Baz');
-      _expectGolden('test/testdata/list/TestEnumerators/alphabet.golden', l.render());
+      _expectGolden(
+        'test/testdata/list/TestEnumerators/alphabet.golden',
+        l.render(),
+      );
     });
 
     test('TestEnumerators/arabic', () {
@@ -168,7 +185,10 @@ void main() {
         ..item('Foo')
         ..item('Bar')
         ..item('Baz');
-      _expectGolden('test/testdata/list/TestEnumerators/arabic.golden', l.render());
+      _expectGolden(
+        'test/testdata/list/TestEnumerators/arabic.golden',
+        l.render(),
+      );
     });
 
     test('TestEnumerators/roman', () {
@@ -177,7 +197,10 @@ void main() {
         ..item('Foo')
         ..item('Bar')
         ..item('Baz');
-      _expectGolden('test/testdata/list/TestEnumerators/roman.golden', l.render());
+      _expectGolden(
+        'test/testdata/list/TestEnumerators/roman.golden',
+        l.render(),
+      );
     });
 
     test('TestEnumerators/bullet', () {
@@ -186,7 +209,10 @@ void main() {
         ..item('Foo')
         ..item('Bar')
         ..item('Baz');
-      _expectGolden('test/testdata/list/TestEnumerators/bullet.golden', l.render());
+      _expectGolden(
+        'test/testdata/list/TestEnumerators/bullet.golden',
+        l.render(),
+      );
     });
 
     test('TestEnumerators/asterisk', () {
@@ -195,7 +221,10 @@ void main() {
         ..item('Foo')
         ..item('Bar')
         ..item('Baz');
-      _expectGolden('test/testdata/list/TestEnumerators/asterisk.golden', l.render());
+      _expectGolden(
+        'test/testdata/list/TestEnumerators/asterisk.golden',
+        l.render(),
+      );
     });
 
     test('TestEnumerators/dash', () {
@@ -204,7 +233,10 @@ void main() {
         ..item('Foo')
         ..item('Bar')
         ..item('Baz');
-      _expectGolden('test/testdata/list/TestEnumerators/dash.golden', l.render());
+      _expectGolden(
+        'test/testdata/list/TestEnumerators/dash.golden',
+        l.render(),
+      );
     });
 
     test('TestEnumeratorsTransform/alphabet lower', () {
@@ -292,8 +324,9 @@ void main() {
 
       for (final c in cases) {
         final prefix = c.enumerator(emptyItems, c.index);
-        final bullet =
-            prefix.endsWith('.') ? prefix.substring(0, prefix.length - 1) : prefix;
+        final bullet = prefix.endsWith('.')
+            ? prefix.substring(0, prefix.length - 1)
+            : prefix;
         expect(bullet, equals(c.exp));
       }
     });

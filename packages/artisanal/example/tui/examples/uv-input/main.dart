@@ -41,7 +41,7 @@ class _LogModel implements tui.Model {
     ]);
   }
 
-// #region input_decoding_usage
+  // #region input_decoding_usage
   @override
   (tui.Model, tui.Cmd?) update(tui.Msg msg) {
     switch (msg) {
@@ -79,7 +79,7 @@ class _LogModel implements tui.Model {
         if (key.matchesSingle(tui.CommonKeyBindings.quit)) {
           return (this, tui.Cmd.quit());
         }
-// #endregion
+        // #endregion
         // Convenience: press `d/b/f/c` to re-request reports.
         // Clipboard: `y` copy demo text, `p` request clipboard read (if supported).
         // Size: `s` request window-size report (CSI 18 t).

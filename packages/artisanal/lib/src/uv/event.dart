@@ -177,6 +177,7 @@ final class CellSizeEvent extends Event {
 sealed class KeyEvent extends Event {
   const KeyEvent(this._key);
   final Key _key;
+
   /// Returns the underlying [Key] descriptor.
   Key key() => _key;
 
@@ -188,6 +189,7 @@ sealed class KeyEvent extends Event {
     String? s4,
     String? s5,
   ]) => _key.matchString(s, s2, s3, s4, s5);
+
   /// Returns a human-readable keystroke (e.g., `ctrl+shift+A`).
   String keystroke() => _key.keystroke();
 
@@ -209,6 +211,7 @@ final class KeyReleaseEvent extends KeyEvent {
 sealed class MouseEvent extends Event {
   const MouseEvent(this._mouse);
   final Mouse _mouse;
+
   /// Returns the underlying [Mouse] payload (position, button, modifiers).
   Mouse mouse() => _mouse;
 

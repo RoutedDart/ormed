@@ -8,8 +8,10 @@ import 'package:artisanal/src/tui/key.dart';
 import 'package:test/test.dart';
 
 class MockTerminal extends StringTerminal {
-  MockTerminal({int width = 80, int height = 24}) 
-    : _width = width, _height = height, super(terminalWidth: width, terminalHeight: height);
+  MockTerminal({int width = 80, int height = 24})
+    : _width = width,
+      _height = height,
+      super(terminalWidth: width, terminalHeight: height);
 
   int _width;
   int _height;
@@ -31,7 +33,9 @@ class SimpleModel implements Model {
 
   @override
   (Model, Cmd?) update(Msg msg) {
-    if (msg is KeyMsg && msg.key.type == KeyType.runes && msg.key.runes.isNotEmpty) {
+    if (msg is KeyMsg &&
+        msg.key.type == KeyType.runes &&
+        msg.key.runes.isNotEmpty) {
       if (String.fromCharCode(msg.key.runes.first) == 'q') {
         return (this, Cmd.quit());
       }
@@ -65,26 +69,29 @@ void main() {
     await runFuture;
   });
 
-  test('UltravioletTuiRenderer emits output on first render (altScreen)', () async {
-    final terminal = MockTerminal(width: 80, height: 24);
-    final program = Program(
-      SimpleModel(),
-      options: const ProgramOptions(
-        useUltravioletRenderer: true,
-        altScreen: true,
-      ),
-      terminal: terminal,
-    );
+  test(
+    'UltravioletTuiRenderer emits output on first render (altScreen)',
+    () async {
+      final terminal = MockTerminal(width: 80, height: 24);
+      final program = Program(
+        SimpleModel(),
+        options: const ProgramOptions(
+          useUltravioletRenderer: true,
+          altScreen: true,
+        ),
+        terminal: terminal,
+      );
 
-    final runFuture = program.run();
-    await Future.delayed(const Duration(milliseconds: 200));
+      final runFuture = program.run();
+      await Future.delayed(const Duration(milliseconds: 200));
 
-    expect(terminal.output, contains('Hello UV'));
-    expect(terminal.operations, contains('flush'));
+      expect(terminal.output, contains('Hello UV'));
+      expect(terminal.operations, contains('flush'));
 
-    terminal.simulateTyping('q');
-    await runFuture;
-  });
+      terminal.simulateTyping('q');
+      await runFuture;
+    },
+  );
 
   test('UltravioletTuiRenderer handles resize correctly', () async {
     final terminal = MockTerminal(width: 80, height: 24);

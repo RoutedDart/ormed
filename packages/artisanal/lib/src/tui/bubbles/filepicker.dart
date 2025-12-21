@@ -798,10 +798,7 @@ class FilePickerModel extends ViewComponent {
       if (isDir) {
         if (_dirAllowed) {
           final selectedPath = p.join(_currentDirectory, file.name);
-          return (
-            copyWith(selectedPath: selectedPath, clearError: true),
-            null,
-          );
+          return (copyWith(selectedPath: selectedPath, clearError: true), null);
         }
         // If dir selection is not allowed, we don't show an error here
         // because Enter will navigate into the directory below.

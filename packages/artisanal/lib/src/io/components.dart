@@ -3,7 +3,8 @@ import 'dart:async';
 import '../style/color.dart';
 import '../style/style.dart';
 import '../tui/bubbles/components/alert.dart' show Alert, AlertDisplayStyle;
-import '../tui/bubbles/components/base.dart' show RenderConfig, DisplayComponent;
+import '../tui/bubbles/components/base.dart'
+    show RenderConfig, DisplayComponent;
 import '../tui/bubbles/components/list.dart' show BulletList;
 import '../tui/bubbles/components/table.dart' show HorizontalTableComponent;
 import '../tui/bubbles/components/titled_block.dart' show TitledBlockComponent;

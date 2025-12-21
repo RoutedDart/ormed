@@ -24,12 +24,7 @@ final class HalfBlockImageDrawable implements Drawable {
 
   @override
   Rectangle bounds() {
-    return Rectangle(
-      minX: 0,
-      minY: 0,
-      maxX: columns ?? 0,
-      maxY: rows ?? 0,
-    );
+    return Rectangle(minX: 0, minY: 0, maxX: columns ?? 0, maxY: rows ?? 0);
   }
 
   @override
@@ -52,15 +47,20 @@ final class HalfBlockImageDrawable implements Drawable {
         final topPixel = resized.getPixel(x, y * 2);
         final bottomPixel = resized.getPixel(x, y * 2 + 1);
 
-        final topColor = UvRgb(topPixel.r.toInt(), topPixel.g.toInt(), topPixel.b.toInt());
-        final bottomColor = UvRgb(bottomPixel.r.toInt(), bottomPixel.g.toInt(), bottomPixel.b.toInt());
+        final topColor = UvRgb(
+          topPixel.r.toInt(),
+          topPixel.g.toInt(),
+          topPixel.b.toInt(),
+        );
+        final bottomColor = UvRgb(
+          bottomPixel.r.toInt(),
+          bottomPixel.g.toInt(),
+          bottomPixel.b.toInt(),
+        );
 
         final cell = Cell(
           content: '▀',
-          style: UvStyle(
-            fg: topColor,
-            bg: bottomColor,
-          ),
+          style: UvStyle(fg: topColor, bg: bottomColor),
         );
 
         if (area.minX + x < area.maxX && area.minY + y < area.maxY) {

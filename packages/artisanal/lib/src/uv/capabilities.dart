@@ -98,7 +98,7 @@ final class TerminalCapabilities {
   bool get hasColorPalette => palette.isNotEmpty;
 
   /// Updates capabilities based on an event.
-  /// 
+  ///
   /// Returns true if any capability changed.
   bool updateFromEvent(Event event) {
     if (event is KittyGraphicsEvent) {

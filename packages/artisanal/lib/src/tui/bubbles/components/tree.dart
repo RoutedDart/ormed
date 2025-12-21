@@ -421,7 +421,8 @@ final class _TreeLeaf implements TreeNode {
   bool get hidden => _hidden;
 }
 
-typedef TreeEnumeratorFunc = String Function(List<TreeNode> children, int index);
+typedef TreeEnumeratorFunc =
+    String Function(List<TreeNode> children, int index);
 typedef TreeIndenterFunc = String Function(List<TreeNode> children, int index);
 typedef TreeNodeStyleFunc = Style Function(List<TreeNode> children, int index);
 
@@ -755,7 +756,9 @@ class Tree extends DisplayComponent implements TreeNode {
         renderer.style.enumeratorStyle(children, i),
       );
       final p = enumStyle.render(enumerator(children, i));
-      maxLen = maxLen < Layout.visibleLength(p) ? Layout.visibleLength(p) : maxLen;
+      maxLen = maxLen < Layout.visibleLength(p)
+          ? Layout.visibleLength(p)
+          : maxLen;
     }
 
     for (var i = 0; i < children.length; i++) {
@@ -786,23 +789,24 @@ class Tree extends DisplayComponent implements TreeNode {
       var multiPrefix = enumBgStyle.render(prefix);
 
       while (item.split('\n').length > nodePrefix.split('\n').length) {
-        nodePrefix = Layout.joinVertical(
-          HorizontalAlign.left,
-          [nodePrefix, indent],
-        );
+        nodePrefix = Layout.joinVertical(HorizontalAlign.left, [
+          nodePrefix,
+          indent,
+        ]);
       }
 
       while (nodePrefix.split('\n').length > multiPrefix.split('\n').length) {
-        multiPrefix = Layout.joinVertical(
-          HorizontalAlign.left,
-          [multiPrefix, prefix],
-        );
+        multiPrefix = Layout.joinVertical(HorizontalAlign.left, [
+          multiPrefix,
+          prefix,
+        ]);
       }
 
-      var line = Layout.joinHorizontal(
-        VerticalAlign.top,
-        [multiPrefix, nodePrefix, item],
-      );
+      var line = Layout.joinHorizontal(VerticalAlign.top, [
+        multiPrefix,
+        nodePrefix,
+        item,
+      ]);
 
       final w = renderer.width;
       if (w > 0) {
@@ -814,8 +818,9 @@ class Tree extends DisplayComponent implements TreeNode {
 
       out.add(line);
 
-      final childChildren =
-          child.childrenNodes.where((c) => !c.hidden).toList();
+      final childChildren = child.childrenNodes
+          .where((c) => !c.hidden)
+          .toList();
       if (childChildren.isEmpty) continue;
 
       // Use a child renderer if the child has one, otherwise inherit.
@@ -827,7 +832,11 @@ class Tree extends DisplayComponent implements TreeNode {
       }
 
       final subtree = switch (child) {
-        Tree t => t._renderWith(nextRenderer, prefix: nextPrefix, isRoot: false),
+        Tree t => t._renderWith(
+          nextRenderer,
+          prefix: nextPrefix,
+          isRoot: false,
+        ),
         _ => '',
       };
 

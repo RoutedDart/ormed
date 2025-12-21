@@ -10,7 +10,10 @@ void main() {
 
     test('lookupEnv finds existing value', () {
       final env = Environ(['TERM=xterm-256color']);
-      expect(env.lookupEnv('TERM'), equals((value: 'xterm-256color', found: true)));
+      expect(
+        env.lookupEnv('TERM'),
+        equals((value: 'xterm-256color', found: true)),
+      );
     });
 
     test('last entry wins when duplicated', () {
@@ -19,4 +22,3 @@ void main() {
     });
   });
 }
-

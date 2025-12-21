@@ -37,7 +37,8 @@ final class Alert {
 final class SparklineData {
   const SparklineData({required this.values, required this.maxValue});
 
-  factory SparklineData.empty() => const SparklineData(values: [], maxValue: 10);
+  factory SparklineData.empty() =>
+      const SparklineData(values: [], maxValue: 10);
 
   final List<int> values;
   final int maxValue;
@@ -45,7 +46,9 @@ final class SparklineData {
   SparklineData addValue(int value) {
     final newValues = [...values, value];
     // Keep last 30 data points
-    final trimmed = newValues.length > 30 ? newValues.sublist(newValues.length - 30) : newValues;
+    final trimmed = newValues.length > 30
+        ? newValues.sublist(newValues.length - 30)
+        : newValues;
     final newMax = trimmed.fold<int>(maxValue, (a, b) => b > a ? b : a);
     return SparklineData(values: trimmed, maxValue: math.max(10, newMax));
   }
@@ -55,15 +58,17 @@ final class SparklineData {
     final chars = ['▁', '▂', '▃', '▄', '▅', '▆', '▇', '█'];
     final buffer = StringBuffer();
     final step = values.length > width ? values.length / width : 1.0;
-    
+
     for (var i = 0; i < width && i * step < values.length; i++) {
       final idx = (i * step).floor();
       final value = idx < values.length ? values[idx] : 0;
-      final normalized = maxValue > 0 ? (value / maxValue).clamp(0.0, 1.0) : 0.0;
+      final normalized = maxValue > 0
+          ? (value / maxValue).clamp(0.0, 1.0)
+          : 0.0;
       final charIdx = (normalized * (chars.length - 1)).round();
       buffer.write(chars[charIdx]);
     }
-    
+
     // Pad with baseline if needed
     while (buffer.length < width) {
       buffer.write('▁');
@@ -94,11 +99,11 @@ final class LogEntry {
   final int? lineNumber;
 
   String get levelStr => switch (level) {
-        LogLevel.info => 'INF',
-        LogLevel.debug => 'DBG',
-        LogLevel.warning => 'WRN',
-        LogLevel.error => 'ERR',
-      };
+    LogLevel.info => 'INF',
+    LogLevel.debug => 'DBG',
+    LogLevel.warning => 'WRN',
+    LogLevel.error => 'ERR',
+  };
 }
 
 /// Tracks log statistics by level
@@ -113,13 +118,13 @@ final class LogStats {
   });
 
   factory LogStats.empty() => const LogStats(
-        infoCount: 0,
-        debugCount: 0,
-        warningCount: 0,
-        errorCount: 0,
-        logsPerSecond: 0.0,
-        recentLogs: [],
-      );
+    infoCount: 0,
+    debugCount: 0,
+    warningCount: 0,
+    errorCount: 0,
+    logsPerSecond: 0.0,
+    recentLogs: [],
+  );
 
   final int infoCount;
   final int debugCount;
@@ -150,13 +155,13 @@ final class LogStats {
   }
 
   LogStats withRate(double rate) => LogStats(
-        infoCount: infoCount,
-        debugCount: debugCount,
-        warningCount: warningCount,
-        errorCount: errorCount,
-        logsPerSecond: rate,
-        recentLogs: recentLogs,
-      );
+    infoCount: infoCount,
+    debugCount: debugCount,
+    warningCount: warningCount,
+    errorCount: errorCount,
+    logsPerSecond: rate,
+    recentLogs: recentLogs,
+  );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -365,7 +370,12 @@ class CommandCenterModel implements tui.Model {
         title: 'Render Metrics',
         rendererLabel: 'UV',
       ),
-      levelFilter: {LogLevel.info, LogLevel.debug, LogLevel.warning, LogLevel.error},
+      levelFilter: {
+        LogLevel.info,
+        LogLevel.debug,
+        LogLevel.warning,
+        LogLevel.error,
+      },
       projectFilter: null, // null = all projects
       searchQuery: '',
       searchMode: false,
@@ -404,7 +414,7 @@ class CommandCenterModel implements tui.Model {
   String searchQuery;
   bool searchMode;
   LogStats logStats;
-  String theme;  // Theme name - see ThemePalette.names for available themes
+  String theme; // Theme name - see ThemePalette.names for available themes
   List<Alert> alerts;
   SparklineData sparkline;
   tui.TextInputModel searchInput;
@@ -549,10 +559,7 @@ class CommandCenterModel implements tui.Model {
   tui.Cmd? init() {
     // Schedule log generation and sparkline updates
     // Frame ticks are automatic via ProgramOptions.frameTick
-    return tui.Cmd.batch([
-      _scheduleNewLog(),
-      _scheduleSparklineUpdate(),
-    ]);
+    return tui.Cmd.batch([_scheduleNewLog(), _scheduleSparklineUpdate()]);
   }
 
   @override
@@ -571,15 +578,19 @@ class CommandCenterModel implements tui.Model {
         final fixedPanelsHeight = 14;
         final logPanelHeight = math.max(6, height - fixedPanelsHeight);
         // Content area inside log panel (minus borders and chrome)
-        final logContentHeight = math.max(3, logPanelHeight - 8); // 8 = borders + search + follow + controls + spacing
-        
+        final logContentHeight = math.max(
+          3,
+          logPanelHeight - 8,
+        ); // 8 = borders + search + follow + controls + spacing
+
         final nextViewport = viewport.copyWith(
           width: width - 4,
           height: logContentHeight,
         );
         // Re-format filtered logs for new width
-        final logLines =
-            filteredLogs.map((e) => _formatLogEntry(e, nextViewport.width)).toList();
+        final logLines = filteredLogs
+            .map((e) => _formatLogEntry(e, nextViewport.width))
+            .toList();
         final updatedViewport = nextViewport.setContent(logLines.join('\n'));
 
         return (
@@ -602,14 +613,21 @@ class CommandCenterModel implements tui.Model {
             // Apply search and exit search mode
             final query = searchInput.value;
             return (
-              _updateViewportWithFilter(levelFilter, projectFilter, query, nextDebug)
-                  .copyWith(searchMode: false),
+              _updateViewportWithFilter(
+                levelFilter,
+                projectFilter,
+                query,
+                nextDebug,
+              ).copyWith(searchMode: false),
               null,
             );
           }
           // Forward to text input
           final (nextInput, inputCmd) = searchInput.update(tui.KeyMsg(key));
-          return (copyWith(searchInput: nextInput, debugOverlay: nextDebug), inputCmd);
+          return (
+            copyWith(searchInput: nextInput, debugOverlay: nextDebug),
+            inputCmd,
+          );
         }
 
         // Dismiss alert with Enter
@@ -626,7 +644,10 @@ class CommandCenterModel implements tui.Model {
         // Enter search mode
         if (key.isChar('/')) {
           final focusCmd = searchInput.focus();
-          return (copyWith(searchMode: true, debugOverlay: nextDebug), focusCmd);
+          return (
+            copyWith(searchMode: true, debugOverlay: nextDebug),
+            focusCmd,
+          );
         }
 
         // Toggle debug overlay
@@ -636,7 +657,10 @@ class CommandCenterModel implements tui.Model {
 
         // Toggle stats panel
         if (key.isChar('s') || key.isChar('S')) {
-          return (copyWith(showStats: !showStats, debugOverlay: nextDebug), null);
+          return (
+            copyWith(showStats: !showStats, debugOverlay: nextDebug),
+            null,
+          );
         }
 
         // Cycle color themes
@@ -659,12 +683,18 @@ class CommandCenterModel implements tui.Model {
         // D is taken by debug filter
 
         // Main tab switching (1-6)
-        if (key.isChar('1')) return (copyWith(activeMainTab: 0, debugOverlay: nextDebug), null);
-        if (key.isChar('2')) return (copyWith(activeMainTab: 1, debugOverlay: nextDebug), null);
-        if (key.isChar('3')) return (copyWith(activeMainTab: 2, debugOverlay: nextDebug), null);
-        if (key.isChar('4')) return (copyWith(activeMainTab: 3, debugOverlay: nextDebug), null);
-        if (key.isChar('5')) return (copyWith(activeMainTab: 4, debugOverlay: nextDebug), null);
-        if (key.isChar('6')) return (copyWith(activeMainTab: 5, debugOverlay: nextDebug), null);
+        if (key.isChar('1'))
+          return (copyWith(activeMainTab: 0, debugOverlay: nextDebug), null);
+        if (key.isChar('2'))
+          return (copyWith(activeMainTab: 1, debugOverlay: nextDebug), null);
+        if (key.isChar('3'))
+          return (copyWith(activeMainTab: 2, debugOverlay: nextDebug), null);
+        if (key.isChar('4'))
+          return (copyWith(activeMainTab: 3, debugOverlay: nextDebug), null);
+        if (key.isChar('5'))
+          return (copyWith(activeMainTab: 4, debugOverlay: nextDebug), null);
+        if (key.isChar('6'))
+          return (copyWith(activeMainTab: 5, debugOverlay: nextDebug), null);
 
         // Log level filter toggles (F1-F4 or Shift+I/D/W/E)
         if (key.isChar('I')) {
@@ -674,7 +704,15 @@ class CommandCenterModel implements tui.Model {
           } else {
             newFilter.add(LogLevel.info);
           }
-          return (_updateViewportWithFilter(newFilter, projectFilter, searchQuery, nextDebug), null);
+          return (
+            _updateViewportWithFilter(
+              newFilter,
+              projectFilter,
+              searchQuery,
+              nextDebug,
+            ),
+            null,
+          );
         }
         if (key.isChar('D')) {
           final newFilter = Set<LogLevel>.from(levelFilter);
@@ -683,7 +721,15 @@ class CommandCenterModel implements tui.Model {
           } else {
             newFilter.add(LogLevel.debug);
           }
-          return (_updateViewportWithFilter(newFilter, projectFilter, searchQuery, nextDebug), null);
+          return (
+            _updateViewportWithFilter(
+              newFilter,
+              projectFilter,
+              searchQuery,
+              nextDebug,
+            ),
+            null,
+          );
         }
         if (key.isChar('W')) {
           final newFilter = Set<LogLevel>.from(levelFilter);
@@ -692,7 +738,15 @@ class CommandCenterModel implements tui.Model {
           } else {
             newFilter.add(LogLevel.warning);
           }
-          return (_updateViewportWithFilter(newFilter, projectFilter, searchQuery, nextDebug), null);
+          return (
+            _updateViewportWithFilter(
+              newFilter,
+              projectFilter,
+              searchQuery,
+              nextDebug,
+            ),
+            null,
+          );
         }
         if (key.isChar('E')) {
           final newFilter = Set<LogLevel>.from(levelFilter);
@@ -701,22 +755,48 @@ class CommandCenterModel implements tui.Model {
           } else {
             newFilter.add(LogLevel.error);
           }
-          return (_updateViewportWithFilter(newFilter, projectFilter, searchQuery, nextDebug), null);
+          return (
+            _updateViewportWithFilter(
+              newFilter,
+              projectFilter,
+              searchQuery,
+              nextDebug,
+            ),
+            null,
+          );
         }
 
         // Clear all filters
         if (key.isChar('x') || key.isChar('X')) {
-          final allLevels = {LogLevel.info, LogLevel.debug, LogLevel.warning, LogLevel.error};
-          return (_updateViewportWithFilter(allLevels, null, '', nextDebug), null);
+          final allLevels = {
+            LogLevel.info,
+            LogLevel.debug,
+            LogLevel.warning,
+            LogLevel.error,
+          };
+          return (
+            _updateViewportWithFilter(allLevels, null, '', nextDebug),
+            null,
+          );
         }
 
         // Cycle through project filter
         if (key.isChar('p')) {
           final projectList = [null, ..._logProjects];
-          final currentIndex = projectFilter == null ? 0 : projectList.indexOf(projectFilter);
+          final currentIndex = projectFilter == null
+              ? 0
+              : projectList.indexOf(projectFilter);
           final nextIndex = (currentIndex + 1) % projectList.length;
           final nextProject = projectList[nextIndex];
-          return (_updateViewportWithFilter(levelFilter, nextProject, searchQuery, nextDebug), null);
+          return (
+            _updateViewportWithFilter(
+              levelFilter,
+              nextProject,
+              searchQuery,
+              nextDebug,
+            ),
+            null,
+          );
         }
 
         // Toggle live mode
@@ -727,24 +807,36 @@ class CommandCenterModel implements tui.Model {
         // Refresh (simulate latency change)
         if (key.isChar('r')) {
           final newLatency = 50 + _random.nextInt(200);
-          return (copyWith(latencyMs: newLatency, debugOverlay: nextDebug), null);
+          return (
+            copyWith(latencyMs: newLatency, debugOverlay: nextDebug),
+            null,
+          );
         }
 
         // Go to bottom (follow mode)
         if (key.isChar('G')) {
           final nextViewport = viewport.gotoBottom();
-          return (copyWith(viewport: nextViewport, debugOverlay: nextDebug), null);
+          return (
+            copyWith(viewport: nextViewport, debugOverlay: nextDebug),
+            null,
+          );
         }
 
         // Go to top
         if (key.isChar('g')) {
           final nextViewport = viewport.gotoTop();
-          return (copyWith(viewport: nextViewport, debugOverlay: nextDebug), null);
+          return (
+            copyWith(viewport: nextViewport, debugOverlay: nextDebug),
+            null,
+          );
         }
 
         // Delegate scroll keys to viewport
         final (nextViewport, viewportCmd) = viewport.update(msg);
-        return (copyWith(viewport: nextViewport, debugOverlay: nextDebug), viewportCmd);
+        return (
+          copyWith(viewport: nextViewport, debugOverlay: nextDebug),
+          viewportCmd,
+        );
 
       case tui.MouseMsg():
         // Handle debug overlay first
@@ -753,7 +845,10 @@ class CommandCenterModel implements tui.Model {
         }
         // Delegate to viewport
         final (nextViewport, viewportCmd) = viewport.update(msg);
-        return (copyWith(viewport: nextViewport, debugOverlay: nextDebug), viewportCmd);
+        return (
+          copyWith(viewport: nextViewport, debugOverlay: nextDebug),
+          viewportCmd,
+        );
 
       case _NewLogMsg(:final entry):
         if (!liveMode) {
@@ -770,18 +865,24 @@ class CommandCenterModel implements tui.Model {
 
         // Check for alert conditions (high error rate)
         var newAlerts = List<Alert>.from(alerts);
-        if (entry.level == LogLevel.error && newStats.errorRate > 15 && alerts.length < 3) {
-          newAlerts.add(Alert(
-            message: 'High error rate: ${newStats.errorRate.toStringAsFixed(1)}%',
-            severity: LogLevel.error,
-            timestamp: DateTime.now(),
-          ));
+        if (entry.level == LogLevel.error &&
+            newStats.errorRate > 15 &&
+            alerts.length < 3) {
+          newAlerts.add(
+            Alert(
+              message:
+                  'High error rate: ${newStats.errorRate.toStringAsFixed(1)}%',
+              severity: LogLevel.error,
+              timestamp: DateTime.now(),
+            ),
+          );
         }
 
         // Update viewport content with filtered logs
         final filtered = newLogs.where((log) {
           if (!levelFilter.contains(log.level)) return false;
-          if (projectFilter != null && log.project != projectFilter) return false;
+          if (projectFilter != null && log.project != projectFilter)
+            return false;
           if (searchQuery.isNotEmpty) {
             final query = searchQuery.toLowerCase();
             if (!log.message.toLowerCase().contains(query) &&
@@ -793,8 +894,9 @@ class CommandCenterModel implements tui.Model {
           return true;
         }).toList();
 
-        final logLines =
-            filtered.map((e) => _formatLogEntry(e, viewport.width)).toList();
+        final logLines = filtered
+            .map((e) => _formatLogEntry(e, viewport.width))
+            .toList();
         var nextViewport = viewport.setContent(logLines.join('\n'));
 
         // Auto-scroll if it was at the bottom before adding the new log
@@ -823,24 +925,38 @@ class CommandCenterModel implements tui.Model {
         // Only update time if the second changed (avoid unnecessary rebuilds)
         final timeChanged = time.second != currentTime.second;
         return (
-          timeChanged 
-            ? copyWith(currentTime: time, debugOverlay: nextDebug)
-            : copyWith(debugOverlay: nextDebug, markDirty: false),
+          timeChanged
+              ? copyWith(currentTime: time, debugOverlay: nextDebug)
+              : copyWith(debugOverlay: nextDebug, markDirty: false),
           null, // No manual tick needed - FrameTickMsg is automatic
         );
 
       case _SparklineTickMsg():
         // Update sparkline with current log rate
         final logsLastSecond = logStats.recentLogs
-            .where((t) => t.isAfter(DateTime.now().subtract(const Duration(seconds: 1))))
+            .where(
+              (t) => t.isAfter(
+                DateTime.now().subtract(const Duration(seconds: 1)),
+              ),
+            )
             .length;
         final newSparkline = sparkline.addValue(logsLastSecond);
 
         // Simulate system metrics fluctuation
-        final newCpu = (cpuUsage + (_random.nextDouble() * 10 - 5)).clamp(10.0, 95.0);
-        final newMem = (memUsage + (_random.nextDouble() * 4 - 2)).clamp(30.0, 90.0);
-        final newNetIn = (networkIn + (_random.nextDouble() * 0.4 - 0.2)).clamp(0.1, 5.0);
-        final newNetOut = (networkOut + (_random.nextDouble() * 0.3 - 0.15)).clamp(0.1, 3.0);
+        final newCpu = (cpuUsage + (_random.nextDouble() * 10 - 5)).clamp(
+          10.0,
+          95.0,
+        );
+        final newMem = (memUsage + (_random.nextDouble() * 4 - 2)).clamp(
+          30.0,
+          90.0,
+        );
+        final newNetIn = (networkIn + (_random.nextDouble() * 0.4 - 0.2)).clamp(
+          0.1,
+          5.0,
+        );
+        final newNetOut = (networkOut + (_random.nextDouble() * 0.3 - 0.15))
+            .clamp(0.1, 3.0);
 
         return (
           copyWith(
@@ -872,7 +988,8 @@ class CommandCenterModel implements tui.Model {
   ) {
     final filtered = logs.where((log) {
       if (!newLevelFilter.contains(log.level)) return false;
-      if (newProjectFilter != null && log.project != newProjectFilter) return false;
+      if (newProjectFilter != null && log.project != newProjectFilter)
+        return false;
       if (newSearchQuery.isNotEmpty) {
         final query = newSearchQuery.toLowerCase();
         if (!log.message.toLowerCase().contains(query) &&
@@ -884,7 +1001,9 @@ class CommandCenterModel implements tui.Model {
       return true;
     }).toList();
 
-    final logLines = filtered.map((e) => _formatLogEntry(e, viewport.width)).toList();
+    final logLines = filtered
+        .map((e) => _formatLogEntry(e, viewport.width))
+        .toList();
     final newViewport = viewport.setContent(logLines.join('\n'));
 
     return copyWith(
@@ -899,13 +1018,13 @@ class CommandCenterModel implements tui.Model {
   @override
   String view() {
     if (width == 0 || height == 0) return 'Initializing...';
-    
+
     // Only rebuild content if dirty
     if (_viewDirty) {
       _rebuildView();
       _viewDirty = false;
     }
-    
+
     // Always apply debug overlay (it shows live metrics)
     if (debugOverlay.enabled) {
       return debugOverlay.compose(_cachedView);
@@ -916,7 +1035,12 @@ class CommandCenterModel implements tui.Model {
   void _rebuildView() {
     // Use responsive layout with splitVertical
     // Total screen area
-    final screenArea = uv.Rectangle(minX: 0, minY: 0, maxX: width, maxY: height);
+    final screenArea = uv.Rectangle(
+      minX: 0,
+      minY: 0,
+      maxX: width,
+      maxY: height,
+    );
 
     // Panel 1: Header - Fixed 4 lines (title + project + borders)
     final (:top, :bottom) = uv.splitVertical(screenArea, const uv.Fixed(4));
@@ -1016,7 +1140,9 @@ class CommandCenterModel implements tui.Model {
         LogLevel.warning => _warningStyle().bold(),
         _ => _accentStyle(),
       };
-      alertLine = alertStyle.render('⚠ ALERT: ${alert.message}  [press Enter to dismiss]');
+      alertLine = alertStyle.render(
+        '⚠ ALERT: ${alert.message}  [press Enter to dismiss]',
+      );
     }
 
     // Build content lines
@@ -1026,8 +1152,9 @@ class CommandCenterModel implements tui.Model {
 
     // First line: title on left, time/version on right
     final padding1 = innerWidth - titleLen - rightLen;
-    final line1 =
-        padding1 > 0 ? '$title${' ' * padding1}$rightSide' : '$title  $rightSide';
+    final line1 = padding1 > 0
+        ? '$title${' ' * padding1}$rightSide'
+        : '$title  $rightSide';
 
     final lines = [line1, projectLine];
     if (alertLine != null) {
@@ -1035,18 +1162,20 @@ class CommandCenterModel implements tui.Model {
     }
 
     final panel = tui.Panel()
-      .lines(lines)
-      .border(Border.rounded)
-      .borderStyle(_borderStyle())
-      .padding(0, 1)
-      .width(width);
+        .lines(lines)
+        .border(Border.rounded)
+        .borderStyle(_borderStyle())
+        .padding(0, 1)
+        .width(width);
 
     return panel.render().split('\n');
   }
 
   String _buildProjectLine() {
     final label = _accentStyle().render('● PROJECT:');
-    final countStr = _textStyle().render(' ${projects.length} total projects: ');
+    final countStr = _textStyle().render(
+      ' ${projects.length} total projects: ',
+    );
 
     final pills = <String>[];
     for (final project in projects) {
@@ -1082,11 +1211,11 @@ class CommandCenterModel implements tui.Model {
     }
 
     final panel = tui.Panel()
-      .content(buffer.toString())
-      .border(Border.rounded)
-      .borderStyle(_borderStyle())
-      .padding(0, 1)
-      .width(width);
+        .content(buffer.toString())
+        .border(Border.rounded)
+        .borderStyle(_borderStyle())
+        .padding(0, 1)
+        .width(width);
 
     return panel.render().split('\n');
   }
@@ -1104,11 +1233,11 @@ class CommandCenterModel implements tui.Model {
     final subTabsLine = _buildSubTabsLine();
 
     final panel = tui.Panel()
-      .lines([breadcrumb, subTabsLine])
-      .border(Border.rounded)
-      .borderStyle(_borderStyle())
-      .padding(0, 1)
-      .width(width);
+        .lines([breadcrumb, subTabsLine])
+        .border(Border.rounded)
+        .borderStyle(_borderStyle())
+        .padding(0, 1)
+        .width(width);
 
     return panel.render().split('\n');
   }
@@ -1142,7 +1271,7 @@ class CommandCenterModel implements tui.Model {
   List<String> _buildLogPanel(int panelHeight) {
     // Calculate content height (panel height - 2 for border)
     final contentHeight = math.max(3, panelHeight - 2);
-    
+
     // Title line: "◎ LOGS [1,908,196] ● LIVE"
     final titlePart = _accentBoldStyle().render('◎ LOGS');
     final countPart = '[${_formatNumber(totalLogs)}]';
@@ -1157,15 +1286,15 @@ class CommandCenterModel implements tui.Model {
     // Scroll indicator
     final scrollIndicator = viewport.atBottom
         ? ''
-        : _warningStyle()
-            .render('▲ Scroll up for older (${logs.length} loaded / '
-                '${_formatNumber(totalLogs)} total)');
+        : _warningStyle().render(
+            '▲ Scroll up for older (${logs.length} loaded / '
+            '${_formatNumber(totalLogs)} total)',
+          );
 
     // Follow indicator
     final followIndicator = viewport.atBottom
         ? _successStyle().render('● Following new logs')
-        : _warningStyle()
-            .render('▲ Scrollback mode - Press G to follow');
+        : _warningStyle().render('▲ Scrollback mode - Press G to follow');
 
     // Panel controls line
     final controlsLine = _buildLogPanelControls();
@@ -1173,13 +1302,18 @@ class CommandCenterModel implements tui.Model {
     // Calculate how many lines we have for actual log content
     // contentHeight - searchBar(1) - scrollIndicator(0-1) - spacing(2) - followIndicator(1) - controls(1)
     final hasScrollIndicator = scrollIndicator.isNotEmpty;
-    final fixedLines = 1 + (hasScrollIndicator ? 1 : 0) + 2 + 1 + 1; // search + scroll? + spacing + follow + controls
+    final fixedLines =
+        1 +
+        (hasScrollIndicator ? 1 : 0) +
+        2 +
+        1 +
+        1; // search + scroll? + spacing + follow + controls
     final logViewLines = math.max(1, contentHeight - fixedLines);
 
     // Get visible log lines from viewport, but limit to available space
     final viewportLines = viewport.view().split('\n');
     final visibleLogLines = viewportLines.take(logViewLines).toList();
-    
+
     // Pad if needed
     while (visibleLogLines.length < logViewLines) {
       visibleLogLines.add('');
@@ -1197,15 +1331,15 @@ class CommandCenterModel implements tui.Model {
     ];
 
     final panel = tui.Panel()
-      .lines(contentLines)
-      .border(Border.rounded)
-      .borderStyle(_borderStyle())
-      .title(panelTitle)
-      .padding(0, 1)
-      .width(width);
+        .lines(contentLines)
+        .border(Border.rounded)
+        .borderStyle(_borderStyle())
+        .title(panelTitle)
+        .padding(0, 1)
+        .width(width);
 
     final rendered = panel.render().split('\n');
-    
+
     // Ensure we return exactly panelHeight lines
     if (rendered.length > panelHeight) {
       return rendered.sublist(0, panelHeight);
@@ -1234,7 +1368,11 @@ class CommandCenterModel implements tui.Model {
     final projectLabel = projectFilter ?? 'All Projects';
     buffer.write(_textStyle().render('[p]'));
     buffer.write(' ');
-    buffer.write(projectFilter != null ? _accentStyle().render(projectLabel) : _textDimStyle().render(projectLabel));
+    buffer.write(
+      projectFilter != null
+          ? _accentStyle().render(projectLabel)
+          : _textDimStyle().render(projectLabel),
+    );
     buffer.write('  ');
 
     // Level filters with toggle indicators
@@ -1275,8 +1413,8 @@ class CommandCenterModel implements tui.Model {
       final rateStyle = errorRate > 15
           ? _errorStyle().bold()
           : errorRate > 10
-              ? _warningStyle()
-              : _successStyle();
+          ? _warningStyle()
+          : _successStyle();
       buffer.write(rateStyle.render('${errorRate.toStringAsFixed(1)}% err'));
     }
 
@@ -1287,12 +1425,7 @@ class CommandCenterModel implements tui.Model {
     final buffer = StringBuffer();
 
     // Left side: controls
-    final controls = [
-      '[↑↓] Scroll',
-      '[<>] Pan',
-      '[T] Live',
-      '[R] Refresh',
-    ];
+    final controls = ['[↑↓] Scroll', '[<>] Pan', '[T] Live', '[R] Refresh'];
     buffer.write(_textStyle().render(controls.join('  ')));
 
     // Calculate padding
@@ -1331,7 +1464,8 @@ class CommandCenterModel implements tui.Model {
     final level = levelStyle.render(entry.levelStr);
 
     // Project/Env badge: "kasm/PROD" (accent/success pill style)
-    final projectBadge = '${_accentStyle().render(entry.project)}/'
+    final projectBadge =
+        '${_accentStyle().render(entry.project)}/'
         '${_successStyle().render(entry.environment)}';
 
     // Source tag: [kasm_rdp] (highlight in brackets)
@@ -1398,19 +1532,29 @@ class CommandCenterModel implements tui.Model {
   List<String> _buildFooterPanel(int panelHeight) {
     // Left side: sparkline showing log rate
     final sparklineStr = _accentStyle().render(sparkline.render(20));
-    final rateStr = _successStyle().render('${logStats.logsPerSecond.toStringAsFixed(1)}/s');
-    final leftPart = '${_textStyle().render('LOG RATE:')} $sparklineStr $rateStr';
+    final rateStr = _successStyle().render(
+      '${logStats.logsPerSecond.toStringAsFixed(1)}/s',
+    );
+    final leftPart =
+        '${_textStyle().render('LOG RATE:')} $sparklineStr $rateStr';
 
     // Middle: key shortcuts
     final shortcuts = _textDimStyle().render(
-        '[/]Search [C]Theme [S]Stats [U]Debug [Q]Quit');
+      '[/]Search [C]Theme [S]Stats [U]Debug [Q]Quit',
+    );
 
     // Right side: system stats if enabled
     String rightPart;
     if (showStats) {
-      final cpu = _colorForPercent(cpuUsage).render('CPU:${cpuUsage.toStringAsFixed(0)}%');
-      final mem = _colorForPercent(memUsage).render('MEM:${memUsage.toStringAsFixed(0)}%');
-      final net = _textStyle().render('NET:↓${networkIn.toStringAsFixed(1)} ↑${networkOut.toStringAsFixed(1)}');
+      final cpu = _colorForPercent(
+        cpuUsage,
+      ).render('CPU:${cpuUsage.toStringAsFixed(0)}%');
+      final mem = _colorForPercent(
+        memUsage,
+      ).render('MEM:${memUsage.toStringAsFixed(0)}%');
+      final net = _textStyle().render(
+        'NET:↓${networkIn.toStringAsFixed(1)} ↑${networkOut.toStringAsFixed(1)}',
+      );
       rightPart = '$cpu $mem $net';
     } else {
       final breadcrumb =
@@ -1426,7 +1570,7 @@ class CommandCenterModel implements tui.Model {
 
     final totalLen = leftLen + midLen + rightLen;
     final availPadding = innerWidth - totalLen;
-    
+
     String content;
     if (availPadding > 4) {
       final pad1 = availPadding ~/ 2;
@@ -1437,15 +1581,17 @@ class CommandCenterModel implements tui.Model {
     } else {
       // Too narrow, just show left and right
       final padding = innerWidth - leftLen - rightLen;
-      content = padding > 0 ? '$leftPart${' ' * padding}$rightPart' : '$leftPart $rightPart';
+      content = padding > 0
+          ? '$leftPart${' ' * padding}$rightPart'
+          : '$leftPart $rightPart';
     }
 
     final panel = tui.Panel()
-      .content(content)
-      .border(Border.rounded)
-      .borderStyle(_borderStyle())
-      .padding(0, 1)
-      .width(width);
+        .content(content)
+        .border(Border.rounded)
+        .borderStyle(_borderStyle())
+        .padding(0, 1)
+        .width(width);
 
     return panel.render().split('\n');
   }
@@ -1480,7 +1626,9 @@ void main() async {
     options: const tui.ProgramOptions(
       useUltravioletRenderer: true,
       altScreen: true,
-      metricsInterval: Duration(milliseconds: 250), // Update metrics 4x per second
+      metricsInterval: Duration(
+        milliseconds: 250,
+      ), // Update metrics 4x per second
       mouseMode: tui.MouseMode.allMotion,
     ),
   );

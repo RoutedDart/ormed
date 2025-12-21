@@ -99,11 +99,7 @@ class CreditCardModel implements tui.Model {
     var nextInputs = inputs;
     for (var i = 0; i < inputs.length; i++) {
       final (updated, cmd) = inputs[i].update(msg);
-      nextInputs = [
-        ...nextInputs.take(i),
-        updated,
-        ...nextInputs.skip(i + 1),
-      ];
+      nextInputs = [...nextInputs.take(i), updated, ...nextInputs.skip(i + 1)];
       cmds.add(cmd);
     }
 

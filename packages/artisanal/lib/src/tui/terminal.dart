@@ -21,7 +21,13 @@ import '../terminal/terminal.dart' as unified;
 
 // Re-export unified terminal types with TUI-compatible names
 export '../terminal/terminal.dart'
-    show Terminal, StdioTerminal, TtyTerminal, StringTerminal, RawModeGuard, Ansi;
+    show
+        Terminal,
+        StdioTerminal,
+        TtyTerminal,
+        StringTerminal,
+        RawModeGuard,
+        Ansi;
 
 /// Alias for backward compatibility.
 ///

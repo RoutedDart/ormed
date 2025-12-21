@@ -15,18 +15,30 @@ import 'decoder.dart';
 /// Builds a table of key sequences and their corresponding key events.
 ///
 /// Upstream: `third_party/ultraviolet/key_table.go` (`buildKeysTable`).
-Map<String, Key> buildKeysTable(LegacyKeyEncoding flags, String term, {bool useTerminfo = false}) {
+Map<String, Key> buildKeysTable(
+  LegacyKeyEncoding flags,
+  String term, {
+  bool useTerminfo = false,
+}) {
   final nul = Key(code: keySpace, mod: KeyMod.ctrl); // ctrl+@ or ctrl+space
-  final nulKey = flags.bits & 0x01 != 0 ? Key(code: '@'.codeUnitAt(0), mod: KeyMod.ctrl) : nul;
+  final nulKey = flags.bits & 0x01 != 0
+      ? Key(code: '@'.codeUnitAt(0), mod: KeyMod.ctrl)
+      : nul;
 
   final tab = Key(code: keyTab); // ctrl+i or tab
-  final tabKey = flags.bits & 0x02 != 0 ? Key(code: 'i'.codeUnitAt(0), mod: KeyMod.ctrl) : tab;
+  final tabKey = flags.bits & 0x02 != 0
+      ? Key(code: 'i'.codeUnitAt(0), mod: KeyMod.ctrl)
+      : tab;
 
   final enter = Key(code: keyEnter); // ctrl+m or enter
-  final enterKey = flags.bits & 0x04 != 0 ? Key(code: 'm'.codeUnitAt(0), mod: KeyMod.ctrl) : enter;
+  final enterKey = flags.bits & 0x04 != 0
+      ? Key(code: 'm'.codeUnitAt(0), mod: KeyMod.ctrl)
+      : enter;
 
   final esc = Key(code: keyEscape); // ctrl+[ or escape
-  final escKey = flags.bits & 0x08 != 0 ? Key(code: '['.codeUnitAt(0), mod: KeyMod.ctrl) : esc;
+  final escKey = flags.bits & 0x08 != 0
+      ? Key(code: '['.codeUnitAt(0), mod: KeyMod.ctrl)
+      : esc;
 
   var delCode = keyBackspace;
   if (flags.bits & 0x10 != 0) {
@@ -333,16 +345,25 @@ Map<String, Key> buildKeysTable(LegacyKeyEncoding flags, String term, {bool useT
     final xtermMod = (i + 2).toString();
 
     for (final entry in csiFuncKeys.entries) {
-      table['\x1b[1;$xtermMod${entry.key}'] = Key(code: entry.value.code, mod: m);
+      table['\x1b[1;$xtermMod${entry.key}'] = Key(
+        code: entry.value.code,
+        mod: m,
+      );
     }
     for (final entry in ss3FuncKeys.entries) {
       table['\x1bO$xtermMod${entry.key}'] = Key(code: entry.value.code, mod: m);
     }
     for (final entry in csiTildeKeys.entries) {
-      table['\x1b[${entry.key};$xtermMod~'] = Key(code: entry.value.code, mod: m);
+      table['\x1b[${entry.key};$xtermMod~'] = Key(
+        code: entry.value.code,
+        mod: m,
+      );
     }
     for (final entry in modifyOtherKeys.entries) {
-      table['\x1b[27;$xtermMod;${entry.key}~'] = Key(code: entry.value.code, mod: m);
+      table['\x1b[27;$xtermMod;${entry.key}~'] = Key(
+        code: entry.value.code,
+        mod: m,
+      );
     }
   }
 

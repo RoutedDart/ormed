@@ -557,7 +557,9 @@ class SearchModel<T> extends ViewComponent {
 
     // Search input
     final inputView = _input.view();
-    final inputContent = inputView is View ? inputView.content : inputView.toString();
+    final inputContent = inputView is View
+        ? inputView.content
+        : inputView.toString();
     buffer.writeln(inputContent.trimRight());
 
     // Results

@@ -377,13 +377,12 @@ class TerminalVersionMsg extends Msg {
 
 /// Message sent when keyboard enhancements are reported.
 class KeyboardEnhancementsMsg extends Msg {
-  const KeyboardEnhancementsMsg({
-    this.reportEventTypes = false,
-  });
+  const KeyboardEnhancementsMsg({this.reportEventTypes = false});
   final bool reportEventTypes;
 
   @override
-  String toString() => 'KeyboardEnhancementsMsg(reportEventTypes: $reportEventTypes)';
+  String toString() =>
+      'KeyboardEnhancementsMsg(reportEventTypes: $reportEventTypes)';
 }
 
 /// Message sent when the terminal color profile is detected or changed.
@@ -682,7 +681,8 @@ class RenderMetricsMsg extends Msg {
   final RenderMetrics metrics;
 
   @override
-  String toString() => 'RenderMetricsMsg(fps: ${metrics.averageFps.toStringAsFixed(1)})';
+  String toString() =>
+      'RenderMetricsMsg(fps: ${metrics.averageFps.toStringAsFixed(1)})';
 }
 
 /// Message wrapper for custom user-defined messages.

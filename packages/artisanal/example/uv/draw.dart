@@ -1,7 +1,5 @@
 import 'package:artisanal/uv.dart';
 
-
-
 void main() async {
   final terminal = Terminal();
 
@@ -97,16 +95,16 @@ Press any key to continue...''';
           final colorIdx = int.parse(event.key().text);
           // Simple color mapping for 0-9
           final colors = [
-            UvColor.rgb(0, 0, 0),       // Black
-            UvColor.rgb(255, 0, 0),     // Red
-            UvColor.rgb(0, 255, 0),     // Green
-            UvColor.rgb(255, 255, 0),   // Yellow
-            UvColor.rgb(0, 0, 255),     // Blue
-            UvColor.rgb(255, 0, 255),   // Magenta
-            UvColor.rgb(0, 255, 255),   // Cyan
+            UvColor.rgb(0, 0, 0), // Black
+            UvColor.rgb(255, 0, 0), // Red
+            UvColor.rgb(0, 255, 0), // Green
+            UvColor.rgb(255, 255, 0), // Yellow
+            UvColor.rgb(0, 0, 255), // Blue
+            UvColor.rgb(255, 0, 255), // Magenta
+            UvColor.rgb(0, 255, 255), // Cyan
             UvColor.rgb(255, 255, 255), // White
             UvColor.rgb(128, 128, 128), // Gray
-            UvColor.rgb(255, 128, 0),   // Orange
+            UvColor.rgb(255, 128, 0), // Orange
           ];
           pen = Cell(
             content: pen.content,

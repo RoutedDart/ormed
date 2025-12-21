@@ -138,15 +138,14 @@ void main(List<String> args) async {
       useUvInput: useUvInput,
     );
 
-    final result =
-        await tui.runProgramWithResult(
-              model,
-              options: tui.ProgramOptions(
-                altScreen: true,
-                useUltravioletRenderer: useUvRenderer,
-                useUltravioletInputDecoder: useUvInput,
-              ),
-            );
+    final result = await tui.runProgramWithResult(
+      model,
+      options: tui.ProgramOptions(
+        altScreen: true,
+        useUltravioletRenderer: useUvRenderer,
+        useUltravioletInputDecoder: useUvInput,
+      ),
+    );
 
     if (result.shouldQuit) break;
 

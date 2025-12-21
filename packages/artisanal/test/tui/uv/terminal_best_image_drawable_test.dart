@@ -38,24 +38,27 @@ void main() {
       );
     });
 
-    test('falls back to HalfBlockImageDrawable when no protocol is supported', () {
-      final term = Terminal(output: io.stdout, env: const []);
-      final image = img.Image(width: 1, height: 1);
+    test(
+      'falls back to HalfBlockImageDrawable when no protocol is supported',
+      () {
+        final term = Terminal(output: io.stdout, env: const []);
+        final image = img.Image(width: 1, height: 1);
 
-      term.capabilities
-        ..hasKittyGraphics = false
-        ..hasITerm2 = false
-        ..hasSixel = false;
+        term.capabilities
+          ..hasKittyGraphics = false
+          ..hasITerm2 = false
+          ..hasSixel = false;
 
-      expect(
-        Terminal.bestImageDrawable(
-          image,
-          capabilities: term.capabilities,
-          columns: 10,
-          rows: 4,
-        ),
-        isA<HalfBlockImageDrawable>(),
-      );
-    });
+        expect(
+          Terminal.bestImageDrawable(
+            image,
+            capabilities: term.capabilities,
+            columns: 10,
+            rows: 4,
+          ),
+          isA<HalfBlockImageDrawable>(),
+        );
+      },
+    );
   });
 }

@@ -36,7 +36,7 @@ class CancelReader {
   /// Starts reading from the source.
   void start() {
     if (_subscription != null) return;
-    
+
     _subscription = _source.listen(
       (data) {
         if (!_isCanceled) {

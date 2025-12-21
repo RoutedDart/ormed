@@ -1,9 +1,6 @@
 import 'package:artisanal/uv.dart';
 import 'dart:async';
 
-
-
-
 class Layout {
   Layout({required this.main, required this.footer, required this.sidebar});
   final Rectangle main;
@@ -14,11 +11,7 @@ class Layout {
 Layout makeLayout(Rectangle r) {
   final h = splitHorizontal(r, const Percent(80));
   final v = splitVertical(h.left, Fixed(h.left.height - 7));
-  return Layout(
-    main: v.top,
-    footer: v.bottom,
-    sidebar: h.right,
-  );
+  return Layout(main: v.top, footer: v.bottom, sidebar: h.right);
 }
 
 void main() async {
@@ -30,9 +23,18 @@ void main() async {
 
   var area = terminal.bounds();
 
-  final blue = Cell(content: ' ', style: const UvStyle(bg: UvColor.basic16(4))); // Blue
-  final red = Cell(content: ' ', style: const UvStyle(bg: UvColor.basic16(1)));  // Red
-  final green = Cell(content: ' ', style: const UvStyle(bg: UvColor.basic16(2))); // Green
+  final blue = Cell(
+    content: ' ',
+    style: const UvStyle(bg: UvColor.basic16(4)),
+  ); // Blue
+  final red = Cell(
+    content: ' ',
+    style: const UvStyle(bg: UvColor.basic16(1)),
+  ); // Red
+  final green = Cell(
+    content: ' ',
+    style: const UvStyle(bg: UvColor.basic16(2)),
+  ); // Green
 
   void display() {
     final l = makeLayout(area);

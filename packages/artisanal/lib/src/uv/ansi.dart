@@ -58,10 +58,13 @@ abstract final class UvAnsi {
 
   /// Returns an ANSI sequence that moves the cursor up by [n] rows.
   static String cursorUp(int n) => n == 1 ? '\x1b[A' : '\x1b[${n}A';
+
   /// Returns an ANSI sequence that moves the cursor down by [n] rows.
   static String cursorDown(int n) => n == 1 ? '\x1b[B' : '\x1b[${n}B';
+
   /// Returns an ANSI sequence that moves the cursor forward by [n] columns.
   static String cursorForward(int n) => n == 1 ? '\x1b[C' : '\x1b[${n}C';
+
   /// Returns an ANSI sequence that moves the cursor backward by [n] columns.
   static String cursorBackward(int n) => n == 1 ? '\x1b[D' : '\x1b[${n}D';
 
@@ -74,32 +77,39 @@ abstract final class UvAnsi {
 
   /// Returns an ANSI sequence that moves to absolute 1-based [row1].
   static String verticalPositionAbsolute(int row1) => '\x1b[${row1}d';
+
   /// Returns an ANSI sequence that moves to absolute 1-based [col1].
   static String horizontalPositionAbsolute(int col1) => '\x1b[${col1}G';
+
   /// Returns an ANSI sequence for forward-tab by [n] stops.
   static String cursorHorizontalForwardTab(int n) =>
       n == 1 ? '\x1b[I' : '\x1b[${n}I';
+
   /// Returns an ANSI sequence for backward-tab by [n] stops.
   static String cursorBackwardTab(int n) => n == 1 ? '\x1b[Z' : '\x1b[${n}Z';
 
   /// Returns an ANSI sequence to insert [n] lines.
   static String insertLine(int n) => n == 1 ? '\x1b[L' : '\x1b[${n}L';
+
   /// Returns an ANSI sequence to delete [n] lines.
   static String deleteLine(int n) => n == 1 ? '\x1b[M' : '\x1b[${n}M';
 
   /// Returns an ANSI sequence to delete [n] characters.
   static String deleteCharacter(int n) => n == 1 ? '\x1b[P' : '\x1b[${n}P';
+
   /// Returns an ANSI sequence to insert [n] characters.
   static String insertCharacter(int n) => n == 1 ? '\x1b[@' : '\x1b[${n}@';
 
   /// Returns an ANSI sequence to erase [n] characters.
   static String eraseCharacter(int n) => n == 1 ? '\x1b[X' : '\x1b[${n}X';
+
   /// Returns an ANSI sequence to repeat the previous character [n] times.
   static String repeatPreviousCharacter(int n) =>
       n == 1 ? '\x1b[b' : '\x1b[${n}b';
 
   /// Returns an ANSI sequence to scroll up by [n] lines.
   static String scrollUp(int n) => n == 1 ? '\x1b[S' : '\x1b[${n}S';
+
   /// Returns an ANSI sequence to scroll down by [n] lines.
   static String scrollDown(int n) => n == 1 ? '\x1b[T' : '\x1b[${n}T';
 

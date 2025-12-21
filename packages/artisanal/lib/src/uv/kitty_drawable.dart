@@ -26,12 +26,7 @@ final class KittyImageDrawable implements Drawable {
 
   @override
   Rectangle bounds() {
-    return Rectangle(
-      minX: 0,
-      minY: 0,
-      maxX: columns ?? 0,
-      maxY: rows ?? 0,
-    );
+    return Rectangle(minX: 0, minY: 0, maxX: columns ?? 0, maxY: rows ?? 0);
   }
 
   @override
@@ -39,12 +34,7 @@ final class KittyImageDrawable implements Drawable {
     final cols = columns ?? area.width;
     final rws = rows ?? area.height;
 
-    final sequence = KittyImage.encode(
-      image,
-      id: id,
-      columns: cols,
-      rows: rws,
-    );
+    final sequence = KittyImage.encode(image, id: id, columns: cols, rows: rws);
 
     // We place the sequence in the top-left cell of the area.
     // We also mark the other cells in the area as "occupied" by setting them

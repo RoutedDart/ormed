@@ -22,7 +22,7 @@ class SimpleModel implements Model {
 
   @override
   Cmd? init() => Cmd.tick(const Duration(seconds: 1), (_) => const TickMsg());
-// #endregion
+  // #endregion
 
   @override
   (Model, Cmd?) update(Msg msg) {

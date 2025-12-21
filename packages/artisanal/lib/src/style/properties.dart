@@ -8,14 +8,7 @@
 /// Notes:
 /// - Not all terminals support all underline styles.
 /// - Unsupported styles may render as a standard underline or be ignored.
-enum UnderlineStyle {
-  none,
-  single,
-  double,
-  curly,
-  dotted,
-  dashed,
-}
+enum UnderlineStyle { none, single, double, curly, dotted, dashed }
 
 /// Represents padding (internal spacing) for styled content.
 ///

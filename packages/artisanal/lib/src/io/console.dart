@@ -25,8 +25,7 @@ typedef WriteRaw = void Function(String text);
 typedef ReadLine = String? Function();
 
 /// Callback for reading secret/password input without echo.
-typedef SecretReader =
-    String Function(String prompt, {String? fallback});
+typedef SecretReader = String Function(String prompt, {String? fallback});
 
 /// Result of a task operation.
 enum TaskResult {
@@ -85,14 +84,14 @@ class Console {
     this.verbosity = Verbosity.normal,
     int? terminalWidth,
     Renderer? renderer,
-  })  : _stdout = stdout ?? io.stdout,
-        _stdin = stdin ?? io.stdin,
-        _out = out ?? ((line) => (stdout ?? io.stdout).writeln(line)),
-        _err = err ?? ((line) => io.stderr.writeln(line)),
-        _outRaw = outRaw ?? ((text) => (stdout ?? io.stdout).write(text)),
-        _errRaw = errRaw ?? ((text) => io.stderr.write(text)),
-        _readLine = readLine ?? (stdin ?? io.stdin).readLineSync,
-        _secretReader = secretReader,
+  }) : _stdout = stdout ?? io.stdout,
+       _stdin = stdin ?? io.stdin,
+       _out = out ?? ((line) => (stdout ?? io.stdout).writeln(line)),
+       _err = err ?? ((line) => io.stderr.writeln(line)),
+       _outRaw = outRaw ?? ((text) => (stdout ?? io.stdout).write(text)),
+       _errRaw = errRaw ?? ((text) => io.stderr.write(text)),
+       _readLine = readLine ?? (stdin ?? io.stdin).readLineSync,
+       _secretReader = secretReader,
        terminalWidth = terminalWidth ?? 120,
        _renderer = renderer ?? defaultRenderer;
 
@@ -141,8 +140,7 @@ class Console {
   /// io.components.twoColumnDetail('Name', 'Value');
   /// io.components.bulletList(['Item 1', 'Item 2']);
   /// ```
-  Components get components =>
-      _components ??= Components(io: this);
+  Components get components => _components ??= Components(io: this);
 
   // ─────────────────────────────────────────────────────────────────────────────
   // Basic Output
@@ -335,9 +333,12 @@ class Console {
           spinnerTick++;
           final runtime = _formatDuration(watch.elapsed);
           final runtimeStyled = _style.dim().render(' $runtime');
-          final baseUsed = Style.visibleLength(prefix) +
-              Style.visibleLength(runtimeStyled);
-          final dotsLen = (terminalWidth - baseUsed - 2).clamp(0, terminalWidth);
+          final baseUsed =
+              Style.visibleLength(prefix) + Style.visibleLength(runtimeStyled);
+          final dotsLen = (terminalWidth - baseUsed - 2).clamp(
+            0,
+            terminalWidth,
+          );
           var dots = '.' * dotsLen;
           if (dotsLen > 0) {
             final idx = spinnerTick % dotsLen;

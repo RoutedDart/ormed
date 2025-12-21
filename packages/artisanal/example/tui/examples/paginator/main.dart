@@ -31,13 +31,7 @@ class PaginatorExampleModel implements tui.Model {
     }
 
     final (newPaginator, cmd) = paginator.update(msg);
-    return (
-      PaginatorExampleModel(
-        items: items,
-        paginator: newPaginator,
-      ),
-      cmd,
-    );
+    return (PaginatorExampleModel(items: items, paginator: newPaginator), cmd);
   }
 
   @override

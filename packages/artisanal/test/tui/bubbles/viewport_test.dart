@@ -146,9 +146,10 @@ void main() {
         // Regression: when a styled segment spans wrapped lines, height
         // truncation can drop the trailing reset; the viewport output must not
         // leak styles into subsequent renders.
-        var viewport = ViewportModel(width: 10, height: 1).setContent(
-          'this is a very long selected line that will wrap',
-        );
+        var viewport = ViewportModel(
+          width: 10,
+          height: 1,
+        ).setContent('this is a very long selected line that will wrap');
         // Select the entire first (and only) content line.
         viewport = viewport.copyWith(
           selectionStart: (0, 0),

@@ -38,23 +38,67 @@ String stringForProfile(String input, ColorProfile profile) {
   return cp_downsample.downsampleSgr(input, p);
 }
 
-int Print(Object? v1, [Object? v2, Object? v3, Object? v4, Object? v5, Object? v6]) =>
-    PrintAll([v1, v2, v3, v4, v5, v6].where((it) => it != null));
+int Print(
+  Object? v1, [
+  Object? v2,
+  Object? v3,
+  Object? v4,
+  Object? v5,
+  Object? v6,
+]) => PrintAll([v1, v2, v3, v4, v5, v6].where((it) => it != null));
 
-int Println([Object? v1, Object? v2, Object? v3, Object? v4, Object? v5, Object? v6]) =>
-    PrintlnAll([v1, v2, v3, v4, v5, v6].where((it) => it != null));
+int Println([
+  Object? v1,
+  Object? v2,
+  Object? v3,
+  Object? v4,
+  Object? v5,
+  Object? v6,
+]) => PrintlnAll([v1, v2, v3, v4, v5, v6].where((it) => it != null));
 
-int Printf(String format, [Object? v1, Object? v2, Object? v3, Object? v4, Object? v5, Object? v6]) =>
-    PrintfAll(format, [v1, v2, v3, v4, v5, v6].where((it) => it != null).toList());
+int Printf(
+  String format, [
+  Object? v1,
+  Object? v2,
+  Object? v3,
+  Object? v4,
+  Object? v5,
+  Object? v6,
+]) => PrintfAll(
+  format,
+  [v1, v2, v3, v4, v5, v6].where((it) => it != null).toList(),
+);
 
-String Sprint(Object? v1, [Object? v2, Object? v3, Object? v4, Object? v5, Object? v6]) =>
-    SprintAll([v1, v2, v3, v4, v5, v6].where((it) => it != null));
+String Sprint(
+  Object? v1, [
+  Object? v2,
+  Object? v3,
+  Object? v4,
+  Object? v5,
+  Object? v6,
+]) => SprintAll([v1, v2, v3, v4, v5, v6].where((it) => it != null));
 
-String Sprintln([Object? v1, Object? v2, Object? v3, Object? v4, Object? v5, Object? v6]) =>
-    SprintlnAll([v1, v2, v3, v4, v5, v6].where((it) => it != null));
+String Sprintln([
+  Object? v1,
+  Object? v2,
+  Object? v3,
+  Object? v4,
+  Object? v5,
+  Object? v6,
+]) => SprintlnAll([v1, v2, v3, v4, v5, v6].where((it) => it != null));
 
-String Sprintf(String format, [Object? v1, Object? v2, Object? v3, Object? v4, Object? v5, Object? v6]) =>
-    SprintfAll(format, [v1, v2, v3, v4, v5, v6].where((it) => it != null).toList());
+String Sprintf(
+  String format, [
+  Object? v1,
+  Object? v2,
+  Object? v3,
+  Object? v4,
+  Object? v5,
+  Object? v6,
+]) => SprintfAll(
+  format,
+  [v1, v2, v3, v4, v5, v6].where((it) => it != null).toList(),
+);
 
 int PrintAll(Iterable<Object?> values) {
   final out = _join(values, sep: '');
@@ -125,7 +169,7 @@ String _sprintf(String format, List<Object?> args) {
 
   for (var i = 0; i < format.length; i++) {
     final ch = format.codeUnitAt(i);
-    if (ch != 0x25 /* % */) {
+    if (ch != 0x25 /* % */ ) {
       out.writeCharCode(ch);
       continue;
     }
@@ -136,7 +180,7 @@ String _sprintf(String format, List<Object?> args) {
     }
 
     final next = format.codeUnitAt(i + 1);
-    if (next == 0x25 /* % */) {
+    if (next == 0x25 /* % */ ) {
       out.write('%');
       i++;
       continue;
@@ -167,4 +211,3 @@ cp.Profile _toInternalProfile(ColorProfile profile) {
     ColorProfile.ascii => cp.Profile.noTty,
   };
 }
-

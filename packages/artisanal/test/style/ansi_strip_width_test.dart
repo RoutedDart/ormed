@@ -4,14 +4,12 @@ import 'package:test/test.dart';
 void main() {
   group('ANSI stripping + width', () {
     test('Layout.stripAnsi removes OSC 8 hyperlinks (ST terminated)', () {
-      const s =
-          '\x1b]8;;https://example.com\x1b\\Hello\x1b]8;;\x1b\\';
+      const s = '\x1b]8;;https://example.com\x1b\\Hello\x1b]8;;\x1b\\';
       expect(Layout.stripAnsi(s), equals('Hello'));
     });
 
     test('Layout.visibleLength ignores OSC 8 hyperlinks', () {
-      const s =
-          '\x1b]8;;https://example.com\x1b\\Hello\x1b]8;;\x1b\\';
+      const s = '\x1b]8;;https://example.com\x1b\\Hello\x1b]8;;\x1b\\';
       expect(Layout.visibleLength(s), equals(5));
     });
 

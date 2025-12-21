@@ -267,7 +267,9 @@ void readStyle(List<_SgrParam> params, StyleState out) {
           if (p.sub.isEmpty) break;
           final mode = p.sub[0];
           if (mode == 5 && p.sub.length >= 2) {
-            style = style.copyWith(underlineColor: UvColor.indexed256(p.sub[1]));
+            style = style.copyWith(
+              underlineColor: UvColor.indexed256(p.sub[1]),
+            );
           } else if (mode == 2) {
             // 58:2::r:g:b  -> sub = [2,0,r,g,b]
             // 58:2:r:g:b   -> sub = [2,r,g,b]

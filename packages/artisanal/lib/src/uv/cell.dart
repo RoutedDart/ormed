@@ -215,15 +215,28 @@ final class Cell {
 
   /// Whether this cell has no content, style, link, or drawable.
   bool get isZero =>
-      content.isEmpty && width == 0 && style.isZero && link.isZero && drawable == null;
+      content.isEmpty &&
+      width == 0 &&
+      style.isZero &&
+      link.isZero &&
+      drawable == null;
 
   /// Whether this cell represents a plain space with no attributes.
   bool get isEmpty =>
-      content == ' ' && width == 1 && style.isZero && link.isZero && drawable == null;
+      content == ' ' &&
+      width == 1 &&
+      style.isZero &&
+      link.isZero &&
+      drawable == null;
 
   /// Returns a copy of this cell.
-  Cell clone() =>
-      Cell(content: content, style: style, link: link, width: width, drawable: drawable);
+  Cell clone() => Cell(
+    content: content,
+    style: style,
+    link: link,
+    width: width,
+    drawable: drawable,
+  );
 
   /// Sets this cell to a space with width 1.
   void empty() {

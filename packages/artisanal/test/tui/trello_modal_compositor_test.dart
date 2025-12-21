@@ -34,4 +34,3 @@ void main() {
     expect(modalTitleLine.contains('Kitchen sink'), isFalse);
   });
 }
-

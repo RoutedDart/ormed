@@ -59,34 +59,35 @@ final class Rectangle {
   final int maxX;
   final int maxY;
 
-    /// The width of this rectangle in cells.
-    int get width => maxX - minX;
-    /// The height of this rectangle in cells.
-    int get height => maxY - minY;
+  /// The width of this rectangle in cells.
+  int get width => maxX - minX;
 
-    /// Whether this rectangle has no area.
-    bool get isEmpty => width <= 0 || height <= 0;
+  /// The height of this rectangle in cells.
+  int get height => maxY - minY;
 
-    /// Returns whether [p] lies within this rectangle.
-    bool contains(Position p) =>
+  /// Whether this rectangle has no area.
+  bool get isEmpty => width <= 0 || height <= 0;
+
+  /// Returns whether [p] lies within this rectangle.
+  bool contains(Position p) =>
       p.x >= minX && p.x < maxX && p.y >= minY && p.y < maxY;
 
-    /// Returns whether [other] is entirely contained within this rectangle.
-    bool containsRect(Rectangle other) =>
+  /// Returns whether [other] is entirely contained within this rectangle.
+  bool containsRect(Rectangle other) =>
       other.minX >= minX &&
       other.minY >= minY &&
       other.maxX <= maxX &&
       other.maxY <= maxY;
 
-    /// Returns whether [other] overlaps this rectangle.
-    bool overlaps(Rectangle other) =>
+  /// Returns whether [other] overlaps this rectangle.
+  bool overlaps(Rectangle other) =>
       !(other.maxX <= minX ||
           other.minX >= maxX ||
           other.maxY <= minY ||
           other.minY >= maxY);
 
-    /// Returns the minimal rectangle that contains both this and [other].
-    Rectangle union(Rectangle other) {
+  /// Returns the minimal rectangle that contains both this and [other].
+  Rectangle union(Rectangle other) {
     if (isEmpty) return other;
     if (other.isEmpty) return this;
     return Rectangle(
@@ -123,4 +124,4 @@ final class Rectangle {
 
 /// Creates a rectangle from origin ([x], [y]) and size ([width], [height]).
 Rectangle rect(int x, int y, int width, int height) =>
-  Rectangle(minX: x, minY: y, maxX: x + width, maxY: y + height);
+    Rectangle(minX: x, minY: y, maxX: x + width, maxY: y + height);

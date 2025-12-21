@@ -100,4 +100,3 @@ final class EmojiWidthProbe implements StartupProbe {
     return false;
   }
 }
-

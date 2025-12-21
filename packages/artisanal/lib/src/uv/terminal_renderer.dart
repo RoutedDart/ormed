@@ -77,20 +77,14 @@ final class RenderMetrics {
   /// Average frame time over the sample window.
   Duration get averageFrameTime {
     if (_frameTimes.isEmpty) return Duration.zero;
-    final total = _frameTimes.fold<int>(
-      0,
-      (sum, d) => sum + d.inMicroseconds,
-    );
+    final total = _frameTimes.fold<int>(0, (sum, d) => sum + d.inMicroseconds);
     return Duration(microseconds: total ~/ _frameTimes.length);
   }
 
   /// Average render duration over the sample window.
   Duration get averageRenderDuration {
     if (_renderTimes.isEmpty) return Duration.zero;
-    final total = _renderTimes.fold<int>(
-      0,
-      (sum, d) => sum + d.inMicroseconds,
-    );
+    final total = _renderTimes.fold<int>(0, (sum, d) => sum + d.inMicroseconds);
     return Duration(microseconds: total ~/ _renderTimes.length);
   }
 
@@ -188,7 +182,8 @@ final class RenderMetrics {
   }
 
   @override
-  String toString() => 'RenderMetrics(fps: ${averageFps.toStringAsFixed(1)}, '
+  String toString() =>
+      'RenderMetrics(fps: ${averageFps.toStringAsFixed(1)}, '
       'frameTime: ${averageFrameTime.inMilliseconds}ms, '
       'renderTime: ${averageRenderDuration.inMicroseconds}µs)';
 }

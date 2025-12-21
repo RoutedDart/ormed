@@ -269,10 +269,7 @@ void main() {
         test('go to last moves to last item', () {
           expect(picker.selected, 0);
           final (updated, _) = picker.update(keyChar('G'));
-          expect(
-            (updated).selected,
-            picker.files.length - 1,
-          );
+          expect((updated).selected, picker.files.length - 1);
         });
       });
 

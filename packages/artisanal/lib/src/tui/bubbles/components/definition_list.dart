@@ -271,8 +271,7 @@ class DefinitionList extends DisplayComponent {
 ///
 /// print(list);
 /// ```
-class GroupedDefinitionList extends DisplayComponent
-{
+class GroupedDefinitionList extends DisplayComponent {
   /// Creates a new empty grouped definition list builder.
   GroupedDefinitionList({RenderConfig renderConfig = const RenderConfig()})
     : _renderConfig = renderConfig;

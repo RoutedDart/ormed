@@ -16,10 +16,7 @@ enum TerminalProgressBarState {
 ///
 /// Support depends on the terminal (e.g., Windows Terminal, iTerm2).
 class TerminalProgressBar {
-  const TerminalProgressBar({
-    required this.state,
-    this.value = 0,
-  });
+  const TerminalProgressBar({required this.state, this.value = 0});
 
   /// The current state of the progress bar.
   final TerminalProgressBarState state;
@@ -95,9 +92,7 @@ class View {
 
 /// KeyboardEnhancements describes the requested keyboard enhancement features.
 class KeyboardEnhancements {
-  const KeyboardEnhancements({
-    this.reportEventTypes = false,
-  });
+  const KeyboardEnhancements({this.reportEventTypes = false});
 
   /// Whether to request the terminal to report key repeat and release events.
   final bool reportEventTypes;

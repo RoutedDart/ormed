@@ -7,6 +7,7 @@ import 'screen.dart';
 abstract interface class Drawable {
   /// Draws this drawable into [screen] within [area].
   void draw(Screen screen, Rectangle area);
+
   /// Returns the bounds required to draw this drawable.
   Rectangle bounds();
 }
@@ -24,8 +25,7 @@ final class EmptyDrawable implements Drawable {
 
   /// Returns the bounds of this empty drawable.
   @override
-  Rectangle bounds() =>
-      Rectangle(minX: 0, minY: 0, maxX: width, maxY: height);
+  Rectangle bounds() => Rectangle(minX: 0, minY: 0, maxX: width, maxY: height);
 
   /// Draws nothing.
   @override

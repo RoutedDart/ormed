@@ -1,30 +1,30 @@
 /// Orchestrates a UV terminal’s lifecycle, capabilities, rendering, and input.
-/// 
+///
 /// [Terminal] manages I/O, raw-mode state, resize handling, and a backing
 /// [Buffer] while exposing the high-level [Screen] API for mutation and draw.
 /// It adapts behavior using [TerminalCapabilities] (kitty/sixel/iTerm2, keyboard
 /// enhancements, background/palette) and performs diffed output via
 /// [UvTerminalRenderer]. Incoming bytes are normalized into typed events by
 /// [EventDecoder] and surfaced on [Terminal.events] for application loops.
-/// 
+///
 /// {@category Ultraviolet}
 /// {@subCategory Runtime}
-/// 
+///
 /// {@macro artisanal_uv_concept_overview}
 /// {@macro artisanal_uv_renderer_overview}
 /// {@macro artisanal_uv_events_overview}
 /// {@macro artisanal_uv_performance_tips}
 /// {@macro artisanal_uv_compatibility}
-/// 
+///
 /// Lifecycle
 /// - Start: enter raw mode, subscribe to input/resize, query capabilities.
 /// - Operate: mutate the [Screen]/[Buffer], render frames, react to events.
 /// - Stop: restore modes, exit alt-screen, flush, detach streams.
-/// 
+///
 /// Example
 /// ```dart
 /// import 'package:artisanal/uv.dart';
-/// 
+///
 /// Future<void> main() async {
 ///   final term = Terminal();
 ///   await term.start();          // open: raw mode, size, capability queries
@@ -77,16 +77,30 @@ export 'halfblock_drawable.dart';
 /// decoding, and provides methods for drawing text, shapes, and images.
 ///
 /// Upstream: `third_party/ultraviolet/terminal.go` (`Terminal`).
-class Terminal implements Screen, FillableScreen, FillAreaScreen, ClearableScreen, CloneableScreen, CloneAreaScreen {
-  Terminal({
-    Stream<List<int>>? input,
-    IOSink? output,
-    List<String>? env,
-  }) : _input = input ?? stdin,
-       _output = output ?? stdout,
-       _env = env ?? Platform.environment.entries.map((e) => '${e.key}=${e.value}').toList(),
-       _buf = Buffer.create(0, 0),
-       capabilities = TerminalCapabilities(env: env ?? Platform.environment.entries.map((e) => '${e.key}=${e.value}').toList()) {
+class Terminal
+    implements
+        Screen,
+        FillableScreen,
+        FillAreaScreen,
+        ClearableScreen,
+        CloneableScreen,
+        CloneAreaScreen {
+  Terminal({Stream<List<int>>? input, IOSink? output, List<String>? env})
+    : _input = input ?? stdin,
+      _output = output ?? stdout,
+      _env =
+          env ??
+          Platform.environment.entries
+              .map((e) => '${e.key}=${e.value}')
+              .toList(),
+      _buf = Buffer.create(0, 0),
+      capabilities = TerminalCapabilities(
+        env:
+            env ??
+            Platform.environment.entries
+                .map((e) => '${e.key}=${e.value}')
+                .toList(),
+      ) {
     final isTty = _output is Stdout && (_output).hasTerminal;
     _renderer = UvTerminalRenderer(_output, env: _env, isTty: isTty);
     _reader = TerminalReader(
@@ -99,11 +113,11 @@ class Terminal implements Screen, FillableScreen, FillAreaScreen, ClearableScree
   final Stream<List<int>> _input;
   final IOSink _output;
   final List<String> _env;
-  
+
   late final UvTerminalRenderer _renderer;
   late final TerminalReader _reader;
   late final SizeNotifier _winch;
-  
+
   final Buffer _buf;
   final TerminalCapabilities capabilities;
   bool _running = false;
@@ -114,7 +128,7 @@ class Terminal implements Screen, FillableScreen, FillAreaScreen, ClearableScree
   bool _cursorHidden = false;
   int _keyboardEnhancements = 0;
   final List<String> _prepend = [];
-  
+
   final _eventController = StreamController<Event>.broadcast();
   StreamSubscription? _readerSubscription;
   StreamSubscription? _winchSubscription;
@@ -159,24 +173,28 @@ class Terminal implements Screen, FillableScreen, FillAreaScreen, ClearableScree
     _winch.start();
     _winchSubscription = _winch.stream.listen((_) async {
       final size = _winch.getWindowSize();
-      _eventController.add(WindowSizeEvent(
-        width: size.cells.width,
-        height: size.cells.height,
-        widthPx: size.pixels.width,
-        heightPx: size.pixels.height,
-      ));
+      _eventController.add(
+        WindowSizeEvent(
+          width: size.cells.width,
+          height: size.cells.height,
+          widthPx: size.pixels.width,
+          heightPx: size.pixels.height,
+        ),
+      );
     });
 
     // Initial size.
     final size = _winch.getWindowSize();
     _buf.resize(size.cells.width, size.cells.height);
     _renderer.resize(size.cells.width, size.cells.height);
-    _eventController.add(WindowSizeEvent(
-      width: size.cells.width,
-      height: size.cells.height,
-      widthPx: size.pixels.width,
-      heightPx: size.pixels.height,
-    ));
+    _eventController.add(
+      WindowSizeEvent(
+        width: size.cells.width,
+        height: size.cells.height,
+        widthPx: size.pixels.width,
+        heightPx: size.pixels.height,
+      ),
+    );
 
     // Query capabilities.
     queryCapabilities();
@@ -196,7 +214,7 @@ class Terminal implements Screen, FillableScreen, FillAreaScreen, ClearableScree
     if (_bracketedPasteEnabled) disableBracketedPaste();
     if (_focusReportingEnabled) disableFocusReporting();
     if (_cursorHidden) showCursor();
-    
+
     if (_inAltScreen) {
       exitAltScreen();
     } else {
@@ -239,6 +257,7 @@ class Terminal implements Screen, FillableScreen, FillAreaScreen, ClearableScree
     _buf.resize(width, height);
     _renderer.resize(width, height);
   }
+
   /// Moves the cursor to the given [x] and [y] position.
   void moveTo(int x, int y) {
     _renderer.moveTo(x, y);
@@ -322,7 +341,6 @@ class Terminal implements Screen, FillableScreen, FillAreaScreen, ClearableScree
     _renderer.queryBackgroundColor();
     _renderer.flush();
   }
-
 
   /// Clears the physical screen on the next draw.
   void clearScreen() {
@@ -491,8 +509,17 @@ class Terminal implements Screen, FillableScreen, FillAreaScreen, ClearableScree
   }
 
   /// Returns the best [Drawable] for the given [image] based on this terminal's capabilities.
-  Drawable bestImageDrawableForTerminal(img.Image image, {int? columns, int? rows}) {
-    return bestImageDrawable(image, capabilities: capabilities, columns: columns, rows: rows);
+  Drawable bestImageDrawableForTerminal(
+    img.Image image, {
+    int? columns,
+    int? rows,
+  }) {
+    return bestImageDrawable(
+      image,
+      capabilities: capabilities,
+      columns: columns,
+      rows: rows,
+    );
   }
 
   // NOTE: environment variable lookups are handled by [Environ].

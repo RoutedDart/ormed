@@ -108,7 +108,12 @@ void main() {
         expect(table.cursor, 0);
       });
       test('setCursor parity', () {
-        final table = TableModel(rows: [['1'], ['2']]);
+        final table = TableModel(
+          rows: [
+            ['1'],
+            ['2'],
+          ],
+        );
         table.setCursor(1);
         expect(table.getCursor(), 1);
       });
@@ -123,15 +128,23 @@ void main() {
 
       test('setRows parity', () {
         final table = TableModel();
-        table.setRows([['1']]);
+        table.setRows([
+          ['1'],
+        ]);
         expect(table.getRows().length, 1);
       });
 
       test('selectedRow parity', () {
-        final table = TableModel(rows: [['1'], ['2']]);
+        final table = TableModel(
+          rows: [
+            ['1'],
+            ['2'],
+          ],
+        );
         table.setCursor(1);
         expect(table.selectedRow, ['2']);
-      });    });
+      });
+    });
 
     group('MoveUp', () {
       test('moves cursor up', () {

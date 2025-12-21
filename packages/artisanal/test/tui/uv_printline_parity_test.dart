@@ -24,62 +24,68 @@ class _QuitOnKeyModel implements Model {
 }
 
 void main() {
-  test('PrintLineMsg does not write directly with UltravioletTuiRenderer', () async {
-    final terminal = StringTerminal(terminalWidth: 80, terminalHeight: 24);
-    final program = Program(
-      const _QuitOnKeyModel(),
-      options: const ProgramOptions(
-        altScreen: false,
-        hideCursor: false,
-        useUltravioletRenderer: true,
-      ),
-      terminal: terminal,
-    );
+  test(
+    'PrintLineMsg does not write directly with UltravioletTuiRenderer',
+    () async {
+      final terminal = StringTerminal(terminalWidth: 80, terminalHeight: 24);
+      final program = Program(
+        const _QuitOnKeyModel(),
+        options: const ProgramOptions(
+          altScreen: false,
+          hideCursor: false,
+          useUltravioletRenderer: true,
+        ),
+        terminal: terminal,
+      );
 
-    final runFuture = program.run();
-    await Future<void>.delayed(const Duration(milliseconds: 100));
+      final runFuture = program.run();
+      await Future<void>.delayed(const Duration(milliseconds: 100));
 
-    // When using UV renderer, PrintLineMsg should not call Terminal.writeln()
-    // directly (that desyncs cursor state and causes output to accumulate).
-    expect(
-      terminal.operations.where((op) => op.startsWith('writeln:')).toList(),
-      isEmpty,
-    );
+      // When using UV renderer, PrintLineMsg should not call Terminal.writeln()
+      // directly (that desyncs cursor state and causes output to accumulate).
+      expect(
+        terminal.operations.where((op) => op.startsWith('writeln:')).toList(),
+        isEmpty,
+      );
 
-    // Printed output still shows up.
-    expect(terminal.output, contains('printed'));
-    expect(terminal.output, contains('view'));
+      // Printed output still shows up.
+      expect(terminal.output, contains('printed'));
+      expect(terminal.output, contains('view'));
 
-    terminal.simulateInput([0x71]); // 'q'
-    await runFuture;
-  });
+      terminal.simulateInput([0x71]); // 'q'
+      await runFuture;
+    },
+  );
 
-  test('PrintLineMsg works in fullscreen with UltravioletTuiRenderer', () async {
-    final terminal = StringTerminal(terminalWidth: 80, terminalHeight: 24);
-    final program = Program(
-      const _QuitOnKeyModel(),
-      options: const ProgramOptions(
-        altScreen: true,
-        hideCursor: false,
-        useUltravioletRenderer: true,
-      ),
-      terminal: terminal,
-    );
+  test(
+    'PrintLineMsg works in fullscreen with UltravioletTuiRenderer',
+    () async {
+      final terminal = StringTerminal(terminalWidth: 80, terminalHeight: 24);
+      final program = Program(
+        const _QuitOnKeyModel(),
+        options: const ProgramOptions(
+          altScreen: true,
+          hideCursor: false,
+          useUltravioletRenderer: true,
+        ),
+        terminal: terminal,
+      );
 
-    final runFuture = program.run();
-    await Future<void>.delayed(const Duration(milliseconds: 100));
+      final runFuture = program.run();
+      await Future<void>.delayed(const Duration(milliseconds: 100));
 
-    // Still should not call Terminal.writeln() directly.
-    expect(
-      terminal.operations.where((op) => op.startsWith('writeln:')).toList(),
-      isEmpty,
-    );
+      // Still should not call Terminal.writeln() directly.
+      expect(
+        terminal.operations.where((op) => op.startsWith('writeln:')).toList(),
+        isEmpty,
+      );
 
-    // Printed output still shows up, even with altScreen.
-    expect(terminal.output, contains('printed'));
-    expect(terminal.output, contains('view'));
+      // Printed output still shows up, even with altScreen.
+      expect(terminal.output, contains('printed'));
+      expect(terminal.output, contains('view'));
 
-    terminal.simulateInput([0x71]); // 'q'
-    await runFuture;
-  });
+      terminal.simulateInput([0x71]); // 'q'
+      await runFuture;
+    },
+  );
 }

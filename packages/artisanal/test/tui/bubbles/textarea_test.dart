@@ -409,42 +409,54 @@ void main() {
         textarea.value = 'Hello World\nLine 2';
 
         // Press at (2, 0) -> 'H' is at x=2 (prompt is '> ')
-        var (v1, _) = textarea.update(const MouseMsg(
-          action: MouseAction.press,
-          button: MouseButton.left,
-          x: 2,
-          y: 0,
-        ));
+        var (v1, _) = textarea.update(
+          const MouseMsg(
+            action: MouseAction.press,
+            button: MouseButton.left,
+            x: 2,
+            y: 0,
+          ),
+        );
 
         // Drag to (7, 0) -> 'o' is at x=6
-        var (v2, _) = v1.update(const MouseMsg(
-          action: MouseAction.motion,
-          button: MouseButton.left,
-          x: 7,
-          y: 0,
-        ));
+        var (v2, _) = v1.update(
+          const MouseMsg(
+            action: MouseAction.motion,
+            button: MouseButton.left,
+            x: 7,
+            y: 0,
+          ),
+        );
 
         expect(v2.getSelectedText(), equals('Hello'));
       });
 
       test('selects text when line numbers are enabled', () {
-        var textarea = TextAreaModel(prompt: '│ ', showLineNumbers: true, height: 5);
+        var textarea = TextAreaModel(
+          prompt: '│ ',
+          showLineNumbers: true,
+          height: 5,
+        );
         textarea.value = 'hello';
 
         // With default prompt "│ " (width 2) and line number gutter "1 "
         // (digits=1, plus trailing space), the first content cell starts at x=4.
-        var (v1, _) = textarea.update(const MouseMsg(
-          action: MouseAction.press,
-          button: MouseButton.left,
-          x: 4,
-          y: 0,
-        ));
-        var (v2, _) = v1.update(const MouseMsg(
-          action: MouseAction.motion,
-          button: MouseButton.left,
-          x: 9,
-          y: 0,
-        ));
+        var (v1, _) = textarea.update(
+          const MouseMsg(
+            action: MouseAction.press,
+            button: MouseButton.left,
+            x: 4,
+            y: 0,
+          ),
+        );
+        var (v2, _) = v1.update(
+          const MouseMsg(
+            action: MouseAction.motion,
+            button: MouseButton.left,
+            x: 9,
+            y: 0,
+          ),
+        );
 
         expect(v2.getSelectedText(), equals('hello'));
       });
@@ -460,18 +472,22 @@ void main() {
         textarea.value = 'abcdefghijkl'; // wraps into "abcdef" + "ghijkl"
 
         // Select "ghi" from the second wrapped line (y=1).
-        var (v1, _) = textarea.update(const MouseMsg(
-          action: MouseAction.press,
-          button: MouseButton.left,
-          x: 0,
-          y: 1,
-        ));
-        var (v2, _) = v1.update(const MouseMsg(
-          action: MouseAction.motion,
-          button: MouseButton.left,
-          x: 3,
-          y: 1,
-        ));
+        var (v1, _) = textarea.update(
+          const MouseMsg(
+            action: MouseAction.press,
+            button: MouseButton.left,
+            x: 0,
+            y: 1,
+          ),
+        );
+        var (v2, _) = v1.update(
+          const MouseMsg(
+            action: MouseAction.motion,
+            button: MouseButton.left,
+            x: 3,
+            y: 1,
+          ),
+        );
 
         expect(v2.getSelectedText(), equals('ghi'));
 
@@ -493,18 +509,22 @@ void main() {
 
         // Continuation visual line is y=1. Content starts at x=4:
         // prompt "│ " (2) + line number gutter "1 " or blank (2).
-        var (v1, _) = textarea.update(const MouseMsg(
-          action: MouseAction.press,
-          button: MouseButton.left,
-          x: 4,
-          y: 1,
-        ));
-        var (v2, _) = v1.update(const MouseMsg(
-          action: MouseAction.motion,
-          button: MouseButton.left,
-          x: 7,
-          y: 1,
-        ));
+        var (v1, _) = textarea.update(
+          const MouseMsg(
+            action: MouseAction.press,
+            button: MouseButton.left,
+            x: 4,
+            y: 1,
+          ),
+        );
+        var (v2, _) = v1.update(
+          const MouseMsg(
+            action: MouseAction.motion,
+            button: MouseButton.left,
+            x: 7,
+            y: 1,
+          ),
+        );
 
         expect(v2.getSelectedText(), equals('ijk'));
       });
@@ -514,52 +534,65 @@ void main() {
         textarea.value = 'Hello World\nLine 2';
 
         // Click inside "Hello"
-        var (v1, _) = textarea.update(const MouseMsg(
-          action: MouseAction.press,
-          button: MouseButton.left,
-          x: 4,
-          y: 0,
-        ));
+        var (v1, _) = textarea.update(
+          const MouseMsg(
+            action: MouseAction.press,
+            button: MouseButton.left,
+            x: 4,
+            y: 0,
+          ),
+        );
 
-        var (v2, _) = v1.update(const MouseMsg(
-          action: MouseAction.press,
-          button: MouseButton.left,
-          x: 4,
-          y: 0,
-        ));
+        var (v2, _) = v1.update(
+          const MouseMsg(
+            action: MouseAction.press,
+            button: MouseButton.left,
+            x: 4,
+            y: 0,
+          ),
+        );
 
         expect(v2.getSelectedText(), equals('Hello'));
       });
 
       test('click outside bounds clears selection and blurs', () {
-        var textarea =
-            TextAreaModel(prompt: '> ', showLineNumbers: false, height: 5);
+        var textarea = TextAreaModel(
+          prompt: '> ',
+          showLineNumbers: false,
+          height: 5,
+        );
         textarea.value = 'Hello World\nLine 2';
         textarea.focus();
 
         // Select something
-        var (v1, _) = textarea.update(const MouseMsg(
-          action: MouseAction.press,
-          button: MouseButton.left,
-          x: 2,
-          y: 0,
-        ));
-        var (v2, _) = v1.update(const MouseMsg(
-          action: MouseAction.motion,
-          button: MouseButton.left,
-          x: 7,
-          y: 0,
-        ));
+        var (v1, _) = textarea.update(
+          const MouseMsg(
+            action: MouseAction.press,
+            button: MouseButton.left,
+            x: 2,
+            y: 0,
+          ),
+        );
+        var (v2, _) = v1.update(
+          const MouseMsg(
+            action: MouseAction.motion,
+            button: MouseButton.left,
+            x: 7,
+            y: 0,
+          ),
+        );
         expect(v2.getSelectedText(), equals('Hello'));
         expect(v2.focused, isTrue);
 
         // Click outside (y = 6)
-        var (v3, _) = v2.update(const MouseMsg(
-          action: MouseAction.press,
-          button: MouseButton.left,
-          x: 2,
-          y: 6,
-        ));
+        var (v3, _) = v2.update(
+          const MouseMsg(
+            action: MouseAction.press,
+            button: MouseButton.left,
+            x: 2,
+            y: 6,
+          ),
+        );
         expect(v3.getSelectedText(), equals(''));
         expect(v3.focused, isFalse);
       });

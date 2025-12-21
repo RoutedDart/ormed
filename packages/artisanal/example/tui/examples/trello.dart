@@ -65,8 +65,9 @@ final class _DragState {
       x: x ?? this.x,
       y: y ?? this.y,
       hoverCol: hoverCol == _undefined ? this.hoverCol : hoverCol as int?,
-      hoverIndex:
-          hoverIndex == _undefined ? this.hoverIndex : hoverIndex as int?,
+      hoverIndex: hoverIndex == _undefined
+          ? this.hoverIndex
+          : hoverIndex as int?,
     );
   }
 }
@@ -141,10 +142,7 @@ final class TrelloModel implements tui.Model {
         ),
         _BoardColumn(
           title: 'Doing',
-          cards: [
-            'Viewport selection parity',
-            'UV renderer fixes',
-          ],
+          cards: ['Viewport selection parity', 'UV renderer fixes'],
         ),
         _BoardColumn(
           title: 'Done',
@@ -214,12 +212,12 @@ final class TrelloModel implements tui.Model {
   Style _borderStyle() => Style().foreground(_palette.border).dim();
 
   List<Color> _accentColors() => [
-        _palette.accent,
-        _palette.info,
-        _palette.highlight,
-        _palette.success,
-        _palette.warning,
-      ];
+    _palette.accent,
+    _palette.info,
+    _palette.highlight,
+    _palette.success,
+    _palette.warning,
+  ];
 
   @override
   tui.Cmd? init() => null;
@@ -234,9 +232,11 @@ final class TrelloModel implements tui.Model {
 
     switch (msg) {
       case tui.WindowSizeMsg(:final width, :final height):
-        final base =
-            copyWith(width: width, height: height, debug: nextDebug)
-                ._clampScrolls();
+        final base = copyWith(
+          width: width,
+          height: height,
+          debug: nextDebug,
+        )._clampScrolls();
         final m = base.modal;
         if (m == null) return (base, null);
         final nextModal = base._layoutModal(
@@ -303,9 +303,18 @@ final class TrelloModel implements tui.Model {
           return (_onMouseWheel(button, x, y), null);
         }
         return switch ((action, button)) {
-          (tui.MouseAction.press, tui.MouseButton.left) => (_onMousePress(x, y), null),
-          (tui.MouseAction.motion, tui.MouseButton.left) => (_onMouseMotion(x, y), null),
-          (tui.MouseAction.release, tui.MouseButton.left) => (_onMouseRelease(x, y), null),
+          (tui.MouseAction.press, tui.MouseButton.left) => (
+            _onMousePress(x, y),
+            null,
+          ),
+          (tui.MouseAction.motion, tui.MouseButton.left) => (
+            _onMouseMotion(x, y),
+            null,
+          ),
+          (tui.MouseAction.release, tui.MouseButton.left) => (
+            _onMouseRelease(x, y),
+            null,
+          ),
           _ => (copyWith(debug: nextDebug), null),
         };
 
@@ -327,13 +336,13 @@ final class TrelloModel implements tui.Model {
 
     final next = switch (key.type) {
       tui.KeyType.left => copyWith(
-          focusCol: (col - 1).clamp(0, columns.length - 1),
-          focusIndex: 0,
-        ),
+        focusCol: (col - 1).clamp(0, columns.length - 1),
+        focusIndex: 0,
+      ),
       tui.KeyType.right => copyWith(
-          focusCol: (col + 1).clamp(0, columns.length - 1),
-          focusIndex: 0,
-        ),
+        focusCol: (col + 1).clamp(0, columns.length - 1),
+        focusIndex: 0,
+      ),
       tui.KeyType.up => copyWith(focusIndex: (idx - 1).clamp(0, maxIdx)),
       tui.KeyType.down => copyWith(focusIndex: (idx + 1).clamp(0, maxIdx)),
       tui.KeyType.pageUp => _scrollColumnBy(col, -_pageScrollAmount()),
@@ -381,7 +390,10 @@ final class TrelloModel implements tui.Model {
 
     final visible = _maxVisibleCards();
     final maxScroll = _maxScrollFor(c);
-    final scroll = (c < colScroll.length ? colScroll[c] : 0).clamp(0, maxScroll);
+    final scroll = (c < colScroll.length ? colScroll[c] : 0).clamp(
+      0,
+      maxScroll,
+    );
     final idx = focusIndex.clamp(0, cardsLen - 1);
 
     var nextScrollVal = scroll;
@@ -453,9 +465,7 @@ final class TrelloModel implements tui.Model {
   }
 
   _ModalState _layoutModal(_ModalState m) {
-    final x = ((width - m.width) ~/ 2)
-        .clamp(0, math.max(0, width - 1))
-        .toInt();
+    final x = ((width - m.width) ~/ 2).clamp(0, math.max(0, width - 1)).toInt();
     final y = ((height - m.height) ~/ 2)
         .clamp(0, math.max(0, height - 1))
         .toInt();
@@ -480,22 +490,25 @@ final class TrelloModel implements tui.Model {
   }
 
   TrelloModel _modalPress(_ModalState m, int x, int y) {
-    final inside = x >= m.x && x < m.x + m.width && y >= m.y && y < m.y + m.height;
+    final inside =
+        x >= m.x && x < m.x + m.width && y >= m.y && y < m.y + m.height;
     if (!inside) return copyWith(modal: null);
     return this;
   }
 
-  
-
   TrelloModel _insertCard(int col, int insertAt, String title) {
-    final out = columns.map((c) => c.copyWith(cards: List.of(c.cards))).toList();
+    final out = columns
+        .map((c) => c.copyWith(cards: List.of(c.cards)))
+        .toList();
     final c = col.clamp(0, out.length - 1);
     final cards = out[c].cards;
     final idx = insertAt.clamp(0, cards.length);
     cards.insert(idx, title);
-    return copyWith(columns: out, focusCol: c, focusIndex: idx)
-        ._clampScrolls()
-        ._ensureFocusVisible();
+    return copyWith(
+      columns: out,
+      focusCol: c,
+      focusIndex: idx,
+    )._clampScrolls()._ensureFocusVisible();
   }
 
   TrelloModel _startKeyboardDrag() {
@@ -521,8 +534,11 @@ final class TrelloModel implements tui.Model {
     if (y == _boardTop) {
       final col = _columnAt(x);
       if (col != null) {
-        return copyWith(focusCol: col, focusIndex: 0, drag: null)
-            ._ensureFocusVisible();
+        return copyWith(
+          focusCol: col,
+          focusIndex: 0,
+          drag: null,
+        )._ensureFocusVisible();
       }
     }
 
@@ -530,8 +546,11 @@ final class TrelloModel implements tui.Model {
     if (hit == null) {
       final col = _columnAt(x);
       if (col != null) {
-        return copyWith(focusCol: col, focusIndex: 0, drag: null)
-            ._ensureFocusVisible();
+        return copyWith(
+          focusCol: col,
+          focusIndex: 0,
+          drag: null,
+        )._ensureFocusVisible();
       }
       return copyWith(drag: null);
     }
@@ -591,7 +610,9 @@ final class TrelloModel implements tui.Model {
       return copyWith(drag: null);
     }
 
-    final out = columns.map((c) => c.copyWith(cards: List.of(c.cards))).toList();
+    final out = columns
+        .map((c) => c.copyWith(cards: List.of(c.cards)))
+        .toList();
     final card = out[fromCol].cards.removeAt(fromIndex);
 
     final toCol = targetCol.clamp(0, out.length - 1);
@@ -671,7 +692,8 @@ final class TrelloModel implements tui.Model {
         if (idx >= cardsLen) return (c, cardsLen);
 
         // If we're in the gap, insert *after* the preceding card.
-        if (within >= _cardPanelHeight) return (c, (idx + 1).clamp(0, cardsLen));
+        if (within >= _cardPanelHeight)
+          return (c, (idx + 1).clamp(0, cardsLen));
         return (c, idx);
       }
     }
@@ -695,11 +717,9 @@ final class TrelloModel implements tui.Model {
     final (modalPanel, cursor) = _renderModal(m);
     final comp = uv.Compositor([
       uv.Layer(uv.StyledString(base)).setId('base').setZ(0),
-      uv.Layer(uv.StyledString(modalPanel))
-          .setId('modal')
-          .setX(m.x)
-          .setY(m.y)
-          .setZ(10),
+      uv.Layer(
+        uv.StyledString(modalPanel),
+      ).setId('modal').setX(m.x).setY(m.y).setZ(10),
     ]);
     final composed = debug.compose(_padToScreen(comp.render()));
     return View(content: _padToScreen(composed), cursor: cursor);
@@ -800,17 +820,17 @@ final class TrelloModel implements tui.Model {
     final accent = accents[col % accents.length];
     final headerStyle = isFocusedCol
         ? Style()
-            .bold()
-            .foreground(Colors.black)
-            .background(accent)
-            .padding(0, 1)
-            .width(_colWidth)
+              .bold()
+              .foreground(Colors.black)
+              .background(accent)
+              .padding(0, 1)
+              .width(_colWidth)
         : Style()
-            .bold()
-            .foreground(_palette.textBold)
-            .background(_palette.border)
-            .padding(0, 1)
-            .width(_colWidth);
+              .bold()
+              .foreground(_palette.textBold)
+              .background(_palette.border)
+              .padding(0, 1)
+              .width(_colWidth);
 
     final lines = <String>[
       headerStyle.render(columns[col].title),

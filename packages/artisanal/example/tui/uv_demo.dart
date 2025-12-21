@@ -10,7 +10,9 @@ class DemoModel implements Model {
 
   @override
   (Model, Cmd?) update(Msg msg) {
-    if (msg is KeyMsg && msg.key.type == KeyType.runes && msg.key.runes.isNotEmpty) {
+    if (msg is KeyMsg &&
+        msg.key.type == KeyType.runes &&
+        msg.key.runes.isNotEmpty) {
       if (String.fromCharCode(msg.key.runes.first) == 'q') {
         return (this, Cmd.quit());
       }

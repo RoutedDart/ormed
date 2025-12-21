@@ -26,7 +26,9 @@ void main() {
 
   test('SprintAll/Sprintf uses Writer.colorProfile', () {
     Writer = StringRenderer(colorProfile: ColorProfile.ansi);
-    final colored = Style().foreground(const BasicColor('#00ff00')).render('ok');
+    final colored = Style()
+        .foreground(const BasicColor('#00ff00'))
+        .render('ok');
     final out = SprintAll([colored]);
     expect(out, isNot(contains('38;2')));
   });
@@ -45,4 +47,3 @@ void main() {
     }
   });
 }
-

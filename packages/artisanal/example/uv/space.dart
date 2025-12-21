@@ -2,7 +2,6 @@ import 'package:artisanal/uv.dart';
 import 'dart:async';
 import 'dart:math';
 
-
 List<List<UvColor>> setupColors(int width, int height) {
   final doubleHeight = height * 2;
   final colors = List.generate(
@@ -10,7 +9,10 @@ List<List<UvColor>> setupColors(int width, int height) {
     (y) => List.generate(width, (x) {
       final randomnessFactor = (doubleHeight - y) / doubleHeight;
       final randomOffset = (Random().nextDouble() * 0.2) - 0.1;
-      final value = (randomnessFactor * ((doubleHeight - y) / doubleHeight) + randomOffset).clamp(0.0, 1.0);
+      final value =
+          (randomnessFactor * ((doubleHeight - y) / doubleHeight) +
+                  randomOffset)
+              .clamp(0.0, 1.0);
       final gray = (value * 255).toInt();
       return UvColor.rgb(gray, gray, gray);
     }),

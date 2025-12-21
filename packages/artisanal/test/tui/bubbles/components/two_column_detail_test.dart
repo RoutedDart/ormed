@@ -158,8 +158,7 @@ void main() {
           ..left('Key')
           ..right('Value')
           ..fillStyle(Style().dim())
-          ..width(40)
-          ;
+          ..width(40);
         final output = detail.render();
         expect(output, contains('\x1B['));
       });
@@ -175,8 +174,7 @@ void main() {
               return Style().bold();
             }
             return Style().italic();
-          })
-          ;
+          });
         detail.render();
         expect(callCount, equals(2)); // Called for left and right
       });
@@ -217,8 +215,7 @@ void main() {
           ..styleFunc((text, isLeft) {
             funcCalled = true;
             return Style().italic();
-          })
-          ;
+          });
         detail.render();
         expect(funcCalled, isTrue);
       });
@@ -226,56 +223,64 @@ void main() {
 
     group('color profile', () {
       test('respects ASCII color profile', () {
-        final detail = TwoColumnDetail(
-          renderConfig: const RenderConfig(colorProfile: ColorProfile.ascii),
-        )
-          ..left('Key')
-          ..right('Value')
-          ..leftStyle(Style().bold().foreground(Colors.red));
+        final detail =
+            TwoColumnDetail(
+                renderConfig: const RenderConfig(
+                  colorProfile: ColorProfile.ascii,
+                ),
+              )
+              ..left('Key')
+              ..right('Value')
+              ..leftStyle(Style().bold().foreground(Colors.red));
         final output = detail.render();
         expect(output.contains('\x1B['), isFalse);
       });
 
       test('respects trueColor profile', () {
-        final detail = TwoColumnDetail(
-          renderConfig: const RenderConfig(colorProfile: ColorProfile.trueColor),
-        )
-          ..left('Key')
-          ..right('Value')
-          ..leftStyle(Style().foreground(Colors.rgb(255, 100, 50)));
+        final detail =
+            TwoColumnDetail(
+                renderConfig: const RenderConfig(
+                  colorProfile: ColorProfile.trueColor,
+                ),
+              )
+              ..left('Key')
+              ..right('Value')
+              ..leftStyle(Style().foreground(Colors.rgb(255, 100, 50)));
         final output = detail.render();
         expect(output, contains('\x1B['));
       });
 
       test('respects dark background setting', () {
-        final detailLight = TwoColumnDetail(
-          renderConfig: const RenderConfig(
-            colorProfile: ColorProfile.trueColor,
-            hasDarkBackground: true,
-          ),
-        )
-          ..left('Key')
-          ..right('Value')
-          ..leftStyle(
-            Style().foreground(
-              AdaptiveColor(light: Colors.black, dark: Colors.white),
-            ),
-          );
+        final detailLight =
+            TwoColumnDetail(
+                renderConfig: const RenderConfig(
+                  colorProfile: ColorProfile.trueColor,
+                  hasDarkBackground: true,
+                ),
+              )
+              ..left('Key')
+              ..right('Value')
+              ..leftStyle(
+                Style().foreground(
+                  AdaptiveColor(light: Colors.black, dark: Colors.white),
+                ),
+              );
         final output1 = detailLight.render();
 
-        final detailDark = TwoColumnDetail(
-          renderConfig: const RenderConfig(
-            colorProfile: ColorProfile.trueColor,
-            hasDarkBackground: false,
-          ),
-        )
-          ..left('Key')
-          ..right('Value')
-          ..leftStyle(
-            Style().foreground(
-              AdaptiveColor(light: Colors.black, dark: Colors.white),
-            ),
-          );
+        final detailDark =
+            TwoColumnDetail(
+                renderConfig: const RenderConfig(
+                  colorProfile: ColorProfile.trueColor,
+                  hasDarkBackground: false,
+                ),
+              )
+              ..left('Key')
+              ..right('Value')
+              ..leftStyle(
+                Style().foreground(
+                  AdaptiveColor(light: Colors.black, dark: Colors.white),
+                ),
+              );
         final output2 = detailDark.render();
 
         expect(output1, isNot(equals(output2)));

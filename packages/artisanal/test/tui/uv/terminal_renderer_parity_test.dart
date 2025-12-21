@@ -359,10 +359,7 @@ void main() {
     r.render(cellbuf);
     r.flush();
 
-    expect(
-      out.value,
-      '\x1b[1;5HX\r\n\x1b[5GX\r\n\x1b[5G\x1b[?7lX\x1b[?7h',
-    );
+    expect(out.value, '\x1b[1;5HX\r\n\x1b[5GX\r\n\x1b[5G\x1b[?7lX\x1b[?7h');
   });
 
   test('UvTerminalRenderer parity: resize with clear does not crash', () {

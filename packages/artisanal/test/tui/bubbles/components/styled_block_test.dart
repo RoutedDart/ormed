@@ -233,8 +233,7 @@ void main() {
               return Style().bold();
             }
             return null;
-          })
-          ;
+          });
         block.render();
         expect(callCount, equals(3));
       });
@@ -280,56 +279,64 @@ void main() {
 
     group('color profile', () {
       test('respects ASCII color profile', () {
-        final block = StyledBlock(
-          renderConfig: const RenderConfig(colorProfile: ColorProfile.ascii),
-        )
-          ..info()
-          ..message('Test')
-          ..prefixStyle(Style().bold().foreground(Colors.red));
+        final block =
+            StyledBlock(
+                renderConfig: const RenderConfig(
+                  colorProfile: ColorProfile.ascii,
+                ),
+              )
+              ..info()
+              ..message('Test')
+              ..prefixStyle(Style().bold().foreground(Colors.red));
         final output = block.render();
         expect(output.contains('\x1B['), isFalse);
       });
 
       test('respects trueColor profile', () {
-        final block = StyledBlock(
-          renderConfig: const RenderConfig(colorProfile: ColorProfile.trueColor),
-        )
-          ..info()
-          ..message('Test')
-          ..prefixStyle(Style().foreground(Colors.rgb(100, 150, 200)));
+        final block =
+            StyledBlock(
+                renderConfig: const RenderConfig(
+                  colorProfile: ColorProfile.trueColor,
+                ),
+              )
+              ..info()
+              ..message('Test')
+              ..prefixStyle(Style().foreground(Colors.rgb(100, 150, 200)));
         final output = block.render();
         expect(output, contains('\x1B['));
       });
 
       test('respects dark background setting', () {
-        final blockLight = StyledBlock(
-          renderConfig: const RenderConfig(
-            colorProfile: ColorProfile.trueColor,
-            hasDarkBackground: true,
-          ),
-        )
-          ..info()
-          ..message('Test')
-          ..prefixStyle(
-            Style().foreground(
-              AdaptiveColor(light: Colors.black, dark: Colors.white),
-            ),
-          );
+        final blockLight =
+            StyledBlock(
+                renderConfig: const RenderConfig(
+                  colorProfile: ColorProfile.trueColor,
+                  hasDarkBackground: true,
+                ),
+              )
+              ..info()
+              ..message('Test')
+              ..prefixStyle(
+                Style().foreground(
+                  AdaptiveColor(light: Colors.black, dark: Colors.white),
+                ),
+              );
         final output1 = blockLight.render();
 
-        final blockDark = StyledBlock(
-          renderConfig: const RenderConfig(
-            colorProfile: ColorProfile.trueColor,
-            hasDarkBackground: false,
-          ),
-        )
-          ..info()
-          ..message('Test')
-          ..prefixStyle(
-            Style().foreground(
-              AdaptiveColor(light: Colors.black, dark: Colors.white),
-            ),
-          );
+        final blockDark =
+            StyledBlock(
+                renderConfig: const RenderConfig(
+                  colorProfile: ColorProfile.trueColor,
+                  hasDarkBackground: false,
+                ),
+              )
+              ..info()
+              ..message('Test')
+              ..prefixStyle(
+                Style().foreground(
+                  AdaptiveColor(light: Colors.black, dark: Colors.white),
+                ),
+              );
         final output2 = blockDark.render();
 
         expect(output1, isNot(equals(output2)));
@@ -589,8 +596,7 @@ void main() {
 
     group('styling', () {
       test('applies default dim style', () {
-        final comment = Comment()
-          ..text('Comment');
+        final comment = Comment()..text('Comment');
         final output = comment.render();
         // Should have ANSI codes for dim
         expect(output, contains('\x1B['));
@@ -607,21 +613,27 @@ void main() {
 
     group('color profile', () {
       test('respects ASCII color profile', () {
-        final comment = Comment(
-          renderConfig: const RenderConfig(colorProfile: ColorProfile.ascii),
-        )
-          ..text('Comment')
-          ..style(Style().bold().foreground(Colors.red));
+        final comment =
+            Comment(
+                renderConfig: const RenderConfig(
+                  colorProfile: ColorProfile.ascii,
+                ),
+              )
+              ..text('Comment')
+              ..style(Style().bold().foreground(Colors.red));
         final output = comment.render();
         expect(output.contains('\x1B['), isFalse);
       });
 
       test('respects trueColor profile', () {
-        final comment = Comment(
-          renderConfig: const RenderConfig(colorProfile: ColorProfile.trueColor),
-        )
-          ..text('Comment')
-          ..style(Style().foreground(Colors.rgb(100, 100, 100)));
+        final comment =
+            Comment(
+                renderConfig: const RenderConfig(
+                  colorProfile: ColorProfile.trueColor,
+                ),
+              )
+              ..text('Comment')
+              ..style(Style().foreground(Colors.rgb(100, 100, 100)));
         final output = comment.render();
         expect(output, contains('\x1B['));
       });

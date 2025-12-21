@@ -55,11 +55,9 @@ class SizeNotifier {
   /// Returns the current size of the terminal window in cells and pixels.
   ///
   /// Note: Pixel size is currently not supported in Dart's dart:io and will return (0, 0).
-  ({({int width, int height}) cells, ({int width, int height}) pixels}) getWindowSize() {
+  ({({int width, int height}) cells, ({int width, int height}) pixels})
+  getWindowSize() {
     final (w, h) = getSize();
-    return (
-      cells: (width: w, height: h),
-      pixels: (width: 0, height: 0),
-    );
+    return (cells: (width: w, height: h), pixels: (width: 0, height: 0));
   }
 }

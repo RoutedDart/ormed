@@ -3,24 +3,24 @@ import 'package:artisanal/src/uv/terminal.dart';
 
 void main() async {
   final terminal = Terminal();
-  
+
   print('Starting UV Terminal Demo...');
   print('Press "q" or Ctrl-C to exit.');
   print('Press "m" to toggle mouse tracking.');
   print('Press "c" to clear screen.');
-  
+
   await Future.delayed(Duration(seconds: 1));
-  
+
   await terminal.start();
-  
+
   terminal.enterAltScreen();
   terminal.hideCursor();
-  
+
   bool mouseEnabled = false;
   String lastEvent = 'None';
   int mouseX = -1;
   int mouseY = -1;
-  
+
   void draw() {
     final buf = terminal.buffer;
     buf.fill(Cell(content: ' '));
@@ -42,7 +42,12 @@ void main() async {
     // Draw info
     _write(buf, 2, 2, 'Last Event: $lastEvent');
     _write(buf, 2, 3, 'Size: ${buf.width()}x${buf.height()}');
-    _write(buf, 2, 4, 'Mouse Tracking: ${mouseEnabled ? "ON" : "OFF"} (Press "m" to toggle)');
+    _write(
+      buf,
+      2,
+      4,
+      'Mouse Tracking: ${mouseEnabled ? "ON" : "OFF"} (Press "m" to toggle)',
+    );
     _write(buf, 2, 6, 'Press "q" to quit');
     _write(buf, 2, 7, 'Press "c" to force clear/redraw');
 
@@ -58,10 +63,10 @@ void main() async {
 
   try {
     draw();
-    
+
     await for (final event in terminal.events) {
       lastEvent = event.toString();
-      
+
       if (event is KeyEvent) {
         if (event.key().text == 'q' || event.matchString('ctrl+c')) {
           break;
@@ -86,7 +91,7 @@ void main() async {
       } else if (event is WindowSizeEvent) {
         lastEvent = 'Resized to ${event.width}x${event.height}';
       }
-      
+
       draw();
     }
   } finally {

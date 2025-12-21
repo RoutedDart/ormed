@@ -43,10 +43,7 @@ class PipeModel implements tui.Model {
     }
 
     final (newInput, cmd) = input.update(msg);
-    return (
-      PipeModel(initial: initial)._withInput(newInput),
-      cmd,
-    );
+    return (PipeModel(initial: initial)._withInput(newInput), cmd);
   }
 
   PipeModel _withInput(tui.TextInputModel newInput) {

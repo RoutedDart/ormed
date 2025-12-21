@@ -60,6 +60,7 @@ final class TabStops {
 
   /// Returns the next tab stop after [col].
   int next(int col) => find(col, 1);
+
   /// Returns the previous tab stop before [col].
   int prev(int col) => find(col, -1);
 

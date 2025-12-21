@@ -25,15 +25,16 @@ void main() async {
     final special = Colors.pink;
 
     // Styles
-    final tab = Style()
-        .foreground(subtle)
-        .padding(0, 1);
+    final tab = Style().foreground(subtle).padding(0, 1);
 
-    final activeTab = tab.copy()
+    final activeTab = tab
+        .copy()
         .bold()
         .foreground(highlight)
         .border(Border.rounded)
-        .borderSides(const BorderSides(top: true, left: true, right: true, bottom: false));
+        .borderSides(
+          const BorderSides(top: true, left: true, right: true, bottom: false),
+        );
 
     final tabGap = Style()
         .border(Border.normal)
@@ -66,7 +67,8 @@ void main() async {
         .padding(0, 3)
         .margin(0, 1);
 
-    final activeButtonStyle = buttonStyle.copy()
+    final activeButtonStyle = buttonStyle
+        .copy()
         .foreground(Colors.white)
         .background(special)
         .margin(0, 1)
@@ -124,43 +126,43 @@ void main() async {
     Future<void> render() async {
       final size = await t.getSize();
       width = size.width;
-      
+
       final doc = StringBuffer();
 
       // Tabs
       {
-        final tabs = Layout.joinHorizontal(
-          VerticalAlign.bottom,
-          [
-            activeTab.render('Lip Gloss'),
-            tab.render('Blush'),
-            tab.render('Eye Shadow'),
-            tab.render('Mascara'),
-            tab.render('Foundation'),
-          ],
-        );
-        
+        final tabs = Layout.joinHorizontal(VerticalAlign.bottom, [
+          activeTab.render('Lip Gloss'),
+          tab.render('Blush'),
+          tab.render('Eye Shadow'),
+          tab.render('Mascara'),
+          tab.render('Foundation'),
+        ]);
+
         final rowWidth = Layout.visibleLength(tabs);
-        final gapWidth = max(0, width - rowWidth - 4); // -4 for docStyle padding
+        final gapWidth = max(
+          0,
+          width - rowWidth - 4,
+        ); // -4 for docStyle padding
         final gap = tabGap.render(' ' * gapWidth);
-        
+
         doc.writeln(Layout.joinHorizontal(VerticalAlign.bottom, [tabs, gap]));
         doc.writeln();
       }
 
       // Title & Description
       {
-        final title = titleStyle.copy()
+        final title = titleStyle
+            .copy()
             .background(Colors.hex('#7D56F4'))
             .render('Lip Gloss');
 
-        final desc = Layout.joinVertical(
-          HorizontalAlign.left,
-          [
-            descStyle.render('Style Definitions for Nice Terminal Layouts'),
-            infoStyle.render('From Charm: https://github.com/charmbracelet/lipgloss'),
-          ],
-        );
+        final desc = Layout.joinVertical(HorizontalAlign.left, [
+          descStyle.render('Style Definitions for Nice Terminal Layouts'),
+          infoStyle.render(
+            'From Charm: https://github.com/charmbracelet/lipgloss',
+          ),
+        ]);
 
         doc.writeln(Layout.joinHorizontal(VerticalAlign.top, [title, desc]));
         doc.writeln();
@@ -173,18 +175,15 @@ void main() async {
             .align(HorizontalAlign.center)
             .render('Are you sure you want to eat marmalade?');
 
-        final buttons = Layout.joinHorizontal(
-          VerticalAlign.top,
-          [
-            activeButtonStyle.render('Yes'),
-            buttonStyle.render('Maybe'),
-          ],
-        );
+        final buttons = Layout.joinHorizontal(VerticalAlign.top, [
+          activeButtonStyle.render('Yes'),
+          buttonStyle.render('Maybe'),
+        ]);
 
-        final dialogUI = Layout.joinVertical(
-          HorizontalAlign.center,
-          [question, buttons],
-        );
+        final dialogUI = Layout.joinVertical(HorizontalAlign.center, [
+          question,
+          buttons,
+        ]);
 
         final dialog = Layout.place(
           width: width - 4,
@@ -200,54 +199,49 @@ void main() async {
 
       // Lists
       {
-        final list1 = Layout.joinVertical(
-          HorizontalAlign.left,
-          [
-            listHeaderStyle.render('Citrus Fruits to Try'),
-            listDoneStyle.render('Grapefruit'),
-            listDoneStyle.render('Yuzu'),
-            listItemStyle.render('Citron'),
-            listItemStyle.render('Kumquat'),
-            listItemStyle.render('Pomelo'),
-          ],
-        );
+        final list1 = Layout.joinVertical(HorizontalAlign.left, [
+          listHeaderStyle.render('Citrus Fruits to Try'),
+          listDoneStyle.render('Grapefruit'),
+          listDoneStyle.render('Yuzu'),
+          listItemStyle.render('Citron'),
+          listItemStyle.render('Kumquat'),
+          listItemStyle.render('Pomelo'),
+        ]);
 
-        final list2 = Layout.joinVertical(
-          HorizontalAlign.left,
-          [
-            listHeaderStyle.render('Actual Lip Gloss Vendors'),
-            listItemStyle.render('Glossier'),
-            listItemStyle.render('Claire‘s Boutique'),
-            listDoneStyle.render('Nyx'),
-            listItemStyle.render('Mac'),
-            listDoneStyle.render('Milk'),
-          ],
-        );
+        final list2 = Layout.joinVertical(HorizontalAlign.left, [
+          listHeaderStyle.render('Actual Lip Gloss Vendors'),
+          listItemStyle.render('Glossier'),
+          listItemStyle.render('Claire‘s Boutique'),
+          listDoneStyle.render('Nyx'),
+          listItemStyle.render('Mac'),
+          listDoneStyle.render('Milk'),
+        ]);
 
-        doc.writeln(Layout.joinHorizontal(
-          VerticalAlign.top,
-          [
+        doc.writeln(
+          Layout.joinHorizontal(VerticalAlign.top, [
             listStyle.render(list1),
             listStyle.render(list2),
-          ],
-        ));
+          ]),
+        );
         doc.writeln();
       }
 
       // History
       {
-        final historyA = 'The Romans learned from the Greeks that quinces slowly cooked with honey would “set” when cool.';
-        final historyB = 'Medieval quince preserves, which went by the French name cotignac, produced in a clear version.';
-        final historyC = 'In 1524, Henry VIII, King of England, received a “box of marmalade” from Mr. Hull of Exeter.';
+        final historyA =
+            'The Romans learned from the Greeks that quinces slowly cooked with honey would “set” when cool.';
+        final historyB =
+            'Medieval quince preserves, which went by the French name cotignac, produced in a clear version.';
+        final historyC =
+            'In 1524, Henry VIII, King of England, received a “box of marmalade” from Mr. Hull of Exeter.';
 
-        doc.writeln(Layout.joinHorizontal(
-          VerticalAlign.top,
-          [
+        doc.writeln(
+          Layout.joinHorizontal(VerticalAlign.top, [
             historyStyle.copy().align(HorizontalAlign.right).render(historyA),
             historyStyle.copy().align(HorizontalAlign.center).render(historyB),
             historyStyle.copy().render(historyC),
-          ],
-        ));
+          ]),
+        );
         doc.writeln();
       }
 
@@ -256,26 +250,30 @@ void main() async {
         final statusKey = statusStyle.render('STATUS');
         final encoding = encodingStyle.render('UTF-8');
         final fishCake = fishCakeStyle.render('🍥 Fish Cake');
-        
-        final usedWidth = Layout.visibleLength(statusKey) + 
-                         Layout.visibleLength(encoding) + 
-                         Layout.visibleLength(fishCake);
-        
-        final statusVal = statusText.copy()
+
+        final usedWidth =
+            Layout.visibleLength(statusKey) +
+            Layout.visibleLength(encoding) +
+            Layout.visibleLength(fishCake);
+
+        final statusVal = statusText
+            .copy()
             .width(max(0, width - usedWidth - 4))
             .render('Ravishingly Dark!');
 
-        final bar = Layout.joinHorizontal(
-          VerticalAlign.top,
-          [statusKey, statusVal, encoding, fishCake],
-        );
+        final bar = Layout.joinHorizontal(VerticalAlign.top, [
+          statusKey,
+          statusVal,
+          encoding,
+          fishCake,
+        ]);
 
         doc.writeln(statusBarStyle.copy().width(width - 4).render(bar));
       }
 
       final mainDoc = docStyle.render(doc.toString());
       final ss = StyledString(mainDoc);
-      
+
       t.clear();
       ss.draw(t, t.bounds());
       t.draw();
@@ -300,4 +298,3 @@ void main() async {
     t.stop();
   }
 }
-

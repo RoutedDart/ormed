@@ -33,10 +33,13 @@ import '../unicode/width.dart';
 abstract class Screen {
   /// Returns the screen bounds as a [Rectangle].
   Rectangle bounds();
+
   /// Returns the cell at ([x], [y]) or null if out of bounds.
   Cell? cellAt(int x, int y);
+
   /// Sets the cell at ([x], [y]) to [cell].
   void setCell(int x, int y, Cell? cell);
+
   /// Returns the active grapheme width measurement method.
   WidthMethod widthMethod();
 }

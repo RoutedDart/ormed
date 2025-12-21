@@ -18,10 +18,12 @@ import '../style/color.dart';
 enum CursorShape {
   /// A block cursor (█).
   block,
+
   /// An underline cursor (_).
   underline,
+
   /// A bar (I-beam) cursor (|).
-  bar
+  bar,
 }
 
 extension CursorShapeEncode on CursorShape {

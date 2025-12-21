@@ -1,7 +1,6 @@
 import 'package:test/test.dart';
 import 'package:artisanal/src/uv/uv.dart';
 
-
 void main() {
   group('Layout Parity', () {
     test('Ratio', () {
@@ -55,7 +54,7 @@ void main() {
 
     test('splitVertical', () {
       final area = rect(0, 0, 100, 200);
-      
+
       // Percent(50)
       final res1 = splitVertical(area, const Percent(50));
       expect(res1.top, equals(rect(0, 0, 100, 100)));

@@ -197,8 +197,10 @@ void main() {
 
     test('Unknown sequences', () {
       final d = EventDecoder();
-      final evs =
-          _decodeAll(d, '\x1b[z\x1bOz\x1bO2 \x1bP?1;2:3+zABC\x1b\\'.codeUnits);
+      final evs = _decodeAll(
+        d,
+        '\x1b[z\x1bOz\x1bO2 \x1bP?1;2:3+zABC\x1b\\'.codeUnits,
+      );
       expect(evs, hasLength(5));
       expect(evs[0], isA<UnknownCsiEvent>());
       expect((evs[0] as UnknownCsiEvent).value, '\x1b[z');
@@ -242,8 +244,10 @@ void main() {
 
     test('Report mode responses', () {
       final d = EventDecoder();
-      final evs =
-          _decodeAll(d, '\x1b[2;1\$y\x1b[\$y\x1b[2\$y\x1b[2;\$y'.codeUnits);
+      final evs = _decodeAll(
+        d,
+        '\x1b[2;1\$y\x1b[\$y\x1b[2\$y\x1b[2;\$y'.codeUnits,
+      );
       expect(evs, hasLength(4));
       expect(evs[0], isA<ModeReportEvent>());
       expect((evs[0] as ModeReportEvent).mode, 2);
@@ -268,8 +272,10 @@ void main() {
 
     test('Invalid report mode responses', () {
       final d = EventDecoder();
-      final evs =
-          _decodeAll(d, '\x1b[?\$y\x1b[?1049\$y\x1b[?1049;\$y'.codeUnits);
+      final evs = _decodeAll(
+        d,
+        '\x1b[?\$y\x1b[?1049\$y\x1b[?1049;\$y'.codeUnits,
+      );
       expect(evs, hasLength(3));
       expect(evs[0], isA<UnknownCsiEvent>());
       expect(evs[1], isA<UnknownCsiEvent>());
@@ -315,18 +321,25 @@ void main() {
 
     test('8-bit sequences', () {
       final d = EventDecoder();
-      final evs = _decodeAll(
-        d,
-        [
-          0x9b, 0x41, // CSI A
-          0x8f, 0x41, // SS3 A
-          0x90, 0x3e, 0x7c, ...'Ultraviolet'.codeUnits, 0x1b, 0x5c, // DCS >|Ultraviolet ST
-          0x9d, 0x31, 0x31, 0x3b, ...'#123456'.codeUnits, 0x9c, // OSC 11 ; #123456 ST
-          0x98, ...'hi'.codeUnits, 0x9c, // SOS hi ST
-          0x9f, ...'hello'.codeUnits, 0x9c, // APC hello ST
-          0x9e, ...'bye'.codeUnits, 0x9c, // PM bye ST
-        ],
-      );
+      final evs = _decodeAll(d, [
+        0x9b, 0x41, // CSI A
+        0x8f, 0x41, // SS3 A
+        0x90,
+        0x3e,
+        0x7c,
+        ...'Ultraviolet'.codeUnits,
+        0x1b,
+        0x5c, // DCS >|Ultraviolet ST
+        0x9d,
+        0x31,
+        0x31,
+        0x3b,
+        ...'#123456'.codeUnits,
+        0x9c, // OSC 11 ; #123456 ST
+        0x98, ...'hi'.codeUnits, 0x9c, // SOS hi ST
+        0x9f, ...'hello'.codeUnits, 0x9c, // APC hello ST
+        0x9e, ...'bye'.codeUnits, 0x9c, // PM bye ST
+      ]);
       expect(evs, hasLength(7));
       expect(evs[0], isA<KeyPressEvent>());
       expect((evs[0] as KeyPressEvent).key().code, keyUp);

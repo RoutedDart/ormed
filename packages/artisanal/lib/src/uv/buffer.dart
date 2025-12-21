@@ -200,6 +200,7 @@ final class Buffer {
 
   /// The buffer width in cells.
   int width() => lines.isEmpty ? 0 : lines[0].length;
+
   /// The buffer height in cells.
   int height() => lines.length;
 
@@ -209,11 +210,11 @@ final class Buffer {
   /// Returns the line at [y], or null if out of bounds.
   ///
   /// Upstream: `third_party/ultraviolet/buffer.go` (`Buffer.Line`).
-    /// Returns the line at [y], or null if out of bounds.
-    Line? line(int y) => (y < 0 || y >= lines.length) ? null : lines[y];
+  /// Returns the line at [y], or null if out of bounds.
+  Line? line(int y) => (y < 0 || y >= lines.length) ? null : lines[y];
 
-    /// Returns the cell at ([x], [y]), or null if out of bounds.
-    Cell? cellAt(int x, int y) =>
+  /// Returns the cell at ([x], [y]), or null if out of bounds.
+  Cell? cellAt(int x, int y) =>
       (y < 0 || y >= lines.length) ? null : lines[y].at(x);
 
   /// Marks a single cell as dirty.

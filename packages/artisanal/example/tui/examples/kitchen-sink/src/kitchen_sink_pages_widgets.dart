@@ -1146,7 +1146,10 @@ final class _CompositorPage extends _KitchenSinkPage {
 
   @override
   String view(_KitchenSinkModel m) {
-    final title = m._style(Style()).bold().render('UV uv.Compositor & Layering');
+    final title = m
+        ._style(Style())
+        .bold()
+        .render('UV uv.Compositor & Layering');
 
     // Create some styled content.
     final bgBox = Style()
@@ -1173,7 +1176,9 @@ final class _CompositorPage extends _KitchenSinkPage {
     // Build a composition.
     final comp = uv.Compositor([
       uv.Layer(uv.StyledString(bgBox)).setId('bg').setZ(0),
-      uv.Layer(uv.StyledString(foregroundBox)).setId('fg').setX(5).setY(2).setZ(10),
+      uv.Layer(
+        uv.StyledString(foregroundBox),
+      ).setId('fg').setX(5).setY(2).setZ(10),
       uv.Layer(textLayer).setId('text').setX(15).setY(4).setZ(20),
     ]);
 

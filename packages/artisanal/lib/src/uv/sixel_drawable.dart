@@ -25,12 +25,7 @@ final class SixelImageDrawable implements Drawable {
 
   @override
   Rectangle bounds() {
-    return Rectangle(
-      minX: 0,
-      minY: 0,
-      maxX: columns ?? 0,
-      maxY: rows ?? 0,
-    );
+    return Rectangle(minX: 0, minY: 0, maxX: columns ?? 0, maxY: rows ?? 0);
   }
 
   @override

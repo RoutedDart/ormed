@@ -43,8 +43,12 @@ class LineInfo {
 }
 
 class _DisplayLine {
-  _DisplayLine(this.text,
-      {this.hasCursor = false, this.rowIndex = 0, this.charOffset = 0});
+  _DisplayLine(
+    this.text, {
+    this.hasCursor = false,
+    this.rowIndex = 0,
+    this.charOffset = 0,
+  });
 
   final String text;
   final bool hasCursor;
@@ -519,7 +523,8 @@ class TextAreaModel extends ViewComponent {
   }
 
   /// Returns the appropriate style state based on focus.
-  TextAreaStyleState activeStyle() => _focused ? styles.focused : styles.blurred;
+  TextAreaStyleState activeStyle() =>
+      _focused ? styles.focused : styles.blurred;
 
   /// Returns a [Cursor] for rendering a real cursor in a TUI program.
   /// This requires that [useVirtualCursor] is set to false.
@@ -547,9 +552,7 @@ class TextAreaModel extends ViewComponent {
       return;
     }
 
-    cursor = cursor.copyWith(
-      style: Style().foreground(styles.cursor.color!),
-    );
+    cursor = cursor.copyWith(style: Style().foreground(styles.cursor.color!));
 
     if (styles.cursor.blink) {
       final (newCursor, _) = cursor.setMode(CursorMode.blink);
@@ -564,9 +567,12 @@ class TextAreaModel extends ViewComponent {
     if (_promptWidth != null) return _promptWidth!;
     if (promptFunc != null) {
       return stringWidth(
-        promptFunc!(
-          (lineIndex: lineIndex, isFocused: _focused, row: _row, col: _col),
-        ),
+        promptFunc!((
+          lineIndex: lineIndex,
+          isFocused: _focused,
+          row: _row,
+          col: _col,
+        )),
       );
     }
     return stringWidth(prompt);
@@ -843,7 +849,8 @@ class TextAreaModel extends ViewComponent {
         final now = DateTime.now();
 
         if (_lastClickTime != null &&
-            now.difference(_lastClickTime!) < const Duration(milliseconds: 500) &&
+            now.difference(_lastClickTime!) <
+                const Duration(milliseconds: 500) &&
             _lastClickPos == (contentX, contentY)) {
           // Double click: select word
           final (start, end) = _findWordAt(contentX, contentY);
@@ -935,11 +942,12 @@ class TextAreaModel extends ViewComponent {
     final buffer = StringBuffer();
 
     if (value.isEmpty && placeholder.isNotEmpty) {
-      final p = promptFunc?.call((
+      final p =
+          promptFunc?.call((
             lineIndex: 0,
             isFocused: _focused,
             row: _row,
-            col: _col
+            col: _col,
           )) ??
           prompt;
       final ph = style.computedPlaceholder.render(placeholder);
@@ -947,11 +955,12 @@ class TextAreaModel extends ViewComponent {
     } else {
       for (var i = 0; i < displayLines.length; i++) {
         final displayLine = displayLines[i];
-        final p = promptFunc?.call((
+        final p =
+            promptFunc?.call((
               lineIndex: i,
               isFocused: _focused,
               row: displayLine.rowIndex,
-              col: _col
+              col: _col,
             )) ??
             prompt;
 
@@ -962,8 +971,9 @@ class TextAreaModel extends ViewComponent {
               : ' ' * (lineNumberDigits + 1);
           lnNumber = style.computedLineNumber.render(lnText);
         }
-        final selectionStyle =
-            Style().background(const AnsiColor(7)).foreground(const AnsiColor(0));
+        final selectionStyle = Style()
+            .background(const AnsiColor(7))
+            .foreground(const AnsiColor(0));
 
         // Compute selection overlap for this visual segment.
         int? selStart;
@@ -1012,8 +1022,9 @@ class TextAreaModel extends ViewComponent {
         }
 
         final gs = uni.graphemes(displayLine.text).toList(growable: false);
-        final cursorCol =
-            displayLine.hasCursor ? (_col - displayLine.charOffset) : -1;
+        final cursorCol = displayLine.hasCursor
+            ? (_col - displayLine.charOffset)
+            : -1;
 
         var renderedBody = '';
         for (var j = 0; j < gs.length; j++) {
@@ -1033,17 +1044,18 @@ class TextAreaModel extends ViewComponent {
           renderedBody += part;
         }
 
-        if (displayLine.hasCursor && useVirtualCursor && cursorCol >= gs.length) {
+        if (displayLine.hasCursor &&
+            useVirtualCursor &&
+            cursorCol >= gs.length) {
           cursor = cursor.setChar(' ');
           var part = cursor.view();
           // If the selection is anchored past EOL (rare), don't attempt to style it.
           renderedBody += part;
         }
 
-        final renderedLine =
-            displayLine.hasCursor && !useVirtualCursor
-                ? style.computedCursorLine.render(renderedBody)
-                : renderedBody;
+        final renderedLine = displayLine.hasCursor && !useVirtualCursor
+            ? style.computedCursorLine.render(renderedBody)
+            : renderedBody;
 
         buffer.writeln(
           '${style.computedPrompt.render(p)}$lnNumber$renderedLine',
@@ -1065,10 +1077,7 @@ class TextAreaModel extends ViewComponent {
       return content;
     }
 
-    return View(
-      content: content,
-      cursor: terminalCursor,
-    );
+    return View(content: content, cursor: terminalCursor);
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -1408,8 +1417,9 @@ class TextAreaModel extends ViewComponent {
   List<List<String>> _parseLines(String s) {
     final parts = s.split('\n');
     if (parts.isEmpty) return [[]];
-    final lines =
-        parts.map((p) => uni.graphemes(p).toList(growable: true)).toList();
+    final lines = parts
+        .map((p) => uni.graphemes(p).toList(growable: true))
+        .toList();
     if (lines.isEmpty) return [[]];
     return lines;
   }

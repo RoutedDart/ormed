@@ -49,25 +49,32 @@ final class LegacyKeyEncoding {
   /// Enables mapping `Ctrl+@` to `NUL` when [v] is true.
   LegacyKeyEncoding ctrlAt(bool v) =>
       LegacyKeyEncoding(v ? (bits | _flagCtrlAt) : (bits & ~_flagCtrlAt));
+
   /// Toggles `Ctrl+I` mapping (tab) when [v] is true.
   LegacyKeyEncoding ctrlI(bool v) =>
       LegacyKeyEncoding(v ? (bits | _flagCtrlI) : (bits & ~_flagCtrlI));
+
   /// Toggles `Ctrl+M` mapping (enter) when [v] is true.
   LegacyKeyEncoding ctrlM(bool v) =>
       LegacyKeyEncoding(v ? (bits | _flagCtrlM) : (bits & ~_flagCtrlM));
+
   /// Toggles `Ctrl+[` mapping (escape) when [v] is true.
   LegacyKeyEncoding ctrlOpenBracket(bool v) => LegacyKeyEncoding(
     v ? (bits | _flagCtrlOpenBracket) : (bits & ~_flagCtrlOpenBracket),
   );
+
   /// Chooses legacy backspace behavior when [v] is true.
   LegacyKeyEncoding backspace(bool v) =>
       LegacyKeyEncoding(v ? (bits | _flagBackspace) : (bits & ~_flagBackspace));
+
   /// Enables legacy `Find` key reporting when [v] is true.
   LegacyKeyEncoding find(bool v) =>
       LegacyKeyEncoding(v ? (bits | _flagFind) : (bits & ~_flagFind));
+
   /// Enables legacy `Select` key reporting when [v] is true.
   LegacyKeyEncoding select(bool v) =>
       LegacyKeyEncoding(v ? (bits | _flagSelect) : (bits & ~_flagSelect));
+
   /// Chooses legacy function key variants when [v] is true.
   LegacyKeyEncoding fKeys(bool v) =>
       LegacyKeyEncoding(v ? (bits | _flagFKeys) : (bits & ~_flagFKeys));

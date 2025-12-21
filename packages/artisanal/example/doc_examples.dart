@@ -18,14 +18,14 @@ void compositorLayers() {
   final compositor = Compositor();
   // Note: backgroundLayer, myBackground, etc. are placeholders for the example
   final backgroundLayer = newLayer('Background');
-  
+
   compositor.addLayers([backgroundLayer]);
   compositor.addLayers([
     newLayer('Popup')
-      .setId('popup')
-      .setX(10)
-      .setY(5)
-      .setZ(100) // Higher Z-index renders on top
+        .setId('popup')
+        .setX(10)
+        .setY(5)
+        .setZ(100), // Higher Z-index renders on top
   ]);
 }
 // #endregion
@@ -69,7 +69,7 @@ void runWithOpts() async {
   await runProgram(
     const CounterModel(),
     options: ProgramOptions(
-      altScreen: true,      // Use the alternate screen buffer
+      altScreen: true, // Use the alternate screen buffer
     ),
   );
 }
@@ -101,10 +101,10 @@ final orange = Colors.ansi(208);
 void rendererUsage(Console console) {
   // The high-level Renderer is used by Console and Style
   final style = Style().foreground(Colors.blue).bold();
-  
+
   // Render a styled string to the console
   console.write(style.render('Hello, Artisanal!'));
-  
+
   // You can also use a StringRenderer to capture output
   final stringRenderer = StringRenderer();
   final output = style.renderTo(stringRenderer, 'Captured text');
@@ -128,10 +128,10 @@ void customRenderer() async {
       // Ultraviolet is the default renderer and input decoder
       // useUltravioletRenderer: true,
       // useUltravioletInputDecoder: true,
-      
+
       // To use the simpler FullScreenTuiRenderer instead:
       // useUltravioletRenderer: false,
-      
+
       // Run in inline mode (doesn't take over the screen)
       altScreen: false,
     ),
@@ -146,10 +146,7 @@ final hex = Colors.hex('#ff6432');
 // #endregion
 
 // #region adaptive_color_example
-final text = AdaptiveColor(
-  light: Colors.black,
-  dark: Colors.white,
-);
+final text = AdaptiveColor(light: Colors.black, dark: Colors.white);
 // #endregion
 
 // #region custom_theme_example
@@ -173,7 +170,7 @@ final myTheme = ThemePalette(
 String horizontalLayout() {
   final style1 = Style().foreground(Colors.red);
   final style2 = Style().foreground(Colors.blue);
-  
+
   return Layout.joinHorizontal(VerticalAlign.top, [
     style1.render('Left'),
     style2.render('Right'),
@@ -194,11 +191,11 @@ String verticalLayout() {
 // #region alignment_usage_example
 void alignmentUsage() {
   final box = Style()
-    .width(20)
-    .height(5)
-    .align(HorizontalAlign.center)
-    .alignVertical(VerticalAlign.center)
-    .border(Border.normal);
+      .width(20)
+      .height(5)
+      .align(HorizontalAlign.center)
+      .alignVertical(VerticalAlign.center)
+      .border(Border.normal);
 
   print(box.render('Centered Text'));
 }
@@ -207,22 +204,18 @@ void alignmentUsage() {
 // #region stack_example
 void stackUsage() {
   final background = Style()
-    .width(20)
-    .height(5)
-    .background(Colors.blue)
-    .render('');
+      .width(20)
+      .height(5)
+      .background(Colors.blue)
+      .render('');
 
-  final foreground = Style()
-    .bold()
-    .foreground(Colors.white)
-    .render('Overlay');
+  final foreground = Style().bold().foreground(Colors.white).render('Overlay');
 
   // Stack foreground on top of background
   final stacked = Style.stack([background, foreground]);
   print(stacked);
 }
 // #endregion
-
 
 // #region custom_border_example
 final customBorder = Border(
@@ -243,8 +236,7 @@ void lipglossList() {
     'First item',
     'Second item',
     'Third item',
-  ])
-  .enumerator(ListEnumerators.bullet);
+  ]).enumerator(ListEnumerators.bullet);
 
   print(list.render());
 }
@@ -253,11 +245,11 @@ void lipglossList() {
 // #region lipgloss_table_example
 void lipglossTable() {
   final table = Table()
-    .headers(['ID', 'Name', 'Status'])
-    .row(['1', 'Kasm', 'Running'])
-    .row(['2', 'Vault', 'Stopped'])
-    .border(Border.rounded)
-    .padding(1);
+      .headers(['ID', 'Name', 'Status'])
+      .row(['1', 'Kasm', 'Running'])
+      .row(['2', 'Vault', 'Stopped'])
+      .border(Border.rounded)
+      .padding(1);
 
   print(table.render());
 }
@@ -275,10 +267,13 @@ void consoleOutput() {
 // #region console_task_example
 void consoleTask() async {
   final console = Console();
-  await console.task('Downloading data...', run: () async {
-    await Future.delayed(Duration(seconds: 2));
-    return TaskResult.success;
-  });
+  await console.task(
+    'Downloading data...',
+    run: () async {
+      await Future.delayed(Duration(seconds: 2));
+      return TaskResult.success;
+    },
+  );
 }
 // #endregion
 
@@ -312,9 +307,9 @@ void consoleComponents() async {
 
 // #region hyperlink_style_example
 final linkStyle = Style()
-  .foreground(Colors.blue)
-  .underline()
-  .hyperlink("https://github.com/kingwill101/ormed");
+    .foreground(Colors.blue)
+    .underline()
+    .hyperlink("https://github.com/kingwill101/ormed");
 // #endregion
 
 // #region styled_view_example
@@ -335,11 +330,7 @@ String layoutView() {
 // #endregion
 
 // #region layer_example
-final layer = newLayer('Sidebar')
-  .setId('sidebar')
-  .setX(0)
-  .setY(0)
-  .setZ(10);
+final layer = newLayer('Sidebar').setId('sidebar').setX(0).setY(0).setZ(10);
 // #endregion
 
 // #region compositor_example

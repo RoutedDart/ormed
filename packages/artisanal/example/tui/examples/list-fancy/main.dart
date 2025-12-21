@@ -117,14 +117,7 @@ class FancyModel implements tui.Model {
     }
 
     final (newList, cmd) = list.update(msg);
-    return (
-      FancyModel(
-        list: newList,
-        generator: generator,
-        keys: keys,
-      ),
-      cmd,
-    );
+    return (FancyModel(list: newList, generator: generator, keys: keys), cmd);
   }
 
   @override

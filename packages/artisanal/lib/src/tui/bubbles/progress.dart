@@ -235,10 +235,7 @@ class ProgressModel extends ViewComponent {
 
   /// Creates a new progress bar with the default blend of colors (purple to pink).
   static ProgressModel withDefaultBlend({int width = _defaultWidth}) {
-    return ProgressModel(
-      width: width,
-      blend: ['#5A56E0', '#EE6FF8'],
-    );
+    return ProgressModel(width: width, blend: ['#5A56E0', '#EE6FF8']);
   }
 
   /// Returns a copy of the model with the given colors.
@@ -247,31 +244,17 @@ class ProgressModel extends ViewComponent {
   /// - 2+ colors: uses a blend of the provided colors.
   ProgressModel withColors(List<String> colors) {
     if (colors.isEmpty) {
-      return copyWith(
-        fullColor: '#7571F9',
-        blend: [],
-        colorFunc: null,
-      );
+      return copyWith(fullColor: '#7571F9', blend: [], colorFunc: null);
     }
     if (colors.length == 1) {
-      return copyWith(
-        fullColor: colors[0],
-        blend: [],
-        colorFunc: null,
-      );
+      return copyWith(fullColor: colors[0], blend: [], colorFunc: null);
     }
-    return copyWith(
-      blend: colors,
-      colorFunc: null,
-    );
+    return copyWith(blend: colors, colorFunc: null);
   }
 
   /// Returns a copy of the model with the given color function.
   ProgressModel withColorFunc(ColorFunc fn) {
-    return copyWith(
-      colorFunc: fn,
-      blend: [],
-    );
+    return copyWith(colorFunc: fn, blend: []);
   }
 
   /// Whether the progress bar is currently animating.
@@ -454,7 +437,8 @@ class ProgressModel extends ViewComponent {
         var style = Style().foreground(colorFunc!(percent, current));
         if (isHalfBlock) {
           style = style.background(
-              colorFunc!(percent, math.min(current + halfBlockPerc, 1.0)));
+            colorFunc!(percent, math.min(current + halfBlockPerc, 1.0)),
+          );
         }
         b.write(style.render(full));
       }
@@ -480,10 +464,12 @@ class ProgressModel extends ViewComponent {
           continue;
         }
 
-        b.write(Style()
-            .foreground(blended[blendIndex])
-            .background(blended[blendIndex + 1])
-            .render(full));
+        b.write(
+          Style()
+              .foreground(blended[blendIndex])
+              .background(blended[blendIndex + 1])
+              .render(full),
+        );
         blendIndex += 2;
       }
     } else {
@@ -517,7 +503,9 @@ class ProgressModel extends ViewComponent {
           final current = i / tw;
           var style = Style().foreground(colorFunc!(1.0, current));
           if (isHalfBlock) {
-            style = style.background(colorFunc!(1.0, math.min(current + 0.5 / tw, 1.0)));
+            style = style.background(
+              colorFunc!(1.0, math.min(current + 0.5 / tw, 1.0)),
+            );
           }
           b.write(style.render(full));
         } else if (blend.isNotEmpty || useGradient) {
@@ -533,16 +521,26 @@ class ProgressModel extends ViewComponent {
           }
 
           if (!isHalfBlock) {
-            final blended = blending.blend1D(pw, colors, hasDarkBackground: true);
+            final blended = blending.blend1D(
+              pw,
+              colors,
+              hasDarkBackground: true,
+            );
             final idx = (rel * (pw - 1)).round().clamp(0, pw - 1);
             b.write(Style().foreground(blended[idx]).render(full));
           } else {
-            final blended = blending.blend1D(pw * 2, colors, hasDarkBackground: true);
+            final blended = blending.blend1D(
+              pw * 2,
+              colors,
+              hasDarkBackground: true,
+            );
             final idx = (rel * (pw * 2 - 1)).round().clamp(0, pw * 2 - 2);
-            b.write(Style()
-                .foreground(blended[idx])
-                .background(blended[idx + 1])
-                .render(full));
+            b.write(
+              Style()
+                  .foreground(blended[idx])
+                  .background(blended[idx + 1])
+                  .render(full),
+            );
           }
         } else {
           b.write(Style().foreground(BasicColor(fullColor)).render(full));

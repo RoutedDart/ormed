@@ -29,7 +29,8 @@ final class _MockScreen implements Screen {
   WidthMethod widthMethod() => _method;
 }
 
-final class _MockScreenWithClear extends _MockScreen implements ClearableScreen {
+final class _MockScreenWithClear extends _MockScreen
+    implements ClearableScreen {
   _MockScreenWithClear(super.width, super.height);
   bool clearCalled = false;
 
@@ -87,7 +88,8 @@ final class _MockScreenWithFillArea extends _MockScreen
   }
 }
 
-final class _MockScreenWithClone extends _MockScreen implements CloneableScreen {
+final class _MockScreenWithClone extends _MockScreen
+    implements CloneableScreen {
   _MockScreenWithClone(super.width, super.height);
   bool cloneCalled = false;
 
@@ -261,7 +263,10 @@ void main() {
           scr.setCell(
             x,
             y,
-            Cell(content: String.fromCharCode('A'.codeUnitAt(0) + y * 10 + x), width: 1),
+            Cell(
+              content: String.fromCharCode('A'.codeUnitAt(0) + y * 10 + x),
+              width: 1,
+            ),
           );
         }
       }
@@ -327,9 +332,19 @@ void main() {
     test('Edge cases: empty screen does not throw', () {
       final scr = _MockScreen(0, 0);
       expect(() => screen.clear(scr), returnsNormally);
-      expect(() => screen.fill(scr, Cell(content: 'X', width: 1)), returnsNormally);
+      expect(
+        () => screen.fill(scr, Cell(content: 'X', width: 1)),
+        returnsNormally,
+      );
       expect(() => screen.clearArea(scr, rect(0, 0, 1, 1)), returnsNormally);
-      expect(() => screen.fillArea(scr, Cell(content: 'X', width: 1), rect(0, 0, 1, 1)), returnsNormally);
+      expect(
+        () => screen.fillArea(
+          scr,
+          Cell(content: 'X', width: 1),
+          rect(0, 0, 1, 1),
+        ),
+        returnsNormally,
+      );
       expect(() => screen.clone(scr), returnsNormally);
       expect(() => screen.cloneArea(scr, rect(0, 0, 1, 1)), returnsNormally);
     });

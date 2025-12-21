@@ -45,6 +45,7 @@ final class Canvas implements Screen, Drawable {
 
   /// The current canvas width in cells.
   int width() => _scr.width();
+
   /// The current canvas height in cells.
   int height() => _scr.height();
 
