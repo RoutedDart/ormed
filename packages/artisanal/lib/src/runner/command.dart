@@ -14,6 +14,10 @@ import 'command_runner.dart';
 /// Provides access to the [io] helper for console output and
 /// renders help with proper section formatting.
 ///
+/// {@category Core}
+///
+/// {@macro artisanal_args_commands}
+///
 /// ```dart
 /// class ServeCommand extends Command<void> {
 ///   @override

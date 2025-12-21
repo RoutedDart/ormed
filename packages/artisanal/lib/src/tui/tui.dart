@@ -164,6 +164,7 @@ export 'cmd.dart'
 // Model interface
 export 'model.dart'
     show Model, CopyWithModel, CompositeModel, UpdateResult, noCmd, quit;
+export 'view.dart' show View, TerminalProgressBar, TerminalProgressBarState, KeyboardEnhancements;
 export 'component.dart' show ViewComponent, ComponentHost;
 
 // TuiRenderer
@@ -174,10 +175,12 @@ export 'renderer.dart'
         FullScreenTuiRenderer,
         InlineTuiRenderer,
         UltravioletTuiRenderer,
+        SimpleTuiRenderer,
         BufferedTuiRenderer,
         NullTuiRenderer,
         StringSinkTuiRenderer,
-        TuiTerminalRendererExtension;
+        TuiTerminalRendererExtension,
+        compressAnsi;
 
 // Program runtime
 export 'program.dart'

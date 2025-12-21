@@ -117,13 +117,25 @@ class _PropBits {
 ///
 /// // Inherits bold and foreground from accent, keeps padding from base
 /// final combined = base.copy()..inherit(accent);
+/// Fluent, chainable style builder for CLI output.
+///
+/// Inspired by Go's lipgloss library, this provides a composable way
+/// to build text styles for terminal output.
+///
+/// {@category Style}
+///
+/// {@macro artisanal_style_overview}
+///
+/// ```dart
+/// final style = Style()
+///     .bold()
+///     .foreground(Colors.green)
+///     .padding(1, 2)
+///     .border(Border.rounded)
+///     .width(40);
+///
+/// print(style.render('Hello World'));
 /// ```
-///
-/// ## Property Tracking
-///
-/// The style tracks which properties have been explicitly set using a
-/// bitfield. This enables smart inheritance where only set properties
-/// are copied, and unset properties retain their previous values.
 class Style {
   /// Creates a new empty style.
   Style();
@@ -3086,6 +3098,8 @@ extension StyleConvenienceExtensions on Style {
 
   /// Renders text with the success color.
   String success(Object? text) => copy().foreground(Colors.success).render(text);
+  /// Renders text with the warning color.
+  String warning(Object? text) => copy().foreground(Colors.warning).render(text);
 
   /// Renders text with the error color.
   String error(Object? text) => copy().foreground(Colors.error).render(text);

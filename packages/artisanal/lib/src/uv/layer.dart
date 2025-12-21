@@ -60,36 +60,43 @@ final class Layer {
 
   final List<Layer> _layers;
 
+  /// Child layers attached to this layer.
   List<Layer> get layers => List.unmodifiable(_layers);
 
+  /// Sets the stable [id] used for lookup and hit testing.
   Layer setId(String value) {
     id = value;
     return this;
   }
 
+  /// Sets the horizontal position in cells.
   Layer setX(int value) {
     x = value;
     _recomputeSize();
     return this;
   }
 
+  /// Sets the vertical position in cells.
   Layer setY(int value) {
     y = value;
     _recomputeSize();
     return this;
   }
 
+  /// Sets the z-order for this layer.
   Layer setZ(int value) {
     z = value;
     return this;
   }
 
+  /// Adds [layers] as children of this layer.
   Layer addLayers(List<Layer> layers) {
     _layers.addAll(layers);
     _recomputeSize();
     return this;
   }
 
+  /// Returns the first layer with [lookupId], searching descendants.
   Layer? getLayer(String lookupId) {
     if (lookupId.isEmpty) return null;
     if (id == lookupId) return this;
@@ -100,6 +107,7 @@ final class Layer {
     return null;
   }
 
+  /// Returns the maximum z-order in this subtree.
   int maxZ() {
     var maxZ = z;
     for (final child in _layers) {
@@ -134,6 +142,8 @@ final class Layer {
 }
 
 /// Creates a new [Layer] from a [String] or [Drawable].
+///
+/// Throws an [ArgumentError] if [content] is neither.
 Layer newLayer(Object content, [List<Layer> layers = const []]) {
   if (content is Drawable) {
     return Layer(content, layers);
@@ -151,6 +161,7 @@ final class LayerHit {
   final Layer? layer;
   final Rectangle? bounds;
 
+  /// Whether this hit contains no layer.
   bool get isEmpty => layer == null;
 }
 
@@ -187,18 +198,23 @@ final class Compositor implements Drawable {
   final Map<String, Layer> _index = {};
   Rectangle _bounds = const Rectangle(minX: 0, minY: 0, maxX: 0, maxY: 0);
 
+  /// Rebuilds the flattened layer list and bounds.
   void refresh() => _flatten();
 
+  /// Adds [layers] to the compositor root and refreshes.
   void addLayers(List<Layer> layers) {
     _root.addLayers(layers);
     _flatten();
   }
 
+  /// Returns the compositor bounds.
   @override
   Rectangle bounds() => _bounds;
 
+  /// Returns the layer with [id], if any.
   Layer? getLayer(String id) => _index[id];
 
+  /// Returns the top-most layer hit at ([x], [y]).
   LayerHit hit(int x, int y) {
     final p = Position(x, y);
     for (var i = _layers.length - 1; i >= 0; i--) {
@@ -210,6 +226,7 @@ final class Compositor implements Drawable {
     return const LayerHit();
   }
 
+  /// Draws visible layers that overlap [area] onto [scr].
   @override
   void draw(Screen scr, Rectangle area) {
     if (_layers.isEmpty) _flatten();
@@ -220,6 +237,7 @@ final class Compositor implements Drawable {
     }
   }
 
+  /// Renders the compositor to a string snapshot.
   String render() {
     if (_layers.isEmpty) _flatten();
     final w = _bounds.width;

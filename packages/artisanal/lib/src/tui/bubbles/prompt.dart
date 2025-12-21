@@ -32,6 +32,17 @@ const promptProgramOptions = ProgramOptions(
   sendInterrupt: false,
 );
 
+/// Dedicated defaults for full-screen text editing prompts.
+const textareaPromptOptions = ProgramOptions(
+  altScreen: true,
+  hideCursor: false,
+  fps: 30,
+  mouse: false,
+  bracketedPaste: true,
+  signalHandlers: false,
+  sendInterrupt: false,
+);
+
 /// Runs a [PasswordModel] and resolves to the submitted password, or `null` if
 /// cancelled.
 Future<String?> runPasswordPrompt(
@@ -180,7 +191,7 @@ Future<String?> runTextAreaPrompt(
   final controller = _PromptController<String?>();
   final program = Program(
     _TextAreaPromptModel(model, controller),
-    options: options ?? promptProgramOptions,
+    options: options ?? textareaPromptOptions,
     terminal: terminal,
   );
   await program.run();

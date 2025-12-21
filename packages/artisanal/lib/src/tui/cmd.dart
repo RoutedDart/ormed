@@ -171,6 +171,10 @@ class ExecResult {
 /// async operations that, when complete, may produce a message to be
 /// sent back to the [Model.update] function.
 ///
+/// {@category TUI}
+///
+/// {@macro artisanal_tui_commands_and_messages}
+///
 /// ## Built-in Commands
 ///
 /// - [Cmd.none] - No-op command

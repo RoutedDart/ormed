@@ -42,22 +42,13 @@ enum TaskResult {
 
 /// The main I/O helper for Artisanal-style console output.
 ///
-/// Provides methods for:
-/// - Formatted output (titles, sections, messages)
-/// - Tables and progress bars
-/// - Interactive prompts (confirm, ask, choice, secret)
-/// - Task status display
-///
-/// ```dart
-/// io.title('My Application');
-/// io.info('Starting...');
-/// await io.task('Processing', run: () async => TaskResult.success);
-/// io.success('Done!');
-/// ```
-/// The main I/O helper for Artisanal-style console output.
-///
 /// [Console] provides a high-level API for building polished CLI tools. It
 /// handles verbosity levels, ANSI styling, and interactive components.
+///
+/// {@category Core}
+///
+/// {@macro artisanal_io_overview}
+/// {@macro artisanal_io_verbosity}
 ///
 /// ## Features
 ///
@@ -65,11 +56,6 @@ enum TaskResult {
 /// - **Components**: [table], [progressBar], [tree].
 /// - **Prompts**: [ask], [confirm], [choice], [secret].
 /// - **Tasks**: [task] for running operations with a status indicator.
-///
-/// ## Verbosity
-///
-/// Methods like [info], [debug], and [trace] only produce output if the
-/// current [verbosity] level is high enough.
 ///
 /// ## Usage
 ///
@@ -87,8 +73,8 @@ enum TaskResult {
 class Console {
   /// Creates a new I/O helper.
   Console({
-    required WriteLine out,
-    required WriteLine err,
+    WriteLine? out,
+    WriteLine? err,
     WriteRaw? outRaw,
     WriteRaw? errRaw,
     ReadLine? readLine,
@@ -99,14 +85,14 @@ class Console {
     this.verbosity = Verbosity.normal,
     int? terminalWidth,
     Renderer? renderer,
-  }) : _out = out,
-       _err = err,
-       _outRaw = outRaw ?? ((text) => out(text)),
-       _errRaw = errRaw ?? ((text) => err(text)),
-       _readLine = readLine,
-       _secretReader = secretReader,
-       _stdin = stdin,
-       _stdout = stdout,
+  })  : _stdout = stdout ?? io.stdout,
+        _stdin = stdin ?? io.stdin,
+        _out = out ?? ((line) => (stdout ?? io.stdout).writeln(line)),
+        _err = err ?? ((line) => io.stderr.writeln(line)),
+        _outRaw = outRaw ?? ((text) => (stdout ?? io.stdout).write(text)),
+        _errRaw = errRaw ?? ((text) => io.stderr.write(text)),
+        _readLine = readLine ?? (stdin ?? io.stdin).readLineSync,
+        _secretReader = secretReader,
        terminalWidth = terminalWidth ?? 120,
        _renderer = renderer ?? defaultRenderer;
 
@@ -326,11 +312,42 @@ class Console {
     FutureOr<TaskResult> Function()? run,
   }) async {
     final desc = description.trimRight();
-    write('  $desc ');
+    final prefix = '  $desc ';
+    final terminal = _promptTerminal;
+    final supportsAnsi = (_stdout ?? io.stdout).hasTerminal;
+    final animate = run != null && interactive && supportsAnsi;
+
+    if (!animate) {
+      write(prefix);
+    } else {
+      terminal.hideCursor();
+    }
 
     final watch = Stopwatch()..start();
     TaskResult result = TaskResult.success;
+    Timer? spinnerTimer;
+    var spinnerTick = 0;
     try {
+      if (animate) {
+        const frames = ['|', '/', '-', '\\'];
+        spinnerTimer = Timer.periodic(const Duration(milliseconds: 120), (_) {
+          final frame = frames[spinnerTick % frames.length];
+          spinnerTick++;
+          final runtime = _formatDuration(watch.elapsed);
+          final runtimeStyled = _style.dim().render(' $runtime');
+          final baseUsed = Style.visibleLength(prefix) +
+              Style.visibleLength(runtimeStyled);
+          final dotsLen = (terminalWidth - baseUsed - 2).clamp(0, terminalWidth);
+          var dots = '.' * dotsLen;
+          if (dotsLen > 0) {
+            final idx = spinnerTick % dotsLen;
+            dots = '${dots.substring(0, idx)}$frame${dots.substring(idx + 1)}';
+          }
+          terminal.clearLine();
+          terminal.write('$prefix${_style.dim().render(dots)}$runtimeStyled');
+        });
+      }
+
       final value = await (run?.call() ?? TaskResult.success);
       result = value;
       return result;
@@ -339,6 +356,10 @@ class Console {
       rethrow;
     } finally {
       watch.stop();
+      spinnerTimer?.cancel();
+      if (animate) {
+        terminal.clearLine();
+      }
       final runtime = run == null ? '' : ' ${_formatDuration(watch.elapsed)}';
       final statusLabel = switch (result) {
         TaskResult.success =>
@@ -357,11 +378,19 @@ class Console {
           1 +
           4;
       final dots = (terminalWidth - used).clamp(0, terminalWidth);
-      write(_style.dim().render('.' * dots));
-      if (runtime.isNotEmpty) {
-        write(_style.dim().render(runtime));
+      final line =
+          '$prefix${_style.dim().render('.' * dots)}${runtime.isNotEmpty ? _style.dim().render(runtime) : ''} $statusLabel';
+      if (animate) {
+        terminal.write(line);
+        terminal.writeln();
+        terminal.showCursor();
+      } else {
+        write(_style.dim().render('.' * dots));
+        if (runtime.isNotEmpty) {
+          write(_style.dim().render(runtime));
+        }
+        writeln(' $statusLabel');
       }
-      writeln(' $statusLabel');
     }
   }
 

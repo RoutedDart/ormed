@@ -7,7 +7,7 @@ import 'package:artisanal/uv.dart';
 void runWithUv() async {
   final program = Program(
     const CounterModel(),
-    // Ultraviolet is enabled by default
+    // Ultraviolet is enabled by default.
   );
   await program.run();
 }
@@ -265,10 +265,7 @@ void lipglossTable() {
 
 // #region console_output_example
 void consoleOutput() {
-  final console = Console(
-    out: (s) => print(s),
-    err: (s) => print(s),
-  );
+  final console = Console();
 
   console.write('Hello');
   console.writeln('World');
@@ -277,10 +274,7 @@ void consoleOutput() {
 
 // #region console_task_example
 void consoleTask() async {
-  final console = Console(
-    out: (s) => print(s),
-    err: (s) => print(s),
-  );
+  final console = Console();
   await console.task('Downloading data...', run: () async {
     await Future.delayed(Duration(seconds: 2));
     return TaskResult.success;
@@ -290,11 +284,7 @@ void consoleTask() async {
 
 // #region verbosity_usage_example
 void verbosityUsage() {
-  final console = Console(
-    out: (s) => print(s),
-    err: (s) => print(s),
-    verbosity: Verbosity.verbose,
-  );
+  final console = Console(verbosity: Verbosity.verbose);
 
   console.write('Normal message'); // Always shown unless quiet
 }
@@ -315,10 +305,7 @@ void setGlobalVerbosity() {
 
 // #region console_components_example
 void consoleComponents() async {
-  final console = Console(
-    out: (s) => print(s),
-    err: (s) => print(s),
-  );
+  final console = Console();
   // Components are available on the console
 }
 // #endregion

@@ -41,8 +41,19 @@ When building interactive applications with the `Program` class, you use a `TuiR
 
 - **`UltravioletTuiRenderer` (Default)**: The most advanced renderer. It uses the UV engine to perform buffer diffing and minimal ANSI updates.
 - **`FullScreenTuiRenderer`**: A simpler fullscreen renderer that clears the screen and redraws everything on every frame.
-- **`InlineTuiRenderer`**: Renders the UI "inline" (below the current cursor position) rather than taking over the whole screen. It clears only the lines it previously wrote.
+- **`InlineTuiRenderer`**: Renders the UI "inline" (below the current cursor position) rather than taking over the whole screen.
+- **`SimpleTuiRenderer`**: A basic renderer that simply writes the view to the terminal without any diffing or clearing. Useful for log-style output.
 - **`StringSinkTuiRenderer`**: Useful for testing or capturing the output of a TUI application into a string.
+
+### ANSI Compression
+
+Artisanal provides a `compressAnsi` utility that can be used to reduce the size of terminal output by removing redundant SGR sequences.
+
+```dart
+final redundant = '\x1b[31mRed\x1b[31m Still Red\x1b[0m Reset';
+final compressed = compressAnsi(redundant);
+// Result: '\x1b[31mRed Still Red\x1b[0m Reset'
+```
 
 ### Choosing a Renderer
 
@@ -74,7 +85,9 @@ The UV renderer tracks detailed performance metrics, allowing you to monitor the
 
 ### UV by Default
 
-The Ultraviolet renderer and input decoder are enabled by default for all `Program` based applications.
+Ultraviolet is enabled by default for `Program`‑based apps. You can still
+explicitly set the flags in `ProgramOptions` when you want to be explicit or
+override the defaults.
 
 ```dart file=../../../example/doc_examples.dart#enabling_uv_example
 ```

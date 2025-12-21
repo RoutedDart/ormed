@@ -9,27 +9,17 @@ import '../unicode/width.dart';
 /// used throughout the artisanal package, including both static components
 /// and the TUI runtime.
 ///
+/// {@category Terminal}
+///
+/// {@macro artisanal_terminal_ansi_sequences}
+///
 /// ```dart
-/// import 'package:artisanal/src/terminal/ansi.dart';
+/// import 'package:artisanal/terminal.dart';
 ///
 /// // Use constants
 /// stdout.write(Ansi.cursorHide);
 /// stdout.write(Ansi.clearScreen);
-///
-/// // Use helper methods
-/// stdout.write(Ansi.cursorTo(10, 5));
-/// stdout.write(Ansi.cursorUp(3));
 /// ```
-/// ANSI escape sequence constants and helpers.
-///
-/// Provides all escape sequences needed for terminal control:
-/// - Cursor visibility and movement
-/// - Screen and line clearing
-/// - Alternate screen buffer
-/// - Mouse tracking
-/// - Bracketed paste mode
-/// - Focus reporting
-/// - Style reset
 abstract final class Ansi {
   /// Non-breaking space (NBSP, U+00A0).
   ///

@@ -3,8 +3,6 @@ import 'dart:io' as io;
 
 import 'package:artisanal/terminal.dart';
 
-import '../terminal/stdin_stream.dart'
-    show isSharedStdinStreamStarted, shutdownSharedStdinStream;
 import '../unicode/width.dart' as uni_width;
 import 'cmd.dart';
 import 'emoji_width_probe.dart';
@@ -18,6 +16,29 @@ import 'view.dart';
 import '../uv/cursor.dart';
 import '../uv/tui_adapter.dart' show UvTuiInputParser;
 
+/// The TUI program runtime.
+///
+/// [Program] manages the event loop, input decoding, state updates, and
+/// rendering for an [artisanal.tui] application.
+///
+/// {@category TUI}
+///
+/// {@macro artisanal_tui_tea_overview}
+/// {@macro artisanal_tui_program_lifecycle}
+/// {@macro artisanal_tui_rendering_overview}
+///
+/// ## Usage
+///
+/// ```dart
+/// final program = Program(MyModel());
+/// await program.run();
+/// ```
+///
+/// Or use the convenience helper:
+///
+/// ```dart
+/// await runProgram(MyModel());
+/// ```
 // Re-export control messages for convenience
 export 'cmd.dart'
     show
@@ -100,7 +121,8 @@ class ProgramOptions {
     this.environment,
     this.inputTTY = false,
     this.movementCapsOverride,
-    this.shutdownSharedStdinOnExit = true, this.metricsInterval = const Duration(seconds: 1),
+    this.shutdownSharedStdinOnExit = true,
+    this.metricsInterval = const Duration(seconds: 1),
   }) : assert(fps >= 1 && fps <= 120, 'fps must be between 1 and 120');
 
   /// Whether to use the alternate screen buffer (fullscreen mode).
@@ -505,10 +527,16 @@ class ProgramCancelledError implements Exception {
 /// );
 /// ```
 /// The runtime that manages the TUI event loop and rendering.
+/// The TUI program runtime.
 ///
-/// The [Program] takes an initial [Model], handles input events,
-/// updates the state, and renders the view to the terminal.
-class Program {
+/// {@macro artisanal_tui_tea_overview}
+///
+/// {@macro artisanal_tui_program_lifecycle}
+///
+/// {@macro artisanal_tui_rendering_overview}
+///
+/// {@category TUI}
+class Program<M extends Model> {
   /// Creates a new TUI program with the given initial model.
   Program(
     this._initialModel, {
@@ -517,12 +545,12 @@ class Program {
   }) : _options = options,
        _terminal = terminal;
 
-  final Model _initialModel;
+  final M _initialModel;
   final ProgramOptions _options;
   TuiTerminal? _terminal;
 
   /// The current model state.
-  Model? _model;
+  M? _model;
 
   /// The last view object returned by the model.
   View? _lastView;
@@ -562,7 +590,7 @@ class Program {
   Completer<void>? _runCompleter;
 
   /// Final model snapshot captured during cleanup.
-  Model? _finalModel;
+  M? _finalModel;
 
   /// Signal subscriptions.
   StreamSubscription<io.ProcessSignal>? _sigintSubscription;
@@ -573,13 +601,13 @@ class Program {
   StackTrace? _panicStackTrace;
 
   /// Returns the current model (for testing).
-  Model? get currentModel => _model;
+  M? get currentModel => _model;
 
   /// Whether the program is currently running.
   bool get isRunning => _running;
 
   /// Final model after the program exits (captured before cleanup).
-  Model? get finalModel => _finalModel;
+  M? get finalModel => _finalModel;
 
   /// Runs the TUI program.
   ///
@@ -1100,7 +1128,7 @@ class Program {
 
     // Update model
     final (newModel, cmd) = _model!.update(msg);
-    _model = newModel;
+    _model = newModel as M;
 
     // Re-render
     _render();
@@ -1182,7 +1210,7 @@ class Program {
         final (newModel, cmd) = _model!.update(
           WindowSizeMsg(size.width, size.height),
         );
-        _model = newModel;
+        _model = newModel as M;
         _render();
         if (cmd != null) {
           _executeCommand(cmd);
@@ -1835,20 +1863,20 @@ class Program {
 ///   await runProgram(MyModel());
 /// }
 /// ```
-Future<void> runProgram(
-  Model model, {
+Future<void> runProgram<M extends Model>(
+  M model, {
   ProgramOptions options = const ProgramOptions(),
 }) async {
-  final program = Program(model, options: options);
+  final program = Program<M>(model, options: options);
   await program.run();
 }
 
 /// Runs a TUI program and returns the final model after exit.
-Future<Model> runProgramWithResult(
-  Model model, {
+Future<M> runProgramWithResult<M extends Model>(
+  M model, {
   ProgramOptions options = const ProgramOptions(),
 }) async {
-  final program = Program(model, options: options);
+  final program = Program<M>(model, options: options);
   await program.run();
   return program.finalModel ?? model;
 }
@@ -1863,8 +1891,9 @@ Future<Model> runProgramWithResult(
 ///   await runProgramDebug(MyModel());
 /// }
 /// ```
-Future<void> runProgramDebug(Model model, {ProgramOptions? options}) async {
+Future<void> runProgramDebug<M extends Model>(M model,
+    {ProgramOptions? options}) async {
   final opts = (options ?? const ProgramOptions()).withoutCatchPanics();
-  final program = Program(model, options: opts);
+  final program = Program<M>(model, options: opts);
   await program.run();
 }

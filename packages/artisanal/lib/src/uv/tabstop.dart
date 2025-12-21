@@ -13,12 +13,14 @@ library;
 final class TabStops {
   TabStops._(this.width, this.interval, this.stops);
 
+  /// The default tab interval in cells.
   static const int defaultTabInterval = 8;
 
   final int interval;
   int width;
   List<int> stops;
 
+  /// Creates tab stops for a buffer [width] with a fixed [interval].
   factory TabStops(int width, int interval) {
     final stops = List<int>.filled((width + (interval - 1)) ~/ interval, 0);
     final ts = TabStops._(width, interval, stops);
@@ -26,10 +28,13 @@ final class TabStops {
     return ts;
   }
 
+  /// Creates tab stops for [cols] using [defaultTabInterval].
   factory TabStops.defaults(int cols) => TabStops(cols, defaultTabInterval);
 
+  /// Returns the current tab stop width.
   int getWidth() => width;
 
+  /// Resizes the tab stop table to [newWidth].
   void resize(int newWidth) {
     if (newWidth == width) return;
 
@@ -45,6 +50,7 @@ final class TabStops {
     width = newWidth;
   }
 
+  /// Returns whether [col] is a tab stop.
   bool isStop(int col) {
     final mask = _mask(col);
     final i = col >> 3;
@@ -52,9 +58,12 @@ final class TabStops {
     return (stops[i] & mask) != 0;
   }
 
+  /// Returns the next tab stop after [col].
   int next(int col) => find(col, 1);
+  /// Returns the previous tab stop before [col].
   int prev(int col) => find(col, -1);
 
+  /// Finds a tab stop relative to [col] moving by [delta].
   int find(int col, int delta) {
     if (delta == 0) return col;
 
@@ -80,16 +89,19 @@ final class TabStops {
     return col;
   }
 
+  /// Marks [col] as a tab stop.
   void set(int col) {
     final mask = _mask(col);
     stops[col >> 3] |= mask;
   }
 
+  /// Clears the tab stop at [col].
   void reset(int col) {
     final mask = _mask(col);
     stops[col >> 3] &= ~mask;
   }
 
+  /// Clears all tab stops.
   void clear() {
     stops = List<int>.filled(stops.length, 0);
   }

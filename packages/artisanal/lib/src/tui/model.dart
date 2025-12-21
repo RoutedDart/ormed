@@ -10,29 +10,9 @@ import 'msg.dart';
 /// - [update] - Handles messages and returns new state + optional command
 /// - [view] - Renders the current state as a string
 ///
-/// ## The Elm Architecture
+/// {@category TUI}
 ///
-/// The TUI runtime follows The Elm Architecture pattern:
-///
-/// ```
-/// ┌─────────────────────────────────────────────────────┐
-/// │                     Program                          │
-/// │                                                      │
-/// │    ┌───────┐     ┌────────┐     ┌──────┐            │
-/// │    │ Model │────▶│ update │────▶│ view │            │
-/// │    └───────┘     └────────┘     └──────┘            │
-/// │        ▲              │              │               │
-/// │        │              │              ▼               │
-/// │        │         ┌────────┐     ┌────────┐          │
-/// │        └─────────│  Cmd   │     │ Screen │          │
-/// │                  └────────┘     └────────┘          │
-/// │                       │                              │
-/// │                       ▼                              │
-/// │                  ┌────────┐                          │
-/// │                  │  Msg   │◀──── User Input          │
-/// │                  └────────┘                          │
-/// └─────────────────────────────────────────────────────┘
-/// ```
+/// {@macro artisanal_tui_tea_overview}
 ///
 /// ## Example: Counter
 ///

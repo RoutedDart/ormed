@@ -7,6 +7,10 @@ import 'key.dart';
 /// Messages represent events that can trigger state updates in a [Model].
 /// All message types should extend this class.
 ///
+/// {@category TUI}
+///
+/// {@macro artisanal_tui_commands_and_messages}
+///
 /// ## Built-in Message Types
 ///
 /// - [KeyMsg] - Keyboard input events

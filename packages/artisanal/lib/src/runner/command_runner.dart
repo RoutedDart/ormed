@@ -29,6 +29,10 @@ typedef ExitCodeSetter = void Function(int code);
 /// - Friendly error handling without stack traces
 /// - Global flags for verbosity, ANSI, and interactivity
 ///
+/// {@category Core}
+///
+/// {@macro artisanal_args_overview}
+///
 /// ```dart
 /// final runner = CommandRunner('myapp', 'My application')
 ///   ..addCommand(ServeCommand())

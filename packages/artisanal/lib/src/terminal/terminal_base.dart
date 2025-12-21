@@ -12,6 +12,11 @@ import 'stdin_stream.dart';
 /// static components and the TUI runtime. Implementations can target different
 /// platforms or provide testing capabilities.
 ///
+/// {@category Terminal}
+///
+/// {@macro artisanal_terminal_overview}
+/// {@macro artisanal_terminal_raw_mode}
+///
 /// ```dart
 /// // Use the standard implementation
 /// final terminal = StdioTerminal();
@@ -19,15 +24,6 @@ import 'stdin_stream.dart';
 /// // Basic operations
 /// terminal.write('Hello');
 /// terminal.writeln(' World');
-///
-/// // Cursor control
-/// terminal.hideCursor();
-/// terminal.moveCursor(10, 5);
-/// terminal.showCursor();
-///
-/// // Screen control
-/// terminal.clearScreen();
-/// terminal.enterAltScreen();
 /// ```
 abstract class Terminal {
   // ─────────────────────────────────────────────────────────────────────────────
@@ -964,6 +960,7 @@ class StdioTerminal implements Terminal {
   @override
   bool get isRawMode => _rawModeEnabled;
 
+
   // ─────────────────────────────────────────────────────────────────────────────
   // Mouse Tracking
   // ─────────────────────────────────────────────────────────────────────────────
@@ -1100,6 +1097,7 @@ class StdioTerminal implements Terminal {
 
   @override
   String? readLine() => _stdin.readLineSync();
+
 
   // ─────────────────────────────────────────────────────────────────────────────
   // Lifecycle

@@ -12,9 +12,11 @@ import 'cell.dart';
 int _shift16To8(int x) => x > 0xff ? (x >> 8) : x;
 
 /// Upstream: `third_party/ultraviolet/decoder.go` (`shift`).
+/// Shifts a 16-bit color component down to 8-bit.
 int shift(int x) => _shift16To8(x);
 
 /// Upstream: `third_party/ultraviolet/decoder.go` (`colorToHex`).
+/// Formats [c] as a `#RRGGBB` hex string, or empty if null.
 String colorToHex(UvRgb? c) {
   if (c == null) return '';
   final r = c.r.clamp(0, 255);
@@ -26,6 +28,7 @@ String colorToHex(UvRgb? c) {
 }
 
 /// Upstream: `third_party/ultraviolet/decoder.go` (`getMaxMin`).
+/// Returns the max and min of three values.
 (double max, double min) getMaxMin(double a, double b, double c) {
   double ma;
   double mi;
@@ -81,6 +84,7 @@ double _round3(double x) => (x * 1000).roundToDouble() / 1000;
 }
 
 /// Upstream: `third_party/ultraviolet/decoder.go` (`isDarkColor`).
+/// Returns whether [c] is considered dark using HSL lightness.
 bool isDarkColor(UvRgb? c) {
   if (c == null) return true;
   final (_, __, l) = rgbToHsl(c.r, c.g, c.b);

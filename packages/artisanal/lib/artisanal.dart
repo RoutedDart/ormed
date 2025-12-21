@@ -5,6 +5,8 @@
 /// - [Verbosity] levels for controlling output detail.
 /// - Unified [Terminal] abstraction for raw mode and ANSI handling.
 ///
+/// {@category Core}
+///
 /// ## Functional Areas
 ///
 /// - **I/O**: [Console] provides a high-level API for writing to stdout/stderr,
@@ -14,6 +16,14 @@
 /// - **Styling**: [Style] and [Color] provide a fluent API for terminal text
 ///   formatting (Lip Gloss-inspired).
 ///
+/// ## High-Level I/O
+///
+/// {@macro artisanal_io_overview}
+///
+/// ## Verbosity and Logging
+///
+/// {@macro artisanal_io_verbosity}
+///
 /// ## Modular Exports
 ///
 /// For specific functionality, you may want to import the modular libraries:
@@ -22,6 +32,24 @@
 /// - `package:artisanal/tui.dart`: Interactive TUI framework (Elm Architecture).
 /// - `package:artisanal/bubbles.dart`: Reusable interactive TUI components.
 /// - `package:artisanal/uv.dart`: Low-level cell-buffer rendering engine.
+///
+/// {@template artisanal_io_overview}
+/// The [Console] class is the primary entry point for high-level CLI output.
+/// It supports:
+/// - Writing styled text with verbosity awareness.
+/// - Rendering [DisplayComponent]s (tables, lists, panels).
+/// - Interactive prompts (confirm, select, input).
+/// - Task tracking with spinners and progress bars.
+/// {@endtemplate}
+///
+/// {@template artisanal_io_verbosity}
+/// [Verbosity] levels allow users to control the amount of output produced
+/// by your CLI.
+/// - `quiet`: Only essential output.
+/// - `normal`: Standard output (default).
+/// - `verbose`: Detailed information for debugging.
+/// - `debug`: Maximum detail, including internal state.
+/// {@endtemplate}
 library artisanal;
 
 import 'src/io/console.dart' show Console;

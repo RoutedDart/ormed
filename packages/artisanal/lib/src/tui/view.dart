@@ -3,8 +3,8 @@ import 'cmd.dart';
 import 'msg.dart';
 import '../uv/uv.dart' hide MouseMode;
 
-/// ProgressBarState represents the state of the progress bar.
-enum ProgressBarState {
+/// TerminalProgressBarState represents the state of the terminal taskbar progress.
+enum TerminalProgressBarState {
   none,
   defaultState,
   error,
@@ -12,17 +12,17 @@ enum ProgressBarState {
   warning,
 }
 
-/// ProgressBar represents the terminal progress bar (OSC 9;4).
+/// TerminalProgressBar represents the terminal taskbar progress (OSC 9;4).
 ///
-/// Support depends on the terminal.
-class ProgressBar {
-  const ProgressBar({
+/// Support depends on the terminal (e.g., Windows Terminal, iTerm2).
+class TerminalProgressBar {
+  const TerminalProgressBar({
     required this.state,
     this.value = 0,
   });
 
   /// The current state of the progress bar.
-  final ProgressBarState state;
+  final TerminalProgressBarState state;
 
   /// The current value of the progress bar (0-100).
   final int value;
@@ -33,6 +33,10 @@ class ProgressBar {
 /// This allows the [Model.view] method to return more than just a string,
 /// enabling declarative control over terminal state like cursor position,
 /// window title, and mouse tracking.
+///
+/// {@category TUI}
+///
+/// {@macro artisanal_tui_tea_overview}
 class View {
   const View({
     required this.content,
@@ -68,7 +72,7 @@ class View {
   final String? windowTitle;
 
   /// Optional terminal progress bar state.
-  final ProgressBar? progressBar;
+  final TerminalProgressBar? progressBar;
 
   /// Optional override for alternate screen buffer mode.
   final bool? altScreen;

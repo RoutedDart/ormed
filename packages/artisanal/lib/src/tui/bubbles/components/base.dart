@@ -8,6 +8,10 @@ import '../../component.dart' as tui;
 /// Bubble models render plain strings from `view()`. These components follow the
 /// same convention by rendering to strings and letting the caller decide how to
 /// print them (or compose them into a parent model's view).
+///
+/// {@category TUI}
+///
+/// {@macro artisanal_bubbles_display_components}
 class RenderConfig {
   const RenderConfig({
     this.terminalWidth = 80,

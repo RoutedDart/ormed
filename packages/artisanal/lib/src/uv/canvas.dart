@@ -29,6 +29,7 @@ import '../unicode/width.dart';
 ///
 /// Upstream: `third_party/lipgloss/canvas.go` (Canvas backed by `uv.ScreenBuffer`).
 final class Canvas implements Screen, Drawable {
+  /// Creates a canvas with [width] and [height] in cells.
   Canvas(int width, int height) : _scr = ScreenBuffer(width, height) {
     // Lip Gloss v2 uses GraphemeWidth for canvas composition.
     _scr.method = WidthMethod.grapheme;
@@ -47,20 +48,20 @@ final class Canvas implements Screen, Drawable {
   /// The current canvas height in cells.
   int height() => _scr.height();
 
-  @override
   /// Returns the drawable bounds of the canvas.
+  @override
   Rectangle bounds() => _scr.bounds();
 
-  @override
   /// Returns the active grapheme width measurement method.
+  @override
   WidthMethod widthMethod() => _scr.widthMethod();
 
-  @override
   /// Returns the cell at ([x], [y]) or null if out of bounds.
+  @override
   Cell? cellAt(int x, int y) => _scr.cellAt(x, y);
 
-  @override
   /// Sets the cell at ([x], [y]) in the backing buffer.
+  @override
   void setCell(int x, int y, Cell? cell) => _scr.setCell(x, y, cell);
 
   /// Composes a [Drawable] onto this canvas.
@@ -72,7 +73,7 @@ final class Canvas implements Screen, Drawable {
   /// Renders the canvas into a string (trimming trailing spaces per line).
   String render() => _scr.buffer.render();
 
-  @override
   /// Draws this canvas onto another [Screen] within [area].
+  @override
   void draw(Screen screen, Rectangle area) => _scr.draw(screen, area);
 }

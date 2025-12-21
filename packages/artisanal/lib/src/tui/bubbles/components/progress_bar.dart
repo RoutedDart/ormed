@@ -12,6 +12,10 @@ import '../../../style/style.dart';
 /// ```dart
 /// print(ProgressBarComponent(current: 50, total: 100).render());
 /// ```
+///
+/// {@category TUI}
+///
+/// {@macro artisanal_bubbles_display_components}
 class ProgressBarComponent extends DisplayComponent {
   const ProgressBarComponent({
     required this.current,

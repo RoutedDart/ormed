@@ -18,6 +18,7 @@ import 'screen.dart';
 ///
 /// Mirrors upstream `third_party/ultraviolet/screen`.
 
+/// Clears the entire [screen] to empty cells.
 void clear(Screen screen) {
   if (screen is ClearableScreen) {
     screen.clear();
@@ -26,6 +27,7 @@ void clear(Screen screen) {
   fill(screen, null);
 }
 
+/// Clears [area] of [screen] to empty cells.
 void clearArea(Screen screen, Rectangle area) {
   if (screen is ClearAreaScreen) {
     screen.clearArea(area);
@@ -34,6 +36,7 @@ void clearArea(Screen screen, Rectangle area) {
   fillArea(screen, null, area);
 }
 
+/// Fills the entire [screen] with [cell].
 void fill(Screen screen, Cell? cell) {
   if (screen is FillableScreen) {
     screen.fill(cell);
@@ -42,6 +45,7 @@ void fill(Screen screen, Cell? cell) {
   fillArea(screen, cell, screen.bounds());
 }
 
+/// Fills [area] of [screen] with [cell].
 void fillArea(Screen screen, Cell? cell, Rectangle area) {
   if (screen is FillAreaScreen) {
     screen.fillArea(cell, area);
@@ -55,6 +59,7 @@ void fillArea(Screen screen, Cell? cell, Rectangle area) {
   }
 }
 
+/// Returns a copy of [screen] as a [Buffer].
 Buffer clone(Screen screen) {
   if (screen case CloneableScreen(:final clone)) {
     final v = clone();
@@ -63,6 +68,7 @@ Buffer clone(Screen screen) {
   return cloneArea(screen, screen.bounds()) ?? Buffer.create(0, 0);
 }
 
+/// Returns a copy of [area] from [screen], or null when empty.
 Buffer? cloneArea(Screen screen, Rectangle area) {
   if (screen case CloneAreaScreen(:final cloneArea)) {
     final v = cloneArea(area);
@@ -80,4 +86,3 @@ Buffer? cloneArea(Screen screen, Rectangle area) {
   }
   return b;
 }
-

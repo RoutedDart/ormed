@@ -47,6 +47,7 @@ final class Side {
   final UvStyle style;
   final Link link;
 
+  /// Returns a copy of this side with updated fields.
   Side copyWith({String? content, UvStyle? style, Link? link}) => Side(
     content: content ?? this.content,
     style: style ?? this.style,
@@ -54,6 +55,7 @@ final class Side {
   );
 }
 
+/// A drawable border composed of [Side]s and corner glyphs.
 final class UvBorder implements Drawable {
   const UvBorder({
     required this.top,
@@ -75,6 +77,7 @@ final class UvBorder implements Drawable {
   final Side bottomLeft;
   final Side bottomRight;
 
+  /// Returns a zero-sized bounds rectangle (borders draw into provided areas).
   @override
   Rectangle bounds() => const Rectangle(minX: 0, minY: 0, maxX: 0, maxY: 0);
 
@@ -106,6 +109,7 @@ final class UvBorder implements Drawable {
     bottomRight: bottomRight.copyWith(link: link),
   );
 
+  /// Draws this border around the given [area].
   @override
   void draw(Screen screen, Rectangle area) {
     for (var y = area.minY; y < area.maxY; y++) {
@@ -153,6 +157,7 @@ UvBorder normalBorder() => const UvBorder(
   bottomRight: Side(content: '┘'),
 );
 
+/// Creates a rounded border style.
 UvBorder roundedBorder() => const UvBorder(
   top: Side(content: '─'),
   bottom: Side(content: '─'),
@@ -164,6 +169,7 @@ UvBorder roundedBorder() => const UvBorder(
   bottomRight: Side(content: '╯'),
 );
 
+/// Creates a solid block border style.
 UvBorder blockBorder() => const UvBorder(
   top: Side(content: '█'),
   bottom: Side(content: '█'),
@@ -175,6 +181,7 @@ UvBorder blockBorder() => const UvBorder(
   bottomRight: Side(content: '█'),
 );
 
+/// Creates an outer half-block border style.
 UvBorder outerHalfBlockBorder() => const UvBorder(
   top: Side(content: '▀'),
   bottom: Side(content: '▄'),
@@ -186,6 +193,7 @@ UvBorder outerHalfBlockBorder() => const UvBorder(
   bottomRight: Side(content: '▟'),
 );
 
+/// Creates an inner half-block border style.
 UvBorder innerHalfBlockBorder() => const UvBorder(
   top: Side(content: '▄'),
   bottom: Side(content: '▀'),
@@ -197,6 +205,7 @@ UvBorder innerHalfBlockBorder() => const UvBorder(
   bottomRight: Side(content: '▘'),
 );
 
+/// Creates a thick line border style.
 UvBorder thickBorder() => const UvBorder(
   top: Side(content: '━'),
   bottom: Side(content: '━'),
@@ -208,6 +217,7 @@ UvBorder thickBorder() => const UvBorder(
   bottomRight: Side(content: '┛'),
 );
 
+/// Creates a double line border style.
 UvBorder doubleBorder() => const UvBorder(
   top: Side(content: '═'),
   bottom: Side(content: '═'),
@@ -219,6 +229,7 @@ UvBorder doubleBorder() => const UvBorder(
   bottomRight: Side(content: '╝'),
 );
 
+/// Creates an invisible border style (spaces for all sides).
 UvBorder hiddenBorder() => const UvBorder(
   top: Side(content: ' '),
   bottom: Side(content: ' '),
@@ -230,6 +241,7 @@ UvBorder hiddenBorder() => const UvBorder(
   bottomRight: Side(content: ' '),
 );
 
+/// Creates a markdown-style border using `|` for verticals.
 UvBorder markdownBorder() => const UvBorder(
   top: Side(content: ''),
   bottom: Side(content: ''),
@@ -241,6 +253,7 @@ UvBorder markdownBorder() => const UvBorder(
   bottomRight: Side(content: '|'),
 );
 
+/// Creates a plain ASCII border style.
 UvBorder asciiBorder() => const UvBorder(
   top: Side(content: '-'),
   bottom: Side(content: '-'),

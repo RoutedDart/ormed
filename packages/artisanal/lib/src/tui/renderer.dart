@@ -2,6 +2,7 @@ import 'dart:async' show unawaited;
 import 'dart:io' as io;
 
 import 'terminal.dart';
+import 'view.dart';
 import '../uv/buffer.dart' as uv_buffer;
 import '../uv/styled_string.dart' as uv_styled;
 import '../uv/terminal_renderer.dart' as uv_term;
@@ -12,6 +13,10 @@ export '../uv/terminal_renderer.dart' show RenderMetrics;
 ///
 /// Renderers are responsible for displaying the view string
 /// to the terminal efficiently.
+///
+/// {@category TUI}
+///
+/// {@macro artisanal_tui_rendering_overview}
 abstract class TuiRenderer {
   /// Renders the view to the terminal.
   ///
@@ -116,14 +121,11 @@ class FullScreenTuiRenderer implements TuiRenderer {
       initialize();
     }
 
-    final String content;
-    if (view is String) {
-      content = view;
-    } else {
-      // For now, just extract content from View object.
-      // Full metadata support will be added to Program.
-      content = (view as dynamic).content as String;
-    }
+    final String content = switch (view) {
+      String s => s,
+      View v => v.content,
+      _ => view.toString(),
+    };
 
     // Frame rate limiting
     if (_lastRenderTime != null) {
@@ -143,7 +145,7 @@ class FullScreenTuiRenderer implements TuiRenderer {
 
     // Full redraw (future: diff with _lastView and update only changed lines)
     terminal.cursorHome();
-    final output = _options.ansiCompress ? _compressAnsi(content) : content;
+    final output = _options.ansiCompress ? compressAnsi(content) : content;
     terminal.write(output);
 
     // Clear any remaining content from previous render
@@ -235,12 +237,11 @@ class InlineTuiRenderer implements TuiRenderer {
   void render(Object view) {
     _metrics.beginFrame();
 
-    final String content;
-    if (view is String) {
-      content = view;
-    } else {
-      content = (view as dynamic).content as String;
-    }
+    final String content = switch (view) {
+      String s => s,
+      View v => v.content,
+      _ => view.toString(),
+    };
 
     // Frame rate limiting
     if (_lastRenderTime != null) {
@@ -262,7 +263,7 @@ class InlineTuiRenderer implements TuiRenderer {
     }
 
     // Write the new view
-    final output = _options.ansiCompress ? _compressAnsi(content) : content;
+    final output = _options.ansiCompress ? compressAnsi(content) : content;
     terminal.write(output);
     if (!output.endsWith('\n')) {
       terminal.writeln();
@@ -490,12 +491,11 @@ class UltravioletTuiRenderer implements TuiRenderer {
   void render(Object view) {
     _initialize();
 
-    final String content;
-    if (view is String) {
-      content = view;
-    } else {
-      content = (view as dynamic).content as String;
-    }
+    final String content = switch (view) {
+      String s => s,
+      View v => v.content,
+      _ => view.toString(),
+    };
 
     if (_lastRenderTime != null) {
       final elapsed = DateTime.now().difference(_lastRenderTime!);
@@ -547,7 +547,7 @@ class UltravioletTuiRenderer implements TuiRenderer {
     if (scr == null || r == null) return;
 
     final ss = uv_styled.newStyledString(
-      _options.ansiCompress ? _compressAnsi(_pendingView) : _pendingView,
+      _options.ansiCompress ? compressAnsi(_pendingView) : _pendingView,
     )..wrap = true;
     ss.draw(scr, scr.bounds());
 
@@ -633,13 +633,12 @@ class SimpleTuiRenderer implements TuiRenderer {
 
   @override
   void render(Object view) {
-    final String content;
-    if (view is String) {
-      content = view;
-    } else {
-      content = (view as dynamic).content as String;
-    }
-    final output = _options.ansiCompress ? _compressAnsi(content) : content;
+    final String content = switch (view) {
+      String s => s,
+      View v => v.content,
+      _ => view.toString(),
+    };
+    final output = _options.ansiCompress ? compressAnsi(content) : content;
     terminal.writeln(output);
   }
 
@@ -655,11 +654,11 @@ class SimpleTuiRenderer implements TuiRenderer {
   void dispose() {}
 }
 
-String _compressAnsi(String input) {
-  // Remove redundant SGR sequences to reduce output size.
-  //
-  // This intentionally removes *repeated* SGR sequences even when separated by
-  // text (e.g. "\x1b[31mred\x1b[31mred" -> "\x1b[31mredred").
+/// Removes redundant SGR sequences to reduce output size.
+///
+/// This intentionally removes *repeated* SGR sequences even when separated by
+/// text (e.g. "\x1b[31mred\x1b[31mred" -> "\x1b[31mredred").
+String compressAnsi(String input) {
   final sgr = RegExp(r'\x1B\[[0-9;:]*m');
   final out = StringBuffer();
   var lastEnd = 0;
@@ -696,12 +695,11 @@ class StringSinkTuiRenderer implements TuiRenderer {
 
   @override
   void render(Object view) {
-    final String content;
-    if (view is String) {
-      content = view;
-    } else {
-      content = (view as dynamic).content as String;
-    }
+    final String content = switch (view) {
+      String s => s,
+      View v => v.content,
+      _ => view.toString(),
+    };
     sink.write(content);
   }
 
@@ -734,5 +732,19 @@ extension TuiTerminalRendererExtension on TuiTerminal {
     ),
   }) {
     return InlineTuiRenderer(terminal: this, options: options);
+  }
+
+  /// Creates a simple renderer for this terminal.
+  SimpleTuiRenderer simpleRenderer({
+    TuiRendererOptions options = const TuiRendererOptions(),
+  }) {
+    return SimpleTuiRenderer(terminal: this, options: options);
+  }
+
+  /// Creates an Ultraviolet-backed renderer for this terminal.
+  UltravioletTuiRenderer ultravioletRenderer({
+    TuiRendererOptions options = const TuiRendererOptions(),
+  }) {
+    return UltravioletTuiRenderer(terminal: this, options: options);
   }
 }

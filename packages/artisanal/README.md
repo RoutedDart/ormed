@@ -1,89 +1,94 @@
 # artisanal
 
-An Artisanal-style command runner UX wrapper for `package:args`.
+Artisanal is a full‑stack terminal toolkit for Dart: polished CLI output, a Lip Gloss‑style styling system, a Bubble Tea‑style TUI runtime, reusable widgets (“bubbles”), and an Ultraviolet‑based cell renderer.
 
-Provides a polished CLI experience with:
-- Grouped namespaced commands (e.g., `ui:*`, `db:*`)
-- Formatted help output with sections
-- Progress bars, tables, and task status indicators
-- Interactive prompts (confirm, ask, choice, secret)
-- ANSI color support with graceful fallback
+It is designed to let you build everything from rich command‑line tools to complex interactive TUI apps, with a consistent API surface.
 
-## Components vs. Bubbles
+## What’s inside
 
-- `lib/src/tui/bubbles/components/` contains **display-only** building blocks (`DisplayComponent`).
-- `lib/src/tui/bubbles/` contains **interactive** components implemented as Bubble
-  Tea-style `Model`s.
+- **CLI I/O**: High‑level `Console` helpers for status lines, tables, tasks, and prompts.
+- **Styling**: Lip Gloss‑style `Style`, borders, layout helpers, and **ThemePalette** support.
+- **TUI runtime**: Elm Architecture (`Model`/`Msg`/`Cmd`) with a fully featured `Program`.
+- **Bubbles**: Reusable components (inputs, lists, spinners, viewports, tables, progress bars, etc.).
+- **Ultraviolet (UV)**: High‑performance cell‑buffer renderer and ANSI input decoder.
 
-For migration details, see `doc/migration_guide.md`.
+## Installation
 
-### Bubble Quick Start
+```yaml
+dependencies:
+  artisanal: ^0.0.1
+```
+
+> Workspace users: this repo is `publish_to: none`. Use a path or git reference while developing.
+
+## Quick Start: CLI Output
 
 ```dart
 import 'package:artisanal/artisanal.dart';
 
 Future<void> main() async {
-  final terminal = StdioTerminal();
-  final name = await runTextInputPrompt(
-    TextInputModel(prompt: 'Name: '),
-    terminal,
+  final io = Console();
+
+  io.title('My App');
+  io.section('Setup');
+  io.info('Checking configuration...');
+
+  await io.task('Running migrations', run: () async {
+    await Future.delayed(const Duration(milliseconds: 200));
+    return TaskResult.success;
+  });
+
+  io.table(
+    headers: ['ID', 'Name', 'Status'],
+    rows: [
+      [1, 'users', io.style.success('DONE')],
+      [2, 'posts', io.style.warning('PENDING')],
+    ],
   );
-  print('Hello, $name');
+
+  final proceed = io.confirm('Continue?', defaultValue: true);
+  if (!proceed) return;
+
+  io.success('All good.');
 }
 ```
 
-## Installation
-
-Add to your `pubspec.yaml`:
-
-```yaml
-dependencies:
-  artisanal:
-    path: packages/artisanal  # or git/pub reference
-```
-
-## Quick Start
+## Quick Start: TUI
 
 ```dart
-import 'package:artisanal/artisanal.dart';
+import 'package:artisanal/tui.dart';
 
-void main(List<String> args) async {
-  final runner = CommandRunner('myapp', 'My Application')
-    ..addCommand(ServeCommand())
-    ..addCommand(MigrateCommand());
+class CounterModel implements Model {
+  final int count;
+  const CounterModel([this.count = 0]);
 
-  await runner.run(args);
+  @override
+  Cmd? init() => null;
+
+  @override
+  (Model, Cmd?) update(Msg msg) {
+    return switch (msg) {
+      KeyMsg(key: Key(type: KeyType.up)) => (CounterModel(count + 1), null),
+      KeyMsg(key: Key(type: KeyType.down)) => (CounterModel(count - 1), null),
+      KeyMsg(key: Key(type: KeyType.runes, runes: [0x71])) => (this, Cmd.quit()),
+      _ => (this, null),
+    };
+  }
+
+  @override
+  String view() => 'Count: $count\n\nUse ↑/↓ to change, q to quit';
 }
 
-class ServeCommand extends Command<void> {
-  @override
-  String get name => 'serve';
-
-  @override
-  String get description => 'Start the development server.';
-
-  @override
-  Future<void> run() async {
-    io.title('Starting Server');
-    
-    await io.task('Compiling assets', run: () async {
-      await Future.delayed(Duration(milliseconds: 100));
-      return TaskResult.success;
-    });
-    
-    io.success('Server running at http://localhost:8080');
-  }
+Future<void> main() async {
+  await runProgram(CounterModel());
 }
 ```
 
-## Ultraviolet Renderer (Experimental)
+## Ultraviolet Renderer (High‑performance)
 
-`artisanal` includes a high-performance cell-buffer renderer based on [Ultraviolet](https://github.com/charmbracelet/ultraviolet). This renderer provides:
-- **Flicker-free updates**: Only changed cells are sent to the terminal.
-- **Complex layouts**: Support for overlapping layers and absolute positioning.
-- **Lipgloss v2 Parity**: Full support for advanced styling features like hyperlinks and unified width calculation.
+The UV renderer diffs cell buffers for flicker‑free updates and supports layered composition.
 
-To enable the Ultraviolet renderer in your TUI program:
+Enable it in a TUI program:
 
 ```dart
 await runProgram(
@@ -95,9 +100,9 @@ await runProgram(
 );
 ```
 
-### UV-Safe Logging
+### UV‑safe logging
 
-When using the Ultraviolet renderer, avoid direct `print()` or `stdout.write()` calls as they will desync the cell buffer. Instead, use `Cmd.println`:
+Avoid direct `print()` or `stdout.write()` while UV is active, or the buffer will desync. Use `Cmd.println`:
 
 ```dart
 @override
@@ -109,224 +114,54 @@ When using the Ultraviolet renderer, avoid direct `print()` or `stdout.write()` 
 }
 ```
 
-## Features
+## Theme Palette
 
-### Output Helpers
-
-```dart
-// Titles and sections
-io.title('My Application');
-io.section('Configuration');
-
-// Message blocks
-io.info('Starting process...');
-io.success('Done!');
-io.warning('Check your configuration');
-io.error('Something went wrong');
-io.note('Remember to...');
-io.alert('Important message!');
-
-// Lists and UI
-io.listing(['Item 1', 'Item 2', 'Item 3']);
-io.twoColumnDetail('Key', 'Value');
-io.logo('MY APP'); // ASCII art logo
-io.menu('Main Menu', ['Option 1', 'Option 2']); // Persistent menu
-```
-
-### Tables
+Artisanal ships theme palettes for consistent UI styling.
 
 ```dart
-io.table(
-  headers: ['ID', 'Name', 'Status'],
-  rows: [
-    [1, 'users', io.style.success('DONE')],
-    [2, 'posts', io.style.warning('PENDING')],
-  ],
-);
+import 'package:artisanal/style.dart';
+
+final theme = ThemePalette.byName('dark');
+final title = Style().foreground(theme.accentBold).bold().render('Dashboard');
 ```
 
-### Progress Bars
+Available themes: `ThemePalette.names`.
+
+## Bubbles (Reusable components)
+
+Use components like text inputs, lists, viewports, and progress bars from `package:artisanal/bubbles.dart`:
 
 ```dart
-// Iterate with progress (CLI output)
-for (final item in io.progressIterate(items, max: items.length)) {
-  // process item
-}
-```
+import 'package:artisanal/bubbles.dart';
 
-### Tasks
-
-```dart
-await io.task('Running migrations', run: () async {
-  await runMigrations();
-  return TaskResult.success;  // or .failure, .skipped
-});
-// Output: Running migrations ........................... DONE
-```
-
-### Interactive Prompts
-
-```dart
-// Yes/No confirmation
-final proceed = io.confirm('Continue?', defaultValue: true);
-
-// Text input
-final name = io.ask('Your name', defaultValue: 'Anonymous');
-
-// Secret/password (no echo)
-final password = io.secret('Password');
-
-// Basic numbered choice
-final choice = io.choice(
-  'Select a database',
-  choices: ['SQLite', 'PostgreSQL', 'MySQL'],
-);
-
-// Interactive single-select (arrow keys)
-final db = await io.selectChoice(
-  'Choose database',
-  choices: databases,
-  defaultIndex: 0,
-);
-
-// Interactive multi-select (arrow keys + space)
-final features = await io.multiSelectChoice(
-  'Select features',
-  choices: allFeatures,
-);
-```
-
-The artisanal-style prompt APIs remain supported; interactive prompts run bubbles
-under the hood.
-
-### Components Facade
-
-Access higher-level components via `io.components`:
-
-```dart
-io.components.bulletList(['Item 1', 'Item 2']);
-io.components.definitionList({
-  'Name': 'My App',
-  'Version': '1.0.0',
-});
-io.components.rule('Section Title');
-io.components.line();
-
-await io.components.spin('Processing...', run: () async {
-  // do work
-  return result;
-});
-```
-
-### Fluent Style System
-
-Create advanced styles with a chainable API:
-
-```dart
-final style = Style()
-    .bold()
-    .foreground(Colors.green)
-    .padding(1, 2)
-    .border(Border.rounded);
-
-print(style.render('Styled Text'));
-```
-
-### Console Tags
-
-`artisanal` supports Laravel/Symfony-style console tags for inline styling:
-
-```dart
-io.text('The <fg=red;options=bold>red bold</> text.');
-io.text('Hex colors: <fg=#ff0000>Red</>');
-io.text('ANSI 256: <fg=208>Orange</>');
-io.text('Nested: <fg=blue>Blue <fg=yellow>Yellow</> Blue</>');
-```
-
-Supported tags:
-- `<fg=color>`: Foreground color (name, hex, or 256-code)
-- `<bg=color>`: Background color
-- `<options=bold,italic,underscore,reverse,blink,conceal,strike>`: Text options
-- `<href=url>`: Terminal hyperlinks (OSC 8)
-
-**Components with Fluent Builders:**
-
-```dart
-// Table with per-cell styling
-Table()
-    .headers(['Item', 'Status'])
-    .row(['Task 1', 'Done'])
-    .styleFunc((row, col, data) {
-         if (data == 'Done') return Style().foreground(Colors.green);
-         return null;
-    })
-    .render();
-
-// Tree with custom enumerators
-Tree()
-    .root('Project')
-    .child('src')
-    .enumerator(TreeEnumerator.rounded)
-    .render();
-```
-
-## Global Flags
-
-The runner automatically adds these flags:
-
-| Flag | Description |
-|------|-------------|
-| `--ansi` / `--no-ansi` | Force or disable ANSI colors |
-| `-q`, `--quiet` | Suppress all output |
-| `-v`, `--verbose` | Increase verbosity (-v, -vv, -vvv) |
-| `-n`, `--no-interaction` | Disable interactive prompts |
-
-## Project Structure
-
-```
-lib/src/
-├── tui/                 # Bubble Tea-style runtime + interactive bubbles
-│   ├── component.dart   # ViewComponent, StaticComponent, ComponentHost
-│   ├── model.dart       # Model base class
-│   ├── program.dart     # TUI event loop
-│   └── bubbles/         # Stateful widgets (TEA units)
-│       └── components/  # Display-only components (stateless)
-│           ├── layout.dart      # CompositeComponent, ColumnComponent, RowComponent
-│           ├── text.dart        # Text, StyledText, Rule
-│           ├── list.dart        # BulletList, NumberedList
-│           ├── box.dart         # KeyValue, Box
-│           ├── progress.dart    # ProgressBar, MultiProgressModel
-│           ├── table.dart       # TableComponent, HorizontalTableComponent
-│           └── ...
-│
-├── io/                  # IO utilities
-│   ├── console.dart  # Main IO facade (uses components)
-│   ├── components.dart  # Components (high-level helpers)
-│   └── validators.dart  # Input validators (Acanthis)
-│
-├── terminal/            # Terminal utilities
-│   └── terminal.dart    # Terminal, Key, RawModeGuard
-│
-├── style/               # Styling utilities
-│   ├── style.dart       # Fluent Style system (Lipgloss v2)
-│   └── color.dart       # Color and ColorProfile
-│
-└── runner/              # Command runner
-    ├── artisanal_command.dart
-    └── artisanal_command_runner.dart
+final input = TextInputModel(prompt: 'Name: ');
 ```
 
 ## Examples
 
-See the `example/` directory for a complete demo application showcasing all features.
+Explore working demos under `packages/artisanal/example/` and
+`packages/artisanal/example/tui/examples/`.
 
-```bash
-# Run from workspace root
-dart run packages/artisanal/example/main.dart --help
-dart run packages/artisanal/example/main.dart demo --ansi
-dart run packages/artisanal/example/main.dart ui:components --ansi
-```
+Notable demos:
+- Kitchen sink (widgets + renderer + unicode + colors)
+- Command center dashboard
+- Trello board
+- Progress, spinners, tables, text inputs, etc.
 
-## License
+## Project structure
 
-MIT
+- `package:artisanal/artisanal.dart` – full kit (CLI + style + terminal)
+- `package:artisanal/args.dart` – command runner utilities
+- `package:artisanal/style.dart` – styling + layout + themes
+- `package:artisanal/tui.dart` – TUI runtime and program loop
+- `package:artisanal/bubbles.dart` – reusable widgets
+- `package:artisanal/uv.dart` – low‑level renderer & input decoder
+
+## Notes
+
+- For migration details, see `packages/artisanal/MIGRATION_GUIDE.md`.
+- UV parity notes live in `packages/artisanal/UV_PARITY_MAP.md`.
+
+---
+
+If you want a docs site or API reference, the `packages/artisanal/site/` folder is ready for content.

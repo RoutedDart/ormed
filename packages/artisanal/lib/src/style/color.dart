@@ -63,6 +63,10 @@ extension ColorProfileConverter on ColorProfile {
 /// Abstract base class for terminal colors.
 ///
 /// All color types implement this interface to produce ANSI escape sequences.
+///
+/// {@category Style}
+///
+/// {@macro artisanal_style_colors}
 abstract class Color {
   const Color();
 

@@ -4,10 +4,16 @@
 /// used throughout the package, including both static components and the
 /// TUI runtime.
 ///
+/// {@category Terminal}
+///
+/// {@macro artisanal_terminal_overview}
+/// {@macro artisanal_terminal_raw_mode}
+/// {@macro artisanal_terminal_ansi_sequences}
+///
 /// ## Quick Start
 ///
 /// ```dart
-/// import 'package:artisanal/src/terminal/terminal.dart';
+/// import 'package:artisanal/terminal.dart';
 ///
 /// // Create a terminal
 /// final terminal = StdioTerminal();
@@ -17,25 +23,7 @@
 /// terminal.write('Hello, ');
 /// terminal.writeln('World!');
 /// terminal.showCursor();
-///
-/// // Use ANSI codes directly
-/// stdout.write(Ansi.bold);
-/// stdout.write('Bold text');
-/// stdout.write(Ansi.reset);
-///
-/// // Check key input
-/// if (Keys.isPrintable(byte)) { ... }
 /// ```
-///
-/// ## Components
-///
-/// - [Terminal] - Abstract interface for terminal operations
-/// - [StdioTerminal] - Standard implementation using dart:io
-/// - [StringTerminal] - Test implementation that captures output
-/// - [Ansi] - ANSI escape sequence constants and helpers
-/// - [Key] - Parsed keyboard input event
-/// - [KeyType] - Types of keyboard input
-/// - [Keys] - Key code constants and helpers
 library;
 
 // ANSI escape sequences
