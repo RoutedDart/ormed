@@ -2,7 +2,18 @@
 
 import 'package:ormed/ormed.dart';
 
-/// This example demonstrates automatic Carbon configuration via DataSource.
+/// This example demonstrates Carbon integration with Ormed.
+///
+/// Carbon is a date/time library ported from PHP's Carbon. It provides two
+/// variants:
+/// - **Carbon** (mutable): Methods like `subDay()` modify the instance in-place
+/// - **CarbonImmutable**: Methods return new instances, leaving the original unchanged
+///
+/// ## Important: Ormed returns immutable timestamps
+///
+/// All timestamp getters (`createdAt`, `updatedAt`, `deletedAt`) return
+/// **immutable** Carbon instances. This prevents accidental mutation of model
+/// state when chaining date methods.
 ///
 /// Carbon is automatically configured when you call `DataSource.init()`.
 /// No manual configuration is required unless you want to override the defaults.
@@ -18,6 +29,12 @@ void main() async {
 
   // Example 4: Manual configuration override
   await example4ManualOverride();
+
+  // Example 5: Mutable vs Immutable Carbon behavior
+  example5MutableVsImmutable();
+
+  // Example 6: Safe timestamp manipulation
+  example6SafeTimestampManipulation();
 }
 
 /// Example 1: Basic automatic configuration
@@ -144,6 +161,93 @@ Future<void> example4ManualOverride() async {
 
   await ds.dispose();
 }
+
+// #region mutable-vs-immutable
+/// Example 5: Mutable vs Immutable Carbon behavior
+///
+/// Understanding the difference between Carbon (mutable) and CarbonImmutable
+/// is crucial to avoid unexpected bugs.
+void example5MutableVsImmutable() {
+  print('\n=== Example 5: Mutable vs Immutable ===');
+
+  // MUTABLE Carbon: Methods modify the instance IN-PLACE
+  final mutableDate = Carbon.parse('2024-12-21');
+  print('Original mutable:   ${mutableDate.toDateString()}'); // 2024-12-21
+
+  final result = mutableDate.subDay(); // Returns SAME instance, mutated!
+  print('After subDay():     ${mutableDate.toDateString()}'); // 2024-12-20 ⚠️
+  print('Same object?        ${identical(mutableDate, result)}'); // true
+
+  // IMMUTABLE Carbon: Methods return NEW instances
+  final immutableDate = CarbonImmutable.parse('2024-12-21');
+  print('\nOriginal immutable: ${immutableDate.toDateString()}'); // 2024-12-21
+
+  final newDate = immutableDate.subDay(); // Returns NEW instance
+  print('After subDay():     ${immutableDate.toDateString()}'); // 2024-12-21 ✓
+  print('New date:           ${newDate.toDateString()}'); // 2024-12-20
+  print('Same object?        ${identical(immutableDate, newDate)}'); // false
+}
+// #endregion mutable-vs-immutable
+
+// #region safe-timestamp-usage
+/// Example 6: Safe timestamp manipulation
+///
+/// Ormed returns immutable Carbon instances from timestamp getters,
+/// so you can safely chain methods without corrupting model state.
+void example6SafeTimestampManipulation() {
+  print('\n=== Example 6: Safe Timestamp Usage ===');
+
+  // Simulating what Ormed does internally for timestamps
+  final storedDateTime = DateTime(2024, 12, 21, 10, 30);
+
+  // Ormed's timestamp getters return immutable instances:
+  CarbonInterface getCreatedAt() {
+    return Carbon.fromDateTime(storedDateTime).toImmutable();
+  }
+
+  final createdAt = getCreatedAt();
+  print('createdAt: ${createdAt.toDateTimeString()}');
+
+  // Safe to chain methods - original is unchanged
+  final yesterday = createdAt.subDay();
+  final nextWeek = createdAt.addWeek();
+
+  print('yesterday: ${yesterday.toDateTimeString()}');
+  print('nextWeek:  ${nextWeek.toDateTimeString()}');
+  print('createdAt still: ${createdAt.toDateTimeString()}'); // Unchanged ✓
+
+  // Common patterns
+  final isRecent = createdAt.isAfter(Carbon.now().subDays(7));
+  final humanReadable = createdAt.diffForHumans();
+  print('Is recent (< 7 days): $isRecent');
+  print('Human readable: $humanReadable');
+}
+// #endregion safe-timestamp-usage
+
+// #region carbon-gotchas
+/// Common Carbon gotchas to avoid
+void carbonGotchas() {
+  // ❌ WRONG: Don't store mutable Carbon and mutate it
+  final date = Carbon.now();
+  someFunction(date);
+  print(date); // Value may have changed!
+
+  // ✓ CORRECT: Use immutable or create copies
+  final safeDate = Carbon.now().toImmutable();
+  someFunction(safeDate);
+  print(safeDate); // Guaranteed unchanged
+
+  // ✓ CORRECT: Create a copy before mutating
+  final original = Carbon.now();
+  final copy = original.copy();
+  copy.subDay(); // Only copy is mutated
+}
+
+void someFunction(CarbonInterface date) {
+  // This would mutate mutable Carbon!
+  date.addDays(5);
+}
+// #endregion carbon-gotchas
 
 /// Example DataSource adapter (in-memory for examples)
 extension SqliteDriverAdapter on Object {

@@ -2,6 +2,7 @@
 
 ## 0.1.0-dev+3
 
+- **Fixed**: Timestamp getters (`createdAt`, `updatedAt`, `deletedAt`) now return **immutable** Carbon instances to prevent accidental mutation of model state when chaining date methods like `subDay()`.
 - Refactored `Timestamps` and `SoftDeletes` mixins to use `CarbonInterface` for getters and `Object?` for setters.
 - Exported `carbonized` package directly from `ormed.dart`.
 - Improved `DateTimeCodec` to handle `Carbon` instances during decoding.
