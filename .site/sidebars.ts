@@ -91,6 +91,7 @@ const sidebars: SidebarsConfig = {
       items: [
         'guides/testing',
         'guides/best-practices',
+        'guides/date-time',
         'guides/observability',
         'guides/multi-database',
         'guides/examples',

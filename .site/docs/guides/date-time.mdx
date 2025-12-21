@@ -1,0 +1,105 @@
+---
+sidebar_position: 6
+---
+
+# Date and Time Handling
+
+Ormed provides robust support for date and time handling, integrating the standard Dart `DateTime` with the [Carbonized](https://pub.dev/packages/carbonized) library for a fluent, Laravel-like experience.
+
+:::info
+The `carbonized` package is automatically exported by `package:ormed/ormed.dart`, so you don't need to add it to your `pubspec.yaml` or import it separately.
+:::
+
+## DateTime vs Carbon
+
+While you can use standard `DateTime` objects for all your model fields, Ormed's built-in features like **Timestamps** and **Soft Deletes** return `CarbonInterface` instances.
+
+### Why Carbon?
+
+Carbon extends `DateTime` functionality with:
+- **Fluent manipulation**: `date.addDays(5).subHours(2)`
+- **Human-readable differences**: `date.diffForHumans()`
+- **Easy formatting**: `date.format('Y-m-d')`
+- **Timezone management**: `date.toUtc()`, `date.setTimezone('America/New_York')`
+
+## Configuration
+
+You can configure global Carbon settings using `CarbonConfig`. This is typically done during application bootstrap.
+
+```dart
+import 'package:ormed/ormed.dart';
+
+void main() async {
+  // Basic configuration
+  CarbonConfig.configure(
+    defaultTimezone: 'UTC',
+    defaultLocale: 'en_US',
+  );
+
+  // For named timezone support (e.g., 'Europe/London'), 
+  // you must initialize TimeMachine data:
+  await CarbonConfig.configureWithTimeMachine(
+    defaultTimezone: 'America/New_York',
+  );
+}
+```
+
+## Timestamps and Soft Deletes
+
+When using the `Timestamps` or `SoftDeletes` mixins, the generated fields (`createdAt`, `updatedAt`, `deletedAt`) provide a flexible API.
+
+### Getters
+
+The getters return `CarbonInterface?`, allowing you to immediately use fluent methods:
+
+```dart
+final user = await repo.find(1);
+print(user?.createdAt?.diffForHumans());
+```
+
+### Setters
+
+The setters are typed as `Object?` and accept:
+- `DateTime`
+- `CarbonInterface` (including `Carbon` instances)
+- `null`
+
+```dart
+user.updatedAt = DateTime.now();
+user.updatedAt = Carbon.now().addHours(1);
+```
+
+## Timezones
+
+### TimestampsTZ and SoftDeletesTZ
+
+If you use the `TZ` variants of the mixins (`TimestampsTZ`, `SoftDeletesTZ`), Ormed ensures that:
+1.  Values are converted to **UTC** before being sent to the database.
+2.  Values retrieved from the database are treated as **UTC**.
+
+### Driver Support
+
+Different database drivers handle timezones differently:
+
+- **PostgreSQL**: Supports `TIMESTAMP WITH TIME ZONE`.
+- **MySQL**: `DATETIME` columns are typically timezone-naive. Ormed formats these as strings.
+- **SQLite**: Stored as ISO-8601 strings or integers.
+
+It is highly recommended to store all timestamps in **UTC** and convert to the user's local timezone only for display.
+
+## Custom Date Fields
+
+If you define your own `DateTime` fields in a model, they will use the `DateTimeCodec` by default. This codec automatically handles `Carbon` instances during encoding and decoding.
+
+```dart
+@OrmModel()
+class Event extends Model<Event> {
+  final DateTime scheduledAt;
+  
+  Event({required this.scheduledAt});
+}
+
+// Usage
+final event = $Event(scheduledAt: Carbon.tomorrow());
+await repo.insert(event);
+```
