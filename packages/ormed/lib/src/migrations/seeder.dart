@@ -115,11 +115,9 @@ abstract class DatabaseSeeder {
     List<Map<String, dynamic>> records,
   ) async {
     final results = <TModel>[];
+    final repo = connection.context.repository<TModel>();
     for (final record in records) {
-      final model = await Model.create<TModel>(
-        record,
-        connection: connection.name,
-      );
+      final model = await repo.insert(record);
       results.add(model);
     }
     return results;

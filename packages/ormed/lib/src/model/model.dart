@@ -201,27 +201,25 @@ abstract class Model<TModel extends Model<TModel>>
   }) => query<TModel>(connection: connection).get();
 
   /// Creates and immediately persists a new model from attributes map.
-  /// Note: This is a placeholder - actual implementation requires codec access.
-  /// Use the generated static helper on your model class instead.
   static Future<TModel> create<TModel extends Model<TModel>>(
     Map<String, dynamic> attributes, {
     String? connection,
   }) async {
-    throw UnimplementedError(
-      'Model.create() requires code generation. Use YourModel.create() instead.',
-    );
+    return query<TModel>(connection: connection)
+        .context
+        .repository<TModel>()
+        .insert(attributes);
   }
 
   /// Inserts multiple records without returning model instances.
-  /// Note: This is a placeholder - actual implementation requires codec access.
-  /// Use the generated static helper on your model class instead.
-  static Future<void> insert<TModel>(
+  static Future<void> insert<TModel extends OrmEntity>(
     List<Map<String, dynamic>> records, {
     String? connection,
   }) async {
-    throw UnimplementedError(
-      'Model.insert() requires code generation. Use YourModel.insert() instead.',
-    );
+    await query<TModel>(connection: connection)
+        .context
+        .repository<TModel>()
+        .insertMany(records, returning: false);
   }
 
   /// Starts a query with a where clause.
