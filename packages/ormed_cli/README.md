@@ -8,14 +8,30 @@ Command-line interface for the ormed ORM. Provides migration management, schema 
 
 ## Installation
 
+### Global (Recommended)
+
+Install the CLI globally to use the `orm` command directly from anywhere:
+
+```bash
+dart pub global activate ormed_cli
+```
+
+### Local
+
+Add it to your `dev_dependencies` in `pubspec.yaml`:
+
 ```yaml
 dev_dependencies:
-  ormed_cli: ^0.1.0
+  ormed_cli: ^0.1.0-dev+1
 ```
 
 The CLI is available as the `orm` executable:
 
 ```bash
+# If installed globally
+orm <command>
+
+# If using local dependency
 dart run ormed_cli:orm <command>
 ```
 

@@ -22,11 +22,11 @@ A strongly-typed ORM (Object-Relational Mapping) core for Dart, inspired by Eloq
 
 ```yaml
 dependencies:
-  ormed: ^0.1.0
-  ormed_sqlite: ^0.1.0 # Or ormed_postgres, ormed_mysql
+  ormed: ^0.1.0-dev+1
+  ormed_sqlite: ^0.1.0-dev+1 # Or ormed_postgres, ormed_mysql
 
 dev_dependencies:
-  ormed_cli: ^0.1.0
+  ormed_cli: ^0.1.0-dev+1
   build_runner: ^2.4.0
 ```
 
@@ -34,17 +34,25 @@ dev_dependencies:
 
 The recommended way to use Ormed is via the `orm` CLI, which manages migrations, seeders, and project scaffolding.
 
-### 1. Initialize the Project
+### 1. Install the CLI
+
+```bash
+dart pub global activate ormed_cli
+```
+
+### 2. Initialize the Project
 
 Scaffold the configuration and directory structure:
 
 ```bash
-dart run ormed_cli:orm init
+orm init
 ```
+
+(Or use `dart run ormed_cli:orm init` if not installed globally).
 
 This creates `orm.yaml` and the `lib/src/database` directory.
 
-### 2. Define a Model
+### 3. Define a Model
 
 Create a model file (e.g., `lib/src/models/user.dart`):
 

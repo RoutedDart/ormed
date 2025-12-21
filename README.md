@@ -43,18 +43,24 @@ Part of the [Routed](https://github.com/RoutedDart) ecosystem.
 
 ## 🚀 Quick Start
 
-### 1. Add dependencies
+### 1. Install the CLI
+
+```bash
+dart pub global activate ormed_cli
+```
+
+### 2. Add dependencies
 
 ```yaml
 dependencies:
-  ormed: ^0.1.0
-  ormed_sqlite: ^0.1.0  # or your preferred driver
+  ormed: ^0.1.0-dev+1
+  ormed_sqlite: ^0.1.0-dev+1  # or your preferred driver
 
 dev_dependencies:
   build_runner: ^2.4.0
 ```
 
-### 2. Define a model
+### 3. Define a model
 
 ```dart
 import 'package:ormed/ormed.dart';

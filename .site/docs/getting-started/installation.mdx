@@ -12,20 +12,27 @@ import TabItem from '@theme/TabItem';
 - Dart SDK >= 3.0.0
 - A supported database driver package
 
+## Install the CLI (Recommended)
+
+The Ormed CLI manages migrations, seeders, and project scaffolding. Install it globally for the best experience:
+
+```bash
+dart pub global activate ormed_cli
+```
+
 ## Install Dependencies
 
-Add Ormed, the CLI, and at least one database driver to your `pubspec.yaml`:
+Add Ormed and at least one database driver to your `pubspec.yaml`:
 
 <Tabs groupId="install-driver" defaultValue="sqlite">
   <TabItem value="sqlite" label="SQLite (recommended)">
 
 ```yaml
 dependencies:
-  ormed: ^0.1.0
-  ormed_sqlite: ^0.1.0
+  ormed: ^0.1.0-dev+1
+  ormed_sqlite: ^0.1.0-dev+1
 
 dev_dependencies:
-  ormed_cli: ^0.1.0
   build_runner: ^2.4.0
 ```
 
@@ -34,11 +41,10 @@ dev_dependencies:
 
 ```yaml
 dependencies:
-  ormed: ^0.1.0
-  ormed_postgres: ^0.1.0
+  ormed: ^0.1.0-dev+1
+  ormed_postgres: ^0.1.0-dev+1
 
 dev_dependencies:
-  ormed_cli: ^0.1.0
   build_runner: ^2.4.0
 ```
 
@@ -47,11 +53,10 @@ dev_dependencies:
 
 ```yaml
 dependencies:
-  ormed: ^0.1.0
-  ormed_mysql: ^0.1.0
+  ormed: ^0.1.0-dev+1
+  ormed_mysql: ^0.1.0-dev+1
 
 dev_dependencies:
-  ormed_cli: ^0.1.0
   build_runner: ^2.4.0
 ```
 
@@ -69,8 +74,10 @@ dart pub get
 Scaffold the default config, migration registry, and seed stubs:
 
 ```bash
-dart run ormed_cli:orm init
+orm init
 ```
+
+(Or use `dart run ormed_cli:orm init` if not installed globally).
 
 Key outputs:
 - `orm.yaml` — CLI + connection settings  
