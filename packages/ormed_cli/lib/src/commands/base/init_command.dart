@@ -71,11 +71,13 @@ class InitCommand extends Command<void> {
 
     // Load config
     final config = loadOrmProjectConfig(configFile);
+    final packageName = getPackageName(root);
 
     // Directories
     final migrationsDir = Directory(
       resolvePath(root, config.migrations.directory),
     );
+    final hasExistingMigrations = _hasDartFiles(migrationsDir);
     _ensureDirectory(migrationsDir, 'migrations directory', tracker);
 
     final registry = File(resolvePath(root, config.migrations.registry));
@@ -89,12 +91,16 @@ class InitCommand extends Command<void> {
     );
 
     final seedersDir = Directory(resolvePath(root, config.seeds!.directory));
+    final hasExistingSeeders = _hasDartFiles(seedersDir);
     _ensureDirectory(seedersDir, 'seeders directory', tracker);
 
     final seedRegistry = File(resolvePath(root, config.seeds!.registry));
     _writeFile(
       file: seedRegistry,
-      content: initialSeedRegistryTemplate,
+      content: initialSeedRegistryTemplate.replaceAll(
+        '{{package_name}}',
+        packageName,
+      ),
       label: 'seeders registry',
       force: force,
       tracker: tracker,
@@ -111,13 +117,12 @@ class InitCommand extends Command<void> {
       interactive: true,
     );
 
-    // Create schema dump directory
-    final schemaDumpDir = Directory(
-      resolvePath(root, config.migrations.schemaDump),
-    );
+    // Ensure schema dump parent directory exists
+    final schemaDumpPath = resolvePath(root, config.migrations.schemaDump);
+    final schemaDumpDir = Directory(p.dirname(schemaDumpPath));
     if (!schemaDumpDir.existsSync()) {
       schemaDumpDir.createSync(recursive: true);
-      tracker.paths['schema'] = schemaDumpDir.path;
+      tracker.paths['schema_dir'] = schemaDumpDir.path;
     }
     final gitkeep = File(p.join(schemaDumpDir.path, '.gitkeep'));
     if (!gitkeep.existsSync()) {
@@ -130,6 +135,7 @@ class InitCommand extends Command<void> {
         io: cliIO,
         root: root,
         config: config,
+        packageName: packageName,
         migrationsDir: migrationsDir,
         seedersDir: seedersDir,
         registryFile: registry,
@@ -137,8 +143,6 @@ class InitCommand extends Command<void> {
       );
     } else {
       // If not explicitly requested, check whether dirs contain files and prompt
-      final hasExistingMigrations = _hasDartFiles(migrationsDir);
-      final hasExistingSeeders = _hasDartFiles(seedersDir);
       if (hasExistingMigrations || hasExistingSeeders) {
         cliIO.section('Existing artifacts detected');
         if (hasExistingMigrations) {
@@ -161,6 +165,7 @@ class InitCommand extends Command<void> {
             io: cliIO,
             root: root,
             config: config,
+            packageName: packageName,
             migrationsDir: migrationsDir,
             seedersDir: seedersDir,
             registryFile: registry,
@@ -170,18 +175,17 @@ class InitCommand extends Command<void> {
       }
     }
 
-    cliIO.twoColumnDetail('Ledger table', config.migrations.ledgerTable);
-    cliIO.twoColumnDetail(
-      'Schema dump directory',
-      p.relative(schemaDumpDir.path, from: root.path),
-    );
+    cliIO.newLine();
+    cliIO.components.horizontalTable({
+      'Ledger table': config.migrations.ledgerTable,
+      'Schema dump directory': p.relative(schemaDumpDir.path, from: root.path),
+    });
 
     if (showPaths) {
-      cliIO.newLine();
       cliIO.section('Scaffolded artifact paths');
-      for (final entry in tracker.paths.entries) {
-        cliIO.twoColumnDetail(entry.key, tracker.relative(entry.value));
-      }
+      cliIO.components.horizontalTable(
+        tracker.paths.map((k, v) => MapEntry(k, tracker.relative(v))),
+      );
     }
 
     cliIO.newLine();
@@ -278,6 +282,7 @@ Future<void> _populateExisting({
   required Console io,
   required Directory root,
   required OrmProjectConfig config,
+  required String packageName,
   required Directory migrationsDir,
   required Directory seedersDir,
   required File registryFile,
@@ -290,6 +295,7 @@ Future<void> _populateExisting({
       .listSync(recursive: true)
       .whereType<File>()
       .where((f) => f.path.endsWith('.dart'))
+      .where((f) => f.path != registryFile.path)
       .toList()
     ..sort((a, b) => a.path.compareTo(b.path));
 
@@ -298,6 +304,8 @@ Future<void> _populateExisting({
       .listSync(recursive: true)
       .whereType<File>()
       .where((f) => f.path.endsWith('.dart'))
+      .where((f) => p.basename(f.path) != 'database_seeder.dart')
+      .where((f) => f.path != seedRegistryFile.path)
       .toList()
     ..sort((a, b) => a.path.compareTo(b.path));
 
@@ -393,6 +401,7 @@ Future<void> _populateExisting({
   final seedRegistryContent = [
     "import 'package:ormed_cli/runtime.dart';",
     "import 'package:ormed/ormed.dart';",
+    "import 'package:$packageName/orm_registry.g.dart';",
     "",
     ...seedImports,
     "",
@@ -409,14 +418,14 @@ Future<void> _populateExisting({
     "  _seeders,",
     "  names: names,",
     "  pretend: pretend,",
-    "  beforeRun: (conn) => conn.context.registry.registerGeneratedModels(),",
+    "  beforeRun: (conn) => bootstrapOrm(registry: conn.context.registry),",
     ");",
     "",
     "Future<void> main(List<String> args) => runSeedRegistryEntrypoint(",
     "  args: args,",
     "  seeds: _seeders,",
     "  beforeRun: (connection) =>",
-    "      connection.context.registry.registerGeneratedModels(),",
+    "      bootstrapOrm(registry: connection.context.registry),",
     ");",
   ].join('\n');
 

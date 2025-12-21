@@ -21,6 +21,8 @@ dart run ormed_cli:orm <command>
 
 ## Commands
 
+For a complete walkthrough of setting up a project with the CLI, see the [Getting Started Guide](https://github.com/kingwill101/ormed/tree/main/packages/ormed#getting-started).
+
 ### Project Initialization
 
 ```bash
@@ -160,7 +162,14 @@ project/
 
 ## Migration Formats
 
+Ormed supports both Dart and SQL migrations in the same project. The CLI automatically registers them in your migration registry.
+
 ### Dart Migrations (default)
+Type-safe migrations using a fluent `SchemaBuilder`.
+
+```bash
+dart run ormed_cli:orm make --name create_users_table
+```
 
 ```dart
 class CreateUsersTable extends Migration {
@@ -181,11 +190,34 @@ class CreateUsersTable extends Migration {
 ```
 
 ### SQL Migrations
+Raw `.sql` files for complex schema changes.
 
+```bash
+dart run ormed_cli:orm make --name add_bio_to_users --format sql
 ```
-m_20251220120000_create_users_table/
+
+This creates a directory:
+```
+m_20251220120000_add_bio_to_users/
 ├── up.sql
 └── down.sql
+```
+
+### Simultaneous Support
+The CLI runner is format-agnostic. It builds a unified timeline of all registered migrations based on their timestamps. When you run `migrate`, it will execute Dart classes and SQL files in the correct chronological order. This allows you to use Dart for standard schema changes and drop down to SQL for complex, database-specific logic without breaking the migration flow.
+
+## Runtime Bootstrapping
+
+When using the CLI, you should use the generated `bootstrapOrm()` function to initialize your `ModelRegistry`. This ensures all models, factories, and metadata are correctly registered.
+
+```dart
+import 'package:ormed/ormed.dart';
+import 'orm_registry.g.dart';
+
+void main() {
+  final registry = bootstrapOrm();
+  // ...
+}
 ```
 
 ## Global Options

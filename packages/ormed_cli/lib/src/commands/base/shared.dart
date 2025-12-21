@@ -11,6 +11,7 @@ import 'package:ormed_postgres/ormed_postgres.dart';
 import 'package:ormed_sqlite/ormed_sqlite.dart';
 import 'package:path/path.dart' as p;
 import 'package:meta/meta.dart';
+import 'package:yaml/yaml.dart';
 
 import '../../config.dart';
 
@@ -292,8 +293,9 @@ const String initialSeedRegistryTemplate =
     '''
 import 'package:ormed_cli/runtime.dart';
 import 'package:ormed/ormed.dart';
+import 'package:{{package_name}}/orm_registry.g.dart';
 
-import 'database_seeder.dart';
+import 'seeders/database_seeder.dart';
 $seedImportsMarkerStart
 $seedImportsMarkerEnd
 
@@ -301,7 +303,7 @@ final List<SeederRegistration> _seeders = <SeederRegistration>[
 $seedRegistryMarkerStart
   SeederRegistration(
     name: 'AppDatabaseSeeder',
-    factory: (context) => AppDatabaseSeeder(context.connection),
+    factory: (connection) => AppDatabaseSeeder(connection),
   ),
 $seedRegistryMarkerEnd
 ];
@@ -315,11 +317,14 @@ Future<void> runProjectSeeds(
       _seeders,
       names: names,
       pretend: pretend,
+      beforeRun: (conn) => bootstrapOrm(registry: conn.context.registry),
     );
 
 Future<void> main(List<String> args) => runSeedRegistryEntrypoint(
       args: args,
       seeds: _seeders,
+      beforeRun: (connection) =>
+          bootstrapOrm(registry: connection.context.registry),
     );
 ''';
 
@@ -341,6 +346,15 @@ Directory findProjectRoot([Directory? start]) {
     }
     dir = parent;
   }
+}
+
+String getPackageName(Directory root) {
+  final pubspecFile = File(p.join(root.path, 'pubspec.yaml'));
+  if (!pubspecFile.existsSync()) {
+    throw StateError('pubspec.yaml not found in ${root.path}');
+  }
+  final pubspec = loadYaml(pubspecFile.readAsStringSync()) as YamlMap;
+  return pubspec['name'] as String;
 }
 
 OrmProjectContext resolveOrmProject({String? configPath}) {
