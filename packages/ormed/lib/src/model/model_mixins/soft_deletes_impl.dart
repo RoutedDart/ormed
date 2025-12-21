@@ -17,11 +17,12 @@ mixin SoftDeletesImpl on ModelAttributes, ModelConnection {
 
   /// Timestamp describing when the row was soft deleted.
   ///
-  /// Returns a Carbon instance for fluent date manipulation.
+  /// Returns an immutable Carbon instance for fluent date manipulation.
+  /// The returned instance is immutable to prevent accidental mutation.
   CarbonInterface? get deletedAt {
     final value = getAttribute<DateTime?>(_column);
     if (value == null) return null;
-    return Carbon.fromDateTime(value);
+    return Carbon.fromDateTime(value).toImmutable();
   }
 
   set deletedAt(Object? value) {

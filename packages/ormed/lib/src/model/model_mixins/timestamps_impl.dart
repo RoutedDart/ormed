@@ -18,11 +18,12 @@ mixin TimestampsImpl on ModelAttributes {
 
   /// Timestamp when the model was created.
   ///
-  /// Returns a Carbon instance for fluent date manipulation.
+  /// Returns an immutable Carbon instance for fluent date manipulation.
+  /// The returned instance is immutable to prevent accidental mutation.
   CarbonInterface? get createdAt {
     final value = getAttribute<DateTime?>(_createdAtColumn);
     if (value == null) return null;
-    return Carbon.fromDateTime(value);
+    return Carbon.fromDateTime(value).toImmutable();
   }
 
   set createdAt(Object? value) {
@@ -41,11 +42,12 @@ mixin TimestampsImpl on ModelAttributes {
 
   /// Timestamp when the model was last updated.
   ///
-  /// Returns a Carbon instance for fluent date manipulation.
+  /// Returns an immutable Carbon instance for fluent date manipulation.
+  /// The returned instance is immutable to prevent accidental mutation.
   CarbonInterface? get updatedAt {
     final value = getAttribute<DateTime?>(_updatedAtColumn);
     if (value == null) return null;
-    return Carbon.fromDateTime(value);
+    return Carbon.fromDateTime(value).toImmutable();
   }
 
   set updatedAt(Object? value) {
@@ -93,13 +95,15 @@ mixin TimestampsTZImpl on ModelAttributes {
 
   /// Timestamp when the model was created (UTC).
   ///
-  /// Returns a Carbon instance in UTC timezone for fluent date manipulation.
+  /// Returns an immutable Carbon instance in UTC timezone for fluent date manipulation.
+  /// The returned instance is immutable to prevent accidental mutation.
   CarbonInterface? get createdAt {
     final value = getAttribute<DateTime?>(_createdAtColumn);
     if (value == null) return null;
     // Ensure the DateTime is UTC, then create Carbon with explicit UTC timezone
+    // Return immutable to prevent accidental mutation of the timestamp
     final utcDateTime = value.isUtc ? value : value.toUtc();
-    return Carbon.fromDateTime(utcDateTime).tz('UTC');
+    return Carbon.fromDateTime(utcDateTime).tz('UTC').toImmutable();
   }
 
   set createdAt(Object? value) {
@@ -118,13 +122,15 @@ mixin TimestampsTZImpl on ModelAttributes {
 
   /// Timestamp when the model was last updated (UTC).
   ///
-  /// Returns a Carbon instance in UTC timezone for fluent date manipulation.
+  /// Returns an immutable Carbon instance in UTC timezone for fluent date manipulation.
+  /// The returned instance is immutable to prevent accidental mutation.
   CarbonInterface? get updatedAt {
     final value = getAttribute<DateTime?>(_updatedAtColumn);
     if (value == null) return null;
     // Ensure the DateTime is UTC, then create Carbon with explicit UTC timezone
+    // Return immutable to prevent accidental mutation of the timestamp
     final utcDateTime = value.isUtc ? value : value.toUtc();
-    return Carbon.fromDateTime(utcDateTime).tz('UTC');
+    return Carbon.fromDateTime(utcDateTime).tz('UTC').toImmutable();
   }
 
   set updatedAt(Object? value) {
@@ -170,10 +176,13 @@ mixin SoftDeletesTZImpl on ModelAttributes {
 
   /// Timestamp describing when the row was soft deleted (UTC).
   ///
-  /// Returns a Carbon instance in UTC timezone for fluent date manipulation.
+  /// Returns an immutable Carbon instance in UTC timezone for fluent date manipulation.
+  /// The returned instance is immutable to prevent accidental mutation.
   CarbonInterface? get deletedAt {
     final value = getAttribute<DateTime?>(_column);
-    return value != null ? Carbon.fromDateTime(value).toUtc() : null;
+    return value != null
+        ? Carbon.fromDateTime(value).toUtc().toImmutable()
+        : null;
   }
 
   set deletedAt(Object? value) {
