@@ -22,6 +22,28 @@ The code generator detects this mixin and:
 - Applies timestamp implementation to the generated tracked class
 - Automatically sets timestamps on insert/update operations
 
+## Carbon Integration
+
+Ormed integrates with the [Carbonized](https://pub.dev/packages/carbonized) library to provide a fluent API for date manipulation. The `createdAt` and `updatedAt` getters return a `CarbonInterface?` instance.
+
+```dart
+final user = await repo.find(1);
+if (user != null) {
+  print(user.createdAt?.diffForHumans()); // "2 hours ago"
+  print(user.updatedAt?.addDays(1).isFuture); // true
+}
+```
+
+### Flexible Setters
+
+The `createdAt` and `updatedAt` setters accept both standard Dart `DateTime` objects and `CarbonInterface` instances.
+
+```dart
+user.updatedAt = DateTime.now();
+// or
+user.updatedAt = Carbon.now().subDays(1);
+```
+
 ## Timezone-Aware Timestamps
 
 For timestamps stored in UTC, use `TimestampsTZ`:

@@ -80,7 +80,8 @@ Future<void> softDeleteStatus(DataSource dataSource, int postId) async {
   final post = await dataSource.query<$Post>().withTrashed().find(postId);
 
   if (post != null && post.trashed) {
-    print('Post was deleted at: ${post.deletedAt}');
+    // deletedAt returns a CarbonInterface?
+    print('Post was deleted: ${post.deletedAt?.diffForHumans()}');
   }
 }
 // #endregion soft-delete-status

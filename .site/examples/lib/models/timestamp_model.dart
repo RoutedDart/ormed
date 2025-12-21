@@ -28,10 +28,11 @@ class TimestampArticleTz extends Model<TimestampArticleTz> with TimestampsTZ {
 // #endregion timestamps-tz
 
 // #region timestamps-manual
-// You can manually set timestamps if needed:
-// final post = $Post(
+// You can manually set timestamps using DateTime or Carbon:
+// final post = $TimestampPost(
 //   id: 0,
 //   title: 'My Post',
-//   createdAt: DateTime(2024, 1, 1),  // Override
+//   createdAt: DateTime(2024, 1, 1),
+//   updatedAt: Carbon.now().subDays(1),
 // );
 // #endregion timestamps-manual

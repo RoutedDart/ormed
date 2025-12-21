@@ -89,8 +89,31 @@ Permanently remove a record (bypass soft delete):
 
 ## Checking Soft Delete Status
 
-```dart file=../../examples/lib/soft_deletes.dart#soft-delete-status
+The `trashed` getter returns `true` if the model has been soft deleted.
 
+```dart
+if (user.trashed) {
+  print('User is in the trash');
+}
+```
+
+### Carbon Integration
+
+The `deletedAt` getter returns a `CarbonInterface?`, allowing for fluent date manipulation:
+
+```dart
+print(user.deletedAt?.format('Y-m-d H:i:s'));
+print(user.deletedAt?.diffForHumans()); // "deleted 5 minutes ago"
+```
+
+### Flexible Setters
+
+The `deletedAt` setter accepts both `DateTime` and `CarbonInterface`:
+
+```dart
+user.deletedAt = DateTime.now();
+// or
+user.deletedAt = Carbon.now();
 ```
 
 ## Combining with Timestamps
