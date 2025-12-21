@@ -6,6 +6,10 @@
 - Exported `carbonized` package directly from `ormed.dart`.
 - Improved `DateTimeCodec` to handle `Carbon` instances during decoding.
 - Fixed mass assignment to handle both field and column names for excluded attributes.
+- Optimized Postgres test performance using transactional isolation.
+- Fixed SQLite test cleanup issue where `test_g*` files were left behind.
+- Expanded testing documentation with isolation strategies and concurrency guides.
+- Updated doc comments to follow Effective Dart guidelines.
 
 ## 0.1.0-dev+2
 

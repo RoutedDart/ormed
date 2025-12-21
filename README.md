@@ -28,6 +28,7 @@ Part of the [Routed](https://github.com/RoutedDart) ecosystem.
 - **Observability** — Structured logging, query instrumentation, and tracing hooks
 - **Soft deletes** — Built-in `SoftDeletes` mixin with scoped queries
 - **Repository pattern** — Bulk inserts, upserts, and JSON updates
+- **Testing** — Robust database isolation with `ormedGroup` and `ormedTest`. See the [Testing Guide](packages/ormed/docs/testing.md).
 
 ---
 
@@ -53,8 +54,8 @@ dart pub global activate ormed_cli
 
 ```yaml
 dependencies:
-  ormed: ^0.1.0-dev+2
-  ormed_sqlite: ^0.1.0-dev+2  # or your preferred driver
+  ormed: ^0.1.0-dev+3
+  ormed_sqlite: ^0.1.0-dev+3  # or your preferred driver
 
 dev_dependencies:
   build_runner: ^2.4.0

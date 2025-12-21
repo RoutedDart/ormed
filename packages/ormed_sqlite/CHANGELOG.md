@@ -2,6 +2,7 @@
 
 ## 0.1.0-dev+3
 
+- Fixed test cleanup issue where `test_g*` files were left behind.
 - Synchronized release.
 
 ## 0.1.0-dev+2

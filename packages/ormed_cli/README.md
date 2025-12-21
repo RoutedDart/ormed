@@ -22,7 +22,7 @@ Add it to your `dev_dependencies` in `pubspec.yaml`. This ensures you always hav
 
 ```yaml
 dev_dependencies:
-  ormed_cli: ^0.1.0-dev+2
+  ormed_cli: ^0.1.0-dev+3
 ```
 
 > **Note:** Adding `ormed_cli` as a local dependency will pull in all supported database drivers (SQLite, MySQL, Postgres) and their respective native dependencies. If you want to keep your project's dependency tree minimal, use the **Global** installation instead.

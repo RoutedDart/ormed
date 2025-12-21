@@ -22,11 +22,11 @@ A strongly-typed ORM (Object-Relational Mapping) core for Dart, inspired by Eloq
 
 ```yaml
 dependencies:
-  ormed: ^0.1.0-dev+2
-  ormed_sqlite: ^0.1.0-dev+2 # Or ormed_postgres, ormed_mysql
+  ormed: ^0.1.0-dev+3
+  ormed_sqlite: ^0.1.0-dev+3 # Or ormed_postgres, ormed_mysql
 
 dev_dependencies:
-  ormed_cli: ^0.1.0-dev+2
+  ormed_cli: ^0.1.0-dev+3
   build_runner: ^2.4.0
 ```
 

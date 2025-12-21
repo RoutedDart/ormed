@@ -2,6 +2,7 @@
 
 ## 0.1.0-dev+3
 
+- Optimized test performance using transactional isolation.
 - Synchronized release.
 
 ## 0.1.0-dev+2
