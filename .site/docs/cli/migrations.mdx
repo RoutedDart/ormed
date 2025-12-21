@@ -99,6 +99,21 @@ dart run ormed_cli:orm migrate:refresh
 
 ## Generating migrations (Dart or SQL)
 
+The `make` command can generate both Dart and SQL migrations.
+
+### Dart Migrations (Default)
+```bash
+dart run ormed_cli:orm make --name create_users_table
+```
+
+### SQL Migrations
+```bash
+dart run ormed_cli:orm make --name add_bio_to_users --format sql
+```
+
+### Simultaneous Support
+The CLI runner is designed to handle both formats seamlessly. When you run `migrate`, it builds a unified timeline of all registered migrations. It doesn't matter if a migration is a Dart class or a pair of SQL files; they will be executed in the correct chronological order. This allows you to use Dart for standard schema changes and drop down to SQL for complex, database-specific logic without breaking the migration flow.
+
 Use `make` to scaffold a migration entry:
 
 <Tabs groupId="make-migration-format" defaultValue="dart">

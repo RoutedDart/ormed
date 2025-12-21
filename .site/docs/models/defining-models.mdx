@@ -9,6 +9,19 @@ import TabItem from '@theme/TabItem';
 
 Models in Ormed are Dart classes annotated with `@OrmModel` that map to database tables.
 
+## Naming Conventions
+
+By default, Ormed follows standard database naming conventions:
+
+- **Tables**: Pluralized `snake_case` version of the class name.
+  - `User` → `users`
+  - `UserRole` → `user_roles`
+- **Columns**: `snake_case` version of the field name.
+  - `emailAddress` → `email_address`
+  - `createdAt` → `created_at`
+
+You can override these defaults using the `table` property on `@OrmModel` and the `columnName` property on `@OrmField`.
+
 :::note Snippet context
 - Snippets show model definitions and generated usage in isolation.
 - Run `dart run build_runner build` after creating/updating models to generate `$Model`, `OrmDefinition`, and DTOs.

@@ -15,6 +15,29 @@ Migrations solve a fundamental problem: how to evolve your database schema safel
 
 Ormed migrations support SQLite, PostgreSQL, and MySQL, providing a unified API for schema management.
 
+## Migration Formats
+
+Ormed supports two migration formats that can be used interchangeably and even mixed within the same project.
+
+### Dart Migrations (Default)
+Type-safe migrations using a fluent `SchemaBuilder`. This is the recommended format for most changes as it provides IDE autocompletion and driver-agnostic schema definitions.
+
+```bash
+dart run ormed_cli:orm make --name create_users_table
+```
+
+### SQL Migrations
+Raw `.sql` files for complex schema changes, database-specific features (like triggers or stored procedures), or when porting existing SQL scripts.
+
+```bash
+dart run ormed_cli:orm make --name add_bio_to_users --format sql
+```
+
+This creates a directory containing `up.sql` and `down.sql` files.
+
+### Simultaneous Support
+The migration runner is format-agnostic. It builds a chronological timeline of all registered migrations based on their timestamps. When you run `orm migrate`, it will execute Dart classes and SQL files in the correct order, ensuring your schema evolves predictably regardless of which format you chose for a specific change.
+
 ## Basic Structure
 
 Every migration extends the `Migration` base class:

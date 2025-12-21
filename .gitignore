@@ -5,3 +5,4 @@ pubspec.lock
 .gemini/
 third_party/
 build/
+orm_bootstrap_test/
