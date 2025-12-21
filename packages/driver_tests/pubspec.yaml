@@ -1,7 +1,7 @@
 name: driver_tests
 description: Shared ORM driver integration test suites reused by ORM drivers.
 publish_to: none
-version: 0.1.0-dev
+version: 0.1.0-dev+1
 resolution: workspace
 
 environment:
