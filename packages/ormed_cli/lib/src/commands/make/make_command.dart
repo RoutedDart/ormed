@@ -168,20 +168,47 @@ String _toPascalCase(String slug) {
       .join();
 }
 
-String _migrationFileTemplate(String className) =>
-    '''
+String _migrationFileTemplate(
+  String className, {
+  String? tableName,
+  bool createTable = false,
+}) {
+  var up = '';
+  var down = '';
+  if (tableName != null) {
+    if (createTable) {
+      up = """
+    schema.create('$tableName', (table) {
+      table.id();
+      table.timestamps();
+    });""";
+      down = "    schema.drop('$tableName');";
+    } else {
+      up = """
+    schema.table('$tableName', (table) {
+      //
+    });""";
+    }
+  }
+
+  return '''
 import 'package:ormed/migrations.dart';
 
 class $className extends Migration {
   const $className();
 
   @override
-  void up(SchemaBuilder schema) {}
+  void up(SchemaBuilder schema) {
+$up
+  }
 
   @override
-  void down(SchemaBuilder schema) {}
+  void down(SchemaBuilder schema) {
+$down
+  }
 }
 ''';
+}
 
 String _seederFileTemplate(String className) =>
     '''
@@ -207,6 +234,10 @@ class $className extends DatabaseSeeder {
 
 String _toSnakeCase(String slug) => slug
     .trim()
+    .replaceAllMapped(
+      RegExp(r'([a-z0-9])([A-Z])'),
+      (match) => '${match.group(1)}_${match.group(2)}',
+    )
     .replaceAll(RegExp(r'[^a-zA-Z0-9]+'), '_')
     .replaceAll(RegExp(r'_+'), '_')
     .replaceAll(RegExp(r'^_+|_+$'), '')
@@ -261,8 +292,10 @@ void _createSeeder({
   }
   file.writeAsStringSync(_seederFileTemplate(className));
   cliIO.success('Created seeder');
-  cliIO.twoColumnDetail('File', p.relative(file.path, from: root.path));
-  cliIO.twoColumnDetail('Class', className);
+  cliIO.components.horizontalTable({
+    'File': p.relative(file.path, from: root.path),
+    'Class': className,
+  });
 
   final registryPath = resolvePath(root, seeds.registry);
   final registry = File(registryPath);
@@ -344,13 +377,21 @@ void _createMigration({
     if (file.existsSync()) {
       throw UsageException('Migration file $fileName already exists.', usage);
     }
-    file.writeAsStringSync(_migrationFileTemplate(className));
+    file.writeAsStringSync(_migrationFileTemplate(
+      className,
+      tableName: tableName,
+      createTable: createTable,
+    ));
     createdDisplayPath = fullPath
         ? file.path
         : p.relative(file.path, from: root.path);
     cliIO.success('Created migration');
-    cliIO.twoColumnDetail('File', createdDisplayPath);
-    cliIO.twoColumnDetail('Class', className);
+    cliIO.components.horizontalTable({
+      'File': createdDisplayPath,
+      'Class': className,
+      if (createTable || tableName != null)
+        'Table': tableName ?? 'guessing from slug',
+    });
   } else {
     final dir = Directory(p.join(migrationsDir.path, migrationId));
     if (dir.existsSync()) {
@@ -366,13 +407,12 @@ void _createMigration({
         ? dir.path
         : p.relative(dir.path, from: root.path);
     cliIO.success('Created SQL migration');
-    cliIO.twoColumnDetail('Directory', createdDisplayPath);
-    cliIO.twoColumnDetail('Files', 'up.sql, down.sql');
-  }
-
-  if (createTable || tableName != null) {
-    final tableInfo = tableName ?? 'guessing from slug';
-    cliIO.twoColumnDetail('Table', tableInfo);
+    cliIO.components.horizontalTable({
+      'Directory': createdDisplayPath,
+      'Files': 'up.sql, down.sql',
+      if (createTable || tableName != null)
+        'Table': tableName ?? 'guessing from slug',
+    });
   }
 
   final registryPath = resolvePath(root, config.migrations.registry);
