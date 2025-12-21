@@ -418,8 +418,6 @@ class MySqlCarbonInterfaceCodec extends ValueCodec<CarbonInterface> {
 String _formatDateTime(DateTime value) {
   // MySQL DATETIME stores local time as-is (not converted to UTC)
   // Only TIMESTAMP converts to/from UTC automatically
-  // Calculate full microseconds: milliseconds * 1000 + microseconds
-  final totalMicroseconds = (value.millisecond * 1000) + value.microsecond;
   final buffer = StringBuffer()
     ..write(_padNumber(value.year, 4))
     ..write('-')
