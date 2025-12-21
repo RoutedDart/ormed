@@ -32,7 +32,7 @@ dependencies:
 dev_dependencies:
   build_runner: ^2.10.4
   lints: ^6.0.0
-  ormed_sqlite: 0.1.0-dev
+  ormed_sqlite: ^0.1.0-dev
   driver_tests: 0.1.0-dev
   ormed_mysql: ^0.1.0-dev
   ormed_postgres: ^0.1.0-dev

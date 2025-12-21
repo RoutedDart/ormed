@@ -8,10 +8,10 @@ resolution: workspace
 # Add regular dependencies here.
 dependencies:
   path: ^1.9.1
-  ormed: 0.1.0-dev
-  ormed_sqlite: 0.1.0-dev
-  ormed_cli: 0.1.0-dev
-  artisanal: 0.1.0-dev
+  ormed: ^0.1.0-dev
+  ormed_sqlite: ^0.1.0-dev
+  ormed_cli: ^0.1.0-dev
+  artisanal: ^0.1.0-dev
 
 dev_dependencies:
   lints: ^6.0.0
