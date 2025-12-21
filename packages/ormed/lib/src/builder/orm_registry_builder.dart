@@ -297,6 +297,9 @@ String renderRegistryContent(List<ModelSummary> models) {
     'ModelRegistry bootstrapOrm({ModelRegistry? registry, EventBus? bus, ScopeRegistry? scopes, bool registerFactories = true, bool registerEventHandlers = true, bool registerScopes = true}) {',
   );
   buffer.writeln('  final reg = registry ?? buildOrmRegistry();');
+  buffer.writeln('  if (registry != null) {');
+  buffer.writeln('    reg.registerGeneratedModels();');
+  buffer.writeln('  }');
   buffer.writeln('  if (registerFactories) {');
   buffer.writeln('    registerOrmFactories();');
   buffer.writeln('  }');

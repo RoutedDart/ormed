@@ -78,6 +78,27 @@ class ModelCodecEmitter {
         ? context.trackedModelClassName
         : context.className;
     buffer.writeln('$targetClass(');
+
+    // The generated subclass constructor always uses named parameters
+    // to simplify handling of defaults and optional fields.
+    if (subclass) {
+      for (final parameter in constructor.formalParameters) {
+        final paramName = parameter.displayName;
+        final field = fields.firstWhereOrNull(
+          (f) => !f.isVirtual && f.name == paramName,
+        );
+        if (field == null) {
+          throw InvalidGenerationSourceError(
+            'Constructor parameter $paramName is not backed by a field.',
+            element: constructor,
+          );
+        }
+        buffer.writeln('      $paramName: ${field.localIdentifier},');
+      }
+      buffer.writeln('    )');
+      return buffer.toString();
+    }
+
     if (constructor.formalParameters.isEmpty) {
       buffer.writeln('    ');
     } else if (constructor.formalParameters.every((param) => param.isNamed)) {

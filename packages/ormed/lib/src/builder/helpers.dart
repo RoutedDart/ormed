@@ -1,6 +1,7 @@
 import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/dart/element/nullability_suffix.dart';
 import 'package:analyzer/dart/element/type.dart';
+import 'package:inflector_dart/inflector_dart.dart' as inflector;
 import 'package:source_gen/source_gen.dart';
 
 const _annotationsLibraryUri = 'package:ormed/src/annotations.dart';
@@ -171,4 +172,16 @@ String? normalizeConstructorOverride(ConstantReader annotation) {
   }
   final trimmed = value.trim();
   return trimmed.isEmpty ? null : trimmed;
+}
+
+String inferTableName(String className) {
+  return inflector.tableize(className);
+}
+
+String inferColumnName(String fieldName) {
+  return inflector.underscore(fieldName);
+}
+
+String pluralize(String value) {
+  return inflector.pluralize(value);
 }

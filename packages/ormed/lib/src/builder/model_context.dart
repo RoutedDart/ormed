@@ -34,7 +34,8 @@ bool _hasFactoryAnnotation(ClassElement element) {
 class ModelContext {
   ModelContext(this.element, this.annotation)
     : className = element.displayName,
-      tableName = annotation.peek('table')?.stringValue,
+      tableName = annotation.peek('table')?.stringValue ??
+          inferTableName(element.displayName),
       schema = annotation.peek('schema')?.stringValue,
       generateCodec = annotation.peek('generateCodec')?.boolValue ?? true,
       mixinSoftDeletes = element.mixins.any(isSoftDeletesMixin),
@@ -66,13 +67,6 @@ class ModelContext {
       annotationPrimaryKeys = readStringList(annotation.peek('primaryKey')),
       connectionAnnotation = annotation.peek('connection')?.stringValue,
       constructorOverride = normalizeConstructorOverride(annotation) {
-    if (tableName == null || tableName!.isEmpty) {
-      throw InvalidGenerationSourceError(
-        '@OrmModel requires a non-empty table name.',
-        element: element,
-      );
-    }
-
     fields = _collectFields();
     _applyAnnotationPrimaryKeys(fields);
     if (fields.isEmpty) {
@@ -324,7 +318,8 @@ class ModelContext {
     final softDeleteColumnOverride = softDeleteReader
         ?.peek('columnName')
         ?.stringValue;
-    var columnName = reader?.peek('columnName')?.stringValue ?? fieldName;
+    var columnName = reader?.peek('columnName')?.stringValue ??
+        inferColumnName(fieldName);
     var effectiveNullable = nullableOverride == null || nullableOverride.isNull
         ? field.type.nullabilitySuffix == NullabilitySuffix.question
         : nullableOverride.boolValue;
@@ -587,10 +582,26 @@ class ModelContext {
       (field) => !field.isVirtual && field.name == 'id',
     );
     if (fallback == null) {
-      throw InvalidGenerationSourceError(
-        'At least one field must be marked as primary key for $className.',
-        element: element,
-      );
+      // Auto-create a virtual 'id' primary key if none exists.
+      // This follows the Active Record convention where every table has an 'id' PK.
+      fields.add(FieldDescriptor(
+        owner: className,
+        name: 'id',
+        columnName: 'id',
+        dartType: 'int',
+        resolvedType: 'int',
+        isPrimaryKey: true,
+        isNullable: false,
+        isUnique: true,
+        isIndexed: true,
+        autoIncrement: true,
+        columnType: 'INTEGER',
+        defaultValueSql: null,
+        codecType: null,
+        isSoftDelete: false,
+        isVirtual: true,
+      ));
+      return;
     }
     fallback.isPrimaryKey = true;
   }

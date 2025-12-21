@@ -1,3 +1,4 @@
+import '../helpers.dart';
 import '../model_context.dart';
 
 class CompanionClassEmitter {
@@ -9,9 +10,7 @@ class CompanionClassEmitter {
     final buffer = StringBuffer();
     final className = context.className;
     final generatedClassName = context.trackedModelClassName;
-    // Simple pluralization: add 's'
-    // TODO: Allow configuration or use a proper pluralizer
-    final companionName = '${className}s';
+    final companionName = pluralize(className);
 
     buffer.writeln('class $companionName {');
     buffer.writeln('  const $companionName._();');

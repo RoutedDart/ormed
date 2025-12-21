@@ -43,7 +43,7 @@ import 'package:meta/meta.dart';
 @immutable
 class OrmModel {
   const OrmModel({
-    required this.table,
+    this.table,
     this.schema,
     this.generateCodec = true,
     this.hidden = const [],
@@ -60,7 +60,7 @@ class OrmModel {
   });
 
   /// The database table/collection name.
-  final String table;
+  final String? table;
 
   /// An optional schema or namespace qualifier.
   final String? schema;
