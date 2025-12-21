@@ -65,8 +65,8 @@ extension NoFactoryOrmDefinition on NoFactory {
   static ModelDefinition<$NoFactory> get definition => _$NoFactoryDefinition;
 }
 
-class NoFactorys {
-  const NoFactorys._();
+class NoFactories {
+  const NoFactories._();
 
   /// Starts building a query for [$NoFactory].
   ///

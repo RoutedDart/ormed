@@ -58,7 +58,8 @@ final class $MySqlBuiltinTypesRecord extends MySqlBuiltinTypesRecord
   });
 }
 
-final class _MySqlBuiltinTypesCodec extends ModelCodec<MySqlBuiltinTypesRecord> {
+final class _MySqlBuiltinTypesCodec
+    extends ModelCodec<MySqlBuiltinTypesRecord> {
   const _MySqlBuiltinTypesCodec();
 
   @override
@@ -256,9 +257,7 @@ class _CreateMysqlBuiltinTypesTable extends Migration {
       table.set('tags', ['alpha', 'beta', 'gamma']);
       table.json('document');
       table.binary('payload');
-      table
-          .column('bit_value', const ColumnType.custom('BIT(4)'))
-          .nullable();
+      table.column('bit_value', const ColumnType.custom('BIT(4)')).nullable();
       table.geometry('geom').nullable();
     });
   }
@@ -303,7 +302,10 @@ Future<void> main() async {
     ],
     strategy: DatabaseIsolationStrategy.recreate,
     adapterFactory: (_) => MySqlDriverAdapter.custom(
-      config: DatabaseConfig(driver: 'mysql', options: {'url': url, 'ssl': true}),
+      config: DatabaseConfig(
+        driver: 'mysql',
+        options: {'url': url, 'ssl': true},
+      ),
     ),
   );
 
@@ -328,20 +330,22 @@ Future<void> main() async {
       final document = <String, Object?>{'hello': 'world', 'count': 1};
       final payload = Uint8List.fromList([1, 2, 3, 4, 5]);
 
-      final created = await scopedDataSource.repo<MySqlBuiltinTypesRecord>().insert(
-        $MySqlBuiltinTypesRecord(
-          active: true,
-          amount: amount,
-          timeValue: timeValue,
-          dateValue: dateValue,
-          dateTimeValue: dateTimeValue,
-          timestampValue: timestampValue,
-          uuidValue: uuidValue,
-          tags: tags,
-          document: document,
-          payload: payload,
-        ),
-      );
+      final created = await scopedDataSource
+          .repo<MySqlBuiltinTypesRecord>()
+          .insert(
+            $MySqlBuiltinTypesRecord(
+              active: true,
+              amount: amount,
+              timeValue: timeValue,
+              dateValue: dateValue,
+              dateTimeValue: dateTimeValue,
+              timestampValue: timestampValue,
+              uuidValue: uuidValue,
+              tags: tags,
+              document: document,
+              payload: payload,
+            ),
+          );
 
       expect(created.id, isNotNull);
       expect(created.amount, equals(amount));

@@ -70,7 +70,7 @@ const FieldDefinition _$UserAgeField = FieldDefinition(
 
 const FieldDefinition _$UserCreatedAtField = FieldDefinition(
   name: 'createdAt',
-  columnName: 'createdAt',
+  columnName: 'created_at',
   dartType: 'DateTime',
   resolvedType: 'DateTime?',
   isPrimaryKey: false,
@@ -126,7 +126,7 @@ Map<String, Object?> _encodeUserUntracked(
     'active': registry.encodeField(_$UserActiveField, m.active),
     'name': registry.encodeField(_$UserNameField, m.name),
     'age': registry.encodeField(_$UserAgeField, m.age),
-    'createdAt': registry.encodeField(_$UserCreatedAtField, m.createdAt),
+    'created_at': registry.encodeField(_$UserCreatedAtField, m.createdAt),
     'profile': registry.encodeField(_$UserProfileField, m.profile),
     'metadata': registry.encodeField(_$UserMetadataField, m.metadata),
   };
@@ -267,7 +267,7 @@ class _$UserCodec extends ModelCodec<$User> {
       'active': registry.encodeField(_$UserActiveField, model.active),
       'name': registry.encodeField(_$UserNameField, model.name),
       'age': registry.encodeField(_$UserAgeField, model.age),
-      'createdAt': registry.encodeField(_$UserCreatedAtField, model.createdAt),
+      'created_at': registry.encodeField(_$UserCreatedAtField, model.createdAt),
       'profile': registry.encodeField(_$UserProfileField, model.profile),
       'metadata': registry.encodeField(_$UserMetadataField, model.metadata),
     };
@@ -292,7 +292,7 @@ class _$UserCodec extends ModelCodec<$User> {
     );
     final DateTime? userCreatedAtValue = registry.decodeField<DateTime?>(
       _$UserCreatedAtField,
-      data['createdAt'],
+      data['created_at'],
     );
     final Map<String, Object?>? userProfileValue = registry
         .decodeField<Map<String, Object?>?>(
@@ -320,7 +320,7 @@ class _$UserCodec extends ModelCodec<$User> {
       'active': userActiveValue,
       'name': userNameValue,
       'age': userAgeValue,
-      'createdAt': userCreatedAtValue,
+      'created_at': userCreatedAtValue,
       'profile': userProfileValue,
       'metadata': userMetadataValue,
     });
@@ -356,7 +356,7 @@ class UserInsertDto implements InsertDto<$User> {
       if (active != null) 'active': active,
       if (name != null) 'name': name,
       if (age != null) 'age': age,
-      if (createdAt != null) 'createdAt': createdAt,
+      if (createdAt != null) 'created_at': createdAt,
       if (profile != null) 'profile': profile,
       if (metadata != null) 'metadata': metadata,
     };
@@ -394,7 +394,7 @@ class UserUpdateDto implements UpdateDto<$User> {
       if (active != null) 'active': active,
       if (name != null) 'name': name,
       if (age != null) 'age': age,
-      if (createdAt != null) 'createdAt': createdAt,
+      if (createdAt != null) 'created_at': createdAt,
       if (profile != null) 'profile': profile,
       if (metadata != null) 'metadata': metadata,
     };
@@ -427,7 +427,7 @@ class UserPartial implements PartialEntity<$User> {
       active: row['active'] as bool?,
       name: row['name'] as String?,
       age: row['age'] as int?,
-      createdAt: row['createdAt'] as DateTime?,
+      createdAt: row['created_at'] as DateTime?,
       profile: row['profile'] as Map<String, Object?>?,
       metadata: row['metadata'] as Map<String, Object?>?,
     );
@@ -477,7 +477,7 @@ class UserPartial implements PartialEntity<$User> {
       if (active != null) 'active': active,
       if (name != null) 'name': name,
       if (age != null) 'age': age,
-      if (createdAt != null) 'createdAt': createdAt,
+      if (createdAt != null) 'created_at': createdAt,
       if (profile != null) 'profile': profile,
       if (metadata != null) 'metadata': metadata,
     };
@@ -518,7 +518,7 @@ class $User extends User with ModelAttributes implements OrmEntity {
       'active': active,
       'name': name,
       'age': age,
-      'createdAt': createdAt,
+      'created_at': createdAt,
       'profile': profile,
       'metadata': metadata,
     });
@@ -587,9 +587,9 @@ class $User extends User with ModelAttributes implements OrmEntity {
 
   @override
   DateTime? get createdAt =>
-      getAttribute<DateTime?>('createdAt') ?? super.createdAt;
+      getAttribute<DateTime?>('created_at') ?? super.createdAt;
 
-  set createdAt(DateTime? value) => setAttribute('createdAt', value);
+  set createdAt(DateTime? value) => setAttribute('created_at', value);
 
   @override
   Map<String, Object?>? get profile =>

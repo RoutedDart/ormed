@@ -7,9 +7,9 @@ class CreateDerivedForFactoriesTable extends Migration {
   void up(SchemaBuilder schema) {
     schema.create('derived_for_factories', (table) {
       table.integer('id').primaryKey().autoIncrement();
-      table.string('baseName').nullable();
-      table.string('layerOneNotes').nullable();
-      table.boolean('layerTwoFlag').nullable();
+      table.string('base_name').nullable();
+      table.string('layer_one_notes').nullable();
+      table.boolean('layer_two_flag').nullable();
     });
   }
 

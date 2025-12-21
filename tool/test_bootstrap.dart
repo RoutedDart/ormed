@@ -49,7 +49,8 @@ Future<void> addDependencies() async {
   final pubspecFile = File(p.join(testDir, 'pubspec.yaml'));
   var content = pubspecFile.readAsStringSync();
 
-  final overrides = '''
+  final overrides =
+      '''
 dependency_overrides:
   ormed: { path: "$ormedRoot/packages/ormed" }
   ormed_sqlite: { path: "$ormedRoot/packages/ormed_sqlite" }
@@ -59,16 +60,29 @@ dependency_overrides:
 
   pubspecFile.writeAsStringSync(content + '\n' + overrides);
 
-  await run('dart', ['pub', 'add', 'ormed', 'ormed_sqlite', 'ormed_cli'],
-      workingDirectory: testDir);
-  await run('dart', ['pub', 'add', '--dev', 'build_runner'],
-      workingDirectory: testDir);
+  await run('dart', [
+    'pub',
+    'add',
+    'ormed',
+    'ormed_sqlite',
+    'ormed_cli',
+  ], workingDirectory: testDir);
+  await run('dart', [
+    'pub',
+    'add',
+    '--dev',
+    'build_runner',
+  ], workingDirectory: testDir);
 }
 
 Future<void> initOrm() async {
   print('Initializing ORM...');
-  await run('dart', ['run', 'ormed_cli:orm', 'init', '--no-interaction'],
-      workingDirectory: testDir);
+  await run('dart', [
+    'run',
+    'ormed_cli:orm',
+    'init',
+    '--no-interaction',
+  ], workingDirectory: testDir);
 }
 
 Future<void> createModel() async {
@@ -96,24 +110,34 @@ class User extends Model<User> {
 
 Future<void> runBuildRunner() async {
   print('Running build_runner...');
-  await run('dart', ['run', 'build_runner', 'build', '--delete-conflicting-outputs'],
-      workingDirectory: testDir);
+  await run('dart', [
+    'run',
+    'build_runner',
+    'build',
+    '--delete-conflicting-outputs',
+  ], workingDirectory: testDir);
 }
 
 Future<void> createDartMigration() async {
   print('Creating a Dart migration...');
-  await run(
-    'dart',
-    ['run', 'ormed_cli:orm', 'make', '--name', 'create_users_table', '--create', '--table', 'users'],
-    workingDirectory: testDir,
-  );
+  await run('dart', [
+    'run',
+    'ormed_cli:orm',
+    'make',
+    '--name',
+    'create_users_table',
+    '--create',
+    '--table',
+    'users',
+  ], workingDirectory: testDir);
 
   // Add columns to the migration
-  final migrationsDir = Directory(p.join(testDir, 'lib/src/database/migrations'));
-  final migrationFile = migrationsDir
-      .listSync()
-      .whereType<File>()
-      .firstWhere((f) => f.path.contains('create_users_table'));
+  final migrationsDir = Directory(
+    p.join(testDir, 'lib/src/database/migrations'),
+  );
+  final migrationFile = migrationsDir.listSync().whereType<File>().firstWhere(
+    (f) => f.path.contains('create_users_table'),
+  );
 
   var content = migrationFile.readAsStringSync();
   content = content.replaceFirst(
@@ -125,17 +149,22 @@ Future<void> createDartMigration() async {
 
 Future<void> createSqlMigration() async {
   print('Creating a SQL migration...');
-  await run(
-    'dart',
-    ['run', 'ormed_cli:orm', 'make', '--name', 'add_bio_to_users', '--format', 'sql'],
-    workingDirectory: testDir,
-  );
+  await run('dart', [
+    'run',
+    'ormed_cli:orm',
+    'make',
+    '--name',
+    'add_bio_to_users',
+    '--format',
+    'sql',
+  ], workingDirectory: testDir);
 
-  final migrationsDir = Directory(p.join(testDir, 'lib/src/database/migrations'));
-  final sqlDir = migrationsDir
-      .listSync()
-      .whereType<Directory>()
-      .firstWhere((d) => d.path.contains('add_bio_to_users'));
+  final migrationsDir = Directory(
+    p.join(testDir, 'lib/src/database/migrations'),
+  );
+  final sqlDir = migrationsDir.listSync().whereType<Directory>().firstWhere(
+    (d) => d.path.contains('add_bio_to_users'),
+  );
 
   final upSql = File(p.join(sqlDir.path, 'up.sql'));
   final downSql = File(p.join(sqlDir.path, 'down.sql'));
@@ -146,15 +175,27 @@ Future<void> createSqlMigration() async {
 
 Future<void> runMigrations() async {
   print('Running migrations...');
-  await run('dart', ['run', 'ormed_cli:orm', 'migrate'], workingDirectory: testDir);
+  await run('dart', [
+    'run',
+    'ormed_cli:orm',
+    'migrate',
+  ], workingDirectory: testDir);
 }
 
 Future<void> createSeeder() async {
   print('Creating a seeder...');
-  await run('dart', ['run', 'ormed_cli:orm', 'make', '--name', 'UserSeeder', '--seeder'],
-      workingDirectory: testDir);
+  await run('dart', [
+    'run',
+    'ormed_cli:orm',
+    'make',
+    '--name',
+    'UserSeeder',
+    '--seeder',
+  ], workingDirectory: testDir);
 
-  final seederFile = File(p.join(testDir, 'lib/src/database/seeders/user_seeder.dart'));
+  final seederFile = File(
+    p.join(testDir, 'lib/src/database/seeders/user_seeder.dart'),
+  );
   seederFile.writeAsStringSync('''
 import 'package:ormed/ormed.dart';
 import 'package:orm_bootstrap_test/src/models/user.dart';
@@ -176,7 +217,9 @@ class UserSeeder extends DatabaseSeeder {
 }
 ''');
 
-  final dbSeederFile = File(p.join(testDir, 'lib/src/database/seeders/database_seeder.dart'));
+  final dbSeederFile = File(
+    p.join(testDir, 'lib/src/database/seeders/database_seeder.dart'),
+  );
   dbSeederFile.writeAsStringSync('''
 import 'package:ormed/ormed.dart';
 import 'user_seeder.dart';
@@ -194,7 +237,11 @@ class AppDatabaseSeeder extends DatabaseSeeder {
 
 Future<void> runSeeders() async {
   print('Running seeders...');
-  await run('dart', ['run', 'ormed_cli:orm', 'seed'], workingDirectory: testDir);
+  await run('dart', [
+    'run',
+    'ormed_cli:orm',
+    'seed',
+  ], workingDirectory: testDir);
 }
 
 Future<void> analyzeProject() async {
@@ -285,7 +332,11 @@ void main() async {
   await run('dart', ['run', 'bin/verify_orm.dart'], workingDirectory: testDir);
 }
 
-Future<void> run(String command, List<String> args, {String? workingDirectory}) async {
+Future<void> run(
+  String command,
+  List<String> args, {
+  String? workingDirectory,
+}) async {
   final process = await Process.start(
     command,
     args,
@@ -295,6 +346,8 @@ Future<void> run(String command, List<String> args, {String? workingDirectory}) 
 
   final exitCode = await process.exitCode;
   if (exitCode != 0) {
-    throw Exception('Command $command ${args.join(' ')} exited with code $exitCode');
+    throw Exception(
+      'Command $command ${args.join(' ')} exited with code $exitCode',
+    );
   }
 }

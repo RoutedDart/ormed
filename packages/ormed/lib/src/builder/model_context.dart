@@ -34,7 +34,8 @@ bool _hasFactoryAnnotation(ClassElement element) {
 class ModelContext {
   ModelContext(this.element, this.annotation)
     : className = element.displayName,
-      tableName = annotation.peek('table')?.stringValue ??
+      tableName =
+          annotation.peek('table')?.stringValue ??
           inferTableName(element.displayName),
       schema = annotation.peek('schema')?.stringValue,
       generateCodec = annotation.peek('generateCodec')?.boolValue ?? true,
@@ -318,8 +319,8 @@ class ModelContext {
     final softDeleteColumnOverride = softDeleteReader
         ?.peek('columnName')
         ?.stringValue;
-    var columnName = reader?.peek('columnName')?.stringValue ??
-        inferColumnName(fieldName);
+    var columnName =
+        reader?.peek('columnName')?.stringValue ?? inferColumnName(fieldName);
     var effectiveNullable = nullableOverride == null || nullableOverride.isNull
         ? field.type.nullabilitySuffix == NullabilitySuffix.question
         : nullableOverride.boolValue;
@@ -584,23 +585,25 @@ class ModelContext {
     if (fallback == null) {
       // Auto-create a virtual 'id' primary key if none exists.
       // This follows the Active Record convention where every table has an 'id' PK.
-      fields.add(FieldDescriptor(
-        owner: className,
-        name: 'id',
-        columnName: 'id',
-        dartType: 'int',
-        resolvedType: 'int',
-        isPrimaryKey: true,
-        isNullable: false,
-        isUnique: true,
-        isIndexed: true,
-        autoIncrement: true,
-        columnType: 'INTEGER',
-        defaultValueSql: null,
-        codecType: null,
-        isSoftDelete: false,
-        isVirtual: true,
-      ));
+      fields.add(
+        FieldDescriptor(
+          owner: className,
+          name: 'id',
+          columnName: 'id',
+          dartType: 'int',
+          resolvedType: 'int',
+          isPrimaryKey: true,
+          isNullable: false,
+          isUnique: true,
+          isIndexed: true,
+          autoIncrement: true,
+          columnType: 'INTEGER',
+          defaultValueSql: null,
+          codecType: null,
+          isSoftDelete: false,
+          isVirtual: true,
+        ),
+      );
       return;
     }
     fallback.isPrimaryKey = true;

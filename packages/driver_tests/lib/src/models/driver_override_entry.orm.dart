@@ -98,8 +98,8 @@ extension DriverOverrideEntryOrmDefinition on DriverOverrideEntry {
       _$DriverOverrideEntryDefinition;
 }
 
-class DriverOverrideEntrys {
-  const DriverOverrideEntrys._();
+class DriverOverrideEntries {
+  const DriverOverrideEntries._();
 
   /// Starts building a query for [$DriverOverrideEntry].
   ///

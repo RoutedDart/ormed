@@ -66,7 +66,11 @@ Future<void> main(List<String> arguments) async {
     // Enable SQL logging if requested
     if (logSql) {
       ds!.beforeExecuting((statement) {
-        io.writeln(io.style.foreground(Colors.muted).render('[SQL] ${statement.sqlWithBindings}'));
+        io.writeln(
+          io.style
+              .foreground(Colors.muted)
+              .render('[SQL] ${statement.sqlWithBindings}'),
+        );
       });
     }
 
@@ -522,7 +526,9 @@ Future<void> _runTransactionShowcase(DataSource ds) async {
 
       // Clean up inside same transaction
       await ds.query<Tag>().whereEquals('name', tempTagName).forceDelete();
-      io.writeln('${io.style.foreground(Colors.success).render('✓')} Tag deleted in transaction');
+      io.writeln(
+        '${io.style.foreground(Colors.success).render('✓')} Tag deleted in transaction',
+      );
     });
     io.success('Transaction committed successfully');
   } catch (e) {

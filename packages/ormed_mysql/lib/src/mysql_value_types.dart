@@ -107,4 +107,3 @@ bool _bytesEqual(Uint8List a, Uint8List b) {
   }
   return true;
 }
-

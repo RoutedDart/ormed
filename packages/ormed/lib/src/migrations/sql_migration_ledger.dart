@@ -12,10 +12,7 @@ class SqlMigrationLedger implements MigrationLedger {
     String? tableName,
     String? tablePrefix,
   }) : this._(
-         _applyTablePrefix(
-           tableName ?? 'orm_migrations',
-           tablePrefix,
-         ),
+         _applyTablePrefix(tableName ?? 'orm_migrations', tablePrefix),
          _DriverInvoker.direct(driver),
          tablePrefix,
        );
@@ -27,10 +24,7 @@ class SqlMigrationLedger implements MigrationLedger {
     String? tableName,
     String? tablePrefix,
   }) : this._(
-         _applyTablePrefix(
-           tableName ?? 'orm_migrations',
-           tablePrefix,
-         ),
+         _applyTablePrefix(tableName ?? 'orm_migrations', tablePrefix),
          _DriverInvoker.managed(
            manager ?? ConnectionManager.defaultManager,
            connectionName,
@@ -39,11 +33,7 @@ class SqlMigrationLedger implements MigrationLedger {
          tablePrefix,
        );
 
-  SqlMigrationLedger._(
-    this.tableName,
-    this._driverInvoker,
-    this._tablePrefix,
-  );
+  SqlMigrationLedger._(this.tableName, this._driverInvoker, this._tablePrefix);
 
   final String tableName;
   final _DriverInvoker _driverInvoker;

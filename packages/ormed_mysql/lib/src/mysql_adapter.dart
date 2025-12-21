@@ -2292,9 +2292,7 @@ Object? _decodeResultValue(Object? value, [int? columnType]) {
   if (value is String) {
     if (columnType == _mysqlColumnTypeJson) {
       final trimmed = value.trim();
-      final looksLikeJson =
-          trimmed.startsWith('{') ||
-          trimmed.startsWith('[');
+      final looksLikeJson = trimmed.startsWith('{') || trimmed.startsWith('[');
       if (looksLikeJson) {
         try {
           final decoded = jsonDecode(trimmed);
@@ -2330,8 +2328,7 @@ Object? _decodeResultValue(Object? value, [int? columnType]) {
       try {
         final decodedText = utf8.decode(value).trim();
         final looksLikeJson =
-            decodedText.startsWith('{') ||
-            decodedText.startsWith('[');
+            decodedText.startsWith('{') || decodedText.startsWith('[');
         if (looksLikeJson) {
           final decoded = jsonDecode(decodedText);
           if (decoded is Map || decoded is List) {
@@ -2369,7 +2366,9 @@ String _formatDurationAsTime(Duration value) {
     ..write(':')
     ..write(seconds.toString().padLeft(2, '0'));
   if (micros != 0) {
-    buffer..write('.')..write(micros.toString().padLeft(6, '0'));
+    buffer
+      ..write('.')
+      ..write(micros.toString().padLeft(6, '0'));
   }
   return buffer.toString();
 }

@@ -9,7 +9,7 @@ part of 'derived_for_factory.dart';
 
 const FieldDefinition _$DerivedForFactoryLayerTwoFlagField = FieldDefinition(
   name: 'layerTwoFlag',
-  columnName: 'layerTwoFlag',
+  columnName: 'layer_two_flag',
   dartType: 'bool',
   resolvedType: 'bool?',
   isPrimaryKey: false,
@@ -21,7 +21,7 @@ const FieldDefinition _$DerivedForFactoryLayerTwoFlagField = FieldDefinition(
 
 const FieldDefinition _$DerivedForFactoryLayerOneNotesField = FieldDefinition(
   name: 'layerOneNotes',
-  columnName: 'layerOneNotes',
+  columnName: 'layer_one_notes',
   dartType: 'Map<String, Object?>',
   resolvedType: 'Map<String, Object?>?',
   isPrimaryKey: false,
@@ -46,7 +46,7 @@ const FieldDefinition _$DerivedForFactoryIdField = FieldDefinition(
 
 const FieldDefinition _$DerivedForFactoryBaseNameField = FieldDefinition(
   name: 'baseName',
-  columnName: 'baseName',
+  columnName: 'base_name',
   dartType: 'String',
   resolvedType: 'String?',
   isPrimaryKey: false,
@@ -62,16 +62,16 @@ Map<String, Object?> _encodeDerivedForFactoryUntracked(
 ) {
   final m = model as DerivedForFactory;
   return <String, Object?>{
-    'layerTwoFlag': registry.encodeField(
+    'layer_two_flag': registry.encodeField(
       _$DerivedForFactoryLayerTwoFlagField,
       m.layerTwoFlag,
     ),
-    'layerOneNotes': registry.encodeField(
+    'layer_one_notes': registry.encodeField(
       _$DerivedForFactoryLayerOneNotesField,
       m.layerOneNotes,
     ),
     'id': registry.encodeField(_$DerivedForFactoryIdField, m.id),
-    'baseName': registry.encodeField(
+    'base_name': registry.encodeField(
       _$DerivedForFactoryBaseNameField,
       m.baseName,
     ),
@@ -97,10 +97,10 @@ final ModelDefinition<$DerivedForFactory> _$DerivedForFactoryDefinition =
         guarded: const <String>[],
         casts: const <String, String>{},
         fieldOverrides: const {
-          'layerTwoFlag': FieldAttributeMetadata(guarded: true),
-          'layerOneNotes': FieldAttributeMetadata(cast: 'json'),
+          'layer_two_flag': FieldAttributeMetadata(guarded: true),
+          'layer_one_notes': FieldAttributeMetadata(cast: 'json'),
           'id': FieldAttributeMetadata(hidden: true),
-          'baseName': FieldAttributeMetadata(fillable: true),
+          'base_name': FieldAttributeMetadata(fillable: true),
         },
         softDeletes: false,
         softDeleteColumn: 'deleted_at',
@@ -120,8 +120,8 @@ extension DerivedForFactoryOrmDefinition on DerivedForFactory {
       _$DerivedForFactoryDefinition;
 }
 
-class DerivedForFactorys {
-  const DerivedForFactorys._();
+class DerivedForFactories {
+  const DerivedForFactories._();
 
   /// Starts building a query for [$DerivedForFactory].
   ///
@@ -229,16 +229,16 @@ class _$DerivedForFactoryCodec extends ModelCodec<$DerivedForFactory> {
     ValueCodecRegistry registry,
   ) {
     return <String, Object?>{
-      'layerTwoFlag': registry.encodeField(
+      'layer_two_flag': registry.encodeField(
         _$DerivedForFactoryLayerTwoFlagField,
         model.layerTwoFlag,
       ),
-      'layerOneNotes': registry.encodeField(
+      'layer_one_notes': registry.encodeField(
         _$DerivedForFactoryLayerOneNotesField,
         model.layerOneNotes,
       ),
       'id': registry.encodeField(_$DerivedForFactoryIdField, model.id),
-      'baseName': registry.encodeField(
+      'base_name': registry.encodeField(
         _$DerivedForFactoryBaseNameField,
         model.baseName,
       ),
@@ -253,19 +253,19 @@ class _$DerivedForFactoryCodec extends ModelCodec<$DerivedForFactory> {
     final bool? derivedForFactoryLayerTwoFlagValue = registry
         .decodeField<bool?>(
           _$DerivedForFactoryLayerTwoFlagField,
-          data['layerTwoFlag'],
+          data['layer_two_flag'],
         );
     final Map<String, Object?>? derivedForFactoryLayerOneNotesValue = registry
         .decodeField<Map<String, Object?>?>(
           _$DerivedForFactoryLayerOneNotesField,
-          data['layerOneNotes'],
+          data['layer_one_notes'],
         );
     final int derivedForFactoryIdValue =
         registry.decodeField<int>(_$DerivedForFactoryIdField, data['id']) ?? 0;
     final String? derivedForFactoryBaseNameValue = registry
         .decodeField<String?>(
           _$DerivedForFactoryBaseNameField,
-          data['baseName'],
+          data['base_name'],
         );
     final model = $DerivedForFactory(
       id: derivedForFactoryIdValue,
@@ -274,10 +274,10 @@ class _$DerivedForFactoryCodec extends ModelCodec<$DerivedForFactory> {
       layerTwoFlag: derivedForFactoryLayerTwoFlagValue,
     );
     model._attachOrmRuntimeMetadata({
-      'layerTwoFlag': derivedForFactoryLayerTwoFlagValue,
-      'layerOneNotes': derivedForFactoryLayerOneNotesValue,
+      'layer_two_flag': derivedForFactoryLayerTwoFlagValue,
+      'layer_one_notes': derivedForFactoryLayerOneNotesValue,
       'id': derivedForFactoryIdValue,
-      'baseName': derivedForFactoryBaseNameValue,
+      'base_name': derivedForFactoryBaseNameValue,
     });
     return model;
   }
@@ -299,9 +299,9 @@ class DerivedForFactoryInsertDto implements InsertDto<$DerivedForFactory> {
   @override
   Map<String, Object?> toMap() {
     return <String, Object?>{
-      if (layerTwoFlag != null) 'layerTwoFlag': layerTwoFlag,
-      if (layerOneNotes != null) 'layerOneNotes': layerOneNotes,
-      if (baseName != null) 'baseName': baseName,
+      if (layerTwoFlag != null) 'layer_two_flag': layerTwoFlag,
+      if (layerOneNotes != null) 'layer_one_notes': layerOneNotes,
+      if (baseName != null) 'base_name': baseName,
     };
   }
 }
@@ -324,10 +324,10 @@ class DerivedForFactoryUpdateDto implements UpdateDto<$DerivedForFactory> {
   @override
   Map<String, Object?> toMap() {
     return <String, Object?>{
-      if (layerTwoFlag != null) 'layerTwoFlag': layerTwoFlag,
-      if (layerOneNotes != null) 'layerOneNotes': layerOneNotes,
+      if (layerTwoFlag != null) 'layer_two_flag': layerTwoFlag,
+      if (layerOneNotes != null) 'layer_one_notes': layerOneNotes,
       if (id != null) 'id': id,
-      if (baseName != null) 'baseName': baseName,
+      if (baseName != null) 'base_name': baseName,
     };
   }
 }
@@ -349,10 +349,10 @@ class DerivedForFactoryPartial implements PartialEntity<$DerivedForFactory> {
   /// Missing columns will result in null field values.
   factory DerivedForFactoryPartial.fromRow(Map<String, Object?> row) {
     return DerivedForFactoryPartial(
-      layerTwoFlag: row['layerTwoFlag'] as bool?,
-      layerOneNotes: row['layerOneNotes'] as Map<String, Object?>?,
+      layerTwoFlag: row['layer_two_flag'] as bool?,
+      layerOneNotes: row['layer_one_notes'] as Map<String, Object?>?,
       id: row['id'] as int?,
-      baseName: row['baseName'] as String?,
+      baseName: row['base_name'] as String?,
     );
   }
 
@@ -379,10 +379,10 @@ class DerivedForFactoryPartial implements PartialEntity<$DerivedForFactory> {
   @override
   Map<String, Object?> toMap() {
     return {
-      if (layerTwoFlag != null) 'layerTwoFlag': layerTwoFlag,
-      if (layerOneNotes != null) 'layerOneNotes': layerOneNotes,
+      if (layerTwoFlag != null) 'layer_two_flag': layerTwoFlag,
+      if (layerOneNotes != null) 'layer_one_notes': layerOneNotes,
       if (id != null) 'id': id,
-      if (baseName != null) 'baseName': baseName,
+      if (baseName != null) 'base_name': baseName,
     };
   }
 }
@@ -410,10 +410,10 @@ class $DerivedForFactory extends DerivedForFactory
          layerTwoFlag: layerTwoFlag,
        ) {
     _attachOrmRuntimeMetadata({
-      'layerTwoFlag': layerTwoFlag,
-      'layerOneNotes': layerOneNotes,
+      'layer_two_flag': layerTwoFlag,
+      'layer_one_notes': layerOneNotes,
       'id': id,
-      'baseName': baseName,
+      'base_name': baseName,
     });
   }
 
@@ -443,17 +443,17 @@ class $DerivedForFactory extends DerivedForFactory
 
   @override
   bool? get layerTwoFlag =>
-      getAttribute<bool?>('layerTwoFlag') ?? super.layerTwoFlag;
+      getAttribute<bool?>('layer_two_flag') ?? super.layerTwoFlag;
 
-  set layerTwoFlag(bool? value) => setAttribute('layerTwoFlag', value);
+  set layerTwoFlag(bool? value) => setAttribute('layer_two_flag', value);
 
   @override
   Map<String, Object?>? get layerOneNotes =>
-      getAttribute<Map<String, Object?>?>('layerOneNotes') ??
+      getAttribute<Map<String, Object?>?>('layer_one_notes') ??
       super.layerOneNotes;
 
   set layerOneNotes(Map<String, Object?>? value) =>
-      setAttribute('layerOneNotes', value);
+      setAttribute('layer_one_notes', value);
 
   @override
   int get id => getAttribute<int>('id') ?? super.id;
@@ -461,9 +461,9 @@ class $DerivedForFactory extends DerivedForFactory
   set id(int value) => setAttribute('id', value);
 
   @override
-  String? get baseName => getAttribute<String?>('baseName') ?? super.baseName;
+  String? get baseName => getAttribute<String?>('base_name') ?? super.baseName;
 
-  set baseName(String? value) => setAttribute('baseName', value);
+  set baseName(String? value) => setAttribute('base_name', value);
 
   void _attachOrmRuntimeMetadata(Map<String, Object?> values) {
     replaceAttributes(values);

@@ -114,9 +114,8 @@ class MySqlDurationCodec extends ValueCodec<Duration> {
   const MySqlDurationCodec();
 
   @override
-  Object? encode(Duration? value) => value == null
-      ? null
-      : _formatDurationAsTime(value);
+  Object? encode(Duration? value) =>
+      value == null ? null : _formatDurationAsTime(value);
 
   @override
   Duration? decode(Object? value) {
@@ -165,8 +164,7 @@ class MySqlStringSetCodec extends ValueCodec<Set<String>> {
   const MySqlStringSetCodec();
 
   @override
-  Object? encode(Set<String>? value) =>
-      value?.join(',');
+  Object? encode(Set<String>? value) => value?.join(',');
 
   @override
   Set<String>? decode(Object? value) {
@@ -177,7 +175,11 @@ class MySqlStringSetCodec extends ValueCodec<Set<String>> {
     }
     final raw = value.toString();
     if (raw.isEmpty) return <String>{};
-    return raw.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toSet();
+    return raw
+        .split(',')
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty)
+        .toSet();
   }
 }
 
@@ -482,7 +484,9 @@ String _formatDurationAsTime(Duration value) {
     ..write(':')
     ..write(seconds.toString().padLeft(2, '0'));
   if (micros != 0) {
-    buffer..write('.')..write(micros.toString().padLeft(6, '0'));
+    buffer
+      ..write('.')
+      ..write(micros.toString().padLeft(6, '0'));
   }
   return buffer.toString();
 }

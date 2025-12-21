@@ -205,10 +205,9 @@ abstract class Model<TModel extends Model<TModel>>
     Map<String, dynamic> attributes, {
     String? connection,
   }) async {
-    return query<TModel>(connection: connection)
-        .context
-        .repository<TModel>()
-        .insert(attributes);
+    return query<TModel>(
+      connection: connection,
+    ).context.repository<TModel>().insert(attributes);
   }
 
   /// Inserts multiple records without returning model instances.
@@ -216,10 +215,9 @@ abstract class Model<TModel extends Model<TModel>>
     List<Map<String, dynamic>> records, {
     String? connection,
   }) async {
-    await query<TModel>(connection: connection)
-        .context
-        .repository<TModel>()
-        .insertMany(records, returning: false);
+    await query<TModel>(
+      connection: connection,
+    ).context.repository<TModel>().insertMany(records, returning: false);
   }
 
   /// Starts a query with a where clause.

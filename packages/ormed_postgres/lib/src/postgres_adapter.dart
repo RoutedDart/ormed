@@ -1534,8 +1534,9 @@ class PostgresDriverAdapter
     sql.write(returning);
     final parameterSets = rows
         .map((row) {
-          final parameters =
-              columns.map((column) => row.values[column]).toList(growable: true);
+          final parameters = columns
+              .map((column) => row.values[column])
+              .toList(growable: true);
           if (jsonTemplates.isNotEmpty) {
             final clauses = row.jsonUpdates;
             _validateJsonUpdateShape(jsonTemplates, clauses);

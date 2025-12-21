@@ -1627,9 +1627,7 @@ class _SelectCompilation {
     if (segment.usesPivot) {
       final pivotAlias = _nextAlias('pivot');
       buffer
-        ..write(
-          '${_qualifiedPivotTable(segment.pivotTable!)} AS $pivotAlias ',
-        )
+        ..write('${_qualifiedPivotTable(segment.pivotTable!)} AS $pivotAlias ')
         ..write(
           'JOIN ${_qualifiedTable(segment.targetDefinition)} AS $targetAlias ',
         )
@@ -1643,9 +1641,7 @@ class _SelectCompilation {
         );
     } else {
       buffer
-        ..write(
-          '${_qualifiedTable(segment.targetDefinition)} AS $targetAlias ',
-        )
+        ..write('${_qualifiedTable(segment.targetDefinition)} AS $targetAlias ')
         ..write(
           'WHERE $targetAlias.${grammar.wrapIdentifier(segment.childKey)} = '
           '$parentAlias.${grammar.wrapIdentifier(segment.parentKey)}',
@@ -1707,9 +1703,7 @@ class _SelectCompilation {
     if (segment.usesPivot) {
       final pivotAlias = _nextAlias('pivot');
       buffer
-        ..write(
-          '${_qualifiedPivotTable(segment.pivotTable!)} AS $pivotAlias ',
-        )
+        ..write('${_qualifiedPivotTable(segment.pivotTable!)} AS $pivotAlias ')
         ..write(
           'JOIN ${_qualifiedTable(segment.targetDefinition)} AS $targetAlias ',
         )
@@ -1723,9 +1717,7 @@ class _SelectCompilation {
         );
     } else {
       buffer
-        ..write(
-          '${_qualifiedTable(segment.targetDefinition)} AS $targetAlias ',
-        )
+        ..write('${_qualifiedTable(segment.targetDefinition)} AS $targetAlias ')
         ..write(
           'WHERE $targetAlias.${grammar.wrapIdentifier(segment.childKey)} = '
           '$parentAlias.${grammar.wrapIdentifier(segment.parentKey)}',
