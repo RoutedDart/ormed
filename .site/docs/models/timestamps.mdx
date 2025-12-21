@@ -34,6 +34,17 @@ if (user != null) {
 }
 ```
 
+:::tip Timestamps are Immutable
+Ormed returns **immutable** Carbon instances from timestamp getters. This means you can safely chain methods like `subDay()` without accidentally mutating the model's state:
+
+```dart
+final yesterday = user.createdAt?.subDay(); // Safe! Returns new instance
+print(user.createdAt); // Original value unchanged
+```
+
+See the [Date and Time Handling](/docs/guides/date-time) guide for more details on mutable vs immutable Carbon behavior.
+:::
+
 ### Flexible Setters
 
 The `createdAt` and `updatedAt` setters accept both standard Dart `DateTime` objects and `CarbonInterface` instances.

@@ -22,6 +22,42 @@ Carbon extends `DateTime` functionality with:
 - **Easy formatting**: `date.format('Y-m-d')`
 - **Timezone management**: `date.toUtc()`, `date.setTimezone('America/New_York')`
 
+## Mutable vs Immutable Carbon
+
+:::warning Important
+Carbon provides two variants with **very different behavior**. Understanding this distinction is critical to avoid subtle bugs.
+:::
+
+### Carbon (Mutable)
+
+The `Carbon` class is **mutable** - methods like `subDay()`, `addDays()`, etc. modify the instance **in-place** and return `this`:
+
+```dart file=../../examples/lib/carbon_usage.dart#carbon-mutable-warning
+
+```
+
+### CarbonImmutable (Safe)
+
+The `CarbonImmutable` class is **immutable** - methods return **new instances**, leaving the original unchanged:
+
+```dart file=../../examples/lib/carbon_usage.dart#carbon-immutable-safe
+
+```
+
+### Ormed Returns Immutable Timestamps
+
+All Ormed timestamp getters (`createdAt`, `updatedAt`, `deletedAt`) return **immutable** Carbon instances. This design choice prevents accidental mutation of model state:
+
+```dart file=../../examples/lib/carbon_usage.dart#ormed-timestamps-immutable
+
+```
+
+### Converting Between Mutable and Immutable
+
+```dart file=../../examples/lib/carbon_usage.dart#convert-to-immutable
+
+```
+
 ## Configuration
 
 You can configure global Carbon settings using `CarbonConfig`. This is typically done during application bootstrap.
@@ -103,3 +139,19 @@ class Event extends Model<Event> {
 final event = $Event(scheduledAt: Carbon.tomorrow());
 await repo.insert(event);
 ```
+
+## Best Practices
+
+```dart file=../../examples/lib/carbon_usage.dart#carbon-best-practices
+
+```
+
+### Summary
+
+| Situation | Recommendation |
+|-----------|---------------|
+| Model timestamps (`createdAt`, etc.) | Already immutable - just use them |
+| Local date variables | Use `CarbonImmutable.now()` |
+| Need to mutate a date | Use `copy()` first, or `toMutable()` |
+| Storing a date reference | Call `toImmutable()` |
+| Passing dates to functions | Prefer `CarbonInterface` parameter type |

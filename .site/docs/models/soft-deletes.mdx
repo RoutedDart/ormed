@@ -106,6 +106,14 @@ print(user.deletedAt?.format('Y-m-d H:i:s'));
 print(user.deletedAt?.diffForHumans()); // "deleted 5 minutes ago"
 ```
 
+:::tip deletedAt is Immutable
+Like other timestamp fields, `deletedAt` returns an **immutable** Carbon instance. You can safely chain methods without affecting the model's state:
+
+```dart
+final deletedYesterday = user.deletedAt?.subDay(); // Safe - returns new instance
+```
+:::
+
 ### Flexible Setters
 
 The `deletedAt` setter accepts both `DateTime` and `CarbonInterface`:
