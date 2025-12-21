@@ -17,16 +17,26 @@ mixin SoftDeletesImpl on ModelAttributes, ModelConnection {
 
   /// Timestamp describing when the row was soft deleted.
   ///
-  /// Handles both [DateTime] and [Carbon] values that may be stored.
-  DateTime? get deletedAt {
-    final value = getAttribute<Object?>(_column);
+  /// Returns a Carbon instance for fluent date manipulation.
+  CarbonInterface? get deletedAt {
+    final value = getAttribute<DateTime?>(_column);
     if (value == null) return null;
-    if (value is DateTime) return value;
-    if (value is Carbon) return value.toDateTime();
-    return null;
+    return Carbon.fromDateTime(value);
   }
 
-  set deletedAt(DateTime? value) => setAttribute(_column, value);
+  set deletedAt(Object? value) {
+    setAttribute(
+      _column,
+      switch (value) {
+        null => null,
+        CarbonInterface c => c.toDateTime(),
+        DateTime d => d,
+        _ => throw ArgumentError(
+          'deletedAt must be DateTime or CarbonInterface, got ${value.runtimeType}',
+        ),
+      },
+    );
+  }
 
   /// Whether the model currently has a deletion timestamp.
   bool get trashed => deletedAt != null;

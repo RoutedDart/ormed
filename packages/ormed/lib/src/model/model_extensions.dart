@@ -269,13 +269,11 @@ extension ModelTimestampExtensions<T extends Model<T>> on Model<T> {
   /// print(post.createdAt?.format('Y-m-d H:i:s'));
   /// ```
   CarbonInterface? get createdAt {
-    if (this is TimestampsImpl) {
-      return (this as TimestampsImpl).createdAt;
-    }
-    if (this is TimestampsTZImpl) {
-      return (this as TimestampsTZImpl).createdAt;
-    }
-    return null;
+    return switch (this) {
+      TimestampsImpl t => t.createdAt,
+      TimestampsTZImpl t => t.createdAt,
+      _ => null,
+    };
   }
 
   /// Sets the creation timestamp.
@@ -283,18 +281,11 @@ extension ModelTimestampExtensions<T extends Model<T>> on Model<T> {
   /// Accepts [DateTime] or [CarbonInterface]. Only works when the model mixes in
   /// a timestamp implementation.
   set createdAt(Object? value) {
-    if (this is TimestampsImpl) {
-      if (value == null) {
-        (this as TimestampsImpl).createdAt = null;
-      } else if (value is DateTime) {
-        (this as TimestampsImpl).createdAt = value;
-      } else if (value is CarbonInterface) {
-        (this as TimestampsImpl).createdAt = value.toDateTime();
-      } else {
-        throw ArgumentError.value(value, 'createdAt');
-      }
-    } else if (this is TimestampsTZImpl) {
-      (this as TimestampsTZImpl).createdAt = value;
+    switch (this) {
+      case TimestampsImpl t:
+        t.createdAt = value;
+      case TimestampsTZImpl t:
+        t.createdAt = value;
     }
   }
 
@@ -308,13 +299,11 @@ extension ModelTimestampExtensions<T extends Model<T>> on Model<T> {
   /// print(post.updatedAt?.addDays(5).format('Y-m-d'));
   /// ```
   CarbonInterface? get updatedAt {
-    if (this is TimestampsImpl) {
-      return (this as TimestampsImpl).updatedAt;
-    }
-    if (this is TimestampsTZImpl) {
-      return (this as TimestampsTZImpl).updatedAt;
-    }
-    return null;
+    return switch (this) {
+      TimestampsImpl t => t.updatedAt,
+      TimestampsTZImpl t => t.updatedAt,
+      _ => null,
+    };
   }
 
   /// Sets the last update timestamp.
@@ -322,18 +311,11 @@ extension ModelTimestampExtensions<T extends Model<T>> on Model<T> {
   /// Accepts [DateTime] or [CarbonInterface]. Only works when the model mixes in
   /// a timestamp implementation.
   set updatedAt(Object? value) {
-    if (this is TimestampsImpl) {
-      if (value == null) {
-        (this as TimestampsImpl).updatedAt = null;
-      } else if (value is DateTime) {
-        (this as TimestampsImpl).updatedAt = value;
-      } else if (value is CarbonInterface) {
-        (this as TimestampsImpl).updatedAt = value.toDateTime();
-      } else {
-        throw ArgumentError.value(value, 'updatedAt');
-      }
-    } else if (this is TimestampsTZImpl) {
-      (this as TimestampsTZImpl).updatedAt = value;
+    switch (this) {
+      case TimestampsImpl t:
+        t.updatedAt = value;
+      case TimestampsTZImpl t:
+        t.updatedAt = value;
     }
   }
 
@@ -420,13 +402,11 @@ extension ModelSoftDeleteExtensions<T extends Model<T>> on Model<T> {
   /// Returns true only if this is a tracked model instance with soft delete
   /// support and the model has been soft deleted. Returns false otherwise.
   bool get trashed {
-    if (this is SoftDeletesImpl) {
-      return (this as SoftDeletesImpl).trashed;
-    }
-    if (this is SoftDeletesTZImpl) {
-      return (this as SoftDeletesTZImpl).trashed;
-    }
-    return false;
+    return switch (this) {
+      SoftDeletesImpl s => s.trashed,
+      SoftDeletesTZImpl s => s.trashed,
+      _ => false,
+    };
   }
 
   /// Get the soft delete timestamp as a Carbon instance.
@@ -439,25 +419,23 @@ extension ModelSoftDeleteExtensions<T extends Model<T>> on Model<T> {
   /// print(user.deletedAt?.diffForHumans()); // "3 days ago"
   /// ```
   CarbonInterface? get deletedAt {
-    if (this is SoftDeletesImpl) {
-      final dt = (this as SoftDeletesImpl).deletedAt;
-      return dt != null ? Carbon.fromDateTime(dt) : null;
-    }
-    if (this is SoftDeletesTZImpl) {
-      return (this as SoftDeletesTZImpl).deletedAt;
-    }
-    return null;
+    return switch (this) {
+      SoftDeletesImpl s => s.deletedAt,
+      SoftDeletesTZImpl s => s.deletedAt,
+      _ => null,
+    };
   }
 
   /// Set the soft delete timestamp.
   ///
   /// Only works if this is a tracked model instance with soft delete support.
   /// For SoftDeletesTZ models, the timestamp is automatically converted to UTC.
-  set deletedAt(DateTime? value) {
-    if (this is SoftDeletesImpl) {
-      (this as SoftDeletesImpl).deletedAt = value;
-    } else if (this is SoftDeletesTZImpl) {
-      (this as SoftDeletesTZImpl).deletedAt = value;
+  set deletedAt(Object? value) {
+    switch (this) {
+      case SoftDeletesImpl s:
+        s.deletedAt = value;
+      case SoftDeletesTZImpl s:
+        s.deletedAt = value;
     }
   }
 }
