@@ -18,12 +18,14 @@ dart pub global activate ormed_cli
 
 ### Local
 
-Add it to your `dev_dependencies` in `pubspec.yaml`:
+Add it to your `dev_dependencies` in `pubspec.yaml`. This ensures you always have the version of the CLI that matches your project's ORM version:
 
 ```yaml
 dev_dependencies:
   ormed_cli: ^0.1.0-dev+1
 ```
+
+> **Note:** Adding `ormed_cli` as a local dependency will pull in all supported database drivers (SQLite, MySQL, Postgres) and their respective native dependencies. If you want to keep your project's dependency tree minimal, use the **Global** installation instead.
 
 The CLI is available as the `orm` executable:
 

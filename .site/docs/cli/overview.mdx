@@ -14,11 +14,17 @@ The Ormed CLI manages migrations, seeds, and schema tooling for projects configu
 <Tabs groupId="cli-run" defaultValue="dart-run">
   <TabItem value="dart-run" label="dart run">
 
+Use this if you have `ormed_cli` in your `dev_dependencies`. This ensures version parity with your project.
+
 ```bash
 dart run ormed_cli:orm --help
 dart run ormed_cli:orm init
 dart run ormed_cli:orm migrate
 ```
+
+:::warning
+Adding `ormed_cli` to your project will pull in all database drivers (SQLite, MySQL, Postgres) as transitive dependencies.
+:::
 
   </TabItem>
   <TabItem value="global" label="Global (optional)">

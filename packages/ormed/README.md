@@ -36,9 +36,14 @@ The recommended way to use Ormed is via the `orm` CLI, which manages migrations,
 
 ### 1. Install the CLI
 
+You can install the CLI globally (recommended for smaller dependency trees) or add it to your `dev_dependencies`:
+
 ```bash
+# Global installation
 dart pub global activate ormed_cli
 ```
+
+> **Note:** Adding `ormed_cli` to `dev_dependencies` ensures version parity with your project but will include all database drivers and their dependencies in your `pubspec.lock`.
 
 ### 2. Initialize the Project
 
