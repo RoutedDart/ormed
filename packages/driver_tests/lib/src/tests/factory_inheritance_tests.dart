@@ -12,9 +12,9 @@ void runDriverFactoryInheritanceTests() {
         'layerTwoFlag': true,
       });
       final values = builder.values();
-      expect(values['baseName'], 'root');
-      expect(values['layerOneNotes'], {'notes': true});
-      expect(values['layerTwoFlag'], true);
+      expect(values['base_name'], 'root');
+      expect(values['layer_one_notes'], {'notes': true});
+      expect(values['layer_two_flag'], true);
     });
 
     test('derived models persist with inherited metadata', () async {

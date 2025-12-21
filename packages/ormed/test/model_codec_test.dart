@@ -31,7 +31,7 @@ void main() {
       'id': 100,
       'email': 'decode@example.com',
       'profile': jsonEncode({'lang': 'en'}),
-      'createdAt': now,
+      'created_at': now,
     };
 
     final model = UserOrmDefinition.definition.fromMap(

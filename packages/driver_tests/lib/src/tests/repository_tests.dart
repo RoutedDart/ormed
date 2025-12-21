@@ -1901,7 +1901,7 @@ void runDriverRepositoryTests() {
           expect(map['active'], true);
           expect(map['name'], 'Test');
           expect(map['age'], 25);
-          expect(map['createdAt'], now);
+          expect(map['created_at'], now);
         });
 
         test('empty UserPartial toMap() returns empty map', () {

@@ -508,18 +508,18 @@ void main() {
           'layerOneNotes': 'notes',
           'layerTwoFlag': true,
         }).values();
-        expect(values['baseName'], 'root');
-        expect(values['layerOneNotes'], 'notes');
-        expect(values['layerTwoFlag'], true);
+        expect(values['base_name'], 'root');
+        expect(values['layer_one_notes'], 'notes');
+        expect(values['layer_two_flag'], true);
       });
 
       test('derived metadata includes ancestor attributes', () {
         final overrides =
             DerivedForFactoryOrmDefinition.definition.metadata.fieldOverrides;
         expect(overrides['id']?.hidden, isTrue);
-        expect(overrides['baseName']?.fillable, isTrue);
-        expect(overrides['layerOneNotes']?.cast, 'json');
-        expect(overrides['layerTwoFlag']?.guarded, isTrue);
+        expect(overrides['base_name']?.fillable, isTrue);
+        expect(overrides['layer_one_notes']?.cast, 'json');
+        expect(overrides['layer_two_flag']?.guarded, isTrue);
       });
 
       test(

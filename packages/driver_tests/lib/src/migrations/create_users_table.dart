@@ -11,7 +11,7 @@ class CreateUsersTable extends Migration {
       table.boolean('active');
       table.string('name').nullable();
       table.integer('age').nullable();
-      table.dateTime('createdAt').nullable();
+      table.dateTime('created_at').nullable();
       table.text('profile').nullable();
       table.json('metadata').nullable();
     });

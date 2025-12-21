@@ -42,7 +42,7 @@ void main() {
         active BOOLEAN DEFAULT TRUE,
         name VARCHAR(255),
         age INT,
-        createdAt DATETIME,
+        created_at DATETIME,
         profile JSON,
         metadata JSON
       )
