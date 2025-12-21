@@ -294,7 +294,7 @@ library;
 
 import 'package:ormed/src/model/model.dart';
 
-export 'package:carbonized/carbonized.dart' show Carbon, CarbonInterface;
+export 'package:carbonized/carbonized.dart';
 
 export 'migrations.dart';
 export 'src/annotations.dart';
