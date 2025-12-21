@@ -221,7 +221,6 @@ class _SeedRegistryInfoCommand extends Command<void> {
   }
 }
 
-
 /// Run migration registry as an Artisan command-line tool.
 ///
 /// Provides `info` and `run` commands for listing and executing migrations.
@@ -233,7 +232,8 @@ Future<void> runMigrationRegistryEntrypoint({
     required MigrationId id,
     required MigrationDirection direction,
     required SchemaSnapshot snapshot,
-  }) buildPlan,
+  })
+  buildPlan,
 }) async {
   final migrations = buildMigrations();
 
@@ -242,20 +242,19 @@ Future<void> runMigrationRegistryEntrypoint({
     return;
   }
 
-  final runner = CommandRunner<void>(
-    'migrations',
-    'Migration registry entrypoint',
-    ansi: stdout.supportsAnsiEscapes,
-  )
-    ..addCommand(
-      _MigrationRegistryInfoCommand(migrations: migrations),
-    )
-    ..addCommand(
-      _MigrationRegistryRunCommand(
-        migrations: migrations,
-        buildPlan: buildPlan,
-      ),
-    );
+  final runner =
+      CommandRunner<void>(
+          'migrations',
+          'Migration registry entrypoint',
+          ansi: stdout.supportsAnsiEscapes,
+        )
+        ..addCommand(_MigrationRegistryInfoCommand(migrations: migrations))
+        ..addCommand(
+          _MigrationRegistryRunCommand(
+            migrations: migrations,
+            buildPlan: buildPlan,
+          ),
+        );
 
   // For compatibility with existing entrypoints:
   // - If --help is passed alone, show top-level help.
@@ -292,7 +291,8 @@ Future<void> runMigrationRegistryEntrypoint({
     return;
   }
 
-  final forwarded = (args.isEmpty ||
+  final forwarded =
+      (args.isEmpty ||
           (args.first.startsWith('-') &&
               args.first != '--help' &&
               args.first != '-h'))
@@ -338,10 +338,7 @@ class _MigrationRegistryInfoCommand extends Command<void> {
     if (jsonOut) {
       final payload = [
         for (final m in migrations)
-          {
-            'id': m.id.toString(),
-            'checksum': m.checksum,
-          }
+          {'id': m.id.toString(), 'checksum': m.checksum},
       ];
       stdout.writeln(jsonEncode(payload));
       return;
@@ -356,12 +353,11 @@ class _MigrationRegistryInfoCommand extends Command<void> {
     io.table(
       headers: const ['ID', 'Checksum'],
       rows: [
-        for (final m in migrations) [m.id.toString(), m.checksum.substring(0, 12)],
+        for (final m in migrations)
+          [m.id.toString(), m.checksum.substring(0, 12)],
       ],
     );
-    io.note(
-      'These migrations are available for the CLI migration commands.',
-    );
+    io.note('These migrations are available for the CLI migration commands.');
   }
 }
 
@@ -386,11 +382,7 @@ class _MigrationRegistryRunCommand extends Command<void> {
         'snapshot',
         help: 'Base64-encoded schema snapshot for planning.',
       )
-      ..addFlag(
-        'json',
-        negatable: false,
-        help: 'Output the plan as JSON.',
-      );
+      ..addFlag('json', negatable: false, help: 'Output the plan as JSON.');
   }
 
   final List<MigrationDescriptor> migrations;
@@ -398,7 +390,8 @@ class _MigrationRegistryRunCommand extends Command<void> {
     required MigrationId id,
     required MigrationDirection direction,
     required SchemaSnapshot snapshot,
-  }) buildPlan;
+  })
+  buildPlan;
 
   @override
   String get name => 'run';

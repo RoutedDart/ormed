@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:artisanal/artisanal.dart';
 import 'package:path/path.dart' as p;
+import 'package:yaml/yaml.dart';
 
 import '../../config.dart';
 import 'shared.dart';
@@ -34,7 +35,8 @@ class InitCommand extends Command<void> {
   String get name => 'init';
 
   @override
-  String get description => 'Initialize orm.yaml and migration/seed registries.';
+  String get description =>
+      'Initialize orm.yaml and migration/seed registries.';
 
   @override
   Future<void> run() async {
@@ -43,6 +45,8 @@ class InitCommand extends Command<void> {
     final populateExisting = argResults?['populate-existing'] == true;
     final root = findProjectRoot();
     final tracker = _ArtifactTracker(root);
+
+    await _ensureDependencies(root);
 
     // If config exists, offer re-initialize
     if (!force) {
@@ -159,7 +163,9 @@ class InitCommand extends Command<void> {
         // explicitly requested via --populate-existing.
         final shouldPopulate = force
             ? false
-            : io.confirm('Do you want to populate registries from existing files?');
+            : io.confirm(
+                'Do you want to populate registries from existing files?',
+              );
         if (shouldPopulate) {
           await _populateExisting(
             io: cliIO,
@@ -190,6 +196,54 @@ class InitCommand extends Command<void> {
 
     cliIO.newLine();
     cliIO.success('Project initialized successfully.');
+  }
+
+  Future<void> _ensureDependencies(Directory root) async {
+    final pubspecFile = File(p.join(root.path, 'pubspec.yaml'));
+    if (!pubspecFile.existsSync()) return;
+
+    final pubspec = loadYaml(pubspecFile.readAsStringSync()) as YamlMap;
+    final deps = pubspec['dependencies'] as YamlMap?;
+    final devDeps = pubspec['dev_dependencies'] as YamlMap?;
+
+    final hasOrmed = deps?.containsKey('ormed') ?? false;
+    final hasOrmedCli =
+        (deps?.containsKey('ormed_cli') ?? false) ||
+        (devDeps?.containsKey('ormed_cli') ?? false);
+    final hasBuildRunner = devDeps?.containsKey('build_runner') ?? false;
+
+    if (!hasOrmed || !hasOrmedCli || !hasBuildRunner) {
+      cliIO.newLine();
+      cliIO.section('Dependencies');
+      if (io.confirm(
+        'Do you want to add missing ormed dependencies to pubspec.yaml?',
+      )) {
+        if (!hasOrmed) {
+          cliIO.writeln('• Adding ormed to dependencies...');
+          await Process.run('dart', [
+            'pub',
+            'add',
+            'ormed',
+          ], workingDirectory: root.path);
+        }
+        final devToAdd = <String>[];
+        if (!hasOrmedCli) devToAdd.add('ormed_cli');
+        if (!hasBuildRunner) devToAdd.add('build_runner');
+
+        if (devToAdd.isNotEmpty) {
+          cliIO.writeln(
+            '• Adding ${devToAdd.join(', ')} to dev_dependencies...',
+          );
+          await Process.run('dart', [
+            'pub',
+            'add',
+            '--dev',
+            ...devToAdd,
+          ], workingDirectory: root.path);
+        }
+        cliIO.success('Dependencies updated.');
+      }
+    }
   }
 }
 
@@ -251,7 +305,9 @@ void _ensureDirectory(Directory dir, String label, _ArtifactTracker tracker) {
       '${cliIO.style.foreground(Colors.success).render('✓')} Created $label at ${tracker.relative(dir.path)}',
     );
   } else {
-    cliIO.writeln('${cliIO.style.foreground(Colors.muted).render('○')} $label already exists');
+    cliIO.writeln(
+      '${cliIO.style.foreground(Colors.muted).render('○')} $label already exists',
+    );
   }
 }
 
@@ -291,23 +347,25 @@ Future<void> _populateExisting({
   io.section('Populating registries from existing files');
 
   // Migrations: gather files like migrations/m_*.dart and rebuild registry
-  final migrationFiles = migrationsDir
-      .listSync(recursive: true)
-      .whereType<File>()
-      .where((f) => f.path.endsWith('.dart'))
-      .where((f) => f.path != registryFile.path)
-      .toList()
-    ..sort((a, b) => a.path.compareTo(b.path));
+  final migrationFiles =
+      migrationsDir
+          .listSync(recursive: true)
+          .whereType<File>()
+          .where((f) => f.path.endsWith('.dart'))
+          .where((f) => f.path != registryFile.path)
+          .toList()
+        ..sort((a, b) => a.path.compareTo(b.path));
 
   // Seeders: gather files in seeders dir
-  final seederFiles = seedersDir
-      .listSync(recursive: true)
-      .whereType<File>()
-      .where((f) => f.path.endsWith('.dart'))
-      .where((f) => p.basename(f.path) != 'database_seeder.dart')
-      .where((f) => f.path != seedRegistryFile.path)
-      .toList()
-    ..sort((a, b) => a.path.compareTo(b.path));
+  final seederFiles =
+      seedersDir
+          .listSync(recursive: true)
+          .whereType<File>()
+          .where((f) => f.path.endsWith('.dart'))
+          .where((f) => p.basename(f.path) != 'database_seeder.dart')
+          .where((f) => f.path != seedRegistryFile.path)
+          .toList()
+        ..sort((a, b) => a.path.compareTo(b.path));
 
   // Build migration registry content skeleton by importing and registering
   final migrationImports = <String>[];
@@ -320,9 +378,7 @@ Future<void> _populateExisting({
     // Expected pattern: m_YYYY..._name.dart => class CreateUsersTable or similar
     // We cannot reliably infer class – we import and leave a TODO entry
     migrationImports.add("import '$importPath';");
-    migrationEntries.add(
-      "  // TODO: Add entry for $base (imported above)",
-    );
+    migrationEntries.add("  // TODO: Add entry for $base (imported above)");
   }
 
   final registryContent = [
@@ -393,9 +449,7 @@ Future<void> _populateExisting({
     final importPath = rel.replaceAll('\\', '/');
     final base = p.basenameWithoutExtension(f.path);
     seedImports.add("import '$importPath';");
-    seedRegistrations.add(
-      "  // TODO: Register seeder for $base",
-    );
+    seedRegistrations.add("  // TODO: Register seeder for $base");
   }
 
   final seedRegistryContent = [

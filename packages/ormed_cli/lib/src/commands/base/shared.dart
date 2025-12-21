@@ -510,11 +510,17 @@ void printMigrationPlanPreview({
       final symbol = entry.symbol;
       String styledEntry;
       if (symbol == '+') {
-        styledEntry = io.style.foreground(Colors.success).render('  $symbol ${entry.description}');
+        styledEntry = io.style
+            .foreground(Colors.success)
+            .render('  $symbol ${entry.description}');
       } else if (symbol == '-') {
-        styledEntry = io.style.foreground(Colors.error).render('  $symbol ${entry.description}');
+        styledEntry = io.style
+            .foreground(Colors.error)
+            .render('  $symbol ${entry.description}');
       } else {
-        styledEntry = io.style.foreground(Colors.warning).render('  $symbol ${entry.description}');
+        styledEntry = io.style
+            .foreground(Colors.warning)
+            .render('  $symbol ${entry.description}');
       }
       io.writeln(styledEntry);
 
@@ -529,7 +535,9 @@ void printMigrationPlanPreview({
   if (includeStatements && preview.statements.isNotEmpty) {
     io.newLine();
     for (final statement in preview.statements) {
-      io.writeln(io.style.foreground(Colors.muted).render('    ${statement.sql}'));
+      io.writeln(
+        io.style.foreground(Colors.muted).render('    ${statement.sql}'),
+      );
     }
   }
 }

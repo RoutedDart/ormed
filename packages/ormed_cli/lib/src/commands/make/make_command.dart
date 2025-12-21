@@ -177,14 +177,16 @@ String _migrationFileTemplate(
   var down = '';
   if (tableName != null) {
     if (createTable) {
-      up = """
+      up =
+          """
     schema.create('$tableName', (table) {
       table.id();
       table.timestamps();
     });""";
       down = "    schema.drop('$tableName');";
     } else {
-      up = """
+      up =
+          """
     schema.table('$tableName', (table) {
       //
     });""";
@@ -377,11 +379,13 @@ void _createMigration({
     if (file.existsSync()) {
       throw UsageException('Migration file $fileName already exists.', usage);
     }
-    file.writeAsStringSync(_migrationFileTemplate(
-      className,
-      tableName: tableName,
-      createTable: createTable,
-    ));
+    file.writeAsStringSync(
+      _migrationFileTemplate(
+        className,
+        tableName: tableName,
+        createTable: createTable,
+      ),
+    );
     createdDisplayPath = fullPath
         ? file.path
         : p.relative(file.path, from: root.path);
