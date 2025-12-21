@@ -62,20 +62,20 @@ class OrmedTestConfig {
 /// Value: The TestDatabaseManager for that configuration
 final Map<String, TestDatabaseManager> _managers = {};
 
-/// Tracks which databases have been provisioned for migrateWithTransactions strategy.
-/// Key: DataSource name (unique identifier for each database connection)
-/// Value: The provisioned DataSource
-final Map<String, DataSource> _provisionedDatabases = {};
-
-/// Reference count per database for how many setUpOrmed calls are active.
-final Map<String, int> _databaseRefCount = {};
-
 /// Zone key for the current test configuration
 final _zoneConfigKey = Object();
+
+/// Zone key for the current group context
+final _groupContextKey = Object();
 
 /// Get the current OrmedTestConfig from Zone-local storage
 OrmedTestConfig? get _currentZoneConfig {
   return Zone.current[_zoneConfigKey] as OrmedTestConfig?;
+}
+
+/// Get the current group context from Zone-local storage
+_GroupContext? get _currentGroupContext {
+  return Zone.current[_groupContextKey] as _GroupContext?;
 }
 
 /// Stack of active configurations (for nested groups)
@@ -95,7 +95,14 @@ class _GroupContext {
   _GroupContext(this.manager, this.strategy, this.groupId, {this.config});
 }
 
-_GroupContext? _currentGroupContext;
+/// Global group counter for unique IDs
+int _groupCounter = 0;
+
+/// Generate a unique group ID
+String _generateGroupId() {
+  final timestamp = DateTime.now().millisecondsSinceEpoch;
+  return 'g${timestamp}_${_groupCounter++}';
+}
 
 /// Generate a unique configuration key based on DataSource name and call context
 String _generateConfigKey(String dataSourceName, {String? hint}) {
@@ -106,7 +113,7 @@ String _generateConfigKey(String dataSourceName, {String? hint}) {
   return '${dataSourceName}_$hash';
 }
 
-/// Configure Ormed for testing
+/// Configures Ormed for testing.
 ///
 /// Call this once in your test file's `main()` before defining tests.
 /// Returns an [OrmedTestConfig] that can be passed to [ormedGroup] to ensure
@@ -208,46 +215,15 @@ OrmedTestConfig setUpOrmed({
 
   setUpAll(() async {
     await manager!.initialize();
-
-    // For migrateWithTransactions: provision the base database ONCE at startup.
-    // All test groups will reuse this database, using transaction rollback for isolation.
-    // This is like Laravel's RefreshDatabase trait approach.
-    // When multiple test files call setUpOrmed(), only the first one per database provisions it.
-    if (strategy == DatabaseIsolationStrategy.migrateWithTransactions) {
-      _databaseRefCount[dbName] = (_databaseRefCount[dbName] ?? 0) + 1;
-
-      if (!_provisionedDatabases.containsKey(dbName)) {
-        await manager.provisionDatabase(manager.baseDataSource);
-        _provisionedDatabases[dbName] = dataSource;
-      }
-    }
   });
 
   tearDownAll(() async {
     // Remove from config stack
     _configStack.remove(config);
     if (_lastRegisteredConfig == config) {
-      _lastRegisteredConfig = _configStack.isNotEmpty
-          ? _configStack.last
-          : null;
+      _lastRegisteredConfig = _configStack.isNotEmpty ? _configStack.last : null;
     }
 
-    // Clean up the base database if we provisioned it
-    if (strategy == DatabaseIsolationStrategy.migrateWithTransactions) {
-      _databaseRefCount[dbName] = (_databaseRefCount[dbName] ?? 1) - 1;
-
-      // Only drop the database when the last test file for this database cleans up
-      if ((_databaseRefCount[dbName] ?? 0) <= 0 &&
-          _provisionedDatabases.containsKey(dbName)) {
-        try {
-          await manager!.dropDatabase(manager.baseDataSource);
-        } catch (_) {
-          // Ignore cleanup errors
-        }
-        _provisionedDatabases.remove(dbName);
-        _databaseRefCount.remove(dbName);
-      }
-    }
     await manager!.cleanup();
     _managers.remove(configKey);
   });
@@ -255,15 +231,19 @@ OrmedTestConfig setUpOrmed({
   return config;
 }
 
-/// Run a test with database isolation
+/// Runs a test with database isolation.
 ///
 /// Automatically sets up and tears down database state for each test.
 /// The [DataSource] is passed to the test body.
 ///
+/// If called inside an [ormedGroup], this uses the group's [DataSource] and
+/// follows the group's isolation strategy. If called standalone, this creates
+/// a fresh database for this specific test.
+///
 /// ```dart
 /// ormedTest('creates a user', (db) async {
 ///   final user = User(name: 'John');
-///   await user.save(db); // Pass db explicitly if needed, or rely on context if models support it
+///   await user.save(db);
 ///
 ///   expect(user.id, isNotNull);
 /// });
@@ -301,7 +281,7 @@ void ormedTest(
 
       if (isStandalone) {
         // Standalone test: create fresh DB
-        final testId = 'test_${DateTime.now().millisecondsSinceEpoch}';
+        final testId = 'test_${_generateGroupId()}';
         dataSource = await manager.createDatabase(testId);
         // Optional: begin transaction for consistency, though we drop DB anyway
         await dataSource.beginTransaction();
@@ -309,15 +289,11 @@ void ormedTest(
       } else {
         // Group test: use context's datasource
         if (context.dataSource == null) {
-          // If strategy is recreate, dataSource might be null in context until setUp runs?
-          // But ormedTest runs inside the test body, so setUp has run.
-          // If strategy is recreate, setUp creates the DB.
           throw StateError(
             'Group DataSource not initialized. Check ormedGroup strategy.',
           );
         }
         dataSource = context.dataSource!;
-        // Transaction management is handled by ormedGroup's setUp/tearDown
       }
 
       try {
@@ -338,7 +314,14 @@ void ormedTest(
   );
 }
 
-/// Run a test group with database isolation
+/// Runs a test group with database isolation.
+///
+/// Groups related tests that share a common database setup. Every group gets
+/// its own unique [DataSource] (and thus a unique database) for true concurrency.
+///
+/// Use [ormedGroup] when you have multiple tests that operate on the same
+/// schema and you want to avoid the overhead of creating a fresh database
+/// for every single test.
 ///
 /// ```dart
 /// ormedGroup('User tests', (db) {
@@ -455,20 +438,12 @@ void ormedGroup(
       }
 
       final strategy = refreshStrategy ?? manager.strategy;
-      final groupId = 'group_${DateTime.now().millisecondsSinceEpoch}';
+      final groupId = _generateGroupId();
 
-      // For migrateWithTransactions, we reuse the base DataSource (like Laravel's RefreshDatabase).
-      final reuseBaseDataSource =
-          strategy == DatabaseIsolationStrategy.migrateWithTransactions;
-
-      late DataSource groupDataSource;
-      if (reuseBaseDataSource) {
-        // Reuse the base data source - much faster!
-        groupDataSource = manager.baseDataSource;
-      } else {
-        // Create a new DataSource for this group
-        groupDataSource = manager.createDataSource(groupId);
-      }
+      // Every group gets its own unique DataSource for true concurrency.
+      // This ensures that tests in different groups (even in the same file)
+      // do not interfere with each other.
+      final groupDataSource = manager.createDataSource(groupId);
 
       final context = _GroupContext(
         manager,
@@ -477,119 +452,59 @@ void ormedGroup(
         config: resolvedConfig,
       );
       context.dataSource = groupDataSource;
-      _currentGroupContext = context;
 
-      if (dataSource != null) {
-        setUpAll(() async {
-          await manager.initialize();
-        });
-      }
-
-      if (strategy == DatabaseIsolationStrategy.migrateWithTransactions) {
-        setUp(() async {
-          _currentGroupContext = context;
-          await groupDataSource.beginTransaction();
-          context.dataSource?.setAsDefault();
-        });
-
-        tearDown(() async {
-          await groupDataSource.rollback();
-          _currentGroupContext = null;
-        });
-      } else if (strategy == DatabaseIsolationStrategy.truncate) {
-        setUpAll(() async {
-          await manager.provisionDatabase(groupDataSource);
-          context.dataSource = groupDataSource;
-        });
-
-        tearDownAll(() async {
-          await manager.dropDatabase(groupDataSource);
-          context.dataSource = null;
-          _currentGroupContext = null;
-        });
-
-        setUp(() async {
-          _currentGroupContext = context;
-          final ds = context.dataSource ?? groupDataSource;
-          final schemaManager = manager.getSchemaManager(ds);
-
-          if (schemaManager != null) {
-            // Reset schema to a clean state between tests
-            await schemaManager.reset();
-          } else {
-            // Fallback: rerun migrations if no schema manager is available
-            await manager.migrate(ds);
+      runZoned(
+        () {
+          if (dataSource != null) {
+            setUpAll(() async {
+              await manager.initialize();
+            });
           }
-          context.dataSource?.setAsDefault();
-        });
 
-        tearDown(() {
-          _currentGroupContext = null;
-        });
-      } else if (strategy == DatabaseIsolationStrategy.recreate) {
-        setUpAll(() async {
-          await manager.provisionDatabase(groupDataSource);
-          context.dataSource = groupDataSource;
-        });
+          // Provision the unique database for the group
+          setUpAll(() async {
+            await manager.provisionDatabase(groupDataSource);
+          });
 
-        tearDownAll(() async {
-          await manager.dropDatabase(groupDataSource);
-          context.dataSource = null;
-          _currentGroupContext = null;
-        });
+          tearDownAll(() async {
+            await manager.dropDatabase(groupDataSource);
+          });
 
-        setUp(() async {
-          _currentGroupContext = context;
-          final ds = context.dataSource ?? groupDataSource;
-          final schemaManager = manager.getSchemaManager(ds);
+          if (strategy == DatabaseIsolationStrategy.migrateWithTransactions) {
+            setUp(() async {
+              await groupDataSource.beginTransaction();
+              groupDataSource.setAsDefault();
+            });
 
-          if (schemaManager != null) {
-            await schemaManager.reset();
+            tearDown(() async {
+              await groupDataSource.rollback();
+            });
           } else {
-            await manager.migrate(ds);
+            setUp(() async {
+              final ds = groupDataSource;
+              final schemaManager = manager.getSchemaManager(ds);
+
+              if (schemaManager != null &&
+                  strategy == DatabaseIsolationStrategy.truncate) {
+                // Fast path: truncate tables
+                await schemaManager.truncateAll();
+              } else if (strategy == DatabaseIsolationStrategy.recreate) {
+                // Slow path: full reset
+                if (schemaManager != null) {
+                  await schemaManager.reset();
+                } else {
+                  await manager.migrate(ds);
+                }
+              }
+              ds.setAsDefault();
+            });
           }
-          context.dataSource?.setAsDefault();
-        });
 
-        tearDown(() {
-          _currentGroupContext = null;
-        });
-      } else {
-        // Fallback to truncate-like behaviour for unknown strategies
-        setUpAll(() async {
-          await manager.provisionDatabase(groupDataSource);
-          context.dataSource = groupDataSource;
-        });
-
-        tearDownAll(() async {
-          await manager.dropDatabase(groupDataSource);
-          context.dataSource = null;
-          _currentGroupContext = null;
-        });
-
-        setUp(() async {
-          _currentGroupContext = context;
-          final ds = context.dataSource ?? groupDataSource;
-          final schemaManager = manager.getSchemaManager(ds);
-
-          if (schemaManager != null) {
-            await schemaManager.reset();
-          } else {
-            await manager.migrate(ds);
-          }
-          context.dataSource?.setAsDefault();
-        });
-
-        tearDown(() {
-          _currentGroupContext = null;
-        });
-      }
-
-      // Execute body to define tests
-      body(groupDataSource);
-
-      // Clear context after body execution (synchronous)
-      _currentGroupContext = null;
+          // Execute body to define tests
+          body(groupDataSource);
+        },
+        zoneValues: {_groupContextKey: context},
+      );
     },
     testOn: testOn,
     timeout: timeout,

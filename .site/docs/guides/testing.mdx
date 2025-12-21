@@ -9,7 +9,65 @@ import TabItem from '@theme/TabItem';
 
 Ormed provides comprehensive testing facilities for isolated, reliable database tests.
 
+To get started, import the testing utilities:
+
+```dart
+import 'package:ormed/testing.dart';
+```
+
+## Isolation Strategies
+
+Ormed supports several strategies for isolating database state between tests. You can configure the strategy in `setUpOrmed`.
+
+### `migrateWithTransactions` (Default)
+The fastest strategy. It runs migrations once per group and wraps each test in a transaction that is rolled back after the test completes.
+
+### `truncate`
+Runs migrations once per group and truncates all tables after each test. This is useful for drivers that don't support nested transactions or when you need to test transaction behavior itself.
+
+### `recreate`
+The most thorough but slowest strategy. It drops and recreates the entire schema/database for every test.
+
+## Group vs Test Isolation
+
+Ormed provides two primary functions for defining tests: `ormedGroup` and `ormedTest`.
+
+### `ormedGroup`
+Use `ormedGroup` to group related tests that share a common database setup. Every group gets its own unique database for true concurrency.
+
+```dart
+ormedGroup('User Management', (ds) {
+  // This database is provisioned once for the group
+});
+```
+
+### `ormedTest`
+Use `ormedTest` for individual test cases. 
+- When used **inside** an `ormedGroup`, it inherits the group's `DataSource` and isolation strategy.
+- When used **standalone**, it creates a completely fresh database for that specific test.
+
+```dart
+ormedTest('can create user', (ds) async {
+  final user = await ds.repo<User>().insert(User(name: 'Alice'));
+  expect(user.id, isNotNull);
+});
+```
+
+## DataSource Injection
+Both `ormedGroup` and `ormedTest` inject a `DataSource` instance into their callbacks. **Always use this injected instance** to ensure your tests run against the isolated test database rather than a global or shared instance.
+
+### Accessing the Current DataSource
+If you need to access the `DataSource` within standard `setUp` or `tearDown` blocks, you can use the `currentTestDataSource` getter:
+
+```dart
+setUp(() {
+  final ds = currentTestDataSource;
+  // Perform setup using the isolated data source
+});
+```
+
 ## Core Setup
+The `setUpOrmed` function is the entry point for configuring your test environment. It should be called once in your `main()` function before defining any tests.
 
 <Tabs groupId="testing-core" defaultValue="basic">
   <TabItem value="basic" label="Basic">
@@ -100,6 +158,14 @@ For parallel test execution without conflicts:
 ### Test Both Success and Failure Cases
 
 ```dart file=../../examples/lib/testing/testing.dart#testing-success-failure
+```
+
+## Advanced: TestDatabaseManager
+`TestDatabaseManager` is the underlying engine that manages the lifecycle of test databases. While `ormedGroup` and `ormedTest` are the preferred high-level APIs, you can access the manager via the `testDatabaseManager` getter if you need lower-level control, such as manually seeding data or checking migration status.
+
+```dart
+final manager = testDatabaseManager;
+await manager?.seed([MySeeder()], ds);
 ```
 
 ## Example Test Suite

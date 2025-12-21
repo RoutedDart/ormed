@@ -7,22 +7,28 @@ import '../driver/driver_adapter.dart';
 import '../query/query.dart';
 import 'test_schema_manager.dart';
 
-/// Strategy for database isolation in tests
+/// Defines strategies for database isolation in tests.
 enum DatabaseIsolationStrategy {
-  /// Run migrations before each group
+  /// Runs migrations before each group.
   migrate,
 
-  /// Use transactions for each test (fast, rollback after test)
+  /// Uses transactions for each test.
+  ///
+  /// This is the fastest strategy as it rolls back the transaction after each test.
   migrateWithTransactions,
 
-  /// Truncate tables after each test (slower, but works everywhere)
+  /// Truncates tables after each test.
+  ///
+  /// Slower than transactions but works across all drivers.
   truncate,
 
-  /// Drop and recreate schema after each test (slowest, most thorough)
+  /// Drops and recreates the schema after each test.
+  ///
+  /// The slowest but most thorough isolation strategy.
   recreate,
 }
 
-/// Manages test database lifecycle and isolation
+/// Manages the lifecycle and isolation of test databases.
 class TestDatabaseManager {
   final DataSource _baseDataSource;
   final Future<void> Function(DataSource)? _runMigrations;
@@ -84,7 +90,7 @@ class TestDatabaseManager {
   /// Create a DataSource object synchronously without provisioning the DB
   DataSource createDataSource(String id) {
     final options = _baseDataSource.options;
-    final driver = _baseDataSource.connection.driver;
+    final driver = options.driver;
 
     final testDbName = 'test_${id.replaceAll(RegExp(r'[^a-zA-Z0-9_]'), '_')}';
 
@@ -335,11 +341,16 @@ class TestDatabaseManager {
 
         for (final dbName in databasesToClean) {
           try {
-            await schemaDriver.dropDatabaseIfExists(dbName);
+            // Try dropping as schema first (Postgres)
+            final dropped = await schemaDriver.dropSchemaIfExists(dbName);
+            if (!dropped) {
+              // Then try as database (MySQL)
+              await schemaDriver.dropDatabaseIfExists(dbName);
+            }
             _createdDatabases.remove(dbName);
           } catch (e) {
             print(
-              '[TestDatabaseManager] Warning: Failed to drop database $dbName during cleanup: $e',
+              '[TestDatabaseManager] Warning: Failed to drop database/schema $dbName during cleanup: $e',
             );
           }
         }

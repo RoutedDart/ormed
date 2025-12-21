@@ -1,23 +1,32 @@
-/// Testing utilities for ORM applications.
+/// Provides utilities for testing ORM applications.
 ///
-/// This library provides helpers for database testing including:
-/// - In-memory query driver for fast tests
-/// - Seeding utilities
-/// - Schema management with migrations and seeding
+/// This library includes helpers for database isolation, lifecycle management,
+/// and automated migrations during tests.
+///
+/// Key features:
+/// - [TestDatabaseManager] for managing test database lifecycles.
+/// - [ormedGroup] and [ormedTest] for isolated test definitions.
+/// - Support for multiple isolation strategies (transactions, truncation, recreation).
+///
+/// For a detailed guide on testing, see the [Testing Guide](https://ormed.routed.dev/docs/guides/testing).
+///
+/// ### Basic Usage
 ///
 /// ```dart
 /// import 'package:ormed/testing.dart';
 ///
-/// // Create an isolated DataSource per test/group.
-/// final manager = TestDatabaseManager(baseDataSource: baseDataSource);
-/// await manager.initialize();
+/// void main() {
+///   setUpOrmed(
+///     dataSource: myDataSource,
+///     migrations: [CreateUsersTable()],
+///   );
 ///
-/// final testDs = await manager.createDatabase('my_test');
-/// try {
-///   final users = await testDs.query<User>().get();
-///   // ...
-/// } finally {
-///   await manager.dispose();
+///   ormedGroup('User tests', (ds) {
+///     ormedTest('can create user', (ds) async {
+///       final user = await ds.repo<User>().insert(User(name: 'Alice'));
+///       expect(user.id, isNotNull);
+///     });
+///   });
 /// }
 /// ```
 library;
