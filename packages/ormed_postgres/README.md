@@ -20,8 +20,8 @@ PostgreSQL driver adapter for the ormed ORM. Implements the `DriverAdapter` cont
 
 ```yaml
 dependencies:
-  ormed: ^0.1.0-dev+1
-  ormed_postgres: ^0.1.0-dev+1
+  ormed: any
+  ormed_postgres: any
 ```
 
 ## Quick Start

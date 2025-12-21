@@ -54,8 +54,8 @@ dart pub global activate ormed_cli
 
 ```yaml
 dependencies:
-  ormed: ^0.1.0-dev+3
-  ormed_sqlite: ^0.1.0-dev+3  # or your preferred driver
+  ormed: any
+  ormed_sqlite: any  # or your preferred driver
 
 dev_dependencies:
   build_runner: ^2.4.0

@@ -20,8 +20,8 @@ SQLite driver adapter for the ormed ORM. Implements the `DriverAdapter` contract
 
 ```yaml
 dependencies:
-  ormed: ^0.1.0-dev+1
-  ormed_sqlite: ^0.1.0-dev+1
+  ormed: any
+  ormed_sqlite: any
 ```
 
 ## Quick Start
