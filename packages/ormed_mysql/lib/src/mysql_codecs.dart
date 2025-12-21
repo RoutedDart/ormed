@@ -433,7 +433,7 @@ String _formatDateTime(DateTime value) {
     ..write(':')
     ..write(_padNumber(value.second, 2))
     ..write('.')
-    ..write(_padNumber(totalMicroseconds, 6));
+    ..write(_padNumber(value.millisecond * 1000 + value.microsecond, 6));
   return buffer.toString();
 }
 

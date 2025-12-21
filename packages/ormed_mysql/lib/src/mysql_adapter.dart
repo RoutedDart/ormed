@@ -2270,7 +2270,7 @@ String _formatDateTime(DateTime value) {
     ..write(':')
     ..write(_padNumber(utc.second, 2))
     ..write('.')
-    ..write(_padNumber(utc.microsecond, 6));
+    ..write(_padNumber(utc.millisecond * 1000 + utc.microsecond, 6));
   return buffer.toString();
 }
 
