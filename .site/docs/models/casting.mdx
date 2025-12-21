@@ -19,7 +19,7 @@ These keys are available out of the box:
 
 | Cast key | Dart type to use | Stored as | Notes |
 |---|---|---|---|
-| `datetime` | `DateTime` / `DateTime?` | `DateTime` or ISO-8601 string (driver-dependent) | Use when your driver returns strings for datetime columns |
+| `datetime` | `DateTime` / `DateTime?` | `DateTime` or ISO-8601 string (driver-dependent) | Supports `CarbonInterface` for input. Decodes to `DateTime`. |
 | `json` | `Map<String, Object?>` / `Map<String, Object?>?` | JSON string | For JSON objects |
 | `object` | `Map<String, Object?>` / `Map<String, Object?>?` | JSON string | Alias for `json` |
 | `array` | `List<Object?>` / `List<Object?>?` | JSON string | For JSON arrays |
