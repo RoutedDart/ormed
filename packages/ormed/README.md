@@ -22,11 +22,11 @@ A strongly-typed ORM (Object-Relational Mapping) core for Dart, inspired by Eloq
 
 ```yaml
 dependencies:
-  ormed: ^0.1.0-dev+3
-  ormed_sqlite: ^0.1.0-dev+3 # Or ormed_postgres, ormed_mysql
+  ormed: any
+  ormed_sqlite: any # Or ormed_postgres, ormed_mysql
 
 dev_dependencies:
-  ormed_cli: ^0.1.0-dev+3
+  ormed_cli: any
   build_runner: ^2.4.0
 ```
 
@@ -412,14 +412,83 @@ class User extends Model<User> {
 }
 ```
 
+## Database Drivers
+
+Ormed requires a database driver to connect to your database. Choose the driver that matches your database:
+
+### SQLite (`ormed_sqlite`)
+
+[![pub package](https://img.shields.io/pub/v/ormed_sqlite.svg)](https://pub.dev/packages/ormed_sqlite)
+
+Best for: Local development, mobile apps, embedded databases, testing.
+
+```yaml
+dependencies:
+  ormed_sqlite: any
+```
+
+```dart
+import 'package:ormed_sqlite/ormed_sqlite.dart';
+
+// In-memory (great for testing)
+final adapter = SqliteDriverAdapter.inMemory();
+
+// File-based
+final adapter = SqliteDriverAdapter.file('app.sqlite');
+```
+
+**Features:** In-memory & file databases, JSON1 extension, FTS5 full-text search, window functions, R*Tree spatial indexes.
+
+### PostgreSQL (`ormed_postgres`)
+
+[![pub package](https://img.shields.io/pub/v/ormed_postgres.svg)](https://pub.dev/packages/ormed_postgres)
+
+Best for: Production applications, complex queries, advanced data types.
+
+```yaml
+dependencies:
+  ormed_postgres: any
+```
+
+```dart
+import 'package:ormed_postgres/ormed_postgres.dart';
+
+final adapter = PostgresDriverAdapter.fromUrl(
+  'postgres://user:pass@localhost:5432/mydb',
+);
+```
+
+**Features:** UUID, JSONB, arrays, geometric types, full-text search (tsvector), range types, RETURNING clause, connection pooling.
+
+### MySQL/MariaDB (`ormed_mysql`)
+
+[![pub package](https://img.shields.io/pub/v/ormed_mysql.svg)](https://pub.dev/packages/ormed_mysql)
+
+Best for: Existing MySQL infrastructure, WordPress/Laravel migrations, web hosting.
+
+```yaml
+dependencies:
+  ormed_mysql: any
+```
+
+```dart
+import 'package:ormed_mysql/ormed_mysql.dart';
+
+final adapter = MySqlDriverAdapter.fromUrl(
+  'mysql://user:pass@localhost:3306/mydb',
+);
+```
+
+**Features:** MySQL 8.0+, MariaDB 10.5+, JSON columns, ENUM/SET types, spatial types, Laravel-compatible configuration.
+
 ## Related Packages
 
 | Package | Description |
 |---------|-------------|
-| `ormed_sqlite` | SQLite driver adapter |
-| `ormed_postgres` | PostgreSQL driver adapter |
-| `ormed_mysql` | MySQL/MariaDB driver adapter |
-| `ormed_cli` | CLI tool for migrations and scaffolding |
+| [`ormed_sqlite`](https://pub.dev/packages/ormed_sqlite) | SQLite driver adapter |
+| [`ormed_postgres`](https://pub.dev/packages/ormed_postgres) | PostgreSQL driver adapter |
+| [`ormed_mysql`](https://pub.dev/packages/ormed_mysql) | MySQL/MariaDB driver adapter |
+| [`ormed_cli`](https://pub.dev/packages/ormed_cli) | CLI tool for migrations and scaffolding |
 
 ## Examples
 
