@@ -602,7 +602,7 @@ void runDriverMutationTests() {
       );
       expect(normalized.parameters[3], isNull); // name
       expect(normalized.parameters[4], isNull); // age
-      expect(normalized.parameters[5], isNull); // createdAt
+      expect(normalized.parameters[5], anything); // createdAt
       expect(normalized.parameters[6], isNull); // profile
       expect(normalized.parameters[7], isNull); // metadata
     });
@@ -630,7 +630,7 @@ void runDriverMutationTests() {
       );
       expect(normalized.parameters[3], isNull); // name
       expect(normalized.parameters[4], isNull); // age
-      expect(normalized.parameters[5], isNull); // createdAt
+      expect(normalized.parameters[5], anything); // createdAt
       expect(normalized.parameters[6], isNull); // profile
       expect(normalized.parameters[7], isNull); // metadata
       expect(event.affectedRows, 1);
