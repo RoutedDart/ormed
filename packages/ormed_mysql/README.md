@@ -1,16 +1,29 @@
 # ormed_mysql
 
-MySQL/MariaDB adapter for the routed ORM driver interface. It implements the
-`DriverAdapter` + `SchemaDriver` contracts and executes queries through
-`package:mysql_client_plus`. The adapter plugs directly into `QueryContext` so
-existing repositories work across SQLite/Postgres/MySQL/MariaDB with no code
-changes.
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![Documentation](https://img.shields.io/badge/docs-ormed.vercel.app-blue)](https://ormed.vercel.app/)
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-support-yellow?logo=buy-me-a-coffee)](https://www.buymeacoffee.com/kingwill101)
 
-> **Engine compatibility**: Tested against MySQL 8.0+ and MariaDB 10.5+. Most
-> features should "just work" as long as the backend understands
-> `ON DUPLICATE KEY UPDATE` and `JSON` columns.
+MySQL and MariaDB driver adapter for the ormed ORM. Implements the `DriverAdapter` and `SchemaDriver` contracts, executing queries through `package:mysql_client_plus`.
 
-## Usage
+## Features
+
+- MySQL 8.0+ and MariaDB 10.5+ support
+- Full JSON column support
+- Transaction support with nested savepoints
+- Schema introspection and migration support
+- SET, ENUM, and spatial type support
+- Connection configuration mirroring Laravel's MySQL options
+
+## Installation
+
+```yaml
+dependencies:
+  ormed: ^0.1.0
+  ormed_mysql: ^0.1.0
+```
+
+## Quick Start
 
 ```dart
 import 'package:ormed/ormed.dart';
@@ -18,8 +31,9 @@ import 'package:ormed_mysql/ormed_mysql.dart';
 
 Future<void> main() async {
   final adapter = MySqlDriverAdapter.fromUrl(
-    'mysql://root:secret@localhost:6604/orm_test',
+    'mysql://root:secret@localhost:3306/mydb',
   );
+  
   final registry = ModelRegistry()..register(UserOrmDefinition.definition);
   final context = QueryContext(
     registry: registry,
@@ -35,67 +49,178 @@ Future<void> main() async {
     ')',
   );
 
-  await context.repository<User>().insert(
-    const User(id: 1, email: 'alice@example.com', active: true),
+  await context.repository<\$User>().insert(
+    \$User(email: 'alice@example.com', active: true),
   );
 
-  final users = await context.query<User>().get();
+  final users = await context.query<\$User>().get();
   print(users.first.email);
+  
   await adapter.close();
 }
 ```
 
-### Custom connection options
+## Adapter Constructors
 
-`MySqlDriverAdapter.custom`/`MariaDbDriverAdapter.custom` accept a
-`DatabaseConfig` that mirrors Laravel's MySQL configuration keys. Supported
-options include `url`, `host`, `port`, `database`, `username`, `password`,
-`ssl`, `timeoutMs`, `charset`, `collation`, `timezone`, `sqlMode`, `session`,
-and `init` (an array of SQL statements to run right after the connection is
-established).
+```dart
+// MySQL from URL
+MySqlDriverAdapter.fromUrl('mysql://user:pass@host:port/database')
 
-## Local MariaDB via Docker Compose
+// MariaDB from URL
+MariaDbDriverAdapter.fromUrl('mariadb://user:pass@host:port/database')
 
-`packages/orm/ormed_mysql/docker-compose.yml` starts a disposable MariaDB 11.4
-instance bound to port `6604`.
+// With SSL
+MySqlDriverAdapter.fromUrl('mysqls://user:pass@host:port/database')
+
+// Local development (insecure)
+MySqlDriverAdapter.insecureLocal(
+  database: 'mydb',
+  username: 'root',
+  password: 'secret',
+  port: 3306,
+)
+
+// Custom configuration
+MySqlDriverAdapter.custom(config: DatabaseConfig(
+  driver: 'mysql',
+  options: {
+    'host': 'localhost',
+    'port': 3306,
+    'database': 'mydb',
+    'username': 'root',
+    'password': 'secret',
+    'ssl': true,
+    'timeoutMs': 30000,
+    'charset': 'utf8mb4',
+    'collation': 'utf8mb4_unicode_ci',
+    'timezone': '+00:00',
+    'sqlMode': 'STRICT_TRANS_TABLES',
+    'session': {'wait_timeout': 28800},
+    'init': ['SET NAMES utf8mb4'],
+  },
+))
+```
+
+## Driver Capabilities
+
+| Capability | Supported |
+|------------|-----------|
+| Joins (inner, left, right, cross) | ✅ |
+| Lateral joins | ✅ |
+| Transactions with savepoints | ✅ |
+| Schema introspection | ✅ |
+| Raw SQL execution | ✅ |
+| JSON operations | ✅ |
+| Index hints | ✅ |
+| FOR UPDATE / LOCK IN SHARE MODE | ✅ |
+| Database management | ✅ |
+| Foreign key constraints | ✅ |
+
+> **Note**: MySQL doesn't support native RETURNING. Insert operations return `lastInsertID` instead.
+
+## Type Mappings
+
+| Dart Type | MySQL Type |
+|-----------|------------|
+| `bool` | TINYINT(1) |
+| `int` | INT / BIGINT |
+| `double` | DOUBLE |
+| `Decimal` | DECIMAL / NUMERIC |
+| `String` | VARCHAR / TEXT |
+| `DateTime` | DATETIME / TIMESTAMP |
+| `Duration` | TIME |
+| `UuidValue` | CHAR(36) |
+| `Set<String>` | SET |
+| `MySqlBitString` | BIT |
+| `MySqlGeometry` | GEOMETRY / POINT / POLYGON |
+| `Uint8List` | BLOB / BINARY |
+| `Map` | JSON |
+
+## MySQL-Specific Types
+
+```dart
+// Value classes for MySQL-specific types
+import 'package:ormed_mysql/ormed_mysql.dart';
+
+MySqlBitString   // BIT column values
+MySqlGeometry    // Spatial/geometry values (WKB format)
+```
+
+## Connection URL Schemes
+
+| Scheme | Description |
+|--------|-------------|
+| `mysql://` | Standard MySQL connection |
+| `mariadb://` | Standard MariaDB connection |
+| `mysqls://` | MySQL with SSL |
+| `mariadbs://` | MariaDB with SSL |
+| `mysql+ssl://` | MySQL with SSL (alternative) |
+
+Query parameters: `?ssl=true`, `?secure=true`
+
+## Docker Setup
+
+### MariaDB (docker-compose.yml)
 
 ```bash
-# Start MariaDB locally
-cd packages/orm/ormed_mysql
+cd packages/ormed_mysql
 MARIADB_ROOT_PASSWORD=secret docker compose up -d
 
-# Run the adapter tests
 export MARIADB_URL="mariadb://root:secret@localhost:6604/orm_test"
-dart test packages/orm/ormed_mysql
+dart test packages/ormed_mysql
 
-# Tear everything down
 docker compose down -v
 ```
 
-## Local MySQL via Docker Compose
-
-`packages/orm/ormed_mysql/docker-compose.mysql.yml` brings up a MySQL 8.4 server
-bound to port `6605`.
+### MySQL (docker-compose.mysql.yml)
 
 ```bash
-# Start MySQL locally
-cd packages/orm/ormed_mysql
+cd packages/ormed_mysql
 MYSQL_ROOT_PASSWORD=secret docker compose -f docker-compose.mysql.yml up -d
 
-# Run the adapter tests
 export MYSQL_URL="mysql://root:secret@localhost:6605/orm_test"
-dart test packages/orm/ormed_mysql/test/mysql_driver_shared_test.dart
+dart test packages/ormed_mysql/test/mysql_driver_shared_test.dart
 
-# Tear everything down
 docker compose -f docker-compose.mysql.yml down -v
 ```
 
-## Testing Helpers
+## JSON Operations
 
-- `MariaDbTestHarness.connect()` (see `test/support/mariadb_harness.dart`)
-  provisions a clean schema against MariaDB.
-- `MySqlTestHarness.connect()` (see `test/support/mysql_harness.dart`) targets a
-  vanilla MySQL instance.
-- `executeRaw` makes it easy for tests to run schema DDL during set up/tear down
-  without a migration runner, and both harnesses reuse the shared suites from
-  `package:driver_tests`.
+```dart
+// Query JSON columns
+final users = await ds.query<\$User>()
+    .whereJson('settings', '$.theme', 'dark')
+    .get();
+
+// Uses MySQL JSON functions: JSON_EXTRACT, JSON_UNQUOTE, JSON_TYPE
+```
+
+## Index Hints
+
+```dart
+// MySQL-specific index hints
+final results = await adapter.queryRaw(
+  'SELECT * FROM users USE INDEX (idx_email) WHERE email = ?',
+  ['test@example.com'],
+);
+```
+
+## Upsert Operations
+
+MySQL uses `ON DUPLICATE KEY UPDATE`:
+
+```dart
+await repo.upsert(
+  \$UserInsertDto(email: 'test@example.com', name: 'Test'),
+  uniqueBy: ['email'],
+);
+```
+
+## Related Packages
+
+| Package | Description |
+|---------|-------------|
+| `ormed` | Core ORM library |
+| `ormed_sqlite` | SQLite driver |
+| `ormed_postgres` | PostgreSQL driver |
+| `ormed_cli` | CLI tool for migrations |

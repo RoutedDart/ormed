@@ -1,39 +1,221 @@
 # ormed_cli
 
-Command-line tooling for the routed ORM (migrations generator + runner).
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![Documentation](https://img.shields.io/badge/docs-ormed.vercel.app-blue)](https://ormed.vercel.app/)
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-support-yellow?logo=buy-me-a-coffee)](https://www.buymeacoffee.com/kingwill101)
+
+Command-line interface for the ormed ORM. Provides migration management, schema operations, seeding, and project scaffolding—similar to Laravel's Artisan CLI.
+
+## Installation
+
+```yaml
+dev_dependencies:
+  ormed_cli: ^0.1.0
+```
+
+The CLI is available as the `orm` executable:
+
+```bash
+dart run ormed_cli:orm <command>
+```
 
 ## Commands
 
-```
-# Scaffold orm.yaml, database/migrations.dart, and migrations directory
+### Project Initialization
+
+```bash
+# Scaffold orm.yaml, migration registry, and directories
 dart run ormed_cli:orm init
 
-# Create a new migration file and register it in the registry
-dart run ormed_cli:orm make --name create_users_table
+# Overwrite existing files
+dart run ormed_cli:orm init --force
 
-# Run pending migrations (use --pretend to preview diff + SQL)
-dart run ormed_cli:orm migrate
-dart run ormed_cli:orm migrate --pretend
-
-# Roll back migrations (also accepts --pretend)
-dart run ormed_cli:orm migrate:rollback --steps 1
-
-# Show migration status
-dart run ormed_cli:orm migrate:status
-
-# Run seeders (optional --class to target specific seeders)
-dart run ormed_cli:orm seed
+# Scan and register existing migrations/seeders
+dart run ormed_cli:orm init --populate-existing
 ```
 
-The CLI reads `orm.yaml` to determine the driver + connection options and
-assumes that `database/migrations.dart` exposes the generator template created
-by `ormed_cli:orm init`. Add `--pretend` to any migration command to see the
-schema diff and SQL plan before it runs; otherwise migrations execute
-immediately.
-Define a matching `seeds` block to enable `orm seed` and `orm migrate --seed`, which execute the registry at `database/seeders.dart`.
+### Migration Management
 
-When you define multiple entries under `connections:` and set
-`default_connection`, pass `--connection <name>` to target a specific tenant (for
-example `orm migrate --connection analytics`). Every command that touches the
-database respects the flag, so you can migrate/migrate:rollback/seed each database
-without switching `orm.yaml`.
+```bash
+# Create a new migration
+dart run ormed_cli:orm make --name create_users_table
+dart run ormed_cli:orm make --name create_posts_table --create --table posts
+dart run ormed_cli:orm make --name add_column --format sql  # SQL format instead of Dart
+
+# Run pending migrations
+dart run ormed_cli:orm migrate
+dart run ormed_cli:orm migrate --pretend      # Preview SQL without executing
+dart run ormed_cli:orm migrate --step         # Apply one migration at a time
+dart run ormed_cli:orm migrate --seed         # Run default seeder after
+dart run ormed_cli:orm migrate --force        # Skip production confirmation
+
+# Rollback migrations
+dart run ormed_cli:orm migrate:rollback              # Rollback 1 migration
+dart run ormed_cli:orm migrate:rollback --steps 3    # Rollback 3 migrations
+dart run ormed_cli:orm migrate:rollback --batch 2    # Rollback specific batch
+dart run ormed_cli:orm migrate:rollback --pretend    # Preview rollback SQL
+
+# Reset/Refresh
+dart run ormed_cli:orm migrate:reset      # Rollback ALL migrations
+dart run ormed_cli:orm migrate:refresh    # Reset + re-migrate
+dart run ormed_cli:orm migrate:fresh      # Drop all tables + re-migrate
+dart run ormed_cli:orm migrate:fresh --seed
+
+# Migration status
+dart run ormed_cli:orm migrate:status
+dart run ormed_cli:orm migrate:status --pending  # Only show pending
+
+# Export SQL files
+dart run ormed_cli:orm migrate:export        # Export pending migrations
+dart run ormed_cli:orm migrate:export --all  # Export all migrations
+```
+
+### Database Operations
+
+```bash
+# Run seeders
+dart run ormed_cli:orm seed
+dart run ormed_cli:orm seed --class UserSeeder  # Specific seeder
+dart run ormed_cli:orm seed --pretend           # Preview SQL
+
+# Wipe database
+dart run ormed_cli:orm db:wipe --force
+dart run ormed_cli:orm db:wipe --drop-views
+
+# Schema operations
+dart run ormed_cli:orm schema:dump
+dart run ormed_cli:orm schema:dump --prune  # Delete migration files after dump
+dart run ormed_cli:orm schema:describe
+dart run ormed_cli:orm schema:describe --json
+```
+
+### Multi-Database Support
+
+```bash
+# Target specific connection
+dart run ormed_cli:orm migrate --connection analytics
+dart run ormed_cli:orm seed --connection analytics
+dart run ormed_cli:orm migrate:status --connection analytics
+```
+
+## Configuration (orm.yaml)
+
+The `init` command scaffolds this configuration file:
+
+```yaml
+driver:
+  type: sqlite                              # sqlite, mysql, postgres
+  options:
+    database: database.sqlite               # Connection-specific options
+
+migrations:
+  directory: lib/src/database/migrations    # Migration files location
+  registry: lib/src/database/migrations.dart # Migration registry file
+  ledger_table: orm_migrations              # Table tracking applied migrations
+  schema_dump: database/schema.sql          # Schema dump output
+  format: dart                              # Migration format: dart or sql
+
+seeds:
+  directory: lib/src/database/seeders
+  registry: lib/src/database/seeders.dart
+```
+
+### Multi-Connection Configuration
+
+```yaml
+connections:
+  default:
+    type: sqlite
+    options:
+      database: main.sqlite
+  analytics:
+    type: postgres
+    options:
+      host: localhost
+      port: 5432
+      database: analytics
+      username: user
+      password: secret
+
+default_connection: default
+```
+
+## Directory Structure
+
+After running `init`:
+
+```
+project/
+├── orm.yaml
+├── database/
+│   └── schema.sql
+└── lib/src/database/
+    ├── migrations/
+    │   └── m_YYYYMMDDHHMMSS_migration_name.dart
+    ├── migrations.dart   (registry)
+    ├── seeders/
+    │   └── database_seeder.dart
+    └── seeders.dart      (registry)
+```
+
+## Migration Formats
+
+### Dart Migrations (default)
+
+```dart
+class CreateUsersTable extends Migration {
+  @override
+  void up(SchemaBuilder schema) {
+    schema.create('users', (table) {
+      table.id();
+      table.string('email').unique();
+      table.timestamps();
+    });
+  }
+
+  @override
+  void down(SchemaBuilder schema) {
+    schema.drop('users');
+  }
+}
+```
+
+### SQL Migrations
+
+```
+m_20251220120000_create_users_table/
+├── up.sql
+└── down.sql
+```
+
+## Global Options
+
+Most commands support these flags:
+
+| Flag | Description |
+|------|-------------|
+| `--config, -c` | Path to orm.yaml |
+| `--database, -d` | Override database connection |
+| `--connection` | Select connection from orm.yaml |
+| `--path` | Override migration registry path |
+| `--force, -f` | Skip production confirmation |
+| `--pretend` | Preview SQL without executing |
+| `--graceful` | Treat errors as warnings |
+
+## Creating Seeders
+
+```bash
+dart run ormed_cli:orm make --name UserSeeder --seeder
+```
+
+```dart
+class UserSeeder extends DatabaseSeeder {
+  @override
+  Future<void> run() async {
+    await seed<User>([
+      {'email': 'admin@example.com', 'name': 'Admin'},
+      {'email': 'user@example.com', 'name': 'User'},
+    ]);
+  }
+}
+```

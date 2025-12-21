@@ -1,3 +1,5 @@
-## 1.0.0
+# Changelog
 
-- Initial version.
+## 0.1.0-dev
+
+- Initial release.

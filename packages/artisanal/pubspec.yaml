@@ -1,7 +1,15 @@
 name: artisanal
-description: Artisanal-style command runner UX wrapper for package:args.
-version: 0.0.1
-publish_to: none
+description: A full-stack terminal toolkit for Dart featuring Lip Gloss styling, Bubble Tea TUI architecture, and Ultraviolet rendering.
+version: 0.1.0-dev
+repository: https://github.com/RoutedDart/ormed
+issue_tracker: https://github.com/RoutedDart/ormed/issues
+documentation: https://ormed.vercel.app/
+funding:
+  - https://www.buymeacoffee.com/kingwill101
+topics:
+  - cli
+  - tui
+  - terminal
 resolution: workspace
 
 environment:
@@ -15,6 +23,7 @@ dependencies:
   markdown: ^7.3.0
   characters: ^1.4.1
   image: ^4.7.1
+  html: ^0.15.5
 
 dev_dependencies:
   lints: ^6.0.0

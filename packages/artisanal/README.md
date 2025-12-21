@@ -1,16 +1,22 @@
 # artisanal
 
-Artisanal is a full‑stack terminal toolkit for Dart: polished CLI output, a Lip Gloss‑style styling system, a Bubble Tea‑style TUI runtime, reusable widgets (“bubbles”), and an Ultraviolet‑based cell renderer.
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![Documentation](https://img.shields.io/badge/docs-ormed.vercel.app-blue)](https://ormed.vercel.app/)
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-support-yellow?logo=buy-me-a-coffee)](https://www.buymeacoffee.com/kingwill101)
 
-It is designed to let you build everything from rich command‑line tools to complex interactive TUI apps, with a consistent API surface.
+A full-stack terminal toolkit for Dart, inspired by popular Go terminal libraries: [Lip Gloss](https://github.com/charmbracelet/lipgloss) (styling), [Bubble Tea](https://github.com/charmbracelet/bubbletea) (TUI framework), and [Bubbles](https://github.com/charmbracelet/bubbles) (reusable widgets).
 
-## What’s inside
+Build everything from rich command-line tools to complex interactive TUI applications with a consistent, idiomatic Dart API.
 
-- **CLI I/O**: High‑level `Console` helpers for status lines, tables, tasks, and prompts.
-- **Styling**: Lip Gloss‑style `Style`, borders, layout helpers, and **ThemePalette** support.
-- **TUI runtime**: Elm Architecture (`Model`/`Msg`/`Cmd`) with a fully featured `Program`.
-- **Bubbles**: Reusable components (inputs, lists, spinners, viewports, tables, progress bars, etc.).
-- **Ultraviolet (UV)**: High‑performance cell‑buffer renderer and ANSI input decoder.
+## Features
+
+| Feature | Description |
+|---------|-------------|
+| **CLI I/O** | High-level `Console` helpers for status lines, tables, tasks, prompts, and styled output |
+| **Styling** | Fluent, immutable `Style` API with colors, borders, padding, margins, and themes |
+| **TUI Runtime** | Elm Architecture (`Model`/`Msg`/`Cmd`) with a full-featured `Program` event loop |
+| **Bubbles** | 20+ reusable widgets: inputs, lists, tables, spinners, progress bars, file pickers, etc. |
+| **Ultraviolet (UV)** | High-performance cell-buffer renderer with diff-based updates and graphics support |
 
 ## Installation
 
@@ -19,7 +25,19 @@ dependencies:
   artisanal: ^0.0.1
 ```
 
-> Workspace users: this repo is `publish_to: none`. Use a path or git reference while developing.
+> **Note**: This package uses workspace resolution. Use a path or git reference in standalone projects.
+
+## Library Exports
+
+| Import | Purpose |
+|--------|---------|
+| `package:artisanal/artisanal.dart` | Full CLI kit (Console, Style, Terminal, Layout) |
+| `package:artisanal/args.dart` | Command runner utilities (`CommandRunner`, `Command`) |
+| `package:artisanal/style.dart` | Styling, Layout, Colors, Borders, Themes |
+| `package:artisanal/tui.dart` | TUI runtime: Model, Msg, Cmd, Program |
+| `package:artisanal/bubbles.dart` | Reusable interactive widgets |
+| `package:artisanal/terminal.dart` | Terminal abstraction, ANSI codes, Keys |
+| `package:artisanal/uv.dart` | Low-level cell-buffer renderer |
 
 ## Quick Start: CLI Output
 
@@ -53,7 +71,31 @@ Future<void> main() async {
 }
 ```
 
-## Quick Start: TUI
+## Quick Start: Styling (Lip Gloss)
+
+```dart
+import 'package:artisanal/style.dart';
+
+final style = Style()
+    .bold()
+    .foreground(Colors.purple)
+    .padding(1, 2)
+    .border(Border.rounded);
+
+print(style.render('Hello, Artisanal!'));
+```
+
+### Style Capabilities
+
+- **Text effects**: `bold()`, `italic()`, `underline()`, `strikethrough()`, `dim()`, `inverse()`, `blink()`
+- **Colors**: ANSI 16, ANSI 256, TrueColor (RGB), `AdaptiveColor` (light/dark aware)
+- **Spacing**: `padding()`, `margin()`
+- **Borders**: `rounded`, `thick`, `double`, `hidden`, custom
+- **Alignment**: `align()`, `alignVertical()`
+- **Dimensions**: `width()`, `height()`, `maxWidth()`, `maxHeight()`
+- **Themes**: `ThemePalette` with presets (dark, light, ocean, nord, dracula, monokai, solarized)
+
+## Quick Start: TUI (Elm Architecture)
 
 ```dart
 import 'package:artisanal/tui.dart';
@@ -76,7 +118,7 @@ class CounterModel implements Model {
   }
 
   @override
-  String view() => 'Count: $count\n\nUse ↑/↓ to change, q to quit';
+  String view() => 'Count: \$count\n\nUse ↑/↓ to change, q to quit';
 }
 
 Future<void> main() async {
@@ -84,11 +126,58 @@ Future<void> main() async {
 }
 ```
 
-## Ultraviolet Renderer (High‑performance)
+## Bubbles (Reusable Widgets)
 
-The UV renderer diffs cell buffers for flicker‑free updates and supports layered composition.
+| Widget | Description |
+|--------|-------------|
+| `TextInputModel` | Single-line text input |
+| `TextAreaModel` | Multi-line text editing |
+| `ListModel` | Filterable list selection |
+| `TableModel` | Interactive tables |
+| `ViewportModel` | Scrollable content pane |
+| `ProgressModel` | Progress bars with ETA |
+| `SpinnerModel` | Animated loading spinners |
+| `FilePickerModel` | File/directory browser |
+| `AnticipateModel` | Autocomplete with suggestions |
+| `WizardModel` | Multi-step form wizard |
+| `SelectModel<T>` | Single-choice selection prompt |
+| `MultiSelectModel<T>` | Multiple-choice selection |
+| `PasswordModel` | Masked password input |
+| `TimerModel` | Countdown timer |
+| `StopwatchModel` | Elapsed time tracking |
+| `PaginatorModel` | Pagination controls |
+| `HelpModel` | Key binding help views |
 
-Enable it in a TUI program:
+## Command Runner
+
+Build CLI tools with styled help and nested commands:
+
+```dart
+import 'package:artisanal/args.dart';
+
+class HelloCommand extends Command {
+  @override
+  String get name => 'hello';
+  
+  @override
+  String get description => 'Say hello';
+
+  @override
+  void run() {
+    io.success('Hello, world!');
+  }
+}
+
+void main(List<String> args) {
+  final runner = CommandRunner('my-cli', 'A great CLI');
+  runner.addCommand(HelloCommand());
+  runner.run(args);
+}
+```
+
+## Ultraviolet Renderer
+
+High-performance rendering with diff-based updates for flicker-free TUI applications:
 
 ```dart
 await runProgram(
@@ -96,72 +185,38 @@ await runProgram(
   options: const ProgramOptions(
     useUltravioletRenderer: true,
     useUltravioletInputDecoder: true,
+    altScreen: true,
+    mouseTracking: true,
   ),
 );
 ```
 
-### UV‑safe logging
+### UV Features
 
-Avoid direct `print()` or `stdout.write()` while UV is active, or the buffer will desync. Use `Cmd.println`:
+- 2D cell buffer with styled cells
+- Diff-based terminal updates (minimal redraws)
+- Layer composition and hit-testing
+- Mouse support and focus events
+- Graphics: Kitty, Sixel, iTerm2, half-block drawing
 
-```dart
-@override
-(Model, Cmd?) update(Msg msg) {
-  if (msg is LogMsg) {
-    return (this, Cmd.println('Log: ${msg.text}'));
-  }
-  return (this, null);
-}
-```
+## Console Methods
 
-## Theme Palette
-
-Artisanal ships theme palettes for consistent UI styling.
-
-```dart
-import 'package:artisanal/style.dart';
-
-final theme = ThemePalette.byName('dark');
-final title = Style().foreground(theme.accentBold).bold().render('Dashboard');
-```
-
-Available themes: `ThemePalette.names`.
-
-## Bubbles (Reusable components)
-
-Use components like text inputs, lists, viewports, and progress bars from `package:artisanal/bubbles.dart`:
-
-```dart
-import 'package:artisanal/bubbles.dart';
-
-final input = TextInputModel(prompt: 'Name: ');
-```
+| Category | Methods |
+|----------|---------|
+| **Output** | `writeln()`, `write()`, `title()`, `section()` |
+| **Messages** | `info()`, `success()`, `warning()`, `error()`, `note()`, `caution()` |
+| **Layout** | `table()`, `tree()`, `listing()`, `twoColumnDetail()` |
+| **Interactive** | `ask()`, `confirm()`, `choice()`, `secret()`, `selectChoice()`, `multiSelectChoice()` |
+| **Progress** | `task()`, `progressBar()` |
 
 ## Examples
 
-Explore working demos under `packages/artisanal/example/` and
-`packages/artisanal/example/tui/examples/`.
+See the `example/` directory for comprehensive demos:
 
-Notable demos:
-- Kitchen sink (widgets + renderer + unicode + colors)
-- Command center dashboard
-- Trello board
-- Progress, spinners, tables, text inputs, etc.
-
-## Project structure
-
-- `package:artisanal/artisanal.dart` – full kit (CLI + style + terminal)
-- `package:artisanal/args.dart` – command runner utilities
-- `package:artisanal/style.dart` – styling + layout + themes
-- `package:artisanal/tui.dart` – TUI runtime and program loop
-- `package:artisanal/bubbles.dart` – reusable widgets
-- `package:artisanal/uv.dart` – low‑level renderer & input decoder
-
-## Notes
-
-- For migration details, see `packages/artisanal/MIGRATION_GUIDE.md`.
-- UV parity notes live in `packages/artisanal/UV_PARITY_MAP.md`.
-
----
-
-If you want a docs site or API reference, the `packages/artisanal/site/` folder is ready for content.
+- `main.dart` – Full feature showcase
+- `fluent_style_example.dart` – Style API patterns
+- `spinner_demo.dart` – Various spinner types
+- `lipgloss_table.dart` – Styled tables
+- `log_viewer_demo.dart` – Monitoring dashboard
+- `command_center_demo.dart` – Multi-panel layouts
+- `uv_demo.dart` – Ultraviolet renderer basics

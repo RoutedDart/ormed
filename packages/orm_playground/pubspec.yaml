@@ -11,7 +11,7 @@ dependencies:
   ormed: 0.1.0-dev
   ormed_sqlite: 0.1.0-dev
   ormed_cli: 0.1.0-dev
-  artisanal: 0.0.1
+  artisanal: 0.1.0-dev
 
 dev_dependencies:
   lints: ^6.0.0

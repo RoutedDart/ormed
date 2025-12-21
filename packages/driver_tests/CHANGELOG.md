@@ -1,5 +1,5 @@
 # Changelog
 
-## 0.1.0
+## 0.1.0-dev
 
-- Initial extraction of shared driver integration tests and model fixtures.
+- Initial release.

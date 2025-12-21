@@ -1,31 +1,36 @@
 # ormed
 
-`ormed` provides the strongly typed foundation for routed's upcoming ORM:
-annotations, metadata types, codec abstractions, and a source-gen powered model
-builder inspired by Eloquent, GORM, SQLAlchemy, and ActiveRecord.
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![Documentation](https://img.shields.io/badge/docs-ormed.vercel.app-blue)](https://ormed.vercel.app/)
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-support-yellow?logo=buy-me-a-coffee)](https://www.buymeacoffee.com/kingwill101)
+
+A strongly-typed ORM (Object-Relational Mapping) core for Dart, inspired by Eloquent (Laravel), GORM, SQLAlchemy, and ActiveRecord. Combines compile-time code generation with runtime flexibility for type-safe database operations.
 
 ## Features
 
-- `@OrmModel`, `@OrmField`, and `@OrmRelation` annotations to describe tables,
-  columns, and relationships directly in Dart code.
-- Code generation that emits `ModelDefinition`, `FieldDefinition`, and
-  `ModelCodec` helpers for every annotated class.
-- `ValueCodec` + `ValueCodecRegistry` so drivers can translate between driver
-  payloads (e.g., Postgres binary) and rich Dart objects.
-- Driver-aware schema hints so the same blueprint can emit `jsonb` on Postgres
-  while staying `TEXT` elsewhere via `driverOverride`/`driverSqlType`, plus
-  driver-scoped codec overlays with `ValueCodecRegistry.forDriver`.
-- `ModelRegistry` utilities that let frameworks register/lookup models at
-  runtime without static globals.
-- `QueryContext`, fluent `Query<T>` builder, relation loader, and an
-  `InMemoryQueryExecutor` for tests to validate chaining, eager loading, and
-  pagination without a real database.
+- **Annotations**: `@OrmModel`, `@OrmField`, `@OrmRelation`, `@OrmScope`, `@OrmEvent` to describe tables, columns, relationships, and behaviors
+- **Code Generation**: Emits `ModelDefinition`, `FieldDefinition`, `ModelCodec`, DTOs, and tracked model classes
+- **Query Builder**: Fluent, type-safe queries with filtering, ordering, pagination, aggregates, and eager loading
+- **Relationships**: HasOne, HasMany, BelongsTo, ManyToMany, and polymorphic relations (MorphOne, MorphMany)
+- **Migrations**: Schema builder with Laravel-style table blueprints and driver-specific overrides
+- **Value Codecs**: Custom type serialization with driver-scoped codec registries
+- **Soft Deletes**: Built-in support with `withTrashed()`, `onlyTrashed()` scopes
+- **Event System**: Model lifecycle events (Creating, Created, Updating, Updated, Deleting, Deleted)
+- **Testing**: `TestDatabaseManager` with database isolation strategies
 
-## Getting started
+## Installation
 
-1. Add `ormed` to the root `pubspec.yaml` (already included inside this
-   workspace) then run `dart pub get`.
-2. Annotate your model and add a `part` directive:
+```yaml
+dependencies:
+  ormed: ^0.1.0
+
+dev_dependencies:
+  build_runner: ^2.4.0
+```
+
+## Quick Start
+
+### 1. Define a Model
 
 ```dart
 import 'package:ormed/ormed.dart';
@@ -34,124 +39,275 @@ part 'user.orm.dart';
 
 @OrmModel(table: 'users')
 class User {
-  const User({required this.id, required this.email, this.preferences});
+  const User({required this.id, required this.email, this.name});
 
-  @OrmField(isPrimaryKey: true)
-  final String id;
+  @OrmField(isPrimaryKey: true, autoIncrement: true)
+  final int id;
 
-  @OrmField(codec: JsonMapCodec)
-  final Map<String, Object?>? preferences;
-
+  @OrmField(isUnique: true)
   final String email;
+
+  final String? name;
 }
 ```
 
-3. Run the builder:
+### 2. Generate Code
 
 ```bash
 dart run build_runner build --delete-conflicting-outputs
 ```
 
-This produces `user.orm.dart` containing a `ModelDefinition<User>`, generated
-codec, and helpers accessible via `UserOrmDefinition.definition`.
+This produces `user.orm.dart` with:
+- `UserOrmDefinition.definition` - Model metadata
+- `$User` - Tracked model class with dirty checking
+- `$UserInsertDto`, `$UserUpdateDto` - Mutation DTOs
+- `$UserCodec` - Encode/decode helpers
 
-## Usage
-
-```dart
-final registry = ValueCodecRegistry.standard()
-  ..registerCodecFor(JsonMapCodec, const JsonMapCodec());
-
-final definition = UserOrmDefinition.definition;
-final row = definition.toMap(User(id: '1', email: 'dev@example.com'));
-final decoded = definition.fromMap(row, registry: registry);
-
-final models = ModelRegistry()..register(definition);
-print(models.expect<User>().tableName); // "users"
-```
-
-See `/example` for a compilable todo model plus CLI usage.
-
-## Driver-specific overrides and codecs
-
-Multi-database projects often need different column types or default
-expressions per driver. Use the fluent helpers on `ColumnBuilder` to keep a
-single migration definition:
-
-```dart
-builder.create('events', (table) {
-  table.json('metadata')
-    ..nullable()
-    ..driverType('postgres', const ColumnType.jsonb());
-
-  table.string('locale')
-    ..driverOverride('postgres', collation: '"und-x-icu"');
-
-  table.timestamp('synced_at', timezoneAware: true)
-    ..driverDefault('postgres', expression: "timezone('UTC', now())");
-});
-```
-
-The same plan now emits `JSONB` + Postgres-specific collations while SQLite
-continues to use `TEXT`. At runtime, register codecs scoped to each driver so
-repositories pick up the right encode/decode behavior automatically:
-
-```dart
-final baseRegistry = ValueCodecRegistry.standard()
-  ..registerCodecFor(JsonMapCodec, const JsonMapCodec());
-
-baseRegistry
-  .forDriver('postgres')
-  .registerCodec(key: 'UuidValue', codec: const PostgresUuidCodec());
-
-final adapter = PostgresDriverAdapter.custom(
-  config: postgresConfig,
-  codecRegistry: baseRegistry,
-);
-
-final context = QueryContext(
-  registry: modelRegistry,
-  driver: adapter,
-);
-// context.codecRegistry now resolves driver-specific codecs transparently.
-```
-
-`QueryContext` automatically scopes any registry (your custom one or the
-driver's default) to `adapter.metadata.name`, so you never need to branch in
-model code to pick the correct codec.
-
-## Schema inspector
-
-All driver adapters implement the `SchemaDriver` contract, so you can inspect the
-live database catalog without writing raw SQL. Wrap any driver in the
-`SchemaInspector` helper to mirror Laravel's schema builder ergonomics:
+### 3. Use the ORM
 
 ```dart
 import 'package:ormed/ormed.dart';
 import 'package:ormed_sqlite/ormed_sqlite.dart';
 
-Future<void> main() async {
-  final adapter = SqliteDriverAdapter.inMemory();
-  final inspector = SchemaInspector(adapter as SchemaDriver);
+void main() async {
+  final ds = DataSource(DataSourceOptions(
+    driver: SqliteDriverAdapter.inMemory(),
+    entities: [UserOrmDefinition.definition],
+  ));
+  await ds.init();
 
-  final hasUsers = await inspector.hasTable('users');
-  final emailType = await inspector.columnType('users', 'email');
-  final columns = await adapter.listColumns('posts');
-  final indexes = await adapter.listIndexes('posts');
+  // Insert
+  await ds.repo<$User>().insert($UserInsertDto(email: 'dev@example.com'));
 
-  print('Users table exists? $hasUsers');
-  print('users.email column type: $emailType');
-  print('posts columns: ${columns.map((c) => c.name)}');
-  print('posts indexes: ${indexes.map((i) => i.name)}');
-  await adapter.close();
+  // Query
+  final users = await ds.query<$User>()
+      .whereEquals('email', 'dev@example.com')
+      .get();
+
+  // Update
+  await ds.repo<$User>().update(
+    $UserUpdateDto(name: 'Developer'),
+    where: {'id': 1},
+  );
+
+  // Delete
+  await ds.repo<$User>().deleteByIds([1]);
 }
 ```
 
-These APIs power future tooling (migration diffs, CLI diagnostics, etc.) and are
-available on every routed ORM driver.
+## Annotations
 
-## Next steps
+### `@OrmModel`
 
-- Driver adapters will consume the generated `ModelDefinition`s to build SQL or
-  document queries.
-- `orm_migrations` will share the same metadata to guarantee schema drift
-  detection and reversible migrations.
+```dart
+@OrmModel(
+  table: 'users',
+  schema: 'public',           // Optional schema/namespace
+  softDeletes: true,          // Enable soft deletes
+  primaryKey: 'id',           // Alternative to @OrmField(isPrimaryKey: true)
+  fillable: ['email', 'name'], // Mass assignment whitelist
+  guarded: ['role'],          // Mass assignment blacklist
+  hidden: ['password'],       // Hidden from serialization
+  connection: 'analytics',    // Connection name override
+)
+```
+
+### `@OrmField`
+
+```dart
+@OrmField(
+  columnName: 'user_email',   // Custom column name
+  isPrimaryKey: true,
+  autoIncrement: true,
+  isNullable: true,
+  isUnique: true,
+  isIndexed: true,
+  codec: JsonMapCodec,        // Custom value codec
+  columnType: ColumnType.text, // Override column type
+  defaultValueSql: 'NOW()',   // SQL default expression
+  driverOverrides: {...},     // Per-driver customizations
+)
+```
+
+### `@OrmRelation`
+
+```dart
+// One-to-One (foreign key on related table)
+@OrmRelation.hasOne(related: Profile, foreignKey: 'user_id')
+final Profile? profile;
+
+// One-to-Many
+@OrmRelation.hasMany(related: Post, foreignKey: 'author_id')
+final List<Post> posts;
+
+// Inverse relation
+@OrmRelation.belongsTo(related: User, foreignKey: 'user_id')
+final User author;
+
+// Many-to-Many
+@OrmRelation.manyToMany(
+  related: Tag,
+  pivot: 'post_tags',
+  foreignPivotKey: 'post_id',
+  relatedPivotKey: 'tag_id',
+)
+final List<Tag> tags;
+
+// Polymorphic
+@OrmRelation.morphMany(related: Comment, morphName: 'commentable')
+final List<Comment> comments;
+```
+
+## Query Builder
+
+```dart
+final posts = await ds.query<$Post>()
+    // Filtering
+    .whereEquals('status', 'published')
+    .whereIn('category_id', [1, 2, 3])
+    .whereNull('deleted_at')
+    .whereBetween('views', 100, 1000)
+    .whereHas('comments', (q) => q.whereEquals('approved', true))
+    
+    // Eager loading
+    .with_(['author', 'tags'])
+    .withCount('comments')
+    
+    // Ordering & Pagination
+    .orderByDesc('created_at')
+    .limit(20)
+    .offset(40)
+    
+    // Execute
+    .get();
+
+// Aggregates
+final count = await ds.query<$Post>().count();
+final avgViews = await ds.query<$Post>().avg('views');
+
+// Pagination
+final page = await ds.query<$Post>().paginate(page: 2, perPage: 15);
+```
+
+## Migrations
+
+```dart
+class CreateUsersTable extends Migration {
+  @override
+  void up(SchemaBuilder schema) {
+    schema.create('users', (table) {
+      table.id();                              // bigIncrements primary key
+      table.string('email').unique();
+      table.string('name').nullable();
+      table.boolean('active').defaultValue(true);
+      table.timestamps();                      // created_at, updated_at
+      table.softDeletes();                     // deleted_at
+    });
+  }
+
+  @override
+  void down(SchemaBuilder schema) {
+    schema.drop('users');
+  }
+}
+```
+
+### Column Types
+
+| Method | Description |
+|--------|-------------|
+| `id()` | Auto-incrementing big integer primary key |
+| `string(name, length?)` | VARCHAR column |
+| `text(name)` | TEXT column |
+| `integer(name)` / `bigInteger(name)` | Integer columns |
+| `decimal(name, precision?, scale?)` | Decimal column |
+| `boolean(name)` | Boolean column |
+| `dateTime(name)` / `timestamp(name)` | DateTime columns |
+| `json(name)` / `jsonb(name)` | JSON columns |
+| `binary(name)` | Binary/BLOB column |
+| `enum_(name, values)` | Enum column |
+
+### Column Modifiers
+
+```dart
+table.string('locale')
+    .nullable()
+    .unique()
+    .defaultValue('en')
+    .comment('User locale')
+    .driverType('postgres', ColumnType.jsonb())  // Per-driver type
+    .driverDefault('postgres', "'{}'::jsonb");   // Per-driver default
+```
+
+## Value Codecs
+
+Custom type serialization for database ↔ Dart conversion:
+
+```dart
+class UuidCodec extends ValueCodec<UuidValue> {
+  const UuidCodec();
+
+  @override
+  UuidValue? decode(Object? value) =>
+      value == null ? null : UuidValue.fromString(value as String);
+
+  @override
+  Object? encode(UuidValue? value) => value?.uuid;
+}
+
+// Register globally
+ValueCodecRegistry.instance.registerCodecFor(UuidCodec, const UuidCodec());
+
+// Or per-driver
+ValueCodecRegistry.instance.forDriver('postgres')
+    .registerCodec(key: 'UuidValue', codec: const PostgresUuidCodec());
+```
+
+## Repository Operations
+
+```dart
+final repo = ds.repo<$User>();
+
+// Create
+await repo.insert($UserInsertDto(email: 'new@example.com'));
+await repo.insertMany([dto1, dto2, dto3]);
+
+// Read
+final user = await repo.find(1);
+final all = await repo.all();
+final first = await repo.first();
+
+// Update (accepts DTOs, models, or maps)
+await repo.update(dto, where: {'id': 1});
+await repo.update(dto, where: (q) => q.whereEquals('email', 'old@example.com'));
+
+// Delete
+await repo.delete(model);
+await repo.deleteByIds([1, 2, 3]);
+
+// Upsert
+await repo.upsert(dto, uniqueBy: ['email']);
+```
+
+## Transactions
+
+```dart
+await ds.transaction(() async {
+  await ds.repo<$User>().insert(userDto);
+  await ds.repo<$Profile>().insert(profileDto);
+  // Automatically rolls back on exception
+});
+```
+
+## Related Packages
+
+| Package | Description |
+|---------|-------------|
+| `ormed_sqlite` | SQLite driver adapter |
+| `ormed_postgres` | PostgreSQL driver adapter |
+| `ormed_mysql` | MySQL/MariaDB driver adapter |
+| `ormed_cli` | CLI tool for migrations and scaffolding |
+
+## Examples
+
+See the `example/` directory and `packages/orm_playground` for comprehensive usage examples.

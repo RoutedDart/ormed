@@ -2,6 +2,14 @@ name: ormed
 description: Strongly typed ORM core primitives (annotations, metadata, codecs, and generator) for the routed ecosystem.
 version: 0.1.0-dev
 repository: https://github.com/RoutedDart/ormed
+issue_tracker: https://github.com/RoutedDart/ormed/issues
+documentation: https://ormed.vercel.app/
+funding:
+  - https://www.buymeacoffee.com/kingwill101
+topics:
+  - orm
+  - database
+  - sql
 resolution: workspace
 environment:
   sdk: ">=3.10.0 <4.0.0"
