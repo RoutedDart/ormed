@@ -144,3 +144,17 @@ jobs:
       - name: Run MySQL/MariaDB driver tests
         working-directory: packages/ormed_mysql
         run: dart test --concurrency=1 --reporter=expanded
+
+  bootstrap:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install SQLite3
+        run: sudo apt-get update && sudo apt-get install -y sqlite3 libsqlite3-dev
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+      - name: Install dependencies
+        run: dart pub get
+      - name: Run Bootstrap E2E Test
+        run: dart tool/test_bootstrap.dart
