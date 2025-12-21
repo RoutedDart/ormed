@@ -1,7 +1,1 @@
-# Dart test configuration for ormed package
-
-# Only scan the test/ directory for tests
-paths:
-  - test/
-
-concurrency: 1
+concurrency: 4

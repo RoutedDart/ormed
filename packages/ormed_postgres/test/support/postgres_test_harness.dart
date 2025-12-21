@@ -177,12 +177,11 @@ Future<PostgresTestHarness> createPostgresTestHarness({
           ),
         )
         .toList(),
-    // Use 'recreate' strategy with schema-based isolation for PostgreSQL.
-    // Each test group gets its own schema within the database, enabling
-    // concurrent test execution. The TestDatabaseManager will use
-    // createSchema/dropSchemaIfExists for PostgreSQL instead of
-    // createDatabase/dropDatabaseIfExists.
-    strategy: DatabaseIsolationStrategy.recreate,
+    // Use 'migrateWithTransactions' strategy for PostgreSQL for much better performance.
+    // This uses transactions for test isolation (rollback after each test).
+    // Each test group still gets its own schema, but tests within a group
+    // use transaction rollback for fast cleanup.
+    strategy: DatabaseIsolationStrategy.migrateWithTransactions,
     adapterFactory: (dbName) {
       // Create a new adapter for each test group that will use its own schema.
       // The TestDatabaseManager will call setCurrentSchema(dbName) to isolate

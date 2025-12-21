@@ -52,7 +52,7 @@ Future<void> main() async {
       );
       await ds.repo<ActiveUser>().updateMany([updated]);
 
-      final count = await dataSource
+      final count = await ds
           .query<ActiveUser>()
           .whereEquals('name', 'Bob Updated')
           .count();
@@ -69,7 +69,7 @@ Future<void> main() async {
         {'id': userId},
       ]);
 
-      final count = await dataSource
+      final count = await ds
           .query<ActiveUser>()
           .whereEquals('id', userId)
           .count();

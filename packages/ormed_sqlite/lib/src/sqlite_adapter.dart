@@ -741,11 +741,12 @@ class SqliteDriverAdapter
     // - File-based: Delete the file (use dropDatabaseIfExists instead)
     //
     // Since the TestDatabaseManager creates new adapters per test group,
-    // we just reset our internal state here.
+    // we return false here to let it fall back to dropDatabaseIfExists
+    // which handles file deletion.
     if (_currentSchema == name) {
       _currentSchema = 'main';
     }
-    return true;
+    return false;
   }
 
   @override
