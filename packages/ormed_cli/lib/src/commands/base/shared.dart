@@ -291,6 +291,7 @@ const String seedRegistryMarkerEnd = '// </ORM-SEED-REGISTRY>';
 
 const String initialSeedRegistryTemplate =
     '''
+import 'package:ormed_cli/runtime.dart';
 import 'package:ormed/ormed.dart';
 import 'package:{{package_name}}/orm_registry.g.dart';
 
@@ -330,6 +331,13 @@ Future<void> runProjectSeeds(
     pretend: pretend,
   );
 }
+
+Future<void> main(List<String> args) => runSeedRegistryEntrypoint(
+      args: args,
+      seeds: seeders,
+      beforeRun: (connection) =>
+          bootstrapOrm(registry: connection.context.registry),
+    );
 ''';
 
 class OrmProjectContext {
