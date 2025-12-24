@@ -8,7 +8,7 @@ import 'package:test/test.dart';
 /// Creates a simple MySQL harness for SQL-only tests that don't need ormedTest.
 /// This avoids the setUpOrmed() call which conflicts with tests that have their own setUpAll.
 Future<(MySqlDriverAdapter, DataSource)> _createSimpleHarness() async {
-  registerOrmFactories();
+  ensureMySqlDriverRegistration();
   MySqlDriverAdapter.registerCodecs();
 
   final url =
