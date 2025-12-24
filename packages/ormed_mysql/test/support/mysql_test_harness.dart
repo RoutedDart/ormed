@@ -82,7 +82,7 @@ Future<MySqlTestHarness> createMySqlTestHarness({
   bool logging = true,
   bool enableNamedTimezones = true,
 }) async {
-  registerOrmFactories();
+  ensureMySqlDriverRegistration();
   MySqlDriverAdapter.registerCodecs();
 
   final resolvedUrl =

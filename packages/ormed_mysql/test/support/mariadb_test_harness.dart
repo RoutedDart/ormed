@@ -82,7 +82,7 @@ Future<MariaDbTestHarness> createMariaDbTestHarness({
   bool logging = true,
   bool enableNamedTimezones = true,
 }) async {
-  registerOrmFactories();
+  ensureMySqlDriverRegistration();
   MySqlDriverAdapter.registerCodecs();
 
   final resolvedUrl =
