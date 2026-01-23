@@ -33,7 +33,6 @@ dev_dependencies:
   test: ^1.28.0
 
 dependency_overrides:
-  artisanal: { path: ../../../artisanal }
   ormed: { path: ../.. }
   ormed_cli: { path: ../../../ormed_cli }
   ormed_mysql: { path: ../../../ormed_mysql }

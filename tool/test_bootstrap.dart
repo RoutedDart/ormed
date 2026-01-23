@@ -105,7 +105,6 @@ dependency_overrides:
   ormed: { path: "$ormedRoot/packages/ormed" }
   ormed_sqlite: { path: "$ormedRoot/packages/ormed_sqlite" }
   ormed_cli: { path: "$ormedRoot/packages/ormed_cli" }
-  artisanal: { path: "$ormedRoot/packages/artisanal" }
   ormed_postgres: { path: "$ormedRoot/packages/ormed_postgres" }
   ormed_mysql: { path: "$ormedRoot/packages/ormed_mysql" }
 ''';
@@ -500,11 +499,11 @@ import 'package:orm_bootstrap_test/orm_registry.g.dart';
 void main() async {
   print('Bootstrapping ORM...');
   final registry = bootstrapOrm();
-  
+
   final userDef = registry.expect<User>();
   print('Model Name: \${userDef.modelName}');
   print('Table Name: \${userDef.tableName}');
-  
+
   if (userDef.tableName != 'users') {
     print('Error: Table name should be "users"');
     exit(1);
@@ -530,7 +529,7 @@ void main() async {
   ${multiDatasource ? "}" : ""}
   ${multiDatasource ? "final connection = primary.connection;" : "final ds = DataSource(DataSourceOptions(driver: SqliteDriverAdapter.file('database/orm_bootstrap_test.sqlite'), registry: registry,)); await ds.init(); final connection = ds.connection;"}
   final users = await connection.table('users').get();
-  
+
   print('Found \${users.length} users');
   if (users.isEmpty) {
     print('Error: No users found in database.');
@@ -541,7 +540,7 @@ void main() async {
   print('First User: \${user['name']} (\${user['email']})');
   print('Email Address (snake_case): \${user['email_address']}');
   print('Bio: \${user['bio']}');
-  
+
   if (user['name'] != 'Test User') {
     print('Error: Unexpected user name: \${user['name']}');
     exit(1);

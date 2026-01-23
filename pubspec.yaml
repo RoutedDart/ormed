@@ -8,7 +8,6 @@ workspace:
   - packages/ormed_mysql
   - packages/ormed_postgres_extensions
   - packages/ormed_cli
-  - packages/artisanal
   - .site/examples
 
 funding:
