@@ -185,14 +185,6 @@ void main() async {
 | [driver_tests](packages/driver_tests) | Shared driver-agnostic integration test suites |
 | [orm_playground](packages/orm_playground) | Demo application with end-to-end examples |
 
-### Terminal Toolkit
-
-| Package | Description |
-|---------|-------------|
-| [artisanal](packages/artisanal) | Full-stack terminal toolkit: CLI I/O, Lip Gloss styling, Bubble Tea TUI, and Ultraviolet renderer |
-
----
-
 ## 🛠️ CLI Commands
 
 > **Note:** These examples assume you have globally activated the CLI via `dart pub global activate ormed_cli`. If not, use `dart run ormed_cli:ormed` instead of `ormed`.
