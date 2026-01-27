@@ -824,7 +824,8 @@ class QueryContext implements ConnectionResolver {
         rowCount: result.affectedRows,
         error: null,
       );
-      if (cacheInvalidationPolicy == QueryCacheInvalidationPolicy.flushOnWrite) {
+      if (cacheInvalidationPolicy ==
+          QueryCacheInvalidationPolicy.flushOnWrite) {
         queryCache.flush();
       }
       return result;

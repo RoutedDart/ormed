@@ -62,11 +62,12 @@ Map<String, Object?> _sessionOptions(Map<String, Object?> options) {
 
 Set<String> _sessionAllowlist(Map<String, Object?> options) {
   final raw =
-      options['sessionAllowlist'] ?? options['session_allowlist'] ?? options['sessionAllowList'];
-  return _stringListFrom(raw)
-      .map((entry) => entry.trim())
-      .where((entry) => entry.isNotEmpty)
-      .toSet();
+      options['sessionAllowlist'] ??
+      options['session_allowlist'] ??
+      options['sessionAllowList'];
+  return _stringListFrom(
+    raw,
+  ).map((entry) => entry.trim()).where((entry) => entry.isNotEmpty).toSet();
 }
 
 List<String> _initStatements(Map<String, Object?> options) {

@@ -224,12 +224,16 @@ class ModelCodecEmitter {
       return cleaned;
     }
     cleaned = cleaned.split(RegExp(r'\s*::\s*')).first.trim();
-    final castMatch =
-        RegExp(r'^cast\s*\((.*)\)$', caseSensitive: false).firstMatch(cleaned);
+    final castMatch = RegExp(
+      r'^cast\s*\((.*)\)$',
+      caseSensitive: false,
+    ).firstMatch(cleaned);
     if (castMatch != null) {
       cleaned = castMatch.group(1)!.trim();
-      final asMatch =
-          RegExp(r'\s+as\s+', caseSensitive: false).firstMatch(cleaned);
+      final asMatch = RegExp(
+        r'\s+as\s+',
+        caseSensitive: false,
+      ).firstMatch(cleaned);
       if (asMatch != null) {
         cleaned = cleaned.substring(0, asMatch.start).trim();
       }

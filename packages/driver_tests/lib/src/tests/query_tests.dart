@@ -76,7 +76,9 @@ void runDriverQueryTests() {
     test(
       'preview SQL keeps literal question marks with escaped quotes',
       () async {
-        final supportsRaw = metadata.supportsCapability(DriverCapability.rawSQL);
+        final supportsRaw = metadata.supportsCapability(
+          DriverCapability.rawSQL,
+        );
         if (!supportsRaw) return;
 
         final events = <QueryEvent>[];
@@ -84,7 +86,9 @@ void runDriverQueryTests() {
 
         await dataSource.context
             .query<User>()
-            .selectRaw("CASE WHEN 'it''s ?' = 'it''s ?' THEN 1 ELSE 0 END AS flag")
+            .selectRaw(
+              "CASE WHEN 'it''s ?' = 'it''s ?' THEN 1 ELSE 0 END AS flag",
+            )
             .whereEquals('id', 1)
             .limit(1)
             .get();

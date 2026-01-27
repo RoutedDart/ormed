@@ -43,6 +43,9 @@ jobs:
         working-directory: .site
         run: npm run build
 
+      - name: Verify llms.txt
+        run: test -f .site/build/llms.txt
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:

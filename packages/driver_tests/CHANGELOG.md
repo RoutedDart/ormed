@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.0
+
+- **Release**: Promote driver_tests to the stable 0.1.0 line.
+
 ## 0.1.0-dev+10
 
 - **Added**: Shared driver tests for cache invalidation on writes, preview SQL placeholder escaping, and warnings when using fallback row identifiers.

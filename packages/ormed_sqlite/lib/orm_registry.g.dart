@@ -48,6 +48,9 @@ ModelRegistry bootstrapOrm({
   bool registerScopes = true,
 }) {
   final reg = registry ?? buildOrmRegistry();
+  if (registry != null) {
+    reg.registerGeneratedModels();
+  }
   if (registerFactories) {
     registerOrmFactories();
   }

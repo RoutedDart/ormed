@@ -57,10 +57,7 @@ void main() {
     final context = ModelContext(element, _readOrmModelAnnotation(element));
     final output = ModelCodecEmitter(context).emit();
 
-    expect(
-      RegExp("value\\.name == 'active'").allMatches(output).length,
-      2,
-    );
+    expect(RegExp("value\\.name == 'active'").allMatches(output).length, 2);
     expect(
       output,
       contains(

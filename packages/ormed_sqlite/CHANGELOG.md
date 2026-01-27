@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.0
+
+- **Release**: Promote ormed_sqlite to the stable 0.1.0 line.
+
 ## 0.1.0-dev+10
 
 - **Added**: Configurable `supportsReturning` and `supportsWindowFunctions` overrides; returning clauses are suppressed when disabled.

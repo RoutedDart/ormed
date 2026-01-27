@@ -33,8 +33,7 @@ Future<void> main() async {
             .joinLateral(
               subquery,
               'recent_posts',
-              on: (join) =>
-                  join.on('recent_posts.author_id', '=', 'base.id'),
+              on: (join) => join.on('recent_posts.author_id', '=', 'base.id'),
             )
             .toSql(),
         throwsA(isA<UnsupportedError>()),

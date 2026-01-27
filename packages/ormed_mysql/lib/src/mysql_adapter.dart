@@ -276,10 +276,7 @@ class MySqlDriverAdapter
       _encodePreviewParameters(normalized),
     );
     return StatementPreview(
-      payload: SqlStatementPayload(
-        sql: previewSql,
-        parameters: normalized,
-      ),
+      payload: SqlStatementPayload(sql: previewSql, parameters: normalized),
       resolvedText: resolved,
     );
   }

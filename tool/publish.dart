@@ -4,7 +4,6 @@ import 'package:path/path.dart' as p;
 
 /// Packages to publish in order of dependency
 final packages = [
-  'packages/artisanal',
   'packages/ormed',
   'packages/driver_tests',
   'packages/ormed_sqlite',

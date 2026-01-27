@@ -21,16 +21,10 @@ void main() {
     final adapter = SqliteDriverAdapter.custom(
       config: DatabaseConfig(
         driver: 'sqlite',
-        options: const {
-          'memory': true,
-          'supportsReturning': false,
-        },
+        options: const {'memory': true, 'supportsReturning': false},
       ),
     );
-    final context = QueryContext(
-      registry: ModelRegistry(),
-      driver: adapter,
-    );
+    final context = QueryContext(registry: ModelRegistry(), driver: adapter);
 
     await adapter.executeRaw(
       'CREATE TABLE returning_tests (id INTEGER, name TEXT)',

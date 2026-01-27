@@ -22,11 +22,7 @@ void main() {
         ),
       ],
       filters: const [
-        FilterClause(
-          field: 'id',
-          operator: FilterOperator.equals,
-          value: 1,
-        ),
+        FilterClause(field: 'id', operator: FilterOperator.equals, value: 1),
       ],
     );
 
