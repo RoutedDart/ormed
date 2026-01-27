@@ -1,6 +1,6 @@
 name: ormed
 description: Strongly typed ORM core primitives (annotations, metadata, codecs, and generator) for the routed ecosystem.
-version: 0.1.0-dev+10
+version: 0.1.0
 repository: https://github.com/RoutedDart/ormed
 issue_tracker: https://github.com/RoutedDart/ormed/issues
 documentation: https://ormed.vercel.app/
@@ -15,9 +15,9 @@ environment:
   sdk: ">=3.10.0 <4.0.0"
 
 dependencies:
-  analyzer: ^9.0.0
-  analysis_server_plugin: ^0.3.4
-  analyzer_plugin: ^0.13.11
+  analyzer: ^10.0.1
+  analysis_server_plugin: ^0.3.7
+  analyzer_plugin: ^0.14.1
   build: ^4.0.3
   carbonized: ^0.1.0
   decimal: ^3.2.4
@@ -35,8 +35,8 @@ dependencies:
   hashlib: ^2.3.0
 
 dev_dependencies:
-  analyzer_testing: ^0.1.7
+  analyzer_testing: ^0.1.9
   build_runner: ^2.10.4
   test_reflective_loader: ^0.4.0
   lints: ^6.0.0
-  driver_tests: ^0.1.0-dev+10
+  driver_tests: ^0.1.0
