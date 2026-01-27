@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.0
+
+- **Release**: Promote Ormed to a stable 0.1.0 release.
+- **Improved**: Align analyzer tooling with analyzer 10 (analysis_server_plugin/analyzer_plugin/analyzer_testing).
+
 ## 0.1.0-dev+10
 
 - **Added**: Query cache invalidation policy `flushOnWrite` to clear cached results after mutations, plus warning hooks for risky query features like fallback row identifiers.
