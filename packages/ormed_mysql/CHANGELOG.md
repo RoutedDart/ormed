@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.0
+
+- **Release**: Promote ormed_mysql to the stable 0.1.0 line.
+
 ## 0.1.0-dev+10
 
 - **Added**: Capability flags (`supportsWindowFunctions`, `supportsLateralJoins`) to align behavior with legacy MySQL/MariaDB deployments.

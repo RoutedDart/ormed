@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.0
+
+- **Release**: Promote ormed_postgres_extensions to the stable 0.1.0 line.
+
 ## 0.1.0-dev+9
 
 - **Updated**: Synced release with ORMed dev+9.

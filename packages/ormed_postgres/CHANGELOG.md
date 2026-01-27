@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.0
+
+- **Release**: Promote ormed_postgres to the stable 0.1.0 line.
+
 ## 0.1.0-dev+10
 
 - **Fixed**: Query deletes using fallback row identifiers now project the identifier, avoiding `ctid` lookup errors.
