@@ -18,9 +18,7 @@ void main() {
     connection = OrmConnection(
       config: ConnectionConfig(
         name: 'cache_invalidation_sqlite',
-        options: const {
-          'cacheInvalidationPolicy': 'flushOnWrite',
-        },
+        options: const {'cacheInvalidationPolicy': 'flushOnWrite'},
       ),
       driver: adapter,
       registry: ModelRegistry(),
@@ -31,10 +29,10 @@ void main() {
     await adapter.executeRaw(
       'CREATE TABLE $table (id INTEGER PRIMARY KEY, name TEXT)',
     );
-    await adapter.executeRaw(
-      'INSERT INTO $table (id, name) VALUES (?, ?)',
-      [1, 'alpha'],
-    );
+    await adapter.executeRaw('INSERT INTO $table (id, name) VALUES (?, ?)', [
+      1,
+      'alpha',
+    ]);
   });
 
   tearDownAll(() async {
@@ -51,10 +49,9 @@ void main() {
         .get();
     expect(context.queryCacheStats.totalEntries, greaterThan(0));
 
-    await context
-        .table(table, columns: columns)
-        .whereEquals('id', 1)
-        .update({'name': 'beta'});
+    await context.table(table, columns: columns).whereEquals('id', 1).update({
+      'name': 'beta',
+    });
 
     expect(context.queryCacheStats.totalEntries, equals(0));
   });

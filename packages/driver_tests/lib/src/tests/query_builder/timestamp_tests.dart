@@ -470,10 +470,12 @@ void runTimestampTests() {
 
         expect(afterAuthor, isNotNull);
         expect(beforeAuthor, isNotNull);
-        final beforeMillis =
-            beforeAuthor!.updatedAt!.toDateTime().millisecondsSinceEpoch;
-        final afterMillis =
-            afterAuthor!.updatedAt!.toDateTime().millisecondsSinceEpoch;
+        final beforeMillis = beforeAuthor!.updatedAt!
+            .toDateTime()
+            .millisecondsSinceEpoch;
+        final afterMillis = afterAuthor!.updatedAt!
+            .toDateTime()
+            .millisecondsSinceEpoch;
         expect(afterMillis, isNot(equals(beforeMillis)));
         expect(afterMillis, greaterThanOrEqualTo(beforeMillis - 1000));
       });

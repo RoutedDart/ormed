@@ -54,6 +54,9 @@ final ModelDefinition<$ExampleUser> _$ExampleUserDefinition = ModelDefinition(
     fillable: const <String>[],
     guarded: const <String>[],
     casts: const <String, String>{},
+    appends: const <String>[],
+    touches: const <String>[],
+    timestamps: true,
     softDeletes: false,
     softDeleteColumn: 'deleted_at',
   ),
@@ -126,6 +129,18 @@ class ExampleUsers {
   /// {@macro ormed.repository}
   static Repository<$ExampleUser> repo([String? connection]) =>
       Model.repository<$ExampleUser>(connection: connection);
+
+  /// Builds a tracked model from a column/value map.
+  static $ExampleUser fromMap(
+    Map<String, Object?> data, {
+    ValueCodecRegistry? registry,
+  }) => _$ExampleUserDefinition.fromMap(data, registry: registry);
+
+  /// Converts a tracked model to a column/value map.
+  static Map<String, Object?> toMap(
+    $ExampleUser model, {
+    ValueCodecRegistry? registry,
+  }) => _$ExampleUserDefinition.toMap(model, registry: registry);
 }
 
 class ExampleUserModelFactory {
@@ -158,8 +173,7 @@ class ExampleUserModelFactory {
 
   static ModelFactoryBuilder<ExampleUser> factory({
     GeneratorProvider? generatorProvider,
-  }) => ModelFactoryBuilder<ExampleUser>(
-    definition: definition,
+  }) => ModelFactoryRegistry.factoryFor<ExampleUser>(
     generatorProvider: generatorProvider,
   );
 }
@@ -209,6 +223,24 @@ class ExampleUserInsertDto implements InsertDto<$ExampleUser> {
       if (email != null) 'email': email,
     };
   }
+
+  static const _ExampleUserInsertDtoCopyWithSentinel _copyWithSentinel =
+      _ExampleUserInsertDtoCopyWithSentinel();
+  ExampleUserInsertDto copyWith({
+    Object? id = _copyWithSentinel,
+    Object? email = _copyWithSentinel,
+  }) {
+    return ExampleUserInsertDto(
+      id: identical(id, _copyWithSentinel) ? this.id : id as int?,
+      email: identical(email, _copyWithSentinel)
+          ? this.email
+          : email as String?,
+    );
+  }
+}
+
+class _ExampleUserInsertDtoCopyWithSentinel {
+  const _ExampleUserInsertDtoCopyWithSentinel();
 }
 
 /// Update DTO for [ExampleUser].
@@ -226,6 +258,24 @@ class ExampleUserUpdateDto implements UpdateDto<$ExampleUser> {
       if (email != null) 'email': email,
     };
   }
+
+  static const _ExampleUserUpdateDtoCopyWithSentinel _copyWithSentinel =
+      _ExampleUserUpdateDtoCopyWithSentinel();
+  ExampleUserUpdateDto copyWith({
+    Object? id = _copyWithSentinel,
+    Object? email = _copyWithSentinel,
+  }) {
+    return ExampleUserUpdateDto(
+      id: identical(id, _copyWithSentinel) ? this.id : id as int?,
+      email: identical(email, _copyWithSentinel)
+          ? this.email
+          : email as String?,
+    );
+  }
+}
+
+class _ExampleUserUpdateDtoCopyWithSentinel {
+  const _ExampleUserUpdateDtoCopyWithSentinel();
 }
 
 /// Partial projection for [ExampleUser].
@@ -266,6 +316,24 @@ class ExampleUserPartial implements PartialEntity<$ExampleUser> {
   Map<String, Object?> toMap() {
     return {if (id != null) 'id': id, if (email != null) 'email': email};
   }
+
+  static const _ExampleUserPartialCopyWithSentinel _copyWithSentinel =
+      _ExampleUserPartialCopyWithSentinel();
+  ExampleUserPartial copyWith({
+    Object? id = _copyWithSentinel,
+    Object? email = _copyWithSentinel,
+  }) {
+    return ExampleUserPartial(
+      id: identical(id, _copyWithSentinel) ? this.id : id as int?,
+      email: identical(email, _copyWithSentinel)
+          ? this.email
+          : email as String?,
+    );
+  }
+}
+
+class _ExampleUserPartialCopyWithSentinel {
+  const _ExampleUserPartialCopyWithSentinel();
 }
 
 /// Generated tracked model class for [ExampleUser].
@@ -279,8 +347,9 @@ class ExampleUserPartial implements PartialEntity<$ExampleUser> {
 class $ExampleUser extends ExampleUser
     with ModelAttributes
     implements OrmEntity {
+  /// Internal constructor for [$ExampleUser].
   $ExampleUser({required int id, required String email})
-    : super.new(id: id, email: email) {
+    : super(id: id, email: email) {
     _attachOrmRuntimeMetadata({'id': id, 'email': email});
   }
 
@@ -293,14 +362,28 @@ class $ExampleUser extends ExampleUser
     return $ExampleUser(id: id ?? this.id, email: email ?? this.email);
   }
 
+  /// Builds a tracked model from a column/value map.
+  static $ExampleUser fromMap(
+    Map<String, Object?> data, {
+    ValueCodecRegistry? registry,
+  }) => _$ExampleUserDefinition.fromMap(data, registry: registry);
+
+  /// Converts this tracked model to a column/value map.
+  Map<String, Object?> toMap({ValueCodecRegistry? registry}) =>
+      _$ExampleUserDefinition.toMap(this, registry: registry);
+
+  /// Tracked getter for [id].
   @override
   int get id => getAttribute<int>('id') ?? super.id;
 
+  /// Tracked setter for [id].
   set id(int value) => setAttribute('id', value);
 
+  /// Tracked getter for [email].
   @override
   String get email => getAttribute<String>('email') ?? super.email;
 
+  /// Tracked setter for [email].
   set email(String value) => setAttribute('email', value);
 
   void _attachOrmRuntimeMetadata(Map<String, Object?> values) {
@@ -309,7 +392,33 @@ class $ExampleUser extends ExampleUser
   }
 }
 
+class _ExampleUserCopyWithSentinel {
+  const _ExampleUserCopyWithSentinel();
+}
+
 extension ExampleUserOrmExtension on ExampleUser {
+  static const _ExampleUserCopyWithSentinel _copyWithSentinel =
+      _ExampleUserCopyWithSentinel();
+  ExampleUser copyWith({
+    Object? id = _copyWithSentinel,
+    Object? email = _copyWithSentinel,
+  }) {
+    return ExampleUser(
+      id: identical(id, _copyWithSentinel) ? this.id : id as int,
+      email: identical(email, _copyWithSentinel) ? this.email : email as String,
+    );
+  }
+
+  /// Converts this model to a column/value map.
+  Map<String, Object?> toMap({ValueCodecRegistry? registry}) =>
+      _$ExampleUserDefinition.toMap(this, registry: registry);
+
+  /// Builds a model from a column/value map.
+  static ExampleUser fromMap(
+    Map<String, Object?> data, {
+    ValueCodecRegistry? registry,
+  }) => _$ExampleUserDefinition.fromMap(data, registry: registry);
+
   /// The Type of the generated ORM-managed model class.
   /// Use this when you need to specify the tracked model type explicitly,
   /// for example in generic type parameters.
@@ -321,6 +430,13 @@ extension ExampleUserOrmExtension on ExampleUser {
   $ExampleUser toTracked() {
     return $ExampleUser.fromModel(this);
   }
+}
+
+extension ExampleUserPredicateFields on PredicateBuilder<ExampleUser> {
+  PredicateField<ExampleUser, int> get id =>
+      PredicateField<ExampleUser, int>(this, 'id');
+  PredicateField<ExampleUser, String> get email =>
+      PredicateField<ExampleUser, String>(this, 'email');
 }
 
 void registerExampleUserEventHandlers(EventBus bus) {

@@ -35,11 +35,7 @@ class RelationModel extends Model<RelationModel> {
   @OrmField(isPrimaryKey: true)
   final String id;
 
-  @OrmRelation.belongsTo(
-    target: Owner,
-    foreignKey: 'owner_id',
-    localKey: 'id',
-  )
+  @OrmRelation.belongsTo(target: Owner, foreignKey: 'owner_id', localKey: 'id')
   final Owner? owner;
 }
 

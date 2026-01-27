@@ -196,10 +196,7 @@ class MySqlConnectionSettings {
 
     final sessionVariables =
         _mapOption(options, 'session') ?? const <String, Object?>{};
-    final sessionAllowlist = _stringListOption(
-      options,
-      'sessionAllowlist',
-    )
+    final sessionAllowlist = _stringListOption(options, 'sessionAllowlist')
         .followedBy(_stringListOption(options, 'sessionAllowList'))
         .followedBy(_stringListOption(options, 'session_allowlist'))
         .toSet();

@@ -57,14 +57,11 @@ void build(Query<User> query, String status) {
   }
 
   Future<void> test_rule_disabled_via_analysis_options() async {
-    newAnalysisOptionsYamlFile(
-      testPackageRootPath,
-      '''
+    newAnalysisOptionsYamlFile(testPackageRootPath, '''
 ormed:
   lints:
     raw_sql_interpolation: ignore
-''',
-    );
+''');
     const content = r'''
 import 'package:ormed/ormed.dart';
 

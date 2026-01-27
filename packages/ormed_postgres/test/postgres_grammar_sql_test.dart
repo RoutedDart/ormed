@@ -82,10 +82,7 @@ void main() {
       mode: FullTextMode.natural,
     );
     final plan = plan0(fullText: [clause]);
-    expect(
-      () => grammar.compileSelect(plan),
-      throwsA(isA<ArgumentError>()),
-    );
+    expect(() => grammar.compileSelect(plan), throwsA(isA<ArgumentError>()));
   });
 
   test('lock clause maps shared variants', () {

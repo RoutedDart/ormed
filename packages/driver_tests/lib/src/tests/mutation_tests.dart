@@ -748,13 +748,11 @@ void runDriverMutationTests() {
       final table =
           'orm_warning_updates_${DateTime.now().microsecondsSinceEpoch}';
       final driver = dataSource.connection.driver;
-      await driver.executeRaw(
-        'CREATE TABLE $table (id INTEGER, name TEXT)',
-      );
-      await driver.executeRaw(
-        'INSERT INTO $table (id, name) VALUES (?, ?)',
-        [1, 'alpha'],
-      );
+      await driver.executeRaw('CREATE TABLE $table (id INTEGER, name TEXT)');
+      await driver.executeRaw('INSERT INTO $table (id, name) VALUES (?, ?)', [
+        1,
+        'alpha',
+      ]);
 
       final warnings = <QueryWarning>[];
       dataSource.context.onWarning(warnings.add);
@@ -770,10 +768,7 @@ void runDriverMutationTests() {
             .whereEquals('id', 1)
             .update({'name': 'beta'});
 
-        expect(
-          warnings.any((warning) => warning.feature == 'update'),
-          isTrue,
-        );
+        expect(warnings.any((warning) => warning.feature == 'update'), isTrue);
       } finally {
         await driver.executeRaw('DROP TABLE IF EXISTS $table');
       }
@@ -783,13 +778,11 @@ void runDriverMutationTests() {
       final table =
           'orm_warning_deletes_${DateTime.now().microsecondsSinceEpoch}';
       final driver = dataSource.connection.driver;
-      await driver.executeRaw(
-        'CREATE TABLE $table (id INTEGER, name TEXT)',
-      );
-      await driver.executeRaw(
-        'INSERT INTO $table (id, name) VALUES (?, ?)',
-        [1, 'alpha'],
-      );
+      await driver.executeRaw('CREATE TABLE $table (id INTEGER, name TEXT)');
+      await driver.executeRaw('INSERT INTO $table (id, name) VALUES (?, ?)', [
+        1,
+        'alpha',
+      ]);
 
       final warnings = <QueryWarning>[];
       dataSource.context.onWarning(warnings.add);
@@ -820,13 +813,11 @@ void runDriverMutationTests() {
         final table =
             'orm_projection_delete_${DateTime.now().microsecondsSinceEpoch}';
         final driver = dataSource.connection.driver;
-        await driver.executeRaw(
-          'CREATE TABLE $table (id INTEGER, name TEXT)',
-        );
-        await driver.executeRaw(
-          'INSERT INTO $table (id, name) VALUES (?, ?)',
-          [1, 'alpha'],
-        );
+        await driver.executeRaw('CREATE TABLE $table (id INTEGER, name TEXT)');
+        await driver.executeRaw('INSERT INTO $table (id, name) VALUES (?, ?)', [
+          1,
+          'alpha',
+        ]);
 
         try {
           final columns = const [

@@ -40,9 +40,7 @@ Future<void> main() async {
 
       final table = 'stream_decode_${DateTime.now().microsecondsSinceEpoch}';
       final driver = dataSource.connection.driver;
-      await driver.executeRaw(
-        'CREATE TABLE $table (id INTEGER, payload TEXT)',
-      );
+      await driver.executeRaw('CREATE TABLE $table (id INTEGER, payload TEXT)');
       await driver.executeRaw(
         'INSERT INTO $table (id, payload) VALUES (?, ?)',
         [1, 'alpha'],
