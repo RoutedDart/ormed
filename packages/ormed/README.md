@@ -309,7 +309,7 @@ dart pub global activate ormed_cli
 
 ### 2. Initialize the Project
 
-Scaffold the configuration and directory structure:
+Scaffold the directory structure and code-first datasource setup:
 
 ```bash
 ormed init
@@ -317,13 +317,17 @@ ormed init
 
 (Or use `dart run ormed_cli:ormed init` if not installed globally).
 
-This creates `ormed.yaml` and the `lib/src/database` directory.
+This creates `lib/src/database` plus migrations/seed registries. `ormed.yaml`
+is optional and can be scaffolded with `ormed init --with-config` when you need
+CLI migration/apply flows.
 
 ### 3. Define a Model
 
 Create a model file (e.g., `lib/src/models/user.dart`):
 
 ```dart
+import 'dart:io';
+
 import 'package:ormed/ormed.dart';
 
 part 'user.orm.dart';
@@ -350,8 +354,12 @@ dart run build_runner build
 Generate a migration for your model:
 
 ```bash
-dart run ormed_cli:ormed make --name create_users_table --create --table users
+dart run ormed_cli:ormed make:migration --name create_users_table
 ```
+
+`create_*` migration names infer create-table scaffolding automatically, and
+common alter patterns like `add_*_to_*` infer the target table. `--create` and
+`--table` are optional in most cases.
 
 Edit the generated migration in `lib/src/database/migrations/` to add columns:
 
@@ -423,7 +431,7 @@ If you prefer manual setup without `ormed.yaml`, you can use `DataSourceOptions`
 ```dart
 import 'package:ormed/ormed.dart';
 import 'package:ormed_sqlite/ormed_sqlite.dart';
-import 'orm_registry.g.dart';
+import 'src/database/orm_registry.g.dart';
 
 void main() async {
   final ds = DataSource(DataSourceOptions(
@@ -432,6 +440,26 @@ void main() async {
   ));
   
   await ds.init();
+}
+```
+
+#### Environment Helpers
+
+Use `OrmedEnvironment` to centralize env parsing and validation:
+
+```dart
+import 'package:ormed/ormed.dart';
+
+void main() {
+  final env = OrmedEnvironment();
+
+  final url = env.requireAny(['DB_URL', 'DATABASE_URL']);
+  final maxAttempts = env.intValue('DB_RETRY_ATTEMPTS', fallback: 5);
+  final debug = env.boolValue('DB_DEBUG_LOG', fallback: false);
+
+  // Or load from .env in the current project directory.
+  final fileEnv = OrmedEnvironment.fromDirectory(Directory.current);
+  final accountId = fileEnv.requireAny(['D1_ACCOUNT_ID', 'CF_ACCOUNT_ID']);
 }
 ```
 
@@ -457,6 +485,26 @@ This creates a directory with `up.sql` and `down.sql` files.
 
 ### Simultaneous Support
 You can have Dart and SQL migrations in the same project. The runner executes them in chronological order based on their timestamps, regardless of format. This flexibility allows you to use Dart for standard schema changes and SQL for database-specific features or complex optimizations.
+
+### Registry Helpers
+
+When adding migrations manually or importing an existing project, use:
+
+```bash
+dart run ormed_cli:ormed makemigrations
+```
+
+`makemigrations` first tries to generate a migration from generated model
+metadata (`orm_registry.g.dart`) against the current database schema, then
+syncs `migrations.dart` entries/imports.
+
+Related helpers:
+
+```bash
+dart run ormed_cli:ormed migrations:sync      # sync registry only
+dart run ormed_cli:ormed migrations:entry ... # print manual entry snippet
+dart run ormed_cli:ormed migrations:check     # validate ordering/duplicates
+```
 
 ## Annotations
 

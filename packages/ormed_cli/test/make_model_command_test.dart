@@ -71,5 +71,24 @@ seeds:
       expect(text, contains('class Post'));
       expect(text, contains("@OrmModel(table: 'posts')"));
     });
+
+    test('works without ormed.yaml', () async {
+      final runner = CommandRunner<void>('ormed', 'Routed ORM CLI')
+        ..addCommand(MakeModelCommand());
+
+      File(p.join(scratchDir.path, 'ormed.yaml')).deleteSync();
+      await runner.run(['make:model', 'Comment']);
+
+      final modelPath = p.join(
+        scratchDir.path,
+        'lib/src/database/models/comment.dart',
+      );
+      final file = File(modelPath);
+      expect(file.existsSync(), isTrue);
+      final text = file.readAsStringSync();
+      expect(text, contains("part 'comment.orm.dart';"));
+      expect(text, contains('class Comment'));
+      expect(text, contains("@OrmModel(table: 'comments')"));
+    });
   });
 }

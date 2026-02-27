@@ -71,7 +71,7 @@ class RollbackCommand extends RunnerCommand {
         return record.batch > previous ? record.batch : previous;
       });
       if (highestBatch == 0) {
-        cliIO.warning('No batches found in the ledger.');
+        cliIO.warn('No batches found in the ledger.');
         return;
       }
       if (batchNumber != highestBatch) {
@@ -83,7 +83,7 @@ class RollbackCommand extends RunnerCommand {
           .where((record) => record.batch == batchNumber)
           .toList();
       if (batchRecords.isEmpty) {
-        cliIO.warning('Batch $batchNumber not found.');
+        cliIO.warn('Batch $batchNumber not found.');
         return;
       }
       steps = batchRecords.length;
@@ -111,7 +111,7 @@ class RollbackCommand extends RunnerCommand {
     }
 
     if (!confirmToProceed(force: force)) {
-      cliIO.warning('Rollback cancelled.');
+      cliIO.warn('Rollback cancelled.');
       return;
     }
 
@@ -122,7 +122,7 @@ class RollbackCommand extends RunnerCommand {
       }
     } catch (error) {
       if (graceful) {
-        cliIO.warning('$error');
+        cliIO.warn('$error');
         return;
       }
       rethrow;

@@ -28,7 +28,8 @@ class MakeModelCommand extends Command<void> {
       ..addOption(
         'config',
         abbr: 'c',
-        help: 'Path to ormed.yaml (defaults to project root).',
+        help:
+            'Path to ormed.yaml (optional; used only to resolve project root).',
       );
   }
 
@@ -59,8 +60,9 @@ class MakeModelCommand extends Command<void> {
     }
 
     final configArg = argResults?['config'] as String?;
-    final context = resolveOrmProject(configPath: configArg);
-    final root = context.root;
+    final root = configArg == null || configArg.trim().isEmpty
+        ? findProjectRoot()
+        : resolveOrmProject(configPath: configArg).root;
     final modelsDir = Directory(
       _resolveDirectory(
         root: root,

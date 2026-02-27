@@ -48,10 +48,17 @@ class MakeCommand extends Command<void> {
         negatable: false,
         help: 'Generate a seeder instead of a migration.',
       )
+      ..addFlag(
+        'manual',
+        negatable: false,
+        help:
+            'Create migration files without editing migrations.dart. Prints import/entry snippets for manual registration.',
+      )
       ..addOption(
         'config',
         abbr: 'c',
-        help: 'Path to ormed.yaml (defaults to project root).',
+        help:
+            'Path to ormed.yaml (optional; convention defaults are used when omitted).',
       );
   }
 
@@ -92,15 +99,20 @@ class MakeCommand extends Command<void> {
 
     final tableOption = (argResults?['table'] as String?)?.trim();
     final createFlag = argResults?['create'] == true;
+    final hints = _inferMigrationHints(slug);
+    final inferredCreate = createFlag || hints.createTable;
     final formatOption = (argResults?['format'] as String?)?.trim();
 
     // If not a seeder, and we didn't specify table/create, ask intent
     // Or just rely on reasonable defaults (guess table from slug).
 
     final configArg = argResults?['config'] as String?;
-    final context = resolveOrmProject(configPath: configArg);
-    final root = context.root;
-    final config = loadOrmProjectConfig(context.configFile);
+    final resolved = resolveOrmProjectConfig(configPath: configArg);
+    final root = resolved.root;
+    final config = resolved.config;
+    if (!resolved.hasConfigFile) {
+      printConfigFallbackNotice();
+    }
     final migrationsDir = Directory(
       _resolveDirectory(
         root: root,
@@ -124,9 +136,8 @@ class MakeCommand extends Command<void> {
       config.migrations.format,
       usage: usage,
     );
-    final tableName =
-        tableOption ?? (createFlag ? _guessTableFromSlug(slug) : null);
-    if (createFlag && tableName == null) {
+    final tableName = tableOption ?? hints.tableName;
+    if (inferredCreate && tableName == null) {
       io.note(
         'Hint: add --table=<name> so the generated migration can scaffold columns for the right table.',
       );
@@ -138,9 +149,10 @@ class MakeCommand extends Command<void> {
       migrationsDir: migrationsDir,
       config: config,
       tableName: tableName,
-      createTable: createFlag,
+      createTable: inferredCreate,
       fullPath: argResults?['fullpath'] == true,
       format: migrationFormat,
+      registerInRegistry: argResults?['manual'] != true,
       usage: usage,
     );
   }
@@ -215,7 +227,7 @@ $down
 String _seederFileTemplate(String className, String packageName) =>
     '''
 import 'package:ormed/ormed.dart';
-import 'package:$packageName/orm_registry.g.dart';
+import 'package:$packageName/src/database/orm_registry.g.dart';
 
 class $className extends DatabaseSeeder {
   $className(super.connection);
@@ -230,6 +242,27 @@ class $className extends DatabaseSeeder {
     // ]);
     //
     // Or use call() to run other seeders:
+    // await call([UserSeeder.new, PostSeeder.new]);
+  }
+}
+''';
+
+const String _defaultSeederTemplate = '''
+import 'package:ormed/ormed.dart';
+
+/// Root seeder executed by `orm seed` and `orm migrate --seed`.
+class AppDatabaseSeeder extends DatabaseSeeder {
+  AppDatabaseSeeder(super.connection);
+
+  @override
+  Future<void> run() async {
+    // TODO: add seed logic here
+    // Examples:
+    // await seed<User>([
+    //   {'name': 'Admin User', 'email': 'admin@example.com'},
+    // ]);
+    //
+    // Or call other seeders:
     // await call([UserSeeder.new, PostSeeder.new]);
   }
 }
@@ -259,13 +292,62 @@ String _resolveDirectory({
   return resolvePath(root, candidate);
 }
 
-String? _guessTableFromSlug(String slug) {
-  final match = RegExp(r'^create_(.+)_table$').firstMatch(slug);
-  if (match != null) {
-    return match.group(1);
+_MigrationSlugHints _inferMigrationHints(String slug) {
+  final createTableMatch = RegExp(r'^create_(.+)_table$').firstMatch(slug);
+  if (createTableMatch != null) {
+    final table = createTableMatch.group(1);
+    return _MigrationSlugHints(tableName: table, createTable: table != null);
   }
-  final fallback = RegExp(r'^create_(.+)$').firstMatch(slug);
-  return fallback?.group(1);
+
+  final createMatch = RegExp(r'^create_(.+)$').firstMatch(slug);
+  if (createMatch != null) {
+    final table = createMatch.group(1);
+    return _MigrationSlugHints(tableName: table, createTable: table != null);
+  }
+
+  final addMatch = RegExp(r'^add_.+_to_(.+)$').firstMatch(slug);
+  if (addMatch != null) {
+    return _MigrationSlugHints(
+      tableName: addMatch.group(1),
+      createTable: false,
+    );
+  }
+
+  final removeMatch = RegExp(r'^remove_.+_from_(.+)$').firstMatch(slug);
+  if (removeMatch != null) {
+    return _MigrationSlugHints(
+      tableName: removeMatch.group(1),
+      createTable: false,
+    );
+  }
+
+  final renameMatch = RegExp(r'^rename_.+_in_(.+)$').firstMatch(slug);
+  if (renameMatch != null) {
+    return _MigrationSlugHints(
+      tableName: renameMatch.group(1),
+      createTable: false,
+    );
+  }
+
+  final alterMatch = RegExp(r'^alter_(.+)$').firstMatch(slug);
+  if (alterMatch != null) {
+    return _MigrationSlugHints(
+      tableName: alterMatch.group(1),
+      createTable: false,
+    );
+  }
+
+  return const _MigrationSlugHints(tableName: null, createTable: false);
+}
+
+class _MigrationSlugHints {
+  const _MigrationSlugHints({
+    required this.tableName,
+    required this.createTable,
+  });
+
+  final String? tableName;
+  final bool createTable;
 }
 
 void _createSeeder({
@@ -277,7 +359,7 @@ void _createSeeder({
   final seeds = config.seeds;
   if (seeds == null) {
     throw UsageException(
-      'ormed.yaml missing seeds configuration. Update ormed.yaml to include a seeds block.',
+      'Missing seeds configuration. Run `ormed init --only=seeders` or add a `seeds` block to ormed.yaml.',
       usage,
     );
   }
@@ -303,11 +385,12 @@ void _createSeeder({
 
   final registryPath = resolvePath(root, seeds.registry);
   final registry = File(registryPath);
-  if (!registry.existsSync()) {
-    throw StateError(
-      'Seeder registry $registryPath not found. Run `ormed init`.',
-    );
-  }
+  _ensureSeederScaffold(
+    root: root,
+    seeds: seeds,
+    packageName: packageName,
+    registry: registry,
+  );
   var content = registry.readAsStringSync();
 
   // Calculate relative import path from registry to seeder file
@@ -353,6 +436,7 @@ void _createMigration({
   required bool createTable,
   required bool fullPath,
   required MigrationFormat format,
+  required bool registerInRegistry,
   required String usage,
 }) {
   final timestamp = _formatTimestamp(DateTime.now().toUtc());
@@ -422,15 +506,25 @@ void _createMigration({
   }
 
   final registryPath = resolvePath(root, config.migrations.registry);
-  final registry = File(registryPath);
-  if (!registry.existsSync()) {
-    throw StateError(
-      'Registry file $registryPath not found. Run `ormed init`.',
+  final registryDir = p.dirname(registryPath);
+  if (!registerInRegistry) {
+    _printManualRegistrationSnippet(
+      format: format,
+      migrationId: migrationId,
+      className: className,
+      migrationsDir: migrationsDir.path,
+      registryDir: registryDir,
+      registryPath: registryPath,
+      root: root.path,
     );
+    cliIO.note('Manual mode: migration was not added to migrations registry.');
+    return;
   }
+
+  final registry = File(registryPath);
+  _ensureMigrationRegistry(registry);
   var content = registry.readAsStringSync();
 
-  final registryDir = p.dirname(registryPath);
   if (format == MigrationFormat.dart) {
     final filePath = p.join(migrationsDir.path, '$migrationId.dart');
     final relativeImportPath = p
@@ -448,18 +542,18 @@ void _createMigration({
   }
 
   final entry = format == MigrationFormat.dart
-      ? '''MigrationEntry(
-    id: MigrationId.parse('${timestamp}_$slug'),
-    migration: const $className(),
+      ? '''MigrationEntry.named(
+    '${timestamp}_$slug',
+    const $className(),
   ),'''
       : (() {
           final sqlDirPath = p.join(migrationsDir.path, migrationId);
           final relativeDir = p
               .relative(sqlDirPath, from: registryDir)
               .replaceAll(r'\', '/');
-          return '''MigrationEntry(
-    id: MigrationId.parse('${timestamp}_$slug'),
-    migration: SqlFileMigration(
+          return '''MigrationEntry.named(
+    '${timestamp}_$slug',
+    SqlFileMigration(
       upPath: '$relativeDir/up.sql',
       downPath: '$relativeDir/down.sql',
     ),
@@ -475,6 +569,80 @@ void _createMigration({
   );
   registry.writeAsStringSync(content);
   cliIO.success('Registered migration ${timestamp}_$slug');
+}
+
+void _ensureMigrationRegistry(File registry) {
+  if (registry.existsSync()) return;
+  registry.parent.createSync(recursive: true);
+  registry.writeAsStringSync(initialRegistryTemplate);
+  cliIO.note('Bootstrapped missing migration registry at ${registry.path}.');
+}
+
+void _ensureSeederScaffold({
+  required Directory root,
+  required SeedSection seeds,
+  required String packageName,
+  required File registry,
+}) {
+  final seedersDir = Directory(resolvePath(root, seeds.directory));
+  if (!seedersDir.existsSync()) {
+    seedersDir.createSync(recursive: true);
+  }
+
+  final defaultSeederFile = File(
+    p.join(seedersDir.path, 'database_seeder.dart'),
+  );
+  if (!defaultSeederFile.existsSync()) {
+    defaultSeederFile.writeAsStringSync(_defaultSeederTemplate);
+    cliIO.note(
+      'Bootstrapped default database seeder at ${defaultSeederFile.path}.',
+    );
+  }
+
+  if (!registry.existsSync()) {
+    registry.parent.createSync(recursive: true);
+    registry.writeAsStringSync(
+      initialSeedRegistryTemplate.replaceAll('{{package_name}}', packageName),
+    );
+    cliIO.note('Bootstrapped missing seed registry at ${registry.path}.');
+  }
+}
+
+void _printManualRegistrationSnippet({
+  required MigrationFormat format,
+  required String migrationId,
+  required String className,
+  required String migrationsDir,
+  required String registryDir,
+  required String registryPath,
+  required String root,
+}) {
+  cliIO.newLine();
+  cliIO.section('Manual registration');
+  if (format == MigrationFormat.dart) {
+    final filePath = p.join(migrationsDir, '$migrationId.dart');
+    final relativeImportPath = p
+        .relative(filePath, from: registryDir)
+        .replaceAll(r'\', '/');
+    cliIO.writeln("import '$relativeImportPath';");
+    cliIO.writeln('''MigrationEntry.named(
+  '$migrationId',
+  const $className(),
+),''');
+  } else {
+    final sqlDirPath = p.join(migrationsDir, migrationId);
+    final relativeDir = p
+        .relative(sqlDirPath, from: registryDir)
+        .replaceAll(r'\', '/');
+    cliIO.writeln('''MigrationEntry.named(
+  '$migrationId',
+  SqlFileMigration(
+    upPath: '$relativeDir/up.sql',
+    downPath: '$relativeDir/down.sql',
+  ),
+),''');
+  }
+  cliIO.writeln('Paste into ${p.relative(registryPath, from: root)} markers.');
 }
 
 MigrationFormat _resolveMigrationFormat(
@@ -496,5 +664,68 @@ MigrationFormat _resolveMigrationFormat(
         'Invalid --format "$optionValue". Expected "dart" or "sql".',
         usage,
       );
+  }
+}
+
+/// Alias for `make` with migration-focused naming.
+class MakeMigrationCommand extends MakeCommand {
+  @override
+  String get name => 'make:migration';
+
+  @override
+  String get description => 'Alias for make. Create a new migration file.';
+}
+
+/// Backward-compatible alias for `make:migration`.
+class MakeMigrationLegacyCommand extends MakeMigrationCommand {
+  @override
+  String get name => 'makemigration';
+
+  @override
+  String get description =>
+      'Deprecated alias for make:migration. Use `make:migration`.';
+
+  @override
+  Future<void> run() async {
+    cliIO.warn(
+      '`makemigration` is deprecated and will be removed in a future release. Use `make:migration`.',
+    );
+    await super.run();
+  }
+}
+
+/// Alias for `make --seeder`.
+class MakeSeederCommand extends MakeCommand {
+  @override
+  String get name => 'make:seeder';
+
+  @override
+  String get description => 'Alias for make --seeder. Create a seeder file.';
+
+  @override
+  Future<void> run() async {
+    var slug = (argResults?['name'] as String?)?.trim();
+    if (slug == null || slug.isEmpty) {
+      slug = io.ask(
+        'What is the name of the seeder?',
+        validator: (value) {
+          if (value.trim().isEmpty) return 'Name cannot be empty.';
+          return null;
+        },
+      );
+    }
+
+    final configArg = argResults?['config'] as String?;
+    final resolved = resolveOrmProjectConfig(configPath: configArg);
+    if (!resolved.hasConfigFile) {
+      printConfigFallbackNotice();
+    }
+
+    _createSeeder(
+      slug: slug,
+      root: resolved.root,
+      config: resolved.config,
+      usage: usage,
+    );
   }
 }

@@ -41,7 +41,7 @@ class InitCommand extends Command<void> {
           'config': 'ormed.yaml configuration file',
           'migrations': 'Migrations directory + registry',
           'seeders': 'Seeders directory + registry',
-          'datasource': 'DataSource entrypoint',
+          'datasource': 'DataSource entrypoint + code config',
           'tests': 'Sample test harness helper',
         },
       )
@@ -63,6 +63,12 @@ class InitCommand extends Command<void> {
         'with-analyzer',
         negatable: false,
         help: 'Add the Ormed analyzer plugin to analysis_options.yaml.',
+      )
+      ..addFlag(
+        'with-config',
+        negatable: false,
+        help:
+            'Also scaffold ormed.yaml for migration/apply CLI commands. By default, init is code-first.',
       );
   }
 
@@ -71,7 +77,7 @@ class InitCommand extends Command<void> {
 
   @override
   String get description =>
-      'Initialize ormed.yaml and migration/seed registries.';
+      'Initialize code-first database scaffolding with migrations/seed registries.';
 
   @override
   Future<void> run() async {
@@ -80,13 +86,15 @@ class InitCommand extends Command<void> {
     final populateExisting = argResults?['populate-existing'] == true;
     final skipBuild = argResults?['skip-build'] == true;
     final withAnalyzer = argResults?['with-analyzer'] == true;
+    final withConfig = argResults?['with-config'] == true;
     final onlyTargets =
         (argResults?['only'] as List<String>? ?? const <String>[])
             .map((value) => value.trim())
             .where((value) => value.isNotEmpty)
             .toSet();
     final restrictScaffold = onlyTargets.isNotEmpty;
-    final includeConfig = !restrictScaffold || onlyTargets.contains('config');
+    final includeConfig =
+        onlyTargets.contains('config') || (!restrictScaffold && withConfig);
     final includeMigrations =
         !restrictScaffold || onlyTargets.contains('migrations');
     final includeSeeders = !restrictScaffold || onlyTargets.contains('seeders');
@@ -96,14 +104,8 @@ class InitCommand extends Command<void> {
         !restrictScaffold || onlyTargets.contains('tests');
     final root = findProjectRoot(workingDirectory);
     final tracker = _ArtifactTracker(root);
+    final packageName = getPackageName(root);
     final configFile = File(p.join(root.path, 'ormed.yaml'));
-
-    if (!includeConfig && !configFile.existsSync()) {
-      usageException(
-        'ormed.yaml is required when using --only without config. '
-        'Run `ormed init` or include --only=config.',
-      );
-    }
 
     // If config exists, offer re-initialize
     if (includeConfig && !force) {
@@ -125,7 +127,6 @@ class InitCommand extends Command<void> {
       }
     }
 
-    final packageName = getPackageName(root);
     if (includeConfig) {
       _writeFile(
         file: configFile,
@@ -137,8 +138,20 @@ class InitCommand extends Command<void> {
       );
     }
 
+    if (includeConfig || includeDatasource) {
+      // Create or update .env.example file
+      _ensureEnvExample(
+        root: root,
+        packageName: packageName,
+        force: force,
+        tracker: tracker,
+      );
+    }
+
     // Load config
-    final config = loadOrmProjectConfig(configFile);
+    final config = configFile.existsSync()
+        ? loadOrmProjectConfig(configFile)
+        : _defaultOrmProjectConfig(packageName);
 
     if (!skipBuild &&
         (includeDatasource || includeMigrations || includeSeeders)) {
@@ -188,7 +201,7 @@ class InitCommand extends Command<void> {
     if (includeSeeders) {
       final seeds = config.seeds;
       if (seeds == null) {
-        cliIO.warning(
+        cliIO.warn(
           'No seeds configuration found in ormed.yaml. Skipping seed scaffolding.',
         );
       } else {
@@ -227,6 +240,9 @@ class InitCommand extends Command<void> {
       final datasourceFile = File(
         p.join(root.path, 'lib', 'src', 'database', 'datasource.dart'),
       );
+      final databaseConfigFile = File(
+        p.join(root.path, 'lib', 'src', 'database', 'config.dart'),
+      );
 
       final driverTypes = config.connections.values
           .map((c) => c.driver.type.toLowerCase())
@@ -236,18 +252,26 @@ class InitCommand extends Command<void> {
           .where((pkg) => pkg != null)
           .map((pkg) => "import 'package:$pkg/$pkg.dart';")
           .join('\n');
-      final driverRegistrations = driverTypes
-          .map((type) => _driverRegistrationMapping[type])
-          .where((fn) => fn != null)
-          .map((fn) => "  $fn();")
-          .join('\n');
+
+      _writeFile(
+        file: databaseConfigFile,
+        content: _databaseConfigTemplate(
+          config: config,
+          packageName: packageName,
+          driverImports: driverImports,
+        ),
+        label: 'DataSource config',
+        force: force,
+        tracker: tracker,
+        interactive: true,
+      );
 
       _writeFile(
         file: datasourceFile,
-        content: _datasourceTemplate
-            .replaceAll('{{package_name}}', packageName)
-            .replaceAll('{{driver_imports}}', driverImports)
-            .replaceAll('{{driver_registrations}}', driverRegistrations),
+        content: _datasourceTemplate.replaceAll(
+          '{{package_name}}',
+          packageName,
+        ),
         label: 'DataSource entrypoint',
         force: force,
         tracker: tracker,
@@ -342,7 +366,7 @@ class InitCommand extends Command<void> {
       );
     }
 
-    // Run build_runner to generate orm_registry.g.dart
+    // Run build_runner to generate src/database/orm_registry.g.dart
     final shouldBuild =
         !skipBuild &&
         (includeDatasource || includeMigrations || includeSeeders);
@@ -485,13 +509,100 @@ class InitCommand extends Command<void> {
       }
     }
   }
+
+  /// Ensures a .env.example file exists and optionally updates existing .env
+  void _ensureEnvExample({
+    required Directory root,
+    required String packageName,
+    required bool force,
+    required _ArtifactTracker tracker,
+  }) {
+    final envExampleFile = File(p.join(root.path, '.env.example'));
+    final envFile = File(p.join(root.path, '.env'));
+    final envExampleContent = defaultEnvExample(packageName);
+
+    // Write .env.example
+    _writeFile(
+      file: envExampleFile,
+      content: envExampleContent,
+      label: '.env.example',
+      force: force,
+      tracker: tracker,
+      interactive: true,
+    );
+
+    // Check if .env exists and offer to update it
+    if (envFile.existsSync()) {
+      final existingContent = envFile.readAsStringSync();
+      final newVars = _extractEnvVariables(envExampleContent);
+      final existingVars = _extractEnvVariables(existingContent);
+      final missingVars = newVars
+          .where((v) => !existingVars.contains(v))
+          .toList();
+
+      if (missingVars.isNotEmpty) {
+        cliIO.writeln(
+          cliIO.style.info(
+            'Found existing .env file with ${missingVars.length} new variable(s) available.',
+          ),
+        );
+        if (io.confirm('Do you want to append missing variables to .env?')) {
+          final varsToAppend = missingVars
+              .map((varName) {
+                // Find the line from .env.example for this variable
+                final lines = envExampleContent.split('\n');
+                final varLine = lines.firstWhere(
+                  (line) =>
+                      line.trim().startsWith('$varName=') ||
+                      line.trim().startsWith('# $varName='),
+                  orElse: () => '$varName=',
+                );
+                return varLine;
+              })
+              .join('\n');
+
+          envFile.writeAsStringSync(
+            '$existingContent\n\n# Added by ormed init\n$varsToAppend\n',
+            mode: FileMode.append,
+          );
+          cliIO.success(
+            'Updated .env with ${missingVars.length} new variable(s): ${missingVars.join(', ')}',
+          );
+        }
+      } else {
+        cliIO.writeln(
+          '${cliIO.style.foreground(Colors.muted).render('○')} .env already contains all variables',
+        );
+      }
+    } else {
+      cliIO.writeln(
+        cliIO.style.info(
+          'Tip: Copy .env.example to .env and configure your environment variables.',
+        ),
+      );
+    }
+  }
+
+  /// Extract variable names from env file content (both commented and uncommented)
+  Set<String> _extractEnvVariables(String content) {
+    final varPattern = RegExp(r'^#?\s*([A-Z_][A-Z0-9_]*)=', multiLine: true);
+    return varPattern
+        .allMatches(content)
+        .map((match) => match.group(1)!)
+        .where((name) => !name.startsWith('#'))
+        .toSet();
+  }
 }
 
 void _printNextSteps({required bool withAnalyzer}) {
   cliIO.newLine();
   cliIO.section('Next steps');
+  cliIO.writeln('• Configure runtime DB in `lib/src/database/config.dart`');
   cliIO.writeln('• Add models and include `part \'<model>.orm.dart\';`');
   cliIO.writeln('• Run: dart run build_runner build');
+  cliIO.writeln(
+    '• Optional for custom/multi-connection CLI flows: run `ormed init --only=config` to scaffold ormed.yaml',
+  );
   if (withAnalyzer) {
     cliIO.writeln('• Restart your analyzer to pick up the Ormed plugin');
   }
@@ -557,36 +668,102 @@ void _ensureAnalyzerPluginConfig({
 
 const String _datasourceTemplate = r'''
 import 'package:ormed/ormed.dart';
-import 'package:{{package_name}}/orm_registry.g.dart';
-{{driver_imports}}
+import 'config.dart';
 
-/// Creates a new DataSource instance using the project configuration.
-DataSource createDataSource() {
-{{driver_registrations}}
-
-  final config = loadOrmConfig();
-  return DataSource.fromConfig(
-    config,
-    registry: bootstrapOrm(),
-  );
+/// Creates a new DataSource using driver-specific helper options.
+DataSource createDataSource({DataSourceOptions? options}) {
+  return DataSource(options ?? buildDataSourceOptions());
 }
 ''';
 
+String _databaseConfigTemplate({
+  required OrmProjectConfig config,
+  required String packageName,
+  required String driverImports,
+}) {
+  final optionsBuilder = _buildDataSourceOptionsBuilder(
+    config: config,
+    packageName: packageName,
+  );
+  return '''
+import 'dart:io';
+
+import 'package:ormed/ormed.dart';
+import 'package:$packageName/src/database/orm_registry.g.dart';
+${driverImports.isEmpty ? '' : '$driverImports\n'}
+
+/// Code-first runtime DataSource configuration used by [createDataSource].
+///
+/// Keep `ormed.yaml` for CLI migration/seed workflows when needed.
+DataSourceOptions buildDataSourceOptions() {
+  final env = OrmedEnvironment.fromDirectory(Directory.current);
+  final registry = bootstrapOrm();
+$optionsBuilder
+}
+''';
+}
+
 const Map<String, String> _driverPackageMapping = {
   'sqlite': 'ormed_sqlite',
+  'd1': 'ormed_d1',
   'mysql': 'ormed_mysql',
   'mariadb': 'ormed_mysql',
   'postgres': 'ormed_postgres',
   'postgresql': 'ormed_postgres',
 };
 
-const Map<String, String> _driverRegistrationMapping = {
-  'sqlite': 'ensureSqliteDriverRegistration',
-  'mysql': 'ensureMySqlDriverRegistration',
-  'mariadb': 'ensureMySqlDriverRegistration',
-  'postgres': 'ensurePostgresDriverRegistration',
-  'postgresql': 'ensurePostgresDriverRegistration',
-};
+OrmProjectConfig _defaultOrmProjectConfig(String packageName) {
+  final yaml = loadYaml(defaultOrmYaml(packageName)) as YamlMap;
+  return OrmProjectConfig.fromYaml(yaml);
+}
+
+String _buildDataSourceOptionsBuilder({
+  required OrmProjectConfig config,
+  required String packageName,
+}) {
+  final driver = config.driver.type.trim().toLowerCase();
+  final connectionName = _dartStringLiteral(config.connectionName);
+  switch (driver) {
+    case 'sqlite':
+      final defaultPath =
+          config.driver.option('database') ?? 'database/$packageName.sqlite';
+      return "  final path = env.string('DB_PATH', fallback: '${_dartStringLiteral(defaultPath)}');\n"
+          "  return registry.sqliteFileDataSourceOptions(path: path, name: '$connectionName');";
+    case 'd1':
+      return "  return registry.d1DataSourceOptionsFromEnv(\n"
+          "    name: '$connectionName',\n"
+          "    environment: env.values,\n"
+          "  );";
+    case 'postgres':
+    case 'postgresql':
+      return "  return registry.postgresDataSourceOptionsFromEnv(\n"
+          "    name: '$connectionName',\n"
+          "    environment: env.values,\n"
+          "  );";
+    case 'mysql':
+      return "  return registry.mySqlDataSourceOptionsFromEnv(\n"
+          "    name: '$connectionName',\n"
+          "    environment: env.values,\n"
+          "  );";
+    case 'mariadb':
+      return "  return registry.mariaDbDataSourceOptions(\n"
+          "    name: '$connectionName',\n"
+          "    host: env.string('DB_HOST', fallback: '127.0.0.1'),\n"
+          "    port: env.intValue('DB_PORT', fallback: 3306),\n"
+          "    database: env.string('DB_NAME', fallback: 'mysql'),\n"
+          "    username: env.string('DB_USER', fallback: 'root'),\n"
+          "    password: env.firstNonEmpty(['DB_PASSWORD']),\n"
+          "    secure: env.boolValue('DB_SSLMODE', fallback: false),\n"
+          "    timezone: env.string('DB_TIMEZONE', fallback: '+00:00'),\n"
+          "  );";
+    default:
+      final normalized = _dartStringLiteral(config.driver.type);
+      return "  throw UnsupportedError('Unsupported driver type for scaffolded datasource config: $normalized');";
+  }
+}
+
+String _dartStringLiteral(String value) =>
+    value.replaceAll(r'\', r'\\').replaceAll("'", r"\'");
 
 const String _defaultSeederTemplate = '''
 import 'package:ormed/ormed.dart';
@@ -819,7 +996,7 @@ Future<void> _populateExisting({
     final seedRegistryContent = [
       "import 'package:ormed_cli/runtime.dart';",
       "import 'package:ormed/ormed.dart';",
-      "import 'package:$packageName/orm_registry.g.dart' as g;",
+      "import 'package:$packageName/src/database/orm_registry.g.dart' as g;",
       "",
       ...seedImports,
       "",

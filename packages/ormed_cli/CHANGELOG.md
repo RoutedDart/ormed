@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+- **Added**: `makemigrations` now generates a migration from generated model metadata (`orm_registry.g.dart`) against the current schema, then syncs migration registry entries.
+- **Added**: `makemigrations --sync-only` to skip model-diff generation and run registry sync only.
+- **Added**: `migrations:sync`, `migrations:check`, and `migrations:entry` commands for registry synchronization, validation, and manual entry scaffolding.
+- **Added**: `make:migration` as the canonical migration alias, and `make:seeder` alias for seeder scaffolding.
+- **Changed**: `makemigration` remains supported as a deprecated alias and now prints a deprecation warning.
+- **Improved**: fallback behavior without `ormed.yaml` is now convention-first and driver-neutral across commands.
+- **Improved**: seed and migration registry workflows now provide clearer bootstrap/recovery messages and reduced setup friction for existing projects.
+- **Improved**: CLI docs now document existing-project onboarding and code-first migration workflow.
+- **Fixed**: CLI test scratch directories now consistently use system temp paths to reduce cross-test cwd interference.
+
 ## 0.1.0
 
 - **Release**: Promote ormed_cli to the stable 0.1.0 line.

@@ -14,7 +14,7 @@ void main() {
     setUp(() async {
       repoRoot = Directory.current;
       final scratchParent = Directory(
-        p.join(repoRoot.path, '.dart_tool', 'ormed_cli_tests'),
+        p.join(Directory.systemTemp.path, 'ormed_cli_tests'),
       );
       if (!scratchParent.existsSync()) {
         scratchParent.createSync(recursive: true);
@@ -88,9 +88,32 @@ void main(List<String> args) {
 
     Future<void> runMake(List<String> args) async {
       final runner = CommandRunner<void>('ormed', 'ORM CLI')
-        ..addCommand(MakeCommand());
+        ..addCommand(MakeCommand())
+        ..addCommand(MakeMigrationCommand());
       await runner.run([
         'make',
+        ...args,
+        '--config',
+        p.relative(ormConfig.path, from: Directory.current.path),
+      ]);
+    }
+
+    Future<void> runMakeWithoutConfig(List<String> args) async {
+      final runner = CommandRunner<void>('ormed', 'ORM CLI')
+        ..addCommand(MakeCommand())
+        ..addCommand(MakeMigrationCommand())
+        ..addCommand(MakeSeederCommand());
+      await runner.run(['make', ...args]);
+    }
+
+    Future<void> runMakeMigration(List<String> args) async {
+      final runner = CommandRunner<void>('ormed', 'ORM CLI')
+        ..addCommand(MakeCommand())
+        ..addCommand(MakeMigrationCommand())
+        ..addCommand(MakeMigrationLegacyCommand())
+        ..addCommand(MakeSeederCommand());
+      await runner.run([
+        'make:migration',
         ...args,
         '--config',
         p.relative(ormConfig.path, from: Directory.current.path),
@@ -125,6 +148,32 @@ void main(List<String> args) {
     });
 
     test(
+      'manual mode creates SQL migration but does not edit registry',
+      () async {
+        await runMake([
+          '--name',
+          'create_comments_table',
+          '--format',
+          'sql',
+          '--manual',
+        ]);
+
+        final migrationsDir = Directory(
+          p.join(scratchDir.path, 'lib', 'src', 'database', 'migrations'),
+        );
+        final created = migrationsDir.listSync().whereType<Directory>().any(
+          (d) => p.basename(d.path).endsWith('_create_comments_table'),
+        );
+        expect(created, isTrue);
+
+        final registryText = File(
+          p.join(scratchDir.path, 'lib', 'src', 'database', 'migrations.dart'),
+        ).readAsStringSync();
+        expect(registryText, isNot(contains('create_comments_table')));
+      },
+    );
+
+    test(
       'defaults to SQL when ormed.yaml sets migrations.format: sql',
       () async {
         ormConfig.writeAsStringSync('''
@@ -151,5 +200,175 @@ migrations:
         expect(created, isTrue);
       },
     );
+
+    test('infers create-table scaffold from create_* slug', () async {
+      await runMake(['--name', 'create_widgets', '--format', 'dart']);
+
+      final migrationsDir = Directory(
+        p.join(scratchDir.path, 'lib', 'src', 'database', 'migrations'),
+      );
+      final createdFile = migrationsDir
+          .listSync()
+          .whereType<File>()
+          .map((f) => f.path)
+          .singleWhere(
+            (path) => p.basename(path).endsWith('_create_widgets.dart'),
+          );
+
+      final content = File(createdFile).readAsStringSync();
+      expect(content, contains("schema.create('widgets'"));
+      expect(content, contains("schema.drop('widgets');"));
+    });
+
+    test('make:migration alias creates migration file', () async {
+      await runMakeMigration([
+        '--name',
+        'add_status_to_users',
+        '--format',
+        'dart',
+      ]);
+
+      final migrationsDir = Directory(
+        p.join(scratchDir.path, 'lib', 'src', 'database', 'migrations'),
+      );
+      final createdFile = migrationsDir
+          .listSync()
+          .whereType<File>()
+          .map((f) => f.path)
+          .singleWhere(
+            (path) => p.basename(path).endsWith('_add_status_to_users.dart'),
+          );
+      final content = File(createdFile).readAsStringSync();
+      expect(content, contains("schema.table('users'"));
+      expect(content, isNot(contains("schema.create('users'")));
+    });
+
+    test('legacy makemigration alias still works', () async {
+      final runner = CommandRunner<void>('ormed', 'ORM CLI')
+        ..addCommand(MakeCommand())
+        ..addCommand(MakeMigrationCommand())
+        ..addCommand(MakeMigrationLegacyCommand())
+        ..addCommand(MakeSeederCommand());
+      await runner.run([
+        'makemigration',
+        '--name',
+        'add_role_to_users',
+        '--format',
+        'dart',
+        '--config',
+        p.relative(ormConfig.path, from: Directory.current.path),
+      ]);
+
+      final migrationsDir = Directory(
+        p.join(scratchDir.path, 'lib', 'src', 'database', 'migrations'),
+      );
+      final createdFile = migrationsDir
+          .listSync()
+          .whereType<File>()
+          .map((f) => f.path)
+          .singleWhere(
+            (path) => p.basename(path).endsWith('_add_role_to_users.dart'),
+          );
+      expect(File(createdFile).existsSync(), isTrue);
+    });
+
+    test('make:seeder alias creates and registers seeder', () async {
+      ormConfig.deleteSync();
+      final runner = CommandRunner<void>('ormed', 'ORM CLI')
+        ..addCommand(MakeCommand())
+        ..addCommand(MakeMigrationCommand())
+        ..addCommand(MakeMigrationLegacyCommand())
+        ..addCommand(MakeSeederCommand());
+
+      await runner.run(['make:seeder', '--name', 'AuditSeeder']);
+
+      final seedRegistry = File(
+        p.join(scratchDir.path, 'lib', 'src', 'database', 'seeders.dart'),
+      );
+      final createdSeeder = File(
+        p.join(
+          scratchDir.path,
+          'lib',
+          'src',
+          'database',
+          'seeders',
+          'audit_seeder.dart',
+        ),
+      );
+
+      expect(seedRegistry.existsSync(), isTrue);
+      expect(createdSeeder.existsSync(), isTrue);
+      expect(seedRegistry.readAsStringSync(), contains("name: 'AuditSeeder'"));
+    });
+
+    test('works without ormed.yaml using convention defaults', () async {
+      ormConfig.deleteSync();
+      await runMakeWithoutConfig(['--name', 'create_tags', '--format', 'dart']);
+
+      final migrationsDir = Directory(
+        p.join(scratchDir.path, 'lib', 'src', 'database', 'migrations'),
+      );
+      final createdFile = migrationsDir
+          .listSync()
+          .whereType<File>()
+          .map((f) => f.path)
+          .singleWhere(
+            (path) => p.basename(path).endsWith('_create_tags.dart'),
+          );
+      final content = File(createdFile).readAsStringSync();
+      expect(content, contains("schema.create('tags'"));
+    });
+
+    test('bootstraps migration registry when missing', () async {
+      final registryFile = File(
+        p.join(scratchDir.path, 'lib', 'src', 'database', 'migrations.dart'),
+      );
+      registryFile.deleteSync();
+
+      await runMake(['--name', 'create_bootstrap_table', '--format', 'sql']);
+
+      expect(registryFile.existsSync(), isTrue);
+      final registryText = registryFile.readAsStringSync();
+      expect(registryText, contains('MigrationEntry.named('));
+      expect(registryText, contains('create_bootstrap_table'));
+    });
+
+    test('bootstraps seed registry and default seeder when missing', () async {
+      ormConfig.deleteSync();
+
+      await runMakeWithoutConfig(['--name', 'UserSeeder', '--seeder']);
+
+      final seedRegistry = File(
+        p.join(scratchDir.path, 'lib', 'src', 'database', 'seeders.dart'),
+      );
+      final defaultSeeder = File(
+        p.join(
+          scratchDir.path,
+          'lib',
+          'src',
+          'database',
+          'seeders',
+          'database_seeder.dart',
+        ),
+      );
+      final createdSeeder = File(
+        p.join(
+          scratchDir.path,
+          'lib',
+          'src',
+          'database',
+          'seeders',
+          'user_seeder.dart',
+        ),
+      );
+
+      expect(seedRegistry.existsSync(), isTrue);
+      expect(defaultSeeder.existsSync(), isTrue);
+      expect(createdSeeder.existsSync(), isTrue);
+
+      final seedRegistryText = seedRegistry.readAsStringSync();
+      expect(seedRegistryText, contains("name: 'UserSeeder'"));
+      expect(seedRegistryText, contains("import 'seeders/user_seeder.dart';"));
+    });
   });
 }

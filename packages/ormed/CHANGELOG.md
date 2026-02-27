@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- **Docs**: Updated quickstart and migration helper guidance to use `make:migration` and document `makemigrations` as model-diff generation plus registry sync.
+- **Docs**: Clarified `migrations:sync` as the registry-only command and aligned command examples with the current `ormed_cli` executable usage.
+
 ## 0.1.0
 
 - **Release**: Promote Ormed to a stable 0.1.0 release.

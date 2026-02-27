@@ -12,10 +12,8 @@ void main() {
     late Directory scratchDir;
 
     setUp(() {
-      final repoRoot = Directory.current;
-
       scratchParent = Directory(
-        p.join(repoRoot.path, '.dart_tool', 'ormed_cli_tests'),
+        p.join(Directory.systemTemp.path, 'ormed_cli_tests'),
       );
       if (!scratchParent.existsSync()) {
         scratchParent.createSync(recursive: true);
@@ -69,7 +67,9 @@ dev_dependencies:
       await runInit(['init', '--no-interaction', '--skip-build']);
 
       final ormYaml = File(p.join(scratchDir.path, 'ormed.yaml'));
-      expect(ormYaml.existsSync(), isTrue);
+      expect(ormYaml.existsSync(), isFalse);
+      final envExample = File(p.join(scratchDir.path, '.env.example'));
+      expect(envExample.existsSync(), isTrue);
 
       final migrationsDir = Directory(
         p.join(scratchDir.path, 'lib/src/database/migrations'),
@@ -95,6 +95,25 @@ dev_dependencies:
 
       final schemaDump = File(p.join(scratchDir.path, 'database/schema.sql'));
       expect(schemaDump.parent.existsSync(), isTrue);
+
+      final datasourceFile = File(
+        p.join(scratchDir.path, 'lib/src/database/datasource.dart'),
+      );
+      final databaseConfigFile = File(
+        p.join(scratchDir.path, 'lib/src/database/config.dart'),
+      );
+      expect(datasourceFile.existsSync(), isTrue);
+      expect(databaseConfigFile.existsSync(), isTrue);
+      expect(
+        datasourceFile.readAsStringSync(),
+        contains('options ?? buildDataSourceOptions()'),
+      );
+      expect(
+        databaseConfigFile.readAsStringSync(),
+        contains(
+          'final env = OrmedEnvironment.fromDirectory(Directory.current);',
+        ),
+      );
     });
 
     test('--populate-existing scans and populates registries', () async {
@@ -344,11 +363,6 @@ seeds:
     );
 
     test('--only=datasource scaffolds only datasource', () async {
-      // Provide config so datasource can resolve driver types.
-      File(
-        p.join(scratchDir.path, 'ormed.yaml'),
-      ).writeAsStringSync(defaultOrmYaml('test_project'));
-
       await runInit([
         'init',
         '--only=datasource',
@@ -360,6 +374,10 @@ seeds:
         p.join(scratchDir.path, 'lib/src/database/datasource.dart'),
       );
       expect(datasourceFile.existsSync(), isTrue);
+      final datasourceConfigFile = File(
+        p.join(scratchDir.path, 'lib/src/database/config.dart'),
+      );
+      expect(datasourceConfigFile.existsSync(), isTrue);
 
       final migrationsReg = File(
         p.join(scratchDir.path, 'lib/src/database/migrations.dart'),
@@ -399,14 +417,12 @@ seeds:
       expect(datasourceFile.existsSync(), isFalse);
     });
 
-    test('--only without config errors when ormed.yaml is missing', () async {
-      var exitCode = 0;
-      await runInit([
-        'init',
-        '--only=datasource',
-        '--skip-build',
-      ], setExitCode: (code) => exitCode = code);
-      expect(exitCode, equals(64));
+    test('--only=migrations works without ormed.yaml', () async {
+      await runInit(['init', '--only=migrations', '--skip-build']);
+      final migrationsReg = File(
+        p.join(scratchDir.path, 'lib/src/database/migrations.dart'),
+      );
+      expect(migrationsReg.existsSync(), isTrue);
     });
 
     test(
