@@ -6,6 +6,17 @@ sidebar_position: 6
 
 Ormed supports multiple database drivers (SQLite, PostgreSQL, MySQL), but not all databases support the same features. The Driver Capabilities system allows you to query what features are available at runtime.
 
+## Prerequisites
+
+- [Drivers Overview](../drivers/overview)
+- [Query Builder](../queries/query-builder)
+
+## What You’ll Learn
+
+- How to detect driver feature support at runtime
+- How to build cross-driver-safe query and migration logic
+- How to gate tests by driver capability flags
+
 ## Overview
 
 Drivers advertise supported features via `DriverAdapter.capabilities` and `supportsCapability(...)`. Use this to:

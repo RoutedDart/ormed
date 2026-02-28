@@ -194,8 +194,7 @@ class AdminModelFactory {
 
   static ModelFactoryBuilder<Admin> factory({
     GeneratorProvider? generatorProvider,
-  }) => ModelFactoryBuilder<Admin>(
-    definition: definition,
+  }) => ModelFactoryRegistry.factoryFor<Admin>(
     generatorProvider: generatorProvider,
   );
 }
@@ -427,16 +426,11 @@ class _AdminPartialCopyWithSentinel {
 class $Admin extends Admin with ModelAttributes implements OrmEntity {
   /// Internal constructor for [$Admin].
   $Admin({
-    int id = 0,
+    required int id,
     required String email,
     String? password,
     DateTime? createdAt,
-  }) : super.new(
-         id: id,
-         email: email,
-         password: password,
-         createdAt: createdAt,
-       ) {
+  }) : super(id: id, email: email, password: password, createdAt: createdAt) {
     _attachOrmRuntimeMetadata({
       'id': id,
       'email': email,
@@ -527,7 +521,7 @@ extension AdminOrmExtension on Admin {
     Object? password = _copyWithSentinel,
     Object? createdAt = _copyWithSentinel,
   }) {
-    return Admin.new(
+    return Admin(
       id: identical(id, _copyWithSentinel) ? this.id : id as int,
       email: identical(email, _copyWithSentinel) ? this.email : email as String,
       password: identical(password, _copyWithSentinel)

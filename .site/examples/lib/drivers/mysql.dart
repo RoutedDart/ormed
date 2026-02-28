@@ -4,7 +4,7 @@
 import 'package:ormed/ormed.dart';
 import 'package:ormed_mysql/ormed_mysql.dart';
 
-import '../orm_registry.g.dart';
+import 'package:ormed_examples/src/database/orm_registry.g.dart';
 
 // #region mysql-datasource-url
 Future<DataSource> createMysqlDataSourceFromUrl() async {
@@ -47,4 +47,5 @@ Future<DataSource> createMysqlDataSourceFromFields() async {
   await dataSource.init();
   return dataSource;
 }
+
 // #endregion mysql-datasource-fields

@@ -1,0 +1,112 @@
+name: snippet-version-guard
+
+on:
+  pull_request:
+    paths:
+      - '.site/**'
+      - 'README.md'
+      - 'packages/**/README.md'
+      - 'packages/**/pubspec.yaml'
+      - 'tool/check_snippet_versions.py'
+      - '.github/actions/snippet-version-guard/**'
+      - '.github/workflows/ergonomics-guard.yml'
+  push:
+    branches: [main]
+    paths:
+      - '.site/**'
+      - 'README.md'
+      - 'packages/**/README.md'
+      - 'packages/**/pubspec.yaml'
+      - 'tool/check_snippet_versions.py'
+      - '.github/actions/snippet-version-guard/**'
+      - '.github/workflows/ergonomics-guard.yml'
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  snippet-versions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Collect snippet package version drift
+        id: check
+        uses: ./.github/actions/snippet-version-guard
+        with:
+          root: .
+          report-file: snippet-version-report.md
+          package-name-regex: "^ormed"
+          fail-on-drift: "false"
+
+      - name: Publish workflow summary
+        run: |
+          {
+            echo "## Snippet Version Guard"
+            if [ "${{ steps.check.outputs.outdated_count }}" = "0" ]; then
+              echo ""
+              echo "✅ No outdated package versions found in snippets."
+            else
+              echo ""
+              echo "⚠️ Found ${{ steps.check.outputs.outdated_count }} outdated package version snippet(s)."
+              echo ""
+              cat snippet-version-report.md
+            fi
+            echo ""
+            echo "_This check is non-blocking and for review visibility._"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Comment on pull request
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const marker = '<!-- snippet-version-guard -->';
+            const status = '${{ steps.check.outputs.status }}';
+            const count = '${{ steps.check.outputs.outdated_count }}';
+            const report = fs.readFileSync('snippet-version-report.md', 'utf8');
+
+            const summary = status === 'outdated'
+              ? `⚠️ Found ${count} outdated package version snippet(s).`
+              : '✅ No outdated package versions found in snippets.';
+
+            const body = [
+              marker,
+              '## Snippet Version Guard',
+              '',
+              summary,
+              '',
+              report.trim(),
+              '',
+              '_This check is non-blocking and intended as a docs/version reminder._',
+            ].join('\n');
+
+            const {owner, repo} = context.repo;
+            const issue_number = context.issue.number;
+            const comments = await github.paginate(
+              github.rest.issues.listComments,
+              {owner, repo, issue_number, per_page: 100},
+            );
+            const existing = comments.find(
+              (comment) => comment.body && comment.body.includes(marker),
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner,
+                repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number,
+                body,
+              });
+            }

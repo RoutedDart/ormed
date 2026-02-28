@@ -10,6 +10,24 @@ import TabItem from '@theme/TabItem';
 
 A full-stack application needs a way to render dynamic HTML and handle file uploads. We use **Liquify** for templating and **File Cloud** for storage.
 
+## Prerequisites
+
+- [Server & Web Routes](./server-routes)
+
+## What You’ll Learn
+
+- How template rendering is structured for reuse
+- How layout inheritance keeps UI consistent
+- How file storage is integrated into request flows
+
+## Step Outcome
+
+By the end of this page, you should have:
+
+- A shared template renderer used by all handlers
+- Consistent base layout + page templates for movies/genres
+- Poster upload handling backed by `StorageService`
+
 ## Template renderer
 
 We wrap the Liquify engine in a `TemplateRenderer` class. This allows us to provide "shared data" (like the application name or current user) to all templates automatically.
@@ -17,6 +35,8 @@ We wrap the Liquify engine in a `TemplateRenderer` class. This allows us to prov
 ```dart file=../../../../packages/ormed/example/fullstack/lib/src/templates/template_renderer.dart#template-renderer
 
 ```
+
+The renderer abstraction keeps handlers focused on data, not template engine setup.
 
 ## Layout shell
 
@@ -103,6 +123,13 @@ We use the `StorageService` to handle movie poster uploads. In development, this
     ```
   </TabItem>
 </Tabs>
+
+### Upload flow in this tutorial
+
+1. Handler parses multipart form input.
+2. Poster file is passed to `StorageService`.
+3. Service writes to local disk (`uploads/`) for development.
+4. Stored path/URL is saved via DTO into the database.
 
 ## Genre pages
 

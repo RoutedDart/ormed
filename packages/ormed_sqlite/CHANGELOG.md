@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.0
+- **Added**: `DataSourceOptions.sqlite(...)` and `ModelRegistry.sqliteDataSource(...)` extension helpers for code-first SQLite configuration.
+- **Changed**: SQLite driver internals now reuse shared grammar/dialect/type-mapper/codec utilities from `ormed_sqlite_core`.
+- **Changed**: `ormed_sqlite` now depends on `ormed_sqlite_core` for shared SQLite behavior.
+
 ## 0.1.0
 
 - **Release**: Promote ormed_sqlite to the stable 0.1.0 line.

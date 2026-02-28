@@ -215,8 +215,7 @@ class PostWithAuthorModelFactory {
 
   static ModelFactoryBuilder<PostWithAuthor> factory({
     GeneratorProvider? generatorProvider,
-  }) => ModelFactoryBuilder<PostWithAuthor>(
-    definition: definition,
+  }) => ModelFactoryRegistry.factoryFor<PostWithAuthor>(
     generatorProvider: generatorProvider,
   );
 }
@@ -487,7 +486,7 @@ class $PostWithAuthor extends PostWithAuthor
     required int authorId,
     required String title,
     PostAuthor? author,
-  }) : super.new(id: id, authorId: authorId, title: title, author: author) {
+  }) : super(id: id, authorId: authorId, title: title, author: author) {
     _attachOrmRuntimeMetadata({
       'id': id,
       'author_id': authorId,
@@ -551,13 +550,6 @@ class $PostWithAuthor extends PostWithAuthor
   /// Tracked setter for [title].
   set title(String value) => setAttribute('title', value);
 
-  /// Tracked getter for [author].
-  @override
-  PostAuthor? get author => getAttribute<PostAuthor?>('author') ?? super.author;
-
-  /// Tracked setter for [author].
-  set author(PostAuthor? value) => setAttribute('author', value);
-
   void _attachOrmRuntimeMetadata(Map<String, Object?> values) {
     replaceAttributes(values);
     attachModelDefinition(_$PostWithAuthorDefinition);
@@ -591,7 +583,7 @@ extension PostWithAuthorOrmExtension on PostWithAuthor {
     Object? title = _copyWithSentinel,
     Object? author = _copyWithSentinel,
   }) {
-    return PostWithAuthor.new(
+    return PostWithAuthor(
       id: identical(id, _copyWithSentinel) ? this.id : id as int,
       authorId: identical(authorId, _copyWithSentinel)
           ? this.authorId
@@ -813,8 +805,7 @@ class PostAuthorModelFactory {
 
   static ModelFactoryBuilder<PostAuthor> factory({
     GeneratorProvider? generatorProvider,
-  }) => ModelFactoryBuilder<PostAuthor>(
-    definition: definition,
+  }) => ModelFactoryRegistry.factoryFor<PostAuthor>(
     generatorProvider: generatorProvider,
   );
 }
@@ -979,7 +970,7 @@ class _PostAuthorPartialCopyWithSentinel {
 class $PostAuthor extends PostAuthor with ModelAttributes implements OrmEntity {
   /// Internal constructor for [$PostAuthor].
   $PostAuthor({required int id, required String name})
-    : super.new(id: id, name: name) {
+    : super(id: id, name: name) {
     _attachOrmRuntimeMetadata({'id': id, 'name': name});
   }
 
@@ -1033,7 +1024,7 @@ extension PostAuthorOrmExtension on PostAuthor {
     Object? id = _copyWithSentinel,
     Object? name = _copyWithSentinel,
   }) {
-    return PostAuthor.new(
+    return PostAuthor(
       id: identical(id, _copyWithSentinel) ? this.id : id as int,
       name: identical(name, _copyWithSentinel) ? this.name : name as String,
     );

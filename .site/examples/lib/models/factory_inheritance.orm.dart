@@ -170,8 +170,7 @@ class BaseItemModelFactory {
 
   static ModelFactoryBuilder<BaseItem> factory({
     GeneratorProvider? generatorProvider,
-  }) => ModelFactoryBuilder<BaseItem>(
-    definition: definition,
+  }) => ModelFactoryRegistry.factoryFor<BaseItem>(
     generatorProvider: generatorProvider,
   );
 }
@@ -329,7 +328,7 @@ class _BaseItemPartialCopyWithSentinel {
 /// or model factories to create tracked model instances.
 class $BaseItem extends BaseItem with ModelAttributes implements OrmEntity {
   /// Internal constructor for [$BaseItem].
-  $BaseItem({required int id, String? name}) : super.new(id: id, name: name) {
+  $BaseItem({required int id, String? name}) : super(id: id, name: name) {
     _attachOrmRuntimeMetadata({'id': id, 'name': name});
   }
 
@@ -383,7 +382,7 @@ extension BaseItemOrmExtension on BaseItem {
     Object? id = _copyWithSentinel,
     Object? name = _copyWithSentinel,
   }) {
-    return BaseItem.new(
+    return BaseItem(
       id: identical(id, _copyWithSentinel) ? this.id : id as int,
       name: identical(name, _copyWithSentinel) ? this.name : name as String?,
     );
@@ -610,8 +609,7 @@ class SpecialItemModelFactory {
 
   static ModelFactoryBuilder<SpecialItem> factory({
     GeneratorProvider? generatorProvider,
-  }) => ModelFactoryBuilder<SpecialItem>(
-    definition: definition,
+  }) => ModelFactoryRegistry.factoryFor<SpecialItem>(
     generatorProvider: generatorProvider,
   );
 }
@@ -805,7 +803,7 @@ class $SpecialItem extends SpecialItem
     implements OrmEntity {
   /// Internal constructor for [$SpecialItem].
   $SpecialItem({required int id, String? name, List<String>? tags})
-    : super.new(id: id, name: name, tags: tags) {
+    : super(id: id, name: name, tags: tags) {
     _attachOrmRuntimeMetadata({'tags': tags, 'id': id, 'name': name});
   }
 
@@ -871,7 +869,7 @@ extension SpecialItemOrmExtension on SpecialItem {
     Object? name = _copyWithSentinel,
     Object? tags = _copyWithSentinel,
   }) {
-    return SpecialItem.new(
+    return SpecialItem(
       id: identical(id, _copyWithSentinel) ? this.id : id as int,
       name: identical(name, _copyWithSentinel) ? this.name : name as String?,
       tags: identical(tags, _copyWithSentinel)

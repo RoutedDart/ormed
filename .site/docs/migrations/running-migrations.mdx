@@ -7,6 +7,25 @@ import TabItem from '@theme/TabItem';
 
 # Running Migrations
 
+## Prerequisites
+
+- [Migrations Overview](./overview)
+- [Schema Builder](./schema-builder)
+
+## What You’ll Learn
+
+- How to apply/rollback migrations programmatically
+- How migration ledger state is tracked
+- How to inspect migration status safely
+
+## Step Outcome
+
+By the end of this page, you should be able to:
+
+- Apply/rollback migrations predictably
+- Inspect migration ledger state before/after deploys
+- Diagnose common migration failures quickly
+
 :::note Snippet context
 These snippets are split by step (entries → ledger → runner → apply/rollback) so you can copy just the part you need.
 :::
@@ -42,6 +61,17 @@ Use `MigrationRunner` to run migrations in code:
 
 ```dart file=../../examples/lib/migrations/runner.dart#migration-runner-status
 ```
+
+## CLI Workflow (Most Common)
+
+```bash
+dart run ormed_cli:ormed migrate
+dart run ormed_cli:ormed migrate --pretend
+dart run ormed_cli:ormed migrate:rollback --steps 1
+dart run ormed_cli:ormed migrate:status
+```
+
+Use `--pretend` before risky deploys to inspect generated SQL without applying changes.
 
 ## Ledger API
 
@@ -109,3 +139,13 @@ Ensure:
 - Parent tables are created before child tables
 - Child tables are dropped before parent tables
 - Foreign key columns match the referenced column type
+
+## Deployment Tip
+
+Run migration status checks in CI/CD before and after applying migrations so drift is visible immediately.
+
+## Read This Next
+
+- [Schema Builder](./schema-builder)
+- [Migration & Seeding Events](./events)
+- [Squashing Migrations](./squashing)

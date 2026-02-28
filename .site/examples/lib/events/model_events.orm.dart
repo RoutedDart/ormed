@@ -211,8 +211,7 @@ class EventUserModelFactory {
 
   static ModelFactoryBuilder<EventUser> factory({
     GeneratorProvider? generatorProvider,
-  }) => ModelFactoryBuilder<EventUser>(
-    definition: definition,
+  }) => ModelFactoryRegistry.factoryFor<EventUser>(
     generatorProvider: generatorProvider,
   );
 }
@@ -450,11 +449,11 @@ class $EventUser extends EventUser
     implements OrmEntity {
   /// Internal constructor for [$EventUser].
   $EventUser({
-    int id = 0,
+    required int id,
     required String email,
     required bool active,
     String? name,
-  }) : super.new(id: id, email: email, active: active, name: name) {
+  }) : super(id: id, email: email, active: active, name: name) {
     _attachOrmRuntimeMetadata({
       'id': id,
       'email': email,
@@ -540,7 +539,7 @@ extension EventUserOrmExtension on EventUser {
     Object? active = _copyWithSentinel,
     Object? name = _copyWithSentinel,
   }) {
-    return EventUser.new(
+    return EventUser(
       id: identical(id, _copyWithSentinel) ? this.id : id as int,
       email: identical(email, _copyWithSentinel) ? this.email : email as String,
       active: identical(active, _copyWithSentinel)
@@ -754,8 +753,7 @@ class AuditedUserModelFactory {
 
   static ModelFactoryBuilder<AuditedUser> factory({
     GeneratorProvider? generatorProvider,
-  }) => ModelFactoryBuilder<AuditedUser>(
-    definition: definition,
+  }) => ModelFactoryRegistry.factoryFor<AuditedUser>(
     generatorProvider: generatorProvider,
   );
 }
@@ -921,8 +919,8 @@ class $AuditedUser extends AuditedUser
     with ModelAttributes
     implements OrmEntity {
   /// Internal constructor for [$AuditedUser].
-  $AuditedUser({int id = 0, required String email})
-    : super.new(id: id, email: email) {
+  $AuditedUser({required int id, required String email})
+    : super(id: id, email: email) {
     _attachOrmRuntimeMetadata({'id': id, 'email': email});
   }
 
@@ -976,7 +974,7 @@ extension AuditedUserOrmExtension on AuditedUser {
     Object? id = _copyWithSentinel,
     Object? email = _copyWithSentinel,
   }) {
-    return AuditedUser.new(
+    return AuditedUser(
       id: identical(id, _copyWithSentinel) ? this.id : id as int,
       email: identical(email, _copyWithSentinel) ? this.email : email as String,
     );

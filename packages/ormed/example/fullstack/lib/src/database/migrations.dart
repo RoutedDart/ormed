@@ -8,13 +8,10 @@ import 'migrations/m_20251221201201_create_movies.dart'; // </ORM-MIGRATION-IMPO
 
 final List<MigrationEntry> _entries = [
   // <ORM-MIGRATION-REGISTRY>
-  MigrationEntry(
-    id: MigrationId.parse('m_20251221201155_create_genres'),
-    migration: const CreateGenres(),
-  ),
-  MigrationEntry(
-    id: MigrationId.parse('m_20251221201201_create_movies'),
-    migration: const CreateMovies(),
+  MigrationEntry.named('m_20251221201155_create_genres', const CreateGenres()),
+  MigrationEntry.named(
+    'm_20251221201201_create_movies',
+    const CreateMovies(),
   ), // </ORM-MIGRATION-REGISTRY>
 ];
 

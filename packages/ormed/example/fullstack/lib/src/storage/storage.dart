@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:file_cloud/drivers.dart';
 import 'package:file_cloud/file_cloud.dart';
+import 'package:ormed/ormed.dart';
 import 'package:path/path.dart' as p;
 import 'package:storage_fs/storage_fs.dart';
 
@@ -58,10 +59,11 @@ class StorageService {
   }
 
   CloudFileSystem? _initCloudFromEnv() {
-    final endpoint = Platform.environment['S3_ENDPOINT'];
-    final key = Platform.environment['S3_KEY'];
-    final secret = Platform.environment['S3_SECRET'];
-    final bucket = Platform.environment['S3_BUCKET'];
+    final env = OrmedEnvironment();
+    final endpoint = env.firstNonEmpty(['S3_ENDPOINT']);
+    final key = env.firstNonEmpty(['S3_KEY']);
+    final secret = env.firstNonEmpty(['S3_SECRET']);
+    final bucket = env.firstNonEmpty(['S3_BUCKET']);
     if (endpoint == null || key == null || secret == null || bucket == null) {
       return null;
     }

@@ -6,6 +6,25 @@ sidebar_position: 4
 
 Ormed uses source generation to produce strongly-typed models and metadata. Start from plain Dart classes annotated with `@OrmModel` and let `build_runner` produce definitions consumed by the runtime.
 
+## Prerequisites
+
+- [Quick Start](./quick-start)
+- [Defining Models](../models/defining-models)
+
+## What You’ll Learn
+
+- What files Ormed generates and why they exist
+- How to run generator workflows in build and watch modes
+- How generated registry and model artifacts plug into runtime boot
+
+## Step Outcome
+
+By the end of this page, you should have:
+
+- Generated `*.orm.dart` files for all annotated models
+- A generated registry file under `lib/src/database/`
+- A repeatable build/watch workflow for model changes
+
 ## Running the Generator
 
 Add the builder and run:
@@ -20,15 +39,17 @@ Or use watch mode for development:
 dart run build_runner watch --delete-conflicting-outputs
 ```
 
+Use `build` in CI and one-off runs. Use `watch` during active model iteration.
+
 ## Generated Files
 
 The generator produces several files:
 
 | File | Description |
 |------|-------------|
-| `<model>.ormed.dart` | Model definition, codec, factory, and relation getters |
+| `<model>.orm.dart` | Model definition, codec, factory, and relation getters |
 | `<model>.orm_model.json` | Intermediate metadata for auto-registry (can be gitignored) |
-| `lib/orm_registry.g.dart` | Auto-generated registry of all ORM models |
+| `lib/src/database/orm_registry.g.dart` | Auto-generated registry of all ORM models |
 
 ### Per-Model Generated Code
 
@@ -46,7 +67,7 @@ Configure the builders via `build.yaml`:
 
 ### Model Generator (`ormed`)
 
-Generates `.ormed.dart` files for each annotated model:
+Generates `.orm.dart` files for each annotated model:
 
 ```yaml
 targets:
@@ -69,7 +90,7 @@ targets:
       ormed|orm_registry:
         enabled: true
         options:
-          output: lib/orm_registry.g.dart  # default
+          output: lib/src/database/orm_registry.g.dart  # default
 ```
 
 ### Custom Output Location
@@ -128,8 +149,8 @@ For models with `@OrmRelation` annotations, the generator produces relation gett
 *.orm_model.json
 
 # Optionally ignore generated Dart files if you regenerate on CI
-# *.ormed.dart
-# lib/orm_registry.g.dart
+# *.orm.dart
+# lib/src/database/orm_registry.g.dart
 ```
 
 ## Driver-Specific Field Overrides
@@ -145,3 +166,17 @@ Use `driverOverrides` for per-driver behavior:
 - Use `@OrmField(ignore: true)` for computed properties
 - Re-run `build_runner` whenever annotations change
 - Generated files are not meant to be edited manually
+
+## Verify Generation
+
+After running build:
+
+1. `dart analyze` has no generation-related errors.
+2. Your model directory includes fresh `*.orm.dart` files.
+3. `lib/src/database/orm_registry.g.dart` includes your newly added models.
+
+## Read This Next
+
+- [Model Attributes](../models/attributes)
+- [Configuration](./configuration)
+- [Migrations Overview](../migrations/overview)

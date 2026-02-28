@@ -4,7 +4,32 @@ sidebar_position: 3
 
 # Seeding (CLI)
 
-Seeders are configured in `ormed.yaml` and executed by running the seeder registry entrypoint you configured.
+Seeders run through the seeder registry entrypoint.
+
+## Prerequisites
+
+- [CLI Overview](./overview)
+- [Migrations (CLI)](./migrations)
+
+## What You’ll Learn
+
+- How to run all or selected seeders
+- How pretend mode works for safe previews
+- Which registry paths CLI expects for seeding
+
+## Step Outcome
+
+By the end of this page, you should be able to:
+
+- Run full or targeted seeding flows
+- Use pretend mode to inspect without mutations
+- Validate seeder registry wiring per connection
+
+## Registry defaults
+
+- Convention default registry: `lib/src/database/seeders.dart`
+- Optional override via `ormed.yaml` (`seeds.registry`)
+- If the scaffold is missing, first `seed`/`migrate --seed` bootstraps seeder files and exits with guidance.
 
 ## Run seeders
 
@@ -12,6 +37,12 @@ Seeders are configured in `ormed.yaml` and executed by running the seeder regist
 dart run ormed_cli:ormed seed
 dart run ormed_cli:ormed seed --connection analytics
 ```
+
+Recommended flow:
+
+1. `seed --pretend`
+2. `seed`
+3. Verify seeded records with a quick query/integration check
 
 ## Run specific seeders
 
@@ -32,7 +63,7 @@ dart run ormed_cli:ormed seed --pretend
 
 ## Configuration reminder
 
-Your `ormed.yaml` needs a `seeds` block:
+If you use `ormed.yaml`, include a `seeds` block:
 
 ```yaml
 seeds:
@@ -40,3 +71,15 @@ seeds:
   registry: lib/src/database/seeders.dart
 ```
 
+## Read This Next
+
+- [Schema tooling (CLI)](./schema)
+- [CLI Command Reference](./commands)
+
+## Verify Seeder Wiring
+
+```bash
+dart run ormed_cli:ormed seed --pretend
+```
+
+If using `ormed.yaml`, verify with explicit connection targeting as well.

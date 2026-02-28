@@ -9,6 +9,25 @@ import TabItem from '@theme/TabItem';
 
 The Schema Builder provides a fluent API for defining table structures in a database-agnostic way.
 
+## Prerequisites
+
+- [Migrations Overview](./overview)
+- [Running Migrations](./running-migrations)
+
+## What You’ll Learn
+
+- How to define table schemas with Ormed’s fluent API
+- How column/index/constraint helpers map to SQL backends
+- How schema operations interact with table prefixes and drivers
+
+## Step Outcome
+
+By the end of this page, you should be able to:
+
+- Author create/alter/drop operations with reversible intent
+- Choose column/index/foreign-key helpers correctly
+- Apply driver-specific schema differences intentionally
+
 :::note Snippet context
 Snippets show only the Schema Builder calls. Driver selection and migration execution are covered in the migrations guides.
 :::
@@ -19,6 +38,8 @@ Use `schema.create()` to define a new table:
 
 ```dart file=../../examples/lib/schema/schema_builder.dart#schema-create
 ```
+
+Create parent/reference tables before child tables that depend on them.
 
 :::note Table prefixing
 If `DataSourceOptions.tablePrefix` is set, schema operations automatically prefix unqualified table names (create/alter/drop/rename). Schema‑qualified names (e.g., `public.users`) are not prefixed.
@@ -72,6 +93,8 @@ Chain modifiers to customize column behavior:
 ```dart file=../../examples/lib/schema/schema_builder.dart#schema-modifiers
 ```
 
+Use modifiers (`nullable`, defaults, indexes, comments) to make runtime behavior explicit and rollback-safe.
+
 ## Timestamps & Soft Deletes
 
 ```dart file=../../examples/lib/schema/schema_builder.dart#schema-timestamps
@@ -122,6 +145,8 @@ Use `schema.table()` to modify existing tables:
   </TabItem>
 </Tabs>
 
+When altering populated tables, prefer additive changes first (nullable/defaulted columns), then tighten constraints in follow-up migrations.
+
 ## Dropping Tables
 
 ```dart file=../../examples/lib/schema/schema_builder.dart#schema-drop-rename
@@ -144,3 +169,19 @@ Use this to conditionally apply types or modifiers that vary by database.
 
 </TabItem>
 </Tabs>
+
+## Verify Generated SQL
+
+Before applying risky schema changes:
+
+```bash
+dart run ormed_cli:ormed migrate --pretend
+```
+
+Check the generated SQL for column nullability, defaults, index names, and FK actions.
+
+## Read This Next
+
+- [Running Migrations](./running-migrations)
+- [Migration & Seeding Events](./events)
+- [Squashing Migrations](./squashing)

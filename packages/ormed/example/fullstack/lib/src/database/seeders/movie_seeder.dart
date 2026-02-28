@@ -8,12 +8,15 @@ class MovieSeeder extends DatabaseSeeder {
   @override
   Future<void> run() async {
     // #region seed-movies
+    // #region seed-movies-genre-lookup
     final genres = await connection.query<Genre>().get();
     final drama = genres.firstWhere((g) => g.name == 'Drama').id;
     final sciFi = genres.firstWhere((g) => g.name == 'Science Fiction').id;
     final mystery = genres.firstWhere((g) => g.name == 'Mystery').id;
+    // #endregion seed-movies-genre-lookup
 
     final repo = connection.context.repository<Movie>();
+    // #region seed-movies-insert
     await repo.insertMany([
       MovieInsertDto(
         title: 'City of Amber',
@@ -34,7 +37,9 @@ class MovieSeeder extends DatabaseSeeder {
         genreId: drama,
       ),
     ]);
+    // #endregion seed-movies-insert
 
+    // #region seed-movies-update
     // Demonstrate update DTOs (fix a typo in a summary).
     await repo.update(
       const MovieUpdateDto(
@@ -42,6 +47,7 @@ class MovieSeeder extends DatabaseSeeder {
       ),
       where: {'title': 'Glass Letters'},
     );
+    // #endregion seed-movies-update
     // #endregion seed-movies
   }
 }

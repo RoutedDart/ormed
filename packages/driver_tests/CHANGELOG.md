@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.0
+
+- **Release**: Version alignment for the 0.2.0 workspace release.
+
 ## 0.1.0
 
 - **Release**: Promote driver_tests to the stable 0.1.0 line.

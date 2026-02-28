@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.0
+- **Changed**: Playground DB bootstrap now uses `OrmedEnvironment` helpers for env lookup and interpolation.
+- **Updated**: Bumped `artisanal` to the latest compatible `^0.2.0`.
+
 ## 0.1.0-dev+9
 
 - **Updated**: Synced release with ORMed dev+9.

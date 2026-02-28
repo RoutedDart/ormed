@@ -10,6 +10,25 @@ import TabItem from '@theme/TabItem';
 
 In addition to server-rendered HTML pages, our application provides a RESTful JSON API. This is useful for building mobile apps or single-page applications (SPAs) that need to interact with the same data.
 
+## Prerequisites
+
+- [Server & Web Routes](./server-routes)
+- [Models & Codegen](./models)
+
+## What You’ll Learn
+
+- How to expose CRUD endpoints with Ormed-backed handlers
+- How DTOs shape API write payloads
+- How to share model logic between web and API surfaces
+
+## Step Outcome
+
+By the end of this page, you should have:
+
+- Stable JSON contracts for movie and genre resources
+- Clear status-code behavior for success, validation failure, and missing resources
+- DTO-backed write handlers with minimal parsing/validation boilerplate
+
 ## Movie endpoints
 
 The API endpoints use the same database logic as the web handlers but return JSON responses instead of HTML.
@@ -42,6 +61,16 @@ The API endpoints use the same database logic as the web handlers but return JSO
   </TabItem>
 </Tabs>
 
+### Movie API contract (summary)
+
+| Endpoint | Success | Common failures |
+| --- | --- | --- |
+| `GET /api/movies` | `200` | — |
+| `GET /api/movies/:id` | `200` | `404` when not found |
+| `POST /api/movies` | `201` | `400` validation / malformed JSON |
+| `PATCH /api/movies/:id` | `200` | `400` invalid payload, `404` missing |
+| `DELETE /api/movies/:id` | `200` | `404` missing |
+
 ## Genre endpoints
 
 <Tabs groupId="api-genres">
@@ -61,6 +90,13 @@ The API endpoints use the same database logic as the web handlers but return JSO
   </TabItem>
 </Tabs>
 
+## Error Shape
+
+Handlers in this tutorial return explicit JSON for failure modes. Typical responses are:
+
+- `{"error": "Movie not found"}` for missing records
+- `{"errors": [...]}` for validation failures
+
 ### Payload Format
 All API payloads use the field names defined in your models. For example, when creating a movie, the JSON should look like this:
 
@@ -73,3 +109,9 @@ All API payloads use the field names defined in your models. For example, when c
 }
 ```
 
+## Quick Manual Check
+
+```bash
+curl -s http://localhost:8080/api/movies | jq
+curl -s http://localhost:8080/api/genres | jq
+```

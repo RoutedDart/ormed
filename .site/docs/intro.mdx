@@ -10,6 +10,58 @@ import TabItem from '@theme/TabItem';
 
 Ormed is a **strongly-typed ORM for Dart** inspired by GORM, SQLAlchemy, and ActiveRecord-style patterns. It combines compile-time code generation with runtime flexibility to deliver type-safe database operations.
 
+## Prerequisites
+
+- Basic Dart familiarity
+
+## What You’ll Learn
+
+- What Ormed is and where it fits in a Dart stack
+- The recommended path from first setup to advanced usage
+- Which sections to use for day-1 onboarding vs deeper reference work
+
+## First 15 Minutes
+
+If you want the shortest path to a running query, do this:
+
+1. Install dependencies from [Installation](/docs/getting-started/installation).
+2. Run [Quick Start](/docs/getting-started/quick-start) in your project.
+3. Use [DataSource](/docs/queries/data-source) and [Query Builder](/docs/queries/query-builder) docs once your first query runs.
+
+Use [Adopt Existing Project](/docs/getting-started/adopt-existing-project) instead of Quick Start if your app already has an established schema/runtime.
+
+## Learning Path
+
+Follow this order to go from first contact to fluent usage:
+
+1. **Install + first run**: [Installation](/docs/getting-started/installation) -> [Quick Start](/docs/getting-started/quick-start)
+   Existing app path: [Adopt Existing Project](/docs/getting-started/adopt-existing-project)
+2. **Understand runtime setup**: [Configuration](/docs/getting-started/configuration) -> [Code Generation](/docs/getting-started/code-generation)
+3. **Model your domain**: [Models Overview](/docs/models/overview) -> [Relationships](/docs/models/relationships)
+4. **Query and mutate data**: [Queries Overview](/docs/queries/overview) -> [Repository](/docs/queries/repository)
+5. **Evolve schema safely**: [Migrations Overview](/docs/migrations/overview) -> [Running Migrations](/docs/migrations/running-migrations)
+6. **Choose deployment driver**: [Drivers Overview](/docs/drivers/overview) -> driver-specific pages
+7. **Operational fluency**: [Guides Overview](/docs/guides/overview), then [Testing](/docs/guides/testing) + [Observability](/docs/guides/observability)
+
+## How The Docs Are Organized
+
+The docs are intentionally split by learning mode, similar to mature framework docs:
+
+- `Start Here`: first successful setup and runtime boot
+- `Learn Ormed`: core model/query/migration mental model
+- `Database Drivers`: runtime-specific setup and behavior
+- `Build & Operate`: CLI workflows and production guides
+- `Reference`: capability docs and example index
+
+## Choose Your Path
+
+- New project:
+  - [Installation](/docs/getting-started/installation)
+  - [Quick Start](/docs/getting-started/quick-start)
+- Existing project:
+  - [Installation](/docs/getting-started/installation)
+  - [Adopt Existing Project](/docs/getting-started/adopt-existing-project)
+
 ## Features
 
 - **Type-safe queries** - Fluent query builder with compile-time type checking
@@ -19,7 +71,7 @@ Ormed is a **strongly-typed ORM for Dart** inspired by GORM, SQLAlchemy, and Act
 - **Soft deletes** - Built-in support for soft delete patterns
 - **Timestamps** - Automatic timestamp management for created_at/updated_at
 - **Migrations** - Fluent schema builder with reversible migrations
-- **Multi-database** - Support for SQLite, PostgreSQL, MySQL
+- **Multi-database** - Support for SQLite, PostgreSQL, MySQL, and D1
 - **Value codecs** - Custom type serialization between Dart and database
 
 ## Quick Example
@@ -48,8 +100,8 @@ Add Ormed to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  ormed: ^0.1.0
-  ormed_sqlite: ^0.1.0
+  ormed: ^0.2.0
+  ormed_sqlite: ^0.2.0
 
 dev_dependencies:
   build_runner: ^2.4.0
@@ -70,7 +122,8 @@ dart run build_runner build
 
 ## Next Steps
 
-- [Quick Start Guide](/docs/getting-started/quick-start) - Get up and running in 5 minutes
-- [Defining Models](/docs/models/defining-models) - Learn how to create ORM models
-- [Query Builder](/docs/queries/query-builder) - Master the fluent query API
-- [Migrations](/docs/migrations/overview) - Manage your database schema
+- [Quick Start Guide](/docs/getting-started/quick-start) - Ship your first working query
+- [Models Overview](/docs/models/overview) - Move from toy data to real domain models
+- [Queries Overview](/docs/queries/overview) - Build confidence with data access layers
+- [Migrations](/docs/migrations/overview) - Control schema changes confidently
+- [Drivers Overview](/docs/drivers/overview) - Pick the runtime target (SQLite, Postgres, MySQL, D1)

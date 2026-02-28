@@ -163,8 +163,7 @@ class MorphUserModelFactory {
 
   static ModelFactoryBuilder<MorphUser> factory({
     GeneratorProvider? generatorProvider,
-  }) => ModelFactoryBuilder<MorphUser>(
-    definition: definition,
+  }) => ModelFactoryRegistry.factoryFor<MorphUser>(
     generatorProvider: generatorProvider,
   );
 }
@@ -293,7 +292,7 @@ class _MorphUserPartialCopyWithSentinel {
 /// or model factories to create tracked model instances.
 class $MorphUser extends MorphUser with ModelAttributes implements OrmEntity {
   /// Internal constructor for [$MorphUser].
-  $MorphUser({required int id}) : super.new(id: id) {
+  $MorphUser({required int id}) : super(id: id) {
     _attachOrmRuntimeMetadata({'id': id});
   }
 
@@ -356,7 +355,7 @@ extension MorphUserOrmExtension on MorphUser {
     Object? id = _copyWithSentinel,
     Object? avatar = _copyWithSentinel,
   }) {
-    return MorphUser.new(
+    return MorphUser(
       id: identical(id, _copyWithSentinel) ? this.id : id as int,
       avatar: identical(avatar, _copyWithSentinel)
           ? this.avatar
@@ -570,8 +569,7 @@ class MorphPostPhotosModelFactory {
 
   static ModelFactoryBuilder<MorphPostPhotos> factory({
     GeneratorProvider? generatorProvider,
-  }) => ModelFactoryBuilder<MorphPostPhotos>(
-    definition: definition,
+  }) => ModelFactoryRegistry.factoryFor<MorphPostPhotos>(
     generatorProvider: generatorProvider,
   );
 }
@@ -708,7 +706,7 @@ class $MorphPostPhotos extends MorphPostPhotos
     with ModelAttributes
     implements OrmEntity {
   /// Internal constructor for [$MorphPostPhotos].
-  $MorphPostPhotos({required int id}) : super.new(id: id) {
+  $MorphPostPhotos({required int id}) : super(id: id) {
     _attachOrmRuntimeMetadata({'id': id});
   }
 
@@ -771,7 +769,7 @@ extension MorphPostPhotosOrmExtension on MorphPostPhotos {
     Object? id = _copyWithSentinel,
     Object? photos = _copyWithSentinel,
   }) {
-    return MorphPostPhotos.new(
+    return MorphPostPhotos(
       id: identical(id, _copyWithSentinel) ? this.id : id as int,
       photos: identical(photos, _copyWithSentinel)
           ? this.photos
@@ -1014,8 +1012,7 @@ class MorphPhotoModelFactory {
 
   static ModelFactoryBuilder<MorphPhoto> factory({
     GeneratorProvider? generatorProvider,
-  }) => ModelFactoryBuilder<MorphPhoto>(
-    definition: definition,
+  }) => ModelFactoryRegistry.factoryFor<MorphPhoto>(
     generatorProvider: generatorProvider,
   );
 }
@@ -1225,11 +1222,7 @@ class _MorphPhotoPartialCopyWithSentinel {
 class $MorphPhoto extends MorphPhoto with ModelAttributes implements OrmEntity {
   /// Internal constructor for [$MorphPhoto].
   $MorphPhoto({required int id, int? imageableId, String? imageableType})
-    : super.new(
-        id: id,
-        imageableId: imageableId,
-        imageableType: imageableType,
-      ) {
+    : super(id: id, imageableId: imageableId, imageableType: imageableType) {
     _attachOrmRuntimeMetadata({
       'id': id,
       'imageable_id': imageableId,
@@ -1322,7 +1315,7 @@ extension MorphPhotoOrmExtension on MorphPhoto {
     Object? imageableType = _copyWithSentinel,
     Object? imageable = _copyWithSentinel,
   }) {
-    return MorphPhoto.new(
+    return MorphPhoto(
       id: identical(id, _copyWithSentinel) ? this.id : id as int,
       imageableId: identical(imageableId, _copyWithSentinel)
           ? this.imageableId
@@ -1548,8 +1541,7 @@ class MorphPostTagsModelFactory {
 
   static ModelFactoryBuilder<MorphPostTags> factory({
     GeneratorProvider? generatorProvider,
-  }) => ModelFactoryBuilder<MorphPostTags>(
-    definition: definition,
+  }) => ModelFactoryRegistry.factoryFor<MorphPostTags>(
     generatorProvider: generatorProvider,
   );
 }
@@ -1686,7 +1678,7 @@ class $MorphPostTags extends MorphPostTags
     with ModelAttributes
     implements OrmEntity {
   /// Internal constructor for [$MorphPostTags].
-  $MorphPostTags({required int id}) : super.new(id: id) {
+  $MorphPostTags({required int id}) : super(id: id) {
     _attachOrmRuntimeMetadata({'id': id});
   }
 
@@ -1749,7 +1741,7 @@ extension MorphPostTagsOrmExtension on MorphPostTags {
     Object? id = _copyWithSentinel,
     Object? tags = _copyWithSentinel,
   }) {
-    return MorphPostTags.new(
+    return MorphPostTags(
       id: identical(id, _copyWithSentinel) ? this.id : id as int,
       tags: identical(tags, _copyWithSentinel)
           ? this.tags
@@ -1955,8 +1947,7 @@ class MorphTagModelFactory {
 
   static ModelFactoryBuilder<MorphTag> factory({
     GeneratorProvider? generatorProvider,
-  }) => ModelFactoryBuilder<MorphTag>(
-    definition: definition,
+  }) => ModelFactoryRegistry.factoryFor<MorphTag>(
     generatorProvider: generatorProvider,
   );
 }
@@ -2085,7 +2076,7 @@ class _MorphTagPartialCopyWithSentinel {
 /// or model factories to create tracked model instances.
 class $MorphTag extends MorphTag with ModelAttributes implements OrmEntity {
   /// Internal constructor for [$MorphTag].
-  $MorphTag({required int id}) : super.new(id: id) {
+  $MorphTag({required int id}) : super(id: id) {
     _attachOrmRuntimeMetadata({'id': id});
   }
 
@@ -2148,7 +2139,7 @@ extension MorphTagOrmExtension on MorphTag {
     Object? id = _copyWithSentinel,
     Object? posts = _copyWithSentinel,
   }) {
-    return MorphTag.new(
+    return MorphTag(
       id: identical(id, _copyWithSentinel) ? this.id : id as int,
       posts: identical(posts, _copyWithSentinel)
           ? this.posts

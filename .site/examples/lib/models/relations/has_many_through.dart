@@ -35,7 +35,11 @@ class AuthorPost extends Model<AuthorPost> {
 
 @OrmModel(table: 'comments')
 class PostComment extends Model<PostComment> {
-  const PostComment({required this.id, required this.postId, required this.body});
+  const PostComment({
+    required this.id,
+    required this.postId,
+    required this.body,
+  });
 
   @OrmField(isPrimaryKey: true)
   final int id;

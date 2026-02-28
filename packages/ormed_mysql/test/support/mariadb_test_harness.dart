@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:driver_tests/driver_tests.dart';
 import 'package:ormed/ormed.dart';
 import 'package:ormed_mysql/ormed_mysql.dart';
@@ -87,7 +85,7 @@ Future<MariaDbTestHarness> createMariaDbTestHarness({
 
   final resolvedUrl =
       url ??
-      Platform.environment['MARIADB_URL'] ??
+      OrmedEnvironment().firstNonEmpty(['MARIADB_URL']) ??
       'mariadb://root:secret@localhost:6604/orm_test';
 
   // Parse the connection URL for later use

@@ -6,6 +6,8 @@ on:
       - 'packages/ormed/**'
       - 'packages/ormed_cli/**'
       - 'packages/ormed_sqlite/**'
+      - 'packages/ormed_sqlite_core/**'
+      - 'packages/ormed_d1/**'
       - 'packages/ormed_postgres/**'
       - 'packages/ormed_mysql/**'
       - 'packages/driver_tests/**'
@@ -16,6 +18,8 @@ on:
       - 'packages/ormed/**'
       - 'packages/ormed_cli/**'
       - 'packages/ormed_sqlite/**'
+      - 'packages/ormed_sqlite_core/**'
+      - 'packages/ormed_d1/**'
       - 'packages/ormed_postgres/**'
       - 'packages/ormed_mysql/**'
       - 'packages/driver_tests/**'
@@ -75,6 +79,26 @@ jobs:
       - name: Run SQLite driver tests
         working-directory: packages/ormed_sqlite
         run: dart test --concurrency=1 --reporter=expanded
+
+  d1:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+      - name: Install SQLite3
+        run: sudo apt-get update && sudo apt-get install -y sqlite3 libsqlite3-dev
+      - name: Install dependencies
+        run: dart pub get
+      - name: Install D1 package dependencies
+        working-directory: packages/ormed_d1
+        run: dart pub get
+      - name: Run D1 mock tests
+        working-directory: packages/ormed_d1
+        env:
+          D1_TEST_MODE: mock
+        run: dart test --exclude-tags=integration --concurrency=1 --reporter=expanded
 
   postgres:
     runs-on: ubuntu-latest

@@ -45,7 +45,7 @@ class WipeCommand extends RunnerCommand {
     // final dropTypes = argResults?['drop-types'] == true;
 
     if (!confirmToProceed(force: force, action: 'wipe the database')) {
-      cliIO.warning('Wipe cancelled.');
+      cliIO.warn('Wipe cancelled.');
       return;
     }
 

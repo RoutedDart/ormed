@@ -4,24 +4,37 @@ sidebar_position: 5
 
 # Query Caching
 
-Query caching stores expensive database query results in memory, reducing database load and improving performance.
+Query caching stores query results in memory so repeated reads can skip database round-trips.
 
-## Basic Usage
+## Prerequisites
 
-### remember(Duration)
+- [Query Builder](./query-builder)
+- [Repository](./repository)
 
-Cache query results for a specified duration:
+## What You’ll Learn
+
+- How to enable and tune query-level caching
+- How cache invalidation and bypass options work
+- When to use memory caching vs direct DB reads
+
+## Step Outcome
+
+By the end of this page, you should be able to cache read-heavy queries safely, inspect cache behavior, and invalidate cache on write boundaries.
+
+## 1. Start with `remember`
+
+Cache query results for a specified TTL:
 
 ```dart file=../../examples/lib/caching/caching.dart#cache-remember
 ```
 
-**How it works:**
+How it works:
 1. First query executes against the database
 2. Results are stored in cache with the specified TTL
-3. Subsequent identical queries retrieve from cache
+3. Equivalent subsequent queries return cached rows
 4. Cache entry expires after the duration
 
-### rememberForever()
+### Use `rememberForever()` sparingly
 
 Cache results indefinitely (until manually cleared):
 
@@ -32,40 +45,40 @@ Cache results indefinitely (until manually cleared):
 Use `rememberForever()` carefully! Cached data won't update automatically. Clear the cache manually when data changes.
 :::
 
-### dontRemember()
+### Use `dontRemember()` to force fresh reads
 
 Bypass the cache for a specific query:
 
 ```dart file=../../examples/lib/caching/caching.dart#cache-dont-remember
 ```
 
-### Chaining with Other Methods
+### Cache works with normal query chaining
 
 ```dart file=../../examples/lib/caching/caching.dart#cache-chaining
 ```
 
-## Cache Management
+## 2. Manage Cache Lifecycle
 
-### Flushing the Cache
+### Flush all cache entries
 
 Clear all cached queries:
 
 ```dart file=../../examples/lib/caching/caching.dart#cache-flush
 ```
 
-### Vacuum Expired Entries
+### Vacuum expired entries
 
 Remove expired cache entries to free memory:
 
 ```dart file=../../examples/lib/caching/caching.dart#cache-vacuum
 ```
 
-### Cache Statistics
+### Inspect cache statistics
 
 ```dart file=../../examples/lib/caching/caching.dart#cache-stats
 ```
 
-## Cache Events
+## 3. Observe Cache Behavior
 
 Real-time notifications about cache operations:
 
@@ -78,27 +91,27 @@ Real-time notifications about cache operations:
 | `CacheFlushEvent` | All cache cleared | timestamp, entriesCleared |
 | `CacheVacuumEvent` | Expired entries cleaned | timestamp, entriesRemoved |
 
-### Listening to Events
+### Listen to events
 
 ```dart file=../../examples/lib/caching/caching.dart#cache-events-listening
 
 ```
 
-### Monitoring Cache Performance
+### Track hit/miss trends
 
 ```dart file=../../examples/lib/caching/caching.dart#cache-monitor
 
 ```
 
-### Integration with Metrics
+### Integrate with metrics backends
 
 ```dart file=../../examples/lib/caching/caching.dart#cache-metrics-integration
 
 ```
 
-## When to Use Caching
+## 4. Choose Good Cache Targets
 
-### ✅ Good Candidates
+Good candidates:
 
 - Dashboard statistics and reports
 - Reference data (countries, categories)
@@ -106,34 +119,34 @@ Real-time notifications about cache operations:
 - Popular content (trending posts)
 - Aggregated data
 
-### ❌ Poor Candidates
+Poor candidates:
 
 - Real-time data requiring immediate consistency
 - User-specific personalized content
 - Rapidly changing data (live scores, stock prices)
 - Write-heavy operations
 
-## Best Practices
+## 5. Apply Practical Patterns
 
-### Use Appropriate TTLs
+### Select TTLs by volatility
 
 ```dart file=../../examples/lib/caching/caching.dart#cache-best-practices-ttl
 
 ```
 
-### Cache Expensive Queries
+### Prioritize expensive queries
 
 ```dart file=../../examples/lib/caching/caching.dart#cache-expensive-queries
 
 ```
 
-### Clear Cache on Schema Changes
+### Clear cache after schema/data-shape changes
 
 ```dart file=../../examples/lib/caching/caching.dart#cache-clear-on-schema
 
 ```
 
-### Don't Cache User-Specific Data Globally
+### Avoid global caching for user-specific data
 
 ```dart file=../../examples/lib/caching/caching.dart#cache-user-specific-bad
 
@@ -149,7 +162,7 @@ Real-time notifications about cache operations:
 
 ```
 
-## Cache Invalidation Strategies
+## 6. Pick an Invalidation Strategy
 
 ### Time-based (TTL)
 
@@ -157,22 +170,26 @@ Real-time notifications about cache operations:
 
 ```
 
-### Manual Invalidation
+### Manual invalidation
 
 ```dart file=../../examples/lib/caching/caching.dart#cache-manual-invalidation
 
 ```
 
-### Event-driven
+### Event-driven invalidation
 
 ```dart file=../../examples/lib/caching/caching.dart#cache-event-driven-invalidation
 
 ```
 
-## Performance Benefits
+## Verify Your Setup
 
-Query caching can provide:
-- **10-100x faster** query response times
-- **Reduced database load** - Fewer connections and queries
-- **Better scalability** - Handle more concurrent users
-- **Lower costs** - Reduced database resource usage
+- Re-running the same read query produces cache hits.
+- Write paths invalidate cache intentionally (`flushQueryCache` or event-driven hook).
+- Hit ratio is monitored so cache usage can be tuned over time.
+
+## Read This Next
+
+- [Query Builder](./query-builder)
+- [Observability](../guides/observability)
+- [Best Practices](../guides/best-practices)

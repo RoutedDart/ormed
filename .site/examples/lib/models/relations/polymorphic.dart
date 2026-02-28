@@ -61,10 +61,7 @@ class MorphPhoto extends Model<MorphPhoto> {
   final String? imageableType;
 
   @OrmField(ignore: true)
-  @OrmRelation.morphTo(
-    foreignKey: 'imageable_id',
-    morphType: 'imageable_type',
-  )
+  @OrmRelation.morphTo(foreignKey: 'imageable_id', morphType: 'imageable_type')
   final OrmEntity? imageable;
 }
 // #endregion relation-morph-to
@@ -109,4 +106,5 @@ class MorphTag extends Model<MorphTag> {
   )
   final List<MorphPostTags> posts;
 }
+
 // #endregion relation-morphed-by-many

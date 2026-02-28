@@ -9,6 +9,17 @@ import TabItem from '@theme/TabItem';
 
 Model factories provide a convenient way to generate test data for your ORM models with deterministic seeding, field overrides, and persistence integration.
 
+## Prerequisites
+
+- [Defining Models](./defining-models)
+- [Guide: Testing](../guides/testing)
+
+## What You’ll Learn
+
+- How to enable generated model factories
+- How to define defaults, states, and hooks
+- How to produce deterministic test data quickly
+
 ## Quick Start
 
 ```dart file=../../examples/lib/factories/basic.dart#factory-quickstart
@@ -436,3 +447,9 @@ final user = await FactoryUser.factory()
   .withField('email', 'john@test.com')
   .create();
 ```
+
+## Read This Next
+
+- [Testing](../guides/testing)
+- [Model Methods](./model-methods)
+- [Repository](../queries/repository)

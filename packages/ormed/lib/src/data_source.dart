@@ -216,6 +216,9 @@ class DataSource {
   ///
   /// This uses the [DriverAdapterRegistry] to instantiate the driver
   /// defined in the configuration.
+  ///
+  /// If [registry] is omitted, an empty [ModelRegistry] is created so the
+  /// data source can still be bootstrapped for migration/raw SQL workflows.
   factory DataSource.fromConfig(
     OrmProjectConfig config, {
     ModelRegistry? registry,
@@ -227,7 +230,7 @@ class DataSource {
     return DataSource(
       DataSourceOptions(
         driver: DriverAdapterRegistry.create(driverConfig),
-        registry: registry,
+        registry: registry ?? ModelRegistry(),
         scopeRegistry: scopeRegistry,
         name: config.activeConnectionName,
         codecs: codecs,

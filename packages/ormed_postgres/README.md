@@ -20,40 +20,39 @@ PostgreSQL driver adapter for the ormed ORM. Implements the `DriverAdapter` cont
 
 ```yaml
 dependencies:
-  ormed: ^0.1.0
-  ormed_postgres: ^0.1.0
+  ormed: ^0.2.0
+  ormed_postgres: ^0.2.0
 ```
 
 ## Quick Start
 
 ```dart
-import 'package:ormed/ormed.dart';
+import 'package:your_app/src/database/datasource.dart';
+
+Future<void> main() async {
+  final ds = createDataSource(connection: 'default');
+  await ds.init();
+
+  final rows = await ds.connection.driver.queryRaw('SELECT 1 AS ok');
+  print(rows.first['ok']);
+
+  await ds.dispose();
+}
+```
+
+Generated apps should use `ormed init` scaffolding (`lib/src/database/config.dart` +
+`datasource.dart`) as the primary runtime entrypoint.
+
+### Low-level adapter usage
+
+```dart
 import 'package:ormed_postgres/ormed_postgres.dart';
 
 Future<void> main() async {
   final adapter = PostgresDriverAdapter.fromUrl(
     'postgres://postgres:postgres@localhost:5432/mydb',
   );
-  
-  final registry = ModelRegistry()..register(UserOrmDefinition.definition);
-  final context = QueryContext(
-    registry: registry,
-    driver: adapter,
-    codecRegistry: adapter.codecs,
-  );
-
-  await adapter.executeRaw(
-    'CREATE TABLE IF NOT EXISTS users '
-    '(id SERIAL PRIMARY KEY, email TEXT NOT NULL)',
-  );
-
-  await context.repository<\$User>().insert(
-    \$User(email: 'alice@example.com'),
-  );
-
-  final users = await context.query<\$User>().get();
-  print(users.first.email);
-  
+  await adapter.queryRaw('SELECT 1 AS ok');
   await adapter.close();
 }
 ```
@@ -86,6 +85,54 @@ PostgresDriverAdapter.custom(config: DatabaseConfig(
     'applicationName': 'my_app',
   },
 ))
+```
+
+## DataSource Helper Extensions
+
+```dart
+import 'dart:io';
+
+import 'package:ormed/ormed.dart';
+import 'package:ormed_postgres/ormed_postgres.dart';
+import 'package:your_app/src/models/user.orm.dart';
+
+Future<void> main() async {
+  final env = OrmedEnvironment.fromDirectory(Directory.current);
+  final registry = ModelRegistry()..register(UserOrmDefinition.definition);
+  final ds = DataSource(
+    registry.postgresDataSourceOptionsFromEnv(
+      name: 'default',
+      environment: env.values,
+    ),
+  );
+  await ds.init();
+
+  final rows = await ds.connection.driver.queryRaw('SELECT 1 AS ok');
+  print(rows.first['ok']);
+
+  await ds.dispose();
+}
+```
+
+## Environment Variables
+
+`postgresDataSourceOptionsFromEnv(...)` recognizes:
+
+- `DB_URL` or `DATABASE_URL`
+- `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`
+- `DB_SSLMODE`, `DB_TIMEZONE`, `DB_APP_NAME`
+
+Example `.env`:
+
+```bash
+DB_HOST=127.0.0.1
+DB_PORT=5432
+DB_NAME=mydb
+DB_USER=postgres
+DB_PASSWORD=postgres
+DB_SSLMODE=disable
+DB_TIMEZONE=UTC
+DB_APP_NAME=my_service
 ```
 
 ## Driver Capabilities

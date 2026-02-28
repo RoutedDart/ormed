@@ -197,8 +197,7 @@ class AuthorWithCommentsModelFactory {
 
   static ModelFactoryBuilder<AuthorWithComments> factory({
     GeneratorProvider? generatorProvider,
-  }) => ModelFactoryBuilder<AuthorWithComments>(
-    definition: definition,
+  }) => ModelFactoryRegistry.factoryFor<AuthorWithComments>(
     generatorProvider: generatorProvider,
   );
 }
@@ -384,7 +383,7 @@ class $AuthorWithComments extends AuthorWithComments
     implements OrmEntity {
   /// Internal constructor for [$AuthorWithComments].
   $AuthorWithComments({required int id, List<PostComment>? comments})
-    : super.new(id: id, comments: comments) {
+    : super(id: id, comments: comments) {
     _attachOrmRuntimeMetadata({'id': id, 'comments': comments});
   }
 
@@ -416,14 +415,6 @@ class $AuthorWithComments extends AuthorWithComments
 
   /// Tracked setter for [id].
   set id(int value) => setAttribute('id', value);
-
-  /// Tracked getter for [comments].
-  @override
-  List<PostComment>? get comments =>
-      getAttribute<List<PostComment>?>('comments') ?? super.comments;
-
-  /// Tracked setter for [comments].
-  set comments(List<PostComment>? value) => setAttribute('comments', value);
 
   void _attachOrmRuntimeMetadata(Map<String, Object?> values) {
     replaceAttributes(values);
@@ -458,7 +449,7 @@ extension AuthorWithCommentsOrmExtension on AuthorWithComments {
     Object? id = _copyWithSentinel,
     Object? comments = _copyWithSentinel,
   }) {
-    return AuthorWithComments.new(
+    return AuthorWithComments(
       id: identical(id, _copyWithSentinel) ? this.id : id as int,
       comments: identical(comments, _copyWithSentinel)
           ? this.comments
@@ -673,8 +664,7 @@ class AuthorPostModelFactory {
 
   static ModelFactoryBuilder<AuthorPost> factory({
     GeneratorProvider? generatorProvider,
-  }) => ModelFactoryBuilder<AuthorPost>(
-    definition: definition,
+  }) => ModelFactoryRegistry.factoryFor<AuthorPost>(
     generatorProvider: generatorProvider,
   );
 }
@@ -857,7 +847,7 @@ class _AuthorPostPartialCopyWithSentinel {
 class $AuthorPost extends AuthorPost with ModelAttributes implements OrmEntity {
   /// Internal constructor for [$AuthorPost].
   $AuthorPost({required int id, required int authorId})
-    : super.new(id: id, authorId: authorId) {
+    : super(id: id, authorId: authorId) {
     _attachOrmRuntimeMetadata({'id': id, 'author_id': authorId});
   }
 
@@ -911,7 +901,7 @@ extension AuthorPostOrmExtension on AuthorPost {
     Object? id = _copyWithSentinel,
     Object? authorId = _copyWithSentinel,
   }) {
-    return AuthorPost.new(
+    return AuthorPost(
       id: identical(id, _copyWithSentinel) ? this.id : id as int,
       authorId: identical(authorId, _copyWithSentinel)
           ? this.authorId
@@ -1136,8 +1126,7 @@ class PostCommentModelFactory {
 
   static ModelFactoryBuilder<PostComment> factory({
     GeneratorProvider? generatorProvider,
-  }) => ModelFactoryBuilder<PostComment>(
-    definition: definition,
+  }) => ModelFactoryRegistry.factoryFor<PostComment>(
     generatorProvider: generatorProvider,
   );
 }
@@ -1339,7 +1328,7 @@ class $PostComment extends PostComment
     implements OrmEntity {
   /// Internal constructor for [$PostComment].
   $PostComment({required int id, required int postId, required String body})
-    : super.new(id: id, postId: postId, body: body) {
+    : super(id: id, postId: postId, body: body) {
     _attachOrmRuntimeMetadata({'id': id, 'post_id': postId, 'body': body});
   }
 
@@ -1405,7 +1394,7 @@ extension PostCommentOrmExtension on PostComment {
     Object? postId = _copyWithSentinel,
     Object? body = _copyWithSentinel,
   }) {
-    return PostComment.new(
+    return PostComment(
       id: identical(id, _copyWithSentinel) ? this.id : id as int,
       postId: identical(postId, _copyWithSentinel)
           ? this.postId

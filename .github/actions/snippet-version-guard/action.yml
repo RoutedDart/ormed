@@ -1,0 +1,85 @@
+name: Snippet Version Guard
+description: Check dependency version snippets in docs/readmes against package manifest versions.
+
+inputs:
+  root:
+    description: Repository root to scan.
+    required: false
+    default: .
+  report-file:
+    description: Markdown report output path.
+    required: false
+    default: snippet-version-report.md
+  report-title:
+    description: Heading used in the generated markdown report.
+    required: false
+    default: Outdated snippet references
+  fail-on-drift:
+    description: Fail action when outdated snippet versions are found.
+    required: false
+    default: "false"
+  package-name-regex:
+    description: Regex used to select package names from manifests.
+    required: false
+    default: "^ormed"
+  package-manifest-globs:
+    description: |
+      Newline-separated glob patterns for manifests with `name:` and `version:`.
+      Example:
+      packages/*/pubspec.yaml
+    required: false
+    default: |
+      packages/*/pubspec.yaml
+  target-globs:
+    description: |
+      Newline-separated glob patterns for files to scan for dependency snippets.
+    required: false
+    default: |
+      README.md
+      packages/*/README.md
+      .site/docs/**/*.mdx
+      .site/docs/**/*.md
+      .site/examples/**/*.yaml
+      .site/examples/**/*.yml
+
+outputs:
+  status:
+    description: clean | outdated
+    value: ${{ steps.check.outputs.status }}
+  outdated_count:
+    description: Number of outdated snippets found.
+    value: ${{ steps.check.outputs.outdated_count }}
+  report_file:
+    description: Absolute path to generated report.
+    value: ${{ steps.check.outputs.report_file }}
+
+runs:
+  using: composite
+  steps:
+    - id: check
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        args=(
+          --root "${{ inputs.root }}"
+          --report-file "${{ inputs.report-file }}"
+          --report-title "${{ inputs.report-title }}"
+          --package-name-regex "${{ inputs.package-name-regex }}"
+        )
+
+        while IFS= read -r line; do
+          [ -z "$line" ] && continue
+          args+=(--manifest-glob "$line")
+        done <<< "${{ inputs.package-manifest-globs }}"
+
+        while IFS= read -r line; do
+          [ -z "$line" ] && continue
+          args+=(--target-glob "$line")
+        done <<< "${{ inputs.target-globs }}"
+
+        if [ "${{ inputs.fail-on-drift }}" = "true" ]; then
+          args+=(--fail-on-drift)
+        fi
+
+        python3 "${{ github.action_path }}/../../../tool/check_snippet_versions.py" "${args[@]}"

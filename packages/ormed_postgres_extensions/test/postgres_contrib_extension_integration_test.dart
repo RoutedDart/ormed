@@ -1,12 +1,10 @@
-import 'dart:io';
-
 import 'package:ormed/ormed.dart';
 import 'package:ormed_postgres/ormed_postgres.dart';
 import 'package:ormed_postgres_extensions/ormed_postgres_extensions.dart';
 import 'package:test/test.dart';
 
 Future<void> main() async {
-  final contribUrl = Platform.environment['POSTGRES_EXT_URL'];
+  final contribUrl = OrmedEnvironment().firstNonEmpty(['POSTGRES_EXT_URL']);
   if (contribUrl == null) {
     group('Postgres contrib extensions', () {
       test(

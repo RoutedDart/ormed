@@ -12,7 +12,7 @@ import '../models/post.dart';
 import '../models/post.orm.dart';
 import '../models/comment.dart';
 import '../models/comment.orm.dart';
-import '../orm_registry.g.dart';
+import 'package:ormed_examples/src/database/orm_registry.g.dart';
 
 // #region testing-basic-setup
 Future<void> basicTestSetup() async {
@@ -371,6 +371,7 @@ Future<void> factoryFixturesExample(DataSource dataSource) async {
 // #region testing-transaction-testing
 // Test transaction rollback and concurrent access
 
+// #region testing-transaction-rollback
 Future<void> transactionTestingExample(DataSource dataSource) async {
   // Test rollback on error
   try {
@@ -389,7 +390,9 @@ Future<void> transactionTestingExample(DataSource dataSource) async {
   final count = await dataSource.query<$User>().count();
   // expect(count, equals(0));
 }
+// #endregion testing-transaction-rollback
 
+// #region testing-transaction-concurrent
 Future<void> concurrentTransactionExample(DataSource dataSource) async {
   // Test concurrent inserts
   await Future.wait([
@@ -408,11 +411,13 @@ Future<void> concurrentTransactionExample(DataSource dataSource) async {
   final count = await dataSource.query<$User>().count();
   // expect(count, equals(2));
 }
+// #endregion testing-transaction-concurrent
 // #endregion testing-transaction-testing
 
 // #region testing-relationship-testing
 // Test eager loading, lazy loading, and N+1 prevention
 
+// #region testing-relationship-eager
 Future<void> eagerLoadingTest(DataSource dataSource) async {
   final (user, _) = await createUserWithPosts(dataSource, 3);
 
@@ -423,7 +428,9 @@ Future<void> eagerLoadingTest(DataSource dataSource) async {
   final posts = users.first.posts;
   // expect(posts?.length, equals(3));
 }
+// #endregion testing-relationship-eager
 
+// #region testing-relationship-lazy
 Future<void> lazyLoadingTest(DataSource dataSource) async {
   final (user, _) = await createUserWithPosts(dataSource, 2);
 
@@ -437,7 +444,9 @@ Future<void> lazyLoadingTest(DataSource dataSource) async {
       .get();
   // expect(posts.length, equals(2));
 }
+// #endregion testing-relationship-lazy
 
+// #region testing-relationship-n-plus-one
 Future<void> n1PreventionTest(DataSource dataSource) async {
   // Create multiple users with posts
   for (var i = 0; i < 3; i++) {
@@ -457,11 +466,13 @@ Future<void> n1PreventionTest(DataSource dataSource) async {
   // expect(users.length, equals(3));
   // expect(users.first.posts?.length, equals(2));
 }
+// #endregion testing-relationship-n-plus-one
 // #endregion testing-relationship-testing
 
 // #region testing-validation-errors
 // Test constraint violations and error handling
 
+// #region testing-validation-unique
 Future<void> uniqueConstraintTest(DataSource dataSource) async {
   final user1 = $User(id: 0, name: 'Test', email: 'unique@test.com');
   await dataSource.repo<$User>().insert(user1);
@@ -475,7 +486,9 @@ Future<void> uniqueConstraintTest(DataSource dataSource) async {
     // expect(e, isA<DatabaseException>());
   }
 }
+// #endregion testing-validation-unique
 
+// #region testing-validation-foreign-key
 Future<void> foreignKeyConstraintTest(DataSource dataSource) async {
   // Attempt to insert post with invalid user_id
   final post = $Post(id: 0, title: 'Test', authorId: 9999);
@@ -487,7 +500,9 @@ Future<void> foreignKeyConstraintTest(DataSource dataSource) async {
     // expect(e, isA<DatabaseException>());
   }
 }
+// #endregion testing-validation-foreign-key
 
+// #region testing-validation-not-null
 Future<void> notNullConstraintTest(DataSource dataSource) async {
   // Attempt to insert null into required field
   try {
@@ -496,6 +511,7 @@ Future<void> notNullConstraintTest(DataSource dataSource) async {
     // Validation or constraint error
   }
 }
+// #endregion testing-validation-not-null
 // #endregion testing-validation-errors
 
 // #region testing-performance
@@ -545,6 +561,7 @@ Future<void> detectN1Test(DataSource dataSource) async {
 // #region testing-data-integrity
 // Test foreign key cascades and integrity constraints
 
+// #region testing-data-integrity-cascade
 Future<void> cascadeDeleteTest(DataSource dataSource) async {
   final (user, posts) = await createUserWithPosts(dataSource, 3);
 
@@ -558,7 +575,9 @@ Future<void> cascadeDeleteTest(DataSource dataSource) async {
       .get();
   // expect(remainingPosts, isEmpty);
 }
+// #endregion testing-data-integrity-cascade
 
+// #region testing-data-integrity-referential
 Future<void> referentialIntegrityTest(DataSource dataSource) async {
   final user = $User(id: 0, name: 'Author', email: 'author@test.com');
   await dataSource.repo<$User>().insert(user);
@@ -574,11 +593,13 @@ Future<void> referentialIntegrityTest(DataSource dataSource) async {
     // expect(e, isA<DatabaseException>());
   }
 }
+// #endregion testing-data-integrity-referential
 // #endregion testing-data-integrity
 
 // #region testing-cleanup-strategies
 // Different cleanup approaches for test isolation
 
+// #region testing-cleanup-transaction
 Future<void> transactionRollbackCleanup(DataSource dataSource) async {
   // Strategy 1: Transaction rollback (fastest)
   // Use DatabaseIsolationStrategy.migrateWithTransactions in setUpOrmed
@@ -590,7 +611,9 @@ Future<void> transactionRollbackCleanup(DataSource dataSource) async {
     // Auto-rolled back after test
   });
 }
+// #endregion testing-cleanup-transaction
 
+// #region testing-cleanup-truncate
 Future<void> truncateCleanup(DataSource dataSource) async {
   // Strategy 2: Truncate tables (moderate speed)
   // Use DatabaseIsolationStrategy.truncate in setUpOrmed
@@ -601,7 +624,9 @@ Future<void> truncateCleanup(DataSource dataSource) async {
   await dataSource.execute('DELETE FROM posts');
   await dataSource.execute('DELETE FROM comments');
 }
+// #endregion testing-cleanup-truncate
 
+// #region testing-cleanup-recreate
 Future<void> recreateCleanup() async {
   // Strategy 3: Recreate database (slowest, most thorough)
   // Use DatabaseIsolationStrategy.recreate in setUpOrmed
@@ -619,5 +644,6 @@ Future<void> recreateCleanup() async {
   // Complete isolation, but slower
   await dataSource.dispose();
 }
+// #endregion testing-cleanup-recreate
 
 // #endregion testing-cleanup-strategies

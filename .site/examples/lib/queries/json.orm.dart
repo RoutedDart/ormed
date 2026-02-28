@@ -177,8 +177,7 @@ class UserModelFactory {
 
   static ModelFactoryBuilder<User> factory({
     GeneratorProvider? generatorProvider,
-  }) => ModelFactoryBuilder<User>(
-    definition: definition,
+  }) => ModelFactoryRegistry.factoryFor<User>(
     generatorProvider: generatorProvider,
   );
 }
@@ -376,8 +375,11 @@ class _UserPartialCopyWithSentinel {
 /// or model factories to create tracked model instances.
 class $User extends User with ModelAttributes implements OrmEntity {
   /// Internal constructor for [$User].
-  $User({int id = 0, required String email, Map<String, Object?>? metadata})
-    : super.new(id: id, email: email, metadata: metadata) {
+  $User({
+    required int id,
+    required String email,
+    Map<String, Object?>? metadata,
+  }) : super(id: id, email: email, metadata: metadata) {
     _attachOrmRuntimeMetadata({'id': id, 'email': email, 'metadata': metadata});
   }
 
@@ -444,7 +446,7 @@ extension UserOrmExtension on User {
     Object? email = _copyWithSentinel,
     Object? metadata = _copyWithSentinel,
   }) {
-    return User.new(
+    return User(
       id: identical(id, _copyWithSentinel) ? this.id : id as int,
       email: identical(email, _copyWithSentinel) ? this.email : email as String,
       metadata: identical(metadata, _copyWithSentinel)

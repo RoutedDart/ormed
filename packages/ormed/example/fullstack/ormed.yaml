@@ -1,3 +1,4 @@
+# #region fullstack-ormed-config
 driver:
   type: sqlite
   options:
@@ -10,3 +11,4 @@ migrations:
 seeds:
   directory: lib/src/database/seeders
   registry: lib/src/database/seeders.dart
+# #endregion fullstack-ormed-config

@@ -38,10 +38,23 @@ void main() {
     });
 
     // #region testing-api-list
+    // #region testing-api-list-movies
     test('GET /api/movies returns JSON list', () async {
       await withClient(harness, (client) async {
         final response = await client.get('/api/movies');
 
+        // #region testing-api-list-movies-core
+        response
+          ..assertStatus(HttpStatus.ok)
+          ..assertJson((json) {
+            json
+              ..has('movies')
+              ..countBetween('movies', 1, 10)
+              ..etc();
+          });
+        // #endregion testing-api-list-movies-core
+
+        // #region testing-api-list-movies-shape
         response
           ..assertStatus(HttpStatus.ok)
           ..assertJson((json) {
@@ -75,13 +88,28 @@ void main() {
               })
               ..etc();
           });
+        // #endregion testing-api-list-movies-shape
       });
     });
+    // #endregion testing-api-list-movies
 
+    // #region testing-api-list-genres
     test('GET /api/genres returns JSON list', () async {
       await withClient(harness, (client) async {
         final response = await client.get('/api/genres');
 
+        // #region testing-api-list-genres-core
+        response
+          ..assertStatus(HttpStatus.ok)
+          ..assertJson((json) {
+            json
+              ..has('genres')
+              ..countBetween('genres', 1, 10)
+              ..etc();
+          });
+        // #endregion testing-api-list-genres-core
+
+        // #region testing-api-list-genres-shape
         response
           ..assertStatus(HttpStatus.ok)
           ..assertJson((json) {
@@ -99,8 +127,10 @@ void main() {
               })
               ..etc();
           });
+        // #endregion testing-api-list-genres-shape
       });
     });
+    // #endregion testing-api-list-genres
     // #endregion testing-api-list
 
     // #region testing-api-genre-show
@@ -158,6 +188,7 @@ void main() {
     // #region testing-api-create
     test('POST /api/movies creates via DTOs', () async {
       await withClient(harness, (client) async {
+        // #region testing-api-create-request
         final genre = await GenreModelFactory.factory()
             .state({'name': 'API Genre', 'description': 'API factory'})
             .create(context: ds.context);
@@ -168,7 +199,9 @@ void main() {
           'summary': 'A coastal community reunites after decades.',
           'genreId': genre.id,
         });
+        // #endregion testing-api-create-request
 
+        // #region testing-api-create-assertions
         response
           ..assertStatus(HttpStatus.created)
           ..assertJson((json) {
@@ -183,6 +216,7 @@ void main() {
               })
               ..etc();
           });
+        // #endregion testing-api-create-assertions
       });
     });
     // #endregion testing-api-create

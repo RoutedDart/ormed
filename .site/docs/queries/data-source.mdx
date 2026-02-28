@@ -9,6 +9,32 @@ import TabItem from '@theme/TabItem';
 
 The `DataSource` class provides a modern, declarative API for configuring and using the ORM. It bundles driver configuration, entity registration, and connection management into a single interface.
 
+## Prerequisites
+
+- [Configuration](../getting-started/configuration)
+- [Drivers Overview](../drivers/overview)
+
+## What You’ll Learn
+
+- How `DataSourceOptions` shape runtime behavior
+- How initialization and default connection selection work
+- How to choose between generated helpers and manual datasource composition
+
+## Step Outcome
+
+By the end of this page, you should be able to:
+
+- Build a `DataSource` from generated options or manual options
+- Initialize and dispose connections safely
+- Route queries to default or named connections intentionally
+
+## Minimal Lifecycle (Always)
+
+1. Construct `DataSource` with options.
+2. Call `await ds.init()` once.
+3. Run query/repository operations.
+4. Call `await ds.dispose()` on shutdown/tests.
+
 ## Overview
 
 ```dart file=../../examples/lib/datasource.dart#datasource-overview
@@ -45,6 +71,8 @@ The `init()` method:
 - Is idempotent—calling it multiple times has no effect
 - Automatically registers the DataSource with `ConnectionManager`
 - Automatically sets it as default if it's the first DataSource initialized
+
+If you use static model helpers (`Users.query()`), make sure a default datasource has been initialized or explicitly set.
 
 ## Using Static Model Helpers
 
@@ -97,6 +125,8 @@ Execute multiple operations atomically:
 
 ```dart file=../../examples/lib/datasource.dart#datasource-transactions
 ```
+
+Use transactions for any sequence where partial success would leave inconsistent state.
 
 ## Ad-hoc Table Queries
 
@@ -186,6 +216,13 @@ Query through the `DataSource` you want (or pass `connection:` to static helpers
   </TabItem>
 </Tabs>
 
+## Common Production Pattern
+
+- Keep one primary write datasource.
+- Add read/analytics datasource only when needed.
+- Name connections explicitly (`primary`, `analytics`, tenant IDs).
+- Avoid implicit switching in shared utility code.
+
 ## Lifecycle Management
 
 ```dart file=../../examples/lib/datasource.dart#datasource-lifecycle
@@ -202,3 +239,10 @@ Disposing a default `DataSource` unregisters it from `ConnectionManager` and cle
 
 ```dart file=../../examples/lib/datasource.dart#datasource-custom-codecs
 ```
+
+## Read This Next
+
+- [Query Builder](./query-builder)
+- [Repository](./repository)
+- [Configuration](../getting-started/configuration)
+- [Multi-Database Support](../guides/multi-database)

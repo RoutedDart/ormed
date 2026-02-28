@@ -12,7 +12,11 @@ import 'src/commands/base/event_reporter.dart';
 import 'src/commands/base/shared.dart';
 
 export 'src/commands/base/shared.dart'
-    show OrmProjectContext, resolveOrmProject, createConnection;
+    show
+        OrmProjectContext,
+        resolveOrmProject,
+        resolveOrmProjectConfig,
+        createConnection;
 export 'src/config.dart'
     show
         OrmProjectConfig,
@@ -113,14 +117,19 @@ class _SeedRegistryRunCommand extends Command<void> {
         negatable: false,
         help: 'Dump queries without executing any seeder.',
       )
-      ..addOption('config', help: 'Path to orm.yaml to use for this run.')
+      ..addOption(
+        'config',
+        help:
+            'Path to ormed.yaml to use for this run (optional; defaults by convention).',
+      )
       ..addOption(
         'database',
         help: 'Override database/file for the active connection.',
       )
       ..addOption(
         'connection',
-        help: 'Override the active connection name from orm.yaml.',
+        help:
+            'Override the active connection name from ormed.yaml when present.',
       )
       ..addMultiOption(
         'run',
@@ -150,11 +159,15 @@ class _SeedRegistryRunCommand extends Command<void> {
     final requestedClasses =
         (args['run'] as List?)?.cast<String>() ?? const <String>[];
 
-    final project = resolveOrmProject(configPath: configArg);
-    var config = loadOrmProjectConfig(project.configFile);
+    final resolved = resolveOrmProjectConfig(configPath: configArg);
+    var config = resolved.config;
     if (connectionArg != null && connectionArg.trim().isNotEmpty) {
       config = config.withConnection(connectionArg);
     }
+    final project = OrmProjectContext(
+      root: resolved.root,
+      configFile: resolved.configFile,
+    );
     final effectiveConfig = databaseArg == null
         ? config
         : config.updateActiveConnection(

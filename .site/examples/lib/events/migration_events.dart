@@ -6,7 +6,7 @@ import 'package:ormed/ormed.dart';
 import '../migrations/basic.dart';
 import '../models/user.dart';
 import '../models/user.orm.dart';
-import '../orm_registry.g.dart';
+import 'package:ormed_examples/src/database/orm_registry.g.dart';
 
 // #region migration-event-listeners
 Future<void> migrationEventsExample(DriverAdapter schemaDriver) async {

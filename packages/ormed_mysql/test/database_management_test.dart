@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'dart:math';
 
 import 'package:ormed/ormed.dart';
@@ -10,7 +9,7 @@ final _testRunId = Random().nextInt(1000000);
 
 MySqlDriverAdapter _createAdapterFromEnv() {
   final url =
-      Platform.environment['MYSQL_URL'] ??
+      OrmedEnvironment().firstNonEmpty(['MYSQL_URL']) ??
       'mysql://root:secret@localhost:6605/orm_test';
 
   return MySqlDriverAdapter.custom(

@@ -12,10 +12,8 @@ void main() {
     late Directory scratchDir;
 
     setUp(() {
-      final repoRoot = Directory.current;
-
       scratchParent = Directory(
-        p.join(repoRoot.path, '.dart_tool', 'ormed_cli_tests'),
+        p.join(Directory.systemTemp.path, 'ormed_cli_tests'),
       );
       if (!scratchParent.existsSync()) {
         scratchParent.createSync(recursive: true);
@@ -69,7 +67,9 @@ dev_dependencies:
       await runInit(['init', '--no-interaction', '--skip-build']);
 
       final ormYaml = File(p.join(scratchDir.path, 'ormed.yaml'));
-      expect(ormYaml.existsSync(), isTrue);
+      expect(ormYaml.existsSync(), isFalse);
+      final envExample = File(p.join(scratchDir.path, '.env.example'));
+      expect(envExample.existsSync(), isTrue);
 
       final migrationsDir = Directory(
         p.join(scratchDir.path, 'lib/src/database/migrations'),
@@ -89,12 +89,286 @@ dev_dependencies:
       final defaultSeeder = File(
         p.join(seedersDir.path, 'database_seeder.dart'),
       );
-      expect(seedersDir.existsSync(), isTrue);
-      expect(seedersReg.existsSync(), isTrue);
-      expect(defaultSeeder.existsSync(), isTrue);
+      expect(seedersDir.existsSync(), isFalse);
+      expect(seedersReg.existsSync(), isFalse);
+      expect(defaultSeeder.existsSync(), isFalse);
 
       final schemaDump = File(p.join(scratchDir.path, 'database/schema.sql'));
       expect(schemaDump.parent.existsSync(), isTrue);
+
+      final datasourceFile = File(
+        p.join(scratchDir.path, 'lib/src/database/datasource.dart'),
+      );
+      final databaseConfigFile = File(
+        p.join(scratchDir.path, 'lib/src/database/config.dart'),
+      );
+      final testHelperFile = File(
+        p.join(scratchDir.path, 'lib/test/helpers/ormed_test_helper.dart'),
+      );
+      expect(datasourceFile.existsSync(), isTrue);
+      expect(databaseConfigFile.existsSync(), isTrue);
+      expect(testHelperFile.existsSync(), isFalse);
+      expect(
+        datasourceFile.readAsStringSync(),
+        contains('options ?? buildDataSourceOptions(connection: connection)'),
+      );
+      expect(
+        datasourceFile.readAsStringSync(),
+        contains('Map<String, DataSource> createDataSources'),
+      );
+      expect(
+        datasourceFile.readAsStringSync(),
+        contains('createDefaultDataSource'),
+      );
+      expect(
+        databaseConfigFile.readAsStringSync(),
+        contains(
+          'final env = OrmedEnvironment.fromDirectory(Directory.current);',
+        ),
+      );
+      expect(
+        databaseConfigFile.readAsStringSync(),
+        contains('buildAllDataSourceOptions()'),
+      );
+      expect(
+        databaseConfigFile.readAsStringSync(),
+        contains('buildDefaultDataSourceOptions'),
+      );
+    });
+
+    test('--with-seeders and --with-tests scaffold optional artifacts', () async {
+      await runInit([
+        'init',
+        '--with-seeders',
+        '--with-tests',
+        '--no-interaction',
+        '--skip-build',
+      ]);
+
+      final seedersDir = Directory(
+        p.join(scratchDir.path, 'lib/src/database/seeders'),
+      );
+      final seedersReg = File(
+        p.join(scratchDir.path, 'lib/src/database/seeders.dart'),
+      );
+      final defaultSeeder = File(
+        p.join(seedersDir.path, 'database_seeder.dart'),
+      );
+      final testHelperFile = File(
+        p.join(scratchDir.path, 'lib/test/helpers/ormed_test_helper.dart'),
+      );
+
+      expect(seedersDir.existsSync(), isTrue);
+      expect(seedersReg.existsSync(), isTrue);
+      expect(defaultSeeder.existsSync(), isTrue);
+      expect(testHelperFile.existsSync(), isTrue);
+    });
+
+    test('scaffolds datasource config for multiple connections', () async {
+      File(p.join(scratchDir.path, 'ormed.yaml')).writeAsStringSync('''
+default_connection: primary
+connections:
+  primary:
+    driver:
+      type: sqlite
+      options:
+        database: database/primary.sqlite
+    migrations:
+      directory: lib/src/database/migrations
+      registry: lib/src/database/migrations.dart
+      ledger_table: orm_migrations
+      schema_dump: database/schema
+  analytics:
+    driver:
+      type: sqlite
+      options:
+        database: database/analytics.sqlite
+    migrations:
+      directory: lib/src/database/migrations
+      registry: lib/src/database/migrations.dart
+      ledger_table: orm_migrations
+      schema_dump: database/schema
+''');
+
+      await runInit([
+        'init',
+        '--only=datasource',
+        '--no-interaction',
+        '--skip-build',
+      ]);
+
+      final datasourceFile = File(
+        p.join(scratchDir.path, 'lib/src/database/datasource.dart'),
+      );
+      final configFile = File(
+        p.join(scratchDir.path, 'lib/src/database/config.dart'),
+      );
+      final datasourceText = datasourceFile.readAsStringSync();
+      final configText = configFile.readAsStringSync();
+
+      expect(
+        datasourceText,
+        contains('buildDataSourceOptions(connection: connection)'),
+      );
+      expect(datasourceText, contains('createDataSources'));
+      expect(datasourceText, contains('createPrimaryDataSource'));
+      expect(datasourceText, contains('createAnalyticsDataSource'));
+
+      expect(
+        configText,
+        contains("const String defaultDataSourceConnection = 'primary';"),
+      );
+      expect(configText, contains("'primary'"));
+      expect(configText, contains("'analytics'"));
+      expect(configText, contains("case 'primary':"));
+      expect(configText, contains("case 'analytics':"));
+      expect(configText, contains('buildAllDataSourceOptions()'));
+      expect(configText, contains('buildPrimaryDataSourceOptions'));
+      expect(configText, contains('buildAnalyticsDataSourceOptions'));
+      expect(
+        configText,
+        contains("env.firstNonEmpty(['DB_PRIMARY_PATH', 'DB_PATH'])"),
+      );
+      expect(
+        configText,
+        contains(
+          "env.firstNonEmpty(['DB_ANALYTICS_PATH']) ?? 'database/analytics.sqlite'",
+        ),
+      );
+    });
+
+    test(
+      'isolates postgres env keys by connection in scaffolded config',
+      () async {
+        File(p.join(scratchDir.path, 'ormed.yaml')).writeAsStringSync('''
+default_connection: primary
+connections:
+  primary:
+    driver:
+      type: postgres
+      options:
+        host: primary.local
+        port: 5432
+        database: app_primary
+        username: app_user
+    migrations:
+      directory: lib/src/database/migrations
+      registry: lib/src/database/migrations.dart
+      ledger_table: orm_migrations
+      schema_dump: database/schema
+  analytics:
+    driver:
+      type: postgres
+      options:
+        host: analytics.local
+        port: 5433
+        database: app_analytics
+        username: analytics_user
+    migrations:
+      directory: lib/src/database/migrations
+      registry: lib/src/database/migrations.dart
+      ledger_table: orm_migrations
+      schema_dump: database/schema
+''');
+
+        await runInit([
+          'init',
+          '--only=datasource',
+          '--no-interaction',
+          '--skip-build',
+        ]);
+
+        final configFile = File(
+          p.join(scratchDir.path, 'lib/src/database/config.dart'),
+        );
+        final configText = configFile.readAsStringSync();
+
+        expect(
+          configText,
+          contains(
+            "_parseIntEnv(env.firstNonEmpty(['DB_PRIMARY_PORT', 'DB_PORT'])",
+          ),
+        );
+        expect(
+          configText,
+          contains("_parseIntEnv(env.firstNonEmpty(['DB_ANALYTICS_PORT'])"),
+        );
+        expect(
+          configText,
+          contains(
+            "env.firstNonEmpty(['DB_ANALYTICS_HOST']) ?? 'analytics.local'",
+          ),
+        );
+        expect(configText, contains("'DB_PASSWORD': password ?? ''"));
+        expect(
+          configText,
+          contains("return registry.postgresDataSourceOptionsFromEnv("),
+        );
+      },
+    );
+
+    test('scaffolds test helper derived from configured connections', () async {
+      File(p.join(scratchDir.path, 'ormed.yaml')).writeAsStringSync('''
+default_connection: primary
+connections:
+  primary:
+    driver:
+      type: sqlite
+      options:
+        database: database/primary.sqlite
+    migrations:
+      directory: lib/src/database/migrations
+      registry: lib/src/database/migrations.dart
+      ledger_table: orm_migrations
+      schema_dump: database/schema
+  analytics:
+    driver:
+      type: sqlite
+      options:
+        database: database/analytics.sqlite
+    migrations:
+      directory: lib/src/database/migrations
+      registry: lib/src/database/migrations.dart
+      ledger_table: orm_migrations
+      schema_dump: database/schema
+''');
+
+      await runInit([
+        'init',
+        '--only=tests',
+        '--no-interaction',
+        '--skip-build',
+      ]);
+
+      final helperFile = File(
+        p.join(scratchDir.path, 'lib/test/helpers/ormed_test_helper.dart'),
+      );
+      final configFile = File(
+        p.join(scratchDir.path, 'lib/src/database/config.dart'),
+      );
+      final datasourceFile = File(
+        p.join(scratchDir.path, 'lib/src/database/datasource.dart'),
+      );
+      expect(helperFile.existsSync(), isTrue);
+      expect(configFile.existsSync(), isTrue);
+      expect(datasourceFile.existsSync(), isTrue);
+      final helperText = helperFile.readAsStringSync();
+
+      expect(
+        helperText,
+        contains("import 'package:test_project/src/database/config.dart';"),
+      );
+      expect(
+        helperText,
+        contains("import 'package:test_project/src/database/datasource.dart';"),
+      );
+      expect(helperText, contains('final OrmedTestConfig primaryTestConfig'));
+      expect(helperText, contains('final OrmedTestConfig analyticsTestConfig'));
+      expect(helperText, contains('OrmConnection primaryTestConnection()'));
+      expect(helperText, contains('OrmConnection analyticsTestConnection()'));
+      expect(helperText, contains('_ensureGeneratedTestConfig('));
+      expect(helperText, isNot(contains('createDataSources();')));
+      expect(helperText, isNot(contains('SqliteDriverAdapter.inMemory()')));
     });
 
     test('--populate-existing scans and populates registries', () async {
@@ -125,6 +399,8 @@ dev_dependencies:
 
       await runInit([
         'init',
+        '--only=migrations',
+        '--only=seeders',
         '--no-interaction',
         '--populate-existing',
         '--skip-build',
@@ -197,7 +473,10 @@ dev_dependencies:
           return '';
         }
 
-        await runInit(['init', '--skip-build'], readLine: readLine);
+        await runInit(
+          ['init', '--only=migrations', '--only=seeders', '--skip-build'],
+          readLine: readLine,
+        );
 
         final migrationsReg = File(
           p.join(scratchDir.path, 'lib/src/database/migrations.dart'),
@@ -241,7 +520,10 @@ dev_dependencies:
       ).writeAsStringSync('class DeltaSeeder {}');
 
       String readLine() => 'n';
-      await runInit(['init', '--skip-build'], readLine: readLine);
+      await runInit(
+        ['init', '--only=migrations', '--only=seeders', '--skip-build'],
+        readLine: readLine,
+      );
 
       final migrationsReg = File(
         p.join(scratchDir.path, 'lib/src/database/migrations.dart'),
@@ -268,7 +550,13 @@ dev_dependencies:
 
     test('--force overwrites existing registry files', () async {
       // First run to scaffold.
-      await runInit(['init', '--no-interaction', '--skip-build']);
+      await runInit([
+        'init',
+        '--only=migrations',
+        '--only=seeders',
+        '--no-interaction',
+        '--skip-build',
+      ]);
 
       final migrationsReg = File(
         p.join(scratchDir.path, 'lib/src/database/migrations.dart'),
@@ -282,7 +570,14 @@ dev_dependencies:
       seedersReg.writeAsStringSync('// SENTINEL: SEEDERS');
 
       // Re-run with --force should overwrite to a clean state.
-      await runInit(['init', '--no-interaction', '--force', '--skip-build']);
+      await runInit([
+        'init',
+        '--only=migrations',
+        '--only=seeders',
+        '--no-interaction',
+        '--force',
+        '--skip-build',
+      ]);
 
       final regText = migrationsReg.readAsStringSync();
       final seedText = seedersReg.readAsStringSync();
@@ -344,11 +639,6 @@ seeds:
     );
 
     test('--only=datasource scaffolds only datasource', () async {
-      // Provide config so datasource can resolve driver types.
-      File(
-        p.join(scratchDir.path, 'ormed.yaml'),
-      ).writeAsStringSync(defaultOrmYaml('test_project'));
-
       await runInit([
         'init',
         '--only=datasource',
@@ -360,6 +650,10 @@ seeds:
         p.join(scratchDir.path, 'lib/src/database/datasource.dart'),
       );
       expect(datasourceFile.existsSync(), isTrue);
+      final datasourceConfigFile = File(
+        p.join(scratchDir.path, 'lib/src/database/config.dart'),
+      );
+      expect(datasourceConfigFile.existsSync(), isTrue);
 
       final migrationsReg = File(
         p.join(scratchDir.path, 'lib/src/database/migrations.dart'),
@@ -399,14 +693,12 @@ seeds:
       expect(datasourceFile.existsSync(), isFalse);
     });
 
-    test('--only without config errors when ormed.yaml is missing', () async {
-      var exitCode = 0;
-      await runInit([
-        'init',
-        '--only=datasource',
-        '--skip-build',
-      ], setExitCode: (code) => exitCode = code);
-      expect(exitCode, equals(64));
+    test('--only=migrations works without ormed.yaml', () async {
+      await runInit(['init', '--only=migrations', '--skip-build']);
+      final migrationsReg = File(
+        p.join(scratchDir.path, 'lib/src/database/migrations.dart'),
+      );
+      expect(migrationsReg.existsSync(), isTrue);
     });
 
     test(

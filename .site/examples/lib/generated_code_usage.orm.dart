@@ -167,8 +167,7 @@ class DocumentModelFactory {
 
   static ModelFactoryBuilder<Document> factory({
     GeneratorProvider? generatorProvider,
-  }) => ModelFactoryBuilder<Document>(
-    definition: definition,
+  }) => ModelFactoryRegistry.factoryFor<Document>(
     generatorProvider: generatorProvider,
   );
 }
@@ -333,8 +332,8 @@ class _DocumentPartialCopyWithSentinel {
 /// or model factories to create tracked model instances.
 class $Document extends Document with ModelAttributes implements OrmEntity {
   /// Internal constructor for [$Document].
-  $Document({int id = 0, Map<String, Object?>? metadata})
-    : super.new(id: id, metadata: metadata) {
+  $Document({required int id, Map<String, Object?>? metadata})
+    : super(id: id, metadata: metadata) {
     _attachOrmRuntimeMetadata({'id': id, 'metadata': metadata});
   }
 
@@ -389,7 +388,7 @@ extension DocumentOrmExtension on Document {
     Object? id = _copyWithSentinel,
     Object? metadata = _copyWithSentinel,
   }) {
-    return Document.new(
+    return Document(
       id: identical(id, _copyWithSentinel) ? this.id : id as int,
       metadata: identical(metadata, _copyWithSentinel)
           ? this.metadata

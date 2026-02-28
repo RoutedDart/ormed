@@ -56,7 +56,7 @@ class FreshCommand extends RunnerCommand {
       force: force,
       action: 'wipe and re-migrate the database',
     )) {
-      cliIO.warning('Fresh cancelled.');
+      cliIO.warn('Fresh cancelled.');
       return;
     }
 
@@ -87,7 +87,7 @@ class FreshCommand extends RunnerCommand {
     if (seed || seederOverride != null) {
       final seeds = config.seeds;
       if (seeds == null) {
-        cliIO.warning('No seeds configuration found. Skipping seeder.');
+        cliIO.warn('No seeds configuration found. Skipping seeder.');
       } else {
         cliIO.info('Running seeders...');
         await runSeedRegistry(

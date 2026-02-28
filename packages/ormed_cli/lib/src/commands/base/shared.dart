@@ -5,6 +5,8 @@ import 'dart:io';
 import 'package:artisanal/artisanal.dart';
 import 'package:ormed/ormed.dart';
 // ignore: unused_import
+import 'package:ormed_d1/ormed_d1.dart';
+// ignore: unused_import
 import 'package:ormed_mysql/ormed_mysql.dart';
 // ignore: unused_import
 import 'package:ormed_postgres/ormed_postgres.dart';
@@ -58,7 +60,19 @@ class ProcessMigrationRegistryLoader implements MigrationRegistryLoader {
     final path = registryPath ?? resolvePath(root, config.migrations.registry);
     final script = File(path);
     if (!script.existsSync()) {
-      throw StateError('Migration registry ${script.path} not found.');
+      final migrationsDir = Directory(
+        resolvePath(root, config.migrations.directory),
+      );
+      if (_hasMigrationSources(
+        migrationsDir,
+        missingRegistryPath: script.path,
+      )) {
+        throw StateError(
+          'Migration registry ${script.path} not found, but migration files exist in ${migrationsDir.path}. '
+          'Run `ormed makemigrations` (or `ormed migrations:sync`) to rebuild the registry.',
+        );
+      }
+      return const <MigrationDescriptor>[];
     }
     final result = await Process.run(
       'dart',
@@ -135,6 +149,28 @@ class ProcessMigrationRegistryLoader implements MigrationRegistryLoader {
   }
 }
 
+bool _hasMigrationSources(
+  Directory migrationsDir, {
+  required String missingRegistryPath,
+}) {
+  if (!migrationsDir.existsSync()) return false;
+  final normalizedRegistry = p.normalize(missingRegistryPath);
+  for (final entity in migrationsDir.listSync(recursive: true)) {
+    if (entity is! File) continue;
+    final normalizedPath = p.normalize(entity.path);
+    if (normalizedPath == normalizedRegistry) {
+      continue;
+    }
+    final base = p.basename(normalizedPath).toLowerCase();
+    if (normalizedPath.endsWith('.dart') ||
+        base == 'up.sql' ||
+        base == 'down.sql') {
+      return true;
+    }
+  }
+  return false;
+}
+
 class ProcessProjectSeederRunner implements ProjectSeederRunner {
   const ProcessProjectSeederRunner();
 
@@ -152,18 +188,20 @@ class ProcessProjectSeederRunner implements ProjectSeederRunner {
     final script = File(scriptPath);
     if (!script.existsSync()) {
       throw StateError(
-        'Seed registry ${script.path} not found. Run `ormed init`.',
+        'Seed registry ${script.path} not found. Run `ormed init --only=seeders --populate-existing`.',
       );
     }
     final relativeScript = p.relative(script.path, from: project.root.path);
     final args = <String>['run', relativeScript];
-    final configPath = p.relative(
-      project.configFile.path,
-      from: project.root.path,
-    );
-    args
-      ..add('--config')
-      ..add(configPath);
+    if (project.configFile != null) {
+      final configPath = p.relative(
+        project.configFile!.path,
+        from: project.root.path,
+      );
+      args
+        ..add('--config')
+        ..add(configPath);
+    }
     final targetClasses = (overrideClasses == null || overrideClasses.isEmpty)
         ? seeds.seedNames
         : overrideClasses;
@@ -272,18 +310,97 @@ void main(List<String> args) {
 /// Generate the default ormed.yaml content with the project-specific database path.
 String defaultOrmYaml(String packageName) =>
     '''
+# Ormed Configuration
+#
+# Environment Variables:
+#   Use \${VAR} to substitute environment variables
+#   Use \${VAR:-default} to provide a fallback value
+#   Create a .env file in this directory for local development
+#
+# Example:
+#   database: \${DB_PATH:-database/default.sqlite}
+#   password: \${DB_PASSWORD}
+
 driver:
-  type: sqlite
+  type: \${DB_TYPE:-sqlite}
   options:
-    database: database/$packageName.sqlite
+    # SQLite configuration (default)
+    database: \${DB_PATH:-database/$packageName.sqlite}
+
+    # PostgreSQL/MySQL configuration (uncomment and configure as needed)
+    # host: \${DB_HOST:-localhost}
+    # port: \${DB_PORT:-5432}
+    # database: \${DB_NAME:-$packageName}
+    # username: \${DB_USER:-postgres}
+    # password: \${DB_PASSWORD}
+    # sslmode: \${DB_SSLMODE:-disable}
+
+    # Cloudflare D1 configuration (DB_TYPE=d1)
+    # accountId: \${DB_D1_ACCOUNT_ID}
+    # databaseId: \${DB_D1_DATABASE_ID}
+    # apiToken: \${DB_D1_API_TOKEN}
+    # baseUrl: \${DB_D1_BASE_URL:-https://api.cloudflare.com/client/v4}
+
 migrations:
   directory: lib/src/database/migrations
   registry: lib/src/database/migrations.dart
-  ledger_table: orm_migrations
+  ledger_table: \${MIGRATION_TABLE:-orm_migrations}
   schema_dump: database/schema.sql
 seeds:
   directory: lib/src/database/seeders
   registry: lib/src/database/seeders.dart
+''';
+
+String defaultEnvExample(String packageName) =>
+    '''
+# Database Configuration
+# Copy this file to .env and update values for your environment
+# The .env file is automatically loaded by Ormed
+
+# Database Type: sqlite, d1, postgres, mysql, mariadb
+DB_TYPE=sqlite
+
+# SQLite Configuration
+DB_PATH=database/$packageName.sqlite
+
+# PostgreSQL/MySQL Configuration (uncomment when using)
+# DB_HOST=localhost
+# DB_PORT=5432
+# DB_NAME=$packageName
+# DB_USER=postgres
+# DB_PASSWORD=your_secure_password_here
+# DB_SSLMODE=disable
+
+# Cloudflare D1 Configuration (set DB_TYPE=d1)
+# DB_D1_ACCOUNT_ID=your_cloudflare_account_id
+# DB_D1_DATABASE_ID=your_d1_database_id
+# DB_D1_API_TOKEN=your_cloudflare_api_token
+# DB_D1_BASE_URL=https://api.cloudflare.com/client/v4
+
+# Migration Configuration
+MIGRATION_TABLE=orm_migrations
+''';
+
+const String defaultSeederTemplate =
+    '''
+import 'package:ormed/ormed.dart';
+
+/// Root seeder executed by `ormed seed` and `ormed migrate --seed`.
+class AppDatabaseSeeder extends DatabaseSeeder {
+  AppDatabaseSeeder(super.connection);
+
+  @override
+  Future<void> run() async {
+    // TODO: add seed logic here
+    // Examples:
+    // await seed<User>([
+    //   {'name': 'Admin User', 'email': 'admin@example.com'},
+    // ]);
+    //
+    // Or call other seeders:
+    // await call([UserSeeder.new, PostSeeder.new]);
+  }
+}
 ''';
 
 const String seedImportsMarkerStart = '// <ORM-SEED-IMPORTS>';
@@ -297,14 +414,14 @@ const String initialSeedRegistryTemplate =
 
 import 'package:ormed_cli/runtime.dart';
 import 'package:ormed/ormed.dart';
-import 'package:{{package_name}}/orm_registry.g.dart' as g;
+import 'package:{{package_name}}/src/database/orm_registry.g.dart' as g;
 
 import 'seeders/database_seeder.dart';
 $seedImportsMarkerStart
 $seedImportsMarkerEnd
 
 /// Registered seeders for this project.
-/// 
+///
 /// Used by `ormed seed` command and can be imported for programmatic seeding.
 final List<SeederRegistration> seeders = <SeederRegistration>[
 $seedRegistryMarkerStart
@@ -316,7 +433,7 @@ $seedRegistryMarkerEnd
 ];
 
 /// Run project seeders on the given connection.
-/// 
+///
 /// Example:
 /// ```dart
 /// await runProjectSeeds(connection);
@@ -344,8 +461,55 @@ Future<void> main(List<String> args) => runSeedRegistryEntrypoint(
     );
 ''';
 
+/// Returns true when at least one custom seeder source exists.
+///
+/// Ignores the generated root seeder (`database_seeder.dart`).
+bool hasSeederSources(Directory seedersDir) {
+  if (!seedersDir.existsSync()) return false;
+  for (final entity in seedersDir.listSync(recursive: true)) {
+    if (entity is! File) continue;
+    if (!entity.path.endsWith('.dart')) continue;
+    if (entity.path.endsWith('database_seeder.dart')) continue;
+    return true;
+  }
+  return false;
+}
+
+/// Creates missing seed scaffolding (directory, registry, default seeder).
+///
+/// Returns true when any files were created.
+bool ensureSeedScaffoldIfMissing({
+  required Directory root,
+  required SeedSection seeds,
+  required String packageName,
+}) {
+  var changed = false;
+  final seedersDir = Directory(resolvePath(root, seeds.directory));
+  if (!seedersDir.existsSync()) {
+    seedersDir.createSync(recursive: true);
+    changed = true;
+  }
+
+  final defaultSeeder = File(p.join(seedersDir.path, 'database_seeder.dart'));
+  if (!defaultSeeder.existsSync()) {
+    defaultSeeder.parent.createSync(recursive: true);
+    defaultSeeder.writeAsStringSync(defaultSeederTemplate);
+    changed = true;
+  }
+
+  final registry = File(resolvePath(root, seeds.registry));
+  if (!registry.existsSync()) {
+    registry.parent.createSync(recursive: true);
+    registry.writeAsStringSync(
+      initialSeedRegistryTemplate.replaceAll('{{package_name}}', packageName),
+    );
+    changed = true;
+  }
+  return changed;
+}
+
 const String initialTestHelperTemplate = r'''
-import 'package:{{package_name}}/orm_registry.g.dart';
+import 'package:{{package_name}}/src/database/orm_registry.g.dart';
 import 'package:ormed/ormed.dart';
 import 'package:ormed_sqlite/ormed_sqlite.dart';
 
@@ -404,12 +568,80 @@ class _CreateTestUsersTable extends Migration {
 }
 ''';
 
+/// Normalizes a free-form value into a lowercase snake_case token.
+///
+/// Used by migration/model command slugs and filenames.
+String normalizeSnakeCaseToken(String value) => value
+    .trim()
+    .replaceAllMapped(
+      RegExp(r'([a-z0-9])([A-Z])'),
+      (match) => '${match.group(1)}_${match.group(2)}',
+    )
+    .replaceAll(RegExp(r'[^a-zA-Z0-9]+'), '_')
+    .replaceAll(RegExp(r'_+'), '_')
+    .replaceAll(RegExp(r'^_+|_+$'), '')
+    .toLowerCase();
+
+/// Splits connection names into alphanumeric parts for generated symbols/keys.
+List<String> splitConnectionNameParts(String connectionName) => connectionName
+    .trim()
+    .replaceAll(RegExp(r'[^a-zA-Z0-9]+'), ' ')
+    .split(RegExp(r'\s+'))
+    .where((part) => part.isNotEmpty)
+    .toList(growable: false);
+
+/// Generates the connection segment used in `DB_<CONNECTION>_*` env keys.
+String connectionEnvToken(String connectionName) {
+  final normalized = splitConnectionNameParts(
+    connectionName,
+  ).map((part) => part.toUpperCase()).join('_');
+  if (normalized.isEmpty) {
+    return 'DEFAULT';
+  }
+  return RegExp(r'^[0-9]').hasMatch(normalized)
+      ? 'CONN_$normalized'
+      : normalized;
+}
+
+/// Builds a scoped connection env key such as `DB_PRIMARY_PATH`.
+String dbConnectionEnvKey(String connectionName, String suffix) {
+  final cleanedSuffix = suffix
+      .trim()
+      .toUpperCase()
+      .replaceAll(RegExp(r'[^A-Z0-9]+'), '_')
+      .replaceAll(RegExp(r'_+'), '_')
+      .replaceAll(RegExp(r'^_+|_+$'), '');
+  if (cleanedSuffix.isEmpty) {
+    throw ArgumentError.value(suffix, 'suffix', 'Suffix must not be empty.');
+  }
+  return 'DB_${connectionEnvToken(connectionName)}_$cleanedSuffix';
+}
+
 /// Context for a resolved ORM project, containing the root directory and config file.
 class OrmProjectContext {
-  OrmProjectContext({required this.root, required this.configFile});
+  OrmProjectContext({required this.root, this.configFile});
 
   final Directory root;
-  final File configFile;
+  final File? configFile;
+
+  bool get hasConfigFile => configFile != null;
+}
+
+/// Resolved ORM project settings used by file-generation commands.
+///
+/// When [configFile] is null, [config] is inferred from conventions.
+class ResolvedOrmProjectConfig {
+  const ResolvedOrmProjectConfig({
+    required this.root,
+    required this.config,
+    required this.configFile,
+  });
+
+  final Directory root;
+  final OrmProjectConfig config;
+  final File? configFile;
+
+  bool get hasConfigFile => configFile != null;
 }
 
 Directory findProjectRoot([Directory? start]) {
@@ -432,6 +664,54 @@ String getPackageName(Directory root) {
   }
   final pubspec = loadYaml(pubspecFile.readAsStringSync()) as YamlMap;
   return pubspec['name'] as String;
+}
+
+OrmProjectConfig _defaultOrmProjectConfigForRoot(Directory root) {
+  final packageName = getPackageName(root);
+  final env = OrmedEnvironment.fromDirectory(root);
+  final template = defaultOrmYaml(packageName);
+  final expanded = env.interpolate(template);
+  final yaml = loadYaml(expanded) as YamlMap;
+  return OrmProjectConfig.fromYaml(yaml);
+}
+
+/// Resolves project config, falling back to convention defaults when
+/// `ormed.yaml` is absent.
+ResolvedOrmProjectConfig resolveOrmProjectConfig({
+  String? configPath,
+  bool requireConfig = false,
+}) {
+  if (configPath != null && configPath.trim().isNotEmpty) {
+    final context = resolveOrmProject(configPath: configPath);
+    return ResolvedOrmProjectConfig(
+      root: context.root,
+      config: loadOrmProjectConfig(context.configFile!),
+      configFile: context.configFile,
+    );
+  }
+
+  final discoveredConfig = findOrmConfigFile();
+  if (discoveredConfig != null) {
+    final root = findProjectRoot(discoveredConfig.parent);
+    return ResolvedOrmProjectConfig(
+      root: root,
+      config: loadOrmProjectConfig(discoveredConfig),
+      configFile: discoveredConfig,
+    );
+  }
+
+  if (requireConfig) {
+    throw StateError(
+      'Missing ormed.yaml. Run `ormed init --with-config` or provide --config path.',
+    );
+  }
+
+  final root = findProjectRoot();
+  return ResolvedOrmProjectConfig(
+    root: root,
+    config: _defaultOrmProjectConfigForRoot(root),
+    configFile: null,
+  );
 }
 
 /// Resolves the ORM project context, locating the `ormed.yaml` config file.
@@ -461,7 +741,7 @@ OrmProjectContext resolveOrmProject({String? configPath}) {
   }
 
   throw StateError(
-    'Missing ormed.yaml. Run `ormed init` or provide --config path.',
+    'Missing ormed.yaml. Run `ormed init --with-config` or provide --config path.',
   );
 }
 
@@ -527,11 +807,28 @@ Future<OrmConnectionHandle> createConnection(
   String? targetConnection,
 }) {
   _bootstrapCliDrivers();
+  _ensureSqliteDirectories(root, config);
   return registerConnectionsFromConfig(
     root: root,
     config: config,
     targetConnection: targetConnection ?? config.connectionName,
   );
+}
+
+void _ensureSqliteDirectories(Directory root, OrmProjectConfig config) {
+  for (final definition in config.connections.values) {
+    final driverType = definition.driver.type.trim().toLowerCase();
+    if (driverType != 'sqlite') continue;
+    final dbPath = definition.driver.option('database');
+    if (dbPath == null || dbPath.trim().isEmpty) continue;
+    final resolvedPath = p.isAbsolute(dbPath)
+        ? p.normalize(dbPath)
+        : resolvePath(root, dbPath);
+    final dbDir = Directory(p.dirname(resolvedPath));
+    if (!dbDir.existsSync()) {
+      dbDir.createSync(recursive: true);
+    }
+  }
 }
 
 var _cliDriversBootstrapped = false;
@@ -540,6 +837,7 @@ void _bootstrapCliDrivers() {
   if (_cliDriversBootstrapped) return;
   _cliDriversBootstrapped = true;
   ensureSqliteDriverRegistration();
+  ensureD1DriverRegistration();
   ensureMySqlDriverRegistration();
   ensurePostgresDriverRegistration();
 }
@@ -551,6 +849,16 @@ Console get cliIO => _cliIO ??= Console(
   err: stderr.writeln,
 );
 Console? _cliIO;
+
+const String _configFallbackNotice =
+    'No ormed.yaml found; using convention defaults.';
+
+void printConfigFallbackNotice() {
+  cliIO.note(_configFallbackNotice);
+}
+
+@visibleForTesting
+String get configFallbackNoticeForTest => _configFallbackNotice;
 
 void printMigrationPlanPreview({
   required MigrationDescriptor descriptor,
@@ -616,8 +924,9 @@ bool confirmToProceed({bool force = false, String action = 'proceed'}) {
 
 bool _isProductionEnvironment() {
   const envVars = ['ORM_ENV', 'DART_ENV', 'FLUTTER_ENV', 'ENV'];
+  final env = OrmedEnvironment();
   for (final key in envVars) {
-    final value = Platform.environment[key];
+    final value = env.firstNonEmpty([key]);
     if (value != null && value.toLowerCase() == 'production') {
       return true;
     }

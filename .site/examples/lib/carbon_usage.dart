@@ -118,4 +118,5 @@ void carbonBestPractices() {
   final safeCopy = mutable.copy();
   safeCopy.addDays(5); // Only copy is affected
 }
+
 // #endregion carbon-best-practices

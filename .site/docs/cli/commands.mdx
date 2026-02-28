@@ -13,30 +13,76 @@ This page is a quick command index. For guides, start with:
 - [Seeding](./seeding)
 - [Schema tooling](./schema)
 
+## Prerequisites
+
+- [CLI Overview](./overview)
+
+## What You’ll Learn
+
+- The command surface area grouped by workflow
+- Common command flags and aliases
+- Which command to pick for each migration/seed/schema task
+
+## Step Outcome
+
+By the end of this page, you should be able to:
+
+- Identify the right command for scaffold/migrate/seed/schema operations
+- Use preview/status commands before mutating state
+- Navigate command aliases without ambiguity
+
 ## Global patterns
 
-- The CLI reads `ormed.yaml` (auto-discovered, or use `--config`).
+- The CLI uses convention defaults when `ormed.yaml` is absent.
+- If `ormed.yaml` exists, it is auto-discovered (or use `--config`).
 - Use `--connection <name>` to select a connection block.
 - Many commands support `--database` to override the driver database option.
+
+## Recommended Command Order
+
+1. `init`
+2. `make:migration` / `makemigrations`
+3. `migrate --pretend`
+4. `migrate`
+5. `seed`
+6. `migrate:status` / schema tools
 
 ## Commands
 
 ### `init`
 
-Scaffolds `ormed.yaml` plus migration/seeder registries:
+Scaffolds code-first datasource config plus migration registry by default:
 
 ```bash
 dart run ormed_cli:ormed init
+dart run ormed_cli:ormed init --with-seeders  # add seed scaffold
+dart run ormed_cli:ormed init --with-tests    # add test helper scaffold
+dart run ormed_cli:ormed init --with-config   # also scaffold ormed.yaml
 ```
 
-### `make`
+### `make` / `make:migration` / `make:seeder`
 
 Generates migrations or seeders:
 
 ```bash
-dart run ormed_cli:ormed make --name create_users_table
-dart run ormed_cli:ormed make --name create_users_table --format sql
-dart run ormed_cli:ormed make --name UserSeeder --seeder
+dart run ormed_cli:ormed make:migration --name create_users_table
+dart run ormed_cli:ormed make:migration --name create_users_table --format sql
+dart run ormed_cli:ormed make:seeder --name UserSeeder
+```
+
+Compatible aliases:
+- `make --name ...` (migration)
+- `make --name ... --seeder` (seeder)
+
+### `makemigrations`
+
+Generates migration(s) by diffing generated model metadata against current schema:
+
+```bash
+dart run ormed_cli:ormed makemigrations
+dart run ormed_cli:ormed makemigrations --sync-only
+dart run ormed_cli:ormed migrations:sync --dry-run
+dart run ormed_cli:ormed migrations:check
 ```
 
 ### `migrate`
@@ -108,4 +154,3 @@ dart run ormed_cli:ormed schema:describe --json
 dart run ormed_cli:ormed db:wipe
 dart run ormed_cli:ormed db:wipe --drop-views
 ```
-

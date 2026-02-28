@@ -1,0 +1,187 @@
+---
+sidebar_position: 5
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# Cloudflare D1
+
+`ormed_d1` is the Cloudflare D1 adapter for Ormed. It compiles SQLite-compatible SQL through `ormed_sqlite_core` and executes statements over the D1 HTTP API.
+
+## Prerequisites
+
+- [Drivers Overview](./overview)
+- [Configuration](../getting-started/configuration)
+
+## What You’ll Learn
+
+- How to run Ormed against remote D1
+- Which credentials and retry knobs are required
+- How env aliases (`D1_*`, `DB_D1_*`, `CF_ACCOUNT_ID`) are resolved
+
+## Step Outcome
+
+By the end of this page, you should have:
+
+- D1 credentials wired through env or explicit config
+- Retry/timeout settings tuned for your test/debug flow
+- A known-good connectivity check without unsupported SQLite functions
+
+## Install
+
+```yaml
+dependencies:
+  ormed: ^0.2.0
+  ormed_d1: ^0.1.0
+```
+
+## Use in code (DataSource)
+
+The recommended path is generated `config.dart` + `datasource.dart`.
+
+<Tabs groupId="d1-usage" defaultValue="env">
+  <TabItem value="env" label="From Env (recommended)">
+
+```dart
+import 'package:your_app/src/database/datasource.dart';
+
+Future<void> main() async {
+  final ds = createDataSource(connection: 'd1');
+  await ds.init();
+  await ds.dispose();
+}
+```
+
+  </TabItem>
+  <TabItem value="explicit" label="Explicit Credentials">
+
+```dart
+import 'package:ormed/ormed.dart';
+import 'package:ormed_d1/ormed_d1.dart';
+import 'package:your_app/src/database/config.dart';
+
+Future<void> main() async {
+  final base = buildDataSourceOptions(connection: 'd1');
+  final ds = DataSource(
+    base.copyWith(
+      driver: D1DriverAdapter.custom(
+        config: const DatabaseConfig(
+          driver: 'd1',
+          options: {
+            'accountId': 'your-account-id',
+            'databaseId': 'your-database-id',
+            'apiToken': 'your-api-token',
+          },
+        ),
+      ),
+    ),
+  );
+  await ds.init();
+  await ds.dispose();
+}
+```
+
+  </TabItem>
+</Tabs>
+
+## Code-first Helper APIs
+
+Use model-registry extensions when you want explicit setup in code:
+
+- `registry.d1DataSourceOptions(...)`
+- `registry.d1DataSource(...)`
+- `registry.d1DataSourceOptionsFromEnv(...)`
+- `registry.d1DataSourceFromEnv(...)`
+
+## Configure (`ormed.yaml`)
+
+```yaml
+driver:
+  type: d1
+  options:
+    accountId: ${DB_D1_ACCOUNT_ID}
+    databaseId: ${DB_D1_DATABASE_ID}
+    apiToken: ${DB_D1_API_TOKEN}
+    baseUrl: ${DB_D1_BASE_URL:-https://api.cloudflare.com/client/v4}
+```
+
+## Environment Variables
+
+`d1DataSourceOptionsFromEnv(...)` / `d1DataSourceFromEnv(...)` recognize:
+
+- `D1_ACCOUNT_ID`, `CF_ACCOUNT_ID`, `DB_D1_ACCOUNT_ID`
+- `D1_DATABASE_ID`, `DB_D1_DATABASE_ID`
+- `D1_API_TOKEN`, `D1_SECRET`, `DB_D1_API_TOKEN`
+- `D1_BASE_URL`, `DB_D1_BASE_URL`
+- `D1_RETRY_ATTEMPTS`, `DB_D1_RETRY_ATTEMPTS`
+- `D1_REQUEST_TIMEOUT_MS`, `DB_D1_REQUEST_TIMEOUT_MS`
+- `D1_RETRY_BASE_DELAY_MS`, `DB_D1_RETRY_BASE_DELAY_MS`
+- `D1_RETRY_MAX_DELAY_MS`, `DB_D1_RETRY_MAX_DELAY_MS`
+- `D1_DEBUG_LOG`, `DB_D1_DEBUG_LOG`
+
+Minimum required credentials:
+- account id
+- database id
+- API token
+
+## Quick Verification
+
+Use a simple query like `SELECT 1 AS ok` through your app bootstrap path. Avoid probing blocked functions (for example `sqlite_version()`).
+
+## Options
+
+| Option | Type | Default | Description |
+| --- | --- | --- | --- |
+| `accountId` | `String` | — | Cloudflare account id. |
+| `databaseId` | `String` | — | D1 database id. |
+| `apiToken` | `String` | — | Cloudflare API token with D1 access. |
+| `baseUrl` | `String` | `https://api.cloudflare.com/client/v4` | Cloudflare API base URL. |
+| `maxAttempts` | `int` | `5` | Max request attempts (initial + retries). |
+| `requestTimeoutMs` | `int` | `30000` | Per-request timeout in milliseconds. |
+| `retryBaseDelayMs` | `int` | `250` | Initial retry backoff delay. |
+| `retryMaxDelayMs` | `int` | `3000` | Max retry backoff delay cap. |
+| `debugLog` | `bool` | `false` | Enables transport request/response logging. |
+
+## Notes
+
+- D1 is remote and HTTP-backed, so expect higher latency than local SQLite.
+- Retry/backoff is built into the transport and configurable through options/env.
+
+## Troubleshooting
+
+### Slow tests or "hanging" runs
+
+Most long waits are retry/timeout behavior rather than deadlocks. Reduce retry
+envelope while debugging:
+
+- `D1_RETRY_ATTEMPTS=1`
+- `D1_REQUEST_TIMEOUT_MS=5000`
+- `D1_DEBUG_LOG=1`
+
+This makes failures surface quickly and prints request/response timing.
+
+### `not authorized to use function: sqlite_version`
+
+Cloudflare D1 blocks some SQLite functions. Avoid runtime probes like:
+
+- `SELECT sqlite_version()`
+
+Use neutral checks such as:
+
+- `SELECT 1 AS ok`
+
+### 401/403 auth errors
+
+Verify all required values are present and mapped correctly:
+
+- account id (`D1_ACCOUNT_ID` / `CF_ACCOUNT_ID` / `DB_D1_ACCOUNT_ID`)
+- database id (`D1_DATABASE_ID` / `DB_D1_DATABASE_ID`)
+- API token (`D1_API_TOKEN` / `D1_SECRET` / `DB_D1_API_TOKEN`)
+
+If requests still fail, lower retries/timeouts temporarily to surface root errors quickly while debugging.
+
+## Read This Next
+
+- [Guide: Testing](../guides/testing)
+- [Guide: Multi-database](../guides/multi-database)

@@ -25,4 +25,5 @@ class Profile extends Model<Profile> {
   final int userId;
   final String bio;
 }
+
 // #endregion relation-has-one
