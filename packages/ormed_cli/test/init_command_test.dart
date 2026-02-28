@@ -102,11 +102,23 @@ dev_dependencies:
       final databaseConfigFile = File(
         p.join(scratchDir.path, 'lib/src/database/config.dart'),
       );
+      final testHelperFile = File(
+        p.join(scratchDir.path, 'lib/test/helpers/ormed_test_helper.dart'),
+      );
       expect(datasourceFile.existsSync(), isTrue);
       expect(databaseConfigFile.existsSync(), isTrue);
+      expect(testHelperFile.existsSync(), isTrue);
       expect(
         datasourceFile.readAsStringSync(),
-        contains('options ?? buildDataSourceOptions()'),
+        contains('options ?? buildDataSourceOptions(connection: connection)'),
+      );
+      expect(
+        datasourceFile.readAsStringSync(),
+        contains('Map<String, DataSource> createDataSources'),
+      );
+      expect(
+        datasourceFile.readAsStringSync(),
+        contains('createDefaultDataSource'),
       );
       expect(
         databaseConfigFile.readAsStringSync(),
@@ -114,6 +126,144 @@ dev_dependencies:
           'final env = OrmedEnvironment.fromDirectory(Directory.current);',
         ),
       );
+      expect(
+        databaseConfigFile.readAsStringSync(),
+        contains('buildAllDataSourceOptions()'),
+      );
+      expect(
+        databaseConfigFile.readAsStringSync(),
+        contains('buildDefaultDataSourceOptions'),
+      );
+      final helperText = testHelperFile.readAsStringSync();
+      expect(
+        helperText,
+        contains("import 'package:test_project/src/database/config.dart';"),
+      );
+      expect(
+        helperText,
+        contains("import 'package:test_project/src/database/datasource.dart';"),
+      );
+      expect(helperText, contains('final OrmedTestConfig defaultTestConfig'));
+      expect(helperText, contains('OrmConnection defaultTestConnection()'));
+      expect(helperText, isNot(contains('analyticsTestConfig')));
+      expect(helperText, isNot(contains('SqliteDriverAdapter.inMemory()')));
+    });
+
+    test('scaffolds datasource config for multiple connections', () async {
+      File(p.join(scratchDir.path, 'ormed.yaml')).writeAsStringSync('''
+default_connection: primary
+connections:
+  primary:
+    driver:
+      type: sqlite
+      options:
+        database: database/primary.sqlite
+    migrations:
+      directory: lib/src/database/migrations
+      registry: lib/src/database/migrations.dart
+      ledger_table: orm_migrations
+      schema_dump: database/schema
+  analytics:
+    driver:
+      type: sqlite
+      options:
+        database: database/analytics.sqlite
+    migrations:
+      directory: lib/src/database/migrations
+      registry: lib/src/database/migrations.dart
+      ledger_table: orm_migrations
+      schema_dump: database/schema
+''');
+
+      await runInit([
+        'init',
+        '--only=datasource',
+        '--no-interaction',
+        '--skip-build',
+      ]);
+
+      final datasourceFile = File(
+        p.join(scratchDir.path, 'lib/src/database/datasource.dart'),
+      );
+      final configFile = File(
+        p.join(scratchDir.path, 'lib/src/database/config.dart'),
+      );
+      final datasourceText = datasourceFile.readAsStringSync();
+      final configText = configFile.readAsStringSync();
+
+      expect(
+        datasourceText,
+        contains('buildDataSourceOptions(connection: connection)'),
+      );
+      expect(datasourceText, contains('createDataSources'));
+      expect(datasourceText, contains('createPrimaryDataSource'));
+      expect(datasourceText, contains('createAnalyticsDataSource'));
+
+      expect(
+        configText,
+        contains("const String defaultDataSourceConnection = 'primary';"),
+      );
+      expect(configText, contains("'primary'"));
+      expect(configText, contains("'analytics'"));
+      expect(configText, contains("case 'primary':"));
+      expect(configText, contains("case 'analytics':"));
+      expect(configText, contains('buildAllDataSourceOptions()'));
+      expect(configText, contains('buildPrimaryDataSourceOptions'));
+      expect(configText, contains('buildAnalyticsDataSourceOptions'));
+    });
+
+    test('scaffolds test helper derived from configured connections', () async {
+      File(p.join(scratchDir.path, 'ormed.yaml')).writeAsStringSync('''
+default_connection: primary
+connections:
+  primary:
+    driver:
+      type: sqlite
+      options:
+        database: database/primary.sqlite
+    migrations:
+      directory: lib/src/database/migrations
+      registry: lib/src/database/migrations.dart
+      ledger_table: orm_migrations
+      schema_dump: database/schema
+  analytics:
+    driver:
+      type: sqlite
+      options:
+        database: database/analytics.sqlite
+    migrations:
+      directory: lib/src/database/migrations
+      registry: lib/src/database/migrations.dart
+      ledger_table: orm_migrations
+      schema_dump: database/schema
+''');
+
+      await runInit([
+        'init',
+        '--only=tests',
+        '--no-interaction',
+        '--skip-build',
+      ]);
+
+      final helperFile = File(
+        p.join(scratchDir.path, 'lib/test/helpers/ormed_test_helper.dart'),
+      );
+      expect(helperFile.existsSync(), isTrue);
+      final helperText = helperFile.readAsStringSync();
+
+      expect(
+        helperText,
+        contains("import 'package:test_project/src/database/config.dart';"),
+      );
+      expect(
+        helperText,
+        contains("import 'package:test_project/src/database/datasource.dart';"),
+      );
+      expect(helperText, contains('final OrmedTestConfig primaryTestConfig'));
+      expect(helperText, contains('final OrmedTestConfig analyticsTestConfig'));
+      expect(helperText, contains('OrmConnection primaryTestConnection()'));
+      expect(helperText, contains('OrmConnection analyticsTestConnection()'));
+      expect(helperText, isNot(contains('SqliteDriverAdapter.inMemory()')));
     });
 
     test('--populate-existing scans and populates registries', () async {

@@ -1,7 +1,8 @@
 import 'dart:io';
 import 'package:path/path.dart' as p;
 
-final testDir = 'orm_bootstrap_test';
+const testProjectName = 'orm_bootstrap_test';
+final testDir = p.join(Directory.systemTemp.path, testProjectName);
 final ormedRoot = Directory.current.path;
 
 Future<void> main(List<String> args) async {
@@ -13,10 +14,8 @@ Future<void> main(List<String> args) async {
     await createProject();
     await addDependencies();
     await initOrm(options);
+    await verifyConfigScaffoldMode(options);
     await verifyAnalyzerConfig();
-    if (options.multiDatasource) {
-      await configureMultipleDatasources();
-    }
     await createModel();
     await runBuildRunner();
     await createDartMigration();
@@ -104,6 +103,7 @@ Future<void> addDependencies() async {
 dependency_overrides:
   ormed: { path: "$ormedRoot/packages/ormed" }
   ormed_sqlite: { path: "$ormedRoot/packages/ormed_sqlite" }
+  ormed_sqlite_core: { path: "$ormedRoot/packages/ormed_sqlite_core" }
   ormed_cli: { path: "$ormedRoot/packages/ormed_cli" }
   ormed_postgres: { path: "$ormedRoot/packages/ormed_postgres" }
   ormed_mysql: { path: "$ormedRoot/packages/ormed_mysql" }
@@ -159,6 +159,25 @@ Future<void> initOrm(BootstrapOptions options) async {
   ], workingDirectory: testDir);
 }
 
+Future<void> verifyConfigScaffoldMode(BootstrapOptions options) async {
+  final configFile = File(p.join(testDir, 'ormed.yaml'));
+
+  if (options.verifyInitOnly) {
+    if (!configFile.existsSync()) {
+      throw Exception(
+        'Expected ormed.yaml to be scaffolded for this test mode.',
+      );
+    }
+    return;
+  }
+
+  if (configFile.existsSync()) {
+    throw Exception(
+      'Default init should remain configless; found unexpected ormed.yaml.',
+    );
+  }
+}
+
 Future<void> verifyInitOnlyArtifacts() async {
   print('Verifying init --only artifacts...');
   final ormYaml = File(p.join(testDir, 'ormed.yaml'));
@@ -181,47 +200,6 @@ Future<void> verifyInitOnlyArtifacts() async {
       'init --only should not scaffold migrations/seeders registry files',
     );
   }
-}
-
-Future<void> configureMultipleDatasources() async {
-  print('Configuring multiple datasources...');
-  final configFile = File(p.join(testDir, 'ormed.yaml'));
-  if (!configFile.existsSync()) {
-    throw Exception('ormed.yaml not found for multi-datasource config');
-  }
-
-  final primaryDb = 'database/$testDir.sqlite';
-  final analyticsDb = 'database/${testDir}_analytics.sqlite';
-  configFile.writeAsStringSync('''
-default_connection: primary
-connections:
-  primary:
-    driver:
-      type: sqlite
-      options:
-        database: $primaryDb
-    migrations:
-      directory: lib/src/database/migrations
-      registry: lib/src/database/migrations.dart
-      ledger_table: orm_migrations
-      schema_dump: database/schema.sql
-    seeds:
-      directory: lib/src/database/seeders
-      registry: lib/src/database/seeders.dart
-  analytics:
-    driver:
-      type: sqlite
-      options:
-        database: $analyticsDb
-    migrations:
-      directory: lib/src/database/migrations
-      registry: lib/src/database/migrations.dart
-      ledger_table: orm_migrations
-      schema_dump: database/schema.sql
-    seeds:
-      directory: lib/src/database/seeders
-      registry: lib/src/database/seeders.dart
-''');
 }
 
 Future<void> createModel() async {
@@ -277,12 +255,9 @@ Future<void> createDartMigration() async {
   await run('dart', [
     'run',
     'ormed_cli:ormed',
-    'make',
+    'make:migration',
     '--name',
     'create_users_table',
-    '--create',
-    '--table',
-    'users',
   ], workingDirectory: testDir);
 
   // Add columns to the migration
@@ -306,7 +281,7 @@ Future<void> createSqlMigration() async {
   await run('dart', [
     'run',
     'ormed_cli:ormed',
-    'make',
+    'make:migration',
     '--name',
     'add_bio_to_users',
     '--format',
@@ -341,10 +316,9 @@ Future<void> createSeeder() async {
   await run('dart', [
     'run',
     'ormed_cli:ormed',
-    'make',
+    'make:seeder',
     '--name',
     'UserSeeder',
-    '--seeder',
   ], workingDirectory: testDir);
 
   final seederFile = File(
@@ -458,8 +432,8 @@ Future<void> verifyFiles() async {
   print('Verifying generated files...');
   final files = [
     'lib/src/database/models/user.orm.dart',
-    'lib/orm_registry.g.dart',
-    'database/$testDir.sqlite',
+    'lib/src/database/orm_registry.g.dart',
+    'database/$testProjectName.sqlite',
   ];
 
   for (final f in files) {
@@ -488,13 +462,14 @@ Future<void> runVerificationScript(BootstrapOptions options) async {
   print('Creating and running verification script...');
   final verifyFile = File(p.join(testDir, 'bin/verify_orm.dart'));
   final multiDatasource = options.multiDatasource;
-  final analyticsDb = 'database/${testDir}_analytics.sqlite';
+  final analyticsDb = 'database/${testProjectName}_analytics.sqlite';
   verifyFile.writeAsStringSync('''
 import 'dart:io';
 import 'package:ormed/ormed.dart';
 import 'package:ormed_sqlite/ormed_sqlite.dart';
 import 'package:orm_bootstrap_test/src/database/models/user.dart';
-import 'package:orm_bootstrap_test/orm_registry.g.dart';
+import 'package:orm_bootstrap_test/src/database/datasource.dart';
+import 'package:orm_bootstrap_test/src/database/orm_registry.g.dart';
 
 void main() async {
   print('Bootstrapping ORM...');
@@ -510,24 +485,15 @@ void main() async {
   }
 
   print('Verifying database content...');
-  ${multiDatasource ? "ensureSqliteDriverRegistration();" : ""}
-  ${multiDatasource ? "final config = loadOrmConfig();" : ""}
-  ${multiDatasource ? "final sources = <String, DataSource>{};" : ""}
-  ${multiDatasource ? "for (final name in config.connections.keys) {" : ""}
-  ${multiDatasource ? "  final ds = DataSource.fromConfig(config.withConnection(name), registry: registry);" : ""}
-  ${multiDatasource ? "  await ds.init();" : ""}
-  ${multiDatasource ? "  sources[name] = ds;" : ""}
-  ${multiDatasource ? "}" : ""}
-  ${multiDatasource ? "if (sources.length < 2) {" : ""}
-  ${multiDatasource ? "  print('Error: Expected multiple datasources to be configured.');" : ""}
-  ${multiDatasource ? "  exit(1);" : ""}
-  ${multiDatasource ? "}" : ""}
-  ${multiDatasource ? "final primary = sources[config.activeConnectionName] ?? sources.values.first;" : ""}
-  ${multiDatasource ? "final analytics = sources['analytics'];" : ""}
+  ${multiDatasource ? "final primary = registry.sqliteFileDataSource(path: 'database/$testProjectName.sqlite', name: 'primary');" : ""}
+  ${multiDatasource ? "final analytics = registry.sqliteFileDataSource(path: '$analyticsDb', name: 'analytics');" : ""}
+  ${multiDatasource ? "await primary.init();" : ""}
+  ${multiDatasource ? "await analytics.init();" : ""}
+  ${multiDatasource ? "final sources = <String, DataSource>{'primary': primary, 'analytics': analytics};" : ""}
   ${multiDatasource ? "if (analytics != null) {" : ""}
   ${multiDatasource ? "  await analytics.connection.driver.executeRaw('SELECT 1');" : ""}
   ${multiDatasource ? "}" : ""}
-  ${multiDatasource ? "final connection = primary.connection;" : "final ds = DataSource(DataSourceOptions(driver: SqliteDriverAdapter.file('database/orm_bootstrap_test.sqlite'), registry: registry,)); await ds.init(); final connection = ds.connection;"}
+  ${multiDatasource ? "final connection = primary.connection;" : "final ds = createDataSource(); await ds.init(); final connection = ds.connection;"}
   final users = await connection.table('users').get();
 
   print('Found \${users.length} users');

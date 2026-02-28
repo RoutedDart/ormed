@@ -268,10 +268,7 @@ class InitCommand extends Command<void> {
 
       _writeFile(
         file: datasourceFile,
-        content: _datasourceTemplate.replaceAll(
-          '{{package_name}}',
-          packageName,
-        ),
+        content: _dataSourceTemplate(config: config),
         label: 'DataSource entrypoint',
         force: force,
         tracker: tracker,
@@ -285,10 +282,7 @@ class InitCommand extends Command<void> {
       );
       _writeFile(
         file: testHelperFile,
-        content: initialTestHelperTemplate.replaceAll(
-          '{{package_name}}',
-          packageName,
-        ),
+        content: _testHelperTemplate(config: config, packageName: packageName),
         label: 'test helper',
         force: force,
         tracker: tracker,
@@ -669,25 +663,131 @@ void _ensureAnalyzerPluginConfig({
   file.writeAsStringSync(lines.join('\n'));
 }
 
-const String _datasourceTemplate = r'''
+String _dataSourceTemplate({required OrmProjectConfig config}) {
+  final perConnection = _buildPerConnectionDataSourceHelpers(config);
+  return '''
 import 'package:ormed/ormed.dart';
 import 'config.dart';
 
 /// Creates a new DataSource using driver-specific helper options.
-DataSource createDataSource({DataSourceOptions? options}) {
-  return DataSource(options ?? buildDataSourceOptions());
+DataSource createDataSource({
+  DataSourceOptions? options,
+  String? connection,
+}) {
+  return DataSource(
+    options ?? buildDataSourceOptions(connection: connection),
+  );
+}
+
+/// Creates DataSources for every generated connection.
+Map<String, DataSource> createDataSources({
+  Map<String, DataSourceOptions> overrides = const {},
+}) {
+  final sources = <String, DataSource>{};
+  for (final connection in generatedDataSourceConnections) {
+    final options =
+        overrides[connection] ??
+        buildDataSourceOptions(connection: connection);
+    sources[connection] = DataSource(options);
+  }
+  return sources;
+}
+
+$perConnection
+''';
+}
+
+String _testHelperTemplate({
+  required OrmProjectConfig config,
+  required String packageName,
+}) {
+  final perConnectionConfigs = _buildPerConnectionTestConfigHelpers(config);
+  final perConnectionConnections = _buildPerConnectionTestConnectionHelpers(
+    config,
+  );
+  final supportedConnections = config.connections.keys
+      .map(_dartStringLiteral)
+      .join(', ');
+
+  return '''
+import 'package:ormed/ormed.dart';
+import 'package:$packageName/src/database/config.dart';
+import 'package:$packageName/src/database/datasource.dart';
+
+final Map<String, DataSource> _generatedTestDataSources = createDataSources();
+
+final Map<String, OrmedTestConfig> _generatedTestConfigs =
+    <String, OrmedTestConfig>{
+      for (final entry in _generatedTestDataSources.entries)
+        entry.key: setUpOrmed(
+          dataSource: entry.value,
+          migrations: const [_CreateTestUsersTable()],
+        ),
+    };
+
+OrmedTestConfig testConfig({String? connection}) {
+  final selectedConnection = (connection ?? defaultDataSourceConnection).trim();
+  final selectedConfig = _generatedTestConfigs[selectedConnection];
+  if (selectedConfig == null) {
+    throw ArgumentError.value(
+      selectedConnection,
+      'connection',
+      'Unknown generated datasource connection. Expected one of: $supportedConnections',
+    );
+  }
+  return selectedConfig;
+}
+
+OrmConnection testConnection({String? connection}) {
+  final selectedConnection = (connection ?? defaultDataSourceConnection).trim();
+  if (!_generatedTestConfigs.containsKey(selectedConnection)) {
+    throw ArgumentError.value(
+      selectedConnection,
+      'connection',
+      'Unknown generated datasource connection. Expected one of: $supportedConnections',
+    );
+  }
+  return ConnectionManager.instance.connection(selectedConnection);
+}
+
+$perConnectionConfigs
+
+$perConnectionConnections
+
+class _CreateTestUsersTable extends Migration {
+  const _CreateTestUsersTable();
+
+  @override
+  Future<void> up(SchemaBuilder schema) async {
+    schema.create('users', (table) {
+      table.integer('id').primaryKey().autoIncrement();
+      table.string('email').unique();
+      table.string('name');
+    });
+  }
+
+  @override
+  Future<void> down(SchemaBuilder schema) async {
+    schema.drop('users', ifExists: true);
+  }
 }
 ''';
+}
 
 String _databaseConfigTemplate({
   required OrmProjectConfig config,
   required String packageName,
   required String driverImports,
 }) {
-  final optionsBuilder = _buildDataSourceOptionsBuilder(
+  final optionsBuilder = _buildDataSourceOptionsSwitch(
     config: config,
     packageName: packageName,
   );
+  final perConnectionHelpers = _buildPerConnectionOptionsHelpers(config);
+  final defaultConnectionName = _dartStringLiteral(config.connectionName);
+  final generatedConnections = config.connections.keys
+      .map((name) => "  '${_dartStringLiteral(name)}',")
+      .join('\n');
   return '''
 import 'dart:io';
 
@@ -698,11 +798,29 @@ ${driverImports.isEmpty ? '' : '$driverImports\n'}
 /// Code-first runtime DataSource configuration used by [createDataSource].
 ///
 /// Keep `ormed.yaml` for CLI migration/seed workflows when needed.
-DataSourceOptions buildDataSourceOptions() {
+const String defaultDataSourceConnection = '$defaultConnectionName';
+
+/// Connections baked into this generated scaffold.
+const List<String> generatedDataSourceConnections = <String>[
+$generatedConnections
+];
+
+DataSourceOptions buildDataSourceOptions({String? connection}) {
   final env = OrmedEnvironment.fromDirectory(Directory.current);
   final registry = bootstrapOrm();
 $optionsBuilder
 }
+
+/// Builds DataSource options for all generated connections.
+Map<String, DataSourceOptions> buildAllDataSourceOptions() {
+  final options = <String, DataSourceOptions>{};
+  for (final connection in generatedDataSourceConnections) {
+    options[connection] = buildDataSourceOptions(connection: connection);
+  }
+  return options;
+}
+
+$perConnectionHelpers
 ''';
 }
 
@@ -716,67 +834,209 @@ const Map<String, String> _driverPackageMapping = {
 };
 
 OrmProjectConfig _defaultOrmProjectConfig(String packageName, Directory root) {
-  final parsed = loadYaml(defaultOrmYaml(packageName)) as YamlMap;
   final env = OrmedEnvironment.fromDirectory(root);
-  final expanded = expandEnv(parsed, env.values);
-  if (expanded is Map<String, Object?>) {
-    return OrmProjectConfig.fromMap(expanded);
-  }
-  if (expanded is Map) {
-    return OrmProjectConfig.fromMap(
-      Map<String, Object?>.from(
-        expanded.map(
-          (key, value) => MapEntry(key.toString(), value),
-        ),
-      ),
-    );
-  }
-  return OrmProjectConfig.fromYaml(parsed);
+  final template = defaultOrmYaml(packageName);
+  final expanded = env.interpolate(template);
+  final yaml = loadYaml(expanded) as YamlMap;
+  return OrmProjectConfig.fromYaml(yaml);
 }
 
-String _buildDataSourceOptionsBuilder({
+String _buildDataSourceOptionsSwitch({
   required OrmProjectConfig config,
   required String packageName,
 }) {
-  final driver = config.driver.type.trim().toLowerCase();
-  final connectionName = _dartStringLiteral(config.connectionName);
+  final buffer = StringBuffer()
+    ..writeln(
+      "  final selectedConnection = (connection ?? defaultDataSourceConnection).trim();",
+    )
+    ..writeln('  switch (selectedConnection) {');
+
+  for (final entry in config.connections.entries) {
+    final connectionName = _dartStringLiteral(entry.key);
+    final caseBody = _buildConnectionDataSourceOptionsBuilder(
+      driverConfig: entry.value.driver,
+      connectionName: entry.key,
+      packageName: packageName,
+    );
+
+    buffer.writeln("    case '$connectionName':");
+    for (final line in caseBody.split('\n')) {
+      if (line.trim().isEmpty) {
+        buffer.writeln('');
+      } else {
+        buffer.writeln('      $line');
+      }
+    }
+  }
+
+  final supported = config.connections.keys
+      .map((name) => _dartStringLiteral(name))
+      .join(', ');
+
+  buffer
+    ..writeln('    default:')
+    ..writeln('      throw ArgumentError.value(')
+    ..writeln("        selectedConnection,")
+    ..writeln("        'connection',")
+    ..writeln(
+      "        'Unknown generated datasource connection. Expected one of: $supported',",
+    )
+    ..writeln('      );')
+    ..writeln('  }');
+
+  return buffer.toString().trimRight();
+}
+
+String _buildConnectionDataSourceOptionsBuilder({
+  required DriverConfig driverConfig,
+  required String connectionName,
+  required String packageName,
+}) {
+  final driver = driverConfig.type.trim().toLowerCase();
+  final safeConnectionName = _dartStringLiteral(connectionName);
   switch (driver) {
     case 'sqlite':
       final defaultPath =
-          config.driver.option('database') ?? 'database/$packageName.sqlite';
-      return "  final path = env.string('DB_PATH', fallback: '${_dartStringLiteral(defaultPath)}');\n"
-          "  return registry.sqliteFileDataSourceOptions(path: path, name: '$connectionName');";
+          driverConfig.option('database') ?? 'database/$packageName.sqlite';
+      return "final path = env.string('DB_PATH', fallback: '${_dartStringLiteral(defaultPath)}');\n"
+          "return registry.sqliteFileDataSourceOptions(path: path, name: '$safeConnectionName');";
     case 'd1':
-      return "  return registry.d1DataSourceOptionsFromEnv(\n"
-          "    name: '$connectionName',\n"
-          "    environment: env.values,\n"
-          "  );";
+      return "return registry.d1DataSourceOptionsFromEnv(\n"
+          "  name: '$safeConnectionName',\n"
+          "  environment: env.values,\n"
+          ");";
     case 'postgres':
     case 'postgresql':
-      return "  return registry.postgresDataSourceOptionsFromEnv(\n"
-          "    name: '$connectionName',\n"
-          "    environment: env.values,\n"
-          "  );";
+      return "return registry.postgresDataSourceOptionsFromEnv(\n"
+          "  name: '$safeConnectionName',\n"
+          "  environment: env.values,\n"
+          ");";
     case 'mysql':
-      return "  return registry.mySqlDataSourceOptionsFromEnv(\n"
-          "    name: '$connectionName',\n"
-          "    environment: env.values,\n"
-          "  );";
+      return "return registry.mySqlDataSourceOptionsFromEnv(\n"
+          "  name: '$safeConnectionName',\n"
+          "  environment: env.values,\n"
+          ");";
     case 'mariadb':
-      return "  return registry.mariaDbDataSourceOptions(\n"
-          "    name: '$connectionName',\n"
-          "    host: env.string('DB_HOST', fallback: '127.0.0.1'),\n"
-          "    port: env.intValue('DB_PORT', fallback: 3306),\n"
-          "    database: env.string('DB_NAME', fallback: 'mysql'),\n"
-          "    username: env.string('DB_USER', fallback: 'root'),\n"
-          "    password: env.firstNonEmpty(['DB_PASSWORD']),\n"
-          "    secure: env.boolValue('DB_SSLMODE', fallback: false),\n"
-          "    timezone: env.string('DB_TIMEZONE', fallback: '+00:00'),\n"
-          "  );";
+      return "return registry.mariaDbDataSourceOptions(\n"
+          "  name: '$safeConnectionName',\n"
+          "  host: env.string('DB_HOST', fallback: '127.0.0.1'),\n"
+          "  port: env.intValue('DB_PORT', fallback: 3306),\n"
+          "  database: env.string('DB_NAME', fallback: 'mysql'),\n"
+          "  username: env.string('DB_USER', fallback: 'root'),\n"
+          "  password: env.firstNonEmpty(['DB_PASSWORD']),\n"
+          "  secure: env.boolValue('DB_SSLMODE', fallback: false),\n"
+          "  timezone: env.string('DB_TIMEZONE', fallback: '+00:00'),\n"
+          ");";
     default:
-      final normalized = _dartStringLiteral(config.driver.type);
-      return "  throw UnsupportedError('Unsupported driver type for scaffolded datasource config: $normalized');";
+      final normalized = _dartStringLiteral(driverConfig.type);
+      return "throw UnsupportedError('Unsupported driver type for scaffolded datasource config: $normalized');";
   }
+}
+
+String _buildPerConnectionOptionsHelpers(OrmProjectConfig config) {
+  final buffer = StringBuffer();
+  final used = <String>{};
+  for (final connection in config.connections.keys) {
+    final suffix = _connectionSuffix(connection, used: used);
+    final safeConnection = _dartStringLiteral(connection);
+    buffer
+      ..writeln('/// Convenience helper for "$safeConnection" connection.')
+      ..writeln('DataSourceOptions build${suffix}DataSourceOptions() {')
+      ..writeln(
+        "  return buildDataSourceOptions(connection: '$safeConnection');",
+      )
+      ..writeln('}')
+      ..writeln('');
+  }
+  return buffer.toString().trimRight();
+}
+
+String _buildPerConnectionDataSourceHelpers(OrmProjectConfig config) {
+  final buffer = StringBuffer();
+  final used = <String>{};
+  for (final connection in config.connections.keys) {
+    final suffix = _connectionSuffix(connection, used: used);
+    final safeConnection = _dartStringLiteral(connection);
+    buffer
+      ..writeln('/// Convenience helper for "$safeConnection" connection.')
+      ..writeln(
+        'DataSource create${suffix}DataSource({DataSourceOptions? options}) {',
+      )
+      ..writeln(
+        '  return DataSource(options ?? build${suffix}DataSourceOptions());',
+      )
+      ..writeln('}')
+      ..writeln('');
+  }
+  return buffer.toString().trimRight();
+}
+
+String _buildPerConnectionTestConfigHelpers(OrmProjectConfig config) {
+  final buffer = StringBuffer();
+  final used = <String>{};
+  for (final connection in config.connections.keys) {
+    final suffix = _connectionSuffix(connection, used: used);
+    final safeConnection = _dartStringLiteral(connection);
+    final variablePrefix = _lowerCamelCase(suffix);
+    buffer
+      ..writeln('/// Convenience test config for "$safeConnection" connection.')
+      ..writeln(
+        'final OrmedTestConfig ${variablePrefix}TestConfig = testConfig(connection: \'$safeConnection\');',
+      )
+      ..writeln('');
+  }
+  return buffer.toString().trimRight();
+}
+
+String _buildPerConnectionTestConnectionHelpers(OrmProjectConfig config) {
+  final buffer = StringBuffer();
+  final used = <String>{};
+  for (final connection in config.connections.keys) {
+    final suffix = _connectionSuffix(connection, used: used);
+    final safeConnection = _dartStringLiteral(connection);
+    buffer
+      ..writeln('/// Convenience test connection for "$safeConnection".')
+      ..writeln('OrmConnection ${_lowerCamelCase(suffix)}TestConnection() {')
+      ..writeln("  return testConnection(connection: '$safeConnection');")
+      ..writeln('}')
+      ..writeln('');
+  }
+  return buffer.toString().trimRight();
+}
+
+String _connectionSuffix(String connectionName, {required Set<String> used}) {
+  final normalized = connectionName
+      .trim()
+      .replaceAll(RegExp(r'[^a-zA-Z0-9]+'), ' ')
+      .split(RegExp(r'\s+'))
+      .where((part) => part.isNotEmpty)
+      .map(
+        (part) =>
+            part.substring(0, 1).toUpperCase() +
+            part.substring(1).toLowerCase(),
+      )
+      .join();
+
+  var suffix = normalized.isEmpty ? 'Default' : normalized;
+  if (RegExp(r'^[0-9]').hasMatch(suffix)) {
+    suffix = 'Conn$suffix';
+  }
+
+  var candidate = suffix;
+  var index = 2;
+  while (used.contains(candidate)) {
+    candidate = '$suffix$index';
+    index++;
+  }
+  used.add(candidate);
+  return candidate;
+}
+
+String _lowerCamelCase(String value) {
+  if (value.isEmpty) {
+    return value;
+  }
+  return value.substring(0, 1).toLowerCase() + value.substring(1);
 }
 
 String _dartStringLiteral(String value) =>
