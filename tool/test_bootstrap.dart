@@ -423,11 +423,19 @@ void main() {
 }
 ''');
 
+  final helperDbPath = p.join('database', '${testProjectName}_helper.sqlite');
+  final helperDbFile = File(p.join(testDir, helperDbPath));
+  if (helperDbFile.existsSync()) {
+    helperDbFile.deleteSync();
+  }
+
   print('Running helper-driven test...');
-  await run('dart', [
-    'test',
-    'test/ormed_helper_test.dart',
-  ], workingDirectory: testDir);
+  await run(
+    'dart',
+    ['test', 'test/ormed_helper_test.dart'],
+    workingDirectory: testDir,
+    environment: {'DB_PATH': helperDbPath},
+  );
 }
 
 Future<void> analyzeProject() async {
@@ -546,11 +554,13 @@ Future<void> run(
   String command,
   List<String> args, {
   String? workingDirectory,
+  Map<String, String>? environment,
 }) async {
   final process = await Process.start(
     command,
     args,
     workingDirectory: workingDirectory,
+    environment: environment,
     mode: ProcessStartMode.inheritStdio,
   );
 
