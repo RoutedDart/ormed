@@ -809,6 +809,7 @@ String _databaseConfigTemplate({
     config: config,
     packageName: packageName,
   );
+  final envParseHelpers = _buildGeneratedEnvParseHelpers(config);
   final perConnectionHelpers = _buildPerConnectionOptionsHelpers(config);
   final defaultConnectionName = _dartStringLiteral(config.connectionName);
   final generatedConnections = config.connections.keys
@@ -846,34 +847,7 @@ Map<String, DataSourceOptions> buildAllDataSourceOptions() {
   return options;
 }
 
-int _parseIntEnv(String? value, {required int fallback}) {
-  if (value == null || value.trim().isEmpty) {
-    return fallback;
-  }
-  return int.tryParse(value.trim()) ?? fallback;
-}
-
-bool _parseBoolEnv(String? value, {required bool fallback}) {
-  if (value == null || value.trim().isEmpty) {
-    return fallback;
-  }
-  final normalized = value.trim().toLowerCase();
-  if (normalized == '1' ||
-      normalized == 'true' ||
-      normalized == 'yes' ||
-      normalized == 'on' ||
-      normalized == 'require') {
-    return true;
-  }
-  if (normalized == '0' ||
-      normalized == 'false' ||
-      normalized == 'no' ||
-      normalized == 'off' ||
-      normalized == 'disable') {
-    return false;
-  }
-  return fallback;
-}
+$envParseHelpers
 
 $perConnectionHelpers
 ''';
@@ -887,6 +861,69 @@ const Map<String, String> _driverPackageMapping = {
   'postgres': 'ormed_postgres',
   'postgresql': 'ormed_postgres',
 };
+
+String _buildGeneratedEnvParseHelpers(OrmProjectConfig config) {
+  final driverTypes = config.connections.values
+      .map((connection) => connection.driver.type.trim().toLowerCase())
+      .toSet();
+
+  final needsIntParse = driverTypes.any(
+    (driver) => const {
+      'd1',
+      'postgres',
+      'postgresql',
+      'mysql',
+      'mariadb',
+    }.contains(driver),
+  );
+  final needsBoolParse = driverTypes.any(
+    (driver) => const {'d1', 'mysql', 'mariadb'}.contains(driver),
+  );
+
+  if (!needsIntParse && !needsBoolParse) {
+    return '';
+  }
+
+  final buffer = StringBuffer();
+  if (needsIntParse) {
+    buffer
+      ..writeln('int _parseIntEnv(String? value, {required int fallback}) {')
+      ..writeln('  if (value == null || value.trim().isEmpty) {')
+      ..writeln('    return fallback;')
+      ..writeln('  }')
+      ..writeln('  return int.tryParse(value.trim()) ?? fallback;')
+      ..writeln('}')
+      ..writeln();
+  }
+
+  if (needsBoolParse) {
+    buffer
+      ..writeln('bool _parseBoolEnv(String? value, {required bool fallback}) {')
+      ..writeln('  if (value == null || value.trim().isEmpty) {')
+      ..writeln('    return fallback;')
+      ..writeln('  }')
+      ..writeln('  final normalized = value.trim().toLowerCase();')
+      ..writeln("  if (normalized == '1' ||")
+      ..writeln("      normalized == 'true' ||")
+      ..writeln("      normalized == 'yes' ||")
+      ..writeln("      normalized == 'on' ||")
+      ..writeln("      normalized == 'require') {")
+      ..writeln('    return true;')
+      ..writeln('  }')
+      ..writeln("  if (normalized == '0' ||")
+      ..writeln("      normalized == 'false' ||")
+      ..writeln("      normalized == 'no' ||")
+      ..writeln("      normalized == 'off' ||")
+      ..writeln("      normalized == 'disable') {")
+      ..writeln('    return false;')
+      ..writeln('  }')
+      ..writeln('  return fallback;')
+      ..writeln('}')
+      ..writeln();
+  }
+
+  return buffer.toString().trimRight();
+}
 
 OrmProjectConfig _defaultOrmProjectConfig(String packageName, Directory root) {
   final env = OrmedEnvironment.fromDirectory(root);
