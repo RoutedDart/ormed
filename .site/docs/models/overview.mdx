@@ -17,6 +17,14 @@ Models are the source of truth for your domain: fields, relationships, casts, li
 - Which model features to adopt first versus later
 - A practical reading order for the model docs
 
+## Step Outcome
+
+By the end of this page, you should know:
+
+- Which model features to implement first for a new project
+- Which features to delay until core reads/writes are stable
+- What to read next for your current implementation phase
+
 ## Recommended Reading Order
 
 1. [Defining Models](./defining-models): shape entities and table mapping.
@@ -31,6 +39,14 @@ Models are the source of truth for your domain: fields, relationships, casts, li
 - Day-1: defining models, attributes/casts, relationships.
 - Once stable: scopes, methods, events.
 - Driver-specific behavior: add overrides only where needed.
+
+## Minimal Model Rollout
+
+1. Define model shape + table mapping.
+2. Add attributes/casts.
+3. Add required relationships.
+4. Run codegen and use generated DTOs in writes.
+5. Add scopes/events only after query/write paths are stable.
 
 ## Read This Next
 

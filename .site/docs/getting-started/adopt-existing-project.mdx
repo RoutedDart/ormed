@@ -17,6 +17,14 @@ This guide is for teams integrating Ormed into an already running Dart service.
 - How to scaffold generated runtime config into an existing codebase
 - How to choose a safe migration strategy for existing databases
 
+## Step Outcome
+
+By the end of this page, you should have:
+
+- Ormed wired into app startup behind a small adapter seam
+- One migrated query/write path running through Ormed
+- A documented decision on migration ownership
+
 ## Integration Strategy
 
 Use this sequence:
@@ -25,6 +33,13 @@ Use this sequence:
 2. Introduce a `DataSource` bootstrap path behind a small adapter layer.
 3. Move one model/query path at a time.
 4. Adopt migrations only after deciding ownership boundaries.
+
+## Safety Rules For Existing Systems
+
+1. Keep old and new paths side-by-side during rollout.
+2. Port read paths before write-heavy paths.
+3. Add regression tests for each ported endpoint/repository.
+4. Decide migration ownership once, then document it in-repo.
 
 ## 1. Add Dependencies
 
@@ -53,6 +68,7 @@ dart run ormed_cli:ormed init
 ```
 
 This adds `lib/src/database/config.dart` and `lib/src/database/datasource.dart` so runtime wiring is code-first by default.
+Seeder scaffold is optional and can be added later with `ormed init --only=seeders` (or by running `ormed make:seeder`).
 
 ## 3. Add Ormed Models Gradually
 
@@ -86,10 +102,12 @@ For existing databases, pick one approach and document it in your repo:
 - Ormed-owned going forward:
   - keep historical schema as-is
   - add a baseline migration entry representing current state
-  - use `ormed make` / `ormed migrate` for all new changes
+  - use `ormed make:migration` / `ormed migrate` for all new changes
 - Externally managed schema:
   - continue current migration tool
   - use Ormed primarily for models/queries/runtime access
+
+If your schema is already mature, start with externally managed migrations and switch only when your team agrees on ownership and release process.
 
 ## 6. Move Endpoints In Slices
 
@@ -100,6 +118,12 @@ Recommended order:
 1. Read-only queries
 2. Simple writes
 3. Transaction-heavy paths
+
+## Verify Before Expanding Scope
+
+- One endpoint fully moved (query + write + tests)
+- Startup/teardown remains stable in all environments
+- No schema drift introduced by accidental migration execution
 
 ## Read This Next
 

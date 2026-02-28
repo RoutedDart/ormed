@@ -20,6 +20,14 @@ Familiar convenience methods for working with model instances.
 - When to use model methods vs repository/query APIs
 - Which fields are excluded during replication
 
+## Step Outcome
+
+By the end of this page, you should be able to:
+
+- Use instance convenience methods without bypassing repository safety
+- Refresh/fresh models correctly for optimistic workflows
+- Use static helper entry points with explicit connection control
+
 ## Copying Models
 
 ### copyWith()
@@ -166,6 +174,8 @@ The `save()` method uses upsert semantics:
 
 ```
 
+Use repository methods for complex transactional writes; use instance helpers for localized model workflows.
+
 ## Touching
 
 ### touch() / touchOwners()
@@ -210,6 +220,12 @@ Notes:
 - For multi-database / multi-tenant flows, prefer explicit `DataSource`/`QueryContext`, or pass a connection name to the helper (`Users.query('analytics')`).
 - If multiple connections register the same model type, always pass `connection:` to avoid relying on implicit resolution.
 - You can override resolution by calling `Model.bindConnectionResolver(...)`. Clear it with `Model.unbindConnectionResolver()` (useful in tests or teardown).
+
+## Verify Method Semantics
+
+1. Test `fresh()` vs `refresh()` in a concurrent update scenario.
+2. Test `replicate()` exclusions (PK/timestamps/custom fields).
+3. Test static helper resolution with explicit connection names in multi-DB setups.
 
 ## Read This Next
 

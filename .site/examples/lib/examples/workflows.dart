@@ -8,7 +8,8 @@ import '../models/user.dart';
 import '../models/user.orm.dart';
 import '../models/post.dart';
 import '../models/post.orm.dart';
-import 'package:ormed_examples/src/database/orm_registry.g.dart';
+import '../src/database/datasource.dart';
+import '../src/database/orm_registry.g.dart';
 
 // #region sqlite-model
 // See models/user.dart for the User model definition
@@ -16,13 +17,8 @@ import 'package:ormed_examples/src/database/orm_registry.g.dart';
 
 // #region sqlite-query
 Future<void> sqliteQueryExample() async {
-  final dataSource = DataSource(
-    DataSourceOptions(
-      name: 'primary',
-      driver: SqliteDriverAdapter.file('database.sqlite'),
-      entities: generatedOrmModelDefinitions,
-    ),
-  );
+  // Uses generated code-first runtime configuration.
+  final dataSource = createDefaultDataSource();
   await dataSource.init();
 
   // Insert a user
@@ -42,23 +38,21 @@ Future<void> sqliteQueryExample() async {
 
   // Delete
   await dataSource.repo<$User>().delete(user);
+
+  await dataSource.dispose();
 }
 // #endregion sqlite-query
 
 // #region static-helpers-pattern
 Future<void> staticHelpersPattern() async {
-  final dataSource = DataSource(
-    DataSourceOptions(
-      name: 'primary',
-      driver: SqliteDriverAdapter.file('database.sqlite'),
-      entities: generatedOrmModelDefinitions,
-    ),
-  );
+  final dataSource = createDefaultDataSource();
   await dataSource.init();
 
   // Now static helpers work automatically!
   final users = await Users.query().get();
   final post = await Posts.find(1);
+
+  await dataSource.dispose();
 }
 // #endregion static-helpers-pattern
 

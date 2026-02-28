@@ -22,7 +22,7 @@ Part of the [Routed](https://github.com/RoutedDart) ecosystem.
 - **Aggregate loaders** — Load counts, sums, averages without fetching full collections (`loadCount()`, `loadSum()`, etc.)
 - **Relation mutations** — `associate()`, `attach()`, `detach()`, `sync()` for managing relationships
 - **Schema migrations** — CLI tooling for creating, applying, and rolling back migrations
-- **Multi-database support** — SQLite, PostgreSQL, MySQL/MariaDB
+- **Multi-database support** — SQLite, PostgreSQL, MySQL/MariaDB, Cloudflare D1
 - **Driver capabilities** — Runtime feature detection for cross-database compatibility
 - **Multi-tenant connections** — Manage multiple database connections with role-based routing
 - **Observability** — Structured logging, query instrumentation, and tracing hooks
@@ -39,6 +39,7 @@ Part of the [Routed](https://github.com/RoutedDart) ecosystem.
 | SQLite          | [ormed_sqlite](packages/ormed_sqlite)     | Via `package:sqlite3`          |
 | PostgreSQL      | [ormed_postgres](packages/ormed_postgres) | Via `package:postgres` (v3)    |
 | MySQL / MariaDB | [ormed_mysql](packages/ormed_mysql)       | Via `package:mysql_client_plus`|
+| Cloudflare D1   | [ormed_d1](packages/ormed_d1)             | Remote SQLite via D1 HTTP API  |
 
 ---
 
@@ -61,7 +62,18 @@ dev_dependencies:
   build_runner: ^2.4.0
 ```
 
-### 3. Define a model
+### 3. Scaffold runtime files
+
+```bash
+ormed init
+```
+
+This creates `lib/src/database/config.dart`, `lib/src/database/datasource.dart`,
+and migration scaffolding. Optional seed/test helpers can be added later with
+`ormed init --with-seeders` / `ormed init --with-tests` (or via
+`ormed make:seeder` for seed scaffolding).
+
+### 4. Define a model
 
 ```dart
 import 'package:ormed/ormed.dart';
@@ -82,13 +94,13 @@ class User {
 }
 ```
 
-### 3. Generate code
+### 5. Generate code
 
 ```bash
 dart run build_runner build --delete-conflicting-outputs
 ```
 
-### 4. Query your data
+### 6. Query your data
 
 ```dart
 import 'package:ormed/ormed.dart';
@@ -162,7 +174,13 @@ void main() async {
 
 ### Test helper
 
-`ormed init` also writes `lib/test/helpers/ormed_test_helper.dart`. The helper wires up two SQLite `DataSource`s via `setUpOrmed` (primary + analytics), runs the sample `_CreateTestUsersTable` migration, and exposes `primaryTestConfig`, `analyticsTestConfig`, and helpers such as `primaryTestConnection()`. Import it in your tests and pass the configs into `ormedGroup` or call `primaryTestConnection()` when you just need the default connection.
+Use `ormed init --with-tests` (or `ormed init --only=tests`) to scaffold
+`lib/test/helpers/ormed_test_helper.dart`. The helper wires up two SQLite
+`DataSource`s via `setUpOrmed` (primary + analytics), runs the sample
+`_CreateTestUsersTable` migration, and exposes `primaryTestConfig`,
+`analyticsTestConfig`, and helpers such as `primaryTestConnection()`. Import it
+in your tests and pass the configs into `ormedGroup` or call
+`primaryTestConnection()` when you just need the default connection.
 
 ---
 
@@ -176,6 +194,7 @@ void main() async {
 | [ormed_sqlite](packages/ormed_sqlite) | SQLite driver adapter with JSON1, FTS5, and R*Tree support |
 | [ormed_postgres](packages/ormed_postgres) | PostgreSQL driver with full type support (UUID, JSONB, arrays, ranges, FTS) |
 | [ormed_mysql](packages/ormed_mysql) | MySQL/MariaDB driver with JSON, spatial types, and SET support |
+| [ormed_d1](packages/ormed_d1) | Cloudflare D1 driver adapter using remote SQLite-compatible execution |
 | [ormed_cli](packages/ormed_cli) | CLI for migrations, seeding, schema operations, and project scaffolding |
 
 ### Development & Testing
@@ -194,7 +213,7 @@ void main() async {
 ormed init
 
 # Create a new migration
-ormed make --name create_users_table
+ormed make:migration --name create_users_table
 
 # Run pending migrations
 ormed migrate
@@ -215,8 +234,8 @@ ormed migrate:status
 ormed schema:describe
 
 # Run database seeders
-dart run ormed_cli:ormed seed
-dart run ormed_cli:ormed seed --class DemoContentSeeder
+ormed seed
+ormed seed --class DemoContentSeeder
 
 # Multi-tenant: apply to specific connection
 dart run ormed_cli:ormed migrate --connection analytics

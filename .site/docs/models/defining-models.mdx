@@ -20,6 +20,14 @@ Models in Ormed are Dart classes annotated with `@OrmModel` that map to database
 - Which generated artifacts each model produces
 - How to prepare models for querying, relations, and migrations
 
+## Step Outcome
+
+By the end of this page, you should have:
+
+- At least one annotated model that compiles
+- Generated `*.orm.dart` artifacts for that model
+- A clear mapping between class fields and DB columns
+
 ## Naming Conventions
 
 By default, Ormed follows standard database naming conventions:
@@ -32,6 +40,8 @@ By default, Ormed follows standard database naming conventions:
   - `createdAt` → `created_at`
 
 You can override these defaults using the `table` property on `@OrmModel` and the `columnName` property on `@OrmField`.
+
+Use defaults unless you are mapping to an existing schema or a strict naming standard.
 
 :::note Snippet context
 - Snippets show model definitions and generated usage in isolation.
@@ -49,6 +59,13 @@ After running `dart run build_runner build`, this generates:
 - `UserOrmDefinition` - Model metadata and static helpers
 - `$UserPartial` - Partial entity for projections
 - `UserInsertDto` / `UserUpdateDto` - Data transfer objects
+
+## Model Definition Checklist
+
+- Primary key field is explicit.
+- Optional DB columns use nullable Dart types.
+- Non-column relation fields are marked `@OrmField(ignore: true)`.
+- Table/column overrides are only added where needed.
 
 ## Model Annotation Options
 
@@ -181,6 +198,15 @@ Data transfer objects for insert/update operations:
 3. **Use nullable types** for optional fields - Clearer intent
 4. **Keep models focused** - One model per table
 5. **Use DTOs** for partial updates - More explicit than tracked models
+
+## Verify Before Continuing
+
+```bash
+dart run build_runner build --delete-conflicting-outputs
+dart analyze
+```
+
+You should see generated `*.orm.dart` files and no generation-related analyzer errors.
 
 ## Read This Next
 

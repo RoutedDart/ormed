@@ -21,6 +21,14 @@ A professional application often needs a command-line interface (CLI) for admini
 - How to structure a runbook for repeatable environments
 - How to keep app runtime and migration runtime in sync
 
+## Step Outcome
+
+By the end of this page, you should have:
+
+- A consistent command surface for serve/migrate/seed
+- A repeatable local workflow for daily development
+- A single checklist you can run before opening a PR
+
 ## Artisanal CLI
 
 The CLI is defined in `bin/cli.dart`. It uses a command-based structure where each task is a separate command.
@@ -82,4 +90,16 @@ dart run bin/server.dart
 
 # Start server using the CLI (recommended)
 dart run bin/cli.dart serve
+```
+
+## Daily Dev Checklist
+
+Run this sequence when you pull new changes or before review:
+
+```bash
+dart pub get
+dart run build_runner build --delete-conflicting-outputs
+dart run ormed_cli:ormed migrate
+dart run ormed_cli:ormed seed
+dart test
 ```

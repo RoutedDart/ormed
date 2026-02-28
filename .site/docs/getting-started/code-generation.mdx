@@ -17,6 +17,14 @@ Ormed uses source generation to produce strongly-typed models and metadata. Star
 - How to run generator workflows in build and watch modes
 - How generated registry and model artifacts plug into runtime boot
 
+## Step Outcome
+
+By the end of this page, you should have:
+
+- Generated `*.orm.dart` files for all annotated models
+- A generated registry file under `lib/src/database/`
+- A repeatable build/watch workflow for model changes
+
 ## Running the Generator
 
 Add the builder and run:
@@ -30,6 +38,8 @@ Or use watch mode for development:
 ```bash
 dart run build_runner watch --delete-conflicting-outputs
 ```
+
+Use `build` in CI and one-off runs. Use `watch` during active model iteration.
 
 ## Generated Files
 
@@ -156,6 +166,14 @@ Use `driverOverrides` for per-driver behavior:
 - Use `@OrmField(ignore: true)` for computed properties
 - Re-run `build_runner` whenever annotations change
 - Generated files are not meant to be edited manually
+
+## Verify Generation
+
+After running build:
+
+1. `dart analyze` has no generation-related errors.
+2. Your model directory includes fresh `*.orm.dart` files.
+3. `lib/src/database/orm_registry.g.dart` includes your newly added models.
 
 ## Read This Next
 

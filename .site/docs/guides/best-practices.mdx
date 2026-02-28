@@ -17,6 +17,14 @@ Recommended patterns, common pitfalls, and optimization strategies for using Orm
 - Common schema and model design pitfalls to avoid
 - Team-level conventions that keep Ormed code maintainable
 
+## Step Outcome
+
+By the end of this page, you should be able to:
+
+- Identify high-risk query/model patterns early in review
+- Apply consistent team conventions for performance and safety
+- Convert checklist items into lint/test guardrails
+
 ## Query Optimization
 
 ### Avoid N+1 Queries
@@ -59,6 +67,8 @@ Recommended patterns, common pitfalls, and optimization strategies for using Orm
 
 ```dart file=../../examples/lib/best_practices/best_practices.dart#pagination
 ```
+
+Treat unbounded reads as an explicit exception, not a default pattern.
 
 ### Index Frequently Queried Columns
 
@@ -221,6 +231,12 @@ Create DTOs for API responses:
 - [ ] Validate relations before mutations
 - [ ] Use scopes for multi-tenancy
 - [ ] Create DTOs for API responses
+
+## Verify Team Adoption
+
+1. Add review checklist items from this page to PR templates.
+2. Add analyzer/plugin rules for common anti-patterns.
+3. Add integration tests for query cardinality and relation loading paths.
 
 ## Read This Next
 

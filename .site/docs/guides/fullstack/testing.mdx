@@ -21,6 +21,14 @@ Testing is a first-class citizen in Ormed. We recommend a multi-layered testing 
 - When to run in-memory vs live-server tests
 - How `ormedGroup` supports reliable integration tests
 
+## Step Outcome
+
+By the end of this page, you should have:
+
+- A repeatable harness for DB + HTTP integration tests
+- Coverage for web routes, JSON APIs, and property-based stress cases
+- Optional Playwright checks for UI-level behavior
+
 ## The Test Harness
 
 To make testing easier, we use a "Harness" pattern powered by **[server_testing](https://pub.dev/packages/server_testing)** and **[server_testing_shelf](https://pub.dev/packages/server_testing_shelf)**. 
@@ -31,7 +39,13 @@ The harness allows us to run tests in two modes:
 
 The harness sets up a fresh in-memory database, initializes the storage service, and bootstraps the Shelf server for each test. This ensures that tests are isolated and don't interfere with each other.
 
-```dart file=../../../../packages/ormed/example/fullstack/test/support/movie_catalog_harness.dart#testing-setup
+```dart file=../../../../packages/ormed/example/fullstack/test/support/movie_catalog_harness.dart#testing-setup-config
+```
+
+```dart file=../../../../packages/ormed/example/fullstack/test/support/movie_catalog_harness.dart#testing-setup-harness-init
+```
+
+```dart file=../../../../packages/ormed/example/fullstack/test/support/movie_catalog_harness.dart#testing-setup-harness-handler
 
 ```
 
@@ -70,6 +84,19 @@ ormedGroup('My tests', (ds) {
 
 This pattern ensures that even when running tests in parallel, each `ormedGroup` has its own database state.
 
+## Run Tests By Layer
+
+```bash
+# Core Dart tests (web + api + property)
+dart test
+
+# Run only API tests
+dart test test/movie_catalog_api_test.dart
+
+# Run only property tests
+dart test test/movie_catalog_property_test.dart
+```
+
 ## Web route tests
 
 Web route tests verify that our HTML pages are rendered correctly and that form submissions work as expected. We use `server_testing` to make HTTP requests against our server and verify the output.
@@ -82,12 +109,18 @@ Web route tests verify that our HTML pages are rendered correctly and that form 
   </TabItem>
   <TabItem value="create" label="Create">
     Verifies that submitting the "New Movie" form creates a record in the database.
-    ```dart file=../../../../packages/ormed/example/fullstack/test/movie_catalog_web_test.dart#testing-web-create
+    ```dart file=../../../../packages/ormed/example/fullstack/test/movie_catalog_web_test.dart#testing-web-create-arrange
+    ```
+    ```dart file=../../../../packages/ormed/example/fullstack/test/movie_catalog_web_test.dart#testing-web-create-request
+    ```
+    ```dart file=../../../../packages/ormed/example/fullstack/test/movie_catalog_web_test.dart#testing-web-create-assertions
     ```
   </TabItem>
   <TabItem value="delete" label="Delete">
     Verifies that deleting a movie removes it from the database.
-    ```dart file=../../../../packages/ormed/example/fullstack/test/movie_catalog_web_test.dart#testing-web-delete
+    ```dart file=../../../../packages/ormed/example/fullstack/test/movie_catalog_web_test.dart#testing-web-delete-confirmation
+    ```
+    ```dart file=../../../../packages/ormed/example/fullstack/test/movie_catalog_web_test.dart#testing-web-delete-flow
     ```
   </TabItem>
 </Tabs>
@@ -117,11 +150,15 @@ When you call `assertJson()`, it provides an `AssertableJson` callback. This all
 <Tabs groupId="api-tests">
   <TabItem value="list" label="List">
     Notice how we chain assertions on the `response` and then use `assertJson` for deep structural verification.
-    ```dart file=../../../../packages/ormed/example/fullstack/test/movie_catalog_api_test.dart#testing-api-list
+    ```dart file=../../../../packages/ormed/example/fullstack/test/movie_catalog_api_test.dart#testing-api-list-movies-core
+    ```
+    ```dart file=../../../../packages/ormed/example/fullstack/test/movie_catalog_api_test.dart#testing-api-list-genres-core
     ```
   </TabItem>
   <TabItem value="create" label="Create">
-    ```dart file=../../../../packages/ormed/example/fullstack/test/movie_catalog_api_test.dart#testing-api-create
+    ```dart file=../../../../packages/ormed/example/fullstack/test/movie_catalog_api_test.dart#testing-api-create-request
+    ```
+    ```dart file=../../../../packages/ormed/example/fullstack/test/movie_catalog_api_test.dart#testing-api-create-assertions
     ```
   </TabItem>
 </Tabs>
@@ -145,11 +182,15 @@ Property testing is most effective when you generate complex, nested data struct
 - **Composition (`flatMap` & `map`)**: You don't just generate single values; you compose them. By using `flatMap`, you can chain multiple generators together to build a complete JSON payload. This ensures that every field in your request is being randomized simultaneously.
 
 1. **Define Generators**: Create individual generators for each field and compose them into a single payload generator.
-    ```dart file=../../../../packages/ormed/example/fullstack/test/movie_catalog_property_test.dart#testing-property-generators
+    ```dart file=../../../../packages/ormed/example/fullstack/test/movie_catalog_property_test.dart#testing-property-generators-fields
+    ```
+    ```dart file=../../../../packages/ormed/example/fullstack/test/movie_catalog_property_test.dart#testing-property-generators-payload
     ```
 
 2. **Define the Runner**: The `PropertyTestRunner` takes your generator and a test function. It executes your test logic (e.g., making an API request) hundreds of times, each time with a different payload.
-    ```dart file=../../../../packages/ormed/example/fullstack/test/movie_catalog_property_test.dart#testing-property-runner
+    ```dart file=../../../../packages/ormed/example/fullstack/test/movie_catalog_property_test.dart#testing-property-runner-definition
+    ```
+    ```dart file=../../../../packages/ormed/example/fullstack/test/movie_catalog_property_test.dart#testing-property-runner-assertions
     ```
 
 3. **Shrinking**: If a failure is found, the library automatically tries to "shrink" the failing input to the smallest possible value that still causes the failure, making it much easier to debug.
@@ -157,17 +198,23 @@ Property testing is most effective when you generate complex, nested data struct
 <Tabs groupId="property-tests">
   <TabItem value="chaos" label="Chaos IDs">
     Tests how the application handles random, potentially invalid IDs in the URL.
-    ```dart file=../../../../packages/ormed/example/fullstack/test/movie_catalog_property_test.dart#testing-property-chaos
+    ```dart file=../../../../packages/ormed/example/fullstack/test/movie_catalog_property_test.dart#testing-property-chaos-movies
+    ```
+    ```dart file=../../../../packages/ormed/example/fullstack/test/movie_catalog_property_test.dart#testing-property-chaos-genres
     ```
   </TabItem>
   <TabItem value="validation" label="Validation">
     Heavily stress tests the movie creation API. We combine valid `Gen` data with invalid `Chaos` data to ensure the API always returns a `400 Bad Request` instead of crashing.
-    ```dart file=../../../../packages/ormed/example/fullstack/test/movie_catalog_property_test.dart#testing-property-validation
+    ```dart file=../../../../packages/ormed/example/fullstack/test/movie_catalog_property_test.dart#testing-property-validation-invalid-json-runner
+    ```
+    ```dart file=../../../../packages/ormed/example/fullstack/test/movie_catalog_property_test.dart#testing-property-validation-patch-runner
     ```
   </TabItem>
   <TabItem value="upload" label="Upload">
     Tests file uploads with randomized content and filenames.
-    ```dart file=../../../../packages/ormed/example/fullstack/test/movie_catalog_property_test.dart#testing-property-upload
+    ```dart file=../../../../packages/ormed/example/fullstack/test/movie_catalog_property_test.dart#testing-property-upload-payload
+    ```
+    ```dart file=../../../../packages/ormed/example/fullstack/test/movie_catalog_property_test.dart#testing-property-upload-runner
     ```
   </TabItem>
 </Tabs>
@@ -189,7 +236,19 @@ organized as factories grow.
 
 ## Playwright UI tests
 
-```ts file=../../../../packages/ormed/example/fullstack/playwright/tests/movie_catalog.spec.ts
+```ts file=../../../../packages/ormed/example/fullstack/playwright/tests/movie_catalog.spec.ts#testing-playwright-helper-create-movie
+```
+
+```ts file=../../../../packages/ormed/example/fullstack/playwright/tests/movie_catalog.spec.ts#testing-playwright-catalog
+```
+
+```ts file=../../../../packages/ormed/example/fullstack/playwright/tests/movie_catalog.spec.ts#testing-playwright-create
+```
+
+```ts file=../../../../packages/ormed/example/fullstack/playwright/tests/movie_catalog.spec.ts#testing-playwright-edit
+```
+
+```ts file=../../../../packages/ormed/example/fullstack/playwright/tests/movie_catalog.spec.ts#testing-playwright-delete
 
 ```
 

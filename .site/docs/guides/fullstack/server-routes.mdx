@@ -21,13 +21,34 @@ The server is where everything comes together. We use **Shelf** to handle HTTP r
 - How web and API routes are organized
 - How to keep route modules maintainable as features grow
 
+## Step Outcome
+
+By the end of this page, you should have:
+
+- A bootable Shelf server with request ID + HTTP logging middleware
+- Router groups for web routes and API routes
+- Handler patterns for list/show/create/update/delete flows
+
+## Request Lifecycle (What Happens Per Request)
+
+1. Request enters the Shelf `Pipeline`.
+2. `requestIdMiddleware()` stamps trace context.
+3. HTTP logging middleware captures timing and status.
+4. Router dispatches to web (`/`, `/movies/...`) or API (`/api/...`) handlers.
+5. Handler reads/writes through `AppDatabase`, storage, and templates.
+
 ## Bootstrap the Shelf server
 
 The entry point of our application initializes the database, storage, and template engine before starting the server. We also use `Pipeline` to add middleware, such as `logRequests` and our custom `contextual_shelf` middleware for structured logging.
 
-```dart file=../../../../packages/ormed/example/fullstack/lib/src/server/server.dart#server-bootstrap
+```dart file=../../../../packages/ormed/example/fullstack/lib/src/server/server.dart#server-bootstrap-deps
+```
+
+```dart file=../../../../packages/ormed/example/fullstack/lib/src/server/server.dart#server-bootstrap-pipeline
 
 ```
+
+The dependency setup block builds services once at startup. The pipeline block defines per-request behavior.
 
 ## Router map
 
@@ -49,6 +70,8 @@ We divide our routes into two main sections: **Web** (for HTML pages) and **API*
 
   </TabItem>
 </Tabs>
+
+Keep web and API routes in separate groups even for the same entity. It keeps response concerns explicit: HTML rendering vs JSON contracts.
 
 ## Movie handlers
 
@@ -91,6 +114,8 @@ Creating a movie is a multi-step process. We've broken it down to show how each 
     ```
   </TabItem>
 </Tabs>
+
+This split is intentional: parsing, validation, storage, persistence, and logging are independent concerns and are easier to test when separated.
 
 ### Updating a Movie
 Updating follows a similar pattern, using `MovieUpdateDto` to apply changes.
@@ -149,3 +174,14 @@ Structured logging (via **Contextual**) is essential for debugging and observabi
     ```
   </TabItem>
 </Tabs>
+
+## Verify Before Continuing
+
+Run the app and confirm both surfaces respond:
+
+```bash
+dart run bin/server.dart
+```
+
+- `GET /` should render HTML.
+- `GET /api/movies` should return JSON.

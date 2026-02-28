@@ -130,7 +130,7 @@ Required:
 
 Optional:
 - `baseUrl` / `base_url` (default: `https://api.cloudflare.com/client/v4`)
-- `maxAttempts` / `max_attempts` / `retryAttempts` (default: `4`)
+- `maxAttempts` / `max_attempts` / `retryAttempts` (default: `5`)
 - `requestTimeoutMs` / `request_timeout_ms` / `timeoutMs` (default: `30000`)
 - `retryBaseDelayMs` / `retry_base_delay_ms` (default: `250`)
 - `retryMaxDelayMs` / `retry_max_delay_ms` (default: `3000`)

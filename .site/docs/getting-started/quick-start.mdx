@@ -21,6 +21,27 @@ If you are integrating into an existing app, use [Adopt Ormed In An Existing Pro
 - How models, migrations, seeders, and generated code connect
 - How to boot `DataSource` and run basic CRUD
 
+## Step Outcome
+
+By the end of this page, you should have:
+
+- A generated runtime datasource scaffold
+- A `User` model with generated ORM artifacts
+- A migration + seeder applied locally
+- A runnable app that performs create/read/update/delete
+
+## Command Flow (One Pass)
+
+```bash
+dart run ormed_cli:ormed init
+dart run build_runner build
+dart run ormed_cli:ormed make:migration --name create_users_table --create --table users
+dart run ormed_cli:ormed migrate
+dart run ormed_cli:ormed make:seeder --name UserSeeder
+dart run ormed_cli:ormed seed
+dart run lib/main.dart
+```
+
 ## Scaffold the Project (CLI)
 
 From your app root:
@@ -33,10 +54,10 @@ This creates:
 - `lib/src/database/config.dart` (runtime datasource options)
 - `lib/src/database/datasource.dart` (DataSource entrypoint)
 - `lib/src/database/migrations.dart` (registry)  
-- `lib/src/database/seeders.dart` and `seeders/database_seeder.dart`
 
 Optional:
 - `ormed.yaml` when you run `dart run ormed_cli:ormed init --with-config`
+- `lib/src/database/seeders.dart` and `seeders/database_seeder.dart` when you run `dart run ormed_cli:ormed init --with-seeders`
 
 Generated starter files:
 
@@ -45,7 +66,13 @@ Generated starter files:
 
 Generated runtime config (code-first default):
 
-```dart file=../../examples/lib/src/database/config.dart
+```dart file=../../examples/lib/src/database/config.dart#config-connections
+```
+
+```dart file=../../examples/lib/src/database/config.dart#config-build-options
+```
+
+```dart file=../../examples/lib/src/database/config.dart#config-build-all-options
 ```
 
   </TabItem>
@@ -53,7 +80,10 @@ Generated runtime config (code-first default):
 
 The recommended entrypoint for your application. It uses generated config helpers and works for both single and multi-connection scaffolds.
 
-```dart file=../../examples/lib/src/database/datasource.dart
+```dart file=../../examples/lib/src/database/datasource.dart#datasource-create-single
+```
+
+```dart file=../../examples/lib/src/database/datasource.dart#datasource-create-multiple
 ```
 
   </TabItem>
@@ -79,9 +109,10 @@ These are the three pieces the CLI maintains: imports, the entry list, and `buil
 ```
 
   </TabItem>
-  <TabItem value="seeders" label="seeders.dart">
+  <TabItem value="seeders" label="seeders.dart (optional)">
 
 Seed registries follow the same pattern: imports + registrations + a runnable entrypoint.
+Generate this with `ormed init --with-seeders`, `ormed init --only=seeders`, or `ormed make:seeder`.
 
 ```dart file=../../examples/lib/src/database/seeders.dart#seed-registry-imports
 ```
@@ -120,7 +151,7 @@ This creates `user.orm.dart` with the generated `$User` class and helpers.
 Create a migration for your table:
 
 ```bash
-dart run ormed_cli:ormed make --name create_users_table --create --table users
+dart run ormed_cli:ormed make:migration --name create_users_table --create --table users
 ```
 
 Edit the generated file in `lib/src/database/migrations/` to add columns:
@@ -147,8 +178,10 @@ dart run ormed_cli:ormed migrate
 Create a seeder:
 
 ```bash
-dart run ormed_cli:ormed make --name UserSeeder --seeder
+dart run ormed_cli:ormed make:seeder --name UserSeeder
 ```
+
+This command bootstraps the seed scaffold automatically if it does not exist yet.
 
 Add data in `lib/src/database/seeders/user_seeder.dart`:
 
@@ -214,6 +247,8 @@ Found users: 1
 Updated name: John Smith
 User deleted
 ```
+
+Exact IDs/counts may differ, but you should see successful CRUD behavior without errors.
 
 ## Next Steps
 

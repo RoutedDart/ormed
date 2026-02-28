@@ -20,6 +20,14 @@ import TabItem from '@theme/TabItem';
 - Which credentials and retry knobs are required
 - How env aliases (`D1_*`, `DB_D1_*`, `CF_ACCOUNT_ID`) are resolved
 
+## Step Outcome
+
+By the end of this page, you should have:
+
+- D1 credentials wired through env or explicit config
+- Retry/timeout settings tuned for your test/debug flow
+- A known-good connectivity check without unsupported SQLite functions
+
 ## Install
 
 ```yaml
@@ -77,6 +85,15 @@ Future<void> main() async {
   </TabItem>
 </Tabs>
 
+## Code-first Helper APIs
+
+Use model-registry extensions when you want explicit setup in code:
+
+- `registry.d1DataSourceOptions(...)`
+- `registry.d1DataSource(...)`
+- `registry.d1DataSourceOptionsFromEnv(...)`
+- `registry.d1DataSourceFromEnv(...)`
+
 ## Configure (`ormed.yaml`)
 
 ```yaml
@@ -107,6 +124,10 @@ Minimum required credentials:
 - account id
 - database id
 - API token
+
+## Quick Verification
+
+Use a simple query like `SELECT 1 AS ok` through your app bootstrap path. Avoid probing blocked functions (for example `sqlite_version()`).
 
 ## Options
 
@@ -157,6 +178,8 @@ Verify all required values are present and mapped correctly:
 - account id (`D1_ACCOUNT_ID` / `CF_ACCOUNT_ID` / `DB_D1_ACCOUNT_ID`)
 - database id (`D1_DATABASE_ID` / `DB_D1_DATABASE_ID`)
 - API token (`D1_API_TOKEN` / `D1_SECRET` / `DB_D1_API_TOKEN`)
+
+If requests still fail, lower retries/timeouts temporarily to surface root errors quickly while debugging.
 
 ## Read This Next
 

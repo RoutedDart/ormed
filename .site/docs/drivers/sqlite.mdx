@@ -20,6 +20,14 @@ SQLite is the default scaffold for new projects. It runs without external servic
 - Which SQLite options matter for local dev and tests
 - How env-based path configuration (`DB_PATH`) fits into scaffolded config
 
+## Step Outcome
+
+By the end of this page, you should have:
+
+- A bootable SQLite datasource (file or in-memory)
+- Clear `DB_PATH` behavior for local runtime
+- A known path for migration + test workflows
+
 ## Install
 
 Add the driver package:
@@ -54,7 +62,10 @@ The recommended way is the generated `createDataSource()` helper:
 <Tabs groupId="sqlite-usage" defaultValue="generated">
   <TabItem value="generated" label="Generated helper">
 
-```dart file=../../examples/lib/src/database/datasource.dart
+```dart file=../../examples/lib/src/database/datasource.dart#datasource-create-single
+```
+
+```dart file=../../examples/lib/src/database/datasource.dart#datasource-create-default
 ```
 
   </TabItem>
@@ -65,6 +76,15 @@ The recommended way is the generated `createDataSource()` helper:
 
   </TabItem>
 </Tabs>
+
+## Code-first Helper APIs
+
+When you want explicit programmatic setup (without manual adapter wiring), use:
+
+- `registry.sqliteFileDataSourceOptions(path: ..., name: ...)`
+- `registry.sqliteFileDataSource(path: ..., name: ...)`
+- `registry.sqliteInMemoryDataSourceOptions(name: ...)`
+- `registry.sqliteInMemoryDataSource(name: ...)`
 
 ## SQLite Migrations Helpers
 
@@ -103,6 +123,12 @@ SQLite does not require network credentials. For scaffolded projects, generated 
 If you keep `ormed.yaml`, interpolation is also supported:
 
 - `${DB_PATH}` and `${DB_PATH:-database/app.sqlite}`
+
+## Quick Verification
+
+1. Boot your app with generated datasource helpers.
+2. Run a migration command.
+3. Confirm the SQLite file appears at expected path (unless using in-memory mode).
 
 ### Notes
 

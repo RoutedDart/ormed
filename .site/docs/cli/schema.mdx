@@ -17,6 +17,14 @@ Schema commands help you inspect and snapshot the database.
 - When to use `--prune`
 - How to inspect schema state in text or JSON form
 
+## Step Outcome
+
+By the end of this page, you should be able to:
+
+- Produce schema dumps for faster environment provisioning
+- Decide when pruning is safe
+- Inspect schema state in machine-readable form
+
 ## Dump schema
 
 `schema:dump` writes a SQL file that can be loaded into empty databases before migrations run (useful for CI and fast test setup).
@@ -35,6 +43,8 @@ dart run ormed_cli:ormed schema:dump --prune
 
 `--prune` currently removes `*.dart` migration files in `migrations.directory`.
 
+Treat `--prune` as a coordinated release operation, not a routine dev command.
+
 ## Describe schema
 
 ```bash
@@ -46,3 +56,10 @@ dart run ormed_cli:ormed schema:describe --json
 
 - [Squashing Migrations](../migrations/squashing)
 - [CLI Command Reference](./commands)
+
+## Verify Schema Tooling
+
+```bash
+dart run ormed_cli:ormed schema:describe --json
+dart run ormed_cli:ormed schema:dump --path database/schema.sql
+```

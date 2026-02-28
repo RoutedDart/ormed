@@ -317,9 +317,12 @@ ormed init
 
 (Or use `dart run ormed_cli:ormed init` if not installed globally).
 
-This creates `lib/src/database` plus migrations/seed registries. `ormed.yaml`
-is optional and can be scaffolded with `ormed init --with-config` when you need
-CLI migration/apply flows.
+This creates `lib/src/database` runtime helpers (`config.dart`,
+`datasource.dart`) plus the migration registry. Seeder scaffold is optional and
+can be added later with `ormed init --with-seeders`, `ormed init --only=seeders`,
+or automatically when you run `ormed make:seeder`. `ormed.yaml` is optional and
+can be scaffolded with `ormed init --with-config` when you need explicit
+config-file-driven CLI workflows.
 
 ### 3. Define a Model
 
@@ -385,7 +388,7 @@ dart run ormed_cli:ormed migrate
 Create a seeder:
 
 ```bash
-dart run ormed_cli:ormed make --name UserSeeder --seeder
+dart run ormed_cli:ormed make:seeder --name UserSeeder
 ```
 
 Add data in `lib/src/database/seeders/user_seeder.dart`:
@@ -472,14 +475,14 @@ Ormed supports two migration formats, which can be mixed in the same project. Th
 Type-safe migrations using a fluent `SchemaBuilder`. Best for most use cases.
 
 ```bash
-dart run ormed_cli:ormed make --name add_bio_to_users
+dart run ormed_cli:ormed make:migration --name add_bio_to_users
 ```
 
 ### SQL Migrations
 Raw `.sql` files for complex schema changes or when porting existing SQL scripts.
 
 ```bash
-dart run ormed_cli:ormed make --name add_bio_to_users --format sql
+dart run ormed_cli:ormed make:migration --name add_bio_to_users --format sql
 ```
 
 This creates a directory with `up.sql` and `down.sql` files.

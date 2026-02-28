@@ -86,10 +86,13 @@ void main() {
     // #region testing-web-create
     test('POST /movies creates a movie', () async {
       await withClient(harness, (client) async {
+        // #region testing-web-create-arrange
         final genre = await GenreModelFactory.factory()
             .state({'name': 'Test Drama', 'description': 'Factory seed.'})
             .create(context: ds.context);
+        // #endregion testing-web-create-arrange
 
+        // #region testing-web-create-request
         final response = await client.multipart('/movies', (builder) {
           builder.addField('title', 'North Star');
           builder.addField('releaseYear', '2022');
@@ -102,7 +105,9 @@ void main() {
             contentType: MediaType('image', 'jpeg'),
           );
         });
+        // #endregion testing-web-create-request
 
+        // #region testing-web-create-assertions
         response.assertStatus(HttpStatus.found);
         final location = response.headers['location']?.first ?? '';
         expect(location, startsWith('/movies/'));
@@ -112,6 +117,7 @@ void main() {
           ..assertStatus(HttpStatus.ok)
           ..assertBodyContains('North Star')
           ..assertBodyContains(genre.name);
+        // #endregion testing-web-create-assertions
       }, mode: TransportMode.ephemeralServer);
     });
     // #endregion testing-web-create
@@ -170,6 +176,7 @@ void main() {
     // #endregion testing-web-edit
 
     // #region testing-web-delete
+    // #region testing-web-delete-confirmation
     test('GET /movies/:id/delete renders delete confirmation', () async {
       await withClient(harness, (client) async {
         final response = await client.get('/movies/1/delete');
@@ -180,7 +187,9 @@ void main() {
           ..assertBodyContains('Yes, delete');
       });
     });
+    // #endregion testing-web-delete-confirmation
 
+    // #region testing-web-delete-flow
     test('POST /movies/:id/delete removes a movie', () async {
       await withClient(harness, (client) async {
         final genre = await GenreModelFactory.factory()
@@ -201,6 +210,7 @@ void main() {
         show.assertStatus(HttpStatus.notFound);
       });
     });
+    // #endregion testing-web-delete-flow
     // #endregion testing-web-delete
 
     // #region testing-web-api-link

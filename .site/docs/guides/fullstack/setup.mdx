@@ -8,7 +8,7 @@ import TabItem from '@theme/TabItem';
 
 # Setup & Scaffolding
 
-In this section, we'll initialize our project and set up the core dependencies. We're building a "server-side" application, so we'll start with the standard Dart server template.
+In this section, you'll create the runnable project foundation and generate the database wiring used by all later steps.
 
 ## Prerequisites
 
@@ -19,6 +19,30 @@ In this section, we'll initialize our project and set up the core dependencies. 
 - How to scaffold the base Shelf project
 - Which dependencies power each layer of the stack
 - How to prepare the project for model/codegen/migration steps
+
+## Step Outcome
+
+By the end of this page, you should have:
+
+- A Shelf-based Dart app in `packages/ormed/example/fullstack`
+- Dependencies installed (`dart pub get`)
+- Ormed initialized with generated datasource helpers
+- A bootable `AppDatabase` wrapper used by server and tests
+
+## Do This Now (in order)
+
+```bash
+dart create -t server-shelf packages/ormed/example/fullstack
+cd packages/ormed/example/fullstack
+dart pub get
+dart run ormed_cli:ormed init --no-interaction
+```
+
+Optional YAML scaffold:
+
+```bash
+dart run ormed_cli:ormed init --with-config --only=config --no-interaction
+```
 
 ## Create the project
 
@@ -80,6 +104,10 @@ Once the dependencies are added, initialize Ormed. This scaffolds code-first dat
 dart run ormed_cli:ormed init --no-interaction
 ```
 
+Lean default note:
+- `init` scaffolds runtime datasource + migrations by default.
+- Seeder and test helper scaffolds are optional (`--with-seeders`, `--with-tests`) and can also be created lazily when first needed.
+
 If you want explicit YAML-driven CLI configuration, scaffold it with:
 
 ```bash
@@ -87,6 +115,8 @@ dart run ormed_cli:ormed init --with-config --only=config --no-interaction
 ```
 
 `ormed.yaml` is optional in the default code-first flow.
+
+Use code-first (`config.dart` + `datasource.dart`) for runtime bootstrapping and day-to-day app development. Keep `ormed.yaml` when you want explicit CLI connection definitions or multi-connection YAML workflows.
 
 <Tabs groupId="config">
   <TabItem value="ormed" label="ormed.yaml">
@@ -110,4 +140,13 @@ We then wrap this in an `AppDatabase` class to manage the connection lifecycle w
 
 ```dart file=../../../../packages/ormed/example/fullstack/lib/src/database/database.dart#database-init
 
+```
+
+## Verify Before Continuing
+
+Run these commands before moving to the models page:
+
+```bash
+dart analyze
+dart run build_runner build --delete-conflicting-outputs
 ```

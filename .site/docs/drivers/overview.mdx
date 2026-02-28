@@ -17,6 +17,14 @@ Ormed ships first-party driver adapters for SQLite, PostgreSQL, MySQL/MariaDB, a
 - How helper-based driver setup differs from config-driven setup
 - Where driver-specific behavior and internals live in the docs
 
+## Step Outcome
+
+By the end of this page, you should know:
+
+- Which driver package to adopt for your runtime
+- Whether to bootstrap with code-first helpers or YAML config
+- Which env vars and docs sections matter for your chosen driver
+
 Drivers are distributed as separate packages (e.g. `ormed_sqlite`). The core `ormed` package depends only on the `DriverAdapter` interface.
 
 - **SQLite** — zero‑dependency file or in‑memory database, ideal for local development and fast tests.
@@ -30,6 +38,13 @@ You can use a driver in three ways:
 2) **YAML/config driven** via `ormed.yaml` + `DataSource.fromConfig(config)`  
 3) **Programmatic** via `DataSourceOptions(driver: ...)`
 
+## Driver Selection Cheat Sheet
+
+- Local dev + fast tests: SQLite
+- General production relational workloads: PostgreSQL
+- Existing MySQL/MariaDB estate: MySQL driver
+- Cloudflare edge/serverless with D1: D1 driver
+
 ### Registration and Helpers
 
 - Code-first scaffolds and driver helper extensions (`*DataSourceOptions(...)`, `*DataSourceOptionsFromEnv(...)`) do not require manual registration calls.
@@ -40,8 +55,9 @@ You can use a driver in three ways:
 
 Driver packages expose environment-based helpers where it makes sense:
 
+- `ormed_sqlite`: `sqliteFileDataSourceOptions(...)`, `sqliteInMemoryDataSourceOptions(...)`
 - `ormed_postgres`: `postgresDataSourceOptionsFromEnv(...)`
-- `ormed_mysql`: `mySqlDataSourceOptionsFromEnv(...)`
+- `ormed_mysql`: `mySqlDataSourceOptionsFromEnv(...)`, `mariaDbDataSourceOptions(...)`
 - `ormed_d1`: `d1DataSourceOptionsFromEnv(...)`
 
 SQLite typically reads a file path from app-level config (for scaffolded projects, usually `DB_PATH` in generated `config.dart`).
@@ -56,6 +72,16 @@ SQLite typically reads a file path from app-level config (for scaffolded project
 | D1 | `d1DataSourceOptionsFromEnv(...)` | `D1_ACCOUNT_ID`/`CF_ACCOUNT_ID`/`DB_D1_ACCOUNT_ID`, `D1_DATABASE_ID`/`DB_D1_DATABASE_ID`, `D1_API_TOKEN`/`D1_SECRET`/`DB_D1_API_TOKEN`, plus optional `D1_*` retry/logging vars |
 
 Pick the driver that matches your runtime environment; you can keep the rest of your Ormed code identical and switch by changing generated options helpers (or active YAML connection) and the adapter behind them.
+
+## Verify Driver Setup
+
+After configuring a driver, run:
+
+```bash
+dart run ormed_cli:ormed migrate --pretend
+```
+
+Then run a simple query through your app bootstrap path to confirm runtime connectivity.
 
 ## Driver internals
 

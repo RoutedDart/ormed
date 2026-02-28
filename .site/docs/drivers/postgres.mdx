@@ -20,6 +20,14 @@ Use PostgreSQL for production‑grade features (JSONB, window functions, robust 
 - Which Postgres options and value types Ormed supports
 - How env-based boot maps to runtime helper APIs
 
+## Step Outcome
+
+By the end of this page, you should have:
+
+- A working Postgres datasource config (URL or fields)
+- Environment-driven config fallback rules understood
+- Confidence with Postgres-specific value mappings used in models
+
 ## Install
 
 Add the driver package:
@@ -67,6 +75,8 @@ driver:
 </TabItem>
 </Tabs>
 
+Prefer URL config in production deployments unless your platform manages secrets as discrete fields.
+
 ## Use in code (DataSource)
 
 The recommended path is generated `config.dart` + `datasource.dart`.
@@ -82,6 +92,15 @@ Future<void> main() async {
   await ds.dispose();
 }
 ```
+
+### Code-first Helper APIs
+
+Use model-registry extensions when you want explicit setup in code:
+
+- `registry.postgresDataSourceOptions(...)`
+- `registry.postgresDataSource(...)`
+- `registry.postgresDataSourceOptionsFromEnv(...)`
+- `registry.postgresDataSourceFromEnv(...)`
 
 ## Type support
 
@@ -157,6 +176,14 @@ Use `package:ormed_postgres/migrations.dart` when you want Postgres-specific sch
 - `DB_SSLMODE`, `DB_TIMEZONE`, `DB_APP_NAME`
 
 If `DB_URL`/`DATABASE_URL` is set, URL-based config is used first, then optional overrides like `DB_SSLMODE` and `DB_TIMEZONE`.
+
+## Quick Verification
+
+```bash
+dart run ormed_cli:ormed migrate --pretend
+```
+
+Then run a basic query through runtime bootstrap to confirm connectivity and session settings.
 
 ### Notes
 

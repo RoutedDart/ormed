@@ -26,6 +26,23 @@ Use this page if you are setting up Ormed in a project for the first time.
 - What `ormed init` generates
 - Which files are required for the first runnable app
 
+## Step Outcome
+
+By the end of this page, you should have:
+
+- `ormed` + one driver installed
+- `ormed init` scaffold files in `lib/src/database/*`
+- Working codegen (`dart run build_runner build`)
+- A clear next step: Quick Start or Adopt Existing Project
+
+## Install In Order
+
+```bash
+dart pub get
+dart run ormed_cli:ormed init --no-interaction
+dart run build_runner build --delete-conflicting-outputs
+```
+
 ## Install the CLI
 
 The Ormed CLI manages migrations, seeders, and project scaffolding. You have two options for installation:
@@ -48,6 +65,8 @@ dev_dependencies:
 :::info
 **Note:** Adding `ormed_cli` as a local dependency will pull in all supported database drivers (SQLite, MySQL, Postgres) and their respective native dependencies.
 :::
+
+Choose global when you prefer a thin project dependency tree. Choose local when you want deterministic CLI versions per repo.
 
 ## Install Dependencies
 
@@ -100,7 +119,7 @@ dart pub get
 
 ## Initialize Project Files
 
-Scaffold code-first runtime datasource config, migration registry, and seed stubs:
+Scaffold code-first runtime datasource config and migration registry:
 
 ```bash
 ormed init
@@ -112,11 +131,25 @@ Key outputs:
 - `lib/src/database/config.dart` — Runtime DataSource options helpers
 - `lib/src/database/datasource.dart` — Main ORM entry point
 - `lib/src/database/migrations.dart` — migration registry  
-- `lib/src/database/seeders.dart` — seeder registry
 - `lib/src/database/orm_registry.g.dart` — generated registry after `build_runner`
 
 Optional:
 - `ormed.yaml` — run `ormed init --with-config` when you want explicit config file driven CLI connection blocks.
+- `lib/src/database/seeders.dart` + `lib/src/database/seeders/database_seeder.dart` — run `ormed init --with-seeders` (or `ormed init --only=seeders`) when you want explicit seed scaffold upfront.
+
+## Verify Installation
+
+Run one of these:
+
+```bash
+ormed --help
+```
+
+```bash
+dart run ormed_cli:ormed --help
+```
+
+Then verify generated files exist under `lib/src/database/`.
 
 ## Project Structure
 
@@ -135,7 +168,6 @@ my_app/
 │   │       ├── datasource.dart
 │   │       ├── orm_registry.g.dart (generated)
 │   │       ├── migrations.dart
-│   │       ├── seeders.dart
 │   │       └── migrations/
 │   │           └── m_20241201_create_users_table.dart
 │   └── main.dart

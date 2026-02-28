@@ -111,24 +111,35 @@ Common env vars used by generated SQLite config:
 
 - `DB_PATH` (fallback usually `database/<app>.sqlite`)
 
-## Connection Registration
+Example `.env`:
 
-Register connections for use across your application:
+```bash
+DB_PATH=database/app.sqlite
+```
+
+## Named DataSources (recommended)
+
+Use named `DataSource` instances for multi-database apps:
 
 ```dart
-registerSqliteOrmConnection(
-  name: 'my_connection',
-  database: DatabaseConfig(
-    driver: 'sqlite',
-    options: {'path': 'app.sqlite'},
+final primary = DataSource(
+  myModelRegistry.sqliteFileDataSourceOptions(
+    path: 'database/app.sqlite',
+    name: 'primary',
   ),
-  registry: myModelRegistry,
 );
 
-// Use via ConnectionManager
-await ConnectionManager.instance.use('my_connection', (conn) async {
-  final users = await conn.query<\$User>().get();
-});
+final analytics = DataSource(
+  myModelRegistry.sqliteFileDataSourceOptions(
+    path: 'database/analytics.sqlite',
+    name: 'analytics',
+  ),
+);
+
+await primary.init();
+await analytics.init();
+
+final users = await primary.query<\$User>().get();
 ```
 
 ## Driver Capabilities

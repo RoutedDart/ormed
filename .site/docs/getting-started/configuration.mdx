@@ -21,6 +21,23 @@ Ormed defaults to **code-first runtime configuration** generated in `lib/src/dat
 - When to introduce `ormed.yaml` and multi-connection blocks
 - How environment variables are resolved in code and YAML
 
+## Step Outcome
+
+By the end of this page, you should have:
+
+- A clear config mode choice (`code-first` vs `ormed.yaml`)
+- Connection definitions matching your runtime and CLI needs
+- Environment interpolation working in your local/dev setup
+
+## Pick A Config Mode First
+
+| Use case | Recommended mode |
+| --- | --- |
+| App runtime in Dart code, fastest onboarding | Code-first (`config.dart`) |
+| Explicit per-connection CLI blocks, YAML-driven workflows | `ormed.yaml` |
+| Multi-connection runtime in code | Code-first + generated helpers |
+| Multi-connection CLI targeting | `ormed.yaml` with `connections` |
+
 :::note Snippet context
 - YAML blocks show CLI/runtime config.
 - Dart snippets show only the relevant registry/setup pieces; full app bootstrapping is covered in Quick Start.
@@ -30,7 +47,13 @@ Ormed defaults to **code-first runtime configuration** generated in `lib/src/dat
 
 `ormed init` generates runtime datasource options in code:
 
-```dart file=../../examples/lib/src/database/config.dart
+```dart file=../../examples/lib/src/database/config.dart#config-connections
+```
+
+```dart file=../../examples/lib/src/database/config.dart#config-build-options
+```
+
+```dart file=../../examples/lib/src/database/config.dart#config-build-all-options
 ```
 
 This gives you:
@@ -39,6 +62,8 @@ This gives you:
 - `buildDataSourceOptions({String? connection})`
 - `buildAllDataSourceOptions()`
 - Per-connection helpers such as `buildDefaultDataSourceOptions()`
+
+Use these helpers directly from app bootstrap. You do not need to manually assemble driver adapters for normal cases.
 
 ## Optional `ormed.yaml` (CLI / explicit connection blocks)
 
@@ -63,6 +88,8 @@ seeds:
   directory: lib/src/database/seeders
   registry: lib/src/database/seeders.dart
 ```
+
+`seeds` is optional unless you run `ormed seed` / `ormed migrate --seed`.
 
   </TabItem>
   <TabItem value="multiple" label="Multiple connections">
@@ -144,7 +171,7 @@ When using `ormed.yaml`, both `migrations.registry` and `seeds.registry` are **s
   dart run lib/src/database/migrations.dart --dump-json
   ```
 
-- **Seeds registry** (`seeds.registry`): lists `SeederRegistration`s and exposes `main` for `ormed seed` / `ormed migrate --seed`. You can execute it without the CLI wrapper:
+- **Seeds registry** (`seeds.registry`): lists `SeederRegistration`s and exposes `main` for `ormed seed` / `ormed migrate --seed`. Scaffold it with `ormed init --only=seeders` (or create the first seeder with `ormed make:seeder`) before running the entrypoint directly:
 
   ```bash
   dart run lib/src/database/seeders.dart
@@ -179,6 +206,20 @@ dart run ormed_cli:ormed migrate --connection production
 ```
 
 `.env` support: `.env` files are loaded and interpolated by `OrmedEnvironment`, and YAML interpolation remains supported for `ormed.yaml`.
+
+## Verify Configuration
+
+Code-first runtime check:
+
+```bash
+dart run lib/main.dart
+```
+
+YAML/CLI check:
+
+```bash
+dart run ormed_cli:ormed migrate --connection primary
+```
 
 ## Programmatic Configuration
 
@@ -247,4 +288,4 @@ migrations:
   format: sql # dart | sql
 ```
 
-This only affects generation defaults (what `ormed make` produces). The migration registry can still contain both styles.
+This only affects generation defaults (what `ormed make:migration` produces). The migration registry can still contain both styles.

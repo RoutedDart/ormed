@@ -17,6 +17,14 @@ Ormed provides robust support for date and time handling, integrating the standa
 - How timezone handling affects timestamps and persistence
 - How to avoid mutation bugs in date-time workflows
 
+## Step Outcome
+
+By the end of this page, you should be able to:
+
+- Use immutable date-time flows safely in model logic
+- Avoid accidental in-place date mutations
+- Keep storage/display timezone behavior consistent
+
 :::info
 The `carbonized` package is automatically exported by `package:ormed/ormed.dart`, so you don't need to add it to your `pubspec.yaml` or import it separately.
 :::
@@ -62,6 +70,8 @@ All Ormed timestamp getters (`createdAt`, `updatedAt`, `deletedAt`) return **imm
 ```dart file=../../examples/lib/carbon_usage.dart#ormed-timestamps-immutable
 
 ```
+
+Default to immutable date handling in app code; convert to mutable only in narrow, controlled utility flows.
 
 ### Converting Between Mutable and Immutable
 
@@ -166,6 +176,12 @@ await repo.insert(event);
 | Need to mutate a date | Use `copy()` first, or `toMutable()` |
 | Storing a date reference | Call `toImmutable()` |
 | Passing dates to functions | Prefer `CarbonInterface` parameter type |
+
+## Verify Date/Time Behavior
+
+1. Assert timestamp values round-trip correctly through insert/query.
+2. Assert `TimestampsTZ` paths store/retrieve UTC values.
+3. Add a test that catches accidental mutable Carbon side effects.
 
 ## Read This Next
 

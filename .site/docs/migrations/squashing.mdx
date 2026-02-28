@@ -17,6 +17,14 @@ As your application grows, you may accumulate hundreds of migration files. Squas
 - How and when to prune migration files safely
 - How squashing interacts with existing migration ledgers
 
+## Step Outcome
+
+By the end of this page, you should be able to:
+
+- Create schema dumps intentionally for faster bootstrap
+- Decide when pruning is safe for your team/release process
+- Understand how dump loading interacts with migration ledger state
+
 ## Creating a Schema Dump
 
 ```bash
@@ -44,6 +52,8 @@ Only use `--prune` after ensuring:
 - All team members have pulled the latest changes
 - Your CI/CD pipeline is updated
 :::
+
+Treat pruning as a release operation, not a daily workflow.
 
 ## How It Works
 
@@ -91,6 +101,12 @@ migrations:
 - **Create dumps periodically** (e.g., before major releases)
 - **Test first** in dev/staging before pruning in production
 - **Document** when dumps were created and which migration they represent
+
+## Verify Squash Safety
+
+1. Bootstrap a fresh DB from dump in CI/staging.
+2. Apply post-dump migrations successfully.
+3. Confirm existing environments with non-empty ledgers still migrate normally.
 
 ## Database Support
 

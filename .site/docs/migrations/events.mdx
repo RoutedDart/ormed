@@ -20,6 +20,14 @@ Migrations and seeders emit structured events through the shared `EventBus`. Sub
 - How to subscribe and route event streams
 - How to use lifecycle events for observability and auditing
 
+## Step Outcome
+
+By the end of this page, you should be able to:
+
+- Subscribe to migration/seeding lifecycle streams once at startup
+- Route failures and progress into logs/metrics/traces
+- Correlate migration/seeding events with runtime query telemetry
+
 :::note Snippet context
 The snippets below are split into “subscribe” and “run” pieces so you can reuse the listener wiring in your own bootstrap code.
 :::
@@ -81,6 +89,12 @@ Tips:
 - Use the same `EventBus` for migrations, seeders, and runtime queries to correlate logs.
 - `SeederFailedEvent` fires before the error is rethrown—log here, then let your process fail.
 - Combine with `pretend: true` on `SeederRunner.run` to capture SQL without mutating the database.
+
+## Verify Event Stream
+
+1. Run one migration batch and confirm batch + per-migration events are emitted.
+2. Run one seed flow and confirm start/completion/failure hooks.
+3. Confirm failed events include enough context for alerting.
 
 ## Read This Next
 

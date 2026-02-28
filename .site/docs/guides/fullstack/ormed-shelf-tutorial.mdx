@@ -17,6 +17,17 @@ Welcome to the Full-Stack Movie Catalog tutorial! In this guide, we'll build a c
 - How models, migrations, API routes, templates, storage, and tests fit together
 - How to run a production-style workflow from one tutorial path
 
+## How To Use This Guide
+
+Follow the pages in order. Each page has a concrete outcome that the next page depends on.
+
+1. Scaffold the project and initialize Ormed.
+2. Define models and generate ORM code.
+3. Apply migrations and seed initial data.
+4. Boot server routes and verify web/API behavior.
+5. Add templates, storage, and tests.
+6. Use the CLI/runbook for repeatable local workflows.
+
 This isn't just a "Hello World" example. We'll build a meaningful application that includes:
 - **Database Modeling**: Defining structured data with relations.
 - **Migrations & Seeding**: Managing schema changes and initial data.
@@ -40,16 +51,29 @@ By the end of this tutorial, you'll have a movie catalog app with:
 - **Asset uploads**: Storing movie posters on disk.
 - **Observability**: Structured logging for easier debugging.
 
+## Fast Path (Command Order)
+
+If you want the shortest path first, run commands in this order while following the guide pages:
+
+```bash
+dart pub get
+dart run build_runner build --delete-conflicting-outputs
+dart run ormed_cli:ormed migrate
+dart run ormed_cli:ormed seed
+dart test
+dart run bin/server.dart
+```
+
 ## Guide Map
 
-1. [**Setup & Scaffolding**](./setup) - Initialize the project and dependencies.
-2. [**Models & Codegen**](./models) - Define your data structure.
-3. [**Migrations & Seed Data**](./migrations-seeds) - Prepare your database.
-4. [**Server & Web Routes**](./server-routes) - Build the web application.
-5. [**JSON API**](./api) - Expose your data via REST.
-6. [**Templates & Storage**](./templates-storage) - UI and file handling.
-7. [**Testing Strategy**](./testing) - Verify your work.
-8. [**CLI & Runbook**](./cli-runbook) - Manage the app.
+1. [**Setup & Scaffolding**](./setup) - Project compiles, Ormed is initialized.
+2. [**Models & Codegen**](./models) - Models + generated ORM/DTO artifacts exist.
+3. [**Migrations & Seed Data**](./migrations-seeds) - Database can be rebuilt deterministically.
+4. [**Server & Web Routes**](./server-routes) - HTML and JSON route handlers are wired.
+5. [**JSON API**](./api) - CRUD contract and payload/error behavior are explicit.
+6. [**Templates & Storage**](./templates-storage) - UI templates and upload flow are integrated.
+7. [**Testing Strategy**](./testing) - Web/API/property/UI tests cover core flows.
+8. [**CLI & Runbook**](./cli-runbook) - Day-to-day operational workflow is repeatable.
 
 ## Project Layout
 

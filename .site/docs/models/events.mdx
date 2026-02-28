@@ -21,6 +21,14 @@ Ormed emits lifecycle events for every model operation:
 - How to wire global and model-specific listeners
 - How to use events for auditing, guardrails, and side effects
 
+## Step Outcome
+
+By the end of this page, you should be able to:
+
+- Attach listeners once at bootstrap
+- Cancel unsafe operations with guard handlers
+- Route lifecycle events into observability/audit systems
+
 - Cancellable: `saving`, `creating`, `updating`, `deleting`, `restoring`, `replicating`
 - Soft delete aware: `trashed` (soft delete), `forceDeleted` (hard delete)
 - Global listeners: subscribe on the shared `EventBus.instance`
@@ -40,6 +48,8 @@ Rules:
 
 ```dart file=../../examples/lib/events/model_events.dart#model-event-annotation
 ```
+
+Keep handlers small and side-effect-aware; push heavy work to background queues when needed.
 
 ## Listen globally
 
@@ -171,6 +181,12 @@ Use `createQuietlyRelation` and `createManyQuietlyRelation` to create related mo
 - **System migrations**: Update data without user-facing events
 - **Internal sync**: Replicate data without duplicate notifications
 :::
+
+## Verify Event Wiring
+
+1. Test one create/update/delete lifecycle sequence.
+2. Test one cancellable guard (`event.cancel()` path).
+3. Test one suppressed-events path (`withoutEvents`/quiet relations).
 
 ## Read This Next
 

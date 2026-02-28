@@ -133,6 +133,21 @@ Future<void> main() async {
 - `DB_SSLMODE`, `DB_TIMEZONE`
 - `DB_CHARSET`, `DB_COLLATION`, `DB_SQL_MODE`
 
+Example `.env`:
+
+```bash
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_NAME=mydb
+DB_USER=root
+DB_PASSWORD=secret
+DB_SSLMODE=disable
+DB_TIMEZONE=+00:00
+DB_CHARSET=utf8mb4
+DB_COLLATION=utf8mb4_unicode_ci
+DB_SQL_MODE=STRICT_TRANS_TABLES
+```
+
 ## Driver Capabilities
 
 | Capability | Supported |

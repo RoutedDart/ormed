@@ -20,6 +20,10 @@ End-to-end walkthroughs demonstrating how Ormed pieces work together.
 - How generated runtime helpers replace manual boot glue
 - How to adapt the recipe for your own app layout
 
+## Step Outcome
+
+By the end of this page, you should have a repeatable end-to-end workflow you can copy into a new or existing service.
+
 ## End-to-End SQLite Workflow
 
 ### 1. Dependencies (`pubspec.yaml`)
@@ -29,35 +33,36 @@ dependencies:
   ormed: ^0.2.0
   ormed_sqlite: ^0.2.0
 dev_dependencies:
-  build_runner:
+  build_runner: ^2.10.4
   ormed_cli: ^0.2.0
 ```
 
-### 2. Model (`lib/user.dart`)
-
-```dart file=../../examples/lib/models/user.dart#basic-model
-```
-
-### 3. Generate
-
-```bash
-dart run build_runner build --delete-conflicting-outputs
-```
-
-This produces `lib/src/database/orm_registry.g.dart` with `bootstrapOrm()` (and other helpers).
-
-### 4. Bootstrap CLI
+### 2. Bootstrap CLI
 
 ```bash
 dart run ormed_cli:ormed init
 ```
 
-Creates code-first datasource config, datasource entrypoint, registry stubs, and migrations directory.
+This scaffolds `lib/src/database/config.dart` and `lib/src/database/datasource.dart`
+for code-first runtime wiring.
 
-### 5. Create/Apply Migrations
+### 3. Model (`lib/user.dart`)
+
+```dart file=../../examples/lib/models/user.dart#basic-model
+```
+
+### 4. Generate
 
 ```bash
-dart run ormed_cli:ormed make --name create_users --create --table users
+dart run build_runner build --delete-conflicting-outputs
+```
+
+This generates `*.orm.dart` model helpers plus `lib/src/database/orm_registry.g.dart`.
+
+### 5. Create and apply migrations
+
+```bash
+dart run ormed_cli:ormed make:migration --name create_users --create --table users
 # Edit the generated file
 dart run ormed_cli:ormed migrate
 ```
@@ -78,9 +83,16 @@ This is the “put it together” step: initialize the data source, run a query,
   </TabItem>
 </Tabs>
 
+## Quick Validation Checklist
+
+1. `build_runner` succeeds and generated artifacts are present.
+2. Migration applies cleanly.
+3. Seeder runs cleanly.
+4. At least one typed query returns expected records.
+
 ## Static Helpers Pattern
 
-Bind a global resolver for cleaner code:
+After `await dataSource.init()`, generated static helpers use the default connection automatically:
 
 ```dart file=../../examples/lib/examples/workflows.dart#static-helpers-pattern
 ```
@@ -159,6 +171,17 @@ Output:
 - Attach listeners to `context.onQuery`/`.onMutation` to assert behavior
 - For migrations, use `MigrationRunner` with a fake ledger to verify ordering
 - For Postgres integration tests, use `PostgresTestHarness` which spins up a schema per test
+
+## Verify Recipe In CI
+
+Run this sequence in CI to keep examples honest:
+
+```bash
+dart run build_runner build --delete-conflicting-outputs
+dart run ormed_cli:ormed migrate
+dart run ormed_cli:ormed seed
+dart test
+```
 
 ## Read This Next
 

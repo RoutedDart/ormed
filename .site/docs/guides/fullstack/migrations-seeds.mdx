@@ -20,13 +20,27 @@ Once your models are defined, you need to create the corresponding database tabl
 - How to define schema operations for each table
 - How to seed deterministic starter data for development and tests
 
+## Step Outcome
+
+By the end of this page, you should have:
+
+- Repeatable schema history (timestamped migration files)
+- Seeders that populate deterministic tutorial records
+- A database that can be rebuilt from scratch with CLI commands
+
+## Why This Step Matters
+
+- Migrations are schema history.
+- Seeders are initial data fixtures.
+- Keeping them separate lets you evolve schema and data independently.
+
 ## Create migrations
 
 Migrations allow you to evolve your database schema over time. You can generate migration files using the `ormed` CLI.
 
 ```bash
-dart run ormed_cli:ormed make --name create_genres --create --table genres
-dart run ormed_cli:ormed make --name create_movies --create --table movies
+dart run ormed_cli:ormed make:migration --name create_genres --create --table genres
+dart run ormed_cli:ormed make:migration --name create_movies --create --table movies
 ```
 
 These commands generate Dart files in `lib/src/database/migrations/`. You can then define your columns using a fluent schema builder.
@@ -65,7 +79,13 @@ We create separate seeders for each model to keep things organized.
   </TabItem>
   <TabItem value="movies" label="Movie seeder">
 
-```dart file=../../../../packages/ormed/example/fullstack/lib/src/database/seeders/movie_seeder.dart#seed-movies
+```dart file=../../../../packages/ormed/example/fullstack/lib/src/database/seeders/movie_seeder.dart#seed-movies-genre-lookup
+```
+
+```dart file=../../../../packages/ormed/example/fullstack/lib/src/database/seeders/movie_seeder.dart#seed-movies-insert
+```
+
+```dart file=../../../../packages/ormed/example/fullstack/lib/src/database/seeders/movie_seeder.dart#seed-movies-update
 
 ```
 
@@ -96,3 +116,5 @@ dart run ormed_cli:ormed migrate
 # Run the database seeders
 dart run ormed_cli:ormed seed
 ```
+
+If you are iterating quickly and want a clean local state, run migrate/seed again after deleting the local SQLite file.

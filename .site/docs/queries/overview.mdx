@@ -17,11 +17,21 @@ Ormed gives you three layers for data access: query builder, repositories, and D
 - A practical order for learning query features
 - How to scale from simple CRUD to multi-connection workflows
 
+## Step Outcome
+
+By the end of this page, you should know which API layer to use first for your current task.
+
 ## Query Layers
 
 - `Query Builder`: fluent typed reads and writes, joins, filters, projections.
 - `Repository`: model-oriented create/update/delete workflows.
 - `DataSource`: connection lifecycle, transactions, and multi-database routing.
+
+## Quick Decision Guide
+
+- Need custom filtering/joining/projections: start with `Query Builder`.
+- Need model-centric write flows (insert/update/delete): use `Repository`.
+- Need lifecycle/transactions/connection routing: use `DataSource`.
 
 ## Recommended Reading Order
 

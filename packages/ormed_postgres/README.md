@@ -122,6 +122,19 @@ Future<void> main() async {
 - `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`
 - `DB_SSLMODE`, `DB_TIMEZONE`, `DB_APP_NAME`
 
+Example `.env`:
+
+```bash
+DB_HOST=127.0.0.1
+DB_PORT=5432
+DB_NAME=mydb
+DB_USER=postgres
+DB_PASSWORD=postgres
+DB_SSLMODE=disable
+DB_TIMEZONE=UTC
+DB_APP_NAME=my_service
+```
+
 ## Driver Capabilities
 
 | Capability | Supported |

@@ -6,6 +6,7 @@ version: 1.0.1
 environment:
   sdk: ^3.10.4
 
+# #region fullstack-pubspec-core
 dependencies:
   artisanal: ^0.2.0
   contextual: ^2.1.0
@@ -31,10 +32,12 @@ dev_dependencies:
   server_testing: ^0.2.0
   server_testing_shelf: ^0.2.1+1
   test: ^1.28.0
+# #endregion fullstack-pubspec-core
 
 dependency_overrides:
   ormed: { path: ../.. }
   ormed_cli: { path: ../../../ormed_cli }
+  ormed_d1: { path: ../../../ormed_d1 }
   ormed_mysql: { path: ../../../ormed_mysql }
   ormed_postgres: { path: ../../../ormed_postgres }
   ormed_sqlite_core: { path: ../../../ormed_sqlite_core }
