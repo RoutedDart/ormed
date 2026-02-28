@@ -20,35 +20,17 @@ SQLite driver adapter for the ormed ORM. Implements the `DriverAdapter` contract
 
 ```yaml
 dependencies:
-  ormed: ^0.1.0
-  ormed_sqlite: ^0.1.0
+  ormed: ^0.2.0
+  ormed_sqlite: ^0.2.0
 ```
 
 ## Quick Start
 
 ```dart
-import 'dart:io';
-
-import 'package:ormed/ormed.dart';
-import 'package:ormed_sqlite/ormed_sqlite.dart';
-import 'package:your_app/src/database/orm_registry.g.dart';
-
-DataSourceOptions buildDataSourceOptions({String connection = 'default'}) {
-  final env = OrmedEnvironment.fromDirectory(Directory.current);
-  final registry = bootstrapOrm();
-  final path = env.string('DB_PATH', fallback: 'database/app.sqlite');
-  return registry.sqliteFileDataSourceOptions(path: path, name: connection);
-}
-
-DataSource createDataSource({
-  DataSourceOptions? options,
-  String connection = 'default',
-}) {
-  return DataSource(options ?? buildDataSourceOptions(connection: connection));
-}
+import 'package:your_app/src/database/datasource.dart';
 
 Future<void> main() async {
-  final ds = createDataSource();
+  final ds = createDataSource(connection: 'default');
   await ds.init();
 
   final rows = await ds.connection.driver.queryRaw('SELECT 1 AS ok');
@@ -57,6 +39,9 @@ Future<void> main() async {
   await ds.dispose();
 }
 ```
+
+Generated apps should use `ormed init` scaffolding (`lib/src/database/config.dart` +
+`datasource.dart`) as the primary runtime entrypoint.
 
 ### Low-level adapter usage
 
@@ -101,11 +86,11 @@ import 'dart:io';
 
 import 'package:ormed/ormed.dart';
 import 'package:ormed_sqlite/ormed_sqlite.dart';
-import 'package:your_app/src/database/orm_registry.g.dart';
+import 'package:your_app/src/models/user.orm.dart';
 
 Future<void> main() async {
   final env = OrmedEnvironment.fromDirectory(Directory.current);
-  final registry = bootstrapOrm();
+  final registry = ModelRegistry()..register(UserOrmDefinition.definition);
   final path = env.string('DB_PATH', fallback: 'database/app.sqlite');
 
   final ds = DataSource(
@@ -119,6 +104,12 @@ Future<void> main() async {
   await ds.dispose();
 }
 ```
+
+## Environment Variables
+
+Common env vars used by generated SQLite config:
+
+- `DB_PATH` (fallback usually `database/<app>.sqlite`)
 
 ## Connection Registration
 

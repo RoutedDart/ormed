@@ -9,37 +9,17 @@ statements through the Cloudflare D1 HTTP API.
 
 ```yaml
 dependencies:
-  ormed: ^0.1.0
+  ormed: ^0.2.0
   ormed_d1: ^0.1.0
 ```
 
 ## Quick start with Ormed
 
 ```dart
-import 'dart:io';
-
-import 'package:ormed/ormed.dart';
-import 'package:ormed_d1/ormed_d1.dart';
-import 'package:your_app/src/database/orm_registry.g.dart';
-
-DataSourceOptions buildDataSourceOptions({String connection = 'd1'}) {
-  final env = OrmedEnvironment.fromDirectory(Directory.current);
-  final registry = bootstrapOrm();
-  return registry.d1DataSourceOptionsFromEnv(
-    name: connection,
-    environment: env.values,
-  );
-}
-
-DataSource createDataSource({
-  DataSourceOptions? options,
-  String connection = 'd1',
-}) {
-  return DataSource(options ?? buildDataSourceOptions(connection: connection));
-}
+import 'package:your_app/src/database/datasource.dart';
 
 Future<void> main() async {
-  final ds = createDataSource();
+  final ds = createDataSource(connection: 'd1');
   await ds.init();
 
   final rows = await ds.connection.driver.queryRaw('SELECT 1 AS ok');
@@ -48,6 +28,9 @@ Future<void> main() async {
   await ds.dispose();
 }
 ```
+
+Generated apps should use `ormed init` scaffolding (`lib/src/database/config.dart` +
+`datasource.dart`) as the primary runtime entrypoint.
 
 ## Using `DataSource`
 
@@ -58,11 +41,11 @@ import 'dart:io';
 
 import 'package:ormed/ormed.dart';
 import 'package:ormed_d1/ormed_d1.dart';
-import 'package:your_app/src/database/orm_registry.g.dart';
+import 'package:your_app/src/models/user.orm.dart';
 
 Future<void> main() async {
   final env = OrmedEnvironment.fromDirectory(Directory.current);
-  final registry = bootstrapOrm();
+  final registry = ModelRegistry()..register(UserOrmDefinition.definition);
   final dataSource = DataSource(
     registry.d1DataSourceOptionsFromEnv(
       name: 'd1',
@@ -83,10 +66,10 @@ Future<void> main() async {
 ```dart
 import 'package:ormed/ormed.dart';
 import 'package:ormed_d1/ormed_d1.dart';
-import 'package:your_app/src/database/orm_registry.g.dart';
+import 'package:your_app/src/models/user.orm.dart';
 
 Future<void> main() async {
-  final registry = bootstrapOrm();
+  final registry = ModelRegistry()..register(UserOrmDefinition.definition);
   final dataSource = DataSource(
     registry.d1DataSourceOptions(
       name: 'd1',
@@ -209,3 +192,25 @@ dart run example/generated_helpers_verification.dart
 - D1 HTTP does not support explicit SQL transaction statements (`BEGIN`,
   `COMMIT`, `ROLLBACK`) via this adapter.
 - The adapter includes retry/backoff support for transient HTTP/network errors.
+
+## Troubleshooting
+
+### Tests appear to hang
+
+This is usually retry/timeout behavior. For faster failure while debugging:
+
+```bash
+export D1_RETRY_ATTEMPTS=1
+export D1_REQUEST_TIMEOUT_MS=5000
+export D1_DEBUG_LOG=1
+```
+
+### `not authorized to use function: sqlite_version`
+
+D1 blocks some SQLite functions. Prefer health checks like:
+
+```sql
+SELECT 1 AS ok;
+```
+
+instead of `SELECT sqlite_version()`.

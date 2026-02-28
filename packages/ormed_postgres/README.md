@@ -20,37 +20,17 @@ PostgreSQL driver adapter for the ormed ORM. Implements the `DriverAdapter` cont
 
 ```yaml
 dependencies:
-  ormed: ^0.1.0
-  ormed_postgres: ^0.1.0
+  ormed: ^0.2.0
+  ormed_postgres: ^0.2.0
 ```
 
 ## Quick Start
 
 ```dart
-import 'dart:io';
-
-import 'package:ormed/ormed.dart';
-import 'package:ormed_postgres/ormed_postgres.dart';
-import 'package:your_app/src/database/orm_registry.g.dart';
-
-DataSourceOptions buildDataSourceOptions({String connection = 'default'}) {
-  final env = OrmedEnvironment.fromDirectory(Directory.current);
-  final registry = bootstrapOrm();
-  return registry.postgresDataSourceOptionsFromEnv(
-    name: connection,
-    environment: env.values,
-  );
-}
-
-DataSource createDataSource({
-  DataSourceOptions? options,
-  String connection = 'default',
-}) {
-  return DataSource(options ?? buildDataSourceOptions(connection: connection));
-}
+import 'package:your_app/src/database/datasource.dart';
 
 Future<void> main() async {
-  final ds = createDataSource();
+  final ds = createDataSource(connection: 'default');
   await ds.init();
 
   final rows = await ds.connection.driver.queryRaw('SELECT 1 AS ok');
@@ -59,6 +39,9 @@ Future<void> main() async {
   await ds.dispose();
 }
 ```
+
+Generated apps should use `ormed init` scaffolding (`lib/src/database/config.dart` +
+`datasource.dart`) as the primary runtime entrypoint.
 
 ### Low-level adapter usage
 
@@ -111,11 +94,11 @@ import 'dart:io';
 
 import 'package:ormed/ormed.dart';
 import 'package:ormed_postgres/ormed_postgres.dart';
-import 'package:your_app/src/database/orm_registry.g.dart';
+import 'package:your_app/src/models/user.orm.dart';
 
 Future<void> main() async {
   final env = OrmedEnvironment.fromDirectory(Directory.current);
-  final registry = bootstrapOrm();
+  final registry = ModelRegistry()..register(UserOrmDefinition.definition);
   final ds = DataSource(
     registry.postgresDataSourceOptionsFromEnv(
       name: 'default',
@@ -130,6 +113,14 @@ Future<void> main() async {
   await ds.dispose();
 }
 ```
+
+## Environment Variables
+
+`postgresDataSourceOptionsFromEnv(...)` recognizes:
+
+- `DB_URL` or `DATABASE_URL`
+- `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`
+- `DB_SSLMODE`, `DB_TIMEZONE`, `DB_APP_NAME`
 
 ## Driver Capabilities
 

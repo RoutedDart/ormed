@@ -22,11 +22,11 @@ A strongly-typed ORM (Object-Relational Mapping) core for Dart, inspired by Eloq
 
 ```yaml
 dependencies:
-  ormed: ^0.1.0
-  ormed_sqlite: ^0.1.0 # Or ormed_postgres, ormed_mysql
+  ormed: ^0.2.0
+  ormed_sqlite: ^0.2.0 # Or ormed_postgres, ormed_mysql
 
 dev_dependencies:
-  ormed_cli: ^0.1.0
+  ormed_cli: ^0.2.0
   build_runner: ^2.4.0
 ```
 
@@ -431,12 +431,13 @@ If you need full manual control, you can build `DataSourceOptions` directly:
 ```dart
 import 'package:ormed/ormed.dart';
 import 'package:ormed_sqlite/ormed_sqlite.dart';
-import 'src/database/orm_registry.g.dart';
+import 'src/models/user.orm.dart';
 
 void main() async {
+  final registry = ModelRegistry()..register(UserOrmDefinition.definition);
   final ds = DataSource(DataSourceOptions(
     driver: SqliteDriverAdapter.file('database.sqlite'),
-    registry: bootstrapOrm(),
+    registry: registry,
   ));
   
   await ds.init();
@@ -747,7 +748,7 @@ Best for: Local development, mobile apps, embedded databases, testing.
 
 ```yaml
 dependencies:
-  ormed_sqlite: ^0.1.0
+  ormed_sqlite: ^0.2.0
 ```
 
 ```dart
@@ -770,7 +771,7 @@ Best for: Production applications, complex queries, advanced data types.
 
 ```yaml
 dependencies:
-  ormed_postgres: ^0.1.0
+  ormed_postgres: ^0.2.0
 ```
 
 ```dart
@@ -791,7 +792,7 @@ Best for: Existing MySQL infrastructure, WordPress/Laravel migrations, web hosti
 
 ```yaml
 dependencies:
-  ormed_mysql: ^0.1.0
+  ormed_mysql: ^0.2.0
 ```
 
 ```dart

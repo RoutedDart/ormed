@@ -12,11 +12,11 @@ import 'dart:io';
 import 'package:ormed/ormed.dart';
 import 'package:ormed_postgres/ormed_postgres.dart';
 import 'package:ormed_postgres_extensions/ormed_postgres_extensions.dart';
-import 'package:your_app/src/database/orm_registry.g.dart';
+import 'package:your_app/src/models/place.orm.dart';
 
 Future<DataSource> createDataSourceWithExtensions() async {
   final env = OrmedEnvironment.fromDirectory(Directory.current);
-  final registry = bootstrapOrm();
+  final registry = ModelRegistry()..register(PlaceOrmDefinition.definition);
   final baseOptions = registry.postgresDataSourceOptionsFromEnv(
     name: 'default',
     environment: env.values,

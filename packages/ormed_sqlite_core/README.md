@@ -22,14 +22,23 @@ import 'dart:io';
 
 import 'package:ormed/ormed.dart';
 import 'package:ormed_sqlite/ormed_sqlite.dart';
-import 'package:your_app/src/database/orm_registry.g.dart';
+import 'package:your_app/src/models/user.orm.dart';
 
 DataSource createDataSource() {
   final env = OrmedEnvironment.fromDirectory(Directory.current);
-  final registry = bootstrapOrm();
+  final registry = ModelRegistry()..register(UserOrmDefinition.definition);
   final path = env.string('DB_PATH', fallback: 'database/app.sqlite');
   return DataSource(
     registry.sqliteFileDataSourceOptions(path: path, name: 'default'),
   );
 }
+```
+
+## Example
+
+`ormed_sqlite_core` is most useful when building adapters/tools around SQLite SQL
+generation. Run the example to preview generated SQLite DDL:
+
+```bash
+dart run example/main.dart
 ```

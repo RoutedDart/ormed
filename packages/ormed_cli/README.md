@@ -6,7 +6,7 @@ Command-line interface for the ormed ORM. Provides migration management, schema 
 
 ```yaml
 dev_dependencies:
-  ormed_cli: ^0.1.0
+  ormed_cli: ^0.2.0
 ```
 
 The CLI is available as the `ormed` executable:
