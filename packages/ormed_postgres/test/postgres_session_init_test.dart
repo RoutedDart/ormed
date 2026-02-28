@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:ormed/ormed.dart';
 import 'package:ormed_postgres/ormed_postgres.dart';
 import 'package:test/test.dart';
@@ -7,7 +5,7 @@ import 'package:test/test.dart';
 void main() {
   test('session and init options apply on connect', () async {
     final url =
-        Platform.environment['POSTGRES_URL'] ??
+        OrmedEnvironment().firstNonEmpty(['POSTGRES_URL']) ??
         'postgres://postgres:postgres@localhost:6543/orm_test';
 
     final adapter = PostgresDriverAdapter.custom(
@@ -33,7 +31,7 @@ void main() {
 
   test('rejects invalid session option keys', () async {
     final url =
-        Platform.environment['POSTGRES_URL'] ??
+        OrmedEnvironment().firstNonEmpty(['POSTGRES_URL']) ??
         'postgres://postgres:postgres@localhost:6543/orm_test';
 
     final adapter = PostgresDriverAdapter.custom(
@@ -58,7 +56,7 @@ void main() {
 
   test('rejects session option keys not in allowlist', () async {
     final url =
-        Platform.environment['POSTGRES_URL'] ??
+        OrmedEnvironment().firstNonEmpty(['POSTGRES_URL']) ??
         'postgres://postgres:postgres@localhost:6543/orm_test';
 
     final adapter = PostgresDriverAdapter.custom(
@@ -84,7 +82,7 @@ void main() {
 
   test('accepts allowlisted session option keys', () async {
     final url =
-        Platform.environment['POSTGRES_URL'] ??
+        OrmedEnvironment().firstNonEmpty(['POSTGRES_URL']) ??
         'postgres://postgres:postgres@localhost:6543/orm_test';
 
     final adapter = PostgresDriverAdapter.custom(

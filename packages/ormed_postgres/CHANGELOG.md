@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- **Added**: `DataSourceOptions.postgres(...)` and `ModelRegistry.postgresDataSource(...)` extension helpers for code-first PostgreSQL setup.
+- **Docs**: Added usage guidance for the new Postgres datasource helpers.
+
 ## 0.1.0
 
 - **Release**: Promote ormed_postgres to the stable 0.1.0 line.

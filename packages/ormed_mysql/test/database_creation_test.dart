@@ -1,12 +1,12 @@
+import 'package:ormed/ormed.dart';
 import 'package:ormed_mysql/ormed_mysql.dart';
 import 'package:test/test.dart';
-import 'dart:io';
 
 void main() {
   group('MySQL/MariaDB Database Creation', () {
     test('MySQL driver can create new database', () async {
       final url =
-          Platform.environment['MYSQL_URL'] ??
+          OrmedEnvironment().firstNonEmpty(['MYSQL_URL']) ??
           'mysql://root:secret@localhost:6605/orm_test';
 
       // Parse URL to connect without database specified
@@ -48,7 +48,7 @@ void main() {
 
     test('MariaDB driver can create new database', () async {
       final url =
-          Platform.environment['MARIADB_URL'] ??
+          OrmedEnvironment().firstNonEmpty(['MARIADB_URL']) ??
           'mysql://root:secret@localhost:6604/orm_test';
 
       // Parse URL to connect without database specified
@@ -89,7 +89,7 @@ void main() {
 
     test('MySQL driver can switch to newly created database', () async {
       final url =
-          Platform.environment['MYSQL_URL'] ??
+          OrmedEnvironment().firstNonEmpty(['MYSQL_URL']) ??
           'mysql://root:secret@localhost:6605/orm_test';
 
       // Parse URL to connect without database specified

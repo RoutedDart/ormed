@@ -74,6 +74,23 @@ SqliteDriverAdapter.custom(config: DatabaseConfig(
 ))
 ```
 
+## DataSource Helper Extensions
+
+```dart
+import 'package:ormed_sqlite/ormed_sqlite.dart';
+import 'package:your_app/src/database/orm_registry.g.dart';
+
+Future<void> main() async {
+  final ds = bootstrapOrm().sqliteFileDataSource(path: 'database/app.sqlite');
+  await ds.init();
+
+  final rows = await ds.connection.driver.queryRaw('SELECT 1 AS ok');
+  print(rows.first['ok']);
+
+  await ds.dispose();
+}
+```
+
 ## Connection Registration
 
 Register connections for use across your application:

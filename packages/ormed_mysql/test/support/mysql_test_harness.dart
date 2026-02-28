@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:driver_tests/driver_tests.dart';
 import 'package:ormed/ormed.dart';
 import 'package:ormed_mysql/ormed_mysql.dart';
@@ -95,7 +93,7 @@ Future<MySqlTestHarness> createMySqlTestHarness({
 
   final resolvedUrl =
       url ??
-      Platform.environment['MYSQL_URL'] ??
+      OrmedEnvironment().firstNonEmpty(['MYSQL_URL']) ??
       'mysql://root:secret@localhost:6605/orm_test';
 
   // Parse the connection URL for later use

@@ -1,9 +1,9 @@
-import 'dart:io';
+import 'package:ormed/ormed.dart';
 import 'package:postgres/postgres.dart';
 
 void main() async {
   final url =
-      Platform.environment['POSTGRES_URL'] ??
+      OrmedEnvironment().firstNonEmpty(['POSTGRES_URL']) ??
       'postgres://postgres:postgres@127.0.0.1:6543/orm_test';
   print('Connecting to: $url');
 

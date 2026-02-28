@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- **Updated**: Integration tests now use `OrmedEnvironment` helpers for env var lookups.
+
 ## 0.1.0
 
 - **Release**: Promote ormed_postgres_extensions to the stable 0.1.0 line.

@@ -101,6 +101,29 @@ MySqlDriverAdapter.custom(config: DatabaseConfig(
 ))
 ```
 
+## DataSource Helper Extensions
+
+```dart
+import 'dart:io';
+
+import 'package:ormed/ormed.dart';
+import 'package:ormed_mysql/ormed_mysql.dart';
+import 'package:your_app/src/database/orm_registry.g.dart';
+
+Future<void> main() async {
+  final env = OrmedEnvironment.fromDirectory(Directory.current);
+  final ds = bootstrapOrm().mySqlDataSourceFromEnv(
+    environment: env.values,
+  );
+  await ds.init();
+
+  final rows = await ds.connection.driver.queryRaw('SELECT 1 AS ok');
+  print(rows.first['ok']);
+
+  await ds.dispose();
+}
+```
+
 ## Driver Capabilities
 
 | Capability | Supported |
