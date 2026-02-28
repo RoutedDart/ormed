@@ -1,4 +1,4 @@
-@Tags(['integration', 'shared'])
+@Tags(['shared'])
 @Timeout(Duration(minutes: 3))
 library;
 
@@ -12,26 +12,22 @@ import 'support/d1_test_harness.dart';
 
 Future<void> main() async {
   final env = OrmedEnvironment.fromDirectory(Directory.current);
-  final accountId = env.value('D1_ACCOUNT_ID') ?? env.value('CF_ACCOUNT_ID');
-  final databaseId = env.value('D1_DATABASE_ID');
-  final apiToken = env.value('D1_API_TOKEN') ?? env.value('D1_SECRET');
-
-  final missing = <String>[
-    if (accountId == null) 'D1_ACCOUNT_ID/CF_ACCOUNT_ID',
-    if (databaseId == null) 'D1_DATABASE_ID',
-    if (apiToken == null) 'D1_API_TOKEN/D1_SECRET',
-  ];
-
-  if (missing.isNotEmpty) {
-    test(
-      'D1 shared tests require integration env vars',
-      () {},
-      skip: 'Missing env vars: ${missing.join(', ')}',
-    );
+  final backend = resolveD1SharedTestBackend(env);
+  final skipReason = d1SharedTestSkipReason(backend: backend, env: env);
+  if (skipReason != null) {
+    test('D1 shared tests prerequisites', () {}, skip: skipReason);
     return;
   }
 
-  final harness = await createD1TestHarness(logging: true);
+  final ormedSqlLogs = env.firstBool([
+    'D1_ORM_LOG',
+    'D1_ORMED_LOGGING',
+    'ORMED_LOGGING',
+  ], fallback: false);
+  final harness = await createD1TestHarness(
+    backend: backend,
+    logging: ormedSqlLogs,
+  );
   _attachDataSourceDebugLogging(harness.dataSource, env: env);
 
   tearDownAll(() async {
@@ -81,7 +77,7 @@ void _attachDataSourceDebugLogging(
     'D1_DS_LOG',
     'D1_DATA_SOURCE_LOG',
     'D1_DEBUG_LOG',
-  ], fallback: true);
+  ], fallback: false);
   if (!enabled) {
     return;
   }

@@ -4,7 +4,63 @@ import 'package:driver_tests/driver_tests.dart';
 import 'package:ormed/ormed.dart';
 import 'package:ormed_d1/ormed_d1.dart';
 
-/// Reusable Cloudflare D1 test harness for shared driver tests.
+import 'd1_sqlite_cli_mock_server.dart';
+
+enum D1SharedTestBackend { mock, real }
+
+D1SharedTestBackend resolveD1SharedTestBackend(
+  OrmedEnvironment env, {
+  D1SharedTestBackend fallback = D1SharedTestBackend.mock,
+}) {
+  final raw = env.firstNonEmpty([
+    'D1_TEST_MODE',
+    'D1_TEST_BACKEND',
+    'D1_SHARED_BACKEND',
+  ]);
+  if (raw == null) {
+    return fallback;
+  }
+
+  switch (raw.trim().toLowerCase()) {
+    case 'mock':
+    case 'sqlite':
+    case 'sqlite-cli':
+      return D1SharedTestBackend.mock;
+    case 'real':
+    case 'remote':
+    case 'd1':
+      return D1SharedTestBackend.real;
+    default:
+      return fallback;
+  }
+}
+
+String? d1SharedTestSkipReason({
+  required D1SharedTestBackend backend,
+  required OrmedEnvironment env,
+}) {
+  if (backend == D1SharedTestBackend.mock) {
+    if (!D1SqliteCliMockServer.isAvailable) {
+      return 'sqlite3 CLI is not available on PATH for mock D1 shared tests.';
+    }
+    return null;
+  }
+
+  final accountId = env.value('D1_ACCOUNT_ID') ?? env.value('CF_ACCOUNT_ID');
+  final databaseId = env.value('D1_DATABASE_ID');
+  final apiToken = env.value('D1_API_TOKEN') ?? env.value('D1_SECRET');
+  final missing = <String>[
+    if (accountId == null) 'D1_ACCOUNT_ID/CF_ACCOUNT_ID',
+    if (databaseId == null) 'D1_DATABASE_ID',
+    if (apiToken == null) 'D1_API_TOKEN/D1_SECRET',
+  ];
+  if (missing.isEmpty) {
+    return null;
+  }
+  return 'Missing env vars: ${missing.join(', ')}';
+}
+
+/// Reusable D1 test harness for shared driver tests.
 class D1TestHarness {
   D1TestHarness({
     required this.adapter,
@@ -14,8 +70,11 @@ class D1TestHarness {
     required this.accountId,
     required this.databaseId,
     required this.baseUrl,
+    required this.backend,
+    required this.driverOptions,
     required this.logging,
     required this.enableNamedTimezones,
+    this.mockServer,
   });
 
   final D1DriverAdapter adapter;
@@ -25,50 +84,32 @@ class D1TestHarness {
   final String accountId;
   final String databaseId;
   final String baseUrl;
+  final D1SharedTestBackend backend;
+  final Map<String, Object?> driverOptions;
   final bool logging;
   final bool enableNamedTimezones;
+  final D1SqliteCliMockServer? mockServer;
+
+  bool get isMock => backend == D1SharedTestBackend.mock;
 
   D1DriverAdapter createTestAdapter(String testDbName) {
-    final env = OrmedEnvironment.fromDirectory(Directory.current);
-    late final String token;
-    try {
-      token = env.requireAny([
-        'D1_API_TOKEN',
-        'D1_SECRET',
-      ], message: 'D1_API_TOKEN or D1_SECRET is required for D1 shared tests.');
-    } on ArgumentError catch (error) {
-      throw StateError(error.message.toString());
-    }
-
-    final driverOptions = <String, Object?>{
-      'accountId': accountId,
-      'databaseId': databaseId,
-      'apiToken': token,
-      'baseUrl': baseUrl,
-      'debugLog': env.boolValue('D1_DEBUG_LOG', fallback: true),
-      'maxAttempts': env.intValue('D1_RETRY_ATTEMPTS', fallback: 5),
-      'requestTimeoutMs': env.intValue(
-        'D1_REQUEST_TIMEOUT_MS',
-        fallback: 30000,
-      ),
-      'retryBaseDelayMs': env.intValue('D1_RETRY_BASE_DELAY_MS', fallback: 250),
-      'retryMaxDelayMs': env.intValue('D1_RETRY_MAX_DELAY_MS', fallback: 3000),
-    };
-
+    final options = Map<String, Object?>.from(driverOptions);
     return D1DriverAdapter.custom(
-      config: DatabaseConfig(driver: 'd1', options: driverOptions),
+      config: DatabaseConfig(driver: 'd1', options: options),
     );
   }
 
   Future<void> dispose() async {
     await dataSource.dispose();
     await adapter.close();
+    await mockServer?.close();
   }
 }
 
 Future<D1TestHarness> createD1TestHarness({
   bool logging = true,
   bool enableNamedTimezones = true,
+  D1SharedTestBackend? backend,
   String? accountId,
   String? databaseId,
   String? apiToken,
@@ -76,40 +117,67 @@ Future<D1TestHarness> createD1TestHarness({
 }) async {
   D1DriverAdapter.registerCodecs();
   final env = OrmedEnvironment.fromDirectory(Directory.current);
+  final resolvedBackend = backend ?? resolveD1SharedTestBackend(env);
 
+  D1SqliteCliMockServer? mockServer;
   late final String resolvedAccountId;
   late final String resolvedDatabaseId;
   late final String resolvedApiToken;
-  try {
+
+  if (resolvedBackend == D1SharedTestBackend.mock) {
+    if (!D1SqliteCliMockServer.isAvailable) {
+      throw StateError(
+        'sqlite3 CLI is not available on PATH for mock D1 shared tests.',
+      );
+    }
+    mockServer = await D1SqliteCliMockServer.start();
     resolvedAccountId =
         accountId ??
-        env.requireAny(
-          ['D1_ACCOUNT_ID', 'CF_ACCOUNT_ID'],
-          message:
-              'D1_ACCOUNT_ID or CF_ACCOUNT_ID is required for D1 shared tests.',
-        );
+        env.value('D1_ACCOUNT_ID') ??
+        env.value('CF_ACCOUNT_ID') ??
+        'mock-account';
     resolvedDatabaseId =
-        databaseId ??
-        env.require(
-          'D1_DATABASE_ID',
-          message: 'D1_DATABASE_ID is required for D1 shared tests.',
-        );
+        databaseId ?? env.value('D1_DATABASE_ID') ?? 'mock-database';
     resolvedApiToken =
         apiToken ??
-        env.requireAny(
-          ['D1_API_TOKEN', 'D1_SECRET'],
-          message: 'D1_API_TOKEN or D1_SECRET is required for D1 shared tests.',
-        );
-  } on ArgumentError catch (error) {
-    throw StateError(error.message.toString());
+        env.value('D1_API_TOKEN') ??
+        env.value('D1_SECRET') ??
+        'mock-token';
+  } else {
+    try {
+      resolvedAccountId =
+          accountId ??
+          env.requireAny(
+            ['D1_ACCOUNT_ID', 'CF_ACCOUNT_ID'],
+            message:
+                'D1_ACCOUNT_ID or CF_ACCOUNT_ID is required for real D1 shared tests.',
+          );
+      resolvedDatabaseId =
+          databaseId ??
+          env.require(
+            'D1_DATABASE_ID',
+            message: 'D1_DATABASE_ID is required for real D1 shared tests.',
+          );
+      resolvedApiToken =
+          apiToken ??
+          env.requireAny(
+            ['D1_API_TOKEN', 'D1_SECRET'],
+            message:
+                'D1_API_TOKEN or D1_SECRET is required for real D1 shared tests.',
+          );
+    } on ArgumentError catch (error) {
+      throw StateError(error.message.toString());
+    }
   }
+
   final resolvedBaseUrl =
       baseUrl ??
+      mockServer?.baseUrl ??
       env.string(
         'D1_BASE_URL',
         fallback: 'https://api.cloudflare.com/client/v4',
       );
-  final resolvedDebugLog = env.boolValue('D1_DEBUG_LOG', fallback: true);
+  final resolvedDebugLog = env.boolValue('D1_DEBUG_LOG', fallback: false);
   final resolvedMaxAttempts = env.intValue('D1_RETRY_ATTEMPTS', fallback: 5);
   final resolvedRequestTimeoutMs = env.intValue(
     'D1_REQUEST_TIMEOUT_MS',
@@ -197,8 +265,11 @@ Future<D1TestHarness> createD1TestHarness({
     accountId: resolvedAccountId,
     databaseId: resolvedDatabaseId,
     baseUrl: resolvedBaseUrl,
+    backend: resolvedBackend,
+    driverOptions: Map<String, Object?>.from(driverOptions),
     logging: logging,
     enableNamedTimezones: enableNamedTimezones,
+    mockServer: mockServer,
   );
 }
 
