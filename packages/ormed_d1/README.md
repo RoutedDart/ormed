@@ -16,38 +16,42 @@ dependencies:
 ## Quick start with Ormed
 
 ```dart
+import 'dart:io';
+
 import 'package:ormed/ormed.dart';
 import 'package:ormed_d1/ormed_d1.dart';
+import 'package:your_app/src/database/orm_registry.g.dart';
+
+DataSourceOptions buildDataSourceOptions({String connection = 'd1'}) {
+  final env = OrmedEnvironment.fromDirectory(Directory.current);
+  final registry = bootstrapOrm();
+  return registry.d1DataSourceOptionsFromEnv(
+    name: connection,
+    environment: env.values,
+  );
+}
+
+DataSource createDataSource({
+  DataSourceOptions? options,
+  String connection = 'd1',
+}) {
+  return DataSource(options ?? buildDataSourceOptions(connection: connection));
+}
 
 Future<void> main() async {
-  ensureD1DriverRegistration();
+  final ds = createDataSource();
+  await ds.init();
 
-  final registry = ModelRegistry()
-    ..register(UserOrmDefinition.definition);
+  final rows = await ds.connection.driver.queryRaw('SELECT 1 AS ok');
+  print(rows.first['ok']);
 
-  registerD1OrmConnection(
-    name: 'd1',
-    database: DatabaseConfig(
-      driver: 'd1',
-      options: {
-        'accountId': 'your-cloudflare-account-id',
-        'databaseId': 'your-d1-database-id',
-        'apiToken': 'your-d1-api-token',
-      },
-    ),
-    registry: registry,
-  );
-
-  await ConnectionManager.instance.use('d1', (conn) async {
-    final rows = await conn.driver.queryRaw('SELECT 1 AS ok');
-    print(rows.first['ok']);
-  });
+  await ds.dispose();
 }
 ```
 
 ## Using `DataSource`
 
-### Helper extensions (recommended)
+### Helper extensions (recommended, from `.env`)
 
 ```dart
 import 'dart:io';
@@ -58,9 +62,12 @@ import 'package:your_app/src/database/orm_registry.g.dart';
 
 Future<void> main() async {
   final env = OrmedEnvironment.fromDirectory(Directory.current);
-  final dataSource = bootstrapOrm().d1DataSourceFromEnv(
-    name: 'd1',
-    environment: env.values,
+  final registry = bootstrapOrm();
+  final dataSource = DataSource(
+    registry.d1DataSourceOptionsFromEnv(
+      name: 'd1',
+      environment: env.values,
+    ),
   );
   await dataSource.init();
 
@@ -71,47 +78,24 @@ Future<void> main() async {
 }
 ```
 
-### `DataSource.fromConfig(...)` (project config style)
+### Helper extensions (explicit credentials)
 
 ```dart
 import 'package:ormed/ormed.dart';
 import 'package:ormed_d1/ormed_d1.dart';
+import 'package:your_app/src/database/orm_registry.g.dart';
 
 Future<void> main() async {
-  ensureD1DriverRegistration();
-
-  final registry = ModelRegistry()
-    ..register(UserOrmDefinition.definition);
-
-  final config = OrmProjectConfig(
-    activeConnectionName: 'd1',
-    connections: {
-      'd1': ConnectionDefinition(
-        name: 'd1',
-        driver: DriverConfig(
-          type: 'd1',
-          options: {
-            'accountId': 'your-cloudflare-account-id',
-            'databaseId': 'your-d1-database-id',
-            'apiToken': 'your-d1-api-token',
-          },
-        ),
-        migrations: MigrationSection(
-          directory: 'database/migrations',
-          registry: 'database/migrations.dart',
-          ledgerTable: 'orm_migrations',
-          schemaDump: 'database/schema',
-        ),
-      ),
-    },
+  final registry = bootstrapOrm();
+  final dataSource = DataSource(
+    registry.d1DataSourceOptions(
+      name: 'd1',
+      accountId: 'your-cloudflare-account-id',
+      databaseId: 'your-d1-database-id',
+      apiToken: 'your-d1-api-token',
+    ),
   );
-
-  final dataSource = DataSource.fromConfig(config, registry: registry);
   await dataSource.init();
-
-  final rows = await dataSource.connection.driver.queryRaw('SELECT 1 AS ok');
-  print(rows.first['ok']);
-
   await dataSource.dispose();
 }
 ```

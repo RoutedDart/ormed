@@ -27,31 +27,51 @@ dependencies:
 ## Quick Start
 
 ```dart
+import 'dart:io';
+
+import 'package:ormed/ormed.dart';
+import 'package:ormed_sqlite/ormed_sqlite.dart';
+import 'package:your_app/src/database/orm_registry.g.dart';
+
+DataSourceOptions buildDataSourceOptions({String connection = 'default'}) {
+  final env = OrmedEnvironment.fromDirectory(Directory.current);
+  final registry = bootstrapOrm();
+  final path = env.string('DB_PATH', fallback: 'database/app.sqlite');
+  return registry.sqliteFileDataSourceOptions(path: path, name: connection);
+}
+
+DataSource createDataSource({
+  DataSourceOptions? options,
+  String connection = 'default',
+}) {
+  return DataSource(options ?? buildDataSourceOptions(connection: connection));
+}
+
+Future<void> main() async {
+  final ds = createDataSource();
+  await ds.init();
+
+  final rows = await ds.connection.driver.queryRaw('SELECT 1 AS ok');
+  print(rows.first['ok']);
+
+  await ds.dispose();
+}
+```
+
+### Low-level adapter usage
+
+```dart
 import 'package:ormed/ormed.dart';
 import 'package:ormed_sqlite/ormed_sqlite.dart';
 
-void main() async {
-  // In-memory database
+Future<void> main() async {
   final adapter = SqliteDriverAdapter.inMemory();
-  
-  // Or file-based
-  // final adapter = SqliteDriverAdapter.file('app.sqlite');
-  
-  final registry = ModelRegistry()..register(UserOrmDefinition.definition);
-  final context = QueryContext(registry: registry, driver: adapter);
+  final context = QueryContext(registry: ModelRegistry(), driver: adapter);
 
-  // Create schema
   await adapter.executeRaw(
     'CREATE TABLE users (id INTEGER PRIMARY KEY, email TEXT NOT NULL)',
   );
-
-  // Use repository
-  final repository = context.repository<\$User>();
-  await repository.insert(\$User(id: 1, email: 'example@example.com'));
-
-  final users = await context.query<\$User>().get();
-  print(users.first.email);
-  
+  await context.table('users').insert({'email': 'example@example.com'});
   await adapter.close();
 }
 ```
@@ -77,11 +97,20 @@ SqliteDriverAdapter.custom(config: DatabaseConfig(
 ## DataSource Helper Extensions
 
 ```dart
+import 'dart:io';
+
+import 'package:ormed/ormed.dart';
 import 'package:ormed_sqlite/ormed_sqlite.dart';
 import 'package:your_app/src/database/orm_registry.g.dart';
 
 Future<void> main() async {
-  final ds = bootstrapOrm().sqliteFileDataSource(path: 'database/app.sqlite');
+  final env = OrmedEnvironment.fromDirectory(Directory.current);
+  final registry = bootstrapOrm();
+  final path = env.string('DB_PATH', fallback: 'database/app.sqlite');
+
+  final ds = DataSource(
+    registry.sqliteFileDataSourceOptions(path: path, name: 'default'),
+  );
   await ds.init();
 
   final rows = await ds.connection.driver.queryRaw('SELECT 1 AS ok');

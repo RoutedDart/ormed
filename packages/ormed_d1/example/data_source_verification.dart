@@ -29,8 +29,6 @@ Future<void> main(List<String> args) async {
     return;
   }
 
-  ensureD1DriverRegistration();
-
   final driverOptions = <String, Object?>{
     'accountId': accountId,
     'databaseId': databaseId,
@@ -44,37 +42,45 @@ Future<void> main(List<String> args) async {
   };
 
   if (mode == 'both' || mode == 'from-config') {
-    await _verifyWithDataSourceFromConfig(driverOptions);
+    await _verifyWithHelperDataSource(
+      accountId: accountId,
+      databaseId: databaseId,
+      apiToken: apiToken,
+      baseUrl: baseUrl,
+      env: env,
+    );
   }
   if (mode == 'both' || mode == 'direct') {
     await _verifyWithDirectDataSource(driverOptions);
   }
 }
 
-Future<void> _verifyWithDataSourceFromConfig(
-  Map<String, Object?> driverOptions,
-) async {
-  final config = OrmProjectConfig(
-    activeConnectionName: 'd1_from_config',
-    connections: {
-      'd1_from_config': ConnectionDefinition(
-        name: 'd1_from_config',
-        driver: DriverConfig(type: 'd1', options: Map.of(driverOptions)),
-        migrations: MigrationSection(
-          directory: 'database/migrations',
-          registry: 'database/migrations.dart',
-          ledgerTable: 'orm_migrations',
-          schemaDump: 'database/schema',
-        ),
-      ),
-    },
+Future<void> _verifyWithHelperDataSource({
+  required String accountId,
+  required String databaseId,
+  required String apiToken,
+  required String? baseUrl,
+  required OrmedEnvironment env,
+}) async {
+  final registry = ModelRegistry();
+  final dataSource = DataSource(
+    registry.d1DataSourceOptions(
+      name: 'd1_from_helpers',
+      accountId: accountId,
+      databaseId: databaseId,
+      apiToken: apiToken,
+      baseUrl: baseUrl ?? 'https://api.cloudflare.com/client/v4',
+      debugLog: env.boolValue('D1_DEBUG_LOG', fallback: false),
+      maxAttempts: env.intValue('D1_RETRY_ATTEMPTS', fallback: 4),
+      requestTimeoutMs: env.intValue('D1_REQUEST_TIMEOUT_MS', fallback: 30000),
+      retryBaseDelayMs: env.intValue('D1_RETRY_BASE_DELAY_MS', fallback: 250),
+      retryMaxDelayMs: env.intValue('D1_RETRY_MAX_DELAY_MS', fallback: 3000),
+    ),
   );
-
-  final dataSource = DataSource.fromConfig(config, registry: ModelRegistry());
 
   await dataSource.init();
   try {
-    await _runVerificationQuery(dataSource, label: 'from-config');
+    await _runVerificationQuery(dataSource, label: 'from-helpers');
   } finally {
     await dataSource.dispose();
   }

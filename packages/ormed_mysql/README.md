@@ -26,36 +26,49 @@ dependencies:
 ## Quick Start
 
 ```dart
+import 'dart:io';
+
 import 'package:ormed/ormed.dart';
+import 'package:ormed_mysql/ormed_mysql.dart';
+import 'package:your_app/src/database/orm_registry.g.dart';
+
+DataSourceOptions buildDataSourceOptions({String connection = 'default'}) {
+  final env = OrmedEnvironment.fromDirectory(Directory.current);
+  final registry = bootstrapOrm();
+  return registry.mySqlDataSourceOptionsFromEnv(
+    name: connection,
+    environment: env.values,
+  );
+}
+
+DataSource createDataSource({
+  DataSourceOptions? options,
+  String connection = 'default',
+}) {
+  return DataSource(options ?? buildDataSourceOptions(connection: connection));
+}
+
+Future<void> main() async {
+  final ds = createDataSource();
+  await ds.init();
+
+  final rows = await ds.connection.driver.queryRaw('SELECT 1 AS ok');
+  print(rows.first['ok']);
+
+  await ds.dispose();
+}
+```
+
+### Low-level adapter usage
+
+```dart
 import 'package:ormed_mysql/ormed_mysql.dart';
 
 Future<void> main() async {
   final adapter = MySqlDriverAdapter.fromUrl(
     'mysql://root:secret@localhost:3306/mydb',
   );
-  
-  final registry = ModelRegistry()..register(UserOrmDefinition.definition);
-  final context = QueryContext(
-    registry: registry,
-    driver: adapter,
-    codecRegistry: adapter.codecs,
-  );
-
-  await adapter.executeRaw(
-    'CREATE TABLE IF NOT EXISTS users ('
-    'id BIGINT PRIMARY KEY AUTO_INCREMENT,'
-    'email VARCHAR(255) NOT NULL,'
-    'active TINYINT(1) NOT NULL'
-    ')',
-  );
-
-  await context.repository<\$User>().insert(
-    \$User(email: 'alice@example.com', active: true),
-  );
-
-  final users = await context.query<\$User>().get();
-  print(users.first.email);
-  
+  await adapter.queryRaw('SELECT 1 AS ok');
   await adapter.close();
 }
 ```
@@ -112,8 +125,12 @@ import 'package:your_app/src/database/orm_registry.g.dart';
 
 Future<void> main() async {
   final env = OrmedEnvironment.fromDirectory(Directory.current);
-  final ds = bootstrapOrm().mySqlDataSourceFromEnv(
-    environment: env.values,
+  final registry = bootstrapOrm();
+  final ds = DataSource(
+    registry.mySqlDataSourceOptionsFromEnv(
+      name: 'default',
+      environment: env.values,
+    ),
   );
   await ds.init();
 

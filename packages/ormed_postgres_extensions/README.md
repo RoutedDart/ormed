@@ -4,6 +4,33 @@ Postgres extension handlers for Ormed using the driver extension system.
 
 ## Usage
 
+### Bootstrapping (generated helper style)
+
+```dart
+import 'dart:io';
+
+import 'package:ormed/ormed.dart';
+import 'package:ormed_postgres/ormed_postgres.dart';
+import 'package:ormed_postgres_extensions/ormed_postgres_extensions.dart';
+import 'package:your_app/src/database/orm_registry.g.dart';
+
+Future<DataSource> createDataSourceWithExtensions() async {
+  final env = OrmedEnvironment.fromDirectory(Directory.current);
+  final registry = bootstrapOrm();
+  final baseOptions = registry.postgresDataSourceOptionsFromEnv(
+    name: 'default',
+    environment: env.values,
+  );
+  final options = baseOptions.copyWith(
+    driverExtensions: const [PostgisExtensions(), PgvectorExtensions()],
+  );
+
+  final dataSource = DataSource(options);
+  await dataSource.init();
+  return dataSource;
+}
+```
+
 ### PostGIS
 
 ```dart
