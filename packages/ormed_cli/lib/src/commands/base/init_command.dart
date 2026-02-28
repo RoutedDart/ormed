@@ -151,7 +151,7 @@ class InitCommand extends Command<void> {
     // Load config
     final config = configFile.existsSync()
         ? loadOrmProjectConfig(configFile)
-        : _defaultOrmProjectConfig(packageName);
+        : _defaultOrmProjectConfig(packageName, root);
 
     if (!skipBuild &&
         (includeDatasource || includeMigrations || includeSeeders)) {
@@ -561,8 +561,11 @@ class InitCommand extends Command<void> {
               })
               .join('\n');
 
+          final separator = existingContent.trim().isEmpty
+              ? ''
+              : (existingContent.endsWith('\n') ? '\n' : '\n\n');
           envFile.writeAsStringSync(
-            '$existingContent\n\n# Added by ormed init\n$varsToAppend\n',
+            '$separator# Added by ormed init\n$varsToAppend\n',
             mode: FileMode.append,
           );
           cliIO.success(
@@ -712,9 +715,23 @@ const Map<String, String> _driverPackageMapping = {
   'postgresql': 'ormed_postgres',
 };
 
-OrmProjectConfig _defaultOrmProjectConfig(String packageName) {
-  final yaml = loadYaml(defaultOrmYaml(packageName)) as YamlMap;
-  return OrmProjectConfig.fromYaml(yaml);
+OrmProjectConfig _defaultOrmProjectConfig(String packageName, Directory root) {
+  final parsed = loadYaml(defaultOrmYaml(packageName)) as YamlMap;
+  final env = OrmedEnvironment.fromDirectory(root);
+  final expanded = expandEnv(parsed, env.values);
+  if (expanded is Map<String, Object?>) {
+    return OrmProjectConfig.fromMap(expanded);
+  }
+  if (expanded is Map) {
+    return OrmProjectConfig.fromMap(
+      Map<String, Object?>.from(
+        expanded.map(
+          (key, value) => MapEntry(key.toString(), value),
+        ),
+      ),
+    );
+  }
+  return OrmProjectConfig.fromYaml(parsed);
 }
 
 String _buildDataSourceOptionsBuilder({

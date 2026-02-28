@@ -258,15 +258,6 @@ Future<SchemaSnapshot> _captureSnapshot(
       }
       return SchemaSnapshot.capture(driver as SchemaDriver);
     });
-  } catch (_) {
-    return SchemaSnapshot(
-      schemas: const [],
-      tables: const [],
-      views: const [],
-      columns: const [],
-      indexes: const [],
-      foreignKeys: const [],
-    );
   } finally {
     await handle.dispose();
   }
