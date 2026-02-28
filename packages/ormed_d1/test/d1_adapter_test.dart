@@ -73,6 +73,24 @@ void main() {
     expect(() => adapter.queryRaw('select 1'), throwsA(isA<StateError>()));
   });
 
+  test('rejects transaction API because D1 cannot provide atomicity', () async {
+    final adapter = D1DriverAdapter.custom(
+      config: const DatabaseConfig(driver: 'd1'),
+      transport: _FakeTransport(),
+    );
+
+    expect(
+      () => adapter.transaction(() async => 1),
+      throwsA(
+        isA<UnsupportedError>().having(
+          (error) => error.message,
+          'message',
+          contains('does not support atomic'),
+        ),
+      ),
+    );
+  });
+
   test('http transport option validation', () {
     expect(
       () => D1HttpTransport.fromOptions(const <String, Object?>{}),

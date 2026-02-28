@@ -499,6 +499,55 @@ class _CreateTestUsersTable extends Migration {
 }
 ''';
 
+/// Normalizes a free-form value into a lowercase snake_case token.
+///
+/// Used by migration/model command slugs and filenames.
+String normalizeSnakeCaseToken(String value) => value
+    .trim()
+    .replaceAllMapped(
+      RegExp(r'([a-z0-9])([A-Z])'),
+      (match) => '${match.group(1)}_${match.group(2)}',
+    )
+    .replaceAll(RegExp(r'[^a-zA-Z0-9]+'), '_')
+    .replaceAll(RegExp(r'_+'), '_')
+    .replaceAll(RegExp(r'^_+|_+$'), '')
+    .toLowerCase();
+
+/// Splits connection names into alphanumeric parts for generated symbols/keys.
+List<String> splitConnectionNameParts(String connectionName) => connectionName
+    .trim()
+    .replaceAll(RegExp(r'[^a-zA-Z0-9]+'), ' ')
+    .split(RegExp(r'\s+'))
+    .where((part) => part.isNotEmpty)
+    .toList(growable: false);
+
+/// Generates the connection segment used in `DB_<CONNECTION>_*` env keys.
+String connectionEnvToken(String connectionName) {
+  final normalized = splitConnectionNameParts(
+    connectionName,
+  ).map((part) => part.toUpperCase()).join('_');
+  if (normalized.isEmpty) {
+    return 'DEFAULT';
+  }
+  return RegExp(r'^[0-9]').hasMatch(normalized)
+      ? 'CONN_$normalized'
+      : normalized;
+}
+
+/// Builds a scoped connection env key such as `DB_PRIMARY_PATH`.
+String dbConnectionEnvKey(String connectionName, String suffix) {
+  final cleanedSuffix = suffix
+      .trim()
+      .toUpperCase()
+      .replaceAll(RegExp(r'[^A-Z0-9]+'), '_')
+      .replaceAll(RegExp(r'_+'), '_')
+      .replaceAll(RegExp(r'^_+|_+$'), '');
+  if (cleanedSuffix.isEmpty) {
+    throw ArgumentError.value(suffix, 'suffix', 'Suffix must not be empty.');
+  }
+  return 'DB_${connectionEnvToken(connectionName)}_$cleanedSuffix';
+}
+
 /// Context for a resolved ORM project, containing the root directory and config file.
 class OrmProjectContext {
   OrmProjectContext({required this.root, this.configFile});

@@ -210,7 +210,87 @@ connections:
       expect(configText, contains('buildAllDataSourceOptions()'));
       expect(configText, contains('buildPrimaryDataSourceOptions'));
       expect(configText, contains('buildAnalyticsDataSourceOptions'));
+      expect(
+        configText,
+        contains("env.firstNonEmpty(['DB_PRIMARY_PATH', 'DB_PATH'])"),
+      );
+      expect(
+        configText,
+        contains(
+          "env.firstNonEmpty(['DB_ANALYTICS_PATH']) ?? 'database/analytics.sqlite'",
+        ),
+      );
     });
+
+    test(
+      'isolates postgres env keys by connection in scaffolded config',
+      () async {
+        File(p.join(scratchDir.path, 'ormed.yaml')).writeAsStringSync('''
+default_connection: primary
+connections:
+  primary:
+    driver:
+      type: postgres
+      options:
+        host: primary.local
+        port: 5432
+        database: app_primary
+        username: app_user
+    migrations:
+      directory: lib/src/database/migrations
+      registry: lib/src/database/migrations.dart
+      ledger_table: orm_migrations
+      schema_dump: database/schema
+  analytics:
+    driver:
+      type: postgres
+      options:
+        host: analytics.local
+        port: 5433
+        database: app_analytics
+        username: analytics_user
+    migrations:
+      directory: lib/src/database/migrations
+      registry: lib/src/database/migrations.dart
+      ledger_table: orm_migrations
+      schema_dump: database/schema
+''');
+
+        await runInit([
+          'init',
+          '--only=datasource',
+          '--no-interaction',
+          '--skip-build',
+        ]);
+
+        final configFile = File(
+          p.join(scratchDir.path, 'lib/src/database/config.dart'),
+        );
+        final configText = configFile.readAsStringSync();
+
+        expect(
+          configText,
+          contains(
+            "_parseIntEnv(env.firstNonEmpty(['DB_PRIMARY_PORT', 'DB_PORT'])",
+          ),
+        );
+        expect(
+          configText,
+          contains("_parseIntEnv(env.firstNonEmpty(['DB_ANALYTICS_PORT'])"),
+        );
+        expect(
+          configText,
+          contains(
+            "env.firstNonEmpty(['DB_ANALYTICS_HOST']) ?? 'analytics.local'",
+          ),
+        );
+        expect(configText, contains("'DB_PASSWORD': password ?? ''"));
+        expect(
+          configText,
+          contains("return registry.postgresDataSourceOptionsFromEnv("),
+        );
+      },
+    );
 
     test('scaffolds test helper derived from configured connections', () async {
       File(p.join(scratchDir.path, 'ormed.yaml')).writeAsStringSync('''
@@ -248,7 +328,15 @@ connections:
       final helperFile = File(
         p.join(scratchDir.path, 'lib/test/helpers/ormed_test_helper.dart'),
       );
+      final configFile = File(
+        p.join(scratchDir.path, 'lib/src/database/config.dart'),
+      );
+      final datasourceFile = File(
+        p.join(scratchDir.path, 'lib/src/database/datasource.dart'),
+      );
       expect(helperFile.existsSync(), isTrue);
+      expect(configFile.existsSync(), isTrue);
+      expect(datasourceFile.existsSync(), isTrue);
       final helperText = helperFile.readAsStringSync();
 
       expect(
@@ -263,6 +351,8 @@ connections:
       expect(helperText, contains('final OrmedTestConfig analyticsTestConfig'));
       expect(helperText, contains('OrmConnection primaryTestConnection()'));
       expect(helperText, contains('OrmConnection analyticsTestConnection()'));
+      expect(helperText, contains('_ensureGeneratedTestConfig('));
+      expect(helperText, isNot(contains('createDataSources();')));
       expect(helperText, isNot(contains('SqliteDriverAdapter.inMemory()')));
     });
 

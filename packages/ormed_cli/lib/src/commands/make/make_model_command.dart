@@ -121,16 +121,7 @@ String _toPascalCase(String value) => value
     )
     .join();
 
-String _toSnakeCase(String value) => value
-    .trim()
-    .replaceAllMapped(
-      RegExp(r'([a-z0-9])([A-Z])'),
-      (match) => '${match.group(1)}_${match.group(2)}',
-    )
-    .replaceAll(RegExp(r'[^a-zA-Z0-9]+'), '_')
-    .replaceAll(RegExp(r'_+'), '_')
-    .replaceAll(RegExp(r'^_+|_+$'), '')
-    .toLowerCase();
+String _toSnakeCase(String value) => normalizeSnakeCaseToken(value);
 
 String _pluralize(String value) {
   if (value.endsWith('s')) return value;

@@ -268,16 +268,7 @@ class AppDatabaseSeeder extends DatabaseSeeder {
 }
 ''';
 
-String _toSnakeCase(String slug) => slug
-    .trim()
-    .replaceAllMapped(
-      RegExp(r'([a-z0-9])([A-Z])'),
-      (match) => '${match.group(1)}_${match.group(2)}',
-    )
-    .replaceAll(RegExp(r'[^a-zA-Z0-9]+'), '_')
-    .replaceAll(RegExp(r'_+'), '_')
-    .replaceAll(RegExp(r'^_+|_+$'), '')
-    .toLowerCase();
+String _toSnakeCase(String slug) => normalizeSnakeCaseToken(slug);
 
 String _resolveDirectory({
   required Directory root,

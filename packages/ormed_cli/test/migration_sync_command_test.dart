@@ -23,7 +23,9 @@ void main() {
     late CommandRunner<void> runner;
 
     setUp(() async {
-      repoRoot = Directory.current;
+      repoRoot = Directory(
+        p.normalize(p.join(File.fromUri(Platform.script).parent.path, '..')),
+      );
       final scratchParent = Directory(
         p.join(Directory.systemTemp.path, 'ormed_cli_tests'),
       );

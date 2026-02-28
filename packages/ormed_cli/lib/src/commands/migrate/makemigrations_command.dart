@@ -313,10 +313,10 @@ String _defaultSlug(List<ModelSchemaChange> changes) {
 }
 
 String _ensureUniqueSlug(String slug, Directory migrationsDir) {
-  var candidate = _normalizeSlug(slug);
+  var candidate = normalizeSnakeCaseToken(slug);
   var suffix = 1;
   while (_slugExists(candidate, migrationsDir)) {
-    candidate = '${_normalizeSlug(slug)}_$suffix';
+    candidate = '${normalizeSnakeCaseToken(slug)}_$suffix';
     suffix++;
   }
   return candidate;
@@ -335,17 +335,6 @@ bool _slugExists(String slug, Directory migrationsDir) {
   }
   return false;
 }
-
-String _normalizeSlug(String value) => value
-    .trim()
-    .replaceAllMapped(
-      RegExp(r'([a-z0-9])([A-Z])'),
-      (match) => '${match.group(1)}_${match.group(2)}',
-    )
-    .replaceAll(RegExp(r'[^a-zA-Z0-9]+'), '_')
-    .replaceAll(RegExp(r'_+'), '_')
-    .replaceAll(RegExp(r'^_+|_+$'), '')
-    .toLowerCase();
 
 String _renderMigrationFile(String className, List<ModelSchemaChange> changes) {
   final upLines = <String>[];

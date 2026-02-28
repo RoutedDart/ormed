@@ -11,7 +11,9 @@ void main() {
     late Directory originalCwd;
 
     setUp(() {
-      originalCwd = Directory.current;
+      originalCwd = Directory(
+        p.normalize(p.join(File.fromUri(Platform.script).parent.path, '..')),
+      );
       final scratchParent = Directory(
         p.join(Directory.systemTemp.path, 'ormed_cli_make_model_test'),
       );

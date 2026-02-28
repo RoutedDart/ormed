@@ -61,8 +61,10 @@ class D1DriverAdapter extends SqliteRemoteAdapterBase {
 
   @override
   Future<R> transaction<R>(Future<R> Function() action) async {
-    // Cloudflare D1 HTTP API does not allow explicit BEGIN/COMMIT statements.
-    return action();
+    throw UnsupportedError(
+      'Cloudflare D1 HTTP API does not support atomic '
+      'multi-statement transactions.',
+    );
   }
 
   @override
