@@ -1,7 +1,6 @@
 # Changelog
 
-## Unreleased
-
+## 0.2.0
 - **Updated**: Integration tests now use `OrmedEnvironment` helpers for env var lookups.
 
 ## 0.1.0

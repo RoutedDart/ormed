@@ -1,7 +1,6 @@
 # Changelog
 
-## Unreleased
-
+## 0.2.0
 - **Added**: `DataSourceOptions.d1(...)`, `DataSourceOptions.d1FromEnvironment(...)`, and `ModelRegistry.d1DataSource(...)` helpers for code-first D1 setup.
 - **Added**: Configurable HTTP retry/backoff and request timeout controls for D1 transport.
 - **Added**: Optional D1 debug logging for request/response troubleshooting.

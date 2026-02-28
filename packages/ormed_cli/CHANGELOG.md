@@ -1,7 +1,6 @@
 # Changelog
 
-## Unreleased
-
+## 0.2.0
 - **Added**: `makemigrations` now generates a migration from generated model metadata (`orm_registry.g.dart`) against the current schema, then syncs migration registry entries.
 - **Added**: `makemigrations --sync-only` to skip model-diff generation and run registry sync only.
 - **Added**: `migrations:sync`, `migrations:check`, and `migrations:entry` commands for registry synchronization, validation, and manual entry scaffolding.

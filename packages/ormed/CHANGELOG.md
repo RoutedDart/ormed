@@ -1,7 +1,6 @@
 # Changelog
 
-## Unreleased
-
+## 0.2.0
 - **Added**: `OrmedEnvironment` with `.env` loading, variable interpolation support (`${VAR}` / `${VAR:-default}`), and typed helpers for required values.
 - **Added**: `MigrationEntry.named(...)` helper for easier manual migration registration.
 - **Improved**: `DataSource.fromConfig` now falls back to an empty `ModelRegistry` when not explicitly provided.

@@ -1,7 +1,6 @@
 # Changelog
 
-## Unreleased
-
+## 0.2.0
 - **Added**: `DataSourceOptions.mysql(...)` and `ModelRegistry.mySqlDataSource(...)` extension helpers for code-first MySQL setup.
 - **Docs**: Added usage guidance for the new MySQL datasource helpers.
 
