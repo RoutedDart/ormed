@@ -1,5 +1,5 @@
 import 'package:ormed/ormed.dart';
-import 'package:ormed_fullstack_example/orm_registry.g.dart';
+import 'package:ormed_fullstack_example/src/database/orm_registry.g.dart';
 import 'package:ormed_sqlite/ormed_sqlite.dart';
 
 // #region datasource-helper

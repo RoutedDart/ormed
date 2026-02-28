@@ -11,7 +11,7 @@ dependencies:
     path: ../ormed
   ormed_sqlite: ^0.1.0
   ormed_cli: ^0.1.0
-  artisanal: ^0.1.2
+  artisanal: ^0.2.0
 
 dev_dependencies:
   lints: ^6.0.0
@@ -22,6 +22,8 @@ dev_dependencies:
 dependency_overrides:
   ormed:
     path: ../ormed
+  ormed_sqlite_core:
+    path: ../ormed_sqlite_core
   ormed_sqlite:
     path: ../ormed_sqlite
   ormed_cli:

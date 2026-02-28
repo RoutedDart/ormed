@@ -11,7 +11,7 @@ class _OrmRegistryBuilder implements Builder {
   _OrmRegistryBuilder(BuilderOptions options)
     : outputPath =
           (options.config['output'] as String?)?.trim() ??
-          'lib/orm_registry.g.dart' {
+          'lib/src/database/orm_registry.g.dart' {
     if (outputPath.isEmpty) {
       throw StateError('The orm_registry output path cannot be empty.');
     }
@@ -59,7 +59,10 @@ class _OrmRegistryBuilder implements Builder {
       }
     }
 
-    final content = renderRegistryContent(summariesByKey.values.toList());
+    final content = renderRegistryContent(
+      summariesByKey.values.toList(),
+      packageName: buildStep.inputId.package,
+    );
     final outputId = AssetId(buildStep.inputId.package, outputPath);
     await buildStep.writeAsString(outputId, content);
   }
@@ -148,7 +151,7 @@ String? _extractBraceBlock(String source, int braceIndex) {
   return null;
 }
 
-String renderRegistryContent(List<ModelSummary> models) {
+String renderRegistryContent(List<ModelSummary> models, {String? packageName}) {
   final summaries = List<ModelSummary>.from(models)
     ..sort((a, b) => a.className.compareTo(b.className));
   final uniqueImports = <String>{};
@@ -159,7 +162,10 @@ String renderRegistryContent(List<ModelSummary> models) {
 
   for (final summary in summaries) {
     if (uniqueImports.add(summary.importPath)) {
-      buffer.writeln("import '${summary.importPath}';");
+      final importPath = packageName == null
+          ? summary.importPath
+          : 'package:$packageName/${summary.importPath}';
+      buffer.writeln("import '$importPath';");
     }
   }
 

@@ -218,13 +218,13 @@ String _formatTimestampCompact(DateTime value) {
 /// Example:
 /// ```dart
 /// final entries = [
-///   MigrationEntry(
-///     id: MigrationId.parse('m_20251130100953_create_users'),
-///     migration: const CreateUsersTable(),
+///   MigrationEntry.named(
+///     'm_20251130100953_create_users',
+///     const CreateUsersTable(),
 ///   ),
-///   MigrationEntry(
-///     id: MigrationId.parse('m_20251130101500_add_index'),
-///     migration: const AddEmailIndex(),
+///   MigrationEntry.named(
+///     'm_20251130101500_add_index',
+///     const AddEmailIndex(),
 ///   ),
 /// ];
 ///
@@ -233,6 +233,15 @@ String _formatTimestampCompact(DateTime value) {
 /// ```
 class MigrationEntry {
   const MigrationEntry({required this.id, required this.migration});
+
+  /// Convenience constructor for manual registry entries.
+  ///
+  /// Accepts migration IDs in either supported format:
+  /// - `m_YYYYMMDDHHMMSS_slug` (preferred)
+  /// - `YYYY_MM_DD_HHMMSS_slug` (legacy)
+  factory MigrationEntry.named(String id, Migration migration) {
+    return MigrationEntry(id: MigrationId.parse(id), migration: migration);
+  }
 
   final MigrationId id;
   final Migration migration;

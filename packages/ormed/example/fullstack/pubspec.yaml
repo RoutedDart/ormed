@@ -7,7 +7,7 @@ environment:
   sdk: ^3.10.4
 
 dependencies:
-  artisanal: ^0.1.2
+  artisanal: ^0.2.0
   contextual: ^2.1.0
   contextual_shelf: ^0.3.0
   file_cloud: ^0.1.0
@@ -37,4 +37,5 @@ dependency_overrides:
   ormed_cli: { path: ../../../ormed_cli }
   ormed_mysql: { path: ../../../ormed_mysql }
   ormed_postgres: { path: ../../../ormed_postgres }
+  ormed_sqlite_core: { path: ../../../ormed_sqlite_core }
   ormed_sqlite: { path: ../../../ormed_sqlite }

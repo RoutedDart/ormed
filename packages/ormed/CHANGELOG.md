@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- **Added**: `OrmedEnvironment` with `.env` loading, variable interpolation support (`${VAR}` / `${VAR:-default}`), and typed helpers for required values.
+- **Added**: `MigrationEntry.named(...)` helper for easier manual migration registration.
+- **Improved**: `DataSource.fromConfig` now falls back to an empty `ModelRegistry` when not explicitly provided.
+- **Changed**: Default ORM registry generation output path moved to `lib/src/database/orm_registry.g.dart`.
+- **Fixed**: Registry generator now emits package imports when needed so generated files continue to compile from nested output paths.
 - **Docs**: Updated quickstart and migration helper guidance to use `make:migration` and document `makemigrations` as model-diff generation plus registry sync.
 - **Docs**: Clarified `migrations:sync` as the registry-only command and aligned command examples with the current `ormed_cli` executable usage.
 
