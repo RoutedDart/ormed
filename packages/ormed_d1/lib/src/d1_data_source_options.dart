@@ -64,9 +64,9 @@ extension D1DataSourceRegistryExtensions on ModelRegistry {
   /// Builds [DataSourceOptions] for D1 using common environment variables.
   ///
   /// Required vars:
-  /// - `D1_ACCOUNT_ID` or `CF_ACCOUNT_ID`
-  /// - `D1_DATABASE_ID`
-  /// - `D1_API_TOKEN` or `D1_SECRET`
+  /// - `D1_ACCOUNT_ID` or `CF_ACCOUNT_ID` (also accepts `DB_D1_ACCOUNT_ID`)
+  /// - `D1_DATABASE_ID` (also accepts `DB_D1_DATABASE_ID`)
+  /// - `D1_API_TOKEN` or `D1_SECRET` (also accepts `DB_D1_API_TOKEN`)
   DataSourceOptions d1DataSourceOptionsFromEnv({
     String name = 'default',
     Map<String, String>? environment,
@@ -82,17 +82,53 @@ extension D1DataSourceRegistryExtensions on ModelRegistry {
     D1Transport? transport,
   }) {
     final env = OrmedEnvironment(environment);
-    final accountId = env.firstNonEmpty(['D1_ACCOUNT_ID', 'CF_ACCOUNT_ID']);
-    final databaseId = env.value('D1_DATABASE_ID');
-    final apiToken = env.firstNonEmpty(['D1_API_TOKEN', 'D1_SECRET']);
-    final baseUrl = env.string(
-      'D1_BASE_URL',
-      fallback: 'https://api.cloudflare.com/client/v4',
+    final accountId = env.firstNonEmpty([
+      'D1_ACCOUNT_ID',
+      'CF_ACCOUNT_ID',
+      'DB_D1_ACCOUNT_ID',
+    ]);
+    final databaseId = env.firstNonEmpty([
+      'D1_DATABASE_ID',
+      'DB_D1_DATABASE_ID',
+    ]);
+    final apiToken = env.firstNonEmpty([
+      'D1_API_TOKEN',
+      'D1_SECRET',
+      'DB_D1_API_TOKEN',
+    ]);
+    final baseUrl =
+        env.firstNonEmpty(['D1_BASE_URL', 'DB_D1_BASE_URL']) ??
+        'https://api.cloudflare.com/client/v4';
+    final maxAttempts = _intFromEnv(
+      env,
+      keys: const ['D1_RETRY_ATTEMPTS', 'DB_D1_RETRY_ATTEMPTS'],
+      fallback: 5,
+    );
+    final requestTimeoutMs = _intFromEnv(
+      env,
+      keys: const ['D1_REQUEST_TIMEOUT_MS', 'DB_D1_REQUEST_TIMEOUT_MS'],
+      fallback: 30000,
+    );
+    final retryBaseDelayMs = _intFromEnv(
+      env,
+      keys: const ['D1_RETRY_BASE_DELAY_MS', 'DB_D1_RETRY_BASE_DELAY_MS'],
+      fallback: 250,
+    );
+    final retryMaxDelayMs = _intFromEnv(
+      env,
+      keys: const ['D1_RETRY_MAX_DELAY_MS', 'DB_D1_RETRY_MAX_DELAY_MS'],
+      fallback: 3000,
+    );
+    final debugLog = _boolFromEnv(
+      env,
+      keys: const ['D1_DEBUG_LOG', 'DB_D1_DEBUG_LOG'],
+      fallback: false,
     );
     final missing = <String>[
-      if (accountId == null) 'D1_ACCOUNT_ID or CF_ACCOUNT_ID',
-      if (databaseId == null) 'D1_DATABASE_ID',
-      if (apiToken == null) 'D1_API_TOKEN or D1_SECRET',
+      if (accountId == null)
+        'D1_ACCOUNT_ID or CF_ACCOUNT_ID or DB_D1_ACCOUNT_ID',
+      if (databaseId == null) 'D1_DATABASE_ID or DB_D1_DATABASE_ID',
+      if (apiToken == null) 'D1_API_TOKEN or D1_SECRET or DB_D1_API_TOKEN',
     ];
     if (missing.isNotEmpty) {
       throw ArgumentError('Missing required env vars: ${missing.join(', ')}');
@@ -103,11 +139,11 @@ extension D1DataSourceRegistryExtensions on ModelRegistry {
       databaseId: databaseId!,
       apiToken: apiToken!,
       baseUrl: baseUrl,
-      maxAttempts: env.intValue('D1_RETRY_ATTEMPTS', fallback: 5),
-      requestTimeoutMs: env.intValue('D1_REQUEST_TIMEOUT_MS', fallback: 30000),
-      retryBaseDelayMs: env.intValue('D1_RETRY_BASE_DELAY_MS', fallback: 250),
-      retryMaxDelayMs: env.intValue('D1_RETRY_MAX_DELAY_MS', fallback: 3000),
-      debugLog: env.boolValue('D1_DEBUG_LOG', fallback: false),
+      maxAttempts: maxAttempts,
+      requestTimeoutMs: requestTimeoutMs,
+      retryBaseDelayMs: retryBaseDelayMs,
+      retryMaxDelayMs: retryMaxDelayMs,
+      debugLog: debugLog,
       name: name,
       scopeRegistry: scopeRegistry,
       codecs: codecs,
@@ -203,4 +239,43 @@ extension D1DataSourceRegistryExtensions on ModelRegistry {
       ),
     );
   }
+}
+
+int _intFromEnv(
+  OrmedEnvironment env, {
+  required List<String> keys,
+  required int fallback,
+}) {
+  for (final key in keys) {
+    final raw = env.value(key);
+    if (raw == null) continue;
+    final parsed = int.tryParse(raw.trim());
+    if (parsed != null) return parsed;
+  }
+  return fallback;
+}
+
+bool _boolFromEnv(
+  OrmedEnvironment env, {
+  required List<String> keys,
+  required bool fallback,
+}) {
+  for (final key in keys) {
+    final raw = env.value(key);
+    if (raw == null) continue;
+    final normalized = raw.trim().toLowerCase();
+    if (normalized == '1' ||
+        normalized == 'true' ||
+        normalized == 'yes' ||
+        normalized == 'on') {
+      return true;
+    }
+    if (normalized == '0' ||
+        normalized == 'false' ||
+        normalized == 'no' ||
+        normalized == 'off') {
+      return false;
+    }
+  }
+  return fallback;
 }

@@ -121,14 +121,7 @@ class MakeMigrationsCommand extends MigrationSyncCommand {
       return;
     }
 
-    var generated = false;
-    try {
-      generated = await _generateFromModels();
-    } on UsageException {
-      rethrow;
-    } catch (error) {
-      cliIO.warn('Model-diff generation skipped: $error');
-    }
+    final generated = await _generateFromModels();
 
     if (!generated) {
       cliIO.note(

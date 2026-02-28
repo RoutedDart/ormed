@@ -5,6 +5,8 @@ import 'dart:io';
 import 'package:artisanal/artisanal.dart';
 import 'package:ormed/ormed.dart';
 // ignore: unused_import
+import 'package:ormed_d1/ormed_d1.dart';
+// ignore: unused_import
 import 'package:ormed_mysql/ormed_mysql.dart';
 // ignore: unused_import
 import 'package:ormed_postgres/ormed_postgres.dart';
@@ -717,6 +719,7 @@ void _bootstrapCliDrivers() {
   if (_cliDriversBootstrapped) return;
   _cliDriversBootstrapped = true;
   ensureSqliteDriverRegistration();
+  ensureD1DriverRegistration();
   ensureMySqlDriverRegistration();
   ensurePostgresDriverRegistration();
 }

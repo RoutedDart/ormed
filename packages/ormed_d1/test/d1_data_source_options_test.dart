@@ -48,6 +48,38 @@ void main() {
       expect(driver.options['debugLog'], isTrue);
     });
 
+    test('accepts DB_D1_* scaffolded environment variable names', () {
+      final registry = ModelRegistry();
+
+      final options = registry.d1DataSourceOptionsFromEnv(
+        environment: const {
+          'DB_D1_ACCOUNT_ID': 'acct-db',
+          'DB_D1_DATABASE_ID': 'db-db',
+          'DB_D1_API_TOKEN': 'token-db',
+          'DB_D1_BASE_URL': 'https://api.example.invalid/client/v4',
+          'DB_D1_RETRY_ATTEMPTS': '7',
+          'DB_D1_REQUEST_TIMEOUT_MS': '12000',
+          'DB_D1_RETRY_BASE_DELAY_MS': '100',
+          'DB_D1_RETRY_MAX_DELAY_MS': '1400',
+          'DB_D1_DEBUG_LOG': 'true',
+        },
+      );
+
+      final driver = options.driver as D1DriverAdapter;
+      expect(driver.options['accountId'], equals('acct-db'));
+      expect(driver.options['databaseId'], equals('db-db'));
+      expect(driver.options['apiToken'], equals('token-db'));
+      expect(
+        driver.options['baseUrl'],
+        equals('https://api.example.invalid/client/v4'),
+      );
+      expect(driver.options['maxAttempts'], equals(7));
+      expect(driver.options['requestTimeoutMs'], equals(12000));
+      expect(driver.options['retryBaseDelayMs'], equals(100));
+      expect(driver.options['retryMaxDelayMs'], equals(1400));
+      expect(driver.options['debugLog'], isTrue);
+    });
+
     test('throws helpful error when required env vars are missing', () {
       final registry = ModelRegistry();
       expect(
