@@ -188,7 +188,7 @@ class ProcessProjectSeederRunner implements ProjectSeederRunner {
     final script = File(scriptPath);
     if (!script.existsSync()) {
       throw StateError(
-        'Seed registry ${script.path} not found. Run `ormed init --only=seeders`.',
+        'Seed registry ${script.path} not found. Run `ormed init --only=seeders --populate-existing`.',
       );
     }
     final relativeScript = p.relative(script.path, from: project.root.path);
@@ -381,6 +381,28 @@ DB_PATH=database/$packageName.sqlite
 MIGRATION_TABLE=orm_migrations
 ''';
 
+const String defaultSeederTemplate =
+    '''
+import 'package:ormed/ormed.dart';
+
+/// Root seeder executed by `ormed seed` and `ormed migrate --seed`.
+class AppDatabaseSeeder extends DatabaseSeeder {
+  AppDatabaseSeeder(super.connection);
+
+  @override
+  Future<void> run() async {
+    // TODO: add seed logic here
+    // Examples:
+    // await seed<User>([
+    //   {'name': 'Admin User', 'email': 'admin@example.com'},
+    // ]);
+    //
+    // Or call other seeders:
+    // await call([UserSeeder.new, PostSeeder.new]);
+  }
+}
+''';
+
 const String seedImportsMarkerStart = '// <ORM-SEED-IMPORTS>';
 const String seedImportsMarkerEnd = '// </ORM-SEED-IMPORTS>';
 const String seedRegistryMarkerStart = '// <ORM-SEED-REGISTRY>';
@@ -438,6 +460,53 @@ Future<void> main(List<String> args) => runSeedRegistryEntrypoint(
           g.bootstrapOrm(registry: connection.context.registry),
     );
 ''';
+
+/// Returns true when at least one custom seeder source exists.
+///
+/// Ignores the generated root seeder (`database_seeder.dart`).
+bool hasSeederSources(Directory seedersDir) {
+  if (!seedersDir.existsSync()) return false;
+  for (final entity in seedersDir.listSync(recursive: true)) {
+    if (entity is! File) continue;
+    if (!entity.path.endsWith('.dart')) continue;
+    if (entity.path.endsWith('database_seeder.dart')) continue;
+    return true;
+  }
+  return false;
+}
+
+/// Creates missing seed scaffolding (directory, registry, default seeder).
+///
+/// Returns true when any files were created.
+bool ensureSeedScaffoldIfMissing({
+  required Directory root,
+  required SeedSection seeds,
+  required String packageName,
+}) {
+  var changed = false;
+  final seedersDir = Directory(resolvePath(root, seeds.directory));
+  if (!seedersDir.existsSync()) {
+    seedersDir.createSync(recursive: true);
+    changed = true;
+  }
+
+  final defaultSeeder = File(p.join(seedersDir.path, 'database_seeder.dart'));
+  if (!defaultSeeder.existsSync()) {
+    defaultSeeder.parent.createSync(recursive: true);
+    defaultSeeder.writeAsStringSync(defaultSeederTemplate);
+    changed = true;
+  }
+
+  final registry = File(resolvePath(root, seeds.registry));
+  if (!registry.existsSync()) {
+    registry.parent.createSync(recursive: true);
+    registry.writeAsStringSync(
+      initialSeedRegistryTemplate.replaceAll('{{package_name}}', packageName),
+    );
+    changed = true;
+  }
+  return changed;
+}
 
 const String initialTestHelperTemplate = r'''
 import 'package:{{package_name}}/src/database/orm_registry.g.dart';

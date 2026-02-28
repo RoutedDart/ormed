@@ -89,9 +89,9 @@ dev_dependencies:
       final defaultSeeder = File(
         p.join(seedersDir.path, 'database_seeder.dart'),
       );
-      expect(seedersDir.existsSync(), isTrue);
-      expect(seedersReg.existsSync(), isTrue);
-      expect(defaultSeeder.existsSync(), isTrue);
+      expect(seedersDir.existsSync(), isFalse);
+      expect(seedersReg.existsSync(), isFalse);
+      expect(defaultSeeder.existsSync(), isFalse);
 
       final schemaDump = File(p.join(scratchDir.path, 'database/schema.sql'));
       expect(schemaDump.parent.existsSync(), isTrue);
@@ -107,7 +107,7 @@ dev_dependencies:
       );
       expect(datasourceFile.existsSync(), isTrue);
       expect(databaseConfigFile.existsSync(), isTrue);
-      expect(testHelperFile.existsSync(), isTrue);
+      expect(testHelperFile.existsSync(), isFalse);
       expect(
         datasourceFile.readAsStringSync(),
         contains('options ?? buildDataSourceOptions(connection: connection)'),
@@ -134,19 +134,34 @@ dev_dependencies:
         databaseConfigFile.readAsStringSync(),
         contains('buildDefaultDataSourceOptions'),
       );
-      final helperText = testHelperFile.readAsStringSync();
-      expect(
-        helperText,
-        contains("import 'package:test_project/src/database/config.dart';"),
+    });
+
+    test('--with-seeders and --with-tests scaffold optional artifacts', () async {
+      await runInit([
+        'init',
+        '--with-seeders',
+        '--with-tests',
+        '--no-interaction',
+        '--skip-build',
+      ]);
+
+      final seedersDir = Directory(
+        p.join(scratchDir.path, 'lib/src/database/seeders'),
       );
-      expect(
-        helperText,
-        contains("import 'package:test_project/src/database/datasource.dart';"),
+      final seedersReg = File(
+        p.join(scratchDir.path, 'lib/src/database/seeders.dart'),
       );
-      expect(helperText, contains('final OrmedTestConfig defaultTestConfig'));
-      expect(helperText, contains('OrmConnection defaultTestConnection()'));
-      expect(helperText, isNot(contains('analyticsTestConfig')));
-      expect(helperText, isNot(contains('SqliteDriverAdapter.inMemory()')));
+      final defaultSeeder = File(
+        p.join(seedersDir.path, 'database_seeder.dart'),
+      );
+      final testHelperFile = File(
+        p.join(scratchDir.path, 'lib/test/helpers/ormed_test_helper.dart'),
+      );
+
+      expect(seedersDir.existsSync(), isTrue);
+      expect(seedersReg.existsSync(), isTrue);
+      expect(defaultSeeder.existsSync(), isTrue);
+      expect(testHelperFile.existsSync(), isTrue);
     });
 
     test('scaffolds datasource config for multiple connections', () async {
@@ -384,6 +399,8 @@ connections:
 
       await runInit([
         'init',
+        '--only=migrations',
+        '--only=seeders',
         '--no-interaction',
         '--populate-existing',
         '--skip-build',
@@ -456,7 +473,10 @@ connections:
           return '';
         }
 
-        await runInit(['init', '--skip-build'], readLine: readLine);
+        await runInit(
+          ['init', '--only=migrations', '--only=seeders', '--skip-build'],
+          readLine: readLine,
+        );
 
         final migrationsReg = File(
           p.join(scratchDir.path, 'lib/src/database/migrations.dart'),
@@ -500,7 +520,10 @@ connections:
       ).writeAsStringSync('class DeltaSeeder {}');
 
       String readLine() => 'n';
-      await runInit(['init', '--skip-build'], readLine: readLine);
+      await runInit(
+        ['init', '--only=migrations', '--only=seeders', '--skip-build'],
+        readLine: readLine,
+      );
 
       final migrationsReg = File(
         p.join(scratchDir.path, 'lib/src/database/migrations.dart'),
@@ -527,7 +550,13 @@ connections:
 
     test('--force overwrites existing registry files', () async {
       // First run to scaffold.
-      await runInit(['init', '--no-interaction', '--skip-build']);
+      await runInit([
+        'init',
+        '--only=migrations',
+        '--only=seeders',
+        '--no-interaction',
+        '--skip-build',
+      ]);
 
       final migrationsReg = File(
         p.join(scratchDir.path, 'lib/src/database/migrations.dart'),
@@ -541,7 +570,14 @@ connections:
       seedersReg.writeAsStringSync('// SENTINEL: SEEDERS');
 
       // Re-run with --force should overwrite to a clean state.
-      await runInit(['init', '--no-interaction', '--force', '--skip-build']);
+      await runInit([
+        'init',
+        '--only=migrations',
+        '--only=seeders',
+        '--no-interaction',
+        '--force',
+        '--skip-build',
+      ]);
 
       final regText = migrationsReg.readAsStringSync();
       final seedText = seedersReg.readAsStringSync();

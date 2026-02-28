@@ -7,7 +7,6 @@ Future<void> main(List<String> args) async {
     ..addCommand(InitCommand())
     ..addCommand(MakeCommand())
     ..addCommand(MakeMigrationCommand())
-    ..addCommand(MakeMigrationLegacyCommand())
     ..addCommand(MakeSeederCommand())
     ..addCommand(MakeModelCommand())
     ..addCommand(MigrationEntryCommand())

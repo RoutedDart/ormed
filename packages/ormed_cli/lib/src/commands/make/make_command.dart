@@ -667,24 +667,6 @@ class MakeMigrationCommand extends MakeCommand {
   String get description => 'Alias for make. Create a new migration file.';
 }
 
-/// Backward-compatible alias for `make:migration`.
-class MakeMigrationLegacyCommand extends MakeMigrationCommand {
-  @override
-  String get name => 'makemigration';
-
-  @override
-  String get description =>
-      'Deprecated alias for make:migration. Use `make:migration`.';
-
-  @override
-  Future<void> run() async {
-    cliIO.warn(
-      '`makemigration` is deprecated and will be removed in a future release. Use `make:migration`.',
-    );
-    await super.run();
-  }
-}
-
 /// Alias for `make --seeder`.
 class MakeSeederCommand extends MakeCommand {
   @override

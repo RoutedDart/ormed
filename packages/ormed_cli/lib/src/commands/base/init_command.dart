@@ -69,6 +69,18 @@ class InitCommand extends Command<void> {
         negatable: false,
         help:
             'Also scaffold ormed.yaml for migration/apply CLI commands. By default, init is code-first.',
+      )
+      ..addFlag(
+        'with-seeders',
+        negatable: false,
+        help:
+            'Also scaffold seeders directory + registry. By default, seed scaffolding is created lazily when needed.',
+      )
+      ..addFlag(
+        'with-tests',
+        negatable: false,
+        help:
+            'Also scaffold sample ORM test helper. By default, test helper scaffolding is opt-in.',
       );
   }
 
@@ -77,7 +89,7 @@ class InitCommand extends Command<void> {
 
   @override
   String get description =>
-      'Initialize code-first database scaffolding with migrations/seed registries.';
+      'Initialize code-first database scaffolding with datasource + migrations.';
 
   @override
   Future<void> run() async {
@@ -87,6 +99,8 @@ class InitCommand extends Command<void> {
     final skipBuild = argResults?['skip-build'] == true;
     final withAnalyzer = argResults?['with-analyzer'] == true;
     final withConfig = argResults?['with-config'] == true;
+    final withSeeders = argResults?['with-seeders'] == true;
+    final withTests = argResults?['with-tests'] == true;
     final onlyTargets =
         (argResults?['only'] as List<String>? ?? const <String>[])
             .map((value) => value.trim())
@@ -97,13 +111,14 @@ class InitCommand extends Command<void> {
         onlyTargets.contains('config') || (!restrictScaffold && withConfig);
     final includeMigrations =
         !restrictScaffold || onlyTargets.contains('migrations');
-    final includeSeeders = !restrictScaffold || onlyTargets.contains('seeders');
+    final includeSeeders =
+        onlyTargets.contains('seeders') || (!restrictScaffold && withSeeders);
     final includeDatasource =
         !restrictScaffold ||
         onlyTargets.contains('datasource') ||
         onlyTargets.contains('tests');
     final includeTestHelpers =
-        !restrictScaffold || onlyTargets.contains('tests');
+        onlyTargets.contains('tests') || (!restrictScaffold && withTests);
     final root = findProjectRoot(workingDirectory);
     final tracker = _ArtifactTracker(root);
     final packageName = getPackageName(root);
@@ -372,7 +387,11 @@ class InitCommand extends Command<void> {
 
     cliIO.newLine();
     cliIO.success('Project initialized successfully.');
-    _printNextSteps(withAnalyzer: withAnalyzer);
+    _printNextSteps(
+      withAnalyzer: withAnalyzer,
+      includeSeeders: includeSeeders,
+      includeTestHelpers: includeTestHelpers,
+    );
   }
 
   Future<void> _runBuildRunner(Directory root) async {
@@ -593,12 +612,26 @@ class InitCommand extends Command<void> {
   }
 }
 
-void _printNextSteps({required bool withAnalyzer}) {
+void _printNextSteps({
+  required bool withAnalyzer,
+  required bool includeSeeders,
+  required bool includeTestHelpers,
+}) {
   cliIO.newLine();
   cliIO.section('Next steps');
   cliIO.writeln('• Configure runtime DB in `lib/src/database/config.dart`');
   cliIO.writeln('• Add models and include `part \'<model>.orm.dart\';`');
   cliIO.writeln('• Run: dart run build_runner build');
+  if (!includeSeeders) {
+    cliIO.writeln(
+      '• Optional: scaffold seed registry when needed with `ormed init --only=seeders`',
+    );
+  }
+  if (!includeTestHelpers) {
+    cliIO.writeln(
+      '• Optional: scaffold test helper with `ormed init --only=tests`',
+    );
+  }
   cliIO.writeln(
     '• Optional for custom/multi-connection CLI flows: run `ormed init --only=config` to scaffold ormed.yaml',
   );
@@ -710,6 +743,12 @@ String _testHelperTemplate({
   final supportedConnections = config.connections.keys
       .map(_dartStringLiteral)
       .join(', ');
+  final singleConnectionName = config.connections.length == 1
+      ? _dartStringLiteral(config.connections.keys.first)
+      : null;
+  final unknownConnectionError = singleConnectionName == null
+      ? 'Unknown generated datasource connection. Expected one of: $supportedConnections'
+      : 'Generated test helper has a single datasource connection: $singleConnectionName';
 
   return '''
 import 'package:ormed/ormed.dart';
@@ -753,7 +792,7 @@ OrmedTestConfig testConfig({String? connection}) {
       throw ArgumentError.value(
         selectedConnection,
         'connection',
-        'Unknown generated datasource connection. Expected one of: $supportedConnections',
+        '$unknownConnectionError',
       );
     }
     return _ensureGeneratedTestConfig(selectedConnection);
@@ -768,7 +807,7 @@ OrmConnection testConnection({String? connection}) {
       throw ArgumentError.value(
         selectedConnection,
         'connection',
-        'Unknown generated datasource connection. Expected one of: $supportedConnections',
+        '$unknownConnectionError',
       );
     }
     _ensureGeneratedTestConfig(selectedConnection);
@@ -937,10 +976,40 @@ String _buildDataSourceOptionsSwitch({
   required OrmProjectConfig config,
   required String packageName,
 }) {
+  final selectedConnectionLine =
+      "  final selectedConnection = (connection ?? defaultDataSourceConnection).trim();";
+  if (config.connections.length == 1) {
+    final entry = config.connections.entries.first;
+    final connectionName = _dartStringLiteral(entry.key);
+    final caseBody = _buildConnectionDataSourceOptionsBuilder(
+      driverConfig: entry.value.driver,
+      connectionName: entry.key,
+      packageName: packageName,
+      isDefaultConnection: entry.key == config.activeConnectionName,
+    );
+    final buffer = StringBuffer()
+      ..writeln(selectedConnectionLine)
+      ..writeln("  if (selectedConnection != '$connectionName') {")
+      ..writeln('    throw ArgumentError.value(')
+      ..writeln('      selectedConnection,')
+      ..writeln("      'connection',")
+      ..writeln(
+        "      'Generated scaffold has a single datasource connection: $connectionName',",
+      )
+      ..writeln('    );')
+      ..writeln('  }');
+    for (final line in caseBody.split('\n')) {
+      if (line.trim().isEmpty) {
+        buffer.writeln('');
+      } else {
+        buffer.writeln('  $line');
+      }
+    }
+    return buffer.toString().trimRight();
+  }
+
   final buffer = StringBuffer()
-    ..writeln(
-      "  final selectedConnection = (connection ?? defaultDataSourceConnection).trim();",
-    )
+    ..writeln(selectedConnectionLine)
     ..writeln('  switch (selectedConnection) {');
 
   for (final entry in config.connections.entries) {

@@ -20,14 +20,21 @@ dart run ormed_cli:ormed <command>
 ### Project Initialization
 
 ```bash
-# Scaffold code-first datasource + migrations/seed registries
+# Scaffold code-first datasource + migrations (lean default)
 dart run ormed_cli:ormed init
+
+# Also scaffold seeders and test helpers
+dart run ormed_cli:ormed init --with-seeders --with-tests
 
 # Also scaffold ormed.yaml (optional)
 dart run ormed_cli:ormed init --with-config
 
 # Overwrite existing files
 dart run ormed_cli:ormed init --force
+
+# Scaffold specific artifacts only
+dart run ormed_cli:ormed init --only=seeders
+dart run ormed_cli:ormed init --only=tests
 
 # Scan and register existing migrations/seeders
 dart run ormed_cli:ormed init --populate-existing
@@ -37,11 +44,10 @@ dart run ormed_cli:ormed init --populate-existing
 
 ```bash
 # Create a new migration
-dart run ormed_cli:ormed make --name create_users_table
 dart run ormed_cli:ormed make:migration --name create_users_table
-# `makemigration` remains available as a deprecated alias.
-dart run ormed_cli:ormed make --name create_posts_table --create --table posts
-dart run ormed_cli:ormed make --name add_column --format sql  # SQL format instead of Dart
+dart run ormed_cli:ormed make:migration --name create_posts_table --create --table posts
+dart run ormed_cli:ormed make:migration --name add_column --format sql  # SQL format instead of Dart
+# `make` remains available as a compatible alias.
 # `create_*` names infer create-table scaffolding automatically.
 # `add_*_to_*` / `remove_*_from_*` names infer alter-table targets.
 # If registries are missing, `make` bootstraps migrations/seed scaffolding automatically.
@@ -87,10 +93,11 @@ dart run ormed_cli:ormed migrate:export --all  # Export all migrations
 dart run ormed_cli:ormed seed
 dart run ormed_cli:ormed seed --class UserSeeder  # Specific seeder
 dart run ormed_cli:ormed seed --pretend           # Preview SQL
+# If seed scaffold is missing, first run bootstraps it and exits with next-step guidance.
 
 # Create seeders
-dart run ormed_cli:ormed make --name UserSeeder --seeder
 dart run ormed_cli:ormed make:seeder --name UserSeeder
+# `make --seeder` remains available as a compatible alias.
 
 # Wipe database
 dart run ormed_cli:ormed db:wipe --force
@@ -192,9 +199,17 @@ project/
     ├── migrations/
     │   └── m_YYYYMMDDHHMMSS_migration_name.dart
     ├── migrations.dart   (registry)
-    ├── seeders/
-    │   └── database_seeder.dart
-    └── seeders.dart      (registry)
+    ├── config.dart
+    └── datasource.dart
+```
+
+Optional scaffold (`init --with-seeders` or `init --only=seeders`) adds:
+
+```
+lib/src/database/
+├── seeders/
+│   └── database_seeder.dart
+└── seeders.dart
 ```
 
 ## Migration Formats
@@ -244,7 +259,7 @@ Most commands support these flags:
 ## Creating Seeders
 
 ```bash
-dart run ormed_cli:ormed make --name UserSeeder --seeder
+dart run ormed_cli:ormed make:seeder --name UserSeeder
 ```
 
 ```dart

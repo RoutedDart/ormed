@@ -110,7 +110,6 @@ void main(List<String> args) {
       final runner = CommandRunner<void>('ormed', 'ORM CLI')
         ..addCommand(MakeCommand())
         ..addCommand(MakeMigrationCommand())
-        ..addCommand(MakeMigrationLegacyCommand())
         ..addCommand(MakeSeederCommand());
       await runner.run([
         'make:migration',
@@ -243,11 +242,10 @@ migrations:
       expect(content, isNot(contains("schema.create('users'")));
     });
 
-    test('legacy makemigration alias still works', () async {
+    test('legacy makemigration alias is not recognized', () async {
       final runner = CommandRunner<void>('ormed', 'ORM CLI')
         ..addCommand(MakeCommand())
         ..addCommand(MakeMigrationCommand())
-        ..addCommand(MakeMigrationLegacyCommand())
         ..addCommand(MakeSeederCommand());
       await runner.run([
         'makemigration',
@@ -262,14 +260,12 @@ migrations:
       final migrationsDir = Directory(
         p.join(scratchDir.path, 'lib', 'src', 'database', 'migrations'),
       );
-      final createdFile = migrationsDir
-          .listSync()
-          .whereType<File>()
-          .map((f) => f.path)
-          .singleWhere(
-            (path) => p.basename(path).endsWith('_add_role_to_users.dart'),
+      final created =
+          migrationsDir.existsSync() &&
+          migrationsDir.listSync().whereType<File>().any(
+            (file) => p.basename(file.path).endsWith('_add_role_to_users.dart'),
           );
-      expect(File(createdFile).existsSync(), isTrue);
+      expect(created, isFalse);
     });
 
     test('make:seeder alias creates and registers seeder', () async {
@@ -277,7 +273,6 @@ migrations:
       final runner = CommandRunner<void>('ormed', 'ORM CLI')
         ..addCommand(MakeCommand())
         ..addCommand(MakeMigrationCommand())
-        ..addCommand(MakeMigrationLegacyCommand())
         ..addCommand(MakeSeederCommand());
 
       await runner.run(['make:seeder', '--name', 'AuditSeeder']);

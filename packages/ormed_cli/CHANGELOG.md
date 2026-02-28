@@ -5,9 +5,11 @@
 - **Added**: `makemigrations --sync-only` to skip model-diff generation and run registry sync only.
 - **Added**: `migrations:sync`, `migrations:check`, and `migrations:entry` commands for registry synchronization, validation, and manual entry scaffolding.
 - **Added**: `make:migration` as the canonical migration alias, and `make:seeder` alias for seeder scaffolding.
-- **Changed**: `makemigration` remains supported as a deprecated alias and now prints a deprecation warning.
+- **Changed**: Removed legacy `makemigration`; use `make:migration`.
+- **Changed**: `ormed init` now defaults to lean scaffolding (datasource + migrations); seeders/tests are opt-in via `--with-seeders`, `--with-tests`, or `--only`.
 - **Improved**: fallback behavior without `ormed.yaml` is now convention-first and driver-neutral across commands.
 - **Improved**: seed and migration registry workflows now provide clearer bootstrap/recovery messages and reduced setup friction for existing projects.
+- **Improved**: `ormed seed` and `ormed migrate --seed` lazily scaffold missing seed files, then exit with guidance instead of failing on first-run generated artifacts.
 - **Improved**: CLI docs now document existing-project onboarding and code-first migration workflow.
 - **Fixed**: CLI test scratch directories now consistently use system temp paths to reduce cross-test cwd interference.
 

@@ -147,6 +147,43 @@ class ApplyCommand extends RunnerCommand {
           'Missing seeds configuration. Run `ormed init --only=seeders` or add a `seeds` block to ormed.yaml before running --seed.',
         );
       }
+      var bootstrappedSeedScaffold = false;
+      if (projectSeederRunner is ProcessProjectSeederRunner) {
+        final seedersDir = Directory(
+          resolvePath(project.root, seeds.directory),
+        );
+        final registryFile = File(resolvePath(project.root, seeds.registry));
+        if (!registryFile.existsSync()) {
+          if (!hasSeederSources(seedersDir)) {
+            final changed = ensureSeedScaffoldIfMissing(
+              root: project.root,
+              seeds: seeds,
+              packageName: getPackageName(project.root),
+            );
+            if (changed) {
+              bootstrappedSeedScaffold = true;
+              cliIO.note(
+                'Bootstrapped seed scaffolding because --seed was requested.',
+              );
+            }
+          }
+          final refreshedRegistry = File(
+            resolvePath(project.root, seeds.registry),
+          );
+          if (!refreshedRegistry.existsSync()) {
+            usageException(
+              'Seed registry ${registryFile.path} not found, but seeder files exist in ${seedersDir.path}. '
+              'Run `ormed init --only=seeders --populate-existing` before running --seed.',
+            );
+          }
+        }
+      }
+      if (bootstrappedSeedScaffold) {
+        cliIO.note(
+          'Seed scaffold was created. Run `dart run build_runner build` then rerun `ormed seed`.',
+        );
+        return;
+      }
       final seederOverride = argResults?['seeder'] as String?;
       cliIO.info('Running seeders...');
       await runSeedRegistry(

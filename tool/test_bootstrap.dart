@@ -374,6 +374,15 @@ Future<void> runSeeders() async {
 }
 
 Future<void> runHelperTest() async {
+  print('Scaffolding test helpers...');
+  await run('dart', [
+    'run',
+    'ormed_cli:ormed',
+    'init',
+    '--no-interaction',
+    '--only=tests',
+  ], workingDirectory: testDir);
+
   print('Writing helper-driven test file...');
   final testDirPath = Directory(p.join(testDir, 'test'));
   if (!testDirPath.existsSync()) {

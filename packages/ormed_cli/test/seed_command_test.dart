@@ -43,8 +43,23 @@ environment:
       await runner.run(['seed', ...args]);
     }
 
-    test('returns cleanly when no seeders are scaffolded', () async {
+    test('bootstraps missing seed scaffold and returns cleanly', () async {
       await runSeed(const <String>[]);
+
+      expect(
+        File(p.join(scratchDir.path, 'lib/src/database/seeders.dart'))
+            .existsSync(),
+        isTrue,
+      );
+      expect(
+        File(
+          p.join(
+            scratchDir.path,
+            'lib/src/database/seeders/database_seeder.dart',
+          ),
+        ).existsSync(),
+        isTrue,
+      );
     });
   });
 }

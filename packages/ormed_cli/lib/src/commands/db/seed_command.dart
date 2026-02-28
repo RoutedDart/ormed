@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:artisanal/artisanal.dart';
+import 'package:path/path.dart' as p;
 
 import '../../config.dart';
 import '../base/shared.dart';
@@ -71,6 +72,7 @@ class SeedCommand extends Command<void> {
       root: resolved.root,
       configFile: resolved.configFile,
     );
+    var bootstrappedSeedScaffold = false;
     if (!resolved.hasConfigFile) {
       printConfigFallbackNotice();
     }
@@ -82,19 +84,36 @@ class SeedCommand extends Command<void> {
     }
     if (projectSeederRunner is ProcessProjectSeederRunner) {
       final registryFile = File(resolvePath(project.root, seeds.registry));
+      final seedersDir = Directory(resolvePath(project.root, seeds.directory));
       if (!registryFile.existsSync()) {
-        final seedersDir = Directory(
-          resolvePath(project.root, seeds.directory),
-        );
-        if (!_hasSeederSources(seedersDir)) {
-          cliIO.warn('No seeders found.');
-          return;
+        if (!hasSeederSources(seedersDir)) {
+          final changed = ensureSeedScaffoldIfMissing(
+            root: project.root,
+            seeds: seeds,
+            packageName: getPackageName(project.root),
+          );
+          if (changed) {
+            bootstrappedSeedScaffold = true;
+            cliIO.note(
+              'Bootstrapped seed scaffolding at ${p.relative(seedersDir.path, from: project.root.path)}.',
+            );
+          }
         }
+      }
+      final refreshedRegistry = File(resolvePath(project.root, seeds.registry));
+      if (!refreshedRegistry.existsSync()) {
         usageException(
           'Seed registry ${registryFile.path} not found, but seeder files exist in ${seedersDir.path}. '
-          'Run `ormed init --only=seeders` to scaffold the registry.',
+          'Run `ormed init --only=seeders --populate-existing` to scaffold and register seeders.',
         );
       }
+    }
+
+    if (bootstrappedSeedScaffold) {
+      cliIO.note(
+        'Seed scaffold was created. Run `dart run build_runner build` then rerun `ormed seed`.',
+      );
+      return;
     }
 
     final classes = targetClasses.isEmpty ? null : targetClasses;
@@ -128,15 +147,4 @@ class SeedCommand extends Command<void> {
     );
     cliIO.success('Seeding complete.');
   }
-}
-
-bool _hasSeederSources(Directory seedersDir) {
-  if (!seedersDir.existsSync()) return false;
-  for (final entity in seedersDir.listSync(recursive: true)) {
-    if (entity is! File) continue;
-    if (!entity.path.endsWith('.dart')) continue;
-    if (entity.path.endsWith('database_seeder.dart')) continue;
-    return true;
-  }
-  return false;
 }
