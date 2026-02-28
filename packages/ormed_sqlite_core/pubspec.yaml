@@ -1,6 +1,6 @@
 name: ormed_sqlite_core
 description: Shared SQLite grammar, schema dialect, type mapping, and codecs for Ormed runtime adapters.
-version: 0.2.0
+version: 0.1.0
 repository: https://github.com/RoutedDart/ormed
 issue_tracker: https://github.com/RoutedDart/ormed/issues
 documentation: https://ormed.vercel.app/
