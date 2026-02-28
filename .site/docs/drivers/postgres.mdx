@@ -19,7 +19,7 @@ dependencies:
   ormed_postgres: ^0.1.0
 ```
 
-## Configure (ormed.yaml)
+## Configure
 
 <Tabs groupId="postgres-ormed-yaml" defaultValue="url">
 <TabItem value="url" label="URL">
@@ -57,6 +57,9 @@ driver:
 </Tabs>
 
 ## Use in code (DataSource)
+
+The recommended path is generated `config.dart` + `datasource.dart`.  
+Manual YAML/config-driven setup:
 
 ```dart
 import 'package:ormed/ormed.dart';
@@ -147,7 +150,7 @@ Use `package:ormed_postgres/migrations.dart` when you want Postgres-specific sch
 ### Notes
 
 - Supports `RETURNING`, JSON/JSONB operators, window functions, and schema introspection.
-- Migrations and seeds are configured separately in `ormed.yaml`. See Getting Started → Configuration.
+- Migrations and seeds default to convention registries (`lib/src/database/*`) and can be overridden via `ormed.yaml`.
 - For plan/previews/schema internals, see Drivers → Internals.
 
 ## Extensions

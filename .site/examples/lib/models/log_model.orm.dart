@@ -172,8 +172,7 @@ class LogModelFactory {
 
   static ModelFactoryBuilder<Log> factory({
     GeneratorProvider? generatorProvider,
-  }) => ModelFactoryBuilder<Log>(
-    definition: definition,
+  }) => ModelFactoryRegistry.factoryFor<Log>(
     generatorProvider: generatorProvider,
   );
 }
@@ -376,7 +375,7 @@ class _LogPartialCopyWithSentinel {
 class $Log extends Log with ModelAttributes implements OrmEntity {
   /// Internal constructor for [$Log].
   $Log({required int id, required String message, DateTime? timestamp})
-    : super.new(id: id, message: message, timestamp: timestamp) {
+    : super(id: id, message: message, timestamp: timestamp) {
     _attachOrmRuntimeMetadata({
       'id': id,
       'message': message,
@@ -450,7 +449,7 @@ extension LogOrmExtension on Log {
     Object? message = _copyWithSentinel,
     Object? timestamp = _copyWithSentinel,
   }) {
-    return Log.new(
+    return Log(
       id: identical(id, _copyWithSentinel) ? this.id : id as int,
       message: identical(message, _copyWithSentinel)
           ? this.message

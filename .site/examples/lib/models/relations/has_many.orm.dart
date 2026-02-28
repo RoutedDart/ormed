@@ -181,8 +181,7 @@ class UserWithPostsModelFactory {
 
   static ModelFactoryBuilder<UserWithPosts> factory({
     GeneratorProvider? generatorProvider,
-  }) => ModelFactoryBuilder<UserWithPosts>(
-    definition: definition,
+  }) => ModelFactoryRegistry.factoryFor<UserWithPosts>(
     generatorProvider: generatorProvider,
   );
 }
@@ -359,7 +358,7 @@ class $UserWithPosts extends UserWithPosts
     implements OrmEntity {
   /// Internal constructor for [$UserWithPosts].
   $UserWithPosts({required int id, List<UserPost>? posts})
-    : super.new(id: id, posts: posts) {
+    : super(id: id, posts: posts) {
     _attachOrmRuntimeMetadata({'id': id, 'posts': posts});
   }
 
@@ -388,14 +387,6 @@ class $UserWithPosts extends UserWithPosts
 
   /// Tracked setter for [id].
   set id(int value) => setAttribute('id', value);
-
-  /// Tracked getter for [posts].
-  @override
-  List<UserPost>? get posts =>
-      getAttribute<List<UserPost>?>('posts') ?? super.posts;
-
-  /// Tracked setter for [posts].
-  set posts(List<UserPost>? value) => setAttribute('posts', value);
 
   void _attachOrmRuntimeMetadata(Map<String, Object?> values) {
     replaceAttributes(values);
@@ -428,7 +419,7 @@ extension UserWithPostsOrmExtension on UserWithPosts {
     Object? id = _copyWithSentinel,
     Object? posts = _copyWithSentinel,
   }) {
-    return UserWithPosts.new(
+    return UserWithPosts(
       id: identical(id, _copyWithSentinel) ? this.id : id as int,
       posts: identical(posts, _copyWithSentinel)
           ? this.posts
@@ -657,8 +648,7 @@ class UserPostModelFactory {
 
   static ModelFactoryBuilder<UserPost> factory({
     GeneratorProvider? generatorProvider,
-  }) => ModelFactoryBuilder<UserPost>(
-    definition: definition,
+  }) => ModelFactoryRegistry.factoryFor<UserPost>(
     generatorProvider: generatorProvider,
   );
 }
@@ -867,7 +857,7 @@ class _UserPostPartialCopyWithSentinel {
 class $UserPost extends UserPost with ModelAttributes implements OrmEntity {
   /// Internal constructor for [$UserPost].
   $UserPost({required int id, required int authorId, required String title})
-    : super.new(id: id, authorId: authorId, title: title) {
+    : super(id: id, authorId: authorId, title: title) {
     _attachOrmRuntimeMetadata({
       'id': id,
       'author_id': authorId,
@@ -941,7 +931,7 @@ extension UserPostOrmExtension on UserPost {
     Object? authorId = _copyWithSentinel,
     Object? title = _copyWithSentinel,
   }) {
-    return UserPost.new(
+    return UserPost(
       id: identical(id, _copyWithSentinel) ? this.id : id as int,
       authorId: identical(authorId, _copyWithSentinel)
           ? this.authorId

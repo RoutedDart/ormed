@@ -26,9 +26,9 @@ The generator produces several files:
 
 | File | Description |
 |------|-------------|
-| `<model>.ormed.dart` | Model definition, codec, factory, and relation getters |
+| `<model>.orm.dart` | Model definition, codec, factory, and relation getters |
 | `<model>.orm_model.json` | Intermediate metadata for auto-registry (can be gitignored) |
-| `lib/orm_registry.g.dart` | Auto-generated registry of all ORM models |
+| `lib/src/database/orm_registry.g.dart` | Auto-generated registry of all ORM models |
 
 ### Per-Model Generated Code
 
@@ -46,7 +46,7 @@ Configure the builders via `build.yaml`:
 
 ### Model Generator (`ormed`)
 
-Generates `.ormed.dart` files for each annotated model:
+Generates `.orm.dart` files for each annotated model:
 
 ```yaml
 targets:
@@ -69,7 +69,7 @@ targets:
       ormed|orm_registry:
         enabled: true
         options:
-          output: lib/orm_registry.g.dart  # default
+          output: lib/src/database/orm_registry.g.dart  # default
 ```
 
 ### Custom Output Location
@@ -128,8 +128,8 @@ For models with `@OrmRelation` annotations, the generator produces relation gett
 *.orm_model.json
 
 # Optionally ignore generated Dart files if you regenerate on CI
-# *.ormed.dart
-# lib/orm_registry.g.dart
+# *.orm.dart
+# lib/src/database/orm_registry.g.dart
 ```
 
 ## Driver-Specific Field Overrides

@@ -368,9 +368,10 @@ Future<void> queryCaching(DataSource dataSource) async {
 
 // #region pagination-basic
 Future<void> paginationWithTotals(DataSource dataSource) async {
-  final usersPage = await dataSource
-      .query<$User>()
-      .paginate(perPage: 10, page: 2);
+  final usersPage = await dataSource.query<$User>().paginate(
+    perPage: 10,
+    page: 2,
+  );
 
   print('Total users: ${usersPage.total}');
   print('Page ${usersPage.currentPage} of ${usersPage.lastPage}');
@@ -383,9 +384,10 @@ Future<void> paginationWithTotals(DataSource dataSource) async {
 
 // #region pagination-simple
 Future<void> paginationWithoutCount(DataSource dataSource) async {
-  final page = await dataSource
-      .query<$User>()
-      .simplePaginate(perPage: 20, page: 1);
+  final page = await dataSource.query<$User>().simplePaginate(
+    perPage: 20,
+    page: 1,
+  );
 
   print('Loaded ${page.items.length} users');
   print('Has more pages: ${page.hasMorePages}');
@@ -394,17 +396,16 @@ Future<void> paginationWithoutCount(DataSource dataSource) async {
 
 // #region pagination-cursor
 Future<void> cursorPagination(DataSource dataSource) async {
-  final firstPage = await dataSource
-      .query<$User>()
-      .cursorPaginate(perPage: 5, column: 'id');
+  final firstPage = await dataSource.query<$User>().cursorPaginate(
+    perPage: 5,
+    column: 'id',
+  );
 
-  final nextPage = await dataSource
-      .query<$User>()
-      .cursorPaginate(
-        perPage: 5,
-        column: 'id',
-        cursor: firstPage.nextCursor,
-      );
+  final nextPage = await dataSource.query<$User>().cursorPaginate(
+    perPage: 5,
+    column: 'id',
+    cursor: firstPage.nextCursor,
+  );
 
   print('Has more: ${nextPage.hasMore}');
   print('Next cursor: ${nextPage.nextCursor}');
@@ -438,9 +439,9 @@ Future<void> paginationChunking(DataSource dataSource) async {
 
 // #region pagination-streaming
 Future<void> paginationStreaming(DataSource dataSource) async {
-  await for (final row in dataSource
-      .query<$User>()
-      .streamRows(eagerLoadBatchSize: 200)) {
+  await for (final row in dataSource.query<$User>().streamRows(
+    eagerLoadBatchSize: 200,
+  )) {
     print('Row email: ${row.model.email}');
   }
 
@@ -478,7 +479,8 @@ Future<void> joinsExamples(DataSource dataSource) async {
 
   // Join with callback for complex conditions
   final activeUserPosts = await dataSource.query<$User>().join('posts', (join) {
-    join.on('users.id', '=', 'posts.author_id')
+    join
+        .on('users.id', '=', 'posts.author_id')
         .where('posts.status', '=', 'published');
   }).get();
 
@@ -494,26 +496,44 @@ Future<void> joinsExamples(DataSource dataSource) async {
 // #region subqueries
 Future<void> subqueryExamples(DataSource dataSource) async {
   // WHERE IN subquery - users with published posts
-  final activeAuthors = await dataSource.query<$User>().whereInSubquery(
-    'id',
-    dataSource.query<$Post>().select(['author_id']).whereEquals('published', true),
-  ).get();
+  final activeAuthors = await dataSource
+      .query<$User>()
+      .whereInSubquery(
+        'id',
+        dataSource
+            .query<$Post>()
+            .select(['author_id'])
+            .whereEquals('published', true),
+      )
+      .get();
 
   // WHERE NOT IN subquery - users without posts
-  final usersWithoutPosts = await dataSource.query<$User>().whereNotInSubquery(
-    'id',
-    dataSource.query<$Post>().select(['author_id']),
-  ).get();
+  final usersWithoutPosts = await dataSource
+      .query<$User>()
+      .whereNotInSubquery('id', dataSource.query<$Post>().select(['author_id']))
+      .get();
 
   // WHERE EXISTS - users with at least one comment
-  final usersWithComments = await dataSource.query<$User>().whereExists(
-    dataSource.query<$Comment>().whereColumn('comments.user_id', 'users.id'),
-  ).get();
+  final usersWithComments = await dataSource
+      .query<$User>()
+      .whereExists(
+        dataSource.query<$Comment>().whereColumn(
+          'comments.user_id',
+          'users.id',
+        ),
+      )
+      .get();
 
   // WHERE NOT EXISTS - users with no comments
-  final usersWithoutComments = await dataSource.query<$User>().whereNotExists(
-    dataSource.query<$Comment>().whereColumn('comments.user_id', 'users.id'),
-  ).get();
+  final usersWithoutComments = await dataSource
+      .query<$User>()
+      .whereNotExists(
+        dataSource.query<$Comment>().whereColumn(
+          'comments.user_id',
+          'users.id',
+        ),
+      )
+      .get();
 }
 // #endregion subqueries
 
@@ -557,10 +577,9 @@ Future<void> lockingExamples(DataSource dataSource) async {
 
     // Update the locked row
     if (user != null) {
-      await dataSource
-          .query<$User>()
-          .whereEquals('id', 1)
-          .update({'balance': user.row['balance'] + 100});
+      await dataSource.query<$User>().whereEquals('id', 1).update({
+        'balance': user.row['balance'] + 100,
+      });
     }
   });
 
@@ -672,10 +691,7 @@ Future<void> crudExamples(DataSource dataSource) async {
       .whereEquals('id', 1)
       .increment('login_count', 1);
 
-  await dataSource
-      .query<$User>()
-      .whereEquals('id', 1)
-      .decrement('credits', 10);
+  await dataSource.query<$User>().whereEquals('id', 1).decrement('credits', 10);
 
   // Upsert - insert or update if exists
   await dataSource.query<$User>().upsert(
@@ -700,10 +716,7 @@ Future<void> utilityMethodsExamples(DataSource dataSource) async {
   // unless() - inverse of when()
   final postsIgnoreDraft = await dataSource
       .query<$Post>()
-      .unless(
-        false,
-        (q) => q.whereEquals('status', 'published'),
-      )
+      .unless(false, (q) => q.whereEquals('status', 'published'))
       .get();
 
   // tap() - debug/inspect query without modifying it
@@ -739,15 +752,16 @@ Future<void> advancedJoinsExamples(DataSource dataSource) async {
       .get();
 
   // Join a subquery
-  final recentPostsByTopAuthors = await dataSource.query<$Post>().joinSub(
-    'top_authors',
-    (q) => q
-        .select(['id', 'name'])
-        .where('posts', '>', 10),
-    'top_authors.id',
-    '=',
-    'posts.author_id',
-  ).get();
+  final recentPostsByTopAuthors = await dataSource
+      .query<$Post>()
+      .joinSub(
+        'top_authors',
+        (q) => q.select(['id', 'name']).where('posts', '>', 10),
+        'top_authors.id',
+        '=',
+        'posts.author_id',
+      )
+      .get();
 
   // Straight join (MySQL - forces left-to-right evaluation)
   final straightJoinExample = await dataSource
@@ -758,10 +772,7 @@ Future<void> advancedJoinsExamples(DataSource dataSource) async {
   // Cross join subquery (Cartesian product with subquery)
   final cartesianWithSubquery = await dataSource
       .query<$Product>()
-      .crossJoinSub(
-        'sizes',
-        (q) => q.select(['id', 'name']).from('sizes'),
-      )
+      .crossJoinSub('sizes', (q) => q.select(['id', 'name']).from('sizes'))
       .get();
 }
 // #endregion advanced-joins
@@ -787,10 +798,10 @@ Future<void> jsonQueryExamples(DataSource dataSource) async {
       .get();
 
   // JSON overlaps - check if two JSON arrays share elements
-  final usersWithCommonTags = await dataSource
-      .query<$User>()
-      .whereJsonOverlaps('tags', ['popular', 'featured'])
-      .get();
+  final usersWithCommonTags = await dataSource.query<$User>().whereJsonOverlaps(
+    'tags',
+    ['popular', 'featured'],
+  ).get();
 
   // Complex: combine JSON query with other conditions
   final activeAdminsWithFeature = await dataSource
@@ -826,10 +837,10 @@ Future<void> indexHintsExamples(DataSource dataSource) async {
       .get();
 
   // Multiple indexes
-  final multiIndexQuery = await dataSource
-      .query<$User>()
-      .useIndex(['email_idx', 'active_idx'])
-      .get();
+  final multiIndexQuery = await dataSource.query<$User>().useIndex([
+    'email_idx',
+    'active_idx',
+  ]).get();
 }
 // #endregion index-hints
 
@@ -924,4 +935,5 @@ Future<void> whereColumnExamples(DataSource dataSource) async {
       .whereColumn('debt', '>', 'max_debt_allowed')
       .get();
 }
+
 // #endregion where-column

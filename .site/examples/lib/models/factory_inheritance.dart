@@ -20,4 +20,5 @@ class SpecialItem extends BaseItem {
   const SpecialItem({required super.id, super.name, this.tags});
   final List<String>? tags;
 }
+
 // #endregion factory-inheritance

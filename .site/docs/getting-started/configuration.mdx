@@ -7,19 +7,34 @@ import TabItem from '@theme/TabItem';
 
 # Configuration
 
-Ormed uses `ormed.yaml` for CLI + runtime configuration. Two shapes are supported: a single top-level connection (scaffold default) or a `connections:` map for multi-db setups.
+Ormed defaults to **code-first runtime configuration** generated in `lib/src/database/config.dart`.  
+`ormed.yaml` remains supported for CLI workflows and explicit connection blocks.
 
 :::note Snippet context
 - YAML blocks show CLI/runtime config.
 - Dart snippets show only the relevant registry/setup pieces; full app bootstrapping is covered in Quick Start.
 :::
 
-## Connection Shape
+## Runtime Configuration (Default)
+
+`ormed init` generates runtime datasource options in code:
+
+```dart file=../../examples/lib/src/database/config.dart
+```
+
+This gives you:
+- `defaultDataSourceConnection`
+- `generatedDataSourceConnections`
+- `buildDataSourceOptions({String? connection})`
+- `buildAllDataSourceOptions()`
+- Per-connection helpers such as `buildDefaultDataSourceOptions()`
+
+## Optional `ormed.yaml` (CLI / explicit connection blocks)
 
 <Tabs groupId="ormed-yaml-shape" defaultValue="single">
-  <TabItem value="single" label="Single (default)">
+  <TabItem value="single" label="Single connection">
 
-CLI commands read these top-level blocks as the single active connection.
+CLI commands read these top-level blocks as a single active connection.
 
 Create `ormed.yaml` in your project root:
 
@@ -39,7 +54,7 @@ seeds:
 ```
 
   </TabItem>
-  <TabItem value="multiple" label="Multiple">
+  <TabItem value="multiple" label="Multiple connections">
 
 Use this shape for multi-tenant or multi-environment setups. Target a specific connection with `--connection <name>`.
 
@@ -110,7 +125,7 @@ connections:
 
 ## Registry Files (Why They Matter)
 
-Both `migrations.registry` and `seeds.registry` are **standalone Dart entrypoints**. The CLI shells out to these files, so keep their paths accurate in `ormed.yaml`.
+When using `ormed.yaml`, both `migrations.registry` and `seeds.registry` are **standalone Dart entrypoints**. The CLI shells out to these files, so keep their paths accurate.
 
 - **Migrations registry** (`migrations.registry`): exports `buildMigrations()` and a small `main` that supports flags like `--dump-json`/`--plan-json` for schema previews. You can run it directly:
 
@@ -130,7 +145,10 @@ Driver-specific options live on the dedicated pages: **Drivers → SQLite / Post
 
 ## Environment Variables
 
-You can use environment variables in your configuration. `${VAR}` resolves from the current process environment; `${VAR:-fallback}` uses `fallback` when unset.
+You can use environment variables in both code-first and YAML configurations.
+
+- In code-first mode, use `OrmedEnvironment` helpers in `config.dart`.
+- In YAML mode, `${VAR}` resolves from process environment and `${VAR:-fallback}` uses a fallback.
 
 ```yaml
 connections:
@@ -142,45 +160,48 @@ connections:
         sslmode: ${DB_SSLMODE:-disable}
 ```
 
-Set the environment variable:
+Set environment variables:
 
 ```bash
 export DATABASE_URL="postgres://user:pass@db.example.com:5432/myapp"
-dart run ormed migrate:apply --connection production
+dart run ormed_cli:ormed migrate --connection production
 ```
 
-`.env` support: if a `.env` file sits next to `ormed.yaml`, it is loaded automatically (merged with platform environment). Useful for local secrets without exporting them.
+`.env` support: `.env` files are loaded and interpolated by `OrmedEnvironment`, and YAML interpolation remains supported for `ormed.yaml`.
 
 ## Programmatic Configuration
 
-You can also configure Ormed programmatically. The recommended approach is to use the generated registry.
+You can also configure Ormed programmatically. The recommended approach is generated code-first helpers.
 
-<Tabs groupId="programmatic-config" defaultValue="config-driven">
-  <TabItem value="config-driven" label="Config-Driven (recommended)">
+<Tabs groupId="programmatic-config" defaultValue="generated">
+  <TabItem value="generated" label="Generated (recommended)">
 
-This approach uses `ormed.yaml` for database settings but allows you to bootstrap the ORM in code.
+Use generated datasource/config helpers directly:
 
 ```dart
 import 'package:ormed/ormed.dart';
-import 'orm_registry.g.dart';
+import 'src/database/datasource.dart';
 
 void main() async {
-  final config = loadOrmConfig();
-  final ds = DataSource.fromConfig(
-    config,
-    registry: bootstrapOrm(),
-  );
-  
+  final ds = createDataSource();
   await ds.init();
 }
 ```
 
   </TabItem>
-  <TabItem value="generated" label="Generated Registry">
+  <TabItem value="config-driven" label="From ormed.yaml">
 
-If you want to provide the driver manually but use the generated model registry:
+If you prefer explicit YAML-driven runtime boot:
 
-```dart file=../../examples/lib/setup.dart#programmatic-config
+```dart
+import 'package:ormed/ormed.dart';
+import 'src/database/orm_registry.g.dart';
+
+void main() async {
+  final config = loadOrmConfig();
+  final ds = DataSource.fromConfig(config, registry: bootstrapOrm());
+  await ds.init();
+}
 ```
 
   </TabItem>

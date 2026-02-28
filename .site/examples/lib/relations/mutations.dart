@@ -177,7 +177,10 @@ Future<void> relationMutationsSummary(DataSource dataSource) async {
 
   // Single creation
   await user.createRelation<$UserPost>('posts', {'title': 'Map'});
-  await user.createRelation<$UserPost>('posts', UserPostInsertDto(title: 'DTO'));
+  await user.createRelation<$UserPost>(
+    'posts',
+    UserPostInsertDto(title: 'DTO'),
+  );
 
   // Batch creation
   await user.createManyRelation<$UserPost>('posts', [
@@ -192,4 +195,5 @@ Future<void> relationMutationsSummary(DataSource dataSource) async {
     UserPostInsertDto(title: 'Quiet 2'),
   ]);
 }
+
 // #endregion relation-mutations-summary

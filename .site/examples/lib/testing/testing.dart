@@ -12,7 +12,7 @@ import '../models/post.dart';
 import '../models/post.orm.dart';
 import '../models/comment.dart';
 import '../models/comment.orm.dart';
-import '../orm_registry.g.dart';
+import 'package:ormed_examples/src/database/orm_registry.g.dart';
 
 // #region testing-basic-setup
 Future<void> basicTestSetup() async {

@@ -3,7 +3,7 @@
 
 import 'package:ormed/ormed.dart';
 import 'package:ormed_sqlite/ormed_sqlite.dart';
-import '../orm_registry.g.dart';
+import 'package:ormed_examples/src/database/orm_registry.g.dart';
 
 part 'model_scopes.orm.dart';
 

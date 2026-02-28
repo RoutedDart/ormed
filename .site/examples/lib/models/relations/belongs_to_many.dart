@@ -12,7 +12,7 @@ class PostWithTags extends Model<PostWithTags> {
   @OrmField(isPrimaryKey: true)
   final int id;
 
-// #region relation-belongs-to-many-pivot
+  // #region relation-belongs-to-many-pivot
   @OrmRelation.belongsToMany(
     Tag,
     pivotTable: 'post_tags',
@@ -21,7 +21,7 @@ class PostWithTags extends Model<PostWithTags> {
     withPivot: ['sort_order', 'note'],
   )
   final List<Tag>? tags;
-// #endregion relation-belongs-to-many-pivot
+  // #endregion relation-belongs-to-many-pivot
 }
 // #endregion relation-belongs-to-many-post
 

@@ -19,7 +19,7 @@ dependencies:
   ormed_sqlite: ^0.1.0
 ```
 
-## Configure (ormed.yaml)
+## Configure
 
 ```yaml
 driver:
@@ -33,12 +33,21 @@ driver:
       - PRAGMA busy_timeout = 5000
 ```
 
+Use this in `ormed.yaml` when you want explicit config-driven CLI/runtime wiring.  
+Code-first scaffolds already generate equivalent runtime options in `lib/src/database/config.dart`.
+
 ## Use in code (DataSource)
 
-The recommended way is to use the generated `createDataSource()` helper, but you can also initialize it manually:
+The recommended way is the generated `createDataSource()` helper:
 
-<Tabs groupId="sqlite-usage" defaultValue="config">
-  <TabItem value="config" label="From Config">
+<Tabs groupId="sqlite-usage" defaultValue="generated">
+  <TabItem value="generated" label="Generated helper">
+
+```dart file=../../examples/lib/src/database/datasource.dart
+```
+
+  </TabItem>
+  <TabItem value="config" label="From Config (manual)">
 
 ```dart
 import 'package:ormed/ormed.dart';
@@ -46,7 +55,6 @@ import 'package:ormed_sqlite/ormed_sqlite.dart';
 
 void main() async {
   ensureSqliteDriverRegistration();
-  
   final config = loadOrmConfig();
   final ds = DataSource.fromConfig(config);
   await ds.init();
@@ -93,7 +101,7 @@ Available helpers:
 ### Notes
 
 - The adapter automatically enables `RETURNING` support and schema inspection.
-- Migrations and seeds are configured separately in `ormed.yaml`. See Getting Started → Configuration.
+- Migrations and seeds default to convention registries (`lib/src/database/*`) and can be overridden via `ormed.yaml`.
 - For plan/previews/schema internals, see Drivers → Internals.
 
 ## Extensions

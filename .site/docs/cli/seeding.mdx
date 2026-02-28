@@ -4,7 +4,10 @@ sidebar_position: 3
 
 # Seeding (CLI)
 
-Seeders are configured in `ormed.yaml` and executed by running the seeder registry entrypoint you configured.
+Seeders run through the seeder registry entrypoint.
+
+- Convention default registry: `lib/src/database/seeders.dart`
+- Optional override via `ormed.yaml` (`seeds.registry`)
 
 ## Run seeders
 
@@ -32,11 +35,10 @@ dart run ormed_cli:ormed seed --pretend
 
 ## Configuration reminder
 
-Your `ormed.yaml` needs a `seeds` block:
+If you use `ormed.yaml`, include a `seeds` block:
 
 ```yaml
 seeds:
   directory: lib/src/database/seeders
   registry: lib/src/database/seeders.dart
 ```
-

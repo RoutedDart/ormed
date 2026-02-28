@@ -86,7 +86,7 @@ dart pub get
 
 ## Initialize Project Files
 
-Scaffold the default config, migration registry, and seed stubs:
+Scaffold code-first runtime datasource config, migration registry, and seed stubs:
 
 ```bash
 ormed init
@@ -95,10 +95,14 @@ ormed init
 (Or use `dart run ormed_cli:ormed init` if not installed globally).
 
 Key outputs:
-- `ormed.yaml` — CLI + connection settings  
-- `lib/src/database/datasource.dart` — Main ORM entry point with driver registration
+- `lib/src/database/config.dart` — Runtime DataSource options helpers
+- `lib/src/database/datasource.dart` — Main ORM entry point
 - `lib/src/database/migrations.dart` — migration registry  
 - `lib/src/database/seeders.dart` — seeder registry
+- `lib/src/database/orm_registry.g.dart` — generated registry after `build_runner`
+
+Optional:
+- `ormed.yaml` — run `ormed init --with-config` when you want explicit config file driven CLI connection blocks.
 
 ## Project Structure
 
@@ -110,14 +114,17 @@ my_app/
 │   ├── src/
 │   │   ├── models/
 │   │   │   ├── user.dart
-│   │   │   ├── user.ormed.dart  (generated)
+│   │   │   ├── user.orm.dart  (generated)
 │   │   │   └── post.dart
 │   │   └── database/
+│   │       ├── config.dart
+│   │       ├── datasource.dart
+│   │       ├── orm_registry.g.dart (generated)
+│   │       ├── migrations.dart
+│   │       ├── seeders.dart
 │   │       └── migrations/
-│   │           ├── migrations.dart
 │   │           └── m_20241201_create_users_table.dart
 │   └── main.dart
-├── ormed.yaml           (CLI configuration)
 └── pubspec.yaml
 ```
 
@@ -133,13 +140,13 @@ dart run build_runner build
 dart run build_runner watch
 ```
 
-This generates `.ormed.dart` files alongside your model files containing:
+This generates `.orm.dart` files alongside your model files containing:
 - `$ModelName` - Tracked model class with change tracking
 - `ModelNameOrmDefinition` - Model metadata and static helpers
 - `$ModelNamePartial` - Partial entity for projections
 - `ModelNameInsertDto` / `ModelNameUpdateDto` - Data transfer objects
 
-It also generates a centralized `orm_registry.g.dart` file with:
+It also generates a centralized `lib/src/database/orm_registry.g.dart` file with:
 - `bootstrapOrm()` - One-call setup: registry + factories + generated model wiring
 - `buildOrmRegistry()` - Creates a `ModelRegistry` with all models registered (lower-level)
 - `registerOrmFactories()` - Registers factories for `Model.factory<T>()` (when enabled)

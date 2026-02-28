@@ -64,13 +64,19 @@ We use a carefully selected set of packages to handle different aspects of our f
 
 ## Initialize Ormed
 
-Once the dependencies are added, we need to initialize Ormed. This creates the `ormed.yaml` configuration file and sets up the project for code generation.
+Once the dependencies are added, initialize Ormed. This scaffolds code-first datasource helpers and sets up the project for code generation.
 
 ```bash
 dart run ormed_cli:ormed init --no-interaction
 ```
 
-The `ormed.yaml` file tells the ORM where to find your models and where to generate the registry.
+If you want explicit YAML-driven CLI configuration, scaffold it with:
+
+```bash
+dart run ormed_cli:ormed init --with-config --only=config --no-interaction
+```
+
+`ormed.yaml` is optional in the default code-first flow.
 
 <Tabs groupId="config">
   <TabItem value="ormed" label="ormed.yaml">
@@ -84,7 +90,7 @@ The `ormed.yaml` file tells the ORM where to find your models and where to gener
 
 ## DataSource helper
 
-To make database access consistent across our app and tests, we use a `createDataSource` helper. This helper is automatically generated when you run `ormed init`, and it handles loading the configuration and bootstrapping the ORM.
+To make database access consistent across our app and tests, we use a generated `createDataSource` helper.
 
 ```dart file=../../../../packages/ormed/example/fullstack/lib/src/database/datasource.dart#datasource-helper
 
@@ -95,4 +101,3 @@ We then wrap this in an `AppDatabase` class to manage the connection lifecycle w
 ```dart file=../../../../packages/ormed/example/fullstack/lib/src/database/database.dart#database-init
 
 ```
-

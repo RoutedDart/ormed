@@ -4,7 +4,7 @@
 import 'package:ormed/ormed.dart';
 import 'package:ormed_sqlite/ormed_sqlite.dart';
 
-import '../orm_registry.g.dart';
+import 'package:ormed_examples/src/database/orm_registry.g.dart';
 
 part 'model_events.orm.dart';
 
@@ -138,12 +138,7 @@ Future<void> modelEventsUsageExample() async {
 
   // #region model-events-mutations
   final alice = await dataSource.repo<$EventUser>().insert(
-    $EventUser(
-      id: 0,
-      name: 'Alice',
-      email: 'alice@example.com',
-      active: true,
-    ),
+    $EventUser(id: 0, name: 'Alice', email: 'alice@example.com', active: true),
   );
 
   await dataSource.query<$EventUser>().whereEquals('id', alice.id).update({

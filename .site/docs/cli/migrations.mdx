@@ -7,7 +7,10 @@ import TabItem from '@theme/TabItem';
 
 # Migrations (CLI)
 
-Migrations are registered in a Dart registry file (configured in `ormed.yaml`) and executed by the CLI via a schema-capable driver.
+Migrations are registered in a Dart registry file and executed by the CLI via a schema-capable driver.
+
+- Convention default registry: `lib/src/database/migrations.dart`
+- Optional override via `ormed.yaml` (`migrations.registry`)
 
 ## Registry paths matter
 
@@ -104,6 +107,7 @@ The `make` command can generate both Dart and SQL migrations.
 ### Dart Migrations (Default)
 ```bash
 dart run ormed_cli:ormed make --name create_users_table
+dart run ormed_cli:ormed make:migration --name create_users_table
 ```
 
 ### SQL Migrations
@@ -133,7 +137,7 @@ dart run ormed_cli:ormed make --name create_users_table --format sql
   </TabItem>
 </Tabs>
 
-### Default authoring format (ormed.yaml)
+### Default authoring format
 
 You can select the default authoring format for the active connection:
 

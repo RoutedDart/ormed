@@ -15,7 +15,8 @@ This page is a quick command index. For guides, start with:
 
 ## Global patterns
 
-- The CLI reads `ormed.yaml` (auto-discovered, or use `--config`).
+- The CLI uses convention defaults when `ormed.yaml` is absent.
+- If `ormed.yaml` exists, it is auto-discovered (or use `--config`).
 - Use `--connection <name>` to select a connection block.
 - Many commands support `--database` to override the driver database option.
 
@@ -23,10 +24,11 @@ This page is a quick command index. For guides, start with:
 
 ### `init`
 
-Scaffolds `ormed.yaml` plus migration/seeder registries:
+Scaffolds code-first datasource config plus migration/seeder registries:
 
 ```bash
 dart run ormed_cli:ormed init
+dart run ormed_cli:ormed init --with-config   # also scaffold ormed.yaml
 ```
 
 ### `make`
@@ -35,8 +37,20 @@ Generates migrations or seeders:
 
 ```bash
 dart run ormed_cli:ormed make --name create_users_table
+dart run ormed_cli:ormed make:migration --name create_users_table
 dart run ormed_cli:ormed make --name create_users_table --format sql
 dart run ormed_cli:ormed make --name UserSeeder --seeder
+```
+
+### `makemigrations`
+
+Generates migration(s) by diffing generated model metadata against current schema:
+
+```bash
+dart run ormed_cli:ormed makemigrations
+dart run ormed_cli:ormed makemigrations --sync-only
+dart run ormed_cli:ormed migrations:sync --dry-run
+dart run ormed_cli:ormed migrations:check
 ```
 
 ### `migrate`
@@ -108,4 +122,3 @@ dart run ormed_cli:ormed schema:describe --json
 dart run ormed_cli:ormed db:wipe
 dart run ormed_cli:ormed db:wipe --drop-views
 ```
-

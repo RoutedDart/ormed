@@ -15,9 +15,11 @@ By keeping examples in a proper Dart package:
 ```
 examples/
 ├── lib/
-│   ├── models.dart       # Model definition examples
-│   ├── queries.dart      # Query examples
+│   ├── src/database/      # Generated scaffolding (config, datasource, registries)
+│   ├── models/            # Model examples
+│   ├── drivers/           # Driver usage examples
 │   └── ...
+├── ormed.yaml             # Optional CLI config example
 ├── test/
 │   └── examples_test.dart # Tests to verify examples compile/run
 └── pubspec.yaml

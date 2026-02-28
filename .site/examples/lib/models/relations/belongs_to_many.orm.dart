@@ -173,8 +173,7 @@ class PostWithTagsModelFactory {
 
   static ModelFactoryBuilder<PostWithTags> factory({
     GeneratorProvider? generatorProvider,
-  }) => ModelFactoryBuilder<PostWithTags>(
-    definition: definition,
+  }) => ModelFactoryRegistry.factoryFor<PostWithTags>(
     generatorProvider: generatorProvider,
   );
 }
@@ -344,7 +343,7 @@ class $PostWithTags extends PostWithTags
     implements OrmEntity {
   /// Internal constructor for [$PostWithTags].
   $PostWithTags({required int id, List<Tag>? tags})
-    : super.new(id: id, tags: tags) {
+    : super(id: id, tags: tags) {
     _attachOrmRuntimeMetadata({'id': id, 'tags': tags});
   }
 
@@ -398,7 +397,7 @@ extension PostWithTagsOrmExtension on PostWithTags {
     Object? id = _copyWithSentinel,
     Object? tags = _copyWithSentinel,
   }) {
-    return PostWithTags.new(
+    return PostWithTags(
       id: identical(id, _copyWithSentinel) ? this.id : id as int,
       tags: identical(tags, _copyWithSentinel) ? this.tags : tags as List<Tag>?,
     );
@@ -590,8 +589,7 @@ class TagModelFactory {
 
   static ModelFactoryBuilder<Tag> factory({
     GeneratorProvider? generatorProvider,
-  }) => ModelFactoryBuilder<Tag>(
-    definition: definition,
+  }) => ModelFactoryRegistry.factoryFor<Tag>(
     generatorProvider: generatorProvider,
   );
 }
@@ -749,8 +747,7 @@ class _TagPartialCopyWithSentinel {
 /// or model factories to create tracked model instances.
 class $Tag extends Tag with ModelAttributes implements OrmEntity {
   /// Internal constructor for [$Tag].
-  $Tag({required int id, required String name})
-    : super.new(id: id, name: name) {
+  $Tag({required int id, required String name}) : super(id: id, name: name) {
     _attachOrmRuntimeMetadata({'id': id, 'name': name});
   }
 
@@ -803,7 +800,7 @@ extension TagOrmExtension on Tag {
     Object? id = _copyWithSentinel,
     Object? name = _copyWithSentinel,
   }) {
-    return Tag.new(
+    return Tag(
       id: identical(id, _copyWithSentinel) ? this.id : id as int,
       name: identical(name, _copyWithSentinel) ? this.name : name as String,
     );

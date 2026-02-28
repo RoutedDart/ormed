@@ -33,7 +33,7 @@ dev_dependencies:
 dart run build_runner build --delete-conflicting-outputs
 ```
 
-This produces `lib/orm_registry.g.dart` with `bootstrapOrm()` (and other helpers).
+This produces `lib/src/database/orm_registry.g.dart` with `bootstrapOrm()` (and other helpers).
 
 ### 4. Bootstrap CLI
 
@@ -41,7 +41,7 @@ This produces `lib/orm_registry.g.dart` with `bootstrapOrm()` (and other helpers
 dart run ormed_cli:ormed init
 ```
 
-Creates `ormed.yaml`, registry, and migrations directory.
+Creates code-first datasource config, datasource entrypoint, registry stubs, and migrations directory.
 
 ### 5. Create/Apply Migrations
 

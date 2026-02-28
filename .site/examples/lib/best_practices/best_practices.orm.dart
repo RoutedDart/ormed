@@ -191,8 +191,7 @@ class ValidatedUserModelFactory {
 
   static ModelFactoryBuilder<ValidatedUser> factory({
     GeneratorProvider? generatorProvider,
-  }) => ModelFactoryBuilder<ValidatedUser>(
-    definition: definition,
+  }) => ModelFactoryRegistry.factoryFor<ValidatedUser>(
     generatorProvider: generatorProvider,
   );
 }
@@ -397,8 +396,8 @@ class $ValidatedUser extends ValidatedUser
     with ModelAttributes
     implements OrmEntity {
   /// Internal constructor for [$ValidatedUser].
-  $ValidatedUser({int id = 0, required String email, required int age})
-    : super.new(id: id, email: email, age: age) {
+  $ValidatedUser({required int id, required String email, required int age})
+    : super(id: id, email: email, age: age) {
     _attachOrmRuntimeMetadata({'id': id, 'email': email, 'age': age});
   }
 
@@ -464,7 +463,7 @@ extension ValidatedUserOrmExtension on ValidatedUser {
     Object? email = _copyWithSentinel,
     Object? age = _copyWithSentinel,
   }) {
-    return ValidatedUser.new(
+    return ValidatedUser(
       id: identical(id, _copyWithSentinel) ? this.id : id as int,
       email: identical(email, _copyWithSentinel) ? this.email : email as String,
       age: identical(age, _copyWithSentinel) ? this.age : age as int,

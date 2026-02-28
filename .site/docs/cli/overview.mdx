@@ -7,7 +7,10 @@ import TabItem from '@theme/TabItem';
 
 # CLI Overview
 
-The Ormed CLI manages migrations, seeds, and schema tooling for projects configured with `ormed.yaml`.
+The Ormed CLI manages migrations, seeds, and schema tooling.
+
+By default it works in **code-first mode** (no `ormed.yaml` required) using convention paths.
+Use `ormed.yaml` when you want explicit connection blocks and config-driven CLI wiring.
 
 ## Running the CLI
 
@@ -47,7 +50,13 @@ ormed migrate
 
 ## Config discovery
 
-By default the CLI finds the nearest `ormed.yaml` by walking up from the current directory.
+If present, the CLI finds the nearest `ormed.yaml` by walking up from the current directory.
+
+If missing, CLI commands fall back to convention defaults:
+- driver: sqlite
+- database: `database/<package>.sqlite`
+- migrations registry: `lib/src/database/migrations.dart`
+- seed registry: `lib/src/database/seeders.dart`
 
 Override the config path explicitly:
 
@@ -69,4 +78,3 @@ dart run ormed_cli:ormed seed --connection analytics
 Commands that mutate schema/data prompt for confirmation when the process environment indicates production (`ORM_ENV`, `DART_ENV`, `FLUTTER_ENV`, or `ENV` equals `production`).
 
 Use `--force` (when supported) to skip the prompt.
-

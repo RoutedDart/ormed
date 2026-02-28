@@ -6,7 +6,7 @@ import 'package:ormed_mysql/ormed_mysql.dart';
 import 'package:ormed_postgres/ormed_postgres.dart';
 import 'package:ormed_sqlite/ormed_sqlite.dart';
 
-import '../orm_registry.g.dart';
+import 'package:ormed_examples/src/database/orm_registry.g.dart';
 
 // #region postgres-extension-definition
 class PostgresCaseInsensitiveExtensions extends DriverExtension {
@@ -14,12 +14,12 @@ class PostgresCaseInsensitiveExtensions extends DriverExtension {
 
   @override
   List<DriverExtensionHandler> get handlers => const [
-        DriverExtensionHandler(
-          kind: DriverExtensionKind.where,
-          key: 'ci_equals',
-          compile: _compilePostgresCaseInsensitive,
-        ),
-      ];
+    DriverExtensionHandler(
+      kind: DriverExtensionKind.where,
+      key: 'ci_equals',
+      compile: _compilePostgresCaseInsensitive,
+    ),
+  ];
 }
 
 DriverExtensionFragment _compilePostgresCaseInsensitive(
@@ -41,10 +41,10 @@ Future<List<Map<String, Object?>>> searchDocumentsPostgres(
   DataSource dataSource,
   String query,
 ) {
-  return dataSource.context
-      .table('documents')
-      .whereExtension('ci_equals', {'column': 'title', 'value': query})
-      .rows();
+  return dataSource.context.table('documents').whereExtension('ci_equals', {
+    'column': 'title',
+    'value': query,
+  }).rows();
 }
 
 Future<DataSource> createPostgresExtensionDataSource() async {
@@ -69,12 +69,12 @@ class MySqlCaseInsensitiveExtensions extends DriverExtension {
 
   @override
   List<DriverExtensionHandler> get handlers => const [
-        DriverExtensionHandler(
-          kind: DriverExtensionKind.where,
-          key: 'ci_equals',
-          compile: _compileMySqlCaseInsensitive,
-        ),
-      ];
+    DriverExtensionHandler(
+      kind: DriverExtensionKind.where,
+      key: 'ci_equals',
+      compile: _compileMySqlCaseInsensitive,
+    ),
+  ];
 }
 
 DriverExtensionFragment _compileMySqlCaseInsensitive(
@@ -96,10 +96,10 @@ Future<List<Map<String, Object?>>> searchDocumentsMySql(
   DataSource dataSource,
   String query,
 ) {
-  return dataSource.context
-      .table('documents')
-      .whereExtension('ci_equals', {'column': 'title', 'value': query})
-      .rows();
+  return dataSource.context.table('documents').whereExtension('ci_equals', {
+    'column': 'title',
+    'value': query,
+  }).rows();
 }
 
 Future<DataSource> createMySqlExtensionDataSource() async {
@@ -124,12 +124,12 @@ class SqliteCaseInsensitiveExtensions extends DriverExtension {
 
   @override
   List<DriverExtensionHandler> get handlers => const [
-        DriverExtensionHandler(
-          kind: DriverExtensionKind.where,
-          key: 'ci_equals',
-          compile: _compileSqliteCaseInsensitive,
-        ),
-      ];
+    DriverExtensionHandler(
+      kind: DriverExtensionKind.where,
+      key: 'ci_equals',
+      compile: _compileSqliteCaseInsensitive,
+    ),
+  ];
 }
 
 DriverExtensionFragment _compileSqliteCaseInsensitive(
@@ -151,10 +151,10 @@ Future<List<Map<String, Object?>>> searchDocumentsSqlite(
   DataSource dataSource,
   String query,
 ) {
-  return dataSource.context
-      .table('documents')
-      .whereExtension('ci_equals', {'column': 'title', 'value': query})
-      .rows();
+  return dataSource.context.table('documents').whereExtension('ci_equals', {
+    'column': 'title',
+    'value': query,
+  }).rows();
 }
 
 Future<DataSource> createSqliteExtensionDataSource() async {
@@ -169,4 +169,5 @@ Future<DataSource> createSqliteExtensionDataSource() async {
   await dataSource.init();
   return dataSource;
 }
+
 // #endregion sqlite-extension-usage

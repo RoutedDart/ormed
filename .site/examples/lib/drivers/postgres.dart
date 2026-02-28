@@ -4,7 +4,7 @@
 import 'package:ormed/ormed.dart';
 import 'package:ormed_postgres/ormed_postgres.dart';
 
-import '../orm_registry.g.dart';
+import 'package:ormed_examples/src/database/orm_registry.g.dart';
 
 // #region postgres-datasource-url
 Future<DataSource> createPostgresDataSourceFromUrl() async {
@@ -46,4 +46,5 @@ Future<DataSource> createPostgresDataSourceFromFields() async {
   await dataSource.init();
   return dataSource;
 }
+
 // #endregion postgres-datasource-fields
