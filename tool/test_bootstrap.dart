@@ -384,35 +384,42 @@ Future<void> runHelperTest() async {
   );
   helperTestFile.writeAsStringSync('''
 import 'package:ormed/ormed.dart';
+import 'package:orm_bootstrap_test/src/database/config.dart';
 import 'package:orm_bootstrap_test/test/helpers/ormed_test_helper.dart';
 import 'package:test/test.dart' as test;
 
 void main() {
   ormedGroup('Helper test suite', (ds) {
-    ormedTest('primary helper connection can insert and read rows', (db) async {
-      await primaryTestConnection().driver.executeRaw(
+    ormedTest('default helper connection can insert and read rows', (db) async {
+      await testConnection().driver.executeRaw(
         'INSERT INTO users (email, name) VALUES (?, ?)',
         ['helper@example.com', 'Helper'],
       );
 
-      final rows = await primaryTestConnection()
+      final rows = await testConnection()
           .driver
           .queryRaw('SELECT COUNT(*) AS count FROM users');
       test.expect(rows.single['count'], test.equals(1));
     });
-  }, config: primaryTestConfig);
+  }, config: testConfig());
 
-  ormedGroup('Helper analytics suite', (ds) {
-    ormedTest('analytics helper connection stays empty', (db) async {
-      final analyticsRows = await analyticsTestConnection()
-          .driver
-          .queryRaw('SELECT COUNT(*) AS count FROM users');
-      test.expect(analyticsRows.single['count'], test.equals(0));
+  final secondaryConnection = generatedDataSourceConnections.firstWhere(
+    (name) => name != defaultDataSourceConnection,
+    orElse: () => '',
+  );
+  if (secondaryConnection.isNotEmpty) {
+    ormedGroup('Helper secondary suite', (ds) {
+      ormedTest('secondary helper connection stays empty', (db) async {
+        final secondaryRows = await testConnection(connection: secondaryConnection)
+            .driver
+            .queryRaw('SELECT COUNT(*) AS count FROM users');
+        test.expect(secondaryRows.single['count'], test.equals(0));
 
-      final primaryConn = ConnectionManager.instance.connection('primary');
-      test.expect(primaryConn.name, test.equals('primary'));
-    });
-  }, config: analyticsTestConfig);
+        final conn = ConnectionManager.instance.connection(secondaryConnection);
+        test.expect(conn.name, test.equals(secondaryConnection));
+      });
+    }, config: testConfig(connection: secondaryConnection));
+  }
 }
 ''');
 
