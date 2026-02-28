@@ -9,6 +9,17 @@ import TabItem from '@theme/TabItem';
 
 Ormed models support **attribute metadata** that affects:
 
+## Prerequisites
+
+- [Defining Models](./defining-models)
+- [Quick Start](../getting-started/quick-start)
+
+## What You’ll Learn
+
+- How mass-assignment rules (`fillable`, `guarded`) are enforced
+- How visibility (`hidden`, `visible`) affects serialization
+- How attribute metadata connects to casting behavior
+
 - Mass assignment (`fill`, `fillIfAbsent`, `forceFill`)
 - Serialization (`toArray`, `toJson`)
 - Casting (see **Models → Casting**)
@@ -68,3 +79,9 @@ Use `appends` to include computed attributes in `toArray()` / `toJson()` output.
 
 ```dart file=../../examples/lib/models/attribute_metadata_examples.dart#attributes-appends
 ```
+
+## Read This Next
+
+- [Casting](./casting)
+- [Model Scopes](./scopes)
+- [Query Builder](../queries/query-builder)

@@ -10,6 +10,16 @@ import TabItem from '@theme/TabItem';
 
 Once your models are defined, you need to create the corresponding database tables and optionally populate them with initial data.
 
+## Prerequisites
+
+- [Models & Codegen](./models)
+
+## What You’ll Learn
+
+- How to generate migration files for tutorial entities
+- How to define schema operations for each table
+- How to seed deterministic starter data for development and tests
+
 ## Create migrations
 
 Migrations allow you to evolve your database schema over time. You can generate migration files using the `ormed` CLI.
@@ -86,4 +96,3 @@ dart run ormed_cli:ormed migrate
 # Run the database seeders
 dart run ormed_cli:ormed seed
 ```
-

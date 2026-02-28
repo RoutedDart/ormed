@@ -10,6 +10,17 @@ import TabItem from '@theme/TabItem';
 Ormed emits lifecycle events for every model operation:
 `saving`, `saved`, `creating`, `created`, `updating`, `updated`, `deleting`, `deleted`, `trashed`, `forceDeleted`, `restoring`, `restored`, `retrieved`, and `replicating`.
 
+## Prerequisites
+
+- [Defining Models](./defining-models)
+- [CLI Overview](../cli/overview)
+
+## What You’ll Learn
+
+- Which model lifecycle events are emitted and cancellable
+- How to wire global and model-specific listeners
+- How to use events for auditing, guardrails, and side effects
+
 - Cancellable: `saving`, `creating`, `updating`, `deleting`, `restoring`, `replicating`
 - Soft delete aware: `trashed` (soft delete), `forceDeleted` (hard delete)
 - Global listeners: subscribe on the shared `EventBus.instance`
@@ -160,3 +171,9 @@ Use `createQuietlyRelation` and `createManyQuietlyRelation` to create related mo
 - **System migrations**: Update data without user-facing events
 - **Internal sync**: Replicate data without duplicate notifications
 :::
+
+## Read This Next
+
+- [Observability](../guides/observability)
+- [Repository](../queries/repository)
+- [Migration & Seeding Events](../migrations/events)

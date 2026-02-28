@@ -9,17 +9,28 @@ import TabItem from '@theme/TabItem';
 
 End-to-end walkthroughs demonstrating how Ormed pieces work together.
 
+## Prerequisites
+
+- [Quick Start](../getting-started/quick-start)
+- [Configuration](../getting-started/configuration)
+
+## What You’ll Learn
+
+- How a full Ormed workflow fits together end-to-end
+- How generated runtime helpers replace manual boot glue
+- How to adapt the recipe for your own app layout
+
 ## End-to-End SQLite Workflow
 
 ### 1. Dependencies (`pubspec.yaml`)
 
 ```yaml
 dependencies:
-  ormed: ^0.1.0
-  ormed_sqlite: ^0.1.0
+  ormed: ^0.2.0
+  ormed_sqlite: ^0.2.0
 dev_dependencies:
   build_runner:
-  ormed_cli: ^0.1.0
+  ormed_cli: ^0.2.0
 ```
 
 ### 2. Model (`lib/user.dart`)
@@ -148,3 +159,9 @@ Output:
 - Attach listeners to `context.onQuery`/`.onMutation` to assert behavior
 - For migrations, use `MigrationRunner` with a fake ledger to verify ordering
 - For Postgres integration tests, use `PostgresTestHarness` which spins up a schema per test
+
+## Read This Next
+
+- [Best Practices](./best-practices)
+- [Testing](./testing)
+- [Observability](./observability)

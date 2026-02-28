@@ -10,6 +10,17 @@ import TabItem from '@theme/TabItem';
 Ormed defaults to **code-first runtime configuration** generated in `lib/src/database/config.dart`.  
 `ormed.yaml` remains supported for CLI workflows and explicit connection blocks.
 
+## Prerequisites
+
+- You completed [Installation](./installation)
+- You ran `ormed init` from [Quick Start](./quick-start) or [Adopt Existing Project](./adopt-existing-project)
+
+## What You’ll Learn
+
+- How generated `config.dart` selects one or many runtime connections
+- When to introduce `ormed.yaml` and multi-connection blocks
+- How environment variables are resolved in code and YAML
+
 :::note Snippet context
 - YAML blocks show CLI/runtime config.
 - Dart snippets show only the relevant registry/setup pieces; full app bootstrapping is covered in Quick Start.
@@ -106,7 +117,7 @@ Named database connections. Each connection has its own driver, migrations, and 
 connections:
   primary:
     driver:
-      type: sqlite  # sqlite, postgres, mysql, mariadb
+      type: sqlite  # sqlite, d1, postgres, mysql, mariadb
       options:
         database: database.sqlite
     
@@ -141,7 +152,7 @@ When using `ormed.yaml`, both `migrations.registry` and `seeds.registry` are **s
 
 If you relocate these files, update the `registry` paths so the CLI can find and execute them.
 
-Driver-specific options live on the dedicated pages: **Drivers → SQLite / PostgreSQL / MySQL**.
+Driver-specific options live on the dedicated pages: **Drivers → SQLite / PostgreSQL / MySQL / D1**.
 
 ## Environment Variables
 
@@ -195,11 +206,12 @@ If you prefer explicit YAML-driven runtime boot:
 
 ```dart
 import 'package:ormed/ormed.dart';
-import 'src/database/orm_registry.g.dart';
+import 'src/database/config.dart';
 
 void main() async {
   final config = loadOrmConfig();
-  final ds = DataSource.fromConfig(config, registry: bootstrapOrm());
+  final options = buildDataSourceOptions();
+  final ds = DataSource.fromConfig(config, registry: options.registry);
   await ds.init();
 }
 ```
@@ -217,10 +229,10 @@ If you prefer manual control, you can still register models individually:
 
 ## Next Steps
 
-- [Drivers](../drivers/overview) — choose and configure your target database
-- [Defining Models](../models/defining-models) — create your first models
-- [CLI Commands](../cli/commands) — learn all available CLI commands
-- [Migrations](../migrations/overview) — set up database migrations
+- [Defining Models](../models/defining-models) — design your schema model layer
+- [Drivers](../drivers/overview) — pick runtime-specific connection behavior
+- [Migrations](../migrations/overview) — connect config to schema rollout
+- [CLI Commands](../cli/commands) — operational command reference
 
 ## Migration authoring format
 

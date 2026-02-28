@@ -6,6 +6,17 @@ sidebar_position: 3
 
 Ormed provides multiple ways to load relationships between models.
 
+## Prerequisites
+
+- [Relationships](../models/relationships)
+- [Query Builder](./query-builder)
+
+## What You’ll Learn
+
+- How to eager-load and lazy-load relation graphs
+- How to avoid N+1 query patterns
+- How nested relations and constraints are expressed
+
 :::note Snippet context
 - Snippets focus on relation APIs and omit full setup.
 - Unless shown otherwise, assume you already have a `DataSource` named `dataSource` and your relations were generated via `build_runner`.
@@ -123,3 +134,9 @@ Fix by eager loading:
 
 ```dart file=../../examples/lib/relations/loading.dart#n-plus-one-good
 ```
+
+## Read This Next
+
+- [Query Builder](./query-builder)
+- [Repository](./repository)
+- [Model Relationships](../models/relationships)

@@ -8,6 +8,19 @@ import TabItem from '@theme/TabItem';
 # Casting
 
 Casting lets you map a model field to a **codec key** (a string) so Ormed can consistently:
+
+## Prerequisites
+
+- [Defining Models](./defining-models)
+- [Model Attributes](./attributes)
+
+## What You’ll Learn
+
+- Built-in cast keys and when to use each
+- How field-level and model-level casts interact
+- How casting affects read, write, and serialization pipelines
+
+Ormed applies cast mappings consistently to:
 - Normalize values when assigning (`fill`, `setAttribute`)
 - Decode values when hydrating from queries
 - Encode values when persisting mutations
@@ -168,3 +181,9 @@ You can define your own cast keys by registering a codec under that key, then re
 
   </TabItem>
 </Tabs>
+
+## Read This Next
+
+- [Model Attributes](./attributes)
+- [JSON Queries](../queries/json)
+- [Driver Overrides](./driver-overrides)

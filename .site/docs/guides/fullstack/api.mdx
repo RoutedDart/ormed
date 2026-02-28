@@ -10,6 +10,17 @@ import TabItem from '@theme/TabItem';
 
 In addition to server-rendered HTML pages, our application provides a RESTful JSON API. This is useful for building mobile apps or single-page applications (SPAs) that need to interact with the same data.
 
+## Prerequisites
+
+- [Server & Web Routes](./server-routes)
+- [Models & Codegen](./models)
+
+## What You’ll Learn
+
+- How to expose CRUD endpoints with Ormed-backed handlers
+- How DTOs shape API write payloads
+- How to share model logic between web and API surfaces
+
 ## Movie endpoints
 
 The API endpoints use the same database logic as the web handlers but return JSON responses instead of HTML.
@@ -72,4 +83,3 @@ All API payloads use the field names defined in your models. For example, when c
   "genreId": 1
 }
 ```
-

@@ -9,14 +9,25 @@ import TabItem from '@theme/TabItem';
 
 SQLite is the default scaffold for new projects. It runs without external services and is great for local development, CLI tools, and fast integration tests.
 
+## Prerequisites
+
+- [Drivers Overview](./overview)
+- [Configuration](../getting-started/configuration)
+
+## What You’ll Learn
+
+- How to run SQLite with generated datasource helpers
+- Which SQLite options matter for local dev and tests
+- How env-based path configuration (`DB_PATH`) fits into scaffolded config
+
 ## Install
 
 Add the driver package:
 
 ```yaml
 dependencies:
-  ormed: ^0.1.0
-  ormed_sqlite: ^0.1.0
+  ormed: ^0.2.0
+  ormed_sqlite: ^0.2.0
 ```
 
 ## Configure
@@ -47,22 +58,7 @@ The recommended way is the generated `createDataSource()` helper:
 ```
 
   </TabItem>
-  <TabItem value="config" label="From Config (manual)">
-
-```dart
-import 'package:ormed/ormed.dart';
-import 'package:ormed_sqlite/ormed_sqlite.dart';
-
-void main() async {
-  ensureSqliteDriverRegistration();
-  final config = loadOrmConfig();
-  final ds = DataSource.fromConfig(config);
-  await ds.init();
-}
-```
-
-  </TabItem>
-  <TabItem value="manual" label="Manual">
+  <TabItem value="manual" label="Manual adapter">
 
 ```dart file=../../examples/lib/drivers/sqlite.dart#sqlite-datasource
 ```
@@ -98,6 +94,16 @@ Available helpers:
 | `session` | `Map<String, Object?>` | `{}` | Session pragmas applied via `PRAGMA key = value`. |
 | `init` | `List<String>` | `[]` | SQL statements executed after connecting. |
 
+## Environment Variables
+
+SQLite does not require network credentials. For scaffolded projects, generated `config.dart` reads:
+
+- `DB_PATH`: SQLite file path (`database/<package>.sqlite` fallback by default)
+
+If you keep `ormed.yaml`, interpolation is also supported:
+
+- `${DB_PATH}` and `${DB_PATH:-database/app.sqlite}`
+
 ### Notes
 
 - The adapter automatically enables `RETURNING` support and schema inspection.
@@ -113,3 +119,8 @@ Driver extensions let you register custom clause compilers for SQLite queries.
 
 ```dart file=../../examples/lib/drivers/extensions.dart#sqlite-extension-usage
 ```
+
+## Read This Next
+
+- [PostgreSQL](./postgres), [MySQL](./mysql), or [D1](./d1) for non-local runtimes
+- [Guide: Testing](../guides/testing)

@@ -9,14 +9,25 @@ import TabItem from '@theme/TabItem';
 
 The MySQL adapter also supports MariaDB. Configure via URL or explicit fields; common alias keys are accepted.
 
+## Prerequisites
+
+- [Drivers Overview](./overview)
+- [Configuration](../getting-started/configuration)
+
+## What You’ll Learn
+
+- How to configure MySQL/MariaDB with generated helpers
+- Which connection/session options are available
+- How env-driven setup maps to helper APIs
+
 ## Install
 
 Add the driver package:
 
 ```yaml
 dependencies:
-  ormed: ^0.1.0
-  ormed_mysql: ^0.1.0
+  ormed: ^0.2.0
+  ormed_mysql: ^0.2.0
 ```
 
 ## Configure
@@ -66,25 +77,19 @@ driver:
 
 ## Use in code (DataSource)
 
-The recommended way is to use generated `config.dart` + `datasource.dart`, but you can also initialize manually:
-
-<Tabs groupId="mysql-usage" defaultValue="config">
-  <TabItem value="config" label="From Config">
+The recommended way is generated `config.dart` + `datasource.dart`, but you can also initialize directly from environment helpers:
 
 ```dart
-import 'package:ormed/ormed.dart';
-import 'package:ormed_mysql/ormed_mysql.dart';
+import 'package:your_app/src/database/datasource.dart';
 
-void main() async {
-  ensureMySqlDriverRegistration();
-  
-  final config = loadOrmConfig();
-  final ds = DataSource.fromConfig(config);
+Future<void> main() async {
+  final ds = createDataSource(connection: 'default');
   await ds.init();
+  await ds.dispose();
 }
 ```
 
-  </TabItem>
+<Tabs groupId="mysql-usage" defaultValue="url">
   <TabItem value="url" label="URL (Manual)">
 
 ```dart file=../../examples/lib/drivers/mysql.dart#mysql-datasource-url
@@ -118,6 +123,17 @@ void main() async {
 | `session` | `Map<String, Object?>` | `{}` | Session variables applied via `SET @@key = value`. |
 | `init` | `List<String>` | `[]` | SQL statements executed after connecting and applying charset/timezone/sqlMode. |
 | `schema` | `String?` | — | Optional schema/database qualifier used when compiling fully-qualified table names. |
+
+## Environment Variables
+
+`mySqlDataSourceOptionsFromEnv(...)` / `mySqlDataSourceFromEnv(...)` recognize:
+
+- `DB_URL` or `DATABASE_URL`
+- `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`
+- `DB_SSLMODE`, `DB_TIMEZONE`
+- `DB_CHARSET`, `DB_COLLATION`, `DB_SQL_MODE`
+
+If `DB_URL`/`DATABASE_URL` is set, URL-based config is used first, with env overrides applied for SSL/timezone/charset/collation.
 
 ## Extensions
 
@@ -168,3 +184,8 @@ Ormed uses driver codecs to map some MySQL/MariaDB column types to richer Dart t
 - Set `driver.type: mariadb` to target MariaDB specifically; the same options apply.
 - Migrations and seeds default to convention registries (`lib/src/database/*`) and can be overridden via `ormed.yaml`.
 - For plan/previews/schema internals, see Drivers → Internals.
+
+## Read This Next
+
+- [Migrations Overview](../migrations/overview)
+- [Guide: Multi-database](../guides/multi-database)

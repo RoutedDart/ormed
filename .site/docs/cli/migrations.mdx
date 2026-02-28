@@ -9,6 +9,19 @@ import TabItem from '@theme/TabItem';
 
 Migrations are registered in a Dart registry file and executed by the CLI via a schema-capable driver.
 
+## Prerequisites
+
+- [CLI Overview](./overview)
+- [Migrations Overview](../migrations/overview)
+
+## What You’ll Learn
+
+- How to apply, preview, rollback, and export migrations from CLI
+- Why registry path wiring matters
+- How to run migration workflows safely across connections
+
+## Registry defaults
+
 - Convention default registry: `lib/src/database/migrations.dart`
 - Optional override via `ormed.yaml` (`migrations.registry`)
 
@@ -161,3 +174,9 @@ To register an SQL-file migration entry (manual wiring):
 
 ```dart file=../../examples/lib/migrations/sql_workflows.dart#migration-sql-file-entry
 ```
+
+## Read This Next
+
+- [Seeding (CLI)](./seeding)
+- [Schema tooling (CLI)](./schema)
+- [CLI Command Reference](./commands)

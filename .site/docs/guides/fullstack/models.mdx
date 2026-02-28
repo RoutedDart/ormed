@@ -10,6 +10,16 @@ import TabItem from '@theme/TabItem';
 
 Models are the heart of your application. In Ormed, models are simple Dart classes annotated with `@OrmModel`.
 
+## Prerequisites
+
+- [Setup & Scaffolding](./setup)
+
+## What You’ll Learn
+
+- How to define core domain models for the tutorial app
+- How relations are expressed with Ormed annotations
+- How model definitions feed code generation
+
 ## Define the models
 
 We'll define two models: `Genre` and `Movie`.
@@ -70,4 +80,3 @@ The generator creates specialized DTOs like `MovieInsertDto` and `MovieUpdateDto
 1. **Clarity**: It's clear which fields are required for an insert vs. an update.
 2. **Safety**: You can't accidentally try to update a primary key or a read-only field.
 3. **Validation**: DTOs can have their own validation logic.
-

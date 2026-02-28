@@ -8,6 +8,19 @@ import TabItem from '@theme/TabItem';
 # Model Scopes
 
 Scopes package reusable query constraints on a model. Ormed supports:
+
+## Prerequisites
+
+- [Defining Models](./defining-models)
+- [Query Builder](../queries/query-builder)
+
+## What You’ll Learn
+
+- How to define global and local scopes
+- How generated and inline scopes differ
+- How scope registration affects query behavior across the app
+
+Ormed supports:
 - **Generated scopes** (declared on the model with `@OrmScope`)
 - **Inline scopes** (registered at runtime on a `ScopeRegistry`)
 
@@ -78,3 +91,8 @@ Apply them via `scope('name', args)` (and disable globals the same way as genera
 - **Global scopes must be argument-free** (beyond the initial `Query<T>`).
 - Identifiers default to the method name; override with `@OrmScope(identifier: 'custom')` when needed.
 
+## Read This Next
+
+- [Query Builder](../queries/query-builder)
+- [Repository](../queries/repository)
+- [Model Events](./events)

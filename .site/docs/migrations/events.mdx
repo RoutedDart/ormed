@@ -9,6 +9,17 @@ import TabItem from '@theme/TabItem';
 
 Migrations and seeders emit structured events through the shared `EventBus`. Subscribe once to stream progress to logs, metrics, or tracing.
 
+## Prerequisites
+
+- [Migrations Overview](./overview)
+- [CLI Migrations](../cli/migrations)
+
+## What You’ll Learn
+
+- Which migration/seeding events are emitted
+- How to subscribe and route event streams
+- How to use lifecycle events for observability and auditing
+
 :::note Snippet context
 The snippets below are split into “subscribe” and “run” pieces so you can reuse the listener wiring in your own bootstrap code.
 :::
@@ -70,3 +81,9 @@ Tips:
 - Use the same `EventBus` for migrations, seeders, and runtime queries to correlate logs.
 - `SeederFailedEvent` fires before the error is rethrown—log here, then let your process fail.
 - Combine with `pretend: true` on `SeederRunner.run` to capture SQL without mutating the database.
+
+## Read This Next
+
+- [Running Migrations](./running-migrations)
+- [Observability](../guides/observability)
+- [CLI Migrations](../cli/migrations)

@@ -1,0 +1,38 @@
+---
+sidebar_position: 1
+---
+
+# Queries Overview
+
+Ormed gives you three layers for data access: query builder, repositories, and DataSource orchestration.
+
+## Prerequisites
+
+- [Models Overview](../models/overview)
+- [Migrations Overview](../migrations/overview)
+
+## What You’ll Learn
+
+- When to use query builder vs repository vs DataSource APIs
+- A practical order for learning query features
+- How to scale from simple CRUD to multi-connection workflows
+
+## Query Layers
+
+- `Query Builder`: fluent typed reads and writes, joins, filters, projections.
+- `Repository`: model-oriented create/update/delete workflows.
+- `DataSource`: connection lifecycle, transactions, and multi-database routing.
+
+## Recommended Reading Order
+
+1. [Query Builder](./query-builder): core read/write fluency.
+2. [Repository](./repository): structured model mutations.
+3. [Loading Relations](./relations): association-aware reads.
+4. [DataSource](./data-source): boot, connection control, transactions.
+5. [JSON Queries](./json) + [Caching](./caching): specialized tuning.
+
+## Read This Next
+
+- [Query Builder](./query-builder)
+- [Repository](./repository)
+- [Multi-Database Guide](../guides/multi-database)

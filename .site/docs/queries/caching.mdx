@@ -6,6 +6,17 @@ sidebar_position: 5
 
 Query caching stores expensive database query results in memory, reducing database load and improving performance.
 
+## Prerequisites
+
+- [Query Builder](./query-builder)
+- [Repository](./repository)
+
+## What You’ll Learn
+
+- How to enable and tune query-level caching
+- How cache invalidation and bypass options work
+- When to use memory caching vs direct DB reads
+
 ## Basic Usage
 
 ### remember(Duration)
@@ -176,3 +187,9 @@ Query caching can provide:
 - **Reduced database load** - Fewer connections and queries
 - **Better scalability** - Handle more concurrent users
 - **Lower costs** - Reduced database resource usage
+
+## Read This Next
+
+- [Query Builder](./query-builder)
+- [Observability](../guides/observability)
+- [Best Practices](../guides/best-practices)

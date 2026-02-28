@@ -6,6 +6,17 @@ sidebar_position: 4
 
 Ormed uses source generation to produce strongly-typed models and metadata. Start from plain Dart classes annotated with `@OrmModel` and let `build_runner` produce definitions consumed by the runtime.
 
+## Prerequisites
+
+- [Quick Start](./quick-start)
+- [Defining Models](../models/defining-models)
+
+## What You’ll Learn
+
+- What files Ormed generates and why they exist
+- How to run generator workflows in build and watch modes
+- How generated registry and model artifacts plug into runtime boot
+
 ## Running the Generator
 
 Add the builder and run:
@@ -145,3 +156,9 @@ Use `driverOverrides` for per-driver behavior:
 - Use `@OrmField(ignore: true)` for computed properties
 - Re-run `build_runner` whenever annotations change
 - Generated files are not meant to be edited manually
+
+## Read This Next
+
+- [Model Attributes](../models/attributes)
+- [Configuration](./configuration)
+- [Migrations Overview](../migrations/overview)

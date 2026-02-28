@@ -9,6 +9,17 @@ import TabItem from '@theme/TabItem';
 
 The ORM exposes structured hooks for every query and mutation so you can ship metrics, traces, and logs without patching driver code.
 
+## Prerequisites
+
+- [Query Builder](../queries/query-builder)
+- [CLI Overview](../cli/overview)
+
+## What You’ll Learn
+
+- How to capture and inspect structured query logs
+- How to stream ORM events to metrics/tracing systems
+- How to debug slow or failing operations with runtime hooks
+
 ## Query Logging
 
 The simplest way to observe queries is via the built-in query log on `OrmConnection` or `DataSource`:
@@ -209,3 +220,9 @@ Send query metrics to your monitoring service:
 ```dart file=../../examples/lib/observability/observability.dart#slow-query-monitoring
 
 ```
+
+## Read This Next
+
+- [Best Practices](./best-practices)
+- [Testing](./testing)
+- [Multi-Database Support](./multi-database)

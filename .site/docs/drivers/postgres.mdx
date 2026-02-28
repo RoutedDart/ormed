@@ -9,14 +9,25 @@ import TabItem from '@theme/TabItem';
 
 Use PostgreSQL for production‑grade features (JSONB, window functions, robust constraints). Configure via URL or discrete fields.
 
+## Prerequisites
+
+- [Drivers Overview](./overview)
+- [Configuration](../getting-started/configuration)
+
+## What You’ll Learn
+
+- How to configure Postgres in code-first and config-driven flows
+- Which Postgres options and value types Ormed supports
+- How env-based boot maps to runtime helper APIs
+
 ## Install
 
 Add the driver package:
 
 ```yaml
 dependencies:
-  ormed: ^0.1.0
-  ormed_postgres: ^0.1.0
+  ormed: ^0.2.0
+  ormed_postgres: ^0.2.0
 ```
 
 ## Configure
@@ -58,27 +69,17 @@ driver:
 
 ## Use in code (DataSource)
 
-The recommended path is generated `config.dart` + `datasource.dart`.  
-Manual YAML/config-driven setup:
+The recommended path is generated `config.dart` + `datasource.dart`.
+
+For direct code-first boot without `ormed.yaml`:
 
 ```dart
-import 'package:ormed/ormed.dart';
-import 'package:ormed_postgres/ormed_postgres.dart';
+import 'package:your_app/src/database/datasource.dart';
 
-void main() async {
-  // 1. Register the driver
-  ensurePostgresDriverRegistration();
-
-  // 2. Load configuration (usually from ormed.yaml)
-  final config = loadOrmConfig();
-
-  // 3. Create DataSource
-  final ds = DataSource.fromConfig(config);
-
-  // 4. Initialize (connects to DB)
+Future<void> main() async {
+  final ds = createDataSource(connection: 'default');
   await ds.init();
-
-  // Use the datasource...
+  await ds.dispose();
 }
 ```
 
@@ -147,6 +148,16 @@ Use `package:ormed_postgres/migrations.dart` when you want Postgres-specific sch
 | `session` | `Map<String, Object?>` | `{}` | Session settings applied via `SET key = value`. |
 | `init` | `List<String>` | `[]` | SQL statements executed after connecting. |
 
+## Environment Variables
+
+`postgresDataSourceOptionsFromEnv(...)` / `postgresDataSourceFromEnv(...)` recognize:
+
+- `DB_URL` or `DATABASE_URL`
+- `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`
+- `DB_SSLMODE`, `DB_TIMEZONE`, `DB_APP_NAME`
+
+If `DB_URL`/`DATABASE_URL` is set, URL-based config is used first, then optional overrides like `DB_SSLMODE` and `DB_TIMEZONE`.
+
 ### Notes
 
 - Supports `RETURNING`, JSON/JSONB operators, window functions, and schema introspection.
@@ -191,3 +202,8 @@ published packages:
 
 - [PostGIS integration test](https://github.com/RoutedDart/ormed/blob/master/packages/ormed_postgres_extensions/test/postgis_extension_integration_test.dart)
 - [pgvector integration test](https://github.com/RoutedDart/ormed/blob/master/packages/ormed_postgres_extensions/test/pgvector_extension_integration_test.dart)
+
+## Read This Next
+
+- [Migrations Overview](../migrations/overview)
+- [Guide: Multi-database](../guides/multi-database)

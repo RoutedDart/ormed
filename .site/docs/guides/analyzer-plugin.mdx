@@ -6,6 +6,17 @@ Ormed ships an optional analyzer plugin (no separate package) that inspects your
 query builder usage, DTOs, and model metadata during analysis. It helps catch
 unsafe patterns, invalid field names, and other common pitfalls before runtime.
 
+## Prerequisites
+
+- [Code Generation](../getting-started/code-generation)
+- [Query Builder](../queries/query-builder)
+
+## What You’ll Learn
+
+- How to enable analyzer diagnostics for Ormed usage
+- Which categories of ORM mistakes are caught statically
+- How to interpret and fix common plugin diagnostics
+
 ## Enable the plugin
 
 1) Add `ormed` to `dev_dependencies`.
@@ -233,3 +244,9 @@ dart analyze --no-use-aot-snapshot
 final users = await context.query<User>()
   .where('emali', 'a@b.com'); // flagged by the plugin
 ```
+
+## Read This Next
+
+- [Best Practices](./best-practices)
+- [Testing](./testing)
+- [Observability](./observability)

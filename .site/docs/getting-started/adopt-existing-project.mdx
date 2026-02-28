@@ -1,0 +1,108 @@
+---
+sidebar_position: 3
+---
+
+# Adopt Ormed In An Existing Project
+
+This guide is for teams integrating Ormed into an already running Dart service.
+
+## Prerequisites
+
+- [Installation](./installation)
+- Familiarity with your current DB schema and deployment flow
+
+## What You’ll Learn
+
+- How to add Ormed without rewriting the whole app
+- How to scaffold generated runtime config into an existing codebase
+- How to choose a safe migration strategy for existing databases
+
+## Integration Strategy
+
+Use this sequence:
+
+1. Add Ormed packages and generate code.
+2. Introduce a `DataSource` bootstrap path behind a small adapter layer.
+3. Move one model/query path at a time.
+4. Adopt migrations only after deciding ownership boundaries.
+
+## 1. Add Dependencies
+
+Pick your runtime driver and install:
+
+```yaml
+dependencies:
+  ormed: ^0.2.0
+  ormed_sqlite: ^0.2.0 # or ormed_postgres / ormed_mysql / ormed_d1
+
+dev_dependencies:
+  build_runner: ^2.4.0
+  ormed_cli: ^0.2.0
+```
+
+```bash
+dart pub get
+```
+
+## 2. Scaffold Runtime Files
+
+From project root:
+
+```bash
+dart run ormed_cli:ormed init
+```
+
+This adds `lib/src/database/config.dart` and `lib/src/database/datasource.dart` so runtime wiring is code-first by default.
+
+## 3. Add Ormed Models Gradually
+
+Create/annotate model files in `lib/src/models/` and generate:
+
+```bash
+dart run build_runner build --delete-conflicting-outputs
+```
+
+Generated output (`*.orm.dart` + `orm_registry.g.dart`) stays alongside your existing code and can be adopted incrementally.
+
+## 4. Bootstrap DataSource In App Startup
+
+Wire Ormed once during app startup:
+
+```dart
+import 'src/database/datasource.dart';
+
+Future<void> main() async {
+  final ds = createDataSource();
+  await ds.init();
+
+  // existing application startup...
+}
+```
+
+## 5. Choose Migration Ownership
+
+For existing databases, pick one approach and document it in your repo:
+
+- Ormed-owned going forward:
+  - keep historical schema as-is
+  - add a baseline migration entry representing current state
+  - use `ormed make` / `ormed migrate` for all new changes
+- Externally managed schema:
+  - continue current migration tool
+  - use Ormed primarily for models/queries/runtime access
+
+## 6. Move Endpoints In Slices
+
+Do not migrate everything at once. Port one endpoint/repository at a time, validate behavior, then proceed.
+
+Recommended order:
+
+1. Read-only queries
+2. Simple writes
+3. Transaction-heavy paths
+
+## Read This Next
+
+- [Configuration](./configuration)
+- [Models Overview](../models/overview)
+- [Migrations Overview](../migrations/overview)

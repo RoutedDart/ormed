@@ -9,6 +9,17 @@ import TabItem from '@theme/TabItem';
 
 Familiar convenience methods for working with model instances.
 
+## Prerequisites
+
+- [Defining Models](./defining-models)
+- [Repository](../queries/repository)
+
+## What You’ll Learn
+
+- How instance helpers (`copyWith`, `toMap`, `replicate`) work
+- When to use model methods vs repository/query APIs
+- Which fields are excluded during replication
+
 ## Copying Models
 
 ### copyWith()
@@ -199,3 +210,9 @@ Notes:
 - For multi-database / multi-tenant flows, prefer explicit `DataSource`/`QueryContext`, or pass a connection name to the helper (`Users.query('analytics')`).
 - If multiple connections register the same model type, always pass `connection:` to avoid relying on implicit resolution.
 - You can override resolution by calling `Model.bindConnectionResolver(...)`. Clear it with `Model.unbindConnectionResolver()` (useful in tests or teardown).
+
+## Read This Next
+
+- [Repository](../queries/repository)
+- [Model Factories](./factories)
+- [Query Builder](../queries/query-builder)

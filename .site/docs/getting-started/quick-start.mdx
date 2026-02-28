@@ -8,6 +8,18 @@ import TabItem from '@theme/TabItem';
 # Quick Start
 
 This guide will walk you through creating a simple Ormed application with a User model.
+If you are integrating into an existing app, use [Adopt Ormed In An Existing Project](./adopt-existing-project) instead.
+
+## Prerequisites
+
+- You completed [Installation](./installation)
+- You can run `dart pub get` and `dart run build_runner build` in your app
+
+## What You’ll Learn
+
+- How to scaffold runtime config with `ormed init`
+- How models, migrations, seeders, and generated code connect
+- How to boot `DataSource` and run basic CRUD
 
 ## Scaffold the Project (CLI)
 
@@ -205,7 +217,7 @@ User deleted
 
 ## Next Steps
 
-- [Defining Models](../models/defining-models) - Learn about model annotations and fields
-- [Query Builder](../queries/query-builder) - Master the fluent query API
-- [Repository Pattern](../queries/repository) - CRUD operations with flexible inputs
-- [Migrations](../migrations/overview) - Schema management and versioning
+- [Models Overview](../models/overview) - move from demo fields to production model design
+- [Queries Overview](../queries/overview) - expand read patterns beyond basic CRUD
+- [Repository Pattern](../queries/repository) - structured writes and updates
+- [Migrations](../migrations/overview) - schema evolution workflow

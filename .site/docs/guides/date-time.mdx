@@ -6,6 +6,17 @@ sidebar_position: 6
 
 Ormed provides robust support for date and time handling, integrating the standard Dart `DateTime` with the [Carbonized](https://pub.dev/packages/carbonized) library for a fluent, Laravel-like experience.
 
+## Prerequisites
+
+- [Timestamps](../models/timestamps)
+- [Soft Deletes](../models/soft-deletes)
+
+## What You’ll Learn
+
+- How Carbon/CarbonImmutable behaves inside Ormed models
+- How timezone handling affects timestamps and persistence
+- How to avoid mutation bugs in date-time workflows
+
 :::info
 The `carbonized` package is automatically exported by `package:ormed/ormed.dart`, so you don't need to add it to your `pubspec.yaml` or import it separately.
 :::
@@ -155,3 +166,9 @@ await repo.insert(event);
 | Need to mutate a date | Use `copy()` first, or `toMutable()` |
 | Storing a date reference | Call `toImmutable()` |
 | Passing dates to functions | Prefer `CarbonInterface` parameter type |
+
+## Read This Next
+
+- [Best Practices](./best-practices)
+- [Testing](./testing)
+- [Observability](./observability)

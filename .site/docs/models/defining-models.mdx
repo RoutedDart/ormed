@@ -9,6 +9,17 @@ import TabItem from '@theme/TabItem';
 
 Models in Ormed are Dart classes annotated with `@OrmModel` that map to database tables.
 
+## Prerequisites
+
+- You completed [Quick Start](../getting-started/quick-start)
+- You understand runtime setup from [Configuration](../getting-started/configuration)
+
+## What You’ll Learn
+
+- How to design model classes and field mappings
+- Which generated artifacts each model produces
+- How to prepare models for querying, relations, and migrations
+
 ## Naming Conventions
 
 By default, Ormed follows standard database naming conventions:
@@ -170,3 +181,9 @@ Data transfer objects for insert/update operations:
 3. **Use nullable types** for optional fields - Clearer intent
 4. **Keep models focused** - One model per table
 5. **Use DTOs** for partial updates - More explicit than tracked models
+
+## Read This Next
+
+- [Model Attributes](./attributes)
+- [Relationships](./relationships)
+- [Query Builder](../queries/query-builder)

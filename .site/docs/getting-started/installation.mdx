@@ -7,10 +7,24 @@ import TabItem from '@theme/TabItem';
 
 # Installation
 
+## Who This Is For
+
+Use this page if you are setting up Ormed in a project for the first time.
+
+## Prerequisites
+
+- A Dart environment where you can run `dart pub` and `dart run`
+
 ## Requirements
 
 - Dart SDK >= 3.0.0
 - A supported database driver package
+
+## What You’ll Learn
+
+- How to install Ormed runtime + CLI dependencies
+- What `ormed init` generates
+- Which files are required for the first runnable app
 
 ## Install the CLI
 
@@ -28,7 +42,7 @@ Add to `dev_dependencies` to ensure the CLI version always matches your project.
 
 ```yaml
 dev_dependencies:
-  ormed_cli: ^0.1.0
+  ormed_cli: ^0.2.0
 ```
 
 :::info
@@ -44,8 +58,8 @@ Add Ormed and at least one database driver to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  ormed: ^0.1.0
-  ormed_sqlite: ^0.1.0
+  ormed: ^0.2.0
+  ormed_sqlite: ^0.2.0
 
 dev_dependencies:
   build_runner: ^2.4.0
@@ -56,8 +70,8 @@ dev_dependencies:
 
 ```yaml
 dependencies:
-  ormed: ^0.1.0
-  ormed_postgres: ^0.1.0
+  ormed: ^0.2.0
+  ormed_postgres: ^0.2.0
 
 dev_dependencies:
   build_runner: ^2.4.0
@@ -68,8 +82,8 @@ dev_dependencies:
 
 ```yaml
 dependencies:
-  ormed: ^0.1.0
-  ormed_mysql: ^0.1.0
+  ormed: ^0.2.0
+  ormed_mysql: ^0.2.0
 
 dev_dependencies:
   build_runner: ^2.4.0
@@ -154,5 +168,6 @@ It also generates a centralized `lib/src/database/orm_registry.g.dart` file with
 
 ## Next Steps
 
-- [Quick Start Guide](./quick-start) - Build your first Ormed app
-- [Configuration](./configuration) - Configure the CLI and database connections
+- [Quick Start Guide](./quick-start) - build your first working model + migration + query
+- [Adopt Existing Project](./adopt-existing-project) - integrate Ormed into an existing service incrementally
+- [Configuration](./configuration) - understand single/multi-connection runtime setup
