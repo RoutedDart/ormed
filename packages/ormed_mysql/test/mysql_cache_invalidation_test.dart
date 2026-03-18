@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:ormed/ormed.dart';
 import 'package:ormed_mysql/ormed_mysql.dart';
 import 'package:test/test.dart';
@@ -17,7 +15,7 @@ Future<void> main() async {
 
   setUpAll(() async {
     final url =
-        Platform.environment['MYSQL_URL'] ??
+        OrmedEnvironment().firstNonEmpty(['MYSQL_URL']) ??
         'mysql://root:secret@localhost:6605/orm_test';
     final connectionInfo = MySqlConnectionInfo.fromUrl(
       url,

@@ -9,6 +9,25 @@ import TabItem from '@theme/TabItem';
 
 The ORM exposes structured hooks for every query and mutation so you can ship metrics, traces, and logs without patching driver code.
 
+## Prerequisites
+
+- [Query Builder](../queries/query-builder)
+- [CLI Overview](../cli/overview)
+
+## What You’ll Learn
+
+- How to capture and inspect structured query logs
+- How to stream ORM events to metrics/tracing systems
+- How to debug slow or failing operations with runtime hooks
+
+## Step Outcome
+
+By the end of this page, you should be able to:
+
+- Capture query/mutation telemetry without modifying driver code
+- Route ORM events to your logging/metrics/tracing stack
+- Investigate slow/failing database operations with concrete runtime data
+
 ## Query Logging
 
 The simplest way to observe queries is via the built-in query log on `OrmConnection` or `DataSource`:
@@ -54,6 +73,8 @@ The simplest way to observe queries is via the built-in query log on `OrmConnect
 | `error` | Exception object when `success` is `false` |
 | `parameters` | Bind values (empty when `includeParameters` is `false`) |
 | `toMap()` | JSON-serializable representation |
+
+Start with query logs first, then add event hooks and tracing once baseline visibility is in place.
 
 ### Listening to Log Events
 
@@ -209,3 +230,15 @@ Send query metrics to your monitoring service:
 ```dart file=../../examples/lib/observability/observability.dart#slow-query-monitoring
 
 ```
+
+## Verify Observability Setup
+
+1. Enable query logging and run one read + one write query.
+2. Confirm log entries include SQL + duration + success/failure.
+3. Trigger a known failure and confirm error fields are emitted.
+
+## Read This Next
+
+- [Best Practices](./best-practices)
+- [Testing](./testing)
+- [Multi-Database Support](./multi-database)

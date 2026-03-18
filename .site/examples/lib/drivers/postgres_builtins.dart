@@ -14,10 +14,7 @@ final uuid = UuidValue.fromString('00000000-0000-0000-0000-000000000000');
 final amount = Decimal.parse('12.34');
 final money = const PgMoney.fromCents(1234);
 final bits = PgBitString.parse('10101010');
-final timeTz = PgTimeTz(
-  time: Time(1, 2, 3),
-  offset: const Duration(hours: 4),
-);
+final timeTz = PgTimeTz(time: Time(1, 2, 3), offset: const Duration(hours: 4));
 final lsn = LSN.fromString('0/10');
 final snapshot = const PgSnapshot(xmin: 1, xmax: 10, xip: [2, 3]);
 final location = const Point(1.5, 2.5);
@@ -51,4 +48,3 @@ class CreateHostsTable extends Migration {
   }
 }
 // #endregion postgres-builtins-migration
-

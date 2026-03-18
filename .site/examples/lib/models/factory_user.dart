@@ -14,4 +14,5 @@ class FactoryUser extends Model<FactoryUser> with ModelFactoryCapable {
   final String email;
   final String? name;
 }
+
 // #endregion factory-capable-model

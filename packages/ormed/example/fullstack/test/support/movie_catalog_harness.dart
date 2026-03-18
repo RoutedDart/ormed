@@ -16,6 +16,7 @@ import 'package:shelf/shelf.dart';
 import 'package:test/test.dart';
 
 // #region testing-setup
+// #region testing-setup-config
 OrmedTestConfig createMovieCatalogConfig() {
   final baseDataSource = createDataSource();
 
@@ -33,7 +34,9 @@ OrmedTestConfig createMovieCatalogConfig() {
 
   return config;
 }
+// #endregion testing-setup-config
 
+// #region testing-setup-harness-class
 class MovieCatalogTestHarness {
   MovieCatalogTestHarness({
     required this.dataSource,
@@ -53,10 +56,13 @@ class MovieCatalogTestHarness {
     await uploadsDir.delete(recursive: true);
   }
 }
+// #endregion testing-setup-harness-class
 
+// #region testing-setup-harness-factory
 Future<MovieCatalogTestHarness> createMovieCatalogHarness(
   DataSource dataSource,
 ) async {
+  // #region testing-setup-harness-init
   final uploadsDir = await Directory.systemTemp.createTemp('movie_uploads_');
   final storage = StorageService(uploadsRoot: uploadsDir.path);
   await storage.init();
@@ -74,7 +80,9 @@ Future<MovieCatalogTestHarness> createMovieCatalogHarness(
     templates: templates,
     logger: logger,
   );
+  // #endregion testing-setup-harness-init
 
+  // #region testing-setup-harness-handler
   final handler = Pipeline()
       .addMiddleware(requestIdMiddleware())
       .addMiddleware(httpLogger.middleware)
@@ -87,6 +95,8 @@ Future<MovieCatalogTestHarness> createMovieCatalogHarness(
     templates: templates,
     uploadsDir: uploadsDir,
   );
+  // #endregion testing-setup-harness-handler
 }
+// #endregion testing-setup-harness-factory
 
 // #endregion testing-setup

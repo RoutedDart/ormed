@@ -1,32 +1,32 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
 import 'package:ormed/ormed.dart';
-import 'models/attribute_metadata_examples.dart';
-import 'models/casting_examples.dart';
-import 'models/admin.dart';
-import 'models/driver_overrides_examples.dart';
-import 'events/model_events.dart';
-import 'models/relations/has_many_through.dart';
-import 'models/factory_inheritance.dart';
-import 'soft_deletes.dart';
-import 'models/comment.dart';
-import 'models/field_examples.dart';
-import 'generated_code_usage.dart';
-import 'models/factory_user.dart';
-import 'models/log_model.dart';
-import 'models/relations/polymorphic.dart';
-import 'models/post.dart';
-import 'models/relations/belongs_to.dart';
-import 'models/relations/belongs_to_many.dart';
-import 'models/product.dart';
-import 'models/relations/has_one.dart';
-import 'models/model_scopes.dart';
-import 'models/soft_delete_model.dart';
-import 'models/timestamp_model.dart';
-import 'models/user.dart';
-import 'queries/json.dart';
-import 'models/relations/has_many.dart';
-import 'best_practices/best_practices.dart';
+import 'package:ormed_examples/models/attribute_metadata_examples.dart';
+import 'package:ormed_examples/models/casting_examples.dart';
+import 'package:ormed_examples/models/admin.dart';
+import 'package:ormed_examples/models/driver_overrides_examples.dart';
+import 'package:ormed_examples/events/model_events.dart';
+import 'package:ormed_examples/models/relations/has_many_through.dart';
+import 'package:ormed_examples/models/factory_inheritance.dart';
+import 'package:ormed_examples/soft_deletes.dart';
+import 'package:ormed_examples/models/comment.dart';
+import 'package:ormed_examples/models/field_examples.dart';
+import 'package:ormed_examples/generated_code_usage.dart';
+import 'package:ormed_examples/models/factory_user.dart';
+import 'package:ormed_examples/models/log_model.dart';
+import 'package:ormed_examples/models/relations/polymorphic.dart';
+import 'package:ormed_examples/models/post.dart';
+import 'package:ormed_examples/models/relations/belongs_to.dart';
+import 'package:ormed_examples/models/relations/belongs_to_many.dart';
+import 'package:ormed_examples/models/product.dart';
+import 'package:ormed_examples/models/relations/has_one.dart';
+import 'package:ormed_examples/models/model_scopes.dart';
+import 'package:ormed_examples/models/soft_delete_model.dart';
+import 'package:ormed_examples/models/timestamp_model.dart';
+import 'package:ormed_examples/models/user.dart';
+import 'package:ormed_examples/queries/json.dart';
+import 'package:ormed_examples/models/relations/has_many.dart';
+import 'package:ormed_examples/best_practices/best_practices.dart';
 
 final List<ModelDefinition<OrmEntity>> _$ormModelDefinitions = [
   AccountOrmDefinition.definition,
@@ -130,8 +130,7 @@ ModelRegistry buildOrmRegistry() => ModelRegistry()
   ..registerTypeAlias<UserPost>(_$ormModelDefinitions[45])
   ..registerTypeAlias<UserWithPosts>(_$ormModelDefinitions[46])
   ..registerTypeAlias<UserWithProfile>(_$ormModelDefinitions[47])
-  ..registerTypeAlias<ValidatedUser>(_$ormModelDefinitions[48])
-  ;
+  ..registerTypeAlias<ValidatedUser>(_$ormModelDefinitions[48]);
 
 List<ModelDefinition<OrmEntity>> get generatedOrmModelDefinitions =>
     List.unmodifiable(_$ormModelDefinitions);
@@ -195,9 +194,15 @@ extension GeneratedOrmModels on ModelRegistry {
 /// Registers factory definitions for all models that have factory support.
 /// Call this before using [Model.factory<T>()] to ensure definitions are available.
 void registerOrmFactories() {
-  ModelFactoryRegistry.registerIfAbsent<BaseItem>(BaseItemOrmDefinition.definition);
-  ModelFactoryRegistry.registerIfAbsent<FactoryUser>(FactoryUserOrmDefinition.definition);
-  ModelFactoryRegistry.registerIfAbsent<SpecialItem>(SpecialItemOrmDefinition.definition);
+  ModelFactoryRegistry.registerIfAbsent<BaseItem>(
+    BaseItemOrmDefinition.definition,
+  );
+  ModelFactoryRegistry.registerIfAbsent<FactoryUser>(
+    FactoryUserOrmDefinition.definition,
+  );
+  ModelFactoryRegistry.registerIfAbsent<SpecialItem>(
+    SpecialItemOrmDefinition.definition,
+  );
 }
 
 /// Combined setup: registers both model registry and factories.
@@ -220,7 +225,14 @@ void registerModelScopes({ScopeRegistry? scopeRegistry}) {
 }
 
 /// Bootstraps generated ORM pieces: registry, factories, event handlers, and scopes.
-ModelRegistry bootstrapOrm({ModelRegistry? registry, EventBus? bus, ScopeRegistry? scopes, bool registerFactories = true, bool registerEventHandlers = true, bool registerScopes = true}) {
+ModelRegistry bootstrapOrm({
+  ModelRegistry? registry,
+  EventBus? bus,
+  ScopeRegistry? scopes,
+  bool registerFactories = true,
+  bool registerEventHandlers = true,
+  bool registerScopes = true,
+}) {
   final reg = registry ?? buildOrmRegistry();
   if (registry != null) {
     reg.registerGeneratedModels();

@@ -199,8 +199,7 @@ class DriverOverrideExampleModelFactory {
 
   static ModelFactoryBuilder<DriverOverrideExample> factory({
     GeneratorProvider? generatorProvider,
-  }) => ModelFactoryBuilder<DriverOverrideExample>(
-    definition: definition,
+  }) => ModelFactoryRegistry.factoryFor<DriverOverrideExample>(
     generatorProvider: generatorProvider,
   );
 }
@@ -395,7 +394,7 @@ class $DriverOverrideExample extends DriverOverrideExample
   $DriverOverrideExample({
     required int id,
     required Map<String, Object?> payload,
-  }) : super.new(id: id, payload: payload) {
+  }) : super(id: id, payload: payload) {
     _attachOrmRuntimeMetadata({'id': id, 'payload': payload});
   }
 
@@ -453,7 +452,7 @@ extension DriverOverrideExampleOrmExtension on DriverOverrideExample {
     Object? id = _copyWithSentinel,
     Object? payload = _copyWithSentinel,
   }) {
-    return DriverOverrideExample.new(
+    return DriverOverrideExample(
       id: identical(id, _copyWithSentinel) ? this.id : id as int,
       payload: identical(payload, _copyWithSentinel)
           ? this.payload
@@ -666,8 +665,7 @@ class AuditedEventModelFactory {
 
   static ModelFactoryBuilder<AuditedEvent> factory({
     GeneratorProvider? generatorProvider,
-  }) => ModelFactoryBuilder<AuditedEvent>(
-    definition: definition,
+  }) => ModelFactoryRegistry.factoryFor<AuditedEvent>(
     generatorProvider: generatorProvider,
   );
 }
@@ -849,7 +847,7 @@ class $AuditedEvent extends AuditedEvent
     implements OrmEntity {
   /// Internal constructor for [$AuditedEvent].
   $AuditedEvent({required int id, required String action})
-    : super.new(id: id, action: action) {
+    : super(id: id, action: action) {
     _attachOrmRuntimeMetadata({'id': id, 'action': action});
   }
 
@@ -903,7 +901,7 @@ extension AuditedEventOrmExtension on AuditedEvent {
     Object? id = _copyWithSentinel,
     Object? action = _copyWithSentinel,
   }) {
-    return AuditedEvent.new(
+    return AuditedEvent(
       id: identical(id, _copyWithSentinel) ? this.id : id as int,
       action: identical(action, _copyWithSentinel)
           ? this.action

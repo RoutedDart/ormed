@@ -9,6 +9,17 @@ import TabItem from '@theme/TabItem';
 
 The Query Builder provides a fluent, type-safe API for building database queries.
 
+## Prerequisites
+
+- You already defined at least one model ([Defining Models](../models/defining-models))
+- You can boot a datasource from generated helpers ([Quick Start](../getting-started/quick-start))
+
+## What You’ll Learn
+
+- How to compose read queries from simple filters to advanced joins/subqueries
+- How to paginate and aggregate safely
+- When to switch to relation helpers, repository operations, or raw expressions
+
 :::note Snippet context
 - Snippets focus on the query builder calls and omit full setup.
 - Unless shown otherwise, assume either:
@@ -146,7 +157,13 @@ You can use qualified column names (e.g., `table.column`) in where clauses. This
 
 Join multiple tables to query related data in a single query. Use `join` for inner joins (only matching rows), `leftJoin` to include all left-side rows even without matches, `rightJoin` for all right-side rows, and `crossJoin` for Cartesian products. `joinRelation` leverages defined model relationships.
 
-```dart file=../../examples/lib/queries.dart#joins
+```dart file=../../examples/lib/queries.dart#joins-basic
+```
+
+```dart file=../../examples/lib/queries.dart#joins-complex
+```
+
+```dart file=../../examples/lib/queries.dart#joins-variants
 
 ```
 
@@ -154,7 +171,10 @@ Join multiple tables to query related data in a single query. Use `join` for inn
 
 Filter results based on the output of another query. Subqueries are useful when you need to filter by aggregate results or check for existence of related records without joining. Use `whereInSubquery` to match values from a subquery, `whereExists` for existence checks (often more efficient than joins for filtering).
 
-```dart file=../../examples/lib/queries.dart#subqueries
+```dart file=../../examples/lib/queries.dart#subqueries-in-not-in
+```
+
+```dart file=../../examples/lib/queries.dart#subqueries-exists
 
 ```
 
@@ -162,7 +182,10 @@ Filter results based on the output of another query. Subqueries are useful when 
 
 Group rows by column values and aggregate data. Use `groupBy` to group rows, then filter the grouped results with `having` (not `where` — `where` filters before grouping, `having` filters after). Commonly used with aggregate functions like `count`, `sum`, `avg`.
 
-```dart file=../../examples/lib/queries.dart#grouping
+```dart file=../../examples/lib/queries.dart#grouping-basic
+```
+
+```dart file=../../examples/lib/queries.dart#grouping-having
 
 ```
 
@@ -257,7 +280,6 @@ Get partial entities with only selected columns:
 For models with soft deletes:
 
 ```dart file=../../examples/lib/queries.dart#soft-delete-scopes
-
 ```
 
 ## Query Caching
@@ -280,7 +302,10 @@ Combine result sets from multiple queries. `union` removes duplicate rows (slowe
 
 Lock rows within transactions to prevent race conditions and ensure data consistency. Use `lockForUpdate` when you'll modify the rows (prevents other transactions from reading or modifying), or `sharedLock` when you only need to read (allows concurrent reads but prevents modifications). Always use within a transaction.
 
-```dart file=../../examples/lib/queries.dart#locking
+```dart file=../../examples/lib/queries.dart#locking-for-update
+```
+
+```dart file=../../examples/lib/queries.dart#locking-shared
 
 ```
 
@@ -296,7 +321,13 @@ Encapsulate reusable query logic. **Local scopes** are model-specific constraint
 
 Create, update, and delete records.
 
-```dart file=../../examples/lib/queries.dart#crud
+```dart file=../../examples/lib/queries.dart#crud-create
+```
+
+```dart file=../../examples/lib/queries.dart#crud-update-delete
+```
+
+```dart file=../../examples/lib/queries.dart#crud-counters-upsert
 
 ```
 
@@ -304,7 +335,10 @@ Create, update, and delete records.
 
 Helper methods for query building and debugging.
 
-```dart file=../../examples/lib/queries.dart#utility-methods
+```dart file=../../examples/lib/queries.dart#utility-conditional
+```
+
+```dart file=../../examples/lib/queries.dart#utility-debug-value
 
 ```
 
@@ -312,7 +346,13 @@ Helper methods for query building and debugging.
 
 Beyond basic joins—subquery joins, lateral joins, and index hints.
 
-```dart file=../../examples/lib/queries.dart#advanced-joins
+```dart file=../../examples/lib/queries.dart#advanced-joins-where
+```
+
+```dart file=../../examples/lib/queries.dart#advanced-joins-subquery
+```
+
+```dart file=../../examples/lib/queries.dart#advanced-joins-driver-specific
 
 ```
 
@@ -320,7 +360,10 @@ Beyond basic joins—subquery joins, lateral joins, and index hints.
 
 Query and filter JSON fields with path expressions and operations.
 
-```dart file=../../examples/lib/queries.dart#json-queries
+```dart file=../../examples/lib/queries.dart#json-queries-predicates
+```
+
+```dart file=../../examples/lib/queries.dart#json-queries-combined
 
 ```
 
@@ -328,7 +371,10 @@ Query and filter JSON fields with path expressions and operations.
 
 Optimize queries by directing the database optimizer to use (or avoid) specific indexes. **MySQL-specific**.
 
-```dart file=../../examples/lib/queries.dart#index-hints
+```dart file=../../examples/lib/queries.dart#index-hints-core
+```
+
+```dart file=../../examples/lib/queries.dart#index-hints-multiple
 
 ```
 
@@ -336,15 +382,20 @@ Optimize queries by directing the database optimizer to use (or avoid) specific 
 
 Restore deleted records and permanently delete without soft deletes.
 
-```dart file=../../examples/lib/queries.dart#soft-delete-advanced
+```dart file=../../examples/lib/queries.dart#soft-delete-advanced-querying
+```
 
+```dart file=../../examples/lib/queries.dart#soft-delete-advanced-restore-delete
 ```
 
 ## Advanced Ordering
 
 Random order, relation order, and raw expressions.
 
-```dart file=../../examples/lib/queries.dart#order-advanced
+```dart file=../../examples/lib/queries.dart#order-advanced-random-raw
+```
+
+```dart file=../../examples/lib/queries.dart#order-advanced-relations
 
 ```
 
@@ -355,3 +406,9 @@ Compare values between columns or with correlated subqueries.
 ```dart file=../../examples/lib/queries.dart#where-column
 
 ```
+
+## Read This Next
+
+- [Repository](./repository) for write-oriented workflows
+- [Relations](./relations) for association loading patterns
+- [DataSource](./data-source) for connection and transaction orchestration

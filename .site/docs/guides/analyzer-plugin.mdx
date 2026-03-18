@@ -6,6 +6,25 @@ Ormed ships an optional analyzer plugin (no separate package) that inspects your
 query builder usage, DTOs, and model metadata during analysis. It helps catch
 unsafe patterns, invalid field names, and other common pitfalls before runtime.
 
+## Prerequisites
+
+- [Code Generation](../getting-started/code-generation)
+- [Query Builder](../queries/query-builder)
+
+## What You’ll Learn
+
+- How to enable analyzer diagnostics for Ormed usage
+- Which categories of ORM mistakes are caught statically
+- How to interpret and fix common plugin diagnostics
+
+## Step Outcome
+
+By the end of this page, you should be able to:
+
+- Enable the plugin in your workspace
+- Identify diagnostics that indicate correctness vs performance risk
+- Suppress only intentionally and locally when needed
+
 ## Enable the plugin
 
 1) Add `ormed` to `dev_dependencies`.
@@ -20,6 +39,12 @@ analyzer:
 > After changing `analysis_options.yaml`, restart the Dart Analysis Server.
 > If you previously used the standalone `ormed_analyzer` package, remove it from
 > your `pubspec.yaml` and update `analysis_options.yaml` to use `ormed`.
+
+Quick check:
+
+```bash
+dart analyze
+```
 
 ## How it works
 
@@ -204,6 +229,8 @@ Or suppress an entire file:
 // ignore_for_file: ormed/ormed_get_without_limit
 ```
 
+Prefer targeted, line-level suppression and include a short reason in code review context.
+
 ## Generated code warnings
 
 The plugin analyzes generated `.orm.dart` files by default (it needs them to
@@ -233,3 +260,13 @@ dart analyze --no-use-aot-snapshot
 final users = await context.query<User>()
   .where('emali', 'a@b.com'); // flagged by the plugin
 ```
+
+## Read This Next
+
+- [Best Practices](./best-practices)
+- [Testing](./testing)
+- [Observability](./observability)
+
+## CI Recommendation
+
+Run analyzer in CI and fail builds on new Ormed diagnostics unless explicitly suppressed with rationale.

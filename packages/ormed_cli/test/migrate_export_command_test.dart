@@ -59,7 +59,7 @@ void main() {
     setUp(() async {
       repoRoot = Directory.current;
       final scratchParent = Directory(
-        p.join(repoRoot.path, '.dart_tool', 'ormed_cli_tests'),
+        p.join(Directory.systemTemp.path, 'ormed_cli_tests'),
       );
       scratchParent.createSync(recursive: true);
       scratchDir = Directory(
@@ -124,6 +124,13 @@ environment:
       ]);
     }
 
+    Future<void> runOrmWithoutConfig(List<String> args) async {
+      final runner = CommandRunner<void>('ormed', 'ORM CLI')
+        ..addCommand(ApplyCommand())
+        ..addCommand(ExportCommand());
+      await runner.run(args);
+    }
+
     test(
       'migrate:export writes up.sql and down.sql without applying',
       () async {
@@ -185,6 +192,109 @@ environment:
         );
       },
     );
+
+    test('migrate:export works without ormed.yaml', () async {
+      ormConfig.deleteSync();
+      final outDir = Directory(p.join(scratchDir.path, 'sql_out_no_config'));
+
+      await runOrmWithoutConfig([
+        'migrate:export',
+        '--out',
+        outDir.path,
+        '--all',
+      ]);
+
+      final migrationFolder = Directory(
+        p.join(outDir.path, 'm_20250101000000_create_demo'),
+      );
+      expect(migrationFolder.existsSync(), isTrue);
+      expect(File(p.join(migrationFolder.path, 'up.sql')).existsSync(), isTrue);
+      expect(
+        File(p.join(migrationFolder.path, 'down.sql')).existsSync(),
+        isTrue,
+      );
+    });
+
+    test('migrate --pretend --write-sql works without ormed.yaml', () async {
+      ormConfig.deleteSync();
+      final outDir = Directory(
+        p.join(scratchDir.path, 'sql_preview_out_no_config'),
+      );
+
+      await runOrmWithoutConfig([
+        'migrate',
+        '--pretend',
+        '--write-sql',
+        '--sql-out',
+        outDir.path,
+      ]);
+
+      final migrationFolder = Directory(
+        p.join(outDir.path, 'm_20250101000000_create_demo'),
+      );
+      expect(migrationFolder.existsSync(), isTrue);
+      expect(File(p.join(migrationFolder.path, 'up.sql')).existsSync(), isTrue);
+      expect(
+        File(p.join(migrationFolder.path, 'down.sql')).existsSync(),
+        isTrue,
+      );
+    });
+
+    test('config-less defaults honor .env interpolation for DB_PATH', () async {
+      ormConfig.deleteSync();
+      final customDbPath = p.join(scratchDir.path, 'custom_db', 'env.sqlite');
+      File(p.join(scratchDir.path, '.env')).writeAsStringSync('''
+DB_TYPE=sqlite
+DB_PATH=$customDbPath
+''');
+      final outDir = Directory(
+        p.join(scratchDir.path, 'sql_out_env_configless'),
+      );
+
+      await runOrmWithoutConfig([
+        'migrate:export',
+        '--out',
+        outDir.path,
+        '--all',
+      ]);
+
+      expect(File(customDbPath).existsSync(), isTrue);
+      final migrationFolder = Directory(
+        p.join(outDir.path, 'm_20250101000000_create_demo'),
+      );
+      expect(migrationFolder.existsSync(), isTrue);
+    });
+
+    test(
+      'missing registry with no migration sources is treated as empty',
+      () async {
+        migrationRegistryLoader = const ProcessMigrationRegistryLoader();
+
+        await runOrm(['migrate:export', '--all']);
+      },
+    );
+
+    test('missing registry with migration sources suggests sync', () async {
+      migrationRegistryLoader = const ProcessMigrationRegistryLoader();
+
+      final migrationsDir = Directory(
+        p.join(scratchDir.path, 'lib', 'src', 'database', 'migrations'),
+      )..createSync(recursive: true);
+      File(
+        p.join(migrationsDir.path, 'm_20250101000000_create_demo.dart'),
+      ).writeAsStringSync('// migration source');
+
+      expect(
+        () => runOrm(['migrate:export', '--all']),
+        throwsA(
+          isA<StateError>().having(
+            (error) => error.message,
+            'message',
+            contains('ormed makemigrations'),
+          ),
+        ),
+      );
+    });
   });
 }
 

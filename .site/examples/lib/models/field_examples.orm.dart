@@ -161,8 +161,7 @@ class ItemWithIntPKModelFactory {
 
   static ModelFactoryBuilder<ItemWithIntPK> factory({
     GeneratorProvider? generatorProvider,
-  }) => ModelFactoryBuilder<ItemWithIntPK>(
-    definition: definition,
+  }) => ModelFactoryRegistry.factoryFor<ItemWithIntPK>(
     generatorProvider: generatorProvider,
   );
 }
@@ -299,7 +298,7 @@ class $ItemWithIntPK extends ItemWithIntPK
     with ModelAttributes
     implements OrmEntity {
   /// Internal constructor for [$ItemWithIntPK].
-  $ItemWithIntPK({required int id}) : super.new(id: id) {
+  $ItemWithIntPK({required int id}) : super(id: id) {
     _attachOrmRuntimeMetadata({'id': id});
   }
 
@@ -343,7 +342,7 @@ extension ItemWithIntPKOrmExtension on ItemWithIntPK {
   static const _ItemWithIntPKCopyWithSentinel _copyWithSentinel =
       _ItemWithIntPKCopyWithSentinel();
   ItemWithIntPK copyWith({Object? id = _copyWithSentinel}) {
-    return ItemWithIntPK.new(
+    return ItemWithIntPK(
       id: identical(id, _copyWithSentinel) ? this.id : id as int,
     );
   }
@@ -542,8 +541,7 @@ class ItemWithAutoIncrementModelFactory {
 
   static ModelFactoryBuilder<ItemWithAutoIncrement> factory({
     GeneratorProvider? generatorProvider,
-  }) => ModelFactoryBuilder<ItemWithAutoIncrement>(
-    definition: definition,
+  }) => ModelFactoryRegistry.factoryFor<ItemWithAutoIncrement>(
     generatorProvider: generatorProvider,
   );
 }
@@ -672,7 +670,7 @@ class $ItemWithAutoIncrement extends ItemWithAutoIncrement
     with ModelAttributes
     implements OrmEntity {
   /// Internal constructor for [$ItemWithAutoIncrement].
-  $ItemWithAutoIncrement({int id = 0}) : super.new(id: id) {
+  $ItemWithAutoIncrement({required int id}) : super(id: id) {
     _attachOrmRuntimeMetadata({'id': id});
   }
 
@@ -716,7 +714,7 @@ extension ItemWithAutoIncrementOrmExtension on ItemWithAutoIncrement {
   static const _ItemWithAutoIncrementCopyWithSentinel _copyWithSentinel =
       _ItemWithAutoIncrementCopyWithSentinel();
   ItemWithAutoIncrement copyWith({Object? id = _copyWithSentinel}) {
-    return ItemWithAutoIncrement.new(
+    return ItemWithAutoIncrement(
       id: identical(id, _copyWithSentinel) ? this.id : id as int,
     );
   }
@@ -908,8 +906,7 @@ class ItemWithUuidPKModelFactory {
 
   static ModelFactoryBuilder<ItemWithUuidPK> factory({
     GeneratorProvider? generatorProvider,
-  }) => ModelFactoryBuilder<ItemWithUuidPK>(
-    definition: definition,
+  }) => ModelFactoryRegistry.factoryFor<ItemWithUuidPK>(
     generatorProvider: generatorProvider,
   );
 }
@@ -1046,7 +1043,7 @@ class $ItemWithUuidPK extends ItemWithUuidPK
     with ModelAttributes
     implements OrmEntity {
   /// Internal constructor for [$ItemWithUuidPK].
-  $ItemWithUuidPK({required String id}) : super.new(id: id) {
+  $ItemWithUuidPK({required String id}) : super(id: id) {
     _attachOrmRuntimeMetadata({'id': id});
   }
 
@@ -1090,7 +1087,7 @@ extension ItemWithUuidPKOrmExtension on ItemWithUuidPK {
   static const _ItemWithUuidPKCopyWithSentinel _copyWithSentinel =
       _ItemWithUuidPKCopyWithSentinel();
   ItemWithUuidPK copyWith({Object? id = _copyWithSentinel}) {
-    return ItemWithUuidPK.new(
+    return ItemWithUuidPK(
       id: identical(id, _copyWithSentinel) ? this.id : id as String,
     );
   }
@@ -1314,8 +1311,7 @@ class ContactModelFactory {
 
   static ModelFactoryBuilder<Contact> factory({
     GeneratorProvider? generatorProvider,
-  }) => ModelFactoryBuilder<Contact>(
-    definition: definition,
+  }) => ModelFactoryRegistry.factoryFor<Contact>(
     generatorProvider: generatorProvider,
   );
 }
@@ -1541,11 +1537,11 @@ class _ContactPartialCopyWithSentinel {
 class $Contact extends Contact with ModelAttributes implements OrmEntity {
   /// Internal constructor for [$Contact].
   $Contact({
-    int id = 0,
+    required int id,
     required String email,
-    required bool active,
+    bool active = true,
     String? name,
-  }) : super.new(id: id, email: email, active: active, name: name) {
+  }) : super(id: id, email: email, active: active, name: name) {
     _attachOrmRuntimeMetadata({
       'id': id,
       'user_email': email,
@@ -1630,7 +1626,7 @@ extension ContactOrmExtension on Contact {
     Object? active = _copyWithSentinel,
     Object? name = _copyWithSentinel,
   }) {
-    return Contact.new(
+    return Contact(
       id: identical(id, _copyWithSentinel) ? this.id : id as int,
       email: identical(email, _copyWithSentinel) ? this.email : email as String,
       active: identical(active, _copyWithSentinel)

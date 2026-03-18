@@ -166,10 +166,7 @@ void registerEncrypter(DataSource dataSource) {
 // #region casts-arguments
 @OrmModel(
   table: 'invoices',
-  casts: {
-    'amount': 'decimal:2',
-    'metadata': 'encrypted:json',
-  },
+  casts: {'amount': 'decimal:2', 'metadata': 'encrypted:json'},
 )
 class Invoice extends Model<Invoice> {
   const Invoice({required this.id, this.amount, this.metadata});
@@ -180,4 +177,5 @@ class Invoice extends Model<Invoice> {
   final Decimal? amount;
   final Map<String, Object?>? metadata;
 }
+
 // #endregion casts-arguments

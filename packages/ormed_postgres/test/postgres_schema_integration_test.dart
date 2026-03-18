@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:driver_tests/driver_tests.dart';
 import 'package:ormed/ormed.dart';
 import 'package:ormed_postgres/ormed_postgres.dart';
@@ -13,7 +11,7 @@ void main() {
 
     setUpAll(() async {
       final url =
-          Platform.environment['POSTGRES_URL'] ??
+          OrmedEnvironment().firstNonEmpty(['POSTGRES_URL']) ??
           'postgres://postgres:postgres@localhost:6543/orm_test';
 
       driverAdapter = PostgresDriverAdapter.custom(

@@ -4,16 +4,31 @@ sidebar_position: 3
 
 # Loading Relations
 
-Ormed provides multiple ways to load relationships between models.
+Ormed supports eager loading, lazy loading, and aggregate relation loading so you can control query count and response shape explicitly.
+
+## Prerequisites
+
+- [Relationships](../models/relationships)
+- [Query Builder](./query-builder)
+
+## What You’ll Learn
+
+- How to eager-load and lazy-load relation graphs
+- How to avoid N+1 query patterns
+- How nested relations and constraints are expressed
+
+## Step Outcome
+
+By the end of this page, you should be able to load relation trees intentionally, detect accidental lazy loads, and use aggregate relation helpers.
 
 :::note Snippet context
 - Snippets focus on relation APIs and omit full setup.
 - Unless shown otherwise, assume you already have a `DataSource` named `dataSource` and your relations were generated via `build_runner`.
 :::
 
-## Eager Loading
+## 1. Eager Load First
 
-Load relations upfront with your query to avoid N+1 problems.
+Load relations with the main query to avoid per-row follow-up calls.
 
 ### Basic Eager Loading
 
@@ -32,7 +47,7 @@ Load multiple levels of relationships using dot notation. Ormed will recursively
 ```dart file=../../examples/lib/relations/loading.dart#eager-nested
 ```
 
-You can also apply constraints to the final segment of a nested path:
+You can constrain nested segments when needed:
 
 ```dart
 final posts = await dataSource.query<$Post>()
@@ -40,9 +55,9 @@ final posts = await dataSource.query<$Post>()
   .get();
 ```
 
-## Lazy Loading
+## 2. Lazy Load When Needed
 
-Load relations on-demand after fetching the model.
+Lazy loading is useful for conditional paths, but prefer eager loading in list endpoints.
 
 ### Load Relations
 
@@ -61,14 +76,14 @@ Only loads relations that haven't been loaded yet:
 ```dart file=../../examples/lib/relations/loading.dart#check-loaded
 ```
 
-## Accessing Relations
+## 3. Access and Manage Loaded Relations
 
 ```dart file=../../examples/lib/relations/loading.dart#relation-access
 ```
 
-## Relation Aggregates
+## 4. Load Relation Aggregates
 
-Load aggregate values without fetching all related models.
+Aggregate helpers avoid loading entire related collections.
 
 ### Count
 
@@ -90,7 +105,7 @@ Load aggregate values without fetching all related models.
 ```dart file=../../examples/lib/relations/loading.dart#relation-exists
 ```
 
-## Many-to-Many Operations
+## 5. Mutate Relationship Links
 
 ### Attach & Detach
 
@@ -107,14 +122,14 @@ Load aggregate values without fetching all related models.
 ```dart file=../../examples/lib/relations/loading.dart#relation-associate
 ```
 
-## Preventing N+1 Queries
+## 6. Prevent N+1 Queries in Development
 
-Enable lazy loading prevention in development:
+Enable lazy-loading prevention to fail fast during development:
 
 ```dart file=../../examples/lib/relations/loading.dart#prevent-n-plus-one
 ```
 
-This throws an exception when you try to access a relation that hasn't been eager-loaded, helping catch N+1 issues during development.
+This throws when code accesses an unloaded relation, which surfaces N+1 issues early.
 
 ```dart file=../../examples/lib/relations/loading.dart#n-plus-one-bad
 ```
@@ -123,3 +138,15 @@ Fix by eager loading:
 
 ```dart file=../../examples/lib/relations/loading.dart#n-plus-one-good
 ```
+
+## Verify Your Setup
+
+- List endpoints eager-load the relations they render.
+- Development mode catches accidental lazy loads.
+- Aggregate fields (`*_count`, `*_sum`, `*_exists`) are used when full relation data is unnecessary.
+
+## Read This Next
+
+- [Query Builder](./query-builder)
+- [Repository](./repository)
+- [Model Relationships](../models/relationships)

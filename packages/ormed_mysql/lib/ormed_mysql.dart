@@ -9,6 +9,7 @@ import 'package:ormed/ormed.dart';
 import 'src/mysql_adapter.dart';
 
 export 'src/mysql_adapter.dart';
+export 'src/mysql_data_source_options.dart';
 export 'src/mysql_codecs.dart';
 export 'src/mysql_connection_info.dart';
 export 'src/mysql_connector.dart';

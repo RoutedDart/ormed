@@ -9,6 +9,16 @@ import TabItem from '@theme/TabItem';
 
 Drivers don’t receive a raw SQL string from Ormed. They receive immutable plan objects that represent the intent of an operation.
 
+## Prerequisites
+
+- [Driver Internals Overview](./overview)
+
+## What You’ll Learn
+
+- What `QueryPlan`, `MutationPlan`, and `StatementPreview` represent
+- How plan compilation stays deterministic
+- How to inspect generated statements without executing mutations
+
 ## QueryPlan
 
 `QueryPlan` is an immutable description of a read query (filters, joins, selects, eager loads, limits, unions, etc.). A driver executes it via `DriverAdapter.execute(plan)` and can preview it via `DriverAdapter.describeQuery(plan)`.

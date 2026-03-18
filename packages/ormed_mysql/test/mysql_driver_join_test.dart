@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:driver_tests/driver_tests.dart';
 import 'package:ormed/ormed.dart';
 import 'package:ormed_mysql/ormed_mysql.dart';
@@ -12,7 +10,7 @@ Future<(MySqlDriverAdapter, DataSource)> _createSimpleHarness() async {
   MySqlDriverAdapter.registerCodecs();
 
   final url =
-      Platform.environment['MYSQL_URL'] ??
+      OrmedEnvironment().firstNonEmpty(['MYSQL_URL']) ??
       'mysql://root:secret@localhost:6605/orm_test';
 
   final adapter = MySqlDriverAdapter.custom(

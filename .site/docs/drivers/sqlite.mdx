@@ -9,17 +9,36 @@ import TabItem from '@theme/TabItem';
 
 SQLite is the default scaffold for new projects. It runs without external services and is great for local development, CLI tools, and fast integration tests.
 
+## Prerequisites
+
+- [Drivers Overview](./overview)
+- [Configuration](../getting-started/configuration)
+
+## What You’ll Learn
+
+- How to run SQLite with generated datasource helpers
+- Which SQLite options matter for local dev and tests
+- How env-based path configuration (`DB_PATH`) fits into scaffolded config
+
+## Step Outcome
+
+By the end of this page, you should have:
+
+- A bootable SQLite datasource (file or in-memory)
+- Clear `DB_PATH` behavior for local runtime
+- A known path for migration + test workflows
+
 ## Install
 
 Add the driver package:
 
 ```yaml
 dependencies:
-  ormed: ^0.1.0
-  ormed_sqlite: ^0.1.0
+  ormed: ^0.2.0
+  ormed_sqlite: ^0.2.0
 ```
 
-## Configure (ormed.yaml)
+## Configure
 
 ```yaml
 driver:
@@ -33,34 +52,39 @@ driver:
       - PRAGMA busy_timeout = 5000
 ```
 
+Use this in `ormed.yaml` when you want explicit config-driven CLI/runtime wiring.  
+Code-first scaffolds already generate equivalent runtime options in `lib/src/database/config.dart`.
+
 ## Use in code (DataSource)
 
-The recommended way is to use the generated `createDataSource()` helper, but you can also initialize it manually:
+The recommended way is the generated `createDataSource()` helper:
 
-<Tabs groupId="sqlite-usage" defaultValue="config">
-  <TabItem value="config" label="From Config">
+<Tabs groupId="sqlite-usage" defaultValue="generated">
+  <TabItem value="generated" label="Generated helper">
 
-```dart
-import 'package:ormed/ormed.dart';
-import 'package:ormed_sqlite/ormed_sqlite.dart';
+```dart file=../../examples/lib/src/database/datasource.dart#datasource-create-single
+```
 
-void main() async {
-  ensureSqliteDriverRegistration();
-  
-  final config = loadOrmConfig();
-  final ds = DataSource.fromConfig(config);
-  await ds.init();
-}
+```dart file=../../examples/lib/src/database/datasource.dart#datasource-create-default
 ```
 
   </TabItem>
-  <TabItem value="manual" label="Manual">
+  <TabItem value="manual" label="Manual adapter">
 
 ```dart file=../../examples/lib/drivers/sqlite.dart#sqlite-datasource
 ```
 
   </TabItem>
 </Tabs>
+
+## Code-first Helper APIs
+
+When you want explicit programmatic setup (without manual adapter wiring), use:
+
+- `registry.sqliteFileDataSourceOptions(path: ..., name: ...)`
+- `registry.sqliteFileDataSource(path: ..., name: ...)`
+- `registry.sqliteInMemoryDataSourceOptions(name: ...)`
+- `registry.sqliteInMemoryDataSource(name: ...)`
 
 ## SQLite Migrations Helpers
 
@@ -90,10 +114,26 @@ Available helpers:
 | `session` | `Map<String, Object?>` | `{}` | Session pragmas applied via `PRAGMA key = value`. |
 | `init` | `List<String>` | `[]` | SQL statements executed after connecting. |
 
+## Environment Variables
+
+SQLite does not require network credentials. For scaffolded projects, generated `config.dart` reads:
+
+- `DB_PATH`: SQLite file path (`database/<package>.sqlite` fallback by default)
+
+If you keep `ormed.yaml`, interpolation is also supported:
+
+- `${DB_PATH}` and `${DB_PATH:-database/app.sqlite}`
+
+## Quick Verification
+
+1. Boot your app with generated datasource helpers.
+2. Run a migration command.
+3. Confirm the SQLite file appears at expected path (unless using in-memory mode).
+
 ### Notes
 
 - The adapter automatically enables `RETURNING` support and schema inspection.
-- Migrations and seeds are configured separately in `ormed.yaml`. See Getting Started → Configuration.
+- Migrations and seeds default to convention registries (`lib/src/database/*`) and can be overridden via `ormed.yaml`.
 - For plan/previews/schema internals, see Drivers → Internals.
 
 ## Extensions
@@ -105,3 +145,8 @@ Driver extensions let you register custom clause compilers for SQLite queries.
 
 ```dart file=../../examples/lib/drivers/extensions.dart#sqlite-extension-usage
 ```
+
+## Read This Next
+
+- [PostgreSQL](./postgres), [MySQL](./mysql), or [D1](./d1) for non-local runtimes
+- [Guide: Testing](../guides/testing)

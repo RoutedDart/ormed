@@ -7,6 +7,7 @@ import 'package:ormed/ormed.dart';
 import 'src/postgres_adapter.dart';
 
 export 'src/postgres_adapter.dart';
+export 'src/postgres_data_source_options.dart';
 export 'src/postgres_connector.dart';
 export 'src/postgres_codecs.dart';
 export 'src/postgres_grammar.dart';

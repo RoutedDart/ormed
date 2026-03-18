@@ -13,7 +13,8 @@ class SchemaDumpCommand extends Command<void> {
     argParser.addOption(
       'config',
       abbr: 'c',
-      help: 'Path to ormed.yaml (defaults to project root).',
+      help:
+          'Path to ormed.yaml (optional; convention defaults are used when omitted).',
     );
     argParser.addOption('database', help: 'The database connection to use.');
     argParser.addOption(
@@ -48,11 +49,18 @@ class SchemaDumpCommand extends Command<void> {
     final prune = argResults?['prune'] == true;
     final force = argResults?['force'] == true;
 
-    final context = resolveOrmProject(configPath: configArg);
-    final config = loadOrmProjectConfig(context.configFile);
+    final resolved = resolveOrmProjectConfig(configPath: configArg);
+    final context = OrmProjectContext(
+      root: resolved.root,
+      configFile: resolved.configFile,
+    );
+    final config = resolved.config;
+    if (!resolved.hasConfigFile) {
+      printConfigFallbackNotice();
+    }
 
     if (prune && !confirmToProceed(force: force, action: 'prune migrations')) {
-      cliIO.warning('Schema dump cancelled.');
+      cliIO.warn('Schema dump cancelled.');
       return;
     }
 
@@ -131,7 +139,7 @@ class SchemaDumpCommand extends Command<void> {
     final migrationsDir = Directory(migrationsPath);
 
     if (!migrationsDir.existsSync()) {
-      cliIO.warning('No migrations directory found.');
+      cliIO.warn('No migrations directory found.');
       return;
     }
 
@@ -152,7 +160,8 @@ class SchemaDescribeCommand extends Command<void> {
     argParser.addOption(
       'config',
       abbr: 'c',
-      help: 'Path to ormed.yaml (defaults to project root).',
+      help:
+          'Path to ormed.yaml (optional; convention defaults are used when omitted).',
     );
     argParser.addFlag(
       'json',
@@ -171,8 +180,15 @@ class SchemaDescribeCommand extends Command<void> {
   Future<void> run() async {
     final configArg = argResults?['config'] as String?;
     final asJson = argResults?['json'] == true;
-    final context = resolveOrmProject(configPath: configArg);
-    final config = loadOrmProjectConfig(context.configFile);
+    final resolved = resolveOrmProjectConfig(configPath: configArg);
+    final context = OrmProjectContext(
+      root: resolved.root,
+      configFile: resolved.configFile,
+    );
+    final config = resolved.config;
+    if (!resolved.hasConfigFile) {
+      printConfigFallbackNotice();
+    }
     final handle = await createConnection(context.root, config);
     try {
       await handle.use((connection) async {

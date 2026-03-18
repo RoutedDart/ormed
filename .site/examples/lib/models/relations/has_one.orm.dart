@@ -181,8 +181,7 @@ class UserWithProfileModelFactory {
 
   static ModelFactoryBuilder<UserWithProfile> factory({
     GeneratorProvider? generatorProvider,
-  }) => ModelFactoryBuilder<UserWithProfile>(
-    definition: definition,
+  }) => ModelFactoryRegistry.factoryFor<UserWithProfile>(
     generatorProvider: generatorProvider,
   );
 }
@@ -364,7 +363,7 @@ class $UserWithProfile extends UserWithProfile
     implements OrmEntity {
   /// Internal constructor for [$UserWithProfile].
   $UserWithProfile({required int id, Profile? profile})
-    : super.new(id: id, profile: profile) {
+    : super(id: id, profile: profile) {
     _attachOrmRuntimeMetadata({'id': id, 'profile': profile});
   }
 
@@ -397,13 +396,6 @@ class $UserWithProfile extends UserWithProfile
   /// Tracked setter for [id].
   set id(int value) => setAttribute('id', value);
 
-  /// Tracked getter for [profile].
-  @override
-  Profile? get profile => getAttribute<Profile?>('profile') ?? super.profile;
-
-  /// Tracked setter for [profile].
-  set profile(Profile? value) => setAttribute('profile', value);
-
   void _attachOrmRuntimeMetadata(Map<String, Object?> values) {
     replaceAttributes(values);
     attachModelDefinition(_$UserWithProfileDefinition);
@@ -435,7 +427,7 @@ extension UserWithProfileOrmExtension on UserWithProfile {
     Object? id = _copyWithSentinel,
     Object? profile = _copyWithSentinel,
   }) {
-    return UserWithProfile.new(
+    return UserWithProfile(
       id: identical(id, _copyWithSentinel) ? this.id : id as int,
       profile: identical(profile, _copyWithSentinel)
           ? this.profile
@@ -657,8 +649,7 @@ class ProfileModelFactory {
 
   static ModelFactoryBuilder<Profile> factory({
     GeneratorProvider? generatorProvider,
-  }) => ModelFactoryBuilder<Profile>(
-    definition: definition,
+  }) => ModelFactoryRegistry.factoryFor<Profile>(
     generatorProvider: generatorProvider,
   );
 }
@@ -858,7 +849,7 @@ class _ProfilePartialCopyWithSentinel {
 class $Profile extends Profile with ModelAttributes implements OrmEntity {
   /// Internal constructor for [$Profile].
   $Profile({required int id, required int userId, required String bio})
-    : super.new(id: id, userId: userId, bio: bio) {
+    : super(id: id, userId: userId, bio: bio) {
     _attachOrmRuntimeMetadata({'id': id, 'user_id': userId, 'bio': bio});
   }
 
@@ -924,7 +915,7 @@ extension ProfileOrmExtension on Profile {
     Object? userId = _copyWithSentinel,
     Object? bio = _copyWithSentinel,
   }) {
-    return Profile.new(
+    return Profile(
       id: identical(id, _copyWithSentinel) ? this.id : id as int,
       userId: identical(userId, _copyWithSentinel)
           ? this.userId

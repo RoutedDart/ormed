@@ -74,4 +74,5 @@ class AuditedEvent extends Model<AuditedEvent> {
 
   final String action;
 }
+
 // #endregion driver-annotations-model

@@ -185,8 +185,7 @@ class SettingsModelFactory {
 
   static ModelFactoryBuilder<Settings> factory({
     GeneratorProvider? generatorProvider,
-  }) => ModelFactoryBuilder<Settings>(
-    definition: definition,
+  }) => ModelFactoryRegistry.factoryFor<Settings>(
     generatorProvider: generatorProvider,
   );
 }
@@ -384,8 +383,11 @@ class _SettingsPartialCopyWithSentinel {
 /// or model factories to create tracked model instances.
 class $Settings extends Settings with ModelAttributes implements OrmEntity {
   /// Internal constructor for [$Settings].
-  $Settings({int id = 0, Map<String, Object?>? metadata, DateTime? createdAt})
-    : super.new(id: id, metadata: metadata, createdAt: createdAt) {
+  $Settings({
+    required int id,
+    Map<String, Object?>? metadata,
+    DateTime? createdAt,
+  }) : super(id: id, metadata: metadata, createdAt: createdAt) {
     _attachOrmRuntimeMetadata({
       'id': id,
       'metadata': metadata,
@@ -465,7 +467,7 @@ extension SettingsOrmExtension on Settings {
     Object? metadata = _copyWithSentinel,
     Object? createdAt = _copyWithSentinel,
   }) {
-    return Settings.new(
+    return Settings(
       id: identical(id, _copyWithSentinel) ? this.id : id as int,
       metadata: identical(metadata, _copyWithSentinel)
           ? this.metadata
@@ -687,8 +689,7 @@ class FieldCastSettingsModelFactory {
 
   static ModelFactoryBuilder<FieldCastSettings> factory({
     GeneratorProvider? generatorProvider,
-  }) => ModelFactoryBuilder<FieldCastSettings>(
-    definition: definition,
+  }) => ModelFactoryRegistry.factoryFor<FieldCastSettings>(
     generatorProvider: generatorProvider,
   );
 }
@@ -864,8 +865,8 @@ class $FieldCastSettings extends FieldCastSettings
     with ModelAttributes
     implements OrmEntity {
   /// Internal constructor for [$FieldCastSettings].
-  $FieldCastSettings({int id = 0, Map<String, Object?>? metadata})
-    : super.new(id: id, metadata: metadata) {
+  $FieldCastSettings({required int id, Map<String, Object?>? metadata})
+    : super(id: id, metadata: metadata) {
     _attachOrmRuntimeMetadata({'id': id, 'metadata': metadata});
   }
 
@@ -923,7 +924,7 @@ extension FieldCastSettingsOrmExtension on FieldCastSettings {
     Object? id = _copyWithSentinel,
     Object? metadata = _copyWithSentinel,
   }) {
-    return FieldCastSettings.new(
+    return FieldCastSettings(
       id: identical(id, _copyWithSentinel) ? this.id : id as int,
       metadata: identical(metadata, _copyWithSentinel)
           ? this.metadata
@@ -1125,8 +1126,7 @@ class LinkModelFactory {
 
   static ModelFactoryBuilder<Link> factory({
     GeneratorProvider? generatorProvider,
-  }) => ModelFactoryBuilder<Link>(
-    definition: definition,
+  }) => ModelFactoryRegistry.factoryFor<Link>(
     generatorProvider: generatorProvider,
   );
 }
@@ -1281,7 +1281,7 @@ class _LinkPartialCopyWithSentinel {
 /// or model factories to create tracked model instances.
 class $Link extends Link with ModelAttributes implements OrmEntity {
   /// Internal constructor for [$Link].
-  $Link({int id = 0, Uri? website}) : super.new(id: id, website: website) {
+  $Link({required int id, Uri? website}) : super(id: id, website: website) {
     _attachOrmRuntimeMetadata({'id': id, 'website': website});
   }
 
@@ -1335,7 +1335,7 @@ extension LinkOrmExtension on Link {
     Object? id = _copyWithSentinel,
     Object? website = _copyWithSentinel,
   }) {
-    return Link.new(
+    return Link(
       id: identical(id, _copyWithSentinel) ? this.id : id as int,
       website: identical(website, _copyWithSentinel)
           ? this.website
@@ -1551,8 +1551,7 @@ class AccountModelFactory {
 
   static ModelFactoryBuilder<Account> factory({
     GeneratorProvider? generatorProvider,
-  }) => ModelFactoryBuilder<Account>(
-    definition: definition,
+  }) => ModelFactoryRegistry.factoryFor<Account>(
     generatorProvider: generatorProvider,
   );
 }
@@ -1764,7 +1763,7 @@ class $Account extends Account with ModelAttributes implements OrmEntity {
     required int id,
     required AccountStatus status,
     required String secret,
-  }) : super.new(id: id, status: status, secret: secret) {
+  }) : super(id: id, status: status, secret: secret) {
     _attachOrmRuntimeMetadata({'id': id, 'status': status, 'secret': secret});
   }
 
@@ -1831,7 +1830,7 @@ extension AccountOrmExtension on Account {
     Object? status = _copyWithSentinel,
     Object? secret = _copyWithSentinel,
   }) {
-    return Account.new(
+    return Account(
       id: identical(id, _copyWithSentinel) ? this.id : id as int,
       status: identical(status, _copyWithSentinel)
           ? this.status
@@ -2055,8 +2054,7 @@ class InvoiceModelFactory {
 
   static ModelFactoryBuilder<Invoice> factory({
     GeneratorProvider? generatorProvider,
-  }) => ModelFactoryBuilder<Invoice>(
-    definition: definition,
+  }) => ModelFactoryRegistry.factoryFor<Invoice>(
     generatorProvider: generatorProvider,
   );
 }
@@ -2257,7 +2255,7 @@ class _InvoicePartialCopyWithSentinel {
 class $Invoice extends Invoice with ModelAttributes implements OrmEntity {
   /// Internal constructor for [$Invoice].
   $Invoice({required int id, Decimal? amount, Map<String, Object?>? metadata})
-    : super.new(id: id, amount: amount, metadata: metadata) {
+    : super(id: id, amount: amount, metadata: metadata) {
     _attachOrmRuntimeMetadata({
       'id': id,
       'amount': amount,
@@ -2336,7 +2334,7 @@ extension InvoiceOrmExtension on Invoice {
     Object? amount = _copyWithSentinel,
     Object? metadata = _copyWithSentinel,
   }) {
-    return Invoice.new(
+    return Invoice(
       id: identical(id, _copyWithSentinel) ? this.id : id as int,
       amount: identical(amount, _copyWithSentinel)
           ? this.amount

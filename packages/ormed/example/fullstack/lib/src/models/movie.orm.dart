@@ -151,6 +151,9 @@ final ModelDefinition<$Movie> _$MovieDefinition = ModelDefinition(
     fillable: const <String>[],
     guarded: const <String>[],
     casts: const <String, String>{},
+    appends: const <String>[],
+    touches: const <String>[],
+    timestamps: true,
     softDeletes: false,
     softDeleteColumn: 'deleted_at',
   ),
@@ -217,6 +220,18 @@ class Movies {
   /// {@macro ormed.repository}
   static Repository<$Movie> repo([String? connection]) =>
       Model.repository<$Movie>(connection: connection);
+
+  /// Builds a tracked model from a column/value map.
+  static $Movie fromMap(
+    Map<String, Object?> data, {
+    ValueCodecRegistry? registry,
+  }) => _$MovieDefinition.fromMap(data, registry: registry);
+
+  /// Converts a tracked model to a column/value map.
+  static Map<String, Object?> toMap(
+    $Movie model, {
+    ValueCodecRegistry? registry,
+  }) => _$MovieDefinition.toMap(model, registry: registry);
 }
 
 class MovieModelFactory {
@@ -244,8 +259,7 @@ class MovieModelFactory {
 
   static ModelFactoryBuilder<Movie> factory({
     GeneratorProvider? generatorProvider,
-  }) => ModelFactoryBuilder<Movie>(
-    definition: definition,
+  }) => ModelFactoryRegistry.factoryFor<Movie>(
     generatorProvider: generatorProvider,
   );
 }
@@ -626,7 +640,7 @@ class _MoviePartialCopyWithSentinel {
 class $Movie extends Movie with ModelAttributes implements OrmEntity {
   /// Internal constructor for [$Movie].
   $Movie({
-    int id = 0,
+    required int id,
     required String title,
     required int releaseYear,
     String? summary,
@@ -634,7 +648,7 @@ class $Movie extends Movie with ModelAttributes implements OrmEntity {
     int? genreId,
     DateTime? createdAt,
     DateTime? updatedAt,
-  }) : super.new(
+  }) : super(
          id: id,
          title: title,
          releaseYear: releaseYear,
@@ -691,6 +705,16 @@ class $Movie extends Movie with ModelAttributes implements OrmEntity {
       updatedAt: updatedAt ?? this.updatedAt,
     );
   }
+
+  /// Builds a tracked model from a column/value map.
+  static $Movie fromMap(
+    Map<String, Object?> data, {
+    ValueCodecRegistry? registry,
+  }) => _$MovieDefinition.fromMap(data, registry: registry);
+
+  /// Converts this tracked model to a column/value map.
+  Map<String, Object?> toMap({ValueCodecRegistry? registry}) =>
+      _$MovieDefinition.toMap(this, registry: registry);
 
   /// Tracked getter for [id].
   @override
@@ -771,7 +795,57 @@ extension MovieRelationQueries on Movie {
   }
 }
 
+class _MovieCopyWithSentinel {
+  const _MovieCopyWithSentinel();
+}
+
 extension MovieOrmExtension on Movie {
+  static const _MovieCopyWithSentinel _copyWithSentinel =
+      _MovieCopyWithSentinel();
+  Movie copyWith({
+    Object? id = _copyWithSentinel,
+    Object? title = _copyWithSentinel,
+    Object? releaseYear = _copyWithSentinel,
+    Object? summary = _copyWithSentinel,
+    Object? posterPath = _copyWithSentinel,
+    Object? genreId = _copyWithSentinel,
+    Object? createdAt = _copyWithSentinel,
+    Object? updatedAt = _copyWithSentinel,
+  }) {
+    return Movie(
+      id: identical(id, _copyWithSentinel) ? this.id : id as int,
+      title: identical(title, _copyWithSentinel) ? this.title : title as String,
+      releaseYear: identical(releaseYear, _copyWithSentinel)
+          ? this.releaseYear
+          : releaseYear as int,
+      summary: identical(summary, _copyWithSentinel)
+          ? this.summary
+          : summary as String?,
+      posterPath: identical(posterPath, _copyWithSentinel)
+          ? this.posterPath
+          : posterPath as String?,
+      genreId: identical(genreId, _copyWithSentinel)
+          ? this.genreId
+          : genreId as int?,
+      createdAt: identical(createdAt, _copyWithSentinel)
+          ? this.createdAt
+          : createdAt as DateTime?,
+      updatedAt: identical(updatedAt, _copyWithSentinel)
+          ? this.updatedAt
+          : updatedAt as DateTime?,
+    );
+  }
+
+  /// Converts this model to a column/value map.
+  Map<String, Object?> toMap({ValueCodecRegistry? registry}) =>
+      _$MovieDefinition.toMap(this, registry: registry);
+
+  /// Builds a model from a column/value map.
+  static Movie fromMap(
+    Map<String, Object?> data, {
+    ValueCodecRegistry? registry,
+  }) => _$MovieDefinition.fromMap(data, registry: registry);
+
   /// The Type of the generated ORM-managed model class.
   /// Use this when you need to specify the tracked model type explicitly,
   /// for example in generic type parameters.
@@ -783,6 +857,33 @@ extension MovieOrmExtension on Movie {
   $Movie toTracked() {
     return $Movie.fromModel(this);
   }
+}
+
+extension MoviePredicateFields on PredicateBuilder<Movie> {
+  PredicateField<Movie, int> get id => PredicateField<Movie, int>(this, 'id');
+  PredicateField<Movie, String> get title =>
+      PredicateField<Movie, String>(this, 'title');
+  PredicateField<Movie, int> get releaseYear =>
+      PredicateField<Movie, int>(this, 'releaseYear');
+  PredicateField<Movie, String?> get summary =>
+      PredicateField<Movie, String?>(this, 'summary');
+  PredicateField<Movie, String?> get posterPath =>
+      PredicateField<Movie, String?>(this, 'posterPath');
+  PredicateField<Movie, int?> get genreId =>
+      PredicateField<Movie, int?>(this, 'genreId');
+  PredicateField<Movie, DateTime?> get createdAt =>
+      PredicateField<Movie, DateTime?>(this, 'createdAt');
+  PredicateField<Movie, DateTime?> get updatedAt =>
+      PredicateField<Movie, DateTime?>(this, 'updatedAt');
+}
+
+extension MovieTypedRelations on Query<Movie> {
+  Query<Movie> withGenre([PredicateCallback<Genre>? constraint]) =>
+      withRelationTyped('genre', constraint);
+  Query<Movie> whereHasGenre([PredicateCallback<Genre>? constraint]) =>
+      whereHasTyped('genre', constraint);
+  Query<Movie> orWhereHasGenre([PredicateCallback<Genre>? constraint]) =>
+      orWhereHasTyped('genre', constraint);
 }
 
 void registerMovieEventHandlers(EventBus bus) {

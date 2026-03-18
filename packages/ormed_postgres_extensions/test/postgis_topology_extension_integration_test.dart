@@ -1,12 +1,10 @@
-import 'dart:io';
-
 import 'package:ormed/ormed.dart';
 import 'package:ormed_postgres/ormed_postgres.dart';
 import 'package:ormed_postgres_extensions/ormed_postgres_extensions.dart';
 import 'package:test/test.dart';
 
 Future<void> main() async {
-  final postgisUrl = Platform.environment['POSTGIS_URL'];
+  final postgisUrl = OrmedEnvironment().firstNonEmpty(['POSTGIS_URL']);
   if (postgisUrl == null) {
     group('PostGIS topology extensions', () {
       test('requires POSTGIS_URL', () {}, skip: 'POSTGIS_URL not set');

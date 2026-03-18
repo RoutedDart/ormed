@@ -7,10 +7,41 @@ import TabItem from '@theme/TabItem';
 
 # Installation
 
+## Who This Is For
+
+Use this page if you are setting up Ormed in a project for the first time.
+
+## Prerequisites
+
+- A Dart environment where you can run `dart pub` and `dart run`
+
 ## Requirements
 
 - Dart SDK >= 3.0.0
 - A supported database driver package
+
+## What You’ll Learn
+
+- How to install Ormed runtime + CLI dependencies
+- What `ormed init` generates
+- Which files are required for the first runnable app
+
+## Step Outcome
+
+By the end of this page, you should have:
+
+- `ormed` + one driver installed
+- `ormed init` scaffold files in `lib/src/database/*`
+- Working codegen (`dart run build_runner build`)
+- A clear next step: Quick Start or Adopt Existing Project
+
+## Install In Order
+
+```bash
+dart pub get
+dart run ormed_cli:ormed init --no-interaction
+dart run build_runner build --delete-conflicting-outputs
+```
 
 ## Install the CLI
 
@@ -28,12 +59,14 @@ Add to `dev_dependencies` to ensure the CLI version always matches your project.
 
 ```yaml
 dev_dependencies:
-  ormed_cli: ^0.1.0
+  ormed_cli: ^0.2.0
 ```
 
 :::info
 **Note:** Adding `ormed_cli` as a local dependency will pull in all supported database drivers (SQLite, MySQL, Postgres) and their respective native dependencies.
 :::
+
+Choose global when you prefer a thin project dependency tree. Choose local when you want deterministic CLI versions per repo.
 
 ## Install Dependencies
 
@@ -44,8 +77,8 @@ Add Ormed and at least one database driver to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  ormed: ^0.1.0
-  ormed_sqlite: ^0.1.0
+  ormed: ^0.2.0
+  ormed_sqlite: ^0.2.0
 
 dev_dependencies:
   build_runner: ^2.4.0
@@ -56,8 +89,8 @@ dev_dependencies:
 
 ```yaml
 dependencies:
-  ormed: ^0.1.0
-  ormed_postgres: ^0.1.0
+  ormed: ^0.2.0
+  ormed_postgres: ^0.2.0
 
 dev_dependencies:
   build_runner: ^2.4.0
@@ -68,8 +101,8 @@ dev_dependencies:
 
 ```yaml
 dependencies:
-  ormed: ^0.1.0
-  ormed_mysql: ^0.1.0
+  ormed: ^0.2.0
+  ormed_mysql: ^0.2.0
 
 dev_dependencies:
   build_runner: ^2.4.0
@@ -86,7 +119,7 @@ dart pub get
 
 ## Initialize Project Files
 
-Scaffold the default config, migration registry, and seed stubs:
+Scaffold code-first runtime datasource config and migration registry:
 
 ```bash
 ormed init
@@ -95,10 +128,28 @@ ormed init
 (Or use `dart run ormed_cli:ormed init` if not installed globally).
 
 Key outputs:
-- `ormed.yaml` — CLI + connection settings  
-- `lib/src/database/datasource.dart` — Main ORM entry point with driver registration
+- `lib/src/database/config.dart` — Runtime DataSource options helpers
+- `lib/src/database/datasource.dart` — Main ORM entry point
 - `lib/src/database/migrations.dart` — migration registry  
-- `lib/src/database/seeders.dart` — seeder registry
+- `lib/src/database/orm_registry.g.dart` — generated registry after `build_runner`
+
+Optional:
+- `ormed.yaml` — run `ormed init --with-config` when you want explicit config file driven CLI connection blocks.
+- `lib/src/database/seeders.dart` + `lib/src/database/seeders/database_seeder.dart` — run `ormed init --with-seeders` (or `ormed init --only=seeders`) when you want explicit seed scaffold upfront.
+
+## Verify Installation
+
+Run one of these:
+
+```bash
+ormed --help
+```
+
+```bash
+dart run ormed_cli:ormed --help
+```
+
+Then verify generated files exist under `lib/src/database/`.
 
 ## Project Structure
 
@@ -110,14 +161,16 @@ my_app/
 │   ├── src/
 │   │   ├── models/
 │   │   │   ├── user.dart
-│   │   │   ├── user.ormed.dart  (generated)
+│   │   │   ├── user.orm.dart  (generated)
 │   │   │   └── post.dart
 │   │   └── database/
+│   │       ├── config.dart
+│   │       ├── datasource.dart
+│   │       ├── orm_registry.g.dart (generated)
+│   │       ├── migrations.dart
 │   │       └── migrations/
-│   │           ├── migrations.dart
 │   │           └── m_20241201_create_users_table.dart
 │   └── main.dart
-├── ormed.yaml           (CLI configuration)
 └── pubspec.yaml
 ```
 
@@ -133,13 +186,13 @@ dart run build_runner build
 dart run build_runner watch
 ```
 
-This generates `.ormed.dart` files alongside your model files containing:
+This generates `.orm.dart` files alongside your model files containing:
 - `$ModelName` - Tracked model class with change tracking
 - `ModelNameOrmDefinition` - Model metadata and static helpers
 - `$ModelNamePartial` - Partial entity for projections
 - `ModelNameInsertDto` / `ModelNameUpdateDto` - Data transfer objects
 
-It also generates a centralized `orm_registry.g.dart` file with:
+It also generates a centralized `lib/src/database/orm_registry.g.dart` file with:
 - `bootstrapOrm()` - One-call setup: registry + factories + generated model wiring
 - `buildOrmRegistry()` - Creates a `ModelRegistry` with all models registered (lower-level)
 - `registerOrmFactories()` - Registers factories for `Model.factory<T>()` (when enabled)
@@ -147,5 +200,6 @@ It also generates a centralized `orm_registry.g.dart` file with:
 
 ## Next Steps
 
-- [Quick Start Guide](./quick-start) - Build your first Ormed app
-- [Configuration](./configuration) - Configure the CLI and database connections
+- [Quick Start Guide](./quick-start) - build your first working model + migration + query
+- [Adopt Existing Project](./adopt-existing-project) - integrate Ormed into an existing service incrementally
+- [Configuration](./configuration) - understand single/multi-connection runtime setup

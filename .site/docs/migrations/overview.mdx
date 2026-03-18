@@ -9,6 +9,25 @@ import TabItem from '@theme/TabItem';
 
 Migrations are version-controlled database schema changes. Each migration defines changes to apply in the `up` method and reverse operations in the `down` method.
 
+## Prerequisites
+
+- You have runtime config in place ([Configuration](../getting-started/configuration))
+- You have models to back your schema changes ([Defining Models](../models/defining-models))
+
+## What You’ll Learn
+
+- How Ormed migration formats work (Dart + SQL)
+- How migration ordering and rollback semantics are enforced
+- How to structure safe table creation and alteration workflows
+
+## Step Outcome
+
+By the end of this page, you should have:
+
+- A migration format choice for your team (Dart, SQL, or mixed)
+- A naming/order strategy that keeps migrations deterministic
+- Reversible `up`/`down` implementations for new schema changes
+
 ## Introduction
 
 Migrations solve a fundamental problem: how to evolve your database schema safely across different environments. Instead of manually running SQL, migrations provide a programmatic way to define schema changes that can be version-controlled, reviewed, and deployed consistently.
@@ -19,18 +38,20 @@ Ormed migrations support SQLite, PostgreSQL, and MySQL, providing a unified API 
 
 Ormed supports two migration formats that can be used interchangeably and even mixed within the same project.
 
+Pick one default format for day-to-day changes; use the other only when it is clearly better for a specific migration.
+
 ### Dart Migrations (Default)
 Type-safe migrations using a fluent `SchemaBuilder`. This is the recommended format for most changes as it provides IDE autocompletion and driver-agnostic schema definitions.
 
 ```bash
-dart run ormed_cli:ormed make --name create_users_table
+dart run ormed_cli:ormed make:migration --name create_users_table
 ```
 
 ### SQL Migrations
 Raw `.sql` files for complex schema changes, database-specific features (like triggers or stored procedures), or when porting existing SQL scripts.
 
 ```bash
-dart run ormed_cli:ormed make --name add_bio_to_users --format sql
+dart run ormed_cli:ormed make:migration --name add_bio_to_users --format sql
 ```
 
 This creates a directory containing `up.sql` and `down.sql` files.
@@ -92,6 +113,13 @@ Choose descriptive names:
 - ✅ `remove_deprecated_status_column`
 - ❌ `update_schema`
 - ❌ `migration_v2`
+
+## Safe Rollout Checklist
+
+1. Additive change first (nullable/defaulted columns when needed).
+2. Backfill data where required.
+3. Enforce stricter constraints in a follow-up migration.
+4. Keep rollback path valid for each step.
 
 ## Runtime Concepts
 

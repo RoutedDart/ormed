@@ -193,8 +193,7 @@ class PostModelFactory {
 
   static ModelFactoryBuilder<Post> factory({
     GeneratorProvider? generatorProvider,
-  }) => ModelFactoryBuilder<Post>(
-    definition: definition,
+  }) => ModelFactoryRegistry.factoryFor<Post>(
     generatorProvider: generatorProvider,
   );
 }
@@ -422,8 +421,12 @@ class _PostPartialCopyWithSentinel {
 /// or model factories to create tracked model instances.
 class $Post extends Post with ModelAttributes implements OrmEntity {
   /// Internal constructor for [$Post].
-  $Post({int id = 0, required String title, String? content, int? authorId})
-    : super.new(id: id, title: title, content: content, authorId: authorId) {
+  $Post({
+    required int id,
+    required String title,
+    String? content,
+    int? authorId,
+  }) : super(id: id, title: title, content: content, authorId: authorId) {
     _attachOrmRuntimeMetadata({
       'id': id,
       'title': title,
@@ -508,7 +511,7 @@ extension PostOrmExtension on Post {
     Object? content = _copyWithSentinel,
     Object? authorId = _copyWithSentinel,
   }) {
-    return Post.new(
+    return Post(
       id: identical(id, _copyWithSentinel) ? this.id : id as int,
       title: identical(title, _copyWithSentinel) ? this.title : title as String,
       content: identical(content, _copyWithSentinel)

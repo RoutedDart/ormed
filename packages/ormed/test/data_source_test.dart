@@ -66,6 +66,35 @@ void main() {
       expect(dataSource.options.driver, driver);
     });
 
+    test('creates from OrmProjectConfig without explicit registry', () {
+      final config = OrmProjectConfig(
+        connections: {
+          'test-conn': ConnectionDefinition(
+            name: 'test-conn',
+            driver: DriverConfig(
+              type: 'mock',
+              options: {'database': 'test-db'},
+            ),
+            migrations: MigrationSection(
+              directory: 'migrations',
+              registry: 'registry',
+              ledgerTable: 'ledger',
+              schemaDump: 'dump',
+            ),
+          ),
+        },
+        activeConnectionName: 'test-conn',
+      );
+
+      DriverAdapterRegistry.register('mock', (config) => driver);
+
+      dataSource = DataSource.fromConfig(config);
+
+      expect(dataSource.name, 'test-conn');
+      expect(dataSource.options.database, 'test-db');
+      expect(dataSource.registry.allDefinitions, isEmpty);
+    });
+
     test('init registers entities and creates connection', () async {
       dataSource = DataSource(
         DataSourceOptions(driver: driver, registry: registry),

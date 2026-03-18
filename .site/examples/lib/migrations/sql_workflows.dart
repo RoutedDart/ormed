@@ -28,4 +28,3 @@ Future<void> exportSqlForMigration({
   );
 }
 // #endregion migration-sql-exporter
-

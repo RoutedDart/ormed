@@ -29,4 +29,5 @@ class UserPost extends Model<UserPost> {
   final int authorId;
   final String title;
 }
+
 // #endregion relation-has-many

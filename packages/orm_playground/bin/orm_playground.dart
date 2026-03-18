@@ -15,9 +15,10 @@ final io = Console(
 );
 
 Future<void> main(List<String> arguments) async {
+  final env = OrmedEnvironment();
   final logSql =
       arguments.contains('--sql') ||
-      Platform.environment['PLAYGROUND_LOG_SQL'] == 'true';
+      env.boolValue('PLAYGROUND_LOG_SQL', fallback: false);
   final seedOverrides = _extractSeedArguments(arguments);
   final animate = !arguments.contains('--no-animate');
 

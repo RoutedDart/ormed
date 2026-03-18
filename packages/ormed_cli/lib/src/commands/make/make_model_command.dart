@@ -28,7 +28,8 @@ class MakeModelCommand extends Command<void> {
       ..addOption(
         'config',
         abbr: 'c',
-        help: 'Path to ormed.yaml (defaults to project root).',
+        help:
+            'Path to ormed.yaml (optional; used only to resolve project root).',
       );
   }
 
@@ -59,8 +60,9 @@ class MakeModelCommand extends Command<void> {
     }
 
     final configArg = argResults?['config'] as String?;
-    final context = resolveOrmProject(configPath: configArg);
-    final root = context.root;
+    final root = configArg == null || configArg.trim().isEmpty
+        ? findProjectRoot()
+        : resolveOrmProject(configPath: configArg).root;
     final modelsDir = Directory(
       _resolveDirectory(
         root: root,
@@ -119,16 +121,7 @@ String _toPascalCase(String value) => value
     )
     .join();
 
-String _toSnakeCase(String value) => value
-    .trim()
-    .replaceAllMapped(
-      RegExp(r'([a-z0-9])([A-Z])'),
-      (match) => '${match.group(1)}_${match.group(2)}',
-    )
-    .replaceAll(RegExp(r'[^a-zA-Z0-9]+'), '_')
-    .replaceAll(RegExp(r'_+'), '_')
-    .replaceAll(RegExp(r'^_+|_+$'), '')
-    .toLowerCase();
+String _toSnakeCase(String value) => normalizeSnakeCaseToken(value);
 
 String _pluralize(String value) {
   if (value.endsWith('s')) return value;

@@ -7,7 +7,29 @@ import TabItem from '@theme/TabItem';
 
 # CLI Overview
 
-The Ormed CLI manages migrations, seeds, and schema tooling for projects configured with `ormed.yaml`.
+The Ormed CLI manages migrations, seeds, and schema tooling.
+
+## Prerequisites
+
+- You completed [Installation](../getting-started/installation)
+- You understand your runtime connection setup ([Configuration](../getting-started/configuration))
+
+## What You’ll Learn
+
+- How to run CLI commands in local and global modes
+- How config discovery and connection targeting work
+- How production guard behavior affects migration/seed operations
+
+## Step Outcome
+
+By the end of this page, you should be able to:
+
+- Run the CLI reliably in your preferred mode (`dart run` or global)
+- Target the intended config/connection for each command
+- Understand when production guard prompts appear
+
+By default it works in **code-first mode** (no `ormed.yaml` required) using convention paths.
+Use `ormed.yaml` when you want explicit connection blocks and config-driven CLI wiring.
 
 ## Running the CLI
 
@@ -45,9 +67,19 @@ ormed migrate
   </TabItem>
 </Tabs>
 
+Use `dart run` for team consistency. Use global install for convenience on personal environments.
+
 ## Config discovery
 
-By default the CLI finds the nearest `ormed.yaml` by walking up from the current directory.
+If present, the CLI finds the nearest `ormed.yaml` by walking up from the current directory.
+
+If missing, CLI commands fall back to convention defaults:
+- driver: sqlite
+- database: `database/<package>.sqlite`
+- migrations registry: `lib/src/database/migrations.dart`
+- seed registry: `lib/src/database/seeders.dart`
+
+The seed registry path is convention-only unless you scaffold it (`ormed init --with-seeders` / `ormed init --only=seeders`) or create your first seeder (`ormed make:seeder`).
 
 Override the config path explicitly:
 
@@ -70,3 +102,22 @@ Commands that mutate schema/data prompt for confirmation when the process enviro
 
 Use `--force` (when supported) to skip the prompt.
 
+## Quick Verification
+
+```bash
+dart run ormed_cli:ormed --help
+dart run ormed_cli:ormed migrate --pretend
+```
+
+If you use `ormed.yaml`, also test explicit targeting:
+
+```bash
+dart run ormed_cli:ormed migrate --config ormed.yaml --connection default --pretend
+```
+
+## Read This Next
+
+- [CLI Migrations](./migrations)
+- [CLI Seeding](./seeding)
+- [CLI Schema](./schema)
+- [CLI Commands](./commands)

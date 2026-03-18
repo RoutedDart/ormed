@@ -1,0 +1,222 @@
+version: "3"
+
+tasks:
+  d1:verify-real-examples:
+    desc: Run D1 examples against real Cloudflare D1 (loads creds from env or 1Password)
+    silent: true
+    preconditions:
+      - sh: "command -v dart >/dev/null 2>&1"
+        msg: "Dart SDK is required."
+      - sh: "command -v bash >/dev/null 2>&1"
+        msg: "bash is required."
+    cmds:
+      - |
+        bash -lc '
+          set -euo pipefail
+
+          # Load local overrides when available.
+          env_file="packages/ormed_d1/.env"
+          if [ -f "$env_file" ] || [ -p "$env_file" ]; then
+            set -a
+            source "$env_file"
+            set +a
+          fi
+
+          account_id="${D1_ACCOUNT_ID:-${CF_ACCOUNT_ID:-}}"
+          database_id="${D1_DATABASE_ID:-}"
+          api_token="${D1_API_TOKEN:-${D1_SECRET:-}}"
+          base_url="${D1_BASE_URL:-https://api.cloudflare.com/client/v4}"
+
+          # Fallback to 1Password when env is incomplete.
+          if [ -z "$account_id" ] || [ -z "$database_id" ] || [ -z "$api_token" ]; then
+            if ! command -v op >/dev/null 2>&1; then
+              echo "Missing D1 env vars and 1Password CLI (op) is not available."
+              exit 1
+            fi
+            account_id="${account_id:-$(op read "op://devops/d1/account_id")}"
+            database_id="${database_id:-$(op read "op://devops/d1/db_id")}"
+            api_token="${api_token:-$(op read "op://devops/d1/credential")}"
+          fi
+
+          if [ -z "$account_id" ] || [ -z "$database_id" ] || [ -z "$api_token" ]; then
+            echo "Missing D1 integration configuration after env + 1Password resolution."
+            echo "Required: account id, database id, and API token."
+            exit 1
+          fi
+
+          pushd packages/ormed_d1 >/dev/null
+
+          D1_ACCOUNT_ID="$account_id" \
+          D1_DATABASE_ID="$database_id" \
+          D1_API_TOKEN="$api_token" \
+          D1_BASE_URL="$base_url" \
+          D1_DEBUG_LOG="${D1_DEBUG_LOG:-0}" \
+          D1_RETRY_ATTEMPTS="${D1_RETRY_ATTEMPTS:-5}" \
+          D1_REQUEST_TIMEOUT_MS="${D1_REQUEST_TIMEOUT_MS:-30000}" \
+          D1_RETRY_BASE_DELAY_MS="${D1_RETRY_BASE_DELAY_MS:-250}" \
+          D1_RETRY_MAX_DELAY_MS="${D1_RETRY_MAX_DELAY_MS:-3000}" \
+            dart run example/data_source_verification.dart both
+
+          D1_ACCOUNT_ID="$account_id" \
+          D1_DATABASE_ID="$database_id" \
+          D1_API_TOKEN="$api_token" \
+          D1_BASE_URL="$base_url" \
+          D1_DEBUG_LOG="${D1_DEBUG_LOG:-0}" \
+          D1_RETRY_ATTEMPTS="${D1_RETRY_ATTEMPTS:-5}" \
+          D1_REQUEST_TIMEOUT_MS="${D1_REQUEST_TIMEOUT_MS:-30000}" \
+          D1_RETRY_BASE_DELAY_MS="${D1_RETRY_BASE_DELAY_MS:-250}" \
+          D1_RETRY_MAX_DELAY_MS="${D1_RETRY_MAX_DELAY_MS:-3000}" \
+            dart run example/generated_helpers_verification.dart
+
+          popd >/dev/null
+        '
+
+  d1:verify-real-driver-overrides:
+    desc: Run driver-overrides shared test against real D1 (env or 1Password auth)
+    silent: true
+    preconditions:
+      - sh: "command -v dart >/dev/null 2>&1"
+        msg: "Dart SDK is required."
+    cmds:
+      - |
+        bash -lc '
+          set -euo pipefail
+
+          env_file="packages/ormed_d1/.env"
+          if [ -f "$env_file" ] || [ -p "$env_file" ]; then
+            set -a
+            source "$env_file"
+            set +a
+          fi
+
+          account_id="${D1_ACCOUNT_ID:-${CF_ACCOUNT_ID:-}}"
+          database_id="${D1_DATABASE_ID:-}"
+          api_token="${D1_API_TOKEN:-${D1_SECRET:-}}"
+          base_url="${D1_BASE_URL:-https://api.cloudflare.com/client/v4}"
+
+          if [ -z "$account_id" ] || [ -z "$database_id" ] || [ -z "$api_token" ]; then
+            if ! command -v op >/dev/null 2>&1; then
+              echo "Missing D1 env vars and 1Password CLI (op) is not available."
+              exit 1
+            fi
+            account_id="${account_id:-$(op read "op://devops/d1/account_id")}"
+            database_id="${database_id:-$(op read "op://devops/d1/db_id")}"
+            api_token="${api_token:-$(op read "op://devops/d1/credential")}"
+          fi
+
+          D1_TEST_MODE=real \
+          D1_ACCOUNT_ID="$account_id" \
+          D1_DATABASE_ID="$database_id" \
+          D1_API_TOKEN="$api_token" \
+          D1_BASE_URL="$base_url" \
+          D1_DEBUG_LOG="${D1_DEBUG_LOG:-0}" \
+            dart test packages/ormed_d1/test/d1_driver_shared_test.dart \
+              --plain-name "driver overrides repository encodes payload using driver-specific codec" \
+              --reporter=expanded \
+              --concurrency=1
+        '
+
+  d1:credential:
+    desc: Read D1 token from packages/ormed_d1/.env
+    silent: true
+    cmds:
+      - |
+        bash -lc '
+          set -euo pipefail
+          env_file="packages/ormed_d1/.env"
+          if [ ! -f "$env_file" ] && [ ! -p "$env_file" ]; then
+            echo "Missing $env_file"
+            exit 1
+          fi
+          set -a
+          source "$env_file"
+          set +a
+          token="${D1_SECRET:-${D1_API_TOKEN:-}}"
+          if [ -z "$token" ]; then
+            echo "Missing D1_SECRET or D1_API_TOKEN in $env_file"
+            exit 1
+          fi
+          printf "%s\n" "$token"
+        '
+
+  d1:test-integration:
+    desc: Run ormed_d1 integration smoke tests (shared suite excluded)
+    silent: true
+    preconditions:
+      - sh: "command -v dart >/dev/null 2>&1"
+        msg: "Dart SDK is required to run integration tests."
+    cmds:
+      - |
+        bash -lc '
+          set -euo pipefail
+          env_file="packages/ormed_d1/.env"
+          if [ -f "$env_file" ] || [ -p "$env_file" ]; then
+            set -a
+            source "$env_file"
+            set +a
+          fi
+
+          account_id="${D1_ACCOUNT_ID:-${CF_ACCOUNT_ID:-}}"
+          database_id="${D1_DATABASE_ID:-}"
+          api_token="${D1_API_TOKEN:-${D1_SECRET:-}}"
+          base_url="${D1_BASE_URL:-https://api.cloudflare.com/client/v4}"
+
+          if [ -z "$account_id" ] || [ -z "$database_id" ] || [ -z "$api_token" ]; then
+            echo "Missing D1 integration configuration."
+            echo "Expected env vars: D1_DATABASE_ID plus account/token via D1_ACCOUNT_ID or CF_ACCOUNT_ID and D1_API_TOKEN or D1_SECRET."
+            echo "If using local env file, define them in packages/ormed_d1/.env."
+            exit 1
+          fi
+
+          D1_ACCOUNT_ID="$account_id" \
+          D1_DATABASE_ID="$database_id" \
+          D1_API_TOKEN="$api_token" \
+          D1_BASE_URL="$base_url" \
+          D1_DEBUG_LOG="${D1_DEBUG_LOG:-1}" \
+          D1_RETRY_ATTEMPTS="${D1_RETRY_ATTEMPTS:-5}" \
+          D1_REQUEST_TIMEOUT_MS="${D1_REQUEST_TIMEOUT_MS:-30000}" \
+          D1_RETRY_BASE_DELAY_MS="${D1_RETRY_BASE_DELAY_MS:-250}" \
+          D1_RETRY_MAX_DELAY_MS="${D1_RETRY_MAX_DELAY_MS:-3000}" \
+            dart test packages/ormed_d1/test --tags integration --exclude-tags shared --concurrency 1 --timeout 3m -r expanded --fail-fast
+        '
+
+  d1:test-shared:
+    desc: Run ormed_d1 shared driver tests (slow; remote D1)
+    silent: true
+    preconditions:
+      - sh: "command -v dart >/dev/null 2>&1"
+        msg: "Dart SDK is required to run integration tests."
+    cmds:
+      - |
+        bash -lc '
+          set -euo pipefail
+          env_file="packages/ormed_d1/.env"
+          if [ -f "$env_file" ] || [ -p "$env_file" ]; then
+            set -a
+            source "$env_file"
+            set +a
+          fi
+
+          account_id="${D1_ACCOUNT_ID:-${CF_ACCOUNT_ID:-}}"
+          database_id="${D1_DATABASE_ID:-}"
+          api_token="${D1_API_TOKEN:-${D1_SECRET:-}}"
+          base_url="${D1_BASE_URL:-https://api.cloudflare.com/client/v4}"
+
+          if [ -z "$account_id" ] || [ -z "$database_id" ] || [ -z "$api_token" ]; then
+            echo "Missing D1 integration configuration."
+            echo "Expected env vars: D1_DATABASE_ID plus account/token via D1_ACCOUNT_ID or CF_ACCOUNT_ID and D1_API_TOKEN or D1_SECRET."
+            echo "If using local env file, define them in packages/ormed_d1/.env."
+            exit 1
+          fi
+
+          D1_ACCOUNT_ID="$account_id" \
+          D1_DATABASE_ID="$database_id" \
+          D1_API_TOKEN="$api_token" \
+          D1_BASE_URL="$base_url" \
+          D1_DEBUG_LOG="${D1_DEBUG_LOG:-1}" \
+          D1_RETRY_ATTEMPTS="${D1_RETRY_ATTEMPTS:-5}" \
+          D1_REQUEST_TIMEOUT_MS="${D1_REQUEST_TIMEOUT_MS:-30000}" \
+          D1_RETRY_BASE_DELAY_MS="${D1_RETRY_BASE_DELAY_MS:-250}" \
+          D1_RETRY_MAX_DELAY_MS="${D1_RETRY_MAX_DELAY_MS:-3000}" \
+            dart test packages/ormed_d1/test/d1_driver_shared_test.dart --tags integration --concurrency 1 --timeout 10m -r expanded --fail-fast
+        '

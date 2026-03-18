@@ -198,8 +198,7 @@ class ScopedUserModelFactory {
 
   static ModelFactoryBuilder<ScopedUser> factory({
     GeneratorProvider? generatorProvider,
-  }) => ModelFactoryBuilder<ScopedUser>(
-    definition: definition,
+  }) => ModelFactoryRegistry.factoryFor<ScopedUser>(
     generatorProvider: generatorProvider,
   );
 }
@@ -425,11 +424,11 @@ class _ScopedUserPartialCopyWithSentinel {
 class $ScopedUser extends ScopedUser with ModelAttributes implements OrmEntity {
   /// Internal constructor for [$ScopedUser].
   $ScopedUser({
-    int id = 0,
+    required int id,
     required String email,
     required bool active,
     String? role,
-  }) : super.new(id: id, email: email, active: active, role: role) {
+  }) : super(id: id, email: email, active: active, role: role) {
     _attachOrmRuntimeMetadata({
       'id': id,
       'email': email,
@@ -514,7 +513,7 @@ extension ScopedUserOrmExtension on ScopedUser {
     Object? active = _copyWithSentinel,
     Object? role = _copyWithSentinel,
   }) {
-    return ScopedUser.new(
+    return ScopedUser(
       id: identical(id, _copyWithSentinel) ? this.id : id as int,
       email: identical(email, _copyWithSentinel) ? this.email : email as String,
       active: identical(active, _copyWithSentinel)

@@ -215,8 +215,7 @@ class CombinedPostModelFactory {
 
   static ModelFactoryBuilder<CombinedPost> factory({
     GeneratorProvider? generatorProvider,
-  }) => ModelFactoryBuilder<CombinedPost>(
-    definition: definition,
+  }) => ModelFactoryRegistry.factoryFor<CombinedPost>(
     generatorProvider: generatorProvider,
   );
 }
@@ -421,8 +420,8 @@ class $CombinedPost extends CombinedPost
     with ModelAttributes, TimestampsImpl, SoftDeletesImpl
     implements OrmEntity {
   /// Internal constructor for [$CombinedPost].
-  $CombinedPost({int id = 0, required String title})
-    : super.new(id: id, title: title) {
+  $CombinedPost({required int id, required String title})
+    : super(id: id, title: title) {
     _attachOrmRuntimeMetadata({'id': id, 'title': title});
   }
 
@@ -477,7 +476,7 @@ extension CombinedPostOrmExtension on CombinedPost {
     Object? id = _copyWithSentinel,
     Object? title = _copyWithSentinel,
   }) {
-    return CombinedPost.new(
+    return CombinedPost(
       id: identical(id, _copyWithSentinel) ? this.id : id as int,
       title: identical(title, _copyWithSentinel) ? this.title : title as String,
     );
@@ -726,8 +725,7 @@ class CombinedPostTzModelFactory {
 
   static ModelFactoryBuilder<CombinedPostTz> factory({
     GeneratorProvider? generatorProvider,
-  }) => ModelFactoryBuilder<CombinedPostTz>(
-    definition: definition,
+  }) => ModelFactoryRegistry.factoryFor<CombinedPostTz>(
     generatorProvider: generatorProvider,
   );
 }
@@ -938,8 +936,8 @@ class $CombinedPostTz extends CombinedPostTz
     with ModelAttributes, TimestampsTZImpl, SoftDeletesTZImpl
     implements OrmEntity {
   /// Internal constructor for [$CombinedPostTz].
-  $CombinedPostTz({int id = 0, required String title})
-    : super.new(id: id, title: title) {
+  $CombinedPostTz({required int id, required String title})
+    : super(id: id, title: title) {
     _attachOrmRuntimeMetadata({'id': id, 'title': title});
   }
 
@@ -993,7 +991,7 @@ extension CombinedPostTzOrmExtension on CombinedPostTz {
     Object? id = _copyWithSentinel,
     Object? title = _copyWithSentinel,
   }) {
-    return CombinedPostTz.new(
+    return CombinedPostTz(
       id: identical(id, _copyWithSentinel) ? this.id : id as int,
       title: identical(title, _copyWithSentinel) ? this.title : title as String,
     );

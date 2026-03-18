@@ -414,7 +414,9 @@ class TestDatabaseManager {
       if (descriptors == null) return null;
       return TestSchemaManager(
         schemaDriver: driver as SchemaDriver,
+        modelDefinitions: dataSource.options.entities,
         migrations: descriptors,
+        tablePrefix: dataSource.options.tablePrefix,
       );
     }
     return null;

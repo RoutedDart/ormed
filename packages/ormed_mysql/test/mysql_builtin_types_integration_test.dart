@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:decimal/decimal.dart';
@@ -270,7 +269,7 @@ class _CreateMysqlBuiltinTypesTable extends Migration {
 
 Future<void> main() async {
   final url =
-      Platform.environment['MYSQL_URL'] ??
+      OrmedEnvironment().firstNonEmpty(['MYSQL_URL']) ??
       'mysql://root:secret@localhost:6605/orm_test';
 
   MySqlDriverAdapter.registerCodecs();

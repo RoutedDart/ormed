@@ -1,12 +1,12 @@
+import 'package:ormed/ormed.dart';
 import 'package:ormed_postgres/ormed_postgres.dart';
 import 'package:test/test.dart';
-import 'dart:io';
 
 void main() {
   group('Postgres Database Creation', () {
     test('Postgres driver can create new database', () async {
       final url =
-          Platform.environment['POSTGRES_URL'] ??
+          OrmedEnvironment().firstNonEmpty(['POSTGRES_URL']) ??
           'postgres://postgres:postgres@localhost:6543/orm_test';
 
       // Parse URL to connect to postgres system database
@@ -46,7 +46,7 @@ void main() {
 
     test('Postgres driver can connect to newly created database', () async {
       final url =
-          Platform.environment['POSTGRES_URL'] ??
+          OrmedEnvironment().firstNonEmpty(['POSTGRES_URL']) ??
           'postgres://postgres:postgres@localhost:6543/orm_test';
 
       final uri = Uri.parse(url);
@@ -106,7 +106,7 @@ void main() {
       'Postgres driver can create databases with different names for parallel tests',
       () async {
         final url =
-            Platform.environment['POSTGRES_URL'] ??
+            OrmedEnvironment().firstNonEmpty(['POSTGRES_URL']) ??
             'postgres://postgres:postgres@localhost:6543/orm_test';
 
         final uri = Uri.parse(url);

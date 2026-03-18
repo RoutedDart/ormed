@@ -49,7 +49,7 @@ void runDriverOverrideTests() {
         );
         final value = rows.single['payload'];
         final driverName = ds.options.driver.metadata.name.toLowerCase();
-        if (driverName.contains('sqlite')) {
+        if (driverName.contains('sqlite') || driverName.contains('d1')) {
           expect(value, isA<String>());
           expect(value, equals(jsonEncode(entry.payload)));
         } else if (driverName.contains('postgres')) {

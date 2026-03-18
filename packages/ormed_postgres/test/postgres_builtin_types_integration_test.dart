@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:decimal/decimal.dart';
@@ -667,7 +666,7 @@ final class _CreateBuiltinTypesTable extends Migration {
 
 Future<void> main() async {
   final url =
-      Platform.environment['POSTGRES_URL'] ??
+      OrmedEnvironment().firstNonEmpty(['POSTGRES_URL']) ??
       'postgres://postgres:postgres@localhost:6543/orm_test';
 
   PostgresDriverAdapter.registerCodecs();

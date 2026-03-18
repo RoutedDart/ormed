@@ -7,7 +7,7 @@ import 'package:ormed/ormed.dart';
 import 'package:ormed_sqlite/ormed_sqlite.dart';
 
 import '../models/user.dart';
-import '../orm_registry.g.dart';
+import 'package:ormed_examples/src/database/orm_registry.g.dart';
 
 // #region driver-internals-datasource
 Future<DataSource> createDriverInternalsDemoDataSource() async {
@@ -74,4 +74,5 @@ Future<void> dumpSchemaIfSupported(DataSource dataSource) async {
   if (state == null || !state.canDump) return;
   await state.dump(File('database/schema.sql'));
 }
+
 // #endregion driver-internals-schema-state

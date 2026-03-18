@@ -97,7 +97,6 @@ class TestProjectSeederRunner implements ProjectSeederRunner {
 
 void main() {
   group('integration tests (in-process)', () {
-    late Directory repoRoot;
     late Directory scratchDir;
     late String dbPath;
     late File ormConfig;
@@ -106,10 +105,8 @@ void main() {
     late TestProjectSeederRunner testSeederRunner;
 
     setUp(() async {
-      repoRoot = Directory.current;
-
       final scratchParent = Directory(
-        p.join(repoRoot.path, '.dart_tool', 'ormed_cli_tests'),
+        p.join(Directory.systemTemp.path, 'ormed_cli_tests'),
       );
       if (!scratchParent.existsSync()) {
         scratchParent.createSync(recursive: true);

@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'dart:math';
 
 import 'package:ormed/ormed.dart';
@@ -10,7 +9,7 @@ final _testRunId = Random().nextInt(1000000);
 
 PostgresDriverAdapter _createAdapterFromEnv({String? database}) {
   final defaultUrl =
-      Platform.environment['POSTGRES_URL'] ??
+      OrmedEnvironment().firstNonEmpty(['POSTGRES_URL']) ??
       'postgres://postgres:postgres@localhost:6543/orm_test';
 
   final uri = Uri.parse(defaultUrl);

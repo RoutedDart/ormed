@@ -141,6 +141,31 @@ class TestSchemaManager {
     if (tables.isEmpty) return;
 
     final driver = _schemaDriver as DriverAdapter;
+
+    // SQLite-like drivers spend most test time toggling FK checks per table.
+    // Batch truncation under one FK-disable scope to reduce per-test roundtrips.
+    final driverName = driver.metadata.name.toLowerCase();
+    final supportsBatchFkScopedTruncate =
+        (driverName == 'sqlite' || driverName == 'd1') &&
+        driver.metadata.supportsCapability(
+          DriverCapability.foreignKeyConstraintControl,
+        );
+
+    if (supportsBatchFkScopedTruncate) {
+      await _schemaDriver.withoutForeignKeyConstraints(() async {
+        for (final table in tables) {
+          try {
+            await driver.executeRaw(
+              'DELETE FROM "${_escapeIdentifier(table)}"',
+            );
+          } catch (_) {
+            // Ignore if table doesn't exist yet
+          }
+        }
+      });
+      return;
+    }
+
     for (final table in tables) {
       try {
         await driver.truncateTable(table);
@@ -267,6 +292,8 @@ class TestSchemaManager {
     });
   }
 }
+
+String _escapeIdentifier(String identifier) => identifier.replaceAll('"', '""');
 
 /// Extension to add test schema management to SchemaDriver
 extension SchemaDriverTestExtensions on SchemaDriver {

@@ -219,8 +219,7 @@ class AccountModelFactory {
 
   static ModelFactoryBuilder<Account> factory({
     GeneratorProvider? generatorProvider,
-  }) => ModelFactoryBuilder<Account>(
-    definition: definition,
+  }) => ModelFactoryRegistry.factoryFor<Account>(
     generatorProvider: generatorProvider,
   );
 }
@@ -499,12 +498,12 @@ class _AccountPartialCopyWithSentinel {
 class $Account extends Account with ModelAttributes implements OrmEntity {
   /// Internal constructor for [$Account].
   $Account({
-    int id = 0,
+    required int id,
     required String email,
     required String passwordHash,
     String? name,
-    required bool isAdmin,
-  }) : super.new(
+    bool isAdmin = false,
+  }) : super(
          id: id,
          email: email,
          passwordHash: passwordHash,
@@ -613,7 +612,7 @@ extension AccountOrmExtension on Account {
     Object? name = _copyWithSentinel,
     Object? isAdmin = _copyWithSentinel,
   }) {
-    return Account.new(
+    return Account(
       id: identical(id, _copyWithSentinel) ? this.id : id as int,
       email: identical(email, _copyWithSentinel) ? this.email : email as String,
       passwordHash: identical(passwordHash, _copyWithSentinel)
@@ -655,7 +654,7 @@ extension $AccountAccessors on $Account {
   }
 
   String normalizeEmail(String? value) {
-    final result = Account.normalizeEmail(this, value as String?);
+    final result = Account.normalizeEmail(this, value);
     setRawAttribute('email', result);
     return result;
   }

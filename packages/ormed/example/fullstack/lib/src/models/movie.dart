@@ -7,6 +7,7 @@ part 'movie.orm.dart';
 // #region model-movie
 @OrmModel(table: 'movies')
 class Movie extends Model<Movie> {
+  // #region model-movie-constructor-fields
   const Movie({
     required this.id,
     required this.title,
@@ -26,13 +27,16 @@ class Movie extends Model<Movie> {
   final String? summary;
   final String? posterPath;
   final int? genreId;
+  // #endregion model-movie-constructor-fields
 
+  // #region model-movie-relations-timestamps
   @OrmField(ignore: true)
   @OrmRelation.belongsTo(target: Genre, foreignKey: 'genre_id')
   final Genre? genre = null;
 
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  // #endregion model-movie-relations-timestamps
 }
 
 // #endregion model-movie

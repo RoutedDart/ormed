@@ -15,4 +15,5 @@ class Log extends Model<Log> {
   final String message;
   final DateTime? timestamp;
 }
+
 // #endregion no-timestamps-model

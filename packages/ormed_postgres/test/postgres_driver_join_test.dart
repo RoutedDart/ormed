@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'dart:math';
 
 import 'package:driver_tests/driver_tests.dart';
@@ -16,7 +15,7 @@ void main() {
 
     setUpAll(() async {
       final url =
-          Platform.environment['POSTGRES_URL'] ??
+          OrmedEnvironment().firstNonEmpty(['POSTGRES_URL']) ??
           'postgres://postgres:postgres@localhost:6543/orm_test';
 
       // Create custom codecs map

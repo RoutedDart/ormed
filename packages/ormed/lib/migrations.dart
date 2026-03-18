@@ -213,13 +213,13 @@
 ///
 /// ```dart
 /// final entries = [
-///   MigrationEntry(
-///     id: MigrationId.parse('m_20251115014501_create_users_table'),
-///     migration: const CreateUsersTable(),
+///   MigrationEntry.named(
+///     'm_20251115014501_create_users_table',
+///     const CreateUsersTable(),
 ///   ),
-///   MigrationEntry(
-///     id: MigrationId.parse('m_20251115015021_create_posts_table'),
-///     migration: const CreatePostsTable(),
+///   MigrationEntry.named(
+///     'm_20251115015021_create_posts_table',
+///     const CreatePostsTable(),
 ///   ),
 /// ];
 ///

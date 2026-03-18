@@ -203,8 +203,7 @@ class TimestampPostModelFactory {
 
   static ModelFactoryBuilder<TimestampPost> factory({
     GeneratorProvider? generatorProvider,
-  }) => ModelFactoryBuilder<TimestampPost>(
-    definition: definition,
+  }) => ModelFactoryRegistry.factoryFor<TimestampPost>(
     generatorProvider: generatorProvider,
   );
 }
@@ -403,8 +402,8 @@ class $TimestampPost extends TimestampPost
     with ModelAttributes, TimestampsImpl
     implements OrmEntity {
   /// Internal constructor for [$TimestampPost].
-  $TimestampPost({int id = 0, required String title})
-    : super.new(id: id, title: title) {
+  $TimestampPost({required int id, required String title})
+    : super(id: id, title: title) {
     _attachOrmRuntimeMetadata({'id': id, 'title': title});
   }
 
@@ -458,7 +457,7 @@ extension TimestampPostOrmExtension on TimestampPost {
     Object? id = _copyWithSentinel,
     Object? title = _copyWithSentinel,
   }) {
-    return TimestampPost.new(
+    return TimestampPost(
       id: identical(id, _copyWithSentinel) ? this.id : id as int,
       title: identical(title, _copyWithSentinel) ? this.title : title as String,
     );
@@ -700,8 +699,7 @@ class TimestampArticleTzModelFactory {
 
   static ModelFactoryBuilder<TimestampArticleTz> factory({
     GeneratorProvider? generatorProvider,
-  }) => ModelFactoryBuilder<TimestampArticleTz>(
-    definition: definition,
+  }) => ModelFactoryRegistry.factoryFor<TimestampArticleTz>(
     generatorProvider: generatorProvider,
   );
 }
@@ -903,8 +901,8 @@ class $TimestampArticleTz extends TimestampArticleTz
     with ModelAttributes, TimestampsTZImpl
     implements OrmEntity {
   /// Internal constructor for [$TimestampArticleTz].
-  $TimestampArticleTz({int id = 0, required String title})
-    : super.new(id: id, title: title) {
+  $TimestampArticleTz({required int id, required String title})
+    : super(id: id, title: title) {
     _attachOrmRuntimeMetadata({'id': id, 'title': title});
   }
 
@@ -958,7 +956,7 @@ extension TimestampArticleTzOrmExtension on TimestampArticleTz {
     Object? id = _copyWithSentinel,
     Object? title = _copyWithSentinel,
   }) {
-    return TimestampArticleTz.new(
+    return TimestampArticleTz(
       id: identical(id, _copyWithSentinel) ? this.id : id as int,
       title: identical(title, _copyWithSentinel) ? this.title : title as String,
     );

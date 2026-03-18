@@ -195,8 +195,7 @@ class ProductModelFactory {
 
   static ModelFactoryBuilder<Product> factory({
     GeneratorProvider? generatorProvider,
-  }) => ModelFactoryBuilder<Product>(
-    definition: definition,
+  }) => ModelFactoryRegistry.factoryFor<Product>(
     generatorProvider: generatorProvider,
   );
 }
@@ -423,11 +422,11 @@ class _ProductPartialCopyWithSentinel {
 class $Product extends Product with ModelAttributes implements OrmEntity {
   /// Internal constructor for [$Product].
   $Product({
-    int id = 0,
+    required int id,
     required String sku,
-    required bool active,
+    bool active = false,
     Map<String, Object?>? metadata,
-  }) : super.new(id: id, sku: sku, active: active, metadata: metadata) {
+  }) : super(id: id, sku: sku, active: active, metadata: metadata) {
     _attachOrmRuntimeMetadata({
       'id': id,
       'sku': sku,
@@ -518,7 +517,7 @@ extension ProductOrmExtension on Product {
     Object? active = _copyWithSentinel,
     Object? metadata = _copyWithSentinel,
   }) {
-    return Product.new(
+    return Product(
       id: identical(id, _copyWithSentinel) ? this.id : id as int,
       sku: identical(sku, _copyWithSentinel) ? this.sku : sku as String,
       active: identical(active, _copyWithSentinel)

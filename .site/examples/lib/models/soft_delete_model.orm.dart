@@ -190,8 +190,7 @@ class SoftDeletePostModelFactory {
 
   static ModelFactoryBuilder<SoftDeletePost> factory({
     GeneratorProvider? generatorProvider,
-  }) => ModelFactoryBuilder<SoftDeletePost>(
-    definition: definition,
+  }) => ModelFactoryRegistry.factoryFor<SoftDeletePost>(
     generatorProvider: generatorProvider,
   );
 }
@@ -378,8 +377,8 @@ class $SoftDeletePost extends SoftDeletePost
     with ModelAttributes, SoftDeletesImpl
     implements OrmEntity {
   /// Internal constructor for [$SoftDeletePost].
-  $SoftDeletePost({int id = 0, required String title})
-    : super.new(id: id, title: title) {
+  $SoftDeletePost({required int id, required String title})
+    : super(id: id, title: title) {
     _attachOrmRuntimeMetadata({'id': id, 'title': title});
   }
 
@@ -434,7 +433,7 @@ extension SoftDeletePostOrmExtension on SoftDeletePost {
     Object? id = _copyWithSentinel,
     Object? title = _copyWithSentinel,
   }) {
-    return SoftDeletePost.new(
+    return SoftDeletePost(
       id: identical(id, _copyWithSentinel) ? this.id : id as int,
       title: identical(title, _copyWithSentinel) ? this.title : title as String,
     );
@@ -663,8 +662,7 @@ class SoftDeleteArticleTzModelFactory {
 
   static ModelFactoryBuilder<SoftDeleteArticleTz> factory({
     GeneratorProvider? generatorProvider,
-  }) => ModelFactoryBuilder<SoftDeleteArticleTz>(
-    definition: definition,
+  }) => ModelFactoryRegistry.factoryFor<SoftDeleteArticleTz>(
     generatorProvider: generatorProvider,
   );
 }
@@ -858,8 +856,8 @@ class $SoftDeleteArticleTz extends SoftDeleteArticleTz
     with ModelAttributes, SoftDeletesTZImpl
     implements OrmEntity {
   /// Internal constructor for [$SoftDeleteArticleTz].
-  $SoftDeleteArticleTz({int id = 0, required String title})
-    : super.new(id: id, title: title) {
+  $SoftDeleteArticleTz({required int id, required String title})
+    : super(id: id, title: title) {
     _attachOrmRuntimeMetadata({'id': id, 'title': title});
   }
 
@@ -913,7 +911,7 @@ extension SoftDeleteArticleTzOrmExtension on SoftDeleteArticleTz {
     Object? id = _copyWithSentinel,
     Object? title = _copyWithSentinel,
   }) {
-    return SoftDeleteArticleTz.new(
+    return SoftDeleteArticleTz(
       id: identical(id, _copyWithSentinel) ? this.id : id as int,
       title: identical(title, _copyWithSentinel) ? this.title : title as String,
     );

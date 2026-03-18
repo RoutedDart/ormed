@@ -8,7 +8,7 @@ import '../models/user.dart';
 import '../models/user.orm.dart';
 import '../models/post.dart';
 import '../models/post.orm.dart';
-import '../orm_registry.g.dart';
+import 'package:ormed_examples/src/database/orm_registry.g.dart';
 
 // #region query-logging
 Future<void> queryLoggingExample() async {

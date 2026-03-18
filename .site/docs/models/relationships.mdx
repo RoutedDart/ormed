@@ -9,6 +9,25 @@ import TabItem from '@theme/TabItem';
 
 Ormed supports common relationship types between models using the `@OrmRelation` annotation.
 
+## Prerequisites
+
+- [Defining Models](./defining-models)
+- [Query Builder](../queries/query-builder)
+
+## What You’ll Learn
+
+- How to declare each relation type with `@OrmRelation`
+- How relation metadata drives eager and lazy loading
+- How to avoid common relation loading pitfalls
+
+## Step Outcome
+
+By the end of this page, you should have:
+
+- Correct relation annotations for your model graph
+- A chosen loading strategy (eager vs lazy) per endpoint/use case
+- Basic manipulation flows (associate/attach/sync) working in tests
+
 ## Relationship Types
 
 <Tabs groupId="relationship-types" defaultValue="has-one">
@@ -70,6 +89,13 @@ final sortOrder = pivot?['sort_order'];
 
   </TabItem>
 </Tabs>
+
+## Choosing A Relation Type
+
+- `belongsTo`: this model stores the foreign key.
+- `hasOne`/`hasMany`: related model stores the foreign key.
+- `belongsToMany`: join/pivot table between both models.
+- Polymorphic (`morph*`): one association can point to multiple model types.
 
 ## Polymorphic Relationships
 
@@ -172,6 +198,8 @@ Load relations on-demand:
 
   </TabItem>
 </Tabs>
+
+Use eager loading for list/detail endpoints that always need related data. Use lazy loading for optional or rarely accessed relations.
 
 ### Checking Relation Status
 
@@ -296,6 +324,12 @@ Create related models without triggering lifecycle events:
   </TabItem>
 </Tabs>
 
+## Verify Relation Behavior
+
+1. Add tests for at least one eager-load path.
+2. Add tests for one relation mutation path (`associate` / `attach` / `sync`).
+3. Confirm no N+1 behavior in hot list endpoints.
+
 ## Aggregate Loading
 
 Load aggregate values without fetching all related models:
@@ -329,3 +363,9 @@ Use `Model.preventLazyLoading()` in development to catch N+1 issues:
 ```
 
 This throws an exception when accessing relations that haven't been eager-loaded, helping you identify performance issues early.
+
+## Read This Next
+
+- [Loading Relations](../queries/relations)
+- [Query Builder](../queries/query-builder)
+- [Repository](../queries/repository)

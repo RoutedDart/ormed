@@ -20,38 +20,43 @@ SQLite driver adapter for the ormed ORM. Implements the `DriverAdapter` contract
 
 ```yaml
 dependencies:
-  ormed: ^0.1.0
-  ormed_sqlite: ^0.1.0
+  ormed: ^0.2.0
+  ormed_sqlite: ^0.2.0
 ```
 
 ## Quick Start
 
 ```dart
+import 'package:your_app/src/database/datasource.dart';
+
+Future<void> main() async {
+  final ds = createDataSource(connection: 'default');
+  await ds.init();
+
+  final rows = await ds.connection.driver.queryRaw('SELECT 1 AS ok');
+  print(rows.first['ok']);
+
+  await ds.dispose();
+}
+```
+
+Generated apps should use `ormed init` scaffolding (`lib/src/database/config.dart` +
+`datasource.dart`) as the primary runtime entrypoint.
+
+### Low-level adapter usage
+
+```dart
 import 'package:ormed/ormed.dart';
 import 'package:ormed_sqlite/ormed_sqlite.dart';
 
-void main() async {
-  // In-memory database
+Future<void> main() async {
   final adapter = SqliteDriverAdapter.inMemory();
-  
-  // Or file-based
-  // final adapter = SqliteDriverAdapter.file('app.sqlite');
-  
-  final registry = ModelRegistry()..register(UserOrmDefinition.definition);
-  final context = QueryContext(registry: registry, driver: adapter);
+  final context = QueryContext(registry: ModelRegistry(), driver: adapter);
 
-  // Create schema
   await adapter.executeRaw(
     'CREATE TABLE users (id INTEGER PRIMARY KEY, email TEXT NOT NULL)',
   );
-
-  // Use repository
-  final repository = context.repository<\$User>();
-  await repository.insert(\$User(id: 1, email: 'example@example.com'));
-
-  final users = await context.query<\$User>().get();
-  print(users.first.email);
-  
+  await context.table('users').insert({'email': 'example@example.com'});
   await adapter.close();
 }
 ```
@@ -74,24 +79,67 @@ SqliteDriverAdapter.custom(config: DatabaseConfig(
 ))
 ```
 
-## Connection Registration
-
-Register connections for use across your application:
+## DataSource Helper Extensions
 
 ```dart
-registerSqliteOrmConnection(
-  name: 'my_connection',
-  database: DatabaseConfig(
-    driver: 'sqlite',
-    options: {'path': 'app.sqlite'},
+import 'dart:io';
+
+import 'package:ormed/ormed.dart';
+import 'package:ormed_sqlite/ormed_sqlite.dart';
+import 'package:your_app/src/models/user.orm.dart';
+
+Future<void> main() async {
+  final env = OrmedEnvironment.fromDirectory(Directory.current);
+  final registry = ModelRegistry()..register(UserOrmDefinition.definition);
+  final path = env.string('DB_PATH', fallback: 'database/app.sqlite');
+
+  final ds = DataSource(
+    registry.sqliteFileDataSourceOptions(path: path, name: 'default'),
+  );
+  await ds.init();
+
+  final rows = await ds.connection.driver.queryRaw('SELECT 1 AS ok');
+  print(rows.first['ok']);
+
+  await ds.dispose();
+}
+```
+
+## Environment Variables
+
+Common env vars used by generated SQLite config:
+
+- `DB_PATH` (fallback usually `database/<app>.sqlite`)
+
+Example `.env`:
+
+```bash
+DB_PATH=database/app.sqlite
+```
+
+## Named DataSources (recommended)
+
+Use named `DataSource` instances for multi-database apps:
+
+```dart
+final primary = DataSource(
+  myModelRegistry.sqliteFileDataSourceOptions(
+    path: 'database/app.sqlite',
+    name: 'primary',
   ),
-  registry: myModelRegistry,
 );
 
-// Use via ConnectionManager
-await ConnectionManager.instance.use('my_connection', (conn) async {
-  final users = await conn.query<\$User>().get();
-});
+final analytics = DataSource(
+  myModelRegistry.sqliteFileDataSourceOptions(
+    path: 'database/analytics.sqlite',
+    name: 'analytics',
+  ),
+);
+
+await primary.init();
+await analytics.init();
+
+final users = await primary.query<\$User>().get();
 ```
 
 ## Driver Capabilities

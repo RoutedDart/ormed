@@ -9,6 +9,25 @@ import TabItem from '@theme/TabItem';
 
 Ormed models support **attribute metadata** that affects:
 
+## Prerequisites
+
+- [Defining Models](./defining-models)
+- [Quick Start](../getting-started/quick-start)
+
+## What You’ll Learn
+
+- How mass-assignment rules (`fillable`, `guarded`) are enforced
+- How visibility (`hidden`, `visible`) affects serialization
+- How attribute metadata connects to casting behavior
+
+## Step Outcome
+
+By the end of this page, you should be able to:
+
+- Safely accept trusted/untrusted input with `fill` vs `forceFill`
+- Control serialized output fields for API/web responses
+- Use accessors/mutators without breaking tracked model behavior
+
 - Mass assignment (`fill`, `fillIfAbsent`, `forceFill`)
 - Serialization (`toArray`, `toJson`)
 - Casting (see **Models → Casting**)
@@ -38,12 +57,16 @@ Notes:
 - `fill` / `fillIfAbsent` / `forceFill` accept tracked models, DTOs, and partials in addition to maps.
 - Map keys can be Dart field names or column names (they are normalized).
 
+Default to `fill(...)` for request payloads, and reserve `forceFill(...)` for trusted internal flows.
+
 ## Serialization (hidden / visible)
 
 `toArray()` / `toJson()` honor `hidden` by default. To include hidden values you must set `includeHidden: true`, and the column must also be listed in `visible`.
 
 ```dart file=../../examples/lib/models/attribute_metadata_examples.dart#attributes-serialize
 ```
+
+Keep sensitive values (`password`, secrets, tokens) hidden by default, even for internal APIs.
 
 ## Accessors and mutators
 
@@ -68,3 +91,17 @@ Use `appends` to include computed attributes in `toArray()` / `toJson()` output.
 
 ```dart file=../../examples/lib/models/attribute_metadata_examples.dart#attributes-appends
 ```
+
+## Verify Attribute Rules
+
+Add tests for:
+
+1. Guarded key rejection/ignore behavior.
+2. Hidden/visible serialization output.
+3. Accessor/mutator behavior on tracked instances.
+
+## Read This Next
+
+- [Casting](./casting)
+- [Model Scopes](./scopes)
+- [Query Builder](../queries/query-builder)

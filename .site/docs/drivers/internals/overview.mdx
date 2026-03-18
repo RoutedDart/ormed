@@ -9,6 +9,25 @@ import TabItem from '@theme/TabItem';
 
 This section explains how drivers plug into Ormed and how queries/mutations are represented internally.
 
+## Prerequisites
+
+- [Drivers Overview](../overview)
+- Familiarity with [Query Builder](../../queries/query-builder)
+
+## What You’ll Learn
+
+- How plans move from ORM APIs to driver execution
+- How preview vs execute paths differ
+- Where to hook custom extensions for advanced driver behavior
+
+## Step Outcome
+
+By the end of this page, you should be able to:
+
+- Explain how `QueryPlan`/`MutationPlan` become driver statements
+- Use describe/preview paths for debugging without side effects
+- Decide when driver extensions are better than raw SQL snippets
+
 If you are building tooling (SQL previews, migrations UI, diagnostics) or implementing a custom driver adapter, these are the core concepts you’ll interact with.
 
 ## The pipeline
@@ -23,6 +42,8 @@ At a high level:
 Important distinction:
 - **Describe** returns a preview (useful for logging/testing/dry-runs)
 - **Execute** performs the operation on the backend
+
+Use describe paths in observability tooling and test diagnostics; use execute paths only in runtime mutation/read flows.
 
 ## Debugging SQL without executing
 
@@ -77,6 +98,13 @@ Supported hooks include:
 
 If a custom clause key is missing for the active driver, compilation fails with
 an actionable error that includes the missing key and driver name.
+
+## Extension Design Guidelines
+
+1. Keep payload schemas explicit and typed where possible.
+2. Provide deterministic SQL generation for preview + execution parity.
+3. Add integration tests per driver capability.
+4. Fail loudly on unsupported clause keys.
 
 ### Postgres extensions example package
 

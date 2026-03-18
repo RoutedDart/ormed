@@ -14,7 +14,9 @@ final amount = Decimal.parse('12.34');
 final duration = const Duration(hours: 1, minutes: 2, seconds: 3);
 final tags = <String>{'alpha', 'beta'};
 final bits = MySqlBitString.parse('1010');
-final geometry = MySqlGeometry.fromHex('000000000101000000000000000000F03F0000000000000040');
+final geometry = MySqlGeometry.fromHex(
+  '000000000101000000000000000000F03F0000000000000040',
+);
 final payload = Uint8List.fromList([1, 2, 3, 4]);
 // #endregion mysql-builtins-values
 
@@ -33,9 +35,7 @@ class CreateMysqlBuiltinsTable extends Migration {
       );
       table.uuid('uuid_value');
       table.set('tags', ['alpha', 'beta', 'gamma']);
-      table
-          .column('bit_value', const ColumnType.custom('BIT(4)'))
-          .nullable();
+      table.column('bit_value', const ColumnType.custom('BIT(4)')).nullable();
       table.geometry('geom').nullable();
       table.binary('payload');
       table.json('document').nullable();
@@ -48,4 +48,3 @@ class CreateMysqlBuiltinsTable extends Migration {
   }
 }
 // #endregion mysql-builtins-migration
-

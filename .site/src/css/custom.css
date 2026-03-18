@@ -4,38 +4,97 @@
  * work well for content-centric websites.
  */
 
-/* You can override the default Infima variables here. */
+/* Learning-path-first docs styling inspired by technical guide sites. */
 :root {
-  --ifm-color-primary: #2e8555;
-  --ifm-color-primary-dark: #29784c;
-  --ifm-color-primary-darker: #277148;
-  --ifm-color-primary-darkest: #205d3b;
-  --ifm-color-primary-light: #33925d;
-  --ifm-color-primary-lighter: #359962;
-  --ifm-color-primary-lightest: #3cad6e;
-  --ifm-code-font-size: 95%;
-  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+  --ifm-color-primary: #0f5d8c;
+  --ifm-color-primary-dark: #0e547e;
+  --ifm-color-primary-darker: #0d4f77;
+  --ifm-color-primary-darkest: #0a415f;
+  --ifm-color-primary-light: #11669a;
+  --ifm-color-primary-lighter: #126ba1;
+  --ifm-color-primary-lightest: #1a80be;
+  --ifm-background-color: #f7f6f2;
+  --ifm-navbar-background-color: #f7f6f2;
+  --ifm-footer-background-color: #f1efe9;
+  --ifm-heading-color: #18212b;
+  --ifm-font-color-base: #243443;
+  --ifm-font-family-base: "Source Sans 3", "Segoe UI", "Helvetica Neue", Arial,
+    sans-serif;
+  --ifm-heading-font-family: "Charter", "Iowan Old Style", "Palatino Linotype",
+    "Book Antiqua", Palatino, Georgia, serif;
+  --ifm-code-font-size: 92%;
+  --ifm-pre-font-size: 0.9rem;
+  --ifm-global-radius: 10px;
+  --ifm-menu-color-active: #0f5d8c;
+  --ifm-menu-color-background-active: rgba(15, 93, 140, 0.1);
+  --ifm-menu-link-padding-vertical: 0.5rem;
+  --ifm-menu-link-padding-horizontal: 0.6rem;
+  --docusaurus-highlighted-code-line-bg: rgba(15, 93, 140, 0.12);
 }
 
-/* For readability concerns, you should choose a lighter palette in dark mode. */
 [data-theme='dark'] {
-  --ifm-color-primary: #25c2a0;
-  --ifm-color-primary-dark: #21af90;
-  --ifm-color-primary-darker: #1fa588;
-  --ifm-color-primary-darkest: #1a8870;
-  --ifm-color-primary-light: #29d5b0;
-  --ifm-color-primary-lighter: #32d8b4;
-  --ifm-color-primary-lightest: #4fddbf;
-  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+  --ifm-color-primary: #72b4df;
+  --ifm-color-primary-dark: #58a8da;
+  --ifm-color-primary-darker: #4aa1d7;
+  --ifm-color-primary-darkest: #2b8ecf;
+  --ifm-color-primary-light: #8cc0e4;
+  --ifm-color-primary-lighter: #9ac7e7;
+  --ifm-color-primary-lightest: #c2ddf0;
+  --ifm-background-color: #111723;
+  --ifm-navbar-background-color: #111723;
+  --ifm-footer-background-color: #0d1320;
+  --ifm-heading-color: #eaf0f7;
+  --ifm-font-color-base: #d4deea;
+  --ifm-menu-color-background-active: rgba(114, 180, 223, 0.2);
+  --docusaurus-highlighted-code-line-bg: rgba(114, 180, 223, 0.16);
 }
 
-/* Make tabbed snippets visually distinct. */
+.navbar {
+  border-bottom: 1px solid var(--ifm-color-emphasis-300);
+}
+
+.theme-doc-markdown {
+  max-width: 76ch;
+}
+
+.theme-doc-markdown h1,
+.theme-doc-markdown h2,
+.theme-doc-markdown h3 {
+  letter-spacing: -0.01em;
+}
+
+.theme-doc-sidebar-container {
+  border-right: 1px solid var(--ifm-color-emphasis-300);
+}
+
+.menu__link {
+  border-radius: 8px;
+}
+
+.menu__list-item-collapsible .menu__link {
+  font-weight: 600;
+}
+
+.menu__link--active {
+  font-weight: 600;
+}
+
+.theme-code-block {
+  border: 1px solid var(--ifm-color-emphasis-300);
+  box-shadow: 0 1px 0 rgba(16, 24, 40, 0.04);
+}
+
+.alert {
+  border-width: 1px;
+  border-style: solid;
+}
+
 .tabs-container {
   margin-top: var(--ifm-spacing-vertical);
 }
 
 .tabs {
-  border-bottom: 1px solid var(--ifm-color-emphasis-200);
+  border-bottom: 1px solid var(--ifm-color-emphasis-300);
   gap: 0.25rem;
 }
 
@@ -50,6 +109,6 @@
 
 .tabs__item--active {
   background: var(--ifm-color-emphasis-100);
-  border: 1px solid var(--ifm-color-emphasis-200);
+  border: 1px solid var(--ifm-color-emphasis-300);
   border-bottom-color: transparent;
 }

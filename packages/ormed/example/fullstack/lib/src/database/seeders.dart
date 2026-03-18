@@ -1,6 +1,6 @@
 import 'package:ormed_cli/runtime.dart';
 import 'package:ormed/ormed.dart';
-import 'package:ormed_fullstack_example/orm_registry.g.dart';
+import 'package:ormed_fullstack_example/src/database/orm_registry.g.dart';
 
 import 'seeders/database_seeder.dart';
 // <ORM-SEED-IMPORTS>

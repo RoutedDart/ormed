@@ -14,6 +14,7 @@ import 'app.dart';
 
 // #region server-bootstrap
 Future<HttpServer> runServer({String host = '0.0.0.0', int port = 8080}) async {
+  // #region server-bootstrap-deps
   final logger = buildLogger();
   final httpLogger = buildHttpLogger(logger);
 
@@ -34,7 +35,9 @@ Future<HttpServer> runServer({String host = '0.0.0.0', int port = 8080}) async {
     templates: templates,
     logger: logger,
   );
+  // #endregion server-bootstrap-deps
 
+  // #region server-bootstrap-pipeline
   final handler = Pipeline()
       .addMiddleware(requestIdMiddleware())
       .addMiddleware(httpLogger.middleware)
@@ -43,6 +46,7 @@ Future<HttpServer> runServer({String host = '0.0.0.0', int port = 8080}) async {
   final server = await serve(handler, host, port);
   logger.info('Server running', Context({'host': host, 'port': port}));
   return server;
+  // #endregion server-bootstrap-pipeline
 }
 
 // #endregion server-bootstrap

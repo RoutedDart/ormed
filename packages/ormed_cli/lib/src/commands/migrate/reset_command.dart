@@ -38,7 +38,7 @@ class ResetCommand extends RunnerCommand {
 
     if (!pretend &&
         !confirmToProceed(force: force, action: 'reset the database')) {
-      cliIO.warning('Reset cancelled.');
+      cliIO.warn('Reset cancelled.');
       return;
     }
 

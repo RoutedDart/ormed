@@ -19,6 +19,7 @@ void main() {
     });
 
     // #region testing-property-chaos
+    // #region testing-property-chaos-movies
     test('property: API survives chaotic ids', () async {
       final client = TestClient.inMemory(harness.requestHandler);
 
@@ -34,7 +35,9 @@ void main() {
       await client.close();
       expect(report.success, isTrue, reason: report.report);
     });
+    // #endregion testing-property-chaos-movies
 
+    // #region testing-property-chaos-genres
     test('property: genre routes never 500', () async {
       final client = TestClient.inMemory(harness.requestHandler);
 
@@ -50,13 +53,16 @@ void main() {
       await client.close();
       expect(report.success, isTrue, reason: report.report);
     });
+    // #endregion testing-property-chaos-genres
     // #endregion testing-property-chaos
 
     // #region testing-property-validation
+    // #region testing-property-validation-create
     test('property: create validation never 500', () async {
       final client = TestClient.inMemory(harness.requestHandler);
 
       // #region testing-property-generators
+      // #region testing-property-generators-fields
       final titleGen = Gen.oneOfGen([
         Gen.string(minLength: 1, maxLength: 40),
         Chaos.string(minLength: 0, maxLength: 8),
@@ -74,7 +80,9 @@ void main() {
         Gen.integer(min: 1, max: 10),
         Chaos.integer(min: -50, max: 50),
       ]);
+      // #endregion testing-property-generators-fields
 
+      // #region testing-property-generators-payload
       final payloadGen = titleGen.flatMap(
         (title) => yearGen.flatMap(
           (year) => summaryGen.flatMap(
@@ -89,16 +97,20 @@ void main() {
           ),
         ),
       );
+      // #endregion testing-property-generators-payload
       // #endregion testing-property-generators
 
       // #region testing-property-runner
+      // #region testing-property-runner-definition
       final runner = PropertyTestRunner<Map<String, dynamic>>(payloadGen, (
         payload,
       ) async {
         final response = await client.postJson('/api/movies', payload);
         expect(response.statusCode, anyOf([201, 400]));
         expect(response.statusCode, lessThan(500));
+        // #endregion testing-property-runner-definition
 
+        // #region testing-property-runner-assertions
         if (response.statusCode == 201) {
           response.assertJson((json) {
             json.has('movie', (movie) {
@@ -117,6 +129,7 @@ void main() {
               ..etc();
           });
         }
+        // #endregion testing-property-runner-assertions
       }, PropertyConfig(numTests: 250, maxShrinks: 50));
       // #endregion testing-property-runner
 
@@ -124,10 +137,13 @@ void main() {
       await client.close();
       expect(report.success, isTrue, reason: report.report);
     });
+    // #endregion testing-property-validation-create
 
+    // #region testing-property-validation-invalid-json
     test('property: invalid JSON never 500', () async {
       final client = TestClient.inMemory(harness.requestHandler);
 
+      // #region testing-property-validation-invalid-json-runner
       final runner = PropertyTestRunner<String>(
         Chaos.string(minLength: 0, maxLength: 200),
         (payload) async {
@@ -150,15 +166,19 @@ void main() {
         },
         PropertyConfig(numTests: 150, maxShrinks: 50),
       );
+      // #endregion testing-property-validation-invalid-json-runner
 
       final report = await runner.run();
       await client.close();
       expect(report.success, isTrue, reason: report.report);
     });
+    // #endregion testing-property-validation-invalid-json
 
+    // #region testing-property-validation-patch
     test('property: patch payloads never 500', () async {
       final client = TestClient.inMemory(harness.requestHandler);
 
+      // #region testing-property-validation-patch-runner
       final payloadGen = Gen.oneOfGen([
         Gen.constant(<String, dynamic>{'summary': 'A short note.'}),
         Gen.constant(<String, dynamic>{'title': 'Edge Title'}),
@@ -173,11 +193,13 @@ void main() {
         expect(response.statusCode, anyOf([200, 400, 404]));
         expect(response.statusCode, lessThan(500));
       }, PropertyConfig(numTests: 120, maxShrinks: 30));
+      // #endregion testing-property-validation-patch-runner
 
       final report = await runner.run();
       await client.close();
       expect(report.success, isTrue, reason: report.report);
     });
+    // #endregion testing-property-validation-patch
     // #endregion testing-property-validation
 
     // #region testing-property-web
@@ -203,6 +225,7 @@ void main() {
     test('property: upload validation never 500', () async {
       final client = TestClient.inMemory(harness.requestHandler);
 
+      // #region testing-property-upload-payload
       final titleGen = Chaos.string(minLength: 0, maxLength: 10);
       final yearGen = Chaos.integer(min: 0, max: 3000);
 
@@ -211,7 +234,9 @@ void main() {
           return {'title': title, 'releaseYear': year, 'genreId': ''};
         }),
       );
+      // #endregion testing-property-upload-payload
 
+      // #region testing-property-upload-runner
       final runner = PropertyTestRunner<Map<String, dynamic>>(payloadGen, (
         payload,
       ) async {
@@ -227,6 +252,7 @@ void main() {
         expect(response.statusCode, anyOf([302, 400]));
         expect(response.statusCode, lessThan(500));
       }, PropertyConfig(numTests: 120, maxShrinks: 30));
+      // #endregion testing-property-upload-runner
 
       final report = await runner.run();
       await client.close();

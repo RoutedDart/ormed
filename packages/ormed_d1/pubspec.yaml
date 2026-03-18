@@ -1,0 +1,27 @@
+name: ormed_d1
+description: Cloudflare D1 adapter for Ormed using SQLite-compatible SQL compilation.
+version: 0.1.0
+repository: https://github.com/RoutedDart/ormed
+issue_tracker: https://github.com/RoutedDart/ormed/issues
+documentation: https://ormed.vercel.app/
+funding:
+  - https://www.buymeacoffee.com/kingwill101
+topics:
+  - orm
+  - database
+  - d1
+  - sqlite
+resolution: workspace
+
+environment:
+  sdk: ">=3.10.0 <4.0.0"
+
+dependencies:
+  http: ^1.2.2
+  ormed: ^0.2.0
+  ormed_sqlite_core: ^0.1.0
+
+dev_dependencies:
+  driver_tests: ^0.2.0
+  lints: ^6.0.0
+  test: ^1.28.0

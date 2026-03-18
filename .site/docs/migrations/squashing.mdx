@@ -6,6 +6,25 @@ sidebar_position: 4
 
 As your application grows, you may accumulate hundreds of migration files. Squashing compresses all migrations into a single SQL schema file, speeding up test database creation and simplifying your migrations directory.
 
+## Prerequisites
+
+- [Migrations Overview](./overview)
+- [Schema tooling (CLI)](../cli/schema)
+
+## What You’ll Learn
+
+- How schema dumps accelerate fresh environment setup
+- How and when to prune migration files safely
+- How squashing interacts with existing migration ledgers
+
+## Step Outcome
+
+By the end of this page, you should be able to:
+
+- Create schema dumps intentionally for faster bootstrap
+- Decide when pruning is safe for your team/release process
+- Understand how dump loading interacts with migration ledger state
+
 ## Creating a Schema Dump
 
 ```bash
@@ -33,6 +52,8 @@ Only use `--prune` after ensuring:
 - All team members have pulled the latest changes
 - Your CI/CD pipeline is updated
 :::
+
+Treat pruning as a release operation, not a daily workflow.
 
 ## How It Works
 
@@ -81,6 +102,12 @@ migrations:
 - **Test first** in dev/staging before pruning in production
 - **Document** when dumps were created and which migration they represent
 
+## Verify Squash Safety
+
+1. Bootstrap a fresh DB from dump in CI/staging.
+2. Apply post-dump migrations successfully.
+3. Confirm existing environments with non-empty ledgers still migrate normally.
+
 ## Database Support
 
 | Database | Method |
@@ -90,3 +117,9 @@ migrations:
 | MySQL | `mysqldump` |
 
 The CLI automatically uses the appropriate database-specific tools.
+
+## Read This Next
+
+- [Running Migrations](./running-migrations)
+- [Schema tooling (CLI)](../cli/schema)
+- [Testing Guide](../guides/testing)

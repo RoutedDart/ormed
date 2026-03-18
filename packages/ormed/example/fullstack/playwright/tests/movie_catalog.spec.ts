@@ -1,4 +1,6 @@
 import { expect, test } from '@playwright/test';
+
+// #region testing-playwright-helper-create-movie
 // @ts-ignore
 async function createMovie(page, title: string) {
   await page.goto('/movies/new');
@@ -12,24 +14,34 @@ async function createMovie(page, title: string) {
   await page.click('button[type="submit"]');
   await expect(page.getByRole('heading', { name: title })).toBeVisible();
 }
+// #endregion testing-playwright-helper-create-movie
+
+// #region testing-playwright-catalog
 // @ts-ignore
 test('catalog page renders', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('heading', { name: 'Movie Catalog' })).toBeVisible();
   await expect(page.getByText('City of Amber')).toBeVisible();
 });
+// #endregion testing-playwright-catalog
+
+// #region testing-playwright-create
 // @ts-ignore
 test('can add a movie from the form', async ({ page }) => {
   await createMovie(page, 'Shoreline Echoes');
 });
+// #endregion testing-playwright-create
 
+// #region testing-playwright-genre
 // @ts-ignore
 test('genre detail shows catalog entries', async ({ page }) => {
   await page.goto('/genres/1');
   await expect(page.getByRole('heading', { name: 'Drama' })).toBeVisible();
   await expect(page.getByText('Ashes in Winter')).toBeVisible();
 });
+// #endregion testing-playwright-genre
 
+// #region testing-playwright-edit
 // @ts-ignore
 test('can edit a movie summary', async ({ page }) => {
   const title = `Edit Trail ${Date.now()}`;
@@ -41,7 +53,9 @@ test('can edit a movie summary', async ({ page }) => {
 
   await expect(page.getByText('A revised logline for the archive.')).toBeVisible();
 });
+// #endregion testing-playwright-edit
 
+// #region testing-playwright-delete
 // @ts-ignore
 test('can delete a movie from the UI', async ({ page }) => {
   const title = `Delete Trail ${Date.now()}`;
@@ -54,3 +68,4 @@ test('can delete a movie from the UI', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Movie Catalog' })).toBeVisible();
   await expect(page.getByText(title)).toHaveCount(0);
 });
+// #endregion testing-playwright-delete

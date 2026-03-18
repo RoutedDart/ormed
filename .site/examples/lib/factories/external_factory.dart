@@ -5,7 +5,7 @@ import 'package:ormed/ormed.dart';
 
 import '../models/factory_user.dart';
 import '../models/factory_user.orm.dart';
-import '../orm_registry.g.dart';
+import 'package:ormed_examples/src/database/orm_registry.g.dart';
 
 // #region factory-external-definition
 class FactoryUserFactory extends ModelFactoryDefinition<FactoryUser> {

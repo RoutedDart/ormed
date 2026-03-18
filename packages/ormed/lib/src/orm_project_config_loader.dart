@@ -3,10 +3,10 @@ library;
 
 import 'dart:io';
 
-import 'package:dotenv/dotenv.dart' as dotenv;
 import 'package:meta/meta.dart';
 import 'package:yaml/yaml.dart';
 
+import 'environment.dart';
 import 'orm_project_config.dart';
 
 /// Finds the `ormed.yaml` file by searching from [startDirectory] up to the
@@ -82,13 +82,7 @@ Object? expandEnv(Object? value, Map<String, String> environment) =>
     _expandEnv(value, environment);
 
 Map<String, String> _loadEnv(Directory directory) {
-  final env = dotenv.DotEnv(includePlatformEnvironment: true, quiet: true);
-  final candidate = File('${directory.path}/.env');
-  env.load(candidate.existsSync() ? [candidate.path] : const <String>[]);
-  // DotEnv exposes the merged map; ignore visibility lint because this is the
-  // supported way to read loaded values.
-  // ignore: invalid_use_of_visible_for_testing_member
-  return Map<String, String>.from(env.map);
+  return OrmedEnvironment.fromDirectory(directory).values;
 }
 
 Object? _expandEnv(Object? value, Map<String, String> environment) {
@@ -107,12 +101,6 @@ Object? _expandEnv(Object? value, Map<String, String> environment) {
   return value;
 }
 
-final RegExp _envPattern = RegExp(r'\$\{([^}:]+)(:-([^}]*))?\}');
-
 String _expandString(String input, Map<String, String> environment) {
-  return input.replaceAllMapped(_envPattern, (match) {
-    final key = match.group(1)!;
-    final fallback = match.group(3);
-    return environment[key] ?? (fallback ?? '');
-  });
+  return OrmedEnvironment(environment).interpolate(input);
 }

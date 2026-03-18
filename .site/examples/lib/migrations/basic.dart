@@ -151,4 +151,5 @@ class AddTimestampsToPosts extends Migration {
     });
   }
 }
+
 // #endregion timestamps-migration

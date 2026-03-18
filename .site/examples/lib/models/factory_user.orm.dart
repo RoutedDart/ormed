@@ -194,8 +194,7 @@ class FactoryUserModelFactory {
 
   static ModelFactoryBuilder<FactoryUser> factory({
     GeneratorProvider? generatorProvider,
-  }) => ModelFactoryBuilder<FactoryUser>(
-    definition: definition,
+  }) => ModelFactoryRegistry.factoryFor<FactoryUser>(
     generatorProvider: generatorProvider,
   );
 }
@@ -388,8 +387,8 @@ class $FactoryUser extends FactoryUser
     with ModelAttributes
     implements OrmEntity {
   /// Internal constructor for [$FactoryUser].
-  $FactoryUser({int id = 0, required String email, String? name})
-    : super.new(id: id, email: email, name: name) {
+  $FactoryUser({required int id, required String email, String? name})
+    : super(id: id, email: email, name: name) {
     _attachOrmRuntimeMetadata({'id': id, 'email': email, 'name': name});
   }
 
@@ -455,7 +454,7 @@ extension FactoryUserOrmExtension on FactoryUser {
     Object? email = _copyWithSentinel,
     Object? name = _copyWithSentinel,
   }) {
-    return FactoryUser.new(
+    return FactoryUser(
       id: identical(id, _copyWithSentinel) ? this.id : id as int,
       email: identical(email, _copyWithSentinel) ? this.email : email as String,
       name: identical(name, _copyWithSentinel) ? this.name : name as String?,

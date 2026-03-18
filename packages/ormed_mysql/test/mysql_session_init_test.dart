@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:ormed/ormed.dart';
 import 'package:ormed_mysql/ormed_mysql.dart';
 import 'package:test/test.dart';
@@ -7,7 +5,7 @@ import 'package:test/test.dart';
 void main() {
   test('session and init options apply on connect', () async {
     final url =
-        Platform.environment['MYSQL_URL'] ??
+        OrmedEnvironment().firstNonEmpty(['MYSQL_URL']) ??
         'mysql://root:secret@localhost:6605/orm_test';
     final connectionInfo = MySqlConnectionInfo.fromUrl(
       url,
@@ -43,7 +41,7 @@ void main() {
 
   test('rejects invalid session option keys', () async {
     final url =
-        Platform.environment['MYSQL_URL'] ??
+        OrmedEnvironment().firstNonEmpty(['MYSQL_URL']) ??
         'mysql://root:secret@localhost:6605/orm_test';
     final connectionInfo = MySqlConnectionInfo.fromUrl(
       url,
@@ -72,7 +70,7 @@ void main() {
 
   test('rejects session option keys not in allowlist', () async {
     final url =
-        Platform.environment['MYSQL_URL'] ??
+        OrmedEnvironment().firstNonEmpty(['MYSQL_URL']) ??
         'mysql://root:secret@localhost:6605/orm_test';
     final connectionInfo = MySqlConnectionInfo.fromUrl(
       url,
@@ -102,7 +100,7 @@ void main() {
 
   test('accepts allowlisted session option keys', () async {
     final url =
-        Platform.environment['MYSQL_URL'] ??
+        OrmedEnvironment().firstNonEmpty(['MYSQL_URL']) ??
         'mysql://root:secret@localhost:6605/orm_test';
     final connectionInfo = MySqlConnectionInfo.fromUrl(
       url,

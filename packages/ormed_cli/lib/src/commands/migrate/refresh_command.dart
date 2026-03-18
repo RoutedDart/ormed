@@ -48,7 +48,7 @@ class RefreshCommand extends RunnerCommand {
     final seederOverride = argResults?['seeder'] as String?;
 
     if (!confirmToProceed(force: force, action: 'refresh the database')) {
-      cliIO.warning('Refresh cancelled.');
+      cliIO.warn('Refresh cancelled.');
       return;
     }
 
@@ -78,7 +78,7 @@ class RefreshCommand extends RunnerCommand {
     if (seed || seederOverride != null) {
       final seeds = config.seeds;
       if (seeds == null) {
-        cliIO.warning('No seeds configuration found. Skipping seeder.');
+        cliIO.warn('No seeds configuration found. Skipping seeder.');
       } else {
         cliIO.info('Running seeders...');
         await runSeedRegistry(

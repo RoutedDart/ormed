@@ -1,0 +1,6 @@
+concurrency: 1
+tags:
+  integration:
+    timeout: 3m
+  shared:
+    timeout: 10m

@@ -55,6 +55,16 @@ class CreatePostsTable extends Migration {
 
 void main() {
   group('MigrationEntry', () {
+    test('named constructor parses the migration id string', () {
+      final entry = MigrationEntry.named(
+        'm_20251130100000_create_users',
+        const CreateUsersTable(),
+      );
+
+      expect(entry.id.toString(), 'm_20251130100000_create_users');
+      expect(entry.migration, isA<CreateUsersTable>());
+    });
+
     test('buildDescriptors sorts migrations by timestamp (oldest first)', () {
       // Create entries in random order
       final entries = [

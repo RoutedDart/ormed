@@ -8,6 +8,27 @@ import TabItem from '@theme/TabItem';
 # Model Scopes
 
 Scopes package reusable query constraints on a model. Ormed supports:
+
+## Prerequisites
+
+- [Defining Models](./defining-models)
+- [Query Builder](../queries/query-builder)
+
+## What You’ll Learn
+
+- How to define global and local scopes
+- How generated and inline scopes differ
+- How scope registration affects query behavior across the app
+
+## Step Outcome
+
+By the end of this page, you should be able to:
+
+- Register generated scopes correctly during bootstrap
+- Apply local scopes for reusable query constraints
+- Disable global scopes intentionally in exceptional flows
+
+Ormed supports:
 - **Generated scopes** (declared on the model with `@OrmScope`)
 - **Inline scopes** (registered at runtime on a `ScopeRegistry`)
 
@@ -78,3 +99,20 @@ Apply them via `scope('name', args)` (and disable globals the same way as genera
 - **Global scopes must be argument-free** (beyond the initial `Query<T>`).
 - Identifiers default to the method name; override with `@OrmScope(identifier: 'custom')` when needed.
 
+## Practical Guidance
+
+- Use global scopes only for always-on constraints (for example soft-delete filters).
+- Use local scopes for business filters reused across endpoints.
+- Prefer explicit scope names that describe intent (`active`, `recent`, `forTenant`).
+
+## Verify Scope Behavior
+
+1. Test that global scopes apply automatically.
+2. Test `withoutGlobalScope(...)` for override paths.
+3. Test local scope arguments (positional + named) in queries.
+
+## Read This Next
+
+- [Query Builder](../queries/query-builder)
+- [Repository](../queries/repository)
+- [Model Events](./events)

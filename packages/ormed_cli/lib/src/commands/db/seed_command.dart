@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:artisanal/artisanal.dart';
+import 'package:path/path.dart' as p;
 
 import '../../config.dart';
 import '../base/shared.dart';
@@ -9,7 +12,8 @@ class SeedCommand extends Command<void> {
       ..addOption(
         'config',
         abbr: 'c',
-        help: 'Path to ormed.yaml (defaults to project root).',
+        help:
+            'Path to ormed.yaml (optional; convention defaults are used when omitted).',
       )
       ..addOption(
         'database',
@@ -19,7 +23,7 @@ class SeedCommand extends Command<void> {
       ..addOption(
         'connection',
         help:
-            'Select a specific connection block defined in ormed.yaml (defaults to default_connection or the only entry).',
+            'Select a specific connection block defined in ormed.yaml when present (defaults to default_connection or the only entry).',
       )
       ..addMultiOption(
         'class',
@@ -45,7 +49,8 @@ class SeedCommand extends Command<void> {
   String get name => 'seed';
 
   @override
-  String get description => 'Run database seeders defined in ormed.yaml.';
+  String get description =>
+      'Run database seeders from the configured (or default) registry.';
 
   @override
   Future<void> run() async {
@@ -58,16 +63,57 @@ class SeedCommand extends Command<void> {
     final databaseOverride = argResults?['database'] as String?;
     final connectionOverride = argResults?['connection'] as String?;
 
-    final project = resolveOrmProject(configPath: configArg);
-    var config = loadOrmProjectConfig(project.configFile);
+    final resolved = resolveOrmProjectConfig(configPath: configArg);
+    var config = resolved.config;
     if (connectionOverride != null && connectionOverride.trim().isNotEmpty) {
       config = config.withConnection(connectionOverride);
+    }
+    final project = OrmProjectContext(
+      root: resolved.root,
+      configFile: resolved.configFile,
+    );
+    var bootstrappedSeedScaffold = false;
+    if (!resolved.hasConfigFile) {
+      printConfigFallbackNotice();
     }
     final seeds = config.seeds;
     if (seeds == null) {
       usageException(
-        'ormed.yaml missing seeds configuration. Run `ormed init` to scaffold seeds or add a `seeds` block.',
+        'Missing seeds configuration. Run `ormed init --only=seeders` or add a `seeds` block to ormed.yaml.',
       );
+    }
+    if (projectSeederRunner is ProcessProjectSeederRunner) {
+      final registryFile = File(resolvePath(project.root, seeds.registry));
+      final seedersDir = Directory(resolvePath(project.root, seeds.directory));
+      if (!registryFile.existsSync()) {
+        if (!hasSeederSources(seedersDir)) {
+          final changed = ensureSeedScaffoldIfMissing(
+            root: project.root,
+            seeds: seeds,
+            packageName: getPackageName(project.root),
+          );
+          if (changed) {
+            bootstrappedSeedScaffold = true;
+            cliIO.note(
+              'Bootstrapped seed scaffolding at ${p.relative(seedersDir.path, from: project.root.path)}.',
+            );
+          }
+        }
+      }
+      final refreshedRegistry = File(resolvePath(project.root, seeds.registry));
+      if (!refreshedRegistry.existsSync()) {
+        usageException(
+          'Seed registry ${registryFile.path} not found, but seeder files exist in ${seedersDir.path}. '
+          'Run `ormed init --only=seeders --populate-existing` to scaffold and register seeders.',
+        );
+      }
+    }
+
+    if (bootstrappedSeedScaffold) {
+      cliIO.note(
+        'Seed scaffold was created. Run `dart run build_runner build` then rerun `ormed seed`.',
+      );
+      return;
     }
 
     final classes = targetClasses.isEmpty ? null : targetClasses;
@@ -86,7 +132,7 @@ class SeedCommand extends Command<void> {
     }
 
     if (!confirmToProceed(force: force)) {
-      cliIO.warning('Seeding cancelled.');
+      cliIO.warn('Seeding cancelled.');
       return;
     }
 

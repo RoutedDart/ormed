@@ -7,18 +7,33 @@ import TabItem from '@theme/TabItem';
 
 # Repository
 
-Repositories provide CRUD operations with flexible input handling, accepting tracked models, DTOs, or raw maps.
+Repositories give you model-oriented CRUD with predictable defaults. They accept tracked models, DTOs, and raw maps, so you can start simple and add type safety as your app grows.
+
+## Prerequisites
+
+- [Query Builder](./query-builder)
+- [Defining Models](../models/defining-models)
+
+## What You’ll Learn
+
+- How to perform insert/read/update/delete flows with repository APIs
+- Which input shapes each operation accepts
+- When repository APIs are a better fit than lower-level query composition
+
+## Step Outcome
+
+By the end of this page, you should be able to implement common write workflows with `repo<T>()` and know when to switch to query builder methods.
 
 :::note Snippet context
 - Snippets focus on repository calls and omit full setup.
 - You can obtain a repository from either:
-  - a `DataSource`/`QueryContext` (explicit, recommended for multi-database flows), or
-  - the generated model helper class (uses the default connection).
-
-The default connection is tracked by `ConnectionManager` and is typically set when you call `await dataSource.init()` (first one auto-defaults) or `dataSource.setAsDefault()`.
+  - a `DataSource`/`QueryContext` (explicit, recommended for multi-database apps), or
+  - generated model helpers (uses the default connection).
+  
+The default connection is managed by `ConnectionManager` and is usually set when you call `await dataSource.init()`.
 :::
 
-## Getting a Repository
+## 1. Get a Repository
 
 <Tabs groupId="repo-get" defaultValue="default">
   <TabItem value="default" label="Default connection">
@@ -35,58 +50,55 @@ The default connection is tracked by `ConnectionManager` and is typically set wh
   </TabItem>
 </Tabs>
 
-## Insert Operations
+Use default helpers for single-connection apps. Use `dataSource.repo<T>()` when routing queries by connection name/tenant.
 
-### Insert Single
+## 2. Insert Records
+
+### Insert one row
 
 ```dart file=../../examples/lib/repository.dart#repo-insert
 
 ```
 
-### Insert Many
+### Insert many rows
 
 ```dart file=../../examples/lib/repository.dart#repo-insert-many
 
 ```
 
-### Upsert (Insert or Update)
+### Upsert (insert-or-update)
 
 ```dart file=../../examples/lib/repository.dart#repo-upsert
 
 ```
 
-## Find Operations
+## 3. Read Records
 
 ### Find by Primary Key
 
 ```dart file=../../examples/lib/repository.dart#repo-find
 ```
 
-### Get All
+### First, count, and exists
 
 ```dart file=../../examples/lib/repository.dart#repo-first-count
 ```
 
-### Count & Exists
+## 4. Update Records
 
-```dart file=../../examples/lib/repository.dart#repo-first-count
-```
-
-## Update Operations
-
-### Update Single
+### Update one model or one matched row
 
 ```dart file=../../examples/lib/repository.dart#repo-update
 
 ```
 
-### Update Many
+### Update many rows/models
 
 ```dart file=../../examples/lib/repository.dart#repo-update-many
 
 ```
 
-### Where Parameter Types
+### `where` accepts multiple input types
 
 The `where` parameter accepts various input types:
 
@@ -94,47 +106,66 @@ The `where` parameter accepts various input types:
 
 ```
 
-### Typed Where Callbacks
+### Typed callback predicates
 
 ```dart file=../../examples/lib/repository.dart#repo-where-typed
 ```
 
 :::caution Important
-When using a callback function for `where`, the parameter is `dynamic` unless you
-explicitly type it. Untyped callbacks still work, but you lose static checking.
-If you want typed predicate field accessors, type the parameter.
+When using a callback for `where`, the parameter is `dynamic` unless you explicitly type it.
+Untyped callbacks still run, but you lose static checking.
 ```dart file=../../examples/lib/repository.dart#repo-where-typing-caution
 ```
 :::
 
-## Delete Operations
+## 5. Delete and Restore
 
-### Delete Single
+### Delete one record
 
 ```dart file=../../examples/lib/repository.dart#repo-delete
 
 ```
 
-### Delete Many
+### Delete many records
 
 ```dart file=../../examples/lib/repository.dart#repo-delete-many
 
 ```
 
-## Soft Delete Operations
+### Soft delete helpers
 
-For models with `SoftDeletes`:
+For models that include `SoftDeletes`:
 
 ```dart file=../../examples/lib/repository.dart#repo-soft-delete
 ```
 
-## Working with Relations
+## 6. Relation and Error Workflows
+
+### Relation loading from repository-fetched models
 
 ```dart file=../../examples/lib/repository.dart#repo-relations
 ```
 
-## Error Handling
+### Error handling patterns
 
 ```dart file=../../examples/lib/repository.dart#repo-errors
 
 ```
+
+## 7. When to Use Repository vs Query Builder
+
+- Prefer `Repository` for CRUD operations tied to one model type.
+- Prefer `Query Builder` for complex filtering, joins, projections, aggregates, and SQL-shape control.
+- Combine them freely: read with query builder, mutate with repository.
+
+## Verify Your Setup
+
+- You can fetch a repository from both default helpers and `DataSource`.
+- You can insert/update/delete without dropping to raw SQL.
+- Your `where` callbacks are typed where predicate fields are used.
+
+## Read This Next
+
+- [Query Builder](./query-builder)
+- [Loading Relations](./relations)
+- [DataSource](./data-source)

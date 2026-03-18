@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.0
+- **Added**: `DataSourceOptions.mysql(...)` and `ModelRegistry.mySqlDataSource(...)` extension helpers for code-first MySQL setup.
+- **Docs**: Added usage guidance for the new MySQL datasource helpers.
+
 ## 0.1.0
 
 - **Release**: Promote ormed_mysql to the stable 0.1.0 line.

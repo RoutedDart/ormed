@@ -1,0 +1,63 @@
+set shell := ["bash", "-lc"]
+
+default: test
+
+# Run unit tests only.
+test:
+	dart test --exclude-tags integration --fail-fast
+
+# Run D1 integration tests (requires D1_* env vars).
+test-integration:
+	if [[ -f .env || -p .env ]]; then set -a; source .env; set +a; fi; \
+	D1_ACCOUNT_ID="${D1_ACCOUNT_ID:-${CF_ACCOUNT_ID:-}}" \
+	D1_DATABASE_ID="${D1_DATABASE_ID:-}" \
+	D1_API_TOKEN="${D1_API_TOKEN:-${D1_SECRET:-}}" \
+	D1_BASE_URL="${D1_BASE_URL:-https://api.cloudflare.com/client/v4}" \
+	D1_DEBUG_LOG="${D1_DEBUG_LOG:-1}" \
+	D1_RETRY_ATTEMPTS="${D1_RETRY_ATTEMPTS:-5}" \
+	D1_REQUEST_TIMEOUT_MS="${D1_REQUEST_TIMEOUT_MS:-30000}" \
+	D1_RETRY_BASE_DELAY_MS="${D1_RETRY_BASE_DELAY_MS:-250}" \
+	D1_RETRY_MAX_DELAY_MS="${D1_RETRY_MAX_DELAY_MS:-3000}" \
+	dart test --tags integration --exclude-tags shared --concurrency 1 --timeout 3m --fail-fast
+
+# Run shared D1 driver tests only (slow).
+test-shared:
+	if [[ -f .env || -p .env ]]; then set -a; source .env; set +a; fi; \
+	D1_ACCOUNT_ID="${D1_ACCOUNT_ID:-${CF_ACCOUNT_ID:-}}" \
+	D1_DATABASE_ID="${D1_DATABASE_ID:-}" \
+	D1_API_TOKEN="${D1_API_TOKEN:-${D1_SECRET:-}}" \
+	D1_BASE_URL="${D1_BASE_URL:-https://api.cloudflare.com/client/v4}" \
+	D1_DEBUG_LOG="${D1_DEBUG_LOG:-1}" \
+	D1_RETRY_ATTEMPTS="${D1_RETRY_ATTEMPTS:-5}" \
+	D1_REQUEST_TIMEOUT_MS="${D1_REQUEST_TIMEOUT_MS:-30000}" \
+	D1_RETRY_BASE_DELAY_MS="${D1_RETRY_BASE_DELAY_MS:-250}" \
+	D1_RETRY_MAX_DELAY_MS="${D1_RETRY_MAX_DELAY_MS:-3000}" \
+	dart test test/d1_driver_shared_test.dart --tags integration --concurrency 1 --timeout 10m --fail-fast
+
+# Verify both DataSource initialization approaches against D1.
+verify-datasource:
+	if [[ -f .env || -p .env ]]; then set -a; source .env; set +a; fi; \
+	D1_ACCOUNT_ID="${D1_ACCOUNT_ID:-${CF_ACCOUNT_ID:-}}" \
+	D1_DATABASE_ID="${D1_DATABASE_ID:-}" \
+	D1_API_TOKEN="${D1_API_TOKEN:-${D1_SECRET:-}}" \
+	D1_BASE_URL="${D1_BASE_URL:-https://api.cloudflare.com/client/v4}" \
+	D1_DEBUG_LOG="${D1_DEBUG_LOG:-1}" \
+	D1_RETRY_ATTEMPTS="${D1_RETRY_ATTEMPTS:-5}" \
+	D1_REQUEST_TIMEOUT_MS="${D1_REQUEST_TIMEOUT_MS:-30000}" \
+	D1_RETRY_BASE_DELAY_MS="${D1_RETRY_BASE_DELAY_MS:-250}" \
+	D1_RETRY_MAX_DELAY_MS="${D1_RETRY_MAX_DELAY_MS:-3000}" \
+	dart run example/data_source_verification.dart both
+
+# Verify generated model helpers (Users.repo/query) against D1.
+verify-generated-helpers:
+	if [[ -f .env || -p .env ]]; then set -a; source .env; set +a; fi; \
+	D1_ACCOUNT_ID="${D1_ACCOUNT_ID:-${CF_ACCOUNT_ID:-}}" \
+	D1_DATABASE_ID="${D1_DATABASE_ID:-}" \
+	D1_API_TOKEN="${D1_API_TOKEN:-${D1_SECRET:-}}" \
+	D1_BASE_URL="${D1_BASE_URL:-https://api.cloudflare.com/client/v4}" \
+	D1_DEBUG_LOG="${D1_DEBUG_LOG:-1}" \
+	D1_RETRY_ATTEMPTS="${D1_RETRY_ATTEMPTS:-5}" \
+	D1_REQUEST_TIMEOUT_MS="${D1_REQUEST_TIMEOUT_MS:-30000}" \
+	D1_RETRY_BASE_DELAY_MS="${D1_RETRY_BASE_DELAY_MS:-250}" \
+	D1_RETRY_MAX_DELAY_MS="${D1_RETRY_MAX_DELAY_MS:-3000}" \
+	dart run example/generated_helpers_verification.dart

@@ -99,6 +99,9 @@ final ModelDefinition<$Genre> _$GenreDefinition = ModelDefinition(
     fillable: const <String>[],
     guarded: const <String>[],
     casts: const <String, String>{},
+    appends: const <String>[],
+    touches: const <String>[],
+    timestamps: true,
     softDeletes: false,
     softDeleteColumn: 'deleted_at',
   ),
@@ -165,6 +168,18 @@ class Genres {
   /// {@macro ormed.repository}
   static Repository<$Genre> repo([String? connection]) =>
       Model.repository<$Genre>(connection: connection);
+
+  /// Builds a tracked model from a column/value map.
+  static $Genre fromMap(
+    Map<String, Object?> data, {
+    ValueCodecRegistry? registry,
+  }) => _$GenreDefinition.fromMap(data, registry: registry);
+
+  /// Converts a tracked model to a column/value map.
+  static Map<String, Object?> toMap(
+    $Genre model, {
+    ValueCodecRegistry? registry,
+  }) => _$GenreDefinition.toMap(model, registry: registry);
 }
 
 class GenreModelFactory {
@@ -192,8 +207,7 @@ class GenreModelFactory {
 
   static ModelFactoryBuilder<Genre> factory({
     GeneratorProvider? generatorProvider,
-  }) => ModelFactoryBuilder<Genre>(
-    definition: definition,
+  }) => ModelFactoryRegistry.factoryFor<Genre>(
     generatorProvider: generatorProvider,
   );
 }
@@ -469,12 +483,12 @@ class _GenrePartialCopyWithSentinel {
 class $Genre extends Genre with ModelAttributes implements OrmEntity {
   /// Internal constructor for [$Genre].
   $Genre({
-    int id = 0,
+    required int id,
     required String name,
     String? description,
     DateTime? createdAt,
     DateTime? updatedAt,
-  }) : super.new(
+  }) : super(
          id: id,
          name: name,
          description: description,
@@ -516,6 +530,16 @@ class $Genre extends Genre with ModelAttributes implements OrmEntity {
       updatedAt: updatedAt ?? this.updatedAt,
     );
   }
+
+  /// Builds a tracked model from a column/value map.
+  static $Genre fromMap(
+    Map<String, Object?> data, {
+    ValueCodecRegistry? registry,
+  }) => _$GenreDefinition.fromMap(data, registry: registry);
+
+  /// Converts this tracked model to a column/value map.
+  Map<String, Object?> toMap({ValueCodecRegistry? registry}) =>
+      _$GenreDefinition.toMap(this, registry: registry);
 
   /// Tracked getter for [id].
   @override
@@ -561,7 +585,45 @@ class $Genre extends Genre with ModelAttributes implements OrmEntity {
   }
 }
 
+class _GenreCopyWithSentinel {
+  const _GenreCopyWithSentinel();
+}
+
 extension GenreOrmExtension on Genre {
+  static const _GenreCopyWithSentinel _copyWithSentinel =
+      _GenreCopyWithSentinel();
+  Genre copyWith({
+    Object? id = _copyWithSentinel,
+    Object? name = _copyWithSentinel,
+    Object? description = _copyWithSentinel,
+    Object? createdAt = _copyWithSentinel,
+    Object? updatedAt = _copyWithSentinel,
+  }) {
+    return Genre(
+      id: identical(id, _copyWithSentinel) ? this.id : id as int,
+      name: identical(name, _copyWithSentinel) ? this.name : name as String,
+      description: identical(description, _copyWithSentinel)
+          ? this.description
+          : description as String?,
+      createdAt: identical(createdAt, _copyWithSentinel)
+          ? this.createdAt
+          : createdAt as DateTime?,
+      updatedAt: identical(updatedAt, _copyWithSentinel)
+          ? this.updatedAt
+          : updatedAt as DateTime?,
+    );
+  }
+
+  /// Converts this model to a column/value map.
+  Map<String, Object?> toMap({ValueCodecRegistry? registry}) =>
+      _$GenreDefinition.toMap(this, registry: registry);
+
+  /// Builds a model from a column/value map.
+  static Genre fromMap(
+    Map<String, Object?> data, {
+    ValueCodecRegistry? registry,
+  }) => _$GenreDefinition.fromMap(data, registry: registry);
+
   /// The Type of the generated ORM-managed model class.
   /// Use this when you need to specify the tracked model type explicitly,
   /// for example in generic type parameters.
@@ -573,6 +635,18 @@ extension GenreOrmExtension on Genre {
   $Genre toTracked() {
     return $Genre.fromModel(this);
   }
+}
+
+extension GenrePredicateFields on PredicateBuilder<Genre> {
+  PredicateField<Genre, int> get id => PredicateField<Genre, int>(this, 'id');
+  PredicateField<Genre, String> get name =>
+      PredicateField<Genre, String>(this, 'name');
+  PredicateField<Genre, String?> get description =>
+      PredicateField<Genre, String?>(this, 'description');
+  PredicateField<Genre, DateTime?> get createdAt =>
+      PredicateField<Genre, DateTime?>(this, 'createdAt');
+  PredicateField<Genre, DateTime?> get updatedAt =>
+      PredicateField<Genre, DateTime?>(this, 'updatedAt');
 }
 
 void registerGenreEventHandlers(EventBus bus) {

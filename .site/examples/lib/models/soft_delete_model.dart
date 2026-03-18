@@ -26,4 +26,5 @@ class SoftDeleteArticleTz extends Model<SoftDeleteArticleTz>
 
   final String title;
 }
+
 // #endregion soft-deletes-tz

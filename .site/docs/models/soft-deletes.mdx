@@ -6,6 +6,25 @@ sidebar_position: 4
 
 Soft deletes allow you to "delete" records by setting a timestamp rather than removing them from the database. This is useful for maintaining audit trails or implementing trash/restore functionality.
 
+## Prerequisites
+
+- [Defining Models](./defining-models)
+- [Query Builder](../queries/query-builder)
+
+## What You’ll Learn
+
+- How to enable soft-delete behavior in generated models
+- How soft-delete scopes affect default query behavior
+- How to restore and force-delete records safely
+
+## Step Outcome
+
+By the end of this page, you should be able to:
+
+- Enable soft deletes in model + migration layers
+- Query active vs trashed records intentionally
+- Restore or permanently delete records based on policy
+
 ## Enabling Soft Deletes
 
 Add the `SoftDeletes` marker mixin to your model:
@@ -61,6 +80,8 @@ Use `onlyTrashed()` to get only soft-deleted records:
 
 ```
 
+Use `withTrashed()` only where product behavior requires it. Keep default queries non-trashed for safety.
+
 ## Soft Delete Operations
 
 ### Deleting Records
@@ -86,6 +107,8 @@ Permanently remove a record (bypass soft delete):
 ```dart file=../../examples/lib/soft_deletes.dart#soft-delete-force
 
 ```
+
+Reserve `forceDelete` for explicit retention/cleanup flows.
 
 ## Checking Soft Delete Status
 
@@ -137,3 +160,16 @@ Migration:
 ```dart file=../../examples/lib/soft_deletes.dart#soft-delete-migration-combined
 
 ```
+
+## Read This Next
+
+- [Query Builder](../queries/query-builder)
+- [Repository](../queries/repository)
+- [Date and Time Handling](../guides/date-time)
+
+## Verify Soft Delete Behavior
+
+1. Delete a record and confirm it remains in DB with `deleted_at` set.
+2. Confirm default queries exclude it.
+3. Confirm `withTrashed`/`onlyTrashed` include it.
+4. Confirm restore + force-delete paths behave as expected.

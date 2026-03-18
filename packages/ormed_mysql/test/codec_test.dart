@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:ormed/ormed.dart';
 import 'package:driver_tests/driver_tests.dart';
 import 'package:ormed_mysql/ormed_mysql.dart';
@@ -7,7 +6,7 @@ import 'package:test/test.dart';
 void main() {
   test('JsonMapCodec is registered and works', () async {
     final url =
-        Platform.environment['MYSQL_URL'] ??
+        OrmedEnvironment().firstNonEmpty(['MYSQL_URL']) ??
         'mysql://root:secret@localhost:6605/orm_test';
 
     // Use the shared driver-test registry to ensure all models (including User)

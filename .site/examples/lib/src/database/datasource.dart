@@ -1,17 +1,33 @@
 import 'package:ormed/ormed.dart';
-import 'package:ormed_sqlite/ormed_sqlite.dart';
-import '../../orm_registry.g.dart';
 
-// #region datasource-entrypoint
-/// Creates a new DataSource instance using the project configuration.
-DataSource createDataSource() {
-  // Ensure the driver is registered
-  ensureSqliteDriverRegistration();
+import 'config.dart';
 
-  final config = loadOrmConfig();
-  return DataSource.fromConfig(
-    config,
-    registry: bootstrapOrm(),
-  );
+/// Creates a new DataSource using driver-specific helper options.
+// #region datasource-create-single
+DataSource createDataSource({DataSourceOptions? options, String? connection}) {
+  return DataSource(options ?? buildDataSourceOptions(connection: connection));
 }
-// #endregion datasource-entrypoint
+// #endregion datasource-create-single
+
+/// Creates DataSources for every generated connection.
+// #region datasource-create-multiple
+Map<String, DataSource> createDataSources({
+  Map<String, DataSourceOptions> overrides = const {},
+}) {
+  final sources = <String, DataSource>{};
+  for (final connection in generatedDataSourceConnections) {
+    final options =
+        overrides[connection] ?? buildDataSourceOptions(connection: connection);
+    sources[connection] = DataSource(options);
+  }
+  return sources;
+}
+// #endregion datasource-create-multiple
+
+/// Convenience helper for "default" connection.
+// #region datasource-create-default
+DataSource createDefaultDataSource({DataSourceOptions? options}) {
+  return DataSource(options ?? buildDefaultDataSourceOptions());
+}
+
+// #endregion datasource-create-default

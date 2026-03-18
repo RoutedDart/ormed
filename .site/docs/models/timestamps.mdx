@@ -9,6 +9,25 @@ import TabItem from '@theme/TabItem';
 
 Ormed provides automatic timestamp management for `created_at` and `updated_at` columns.
 
+## Prerequisites
+
+- [Defining Models](./defining-models)
+- [Migrations Overview](../migrations/overview)
+
+## What You’ll Learn
+
+- How timestamp mixins change generated tracked models
+- How `createdAt`/`updatedAt` behave with Carbonized types
+- How to configure timezone-aware timestamp usage
+
+## Step Outcome
+
+By the end of this page, you should be able to:
+
+- Enable timestamps consistently in models + migrations
+- Understand automatic timestamp updates on insert/update
+- Choose standard vs timezone-aware timestamp mixins
+
 ## Enabling Timestamps
 
 Add the `Timestamps` marker mixin to your model:
@@ -67,6 +86,8 @@ This ensures:
 - All timestamps are converted to UTC before storage
 - Timestamps remain in UTC when retrieved
 - Your application handles timezone conversion for display
+
+Prefer UTC storage for multi-region systems; localize only at presentation boundaries.
 
 ## Migration Setup
 
@@ -142,3 +163,15 @@ If you don't need automatic timestamps, simply don't include the mixin:
 ```dart file=../../examples/lib/models/log_model.dart#no-timestamps-model
 
 ```
+
+## Read This Next
+
+- [Query Builder](../queries/query-builder)
+- [Date and Time Handling](../guides/date-time)
+- [Soft Deletes](./soft-deletes)
+
+## Verify Timestamp Behavior
+
+1. Insert model and confirm both `created_at` + `updated_at` are set.
+2. Update model and confirm only `updated_at` changes.
+3. Validate timezone behavior (`Timestamps` vs `TimestampsTZ`) in your runtime.

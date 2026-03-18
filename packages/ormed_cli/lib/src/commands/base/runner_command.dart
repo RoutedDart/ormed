@@ -13,7 +13,8 @@ abstract class RunnerCommand extends Command<void> {
     argParser.addOption(
       'config',
       abbr: 'c',
-      help: 'Path to ormed.yaml (defaults to project root).',
+      help:
+          'Path to ormed.yaml (optional; convention defaults are used when omitted).',
     );
     argParser.addFlag(
       'preview',
@@ -38,7 +39,7 @@ abstract class RunnerCommand extends Command<void> {
     argParser.addOption(
       'connection',
       help:
-          'Select a specific connection block defined in ormed.yaml (defaults to default_connection or the only entry).',
+          'Select a specific connection block defined in ormed.yaml when present (defaults to default_connection or the only entry).',
     );
   }
 
@@ -59,12 +60,19 @@ abstract class RunnerCommand extends Command<void> {
     final connectionOverride = argResults?['connection'] as String?;
     final pathOverride = argResults?['path'] as String?;
     final realPath = argResults?['realpath'] == true;
-    final context = resolveOrmProject(configPath: configArg);
-    final root = context.root;
-    var config = loadOrmProjectConfig(context.configFile);
+    final resolved = resolveOrmProjectConfig(configPath: configArg);
+    final root = resolved.root;
+    var config = resolved.config;
+    if (!resolved.hasConfigFile) {
+      printConfigFallbackNotice();
+    }
     if (connectionOverride != null && connectionOverride.trim().isNotEmpty) {
       config = config.withConnection(connectionOverride);
     }
+    final context = OrmProjectContext(
+      root: root,
+      configFile: resolved.configFile,
+    );
     final effectiveConfig = databaseOverride == null
         ? config
         : config.updateActiveConnection(
@@ -84,7 +92,7 @@ abstract class RunnerCommand extends Command<void> {
       registryPath: registryPath,
     );
     if (migrations.isEmpty) {
-      cliIO.warning('No migrations found in registry.');
+      cliIO.warn('No migrations found in registry.');
       return;
     }
     final connectionHandle = await createConnection(root, effectiveConfig);

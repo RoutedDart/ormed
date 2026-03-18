@@ -140,8 +140,8 @@ class PlaygroundDatabase {
   }
 
   static String _defaultDatabasePath(Directory root) {
-    final override = Platform.environment['PLAYGROUND_DB'];
-    if (override != null && override.isNotEmpty) {
+    final override = OrmedEnvironment().firstNonEmpty(['PLAYGROUND_DB']);
+    if (override != null) {
       return p.normalize(override);
     }
     final workspaceDatabase = File(

@@ -122,7 +122,7 @@ class ApplyCommand extends RunnerCommand {
     );
 
     if (!confirmToProceed(force: force)) {
-      cliIO.warning('Migration cancelled.');
+      cliIO.warn('Migration cancelled.');
       return;
     }
 
@@ -135,7 +135,7 @@ class ApplyCommand extends RunnerCommand {
       }
     } catch (error) {
       if (graceful) {
-        cliIO.warning('$error');
+        cliIO.warn('$error');
         return;
       }
       rethrow;
@@ -144,8 +144,45 @@ class ApplyCommand extends RunnerCommand {
     if ((argResults?['seed'] == true) || argResults?['seeder'] != null) {
       if (seeds == null) {
         usageException(
-          'ormed.yaml missing seeds configuration. Add a `seeds` block before running --seed.',
+          'Missing seeds configuration. Run `ormed init --only=seeders` or add a `seeds` block to ormed.yaml before running --seed.',
         );
+      }
+      var bootstrappedSeedScaffold = false;
+      if (projectSeederRunner is ProcessProjectSeederRunner) {
+        final seedersDir = Directory(
+          resolvePath(project.root, seeds.directory),
+        );
+        final registryFile = File(resolvePath(project.root, seeds.registry));
+        if (!registryFile.existsSync()) {
+          if (!hasSeederSources(seedersDir)) {
+            final changed = ensureSeedScaffoldIfMissing(
+              root: project.root,
+              seeds: seeds,
+              packageName: getPackageName(project.root),
+            );
+            if (changed) {
+              bootstrappedSeedScaffold = true;
+              cliIO.note(
+                'Bootstrapped seed scaffolding because --seed was requested.',
+              );
+            }
+          }
+          final refreshedRegistry = File(
+            resolvePath(project.root, seeds.registry),
+          );
+          if (!refreshedRegistry.existsSync()) {
+            usageException(
+              'Seed registry ${registryFile.path} not found, but seeder files exist in ${seedersDir.path}. '
+              'Run `ormed init --only=seeders --populate-existing` before running --seed.',
+            );
+          }
+        }
+      }
+      if (bootstrappedSeedScaffold) {
+        cliIO.note(
+          'Seed scaffold was created. Run `dart run build_runner build` then rerun `ormed seed`.',
+        );
+        return;
       }
       final seederOverride = argResults?['seeder'] as String?;
       cliIO.info('Running seeders...');
@@ -255,7 +292,7 @@ Future<void> _previewMigrations({
     registryPath: registryPath,
   );
   if (migrations.isEmpty) {
-    cliIO.warning('No migrations found in registry.');
+    cliIO.warn('No migrations found in registry.');
     return;
   }
 

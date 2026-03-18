@@ -11,7 +11,7 @@ builders:
   orm_registry:
     import: 'package:ormed/src/builder/orm_registry_builder.dart'
     builder_factories: ['ormRegistryBuilder']
-    build_extensions: {'pubspec.yaml': ['lib/orm_registry.g.dart']}
+    build_extensions: {'pubspec.yaml': ['lib/src/database/orm_registry.g.dart']}
     auto_apply: dependents
     build_to: source
     required_inputs: ['lib/**/*.orm.dart']
