@@ -161,7 +161,7 @@ be used instead of `D1_SECRET`.
 From `packages/ormed_d1`:
 
 ```bash
-just test                 # unit tests
+just test                 # unit tests + shared driver suite (mock by default)
 just test-integration     # integration smoke tests (shared excluded)
 just test-shared          # shared driver tests (slow)
 just verify-datasource    # verifies both DataSource approaches
