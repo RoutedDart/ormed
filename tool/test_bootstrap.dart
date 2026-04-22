@@ -104,6 +104,7 @@ dependency_overrides:
   ormed: { path: "$ormedRoot/packages/ormed" }
   ormed_sqlite: { path: "$ormedRoot/packages/ormed_sqlite" }
   ormed_sqlite_core: { path: "$ormedRoot/packages/ormed_sqlite_core" }
+  ormed_sqlite_web: { path: "$ormedRoot/packages/ormed_sqlite_web" }
   ormed_d1: { path: "$ormedRoot/packages/ormed_d1" }
   ormed_cli: { path: "$ormedRoot/packages/ormed_cli" }
   ormed_postgres: { path: "$ormedRoot/packages/ormed_postgres" }
