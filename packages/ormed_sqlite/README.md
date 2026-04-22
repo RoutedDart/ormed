@@ -9,6 +9,7 @@ SQLite driver adapter for the ormed ORM. Implements the `DriverAdapter` contract
 ## Features
 
 - In-memory and file-based SQLite databases
+- Conditional web and Flutter web support through `sqlite3_web`
 - Full transaction support with nested savepoints
 - Schema introspection and migration support
 - JSON operations via SQLite's JSON1 extension
@@ -43,6 +44,52 @@ Future<void> main() async {
 Generated apps should use `ormed init` scaffolding (`lib/src/database/config.dart` +
 `datasource.dart`) as the primary runtime entrypoint.
 
+## Web and Flutter web
+
+The same `package:ormed_sqlite` import can be used on web builds. On web,
+`SqliteDriverAdapter` routes through the browser worker-backed implementation
+provided by `ormed_sqlite_web`.
+
+You must provide:
+
+- `workerUri`: the compiled JS worker entrypoint
+- `wasmUri`: a `sqlite3.wasm` file compatible with `package:sqlite3`
+
+```dart
+import 'package:ormed/ormed.dart';
+import 'package:ormed_sqlite/ormed_sqlite.dart';
+
+Future<void> main() async {
+  final registry = ModelRegistry();
+  final ds = DataSource(
+    registry.sqliteFileDataSourceOptions(
+      path: 'app.sqlite',
+      name: 'web',
+      workerUri: 'worker.js',
+      wasmUri: 'sqlite3.wasm',
+    ),
+  );
+
+  await ds.init();
+  await ds.connection.driver.executeRaw(
+    'CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, email TEXT NOT NULL)',
+  );
+  await ds.dispose();
+}
+```
+
+Worker entrypoint:
+
+```dart
+import 'package:ormed_sqlite/ormed_sqlite.dart';
+
+void main() {
+  runSqliteWebWorker();
+}
+```
+
+See [`example/web`](./example/web) for a complete browser example.
+
 ### Low-level adapter usage
 
 ```dart
@@ -69,6 +116,15 @@ SqliteDriverAdapter.inMemory()
 
 // File-based database
 SqliteDriverAdapter.file('/path/to/database.sqlite')
+
+// Web / Flutter web
+SqliteDriverAdapter.file(
+  'app.sqlite',
+  options: {
+    'workerUri': 'worker.js',
+    'wasmUri': 'sqlite3.wasm',
+  },
+)
 
 // Custom configuration
 SqliteDriverAdapter.custom(config: DatabaseConfig(
@@ -156,6 +212,21 @@ final users = await primary.query<\$User>().get();
 | Case-insensitive LIKE | ✅ |
 | Database management | ✅ |
 | Foreign key constraints | ✅ |
+
+## Web Example
+
+The package includes a browser example under [`example/web`](./example/web).
+
+From `packages/ormed_sqlite/`:
+
+```bash
+dart run example/tool/fetch_sqlite3_wasm.dart
+dart compile js example/web/main.dart -O4 -o example/web/main.js
+dart compile js example/web/worker.dart -O4 -o example/web/worker.js
+python3 -m http.server --directory example 8080
+```
+
+Then open `http://localhost:8080/web/`.
 
 ## Type Mappings
 

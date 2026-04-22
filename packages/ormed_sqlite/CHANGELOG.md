@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.0-wip
+- **Added**: Web and Flutter web support through the unified `ormed_sqlite` API backed by `ormed_sqlite_web`.
+- **Added**: Browser worker helper export and `example/web` setup for testing the web runtime.
+- **Changed**: `SqliteDriverAdapter` and datasource helpers now route to a browser implementation on web builds while preserving the native API on IO platforms.
+
 ## 0.2.0
 - **Added**: `DataSourceOptions.sqlite(...)` and `ModelRegistry.sqliteDataSource(...)` extension helpers for code-first SQLite configuration.
 - **Changed**: SQLite driver internals now reuse shared grammar/dialect/type-mapper/codec utilities from `ormed_sqlite_core`.
