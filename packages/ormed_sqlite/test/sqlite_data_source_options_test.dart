@@ -33,5 +33,26 @@ void main() {
       expect(dataSource.options.registry, same(registry));
       expect(dataSource.options.driver, isA<SqliteDriverAdapter>());
     });
+
+    test('passes through optional web driver settings', () {
+      final registry = ModelRegistry();
+
+      final options = registry.sqliteFileDataSourceOptions(
+        path: 'database/app.sqlite',
+        workerUri: 'worker.js',
+        wasmUri: 'sqlite3.wasm',
+        implementation: 'indexed_db_shared',
+        onlyOpenVfs: true,
+        driverOptions: const {'journal_mode': 'wal'},
+      );
+
+      final driver = options.driver as SqliteDriverAdapter;
+      expect(driver.options['path'], equals('database/app.sqlite'));
+      expect(driver.options['workerUri'], equals('worker.js'));
+      expect(driver.options['wasmUri'], equals('sqlite3.wasm'));
+      expect(driver.options['implementation'], equals('indexed_db_shared'));
+      expect(driver.options['onlyOpenVfs'], isTrue);
+      expect(driver.options['journal_mode'], equals('wal'));
+    });
   });
 }

@@ -1,0 +1,5 @@
+main.js
+worker.js
+*.js.deps
+*.js.map
+sqlite3.wasm

@@ -1,6 +1,6 @@
-name: ormed_sqlite
-description: SQLite adapter for the routed ORM driver interface.
-version: 0.3.0-wip
+name: ormed_sqlite_web
+description: Browser SQLite adapter for Ormed using sqlite3_web workers.
+version: 0.1.0
 repository: https://github.com/RoutedDart/ormed
 issue_tracker: https://github.com/RoutedDart/ormed/issues
 documentation: https://ormed.vercel.app/
@@ -10,6 +10,7 @@ topics:
   - orm
   - database
   - sqlite
+  - web
 resolution: workspace
 
 environment:
@@ -18,13 +19,9 @@ environment:
 dependencies:
   ormed: ^0.2.0
   ormed_sqlite_core: ^0.1.0
-  ormed_sqlite_web: ^0.1.0
   sqlite3: ^3.1.4
-  meta: ^1.17.0
-  path: ^1.9.1
+  sqlite3_web: ^0.7.0
 
 dev_dependencies:
   lints: ^6.0.0
-  build_runner: ^2.10.4
   test: ^1.28.0
-  driver_tests: ^0.2.0

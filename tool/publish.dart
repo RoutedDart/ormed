@@ -7,6 +7,7 @@ final packages = [
   'packages/ormed',
   'packages/driver_tests',
   'packages/ormed_sqlite_core',
+  'packages/ormed_sqlite_web',
   'packages/ormed_sqlite',
   'packages/ormed_d1',
   'packages/ormed_mysql',

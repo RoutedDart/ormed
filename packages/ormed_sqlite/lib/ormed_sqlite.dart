@@ -1,17 +1,21 @@
 /// SQLite adapter for the routed ORM driver interface.
 library;
 
-import 'dart:io';
-
 import 'package:ormed/ormed.dart';
-import 'package:path/path.dart' as p;
 
 import 'src/sqlite_adapter.dart';
+import 'src/sqlite_driver_registration.dart' as sqlite_registration;
 export 'src/sqlite_grammar.dart';
 export 'src/sqlite_adapter.dart';
 export 'src/sqlite_data_source_options.dart';
 export 'src/sqlite_connector.dart';
 export 'src/sqlite_codecs.dart';
+export 'package:ormed_sqlite_web/ormed_sqlite_web.dart'
+    show
+        SqliteWebLockToken,
+        SqliteWebStatementResult,
+        SqliteWebTransport,
+        runSqliteWebWorker;
 
 final _sqliteDriverRegistration = (() {
   DriverAdapterRegistry.register('sqlite', (config) {
@@ -22,32 +26,7 @@ final _sqliteDriverRegistration = (() {
       config: DatabaseConfig(driver: 'sqlite', options: options),
     );
   });
-
-  DriverRegistry.registerDriver('sqlite', ({
-    required Directory root,
-    required ConnectionManager manager,
-    required ModelRegistry registry,
-    required String connectionName,
-    required ConnectionDefinition definition,
-  }) {
-    final options = Map<String, Object?>.from(definition.driver.options);
-    final database = options['database']?.toString() ?? 'database.sqlite';
-    final resolved = p.normalize(p.join(root.path, database));
-    options['database'] = database;
-    options['path'] = resolved;
-    return registerSqliteOrmConnection(
-      name: connectionName,
-      database: DatabaseConfig(driver: 'sqlite', options: options),
-      registry: registry,
-      connection: ConnectionConfig(
-        name: connectionName,
-        database: resolved,
-        options: Map<String, Object?>.from(options),
-      ),
-      manager: manager,
-      singleton: true,
-    );
-  });
+  sqlite_registration.registerSqliteProjectDriver(registerSqliteOrmConnection);
   return null;
 })();
 

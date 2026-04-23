@@ -1,6 +1,7 @@
 library;
 
 import 'package:ormed/ormed.dart';
+import 'package:ormed_sqlite_web/ormed_sqlite_web.dart' show SqliteWebTransport;
 
 import 'sqlite_adapter.dart';
 
@@ -19,10 +20,29 @@ extension SqliteDataSourceRegistryExtensions on ModelRegistry {
     String carbonLocale = 'en_US',
     bool enableNamedTimezones = false,
     List<DriverExtension> driverExtensions = const [],
+    Map<String, Object?> driverOptions = const {},
+    String? workerUri,
+    String? wasmUri,
+    String implementation = 'recommended',
+    bool onlyOpenVfs = false,
+    SqliteWebTransport? transport,
   }) {
+    final effectiveOptions = _sqliteDriverOptions(
+      base: driverOptions,
+      workerUri: workerUri,
+      wasmUri: wasmUri,
+      implementation: implementation,
+      onlyOpenVfs: onlyOpenVfs,
+    );
+
     return DataSourceOptions(
       name: name,
-      driver: SqliteDriverAdapter.file(path, extensions: driverExtensions),
+      driver: SqliteDriverAdapter.file(
+        path,
+        extensions: driverExtensions,
+        options: effectiveOptions,
+        transport: transport,
+      ),
       registry: this,
       scopeRegistry: scopeRegistry,
       codecs: codecs,
@@ -48,10 +68,28 @@ extension SqliteDataSourceRegistryExtensions on ModelRegistry {
     String carbonLocale = 'en_US',
     bool enableNamedTimezones = false,
     List<DriverExtension> driverExtensions = const [],
+    Map<String, Object?> driverOptions = const {},
+    String? workerUri,
+    String? wasmUri,
+    String implementation = 'recommended',
+    bool onlyOpenVfs = false,
+    SqliteWebTransport? transport,
   }) {
+    final effectiveOptions = _sqliteDriverOptions(
+      base: driverOptions,
+      workerUri: workerUri,
+      wasmUri: wasmUri,
+      implementation: implementation,
+      onlyOpenVfs: onlyOpenVfs,
+    );
+
     return DataSourceOptions(
       name: name,
-      driver: SqliteDriverAdapter.inMemory(extensions: driverExtensions),
+      driver: SqliteDriverAdapter.inMemory(
+        extensions: driverExtensions,
+        options: effectiveOptions,
+        transport: transport,
+      ),
       registry: this,
       scopeRegistry: scopeRegistry,
       codecs: codecs,
@@ -78,6 +116,12 @@ extension SqliteDataSourceRegistryExtensions on ModelRegistry {
     String carbonLocale = 'en_US',
     bool enableNamedTimezones = false,
     List<DriverExtension> driverExtensions = const [],
+    Map<String, Object?> driverOptions = const {},
+    String? workerUri,
+    String? wasmUri,
+    String implementation = 'recommended',
+    bool onlyOpenVfs = false,
+    SqliteWebTransport? transport,
   }) {
     return DataSource(
       sqliteFileDataSourceOptions(
@@ -92,6 +136,12 @@ extension SqliteDataSourceRegistryExtensions on ModelRegistry {
         carbonLocale: carbonLocale,
         enableNamedTimezones: enableNamedTimezones,
         driverExtensions: driverExtensions,
+        driverOptions: driverOptions,
+        workerUri: workerUri,
+        wasmUri: wasmUri,
+        implementation: implementation,
+        onlyOpenVfs: onlyOpenVfs,
+        transport: transport,
       ),
     );
   }
@@ -108,6 +158,12 @@ extension SqliteDataSourceRegistryExtensions on ModelRegistry {
     String carbonLocale = 'en_US',
     bool enableNamedTimezones = false,
     List<DriverExtension> driverExtensions = const [],
+    Map<String, Object?> driverOptions = const {},
+    String? workerUri,
+    String? wasmUri,
+    String implementation = 'recommended',
+    bool onlyOpenVfs = false,
+    SqliteWebTransport? transport,
   }) {
     return DataSource(
       sqliteInMemoryDataSourceOptions(
@@ -121,7 +177,36 @@ extension SqliteDataSourceRegistryExtensions on ModelRegistry {
         carbonLocale: carbonLocale,
         enableNamedTimezones: enableNamedTimezones,
         driverExtensions: driverExtensions,
+        driverOptions: driverOptions,
+        workerUri: workerUri,
+        wasmUri: wasmUri,
+        implementation: implementation,
+        onlyOpenVfs: onlyOpenVfs,
+        transport: transport,
       ),
     );
   }
+}
+
+Map<String, Object?> _sqliteDriverOptions({
+  required Map<String, Object?> base,
+  String? workerUri,
+  String? wasmUri,
+  required String implementation,
+  required bool onlyOpenVfs,
+}) {
+  final options = <String, Object?>{...base};
+  if (workerUri != null && workerUri.isNotEmpty) {
+    options['workerUri'] = workerUri;
+  }
+  if (wasmUri != null && wasmUri.isNotEmpty) {
+    options['wasmUri'] = wasmUri;
+  }
+  if (implementation != 'recommended') {
+    options['implementation'] = implementation;
+  }
+  if (onlyOpenVfs) {
+    options['onlyOpenVfs'] = true;
+  }
+  return options;
 }
