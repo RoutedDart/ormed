@@ -4,6 +4,7 @@ final class FakeSqliteWebTransport implements SqliteWebTransport {
   FakeSqliteWebTransport({
     List<SqliteWebStatementResult>? executeResults,
     List<SqliteWebStatementResult>? queryResults,
+    this.executeError,
   }) : _executeResults = List<SqliteWebStatementResult>.from(
          executeResults ?? const <SqliteWebStatementResult>[],
        ),
@@ -13,6 +14,7 @@ final class FakeSqliteWebTransport implements SqliteWebTransport {
 
   final List<SqliteWebStatementResult> _executeResults;
   final List<SqliteWebStatementResult> _queryResults;
+  final Object? Function(String sql)? executeError;
 
   final List<String> executedSql = <String>[];
   final List<Object?> tokenHistory = <Object?>[];
@@ -33,6 +35,8 @@ final class FakeSqliteWebTransport implements SqliteWebTransport {
   ]) async {
     executedSql.add(sql);
     tokenHistory.add(token);
+    final error = executeError?.call(sql);
+    if (error != null) throw error;
     if (_executeResults.isEmpty) {
       return const SqliteWebStatementResult(affectedRows: 1);
     }

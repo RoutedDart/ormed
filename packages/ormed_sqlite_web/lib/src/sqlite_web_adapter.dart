@@ -109,9 +109,13 @@ class SqliteWebDriverAdapter extends SqliteRemoteAdapterBase
       final result = await action();
       await commitTransaction();
       return result;
-    } catch (_) {
-      await rollbackTransaction();
-      rethrow;
+    } catch (error, stackTrace) {
+      if (_transactionDepth > 0) {
+        try {
+          await rollbackTransaction();
+        } catch (_) {}
+      }
+      Error.throwWithStackTrace(error, stackTrace);
     }
   }
 
@@ -130,14 +134,15 @@ class SqliteWebDriverAdapter extends SqliteRemoteAdapterBase
       return;
     }
 
-    _transactionDepth++;
+    final nextDepth = _transactionDepth + 1;
     final transport = await _transport;
     await transport.execute(
-      'SAVEPOINT sp_$_transactionDepth',
+      'SAVEPOINT sp_$nextDepth',
       const [],
       _activeLock,
       true,
     );
+    _transactionDepth = nextDepth;
   }
 
   @override
@@ -148,12 +153,9 @@ class SqliteWebDriverAdapter extends SqliteRemoteAdapterBase
 
     final transport = await _transport;
     if (_transactionDepth == 1) {
-      try {
-        await transport.execute('COMMIT', const [], _activeLock, true);
-      } finally {
-        _transactionDepth = 0;
-        await _releaseExclusiveLock();
-      }
+      await transport.execute('COMMIT', const [], _activeLock, true);
+      _transactionDepth = 0;
+      await _releaseExclusiveLock();
       return;
     }
 

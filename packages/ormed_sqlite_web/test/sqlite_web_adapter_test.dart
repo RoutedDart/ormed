@@ -54,6 +54,65 @@ void main() {
       );
     });
 
+    test('transaction preserves commit errors and rolls back', () async {
+      final transport = FakeSqliteWebTransport(
+        executeError: (sql) =>
+            sql == 'COMMIT' ? StateError('commit failed') : null,
+      );
+      final adapter = SqliteWebDriverAdapter.custom(
+        config: const DatabaseConfig(
+          driver: 'sqlite_web',
+          options: {'database': 'app.sqlite'},
+        ),
+        transport: transport,
+      );
+
+      await expectLater(
+        () => adapter.transaction(() async {}),
+        throwsA(
+          isA<StateError>().having(
+            (error) => error.message,
+            'message',
+            'commit failed',
+          ),
+        ),
+      );
+
+      expect(transport.executedSql, equals(['BEGIN', 'COMMIT', 'ROLLBACK']));
+    });
+
+    test('failed nested begin does not increment transaction depth', () async {
+      final transport = FakeSqliteWebTransport(
+        executeError: (sql) =>
+            sql == 'SAVEPOINT sp_2' ? StateError('savepoint failed') : null,
+      );
+      final adapter = SqliteWebDriverAdapter.custom(
+        config: const DatabaseConfig(
+          driver: 'sqlite_web',
+          options: {'database': 'app.sqlite'},
+        ),
+        transport: transport,
+      );
+
+      await adapter.beginTransaction();
+      await expectLater(
+        adapter.beginTransaction,
+        throwsA(
+          isA<StateError>().having(
+            (error) => error.message,
+            'message',
+            'savepoint failed',
+          ),
+        ),
+      );
+      await adapter.commitTransaction();
+
+      expect(
+        transport.executedSql,
+        equals(['BEGIN', 'SAVEPOINT sp_2', 'COMMIT']),
+      );
+    });
+
     test('execute and query delegate through transport', () async {
       final transport = FakeSqliteWebTransport(
         executeResults: [const SqliteWebStatementResult(affectedRows: 3)],
