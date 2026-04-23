@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.3.0-wip
+## 0.3.0
 - **Added**: Web and Flutter web support through the unified `ormed_sqlite` API backed by `ormed_sqlite_web`.
 - **Added**: Browser worker helper export and `example/web` setup for testing the web runtime.
 - **Changed**: `SqliteDriverAdapter` and datasource helpers now route to a browser implementation on web builds while preserving the native API on IO platforms.
