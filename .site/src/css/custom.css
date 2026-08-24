@@ -1,92 +1,371 @@
 /**
- * Any CSS included here will be global. The classic template
- * bundles Infima by default. Infima is a CSS framework designed to
- * work well for content-centric websites.
+ * Ormed docs theme.
+ *
+ * The docs are a workbench: dark ink surfaces, cool signal colors, and
+ * enough contrast around code to make the learning path feel intentional.
  */
 
-/* Learning-path-first docs styling inspired by technical guide sites. */
 :root {
-  --ifm-color-primary: #0f5d8c;
-  --ifm-color-primary-dark: #0e547e;
-  --ifm-color-primary-darker: #0d4f77;
-  --ifm-color-primary-darkest: #0a415f;
-  --ifm-color-primary-light: #11669a;
-  --ifm-color-primary-lighter: #126ba1;
-  --ifm-color-primary-lightest: #1a80be;
-  --ifm-background-color: #f7f6f2;
-  --ifm-navbar-background-color: #f7f6f2;
-  --ifm-footer-background-color: #f1efe9;
-  --ifm-heading-color: #18212b;
-  --ifm-font-color-base: #243443;
-  --ifm-font-family-base: "Source Sans 3", "Segoe UI", "Helvetica Neue", Arial,
-    sans-serif;
-  --ifm-heading-font-family: "Charter", "Iowan Old Style", "Palatino Linotype",
-    "Book Antiqua", Palatino, Georgia, serif;
-  --ifm-code-font-size: 92%;
-  --ifm-pre-font-size: 0.9rem;
-  --ifm-global-radius: 10px;
-  --ifm-menu-color-active: #0f5d8c;
-  --ifm-menu-color-background-active: rgba(15, 93, 140, 0.1);
-  --ifm-menu-link-padding-vertical: 0.5rem;
-  --ifm-menu-link-padding-horizontal: 0.6rem;
-  --docusaurus-highlighted-code-line-bg: rgba(15, 93, 140, 0.12);
+  --ifm-color-primary: #087f80;
+  --ifm-color-primary-dark: #076f70;
+  --ifm-color-primary-darker: #066768;
+  --ifm-color-primary-darkest: #054f50;
+  --ifm-color-primary-light: #159a99;
+  --ifm-color-primary-lighter: #35aaa7;
+  --ifm-color-primary-lightest: #8ed8cf;
+  --ifm-background-color: #edf4f2;
+  --ifm-navbar-background-color: rgba(248, 252, 251, 0.9);
+  --ifm-footer-background-color: #07151e;
+  --ifm-heading-color: #0b1e29;
+  --ifm-font-color-base: #29434d;
+  --ifm-font-family-base: "IBM Plex Sans", "Avenir Next", "Segoe UI", sans-serif;
+  --ifm-heading-font-family: "IBM Plex Sans", "Avenir Next", "Segoe UI", sans-serif;
+  --ifm-font-family-monospace: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+  --ifm-code-font-size: 90%;
+  --ifm-pre-font-size: 0.86rem;
+  --ifm-global-radius: 6px;
+  --ifm-menu-color-active: #087f80;
+  --ifm-menu-color-background-active: rgba(8, 127, 128, 0.1);
+  --ifm-menu-link-padding-vertical: 0.45rem;
+  --ifm-menu-link-padding-horizontal: 0.7rem;
+  --docusaurus-highlighted-code-line-bg: rgba(8, 127, 128, 0.14);
+
+  --ormed-ink: #07151e;
+  --ormed-ink-soft: #102732;
+  --ormed-article: rgba(255, 255, 255, 0.62);
+  --ormed-sidebar: rgba(224, 237, 234, 0.48);
+  --ormed-border: #c4d7d3;
+  --ormed-border-strong: #9bbab5;
+  --ormed-muted: #607b80;
+  --ormed-accent: #d78332;
+  --ormed-accent-soft: rgba(215, 131, 50, 0.13);
+  --ormed-code: #0b1b25;
+  --ormed-code-border: #31515a;
+  --ormed-code-shadow: rgba(8, 127, 128, 0.14);
 }
 
 [data-theme='dark'] {
-  --ifm-color-primary: #72b4df;
-  --ifm-color-primary-dark: #58a8da;
-  --ifm-color-primary-darker: #4aa1d7;
-  --ifm-color-primary-darkest: #2b8ecf;
-  --ifm-color-primary-light: #8cc0e4;
-  --ifm-color-primary-lighter: #9ac7e7;
-  --ifm-color-primary-lightest: #c2ddf0;
-  --ifm-background-color: #111723;
-  --ifm-navbar-background-color: #111723;
-  --ifm-footer-background-color: #0d1320;
-  --ifm-heading-color: #eaf0f7;
-  --ifm-font-color-base: #d4deea;
-  --ifm-menu-color-background-active: rgba(114, 180, 223, 0.2);
-  --docusaurus-highlighted-code-line-bg: rgba(114, 180, 223, 0.16);
+  --ifm-color-primary: #6fe0cf;
+  --ifm-color-primary-dark: #51d4c1;
+  --ifm-color-primary-darker: #3acbbb;
+  --ifm-color-primary-darkest: #20a99c;
+  --ifm-color-primary-light: #8ce8da;
+  --ifm-color-primary-lighter: #a9f0e3;
+  --ifm-color-primary-lightest: #d2faf2;
+  --ifm-background-color: #07151e;
+  --ifm-navbar-background-color: rgba(7, 21, 30, 0.88);
+  --ifm-footer-background-color: #040c12;
+  --ifm-heading-color: #edf8f3;
+  --ifm-font-color-base: #bfd3d3;
+  --ifm-menu-color-active: #6fe0cf;
+  --ifm-menu-color-background-active: rgba(111, 224, 207, 0.12);
+  --docusaurus-highlighted-code-line-bg: rgba(111, 224, 207, 0.14);
+
+  --ormed-ink: #edf8f3;
+  --ormed-ink-soft: #c5ddda;
+  --ormed-article: rgba(13, 34, 44, 0.78);
+  --ormed-sidebar: rgba(8, 26, 36, 0.82);
+  --ormed-border: #21404c;
+  --ormed-border-strong: #3a6470;
+  --ormed-muted: #8da9ad;
+  --ormed-accent: #f1b45b;
+  --ormed-accent-soft: rgba(241, 180, 91, 0.13);
+  --ormed-code: #09141d;
+  --ormed-code-border: #2d5962;
+  --ormed-code-shadow: rgba(111, 224, 207, 0.12);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  color: var(--ifm-font-color-base);
+  font-synthesis: none;
+  background-color: var(--ifm-background-color);
+  background-image:
+    linear-gradient(rgba(111, 224, 207, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(111, 224, 207, 0.035) 1px, transparent 1px);
+  background-size: 56px 56px;
+}
+
+body::before {
+  position: fixed;
+  z-index: -1;
+  inset: 0;
+  pointer-events: none;
+  content: "";
+  background: radial-gradient(circle at 84% 8%, rgba(8, 127, 128, 0.12), transparent 28rem);
+}
+
+a {
+  text-underline-offset: 0.2em;
+}
+
+:focus-visible {
+  outline: 3px solid var(--ifm-color-primary);
+  outline-offset: 3px;
 }
 
 .navbar {
-  border-bottom: 1px solid var(--ifm-color-emphasis-300);
+  border-bottom: 1px solid var(--ormed-border);
+  box-shadow: 0 8px 24px rgba(7, 21, 30, 0.06);
+  backdrop-filter: blur(16px);
+}
+
+.navbar__brand {
+  gap: 0.65rem;
+}
+
+.navbar__logo {
+  width: 30px;
+  height: 30px;
+}
+
+.navbar__title {
+  color: var(--ifm-heading-color);
+  font-family: var(--ifm-heading-font-family);
+  font-size: 1.12rem;
+  font-weight: 750;
+  letter-spacing: -0.06em;
+}
+
+.navbar__link {
+  color: var(--ifm-font-color-base);
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 0.7rem;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.navbar__link:hover,
+.navbar__link--active {
+  color: var(--ifm-color-primary);
+}
+
+.main-wrapper {
+  min-height: calc(100vh - 60px);
+}
+
+.theme-doc-sidebar-container {
+  border-right: 1px solid var(--ormed-border);
+  background: var(--ormed-sidebar);
+}
+
+.theme-doc-sidebar-menu {
+  font-size: 0.86rem;
+}
+
+.menu__link {
+  border-radius: 4px;
+  color: var(--ifm-font-color-base);
+}
+
+.menu__link:hover {
+  color: var(--ifm-heading-color);
+  background: var(--ifm-menu-color-background-active);
+}
+
+.menu__link--active {
+  border-left: 2px solid var(--ifm-color-primary);
+  color: var(--ifm-menu-color-active);
+  font-weight: 700;
+  background: var(--ifm-menu-color-background-active);
+}
+
+.menu__list-item-collapsible .menu__link {
+  color: var(--ifm-heading-color);
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .theme-doc-markdown {
-  max-width: 76ch;
+  max-width: 78ch;
+  padding: clamp(1.35rem, 3vw, 3.4rem);
+  border: 1px solid var(--ormed-border);
+  border-top: 3px solid var(--ifm-color-primary);
+  border-radius: 8px;
+  background: var(--ormed-article);
+  box-shadow: 18px 18px 0 var(--ormed-code-shadow);
+}
+
+.theme-doc-breadcrumbs {
+  margin-bottom: 1.8rem;
+}
+
+.breadcrumbs__link {
+  color: var(--ormed-muted);
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 0.68rem;
+  font-weight: 650;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.breadcrumbs__item--active .breadcrumbs__link {
+  color: var(--ifm-color-primary);
 }
 
 .theme-doc-markdown h1,
 .theme-doc-markdown h2,
 .theme-doc-markdown h3 {
-  letter-spacing: -0.01em;
+  color: var(--ifm-heading-color);
+  letter-spacing: -0.065em;
 }
 
-.theme-doc-sidebar-container {
-  border-right: 1px solid var(--ifm-color-emphasis-300);
+.theme-doc-markdown > h1 {
+  max-width: 10ch;
+  margin-bottom: 1.45rem;
+  font-size: clamp(3rem, 7vw, 5.8rem);
+  font-weight: 780;
+  line-height: 0.92;
 }
 
-.menu__link {
-  border-radius: 8px;
+.theme-doc-markdown > h1 + p {
+  max-width: 58ch;
+  margin-bottom: 3.5rem;
+  color: var(--ormed-muted);
+  font-size: 1.08rem;
+  line-height: 1.75;
 }
 
-.menu__list-item-collapsible .menu__link {
-  font-weight: 600;
+.theme-doc-markdown h2 {
+  margin-top: 4rem;
+  padding-top: 1.3rem;
+  border-top: 1px solid var(--ormed-border);
+  font-size: clamp(1.65rem, 3vw, 2.35rem);
+  font-weight: 760;
+  line-height: 1.05;
 }
 
-.menu__link--active {
-  font-weight: 600;
+.theme-doc-markdown h2::before {
+  margin-right: 0.55rem;
+  color: var(--ormed-accent);
+  content: "//";
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 0.55em;
+  font-weight: 500;
+  letter-spacing: -0.12em;
+  vertical-align: 0.16em;
+}
+
+.theme-doc-markdown h3 {
+  font-size: 1.35rem;
+  font-weight: 740;
+}
+
+.theme-doc-markdown h3::before {
+  margin-right: 0.5rem;
+  color: var(--ifm-color-primary);
+  content: "·";
+}
+
+.theme-doc-markdown p,
+.theme-doc-markdown li {
+  line-height: 1.72;
+}
+
+.theme-doc-markdown li::marker {
+  color: var(--ifm-color-primary);
+}
+
+.theme-doc-markdown code {
+  border: 1px solid color-mix(in srgb, var(--ifm-color-primary) 18%, transparent);
+  border-radius: 4px;
+  color: var(--ifm-color-primary);
+  background: color-mix(in srgb, var(--ifm-color-primary) 9%, transparent);
 }
 
 .theme-code-block {
-  border: 1px solid var(--ifm-color-emphasis-300);
-  box-shadow: 0 1px 0 rgba(16, 24, 40, 0.04);
+  position: relative;
+  overflow: hidden;
+  margin: 1.6rem 0 2.2rem;
+  border: 1px solid var(--ormed-code-border);
+  border-radius: 8px;
+  background: var(--ormed-code);
+  box-shadow: 9px 9px 0 var(--ormed-code-shadow);
 }
 
-.alert {
-  border-width: 1px;
-  border-style: solid;
+.theme-code-block::before {
+  display: block;
+  height: 3px;
+  content: "";
+  background: linear-gradient(90deg, var(--ormed-accent) 0 18%, var(--ifm-color-primary) 18% 100%);
+}
+
+.theme-code-block pre {
+  background: transparent !important;
+}
+
+.theme-code-block code {
+  border: 0;
+  color: #d4e9e4 !important;
+  background: transparent;
+}
+
+.theme-code-block .token {
+  color: #d4e9e4 !important;
+}
+
+.theme-code-block .token.plain {
+  color: #d4e9e4 !important;
+}
+
+.theme-code-block .token.comment,
+.theme-code-block .token.prolog,
+.theme-code-block .token.doctype,
+.theme-code-block .token.cdata {
+  color: #75979b !important;
+}
+
+.theme-code-block .token.punctuation {
+  color: #c4e3db !important;
+}
+
+.theme-code-block .token.property,
+.theme-code-block .token.tag,
+.theme-code-block .token.boolean,
+.theme-code-block .token.number,
+.theme-code-block .token.constant,
+.theme-code-block .token.symbol,
+.theme-code-block .token.deleted,
+.theme-code-block .token.parameter,
+.theme-code-block .token.variable {
+  color: #f1b45b !important;
+}
+
+.theme-code-block .token.selector,
+.theme-code-block .token.attr-name,
+.theme-code-block .token.string,
+.theme-code-block .token.char,
+.theme-code-block .token.builtin,
+.theme-code-block .token.inserted {
+  color: #a6ebc9 !important;
+}
+
+.theme-code-block .token.operator,
+.theme-code-block .token.entity,
+.theme-code-block .token.url {
+  color: #77d8ea !important;
+}
+
+.theme-code-block .token.atrule,
+.theme-code-block .token.attr-value,
+.theme-code-block .token.function,
+.theme-code-block .token.class-name {
+  color: #82e4cf !important;
+}
+
+.theme-code-block .token.keyword {
+  color: #e99cda !important;
+}
+
+.theme-code-block button {
+  color: var(--ifm-color-primary-lightest);
 }
 
 .tabs-container {
@@ -94,21 +373,110 @@
 }
 
 .tabs {
-  border-bottom: 1px solid var(--ifm-color-emphasis-300);
-  gap: 0.25rem;
+  gap: 0.35rem;
+  padding: 0.3rem;
+  border: 1px solid var(--ormed-border);
+  border-radius: 6px;
+  background: var(--ormed-accent-soft);
 }
 
 .tabs__item {
-  border-radius: 0.5rem 0.5rem 0 0;
+  border: 1px solid transparent;
+  border-radius: 4px;
   padding: 0.5rem 0.75rem;
+  color: var(--ormed-muted);
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 0.72rem;
+  font-weight: 650;
 }
 
 .tabs__item:not(.tabs__item--active):hover {
-  background: var(--ifm-color-emphasis-100);
+  color: var(--ifm-heading-color);
+  background: var(--ifm-menu-color-background-active);
 }
 
 .tabs__item--active {
-  background: var(--ifm-color-emphasis-100);
-  border: 1px solid var(--ifm-color-emphasis-300);
-  border-bottom-color: transparent;
+  border-color: var(--ormed-border-strong);
+  color: var(--ifm-heading-color);
+  background: var(--ormed-article);
+}
+
+.alert {
+  border: 1px solid var(--ormed-border-strong);
+  border-left: 3px solid var(--ifm-color-primary);
+  border-radius: 6px;
+  background: var(--ormed-accent-soft);
+}
+
+.theme-doc-toc-desktop {
+  margin-top: 2.3rem;
+}
+
+.table-of-contents {
+  border-left: 1px solid var(--ormed-border);
+  font-size: 0.78rem;
+}
+
+.table-of-contents__link {
+  color: var(--ormed-muted);
+}
+
+.table-of-contents__link--active,
+.table-of-contents__link:hover {
+  color: var(--ifm-color-primary);
+}
+
+.pagination-nav__link {
+  border: 1px solid var(--ormed-border);
+  border-radius: 6px;
+  background: var(--ormed-article);
+  box-shadow: 6px 6px 0 var(--ormed-code-shadow);
+}
+
+.pagination-nav__link:hover {
+  border-color: var(--ifm-color-primary);
+  background: var(--ifm-menu-color-background-active);
+}
+
+.footer {
+  border-top: 1px solid rgba(111, 224, 207, 0.18);
+}
+
+.footer__title {
+  color: var(--ifm-color-primary-lightest);
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+@media screen and (max-width: 996px) {
+  .theme-doc-markdown {
+    box-shadow: 12px 12px 0 var(--ormed-code-shadow);
+  }
+}
+
+@media screen and (max-width: 640px) {
+  .navbar__link {
+    font-size: 0.64rem;
+  }
+
+  .theme-doc-markdown {
+    padding: 1.15rem;
+    box-shadow: 7px 7px 0 var(--ormed-code-shadow);
+  }
+
+  .theme-doc-markdown > h1 {
+    font-size: clamp(2.8rem, 15vw, 4.4rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
 }

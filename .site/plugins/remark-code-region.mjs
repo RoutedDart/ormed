@@ -80,14 +80,13 @@ export default function remarkCodeRegion(options = {}) {
 function extractRegion(content, regionName) {
   const lines = content.split('\n');
   const regionStartPatterns = [
-    new RegExp(`^\\s*//\\s*#region\\s+${escapeRegex(regionName)}\\s*$`),
-    new RegExp(`^\\s*//\\s*#region:\\s*${escapeRegex(regionName)}\\s*$`),
-    new RegExp(`^\\s*//\\s*region:\\s*${escapeRegex(regionName)}\\s*$`),
+    new RegExp(`^\\s*(?://|#|<!--)\\s*#region\\s+${escapeRegex(regionName)}\\s*(?:-->)?\\s*$`),
+    new RegExp(`^\\s*(?://|#|<!--)\\s*#region:\\s*${escapeRegex(regionName)}\\s*(?:-->)?\\s*$`),
+    new RegExp(`^\\s*(?://|#|<!--)\\s*region:\\s*${escapeRegex(regionName)}\\s*(?:-->)?\\s*$`),
   ];
   const regionEndPatterns = [
-    new RegExp(`^\\s*//\\s*#endregion\\s+${escapeRegex(regionName)}\\s*$`),
-    new RegExp(`^\\s*//\\s*#endregion\\s*$`),
-    new RegExp(`^\\s*//\\s*endregion\\s*$`),
+    /^\s*(?:\/\/|#|<!--)\s*#endregion(?:\s+.*?)?\s*(?:-->)?\s*$/,
+    /^\s*(?:\/\/|#|<!--)\s*endregion(?:\s+.*?)?\s*(?:-->)?\s*$/,
   ];
   
   let inRegion = false;

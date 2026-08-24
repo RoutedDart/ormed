@@ -10,25 +10,6 @@ import TabItem from '@theme/TabItem';
 
 In this section, you'll create the runnable project foundation and generate the database wiring used by all later steps.
 
-## Prerequisites
-
-- [Full‑Stack Movie Catalog (Tutorial Index)](./ormed-shelf-tutorial)
-
-## What You’ll Learn
-
-- How to scaffold the base Shelf project
-- Which dependencies power each layer of the stack
-- How to prepare the project for model/codegen/migration steps
-
-## Step Outcome
-
-By the end of this page, you should have:
-
-- A Shelf-based Dart app in `packages/ormed/example/fullstack`
-- Dependencies installed (`dart pub get`)
-- Ormed initialized with generated datasource helpers
-- A bootable `AppDatabase` wrapper used by server and tests
-
 ## Do This Now (in order)
 
 ```bash
@@ -89,7 +70,7 @@ We use a carefully selected set of packages to handle different aspects of our f
 <Tabs groupId="deps">
   <TabItem value="pubspec" label="pubspec.yaml">
 
-```yaml file=../../../../packages/ormed/example/fullstack/pubspec.yaml
+```yaml file=../../../../packages/ormed/example/fullstack/pubspec.yaml#fullstack-pubspec-core
 
 ```
 

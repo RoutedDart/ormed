@@ -7,26 +7,11 @@ import TabItem from '@theme/TabItem';
 
 # DataSource
 
-The `DataSource` class provides a modern, declarative API for configuring and using the ORM. It bundles driver configuration, entity registration, and connection management into a single interface.
-
-## Prerequisites
-
-- [Configuration](../getting-started/configuration)
-- [Drivers Overview](../drivers/overview)
-
-## What You’ll Learn
-
-- How `DataSourceOptions` shape runtime behavior
-- How initialization and default connection selection work
-- How to choose between generated helpers and manual datasource composition
-
-## Step Outcome
-
-By the end of this page, you should be able to:
-
-- Build a `DataSource` from generated options or manual options
-- Initialize and dispose connections safely
-- Route queries to default or named connections intentionally
+The `DataSource` class provides a modern, declarative API for configuring and
+using the ORM. It bundles driver configuration, entity registration, connection
+management, and execution middleware into a single interface. For a simpler
+driver-first entrypoint, use [`OrmDatabase`](../getting-started/direct-database),
+which owns a `DataSource` for you.
 
 ## Minimal Lifecycle (Always)
 
@@ -54,6 +39,7 @@ By the end of this page, you should be able to:
 | `codecs` | `Map<String, ValueCodec>` | `{}` | Custom value codecs to register |
 | `logging` | `bool` | `false` | Enable query logging |
 | `logger` | `contextual.Logger?` | `null` | Optional contextual logger for default query logging (used only when `logging` is true) |
+| `interceptors` | `List<QueryInterceptor>` | `[]` | Ordered middleware around query, mutation, raw SQL, schema, migration, stream, and transaction execution |
 
 ### Example Configuration (with generated registry)
 
@@ -111,6 +97,30 @@ Use `query<T>()` to create a typed query builder:
 
 ```dart file=../../examples/lib/datasource.dart#datasource-querying
 ```
+
+## Execution Interceptors
+
+Interceptors are the middleware layer for policies, metrics, tracing, and
+short-circuiting. They receive immutable SQL, parameters, operation metadata,
+and a transaction identifier when applicable:
+
+```dart
+final ds = DataSource(DataSourceOptions(
+  driver: myDriver,
+  registry: ModelRegistry(),
+  interceptors: [QueryTimingInterceptor()],
+));
+await ds.init();
+```
+
+The same list can be passed to `OrmDatabase.connect` or the direct
+`SqliteDatabase`, `PostgresDatabase`, `MySqlDatabase`, and `D1Database` helpers.
+Use the facade methods (`queryRaw`, `executeRaw`, `transaction`, and
+`executeSchema`) when raw or schema work should enter the same pipeline. A
+direct call on `db.driver` is intentionally the low-level escape hatch.
+
+See [Observability](../guides/observability) for the built-in Dartastic
+OpenTelemetry adapter and custom middleware examples.
 
 ## Repository Operations
 

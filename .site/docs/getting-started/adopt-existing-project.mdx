@@ -1,29 +1,12 @@
 ---
-sidebar_position: 3
+sidebar_position: 4
 ---
 
 # Adopt Ormed In An Existing Project
 
 This guide is for teams integrating Ormed into an already running Dart service.
 
-## Prerequisites
-
-- [Installation](./installation)
-- Familiarity with your current DB schema and deployment flow
-
-## What You’ll Learn
-
-- How to add Ormed without rewriting the whole app
-- How to scaffold generated runtime config into an existing codebase
-- How to choose a safe migration strategy for existing databases
-
-## Step Outcome
-
-By the end of this page, you should have:
-
-- Ormed wired into app startup behind a small adapter seam
-- One migrated query/write path running through Ormed
-- A documented decision on migration ownership
+Before you start: [Installation](./installation); Familiarity with your current DB schema and deployment flow.
 
 ## Integration Strategy
 
@@ -51,7 +34,7 @@ dependencies:
   ormed_sqlite: ^0.4.0 # or ormed_postgres / ormed_mysql / ormed_d1
 
 dev_dependencies:
-  build_runner: ^2.4.0
+  build_runner: ^2.10.5
   ormed_cli: ^0.3.0
 ```
 

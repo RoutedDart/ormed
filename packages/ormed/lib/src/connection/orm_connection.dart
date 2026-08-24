@@ -75,6 +75,7 @@ class OrmConnection implements ConnectionResolver {
     required ModelRegistry registry,
     ValueCodecRegistry? codecRegistry,
     ScopeRegistry? scopeRegistry,
+    QueryInterceptorPipeline? interceptorPipeline,
     QueryContext? context,
   }) : _driver = driver,
        _registry = registry,
@@ -89,6 +90,7 @@ class OrmConnection implements ConnectionResolver {
           connectionName: config.name,
           connectionDatabase: config.database,
           connectionTablePrefix: config.tablePrefix,
+          interceptorPipeline: interceptorPipeline,
           cacheInvalidationPolicy: _cacheInvalidationPolicy(config.options),
           beforeQueryHook: _dispatchBeforeQuery,
           beforeMutationHook: _dispatchBeforeMutation,
@@ -129,6 +131,10 @@ class OrmConnection implements ConnectionResolver {
   /// `connection.repository<T>()`, and helpers like `Model.query()`.
   /// {@macro ormed.query.query_context}
   QueryContext get context => _context;
+
+  /// The middleware pipeline used for database execution.
+  QueryInterceptorPipeline get interceptorPipeline =>
+      _context.interceptorPipeline;
 
   /// Current pretend-mode flag.
   bool get pretending => _pretending;

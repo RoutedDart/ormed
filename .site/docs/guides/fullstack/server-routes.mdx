@@ -10,25 +10,6 @@ import TabItem from '@theme/TabItem';
 
 The server is where everything comes together. We use **Shelf** to handle HTTP requests and **Shelf Router** to map URLs to specific handler functions.
 
-## Prerequisites
-
-- [Models & Codegen](./models)
-- [Migrations & Seed Data](./migrations-seeds)
-
-## What You’ll Learn
-
-- How to bootstrap the app server and middleware stack
-- How web and API routes are organized
-- How to keep route modules maintainable as features grow
-
-## Step Outcome
-
-By the end of this page, you should have:
-
-- A bootable Shelf server with request ID + HTTP logging middleware
-- Router groups for web routes and API routes
-- Handler patterns for list/show/create/update/delete flows
-
 ## Request Lifecycle (What Happens Per Request)
 
 1. Request enters the Shelf `Pipeline`.
@@ -151,7 +132,6 @@ Genres are simpler as they are mostly read-only in this example.
 
   </TabItem>
 </Tabs>
-
 
 ## Structured logging
 

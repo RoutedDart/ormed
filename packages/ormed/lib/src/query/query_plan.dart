@@ -39,6 +39,7 @@ class QueryPlan {
     List<RelationAggregate>? relationAggregates,
     List<RelationOrder>? relationOrders,
     List<RelationJoin>? relationJoins,
+    Iterable<String>? readTables,
     this.tableAlias,
     this.lockClause,
     this.groupLimit,
@@ -75,6 +76,7 @@ class QueryPlan {
        relationOrders = List.unmodifiable(
          relationOrders ?? const <RelationOrder>[],
        ),
+       readTables = Set.unmodifiable(readTables ?? const <String>[]),
        relationJoins = List.unmodifiable(
          relationJoins ?? const <RelationJoin>[],
        ),
@@ -110,6 +112,13 @@ class QueryPlan {
   final QueryPredicate? having;
   final List<RelationAggregate> relationAggregates;
   final List<RelationOrder> relationOrders;
+
+  /// Tables read by this plan, including eager-loaded relation tables.
+  ///
+  /// Reactive queries use this metadata to decide whether a committed
+  /// database change can affect the result.
+  final Set<String> readTables;
+
   final List<RelationJoin> relationJoins;
   final List<JoinDefinition> joins;
   final String? tableAlias;
@@ -150,6 +159,7 @@ class QueryPlan {
     List<RelationAggregate>? relationAggregates,
     List<RelationOrder>? relationOrders,
     List<RelationJoin>? relationJoins,
+    Iterable<String>? readTables,
     String? tableAlias,
     String? lockClause,
     GroupLimit? groupLimit,
@@ -190,6 +200,7 @@ class QueryPlan {
     having: having ?? this.having,
     relationAggregates: relationAggregates ?? this.relationAggregates,
     relationOrders: relationOrders ?? this.relationOrders,
+    readTables: readTables ?? this.readTables,
     relationJoins: relationJoins ?? this.relationJoins,
     tableAlias: tableAlias ?? this.tableAlias,
     lockClause: lockClause ?? this.lockClause,

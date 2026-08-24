@@ -7,26 +7,63 @@ import TabItem from '@theme/TabItem';
 
 # Observability
 
-The ORM exposes structured hooks for every query and mutation so you can ship metrics, traces, and logs without patching driver code.
+Ormed exposes two complementary observability layers: passive query/event
+listeners for logs and diagnostics, and ordered execution interceptors for
+middleware that must surround the operation. The core package also includes a
+Dartastic OpenTelemetry interceptor, so tracing does not require a second Ormed
+integration package.
 
-## Prerequisites
+## Choose the hook
 
-- [Query Builder](../queries/query-builder)
-- [CLI Overview](../cli/overview)
+| Need | Use |
+| --- | --- |
+| Inspect completed query-builder events, including failures | `QueryContext.onQuery` / `onMutation` |
+| Log every statement and lifecycle boundary | `OrmConnection.listen` / `beforeExecuting` |
+| Surround raw SQL, schema, migrations, streams, and transactions | `QueryInterceptor` |
+| Emit database spans | `OrmOpenTelemetryInterceptor` |
 
-## What You’ll Learn
+Listeners observe work after it is dispatched. Interceptors are the boundary to
+use when the same policy must cover generated queries and direct facade calls.
 
-- How to capture and inspect structured query logs
-- How to stream ORM events to metrics/tracing systems
-- How to debug slow or failing operations with runtime hooks
+## OpenTelemetry with Dartastic
 
-## Step Outcome
+Initialize Dartastic once during application startup, then install the built-in
+interceptor on the database connection:
 
-By the end of this page, you should be able to:
+```dart file=../../examples/lib/observability/observability.dart#opentelemetry
+```
 
-- Capture query/mutation telemetry without modifying driver code
-- Route ORM events to your logging/metrics/tracing stack
-- Investigate slow/failing database operations with concrete runtime data
+`OrmOpenTelemetryInterceptor` creates client spans with operation, driver,
+connection, database, collection, parameter-count, and transaction metadata.
+SQL text is deliberately excluded by default. Enable it only when the
+deployment’s telemetry policy permits it:
+
+```dart
+final db = await SqliteDatabase.connect(
+  path: 'database/app.sqlite',
+  interceptors: [
+    OrmOpenTelemetryInterceptor(includeSql: true),
+  ],
+);
+```
+
+The interceptor covers query-builder reads and writes, `queryRaw`/
+`executeRaw`, schema plans, migrations, streams, and managed transactions.
+Operations inside a transaction carry the same `ormed.transaction.id`, making
+the database work easy to correlate with the parent span.
+
+## Custom execution middleware
+
+Implement `QueryInterceptor` when you need request-local authorization, timing,
+redaction, sampling, or a custom tracing backend:
+
+```dart file=../../examples/lib/observability/observability.dart#custom-interceptor
+```
+
+Register interceptors in the order they should wrap one another. An interceptor
+can reject an operation by throwing or short-circuit it by returning without
+calling `next`. Use `interceptStream` when a streaming query needs stream-level
+transformation rather than only setup/teardown around the stream.
 
 ## Query Logging
 
@@ -54,7 +91,7 @@ The simplest way to observe queries is via the built-in query log on `OrmConnect
 | --- | --- |
 | `enableQueryLog({includeParameters, clear})` | Enables logging; `includeParameters` controls whether bind values are captured (default: true); `clear` resets the log (default: true) |
 | `disableQueryLog({clear})` | Disables logging; optionally clears entries |
-| `clearQueryLog()` | Removes all accumulated entries |
+| `flushQueryLog()` | Removes all accumulated entries |
 | `queryLog` | Returns an immutable list of `QueryLogEntry` objects |
 | `loggingQueries` | Returns `true` when logging is active |
 
@@ -78,7 +115,7 @@ Start with query logs first, then add event hooks and tracing once baseline visi
 
 ### Listening to Log Events
 
-Use `onQueryLogged` to receive entries as they are recorded:
+Use `listen` to receive completed statements as they are recorded:
 
 ```dart file=../../examples/lib/observability/observability.dart#on-query-logged
 
@@ -189,15 +226,18 @@ Capture SQL without executing against the database:
 
 During pretend mode, `connection.pretending` returns `true`.
 
-## Integration with Tracing
+## Integration with another tracing system
 
-Use event hooks to create tracing spans:
+If your application already owns a tracing adapter, use an execution
+interceptor so raw SQL and transaction boundaries are covered as well:
 
 <Tabs groupId="observability-tracing" defaultValue="notes">
 <TabItem value="notes" label="Notes">
 
-- Use `event.preview.sql` / `event.duration` to label spans consistently.
-- Prefer a low-cardinality span name (e.g. `db.query`) and put SQL in attributes.
+- Prefer a low-cardinality span name (for example `db.query`) and put SQL in
+  attributes only when the data is safe to export.
+- Keep the interceptor responsible for span lifecycle; keep passive event
+  listeners for metrics and diagnostic logs.
 
 </TabItem>
 <TabItem value="code" label="Code">
@@ -223,7 +263,8 @@ Send query metrics to your monitoring service:
 
 - **Protect secrets** – Disable `includeParameters` or scrub entries inside `onLog` for columns that may contain PII.
 
-- **Correlate with tracing** – Use `onQuery`/`onMutation` to start tracing spans using the SQL preview and duration data.
+- **Correlate with tracing** – Prefer `QueryInterceptor` for span lifecycle and
+  keep `onQuery`/`onMutation` for metrics or post-execution diagnostics.
 
 - **Monitor slow queries** – Register a listener that warns when `event.duration` exceeds your SLO.
 
@@ -233,9 +274,10 @@ Send query metrics to your monitoring service:
 
 ## Verify Observability Setup
 
-1. Enable query logging and run one read + one write query.
-2. Confirm log entries include SQL + duration + success/failure.
-3. Trigger a known failure and confirm error fields are emitted.
+1. Initialize Dartastic once when using `OrmOpenTelemetryInterceptor`.
+2. Run one read + one write query, including one operation inside a transaction.
+3. Confirm spans include the driver and operation, and child operations share the transaction id.
+4. Confirm SQL and parameters follow your telemetry policy.
 
 ## Read This Next
 

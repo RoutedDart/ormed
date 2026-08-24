@@ -8,6 +8,7 @@ import 'src/d1_adapter.dart';
 import 'src/d1_transport.dart';
 
 export 'src/d1_adapter.dart';
+export 'src/d1_database.dart';
 export 'src/d1_data_source_options.dart';
 export 'src/d1_transport.dart';
 

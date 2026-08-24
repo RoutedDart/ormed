@@ -22,6 +22,7 @@ library;
 import 'dart:async';
 
 import 'package:ormed/src/query/query_builder.dart';
+import 'query_reactivity.dart';
 
 import '../connection/connection_resolver.dart';
 import '../contracts.dart';
@@ -33,12 +34,15 @@ import '../repository/repository.dart';
 import '../value_codec.dart';
 import 'cache/query_cache.dart';
 import 'query_plan.dart';
+import 'query_interceptor.dart';
 
 export 'cache/cache_events.dart';
 export 'cache/query_cache.dart';
 export 'json_path.dart';
 export 'query_builder.dart';
+export 'query_interceptor.dart';
 export 'query_plan.dart';
+export 'query_reactivity.dart';
 export 'relation_loader.dart';
 export 'relation_resolver.dart';
 

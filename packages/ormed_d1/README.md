@@ -13,7 +13,29 @@ dependencies:
   ormed_d1: ^0.2.0
 ```
 
-## Quick start with Ormed
+## Quick start without code generation
+
+Code generation is optional for direct database access:
+
+```dart
+import 'package:ormed_d1/ormed_d1.dart';
+
+Future<void> main() async {
+  final db = await D1Database.connect(
+    accountId: 'account-id',
+    databaseId: 'database-id',
+    apiToken: 'api-token',
+  );
+  final rows = await db.queryRaw('SELECT 1 AS ok');
+  print(rows.first['ok']);
+  await db.close();
+}
+```
+
+To use generated models, pass `registry: buildOrmRegistry()` to
+`D1Database.connect`.
+
+## Quick start with the existing DataSource API
 
 ```dart
 import 'package:your_app/src/database/datasource.dart';

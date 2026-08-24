@@ -82,9 +82,9 @@ Future<void> observabilityExample() async {
   await dataSource.init();
 
   // Log all queries
-  dataSource.onQuery((entry) {
+  dataSource.listen((entry) {
     print('Query: ${entry.sql}');
-    print('Duration: ${entry.duration}ms');
+    print('Duration: ${entry.time}ms');
   });
 
   await dataSource.query<$User>().get();

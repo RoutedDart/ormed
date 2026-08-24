@@ -11,10 +11,12 @@ class SqlMigrationLedger implements MigrationLedger {
     DriverAdapter driver, {
     String? tableName,
     String? tablePrefix,
+    QueryInterceptorPipeline? interceptorPipeline,
   }) : this._(
          _applyTablePrefix(tableName ?? 'orm_migrations', tablePrefix),
          _DriverInvoker.direct(driver),
          tablePrefix,
+         interceptorPipeline,
        );
 
   SqlMigrationLedger.managed({
@@ -23,6 +25,7 @@ class SqlMigrationLedger implements MigrationLedger {
     ConnectionRole role = ConnectionRole.primary,
     String? tableName,
     String? tablePrefix,
+    QueryInterceptorPipeline? interceptorPipeline,
   }) : this._(
          _applyTablePrefix(tableName ?? 'orm_migrations', tablePrefix),
          _DriverInvoker.managed(
@@ -31,13 +34,20 @@ class SqlMigrationLedger implements MigrationLedger {
            role,
          ),
          tablePrefix,
+         interceptorPipeline,
        );
 
-  SqlMigrationLedger._(this.tableName, this._driverInvoker, this._tablePrefix);
+  SqlMigrationLedger._(
+    this.tableName,
+    this._driverInvoker,
+    this._tablePrefix,
+    this._interceptorPipeline,
+  );
 
   final String tableName;
   final _DriverInvoker _driverInvoker;
   final String? _tablePrefix;
+  final QueryInterceptorPipeline? _interceptorPipeline;
   static final ModelRegistry _ledgerRegistry = ModelRegistry()
     ..register(OrmMigrationRecordOrmDefinition.definition);
 
@@ -48,6 +58,7 @@ class SqlMigrationLedger implements MigrationLedger {
     registry: _ledgerRegistry,
     driver: driver,
     connectionTablePrefix: _tablePrefix,
+    interceptorPipeline: _interceptorPipeline,
   );
 
   @override
@@ -70,7 +81,7 @@ class SqlMigrationLedger implements MigrationLedger {
     final migration = _LedgerTableMigration(tableName);
     final plan = migration.plan(MigrationDirection.up);
     try {
-      await schemaDriver.applySchemaPlan(plan);
+      await _applySchemaPlan(schemaDriver, plan);
     } catch (e) {
       final message = e.toString().toLowerCase();
       if (!message.contains('already exists')) {
@@ -78,6 +89,27 @@ class SqlMigrationLedger implements MigrationLedger {
       }
       // Ignore duplicate table creation races when parallel setups share the driver.
     }
+  }
+
+  Future<void> _applySchemaPlan(SchemaDriver schemaDriver, SchemaPlan plan) {
+    final pipeline = _interceptorPipeline;
+    if (pipeline == null || !pipeline.isActive) {
+      return schemaDriver.applySchemaPlan(plan);
+    }
+    final preview = schemaDriver.describeSchemaPlan(plan);
+    return pipeline.run(
+      QueryExecutionContext(
+        driverName: pipeline.driverName,
+        database: pipeline.database,
+        sql: preview.statements.map((statement) => statement.sql).join('\n'),
+        parameters: preview.statements
+            .expand((statement) => statement.parameters)
+            .toList(growable: false),
+        operationName: 'SCHEMA',
+        querySummary: 'SCHEMA migration ledger',
+      ),
+      () => schemaDriver.applySchemaPlan(plan),
+    );
   }
 
   Future<void> _ensureWithRawSql(DriverAdapter driver) {
@@ -93,7 +125,20 @@ class SqlMigrationLedger implements MigrationLedger {
         '$appliedAt TEXT NOT NULL'
         ',$batch INTEGER NOT NULL'
         ')';
-    return driver.executeRaw(sql);
+    final pipeline = _interceptorPipeline;
+    if (pipeline == null || !pipeline.isActive) {
+      return driver.executeRaw(sql);
+    }
+    return pipeline.run(
+      QueryExecutionContext(
+        driverName: pipeline.driverName,
+        database: pipeline.database,
+        sql: sql,
+        operationName: 'RAW',
+        querySummary: 'RAW SQL',
+      ),
+      () => driver.executeRaw(sql),
+    );
   }
 
   @override

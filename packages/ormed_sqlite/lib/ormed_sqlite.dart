@@ -7,6 +7,7 @@ import 'src/sqlite_adapter.dart';
 import 'src/sqlite_driver_registration.dart' as sqlite_registration;
 export 'src/sqlite_grammar.dart';
 export 'src/sqlite_adapter.dart';
+export 'src/sqlite_database.dart';
 export 'src/sqlite_data_source_options.dart';
 export 'src/sqlite_connector.dart';
 export 'src/sqlite_codecs.dart';

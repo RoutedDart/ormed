@@ -69,3 +69,14 @@ abstract class DriverAdapter implements QueryExecutor {
   /// supported.
   Future<int?> threadCount();
 }
+
+/// Optional lifecycle hook for adapters that wrap an independently opened
+/// executor.
+///
+/// Most Ormed drivers open their backend while they are constructed. Adapters
+/// around external runtimes, such as Drift, can implement this contract so a
+/// [DataSource] opens the wrapped backend before the first Ormed operation.
+abstract interface class DriverLifecycle {
+  /// Opens the underlying backend. Implementations should be idempotent.
+  Future<void> open();
+}

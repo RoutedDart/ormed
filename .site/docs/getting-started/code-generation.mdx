@@ -1,29 +1,42 @@
 ---
-sidebar_position: 4
+sidebar_position: 6
+title: Code Generation
+description: Configure build_runner and understand the model and registry files Ormed generates.
 ---
 
 # Code Generation
 
-Ormed uses source generation to produce strongly-typed models and metadata. Start from plain Dart classes annotated with `@OrmModel` and let `build_runner` produce definitions consumed by the runtime.
+Ormed uses source generation to produce strongly-typed models and metadata.
+This page owns the generator workflow: the tooling, generated files, builder
+configuration, and verification steps.
 
-## Prerequisites
+Code generation is optional. If you only need raw SQL, schema operations, or
+ad-hoc table queries, use [Direct Database Access](./direct-database) instead.
 
-- [Quick Start](./quick-start)
-- [Defining Models](../models/defining-models)
+## Add Generator Tooling
 
-## What You’ll Learn
+The generator runs through `build_runner`. Add it to `dev_dependencies`:
 
-- What files Ormed generates and why they exist
-- How to run generator workflows in build and watch modes
-- How generated registry and model artifacts plug into runtime boot
+```yaml
+dev_dependencies:
+  build_runner: ^2.10.4
+```
 
-## Step Outcome
+If you are following [Quick Start](./quick-start), you will also use
+`ormed_cli` for project scaffolding, migrations, and seeders. Add it locally
+for a version-pinned workflow, or follow [CLI Overview](../cli/overview) for
+the global option:
 
-By the end of this page, you should have:
+```yaml
+dev_dependencies:
+  ormed_cli: ^0.3.0
+```
 
-- Generated `*.orm.dart` files for all annotated models
-- A generated registry file under `lib/src/database/`
-- A repeatable build/watch workflow for model changes
+Resolve the tooling before running a build:
+
+```bash
+dart pub get
+```
 
 ## Running the Generator
 

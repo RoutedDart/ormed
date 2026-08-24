@@ -9,25 +9,6 @@ import TabItem from '@theme/TabItem';
 
 `ormed_d1` is the Cloudflare D1 adapter for Ormed. It compiles SQLite-compatible SQL through `ormed_sqlite_core` and executes statements over the D1 HTTP API.
 
-## Prerequisites
-
-- [Drivers Overview](./overview)
-- [Configuration](../getting-started/configuration)
-
-## What You’ll Learn
-
-- How to run Ormed against remote D1
-- Which credentials and retry knobs are required
-- How env aliases (`D1_*`, `DB_D1_*`, `CF_ACCOUNT_ID`) are resolved
-
-## Step Outcome
-
-By the end of this page, you should have:
-
-- D1 credentials wired through env or explicit config
-- Retry/timeout settings tuned for your test/debug flow
-- A known-good connectivity check without unsupported SQLite functions
-
 ## Install
 
 ```yaml

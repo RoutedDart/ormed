@@ -1,6 +1,7 @@
 // Observability examples for documentation
 // ignore_for_file: unused_local_variable
 
+import 'package:dartastic_opentelemetry/dartastic_opentelemetry.dart' as dotel;
 import 'package:ormed/ormed.dart';
 import 'package:ormed_sqlite/ormed_sqlite.dart';
 
@@ -9,6 +10,35 @@ import '../models/user.orm.dart';
 import '../models/post.dart';
 import '../models/post.orm.dart';
 import 'package:ormed_examples/src/database/orm_registry.g.dart';
+
+// #region opentelemetry
+Future<OrmDatabase> openDatabaseWithTracing() async {
+  await dotel.OTel.initialize(serviceName: 'catalog-api');
+
+  return SqliteDatabase.connect(
+    path: ':memory:',
+    interceptors: [OrmOpenTelemetryInterceptor()],
+  );
+}
+// #endregion opentelemetry
+
+// #region custom-interceptor
+class QueryTimingInterceptor extends QueryInterceptor {
+  @override
+  Future<T> intercept<T>(
+    QueryExecutionContext context,
+    Future<T> Function() next,
+  ) async {
+    final startedAt = DateTime.now();
+    try {
+      return await next();
+    } finally {
+      final elapsed = DateTime.now().difference(startedAt);
+      print('${context.operationName} took ${elapsed.inMilliseconds}ms');
+    }
+  }
+}
+// #endregion custom-interceptor
 
 // #region query-logging
 Future<void> queryLoggingExample() async {
@@ -28,12 +58,12 @@ Future<void> queryLoggingExample() async {
   // Review the log
   for (final entry in dataSource.queryLog) {
     print('SQL: ${entry.sql}');
-    print('Bindings: ${entry.bindings}');
+    print('Parameters: ${entry.parameters}');
     print('Duration: ${entry.duration}');
   }
 
   // Clear when done
-  dataSource.clearQueryLog();
+  dataSource.flushQueryLog();
   dataSource.disableQueryLog();
 }
 // #endregion query-logging
@@ -41,12 +71,12 @@ Future<void> queryLoggingExample() async {
 // #region query-events
 Future<void> queryEventsExample(DataSource dataSource) async {
   // Listen for query events
-  dataSource.onQuery((event) {
-    print('Query: ${event.sql}');
+  dataSource.context.onQuery((event) {
+    print('Query: ${event.preview.sql}');
     print('Duration: ${event.duration}ms');
 
     if (event.duration.inMilliseconds > 100) {
-      print('SLOW QUERY: ${event.sql}');
+      print('SLOW QUERY: ${event.preview.sql}');
     }
   });
 
@@ -57,11 +87,11 @@ Future<void> queryEventsExample(DataSource dataSource) async {
 
 // #region structured-logger
 class StructuredQueryLogger {
-  void log(QueryLogEntry entry) {
+  void log(QueryExecuted entry) {
     final logEntry = {
       'sql': entry.sql,
       'bindings': entry.bindings,
-      'duration_ms': entry.duration.inMilliseconds,
+      'duration_ms': entry.time,
       'timestamp': DateTime.now().toIso8601String(),
     };
     print(logEntry);
@@ -71,9 +101,7 @@ class StructuredQueryLogger {
 Future<void> structuredLoggerExample(DataSource dataSource) async {
   final logger = StructuredQueryLogger();
 
-  dataSource.onQuery((event) {
-    logger.log(event);
-  });
+  dataSource.listen(logger.log);
 }
 // #endregion structured-logger
 
@@ -95,27 +123,20 @@ Future<void> sqlPreviewExample(DataSource dataSource) async {
 
 // #region before-hooks
 Future<void> beforeHooksExample(DataSource dataSource) async {
-  // Log before queries execute
-  dataSource.beforeQuery((sql, bindings) {
-    print('About to execute: $sql');
-    print('With parameters: $bindings');
-  });
-
-  // Track query counts
-  var queryCount = 0;
-  dataSource.beforeQuery((sql, bindings) {
-    queryCount++;
+  final unregister = dataSource.beforeExecuting((statement) {
+    print('About to execute: ${statement.sql}');
+    print('With parameters: ${statement.parameters}');
   });
 
   await dataSource.query<$User>().get();
-  print('Total queries: $queryCount');
+  unregister();
 }
 // #endregion before-hooks
 
 // #region on-query-logged
 void onQueryLoggedExample(OrmConnection connection) {
-  connection.onQueryLogged((entry) {
-    print('SQL ${entry.type}: ${entry.sql}');
+  connection.listen((entry) {
+    print('SQL: ${entry.sql} (${entry.time}ms)');
   });
 }
 // #endregion on-query-logged
@@ -157,35 +178,19 @@ Future<void> pretendModeExample(DataSource ds, User user, Post post) async {
 // #endregion pretend-mode
 
 // #region tracing-integration
-void tracingIntegrationExample(QueryContext context, Tracer tracer) {
-  context.onQuery((event) {
-    final span = tracer.startSpan('db.query')
-      ..setAttribute('db.statement', event.preview.sql)
-      ..setAttribute('db.system', 'sqlite');
-
-    if (event.succeeded) {
-      span.end();
-    } else {
-      span.recordException(event.error!, event.stackTrace);
-      span.setStatus(SpanStatus.error);
-      span.end();
-    }
-  });
+Future<OrmDatabase> tracingIntegrationExample() async {
+  await dotel.OTel.initialize(serviceName: 'catalog-api');
+  return SqliteDatabase.connect(
+    path: ':memory:',
+    interceptors: [
+      OrmOpenTelemetryInterceptor(
+        includeParameterCount: true,
+        includeSql: false,
+      ),
+      QueryTimingInterceptor(),
+    ],
+  );
 }
-
-// Placeholder tracer interface
-abstract class Tracer {
-  Span startSpan(String name);
-}
-
-abstract class Span {
-  void setAttribute(String key, String value);
-  void recordException(Object error, StackTrace? stackTrace);
-  void setStatus(SpanStatus status);
-  void end();
-}
-
-enum SpanStatus { ok, error }
 // #endregion tracing-integration
 
 // #region metrics-integration

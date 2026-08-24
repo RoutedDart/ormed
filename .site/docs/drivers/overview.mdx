@@ -6,37 +6,26 @@ sidebar_position: 1
 
 Ormed ships first-party driver adapters for SQLite, PostgreSQL, MySQL/MariaDB, and Cloudflare D1.
 
-## Prerequisites
-
-- You completed [Configuration](../getting-started/configuration)
-- You understand model/query basics from `Learn Ormed`
-
-## What You’ll Learn
-
-- Which driver fits each runtime and deployment profile
-- How helper-based driver setup differs from config-driven setup
-- Where driver-specific behavior and internals live in the docs
-
-## Step Outcome
-
-By the end of this page, you should know:
-
-- Which driver package to adopt for your runtime
-- Whether to bootstrap with code-first helpers or YAML config
-- Which env vars and docs sections matter for your chosen driver
+Before you start: You completed [Configuration](../getting-started/configuration); You understand model/query basics from `Learn Ormed`.
 
 Drivers are distributed as separate packages (e.g. `ormed_sqlite`). The core `ormed` package depends only on the `DriverAdapter` interface.
 
-- **SQLite** — zero‑dependency file or in‑memory database, ideal for local development and fast tests.
+- **SQLite** — zero‑dependency file or in-memory database, ideal for local development and fast tests.
 - **PostgreSQL** — full‑featured SQL with rich JSON, window functions, and robust migrations at scale.
 - **MySQL / MariaDB** — common production backend with `ON DUPLICATE KEY UPDATE` support and JSON columns.
 - **Cloudflare D1** — remote SQLite-compatible runtime for serverless/edge deployments.
 
-You can use a driver in three ways:
+You can use a driver in four ways:
 
-1) **Generated code-first config** via `lib/src/database/config.dart` + `datasource.dart`  
-2) **YAML/config driven** via `ormed.yaml` + `DataSource.fromConfig(config)`  
-3) **Programmatic** via `DataSourceOptions(driver: ...)`
+1) **Direct database facade** via `SqliteDatabase.connect`, `PostgresDatabase.connect`, `MySqlDatabase.connect`, or `D1Database.connect` — no code generation required
+2) **Generated code-first config** via `lib/src/database/config.dart` + `datasource.dart`
+3) **YAML/config driven** via `ormed.yaml` + `DataSource.fromConfig(config)`
+4) **Programmatic** via `DataSourceOptions(driver: ...)`
+
+The direct helpers return `OrmDatabase`, which exposes raw SQL, schema plans,
+ad-hoc table queries, transactions, migrations, and the same interceptor
+pipeline used by generated connections. Start with [Direct Database Access](../getting-started/direct-database)
+when a generated registry would be unnecessary ceremony.
 
 ## Driver Selection Cheat Sheet
 

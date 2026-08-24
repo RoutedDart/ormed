@@ -10,6 +10,7 @@ const sidebars: SidebarsConfig = {
       label: '1. Start Here',
       items: [
         'getting-started/installation',
+        'getting-started/direct-database',
         'getting-started/quick-start',
         'getting-started/adopt-existing-project',
         'getting-started/configuration',
@@ -44,6 +45,7 @@ const sidebars: SidebarsConfig = {
           items: [
             'queries/overview',
             'queries/query-builder',
+            'queries/reactive',
             'queries/repository',
             'queries/relations',
             'queries/data-source',

@@ -1,0 +1,18 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="630" fill="#111513"/>
+  <g opacity="0.15" stroke="#B9F6C9">
+    <path d="M0 90H1200M0 180H1200M0 270H1200M0 360H1200M0 450H1200M0 540H1200"/>
+    <path d="M90 0V630M180 0V630M270 0V630M360 0V630M450 0V630M540 0V630M630 0V630M720 0V630M810 0V630M900 0V630M990 0V630M1080 0V630M1170 0V630"/>
+  </g>
+  <circle cx="1030" cy="126" r="210" fill="#F36B4B" fill-opacity="0.12"/>
+  <circle cx="1030" cy="126" r="125" fill="#B9F6C9" fill-opacity="0.08"/>
+  <rect x="84" y="86" width="76" height="76" rx="20" fill="#F36B4B"/>
+  <path d="M103 114C103 109.029 114.193 105 128 105C141.807 105 153 109.029 153 114C153 118.971 141.807 123 128 123C114.193 123 103 118.971 103 114Z" fill="#111513"/>
+  <path d="M103 114V131C103 135.971 114.193 140 128 140C141.807 140 153 135.971 153 131V114C153 118.971 141.807 123 128 123C114.193 123 103 118.971 103 114Z" fill="#111513" fill-opacity="0.82"/>
+  <path d="M103 131V148C103 152.971 114.193 157 128 157C141.807 157 153 152.971 153 148V131C153 135.971 141.807 140 128 140C114.193 140 103 135.971 103 131Z" fill="#B9F6C9"/>
+  <text x="84" y="270" fill="#F6F0E5" font-family="Georgia, serif" font-size="92" font-weight="700">Ormed</text>
+  <text x="89" y="335" fill="#B9F6C9" font-family="monospace" font-size="28" letter-spacing="4">DART • DATABASES • GENERATED TYPES</text>
+  <text x="89" y="430" fill="#F6F0E5" font-family="Arial, sans-serif" font-size="36">A strongly typed ORM that starts where</text>
+  <text x="89" y="478" fill="#F6F0E5" font-family="Arial, sans-serif" font-size="36">your schema is — generated or not.</text>
+  <rect x="89" y="536" width="222" height="5" rx="2.5" fill="#F36B4B"/>
+</svg>

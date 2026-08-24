@@ -10,24 +10,6 @@ import TabItem from '@theme/TabItem';
 
 A full-stack application needs a way to render dynamic HTML and handle file uploads. We use **Liquify** for templating and **File Cloud** for storage.
 
-## Prerequisites
-
-- [Server & Web Routes](./server-routes)
-
-## What You’ll Learn
-
-- How template rendering is structured for reuse
-- How layout inheritance keeps UI consistent
-- How file storage is integrated into request flows
-
-## Step Outcome
-
-By the end of this page, you should have:
-
-- A shared template renderer used by all handlers
-- Consistent base layout + page templates for movies/genres
-- Poster upload handling backed by `StorageService`
-
 ## Template renderer
 
 We wrap the Liquify engine in a `TemplateRenderer` class. This allows us to provide "shared data" (like the application name or current user) to all templates automatically.

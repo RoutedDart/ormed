@@ -1,6 +1,7 @@
 import 'package:ormed/migrations.dart';
 
 import '../events/event_bus.dart';
+import '../query/query_interceptor.dart';
 import 'migration_events.dart';
 
 /// Coordinates applying and rolling back migrations using a [SchemaDriver]
@@ -20,6 +21,7 @@ class MigrationRunner {
     this._defaultSchema,
     this._emitEvents = true,
     EventBus? events,
+    this.interceptorPipeline,
   }) : _migrations = List.unmodifiable(
          (List<MigrationDescriptor>.from(migrations)..sort(_byMigrationId)),
        ),
@@ -38,6 +40,7 @@ class MigrationRunner {
   final String? _defaultSchema;
   final bool _emitEvents;
   final EventBus _events;
+  final QueryInterceptorPipeline? interceptorPipeline;
 
   /// Applies all pending migrations (or up to [limit]).
   Future<MigrationReport> applyAll({int? limit}) async {
@@ -122,7 +125,7 @@ class MigrationRunner {
 
       try {
         final plan = await _planResolver(descriptor, MigrationDirection.up);
-        await _schemaDriver.applySchemaPlan(plan);
+        await _applySchemaPlan(plan, migrationName);
         stopwatch.stop();
         await _ledger.logApplied(descriptor, appliedAt, batch: batch);
 
@@ -239,7 +242,7 @@ class MigrationRunner {
 
       try {
         final plan = await _planResolver(descriptor, MigrationDirection.down);
-        await _schemaDriver.applySchemaPlan(plan);
+        await _applySchemaPlan(plan, migrationName);
         stopwatch.stop();
         await _ledger.remove(record.id);
 
@@ -314,6 +317,28 @@ class MigrationRunner {
           );
         })
         .toList(growable: false);
+  }
+
+  Future<void> _applySchemaPlan(SchemaPlan plan, String migrationName) {
+    final pipeline = interceptorPipeline;
+    if (pipeline == null || !pipeline.isActive) {
+      return _schemaDriver.applySchemaPlan(plan);
+    }
+    final preview = _schemaDriver.describeSchemaPlan(plan);
+    final statements = preview.statements;
+    return pipeline.run(
+      QueryExecutionContext(
+        driverName: pipeline.driverName,
+        database: pipeline.database,
+        sql: statements.map((statement) => statement.sql).join('\n'),
+        parameters: statements
+            .expand((statement) => statement.parameters)
+            .toList(growable: false),
+        operationName: 'SCHEMA',
+        querySummary: 'SCHEMA $migrationName',
+      ),
+      () => _schemaDriver.applySchemaPlan(plan),
+    );
   }
 
   static int _byMigrationId(MigrationDescriptor a, MigrationDescriptor b) =>

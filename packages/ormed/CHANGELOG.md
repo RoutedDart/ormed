@@ -1,5 +1,20 @@
 # Changelog
 
+## Unreleased
+
+- **Added**: `OrmDatabase` for direct, codegen-optional connections, raw SQL,
+  schema plans, migrations, seeding, transactions, and lifecycle management.
+- **Added**: Ordered `QueryInterceptor` middleware for query-builder queries,
+  mutations, raw SQL, schema plans, migrations, streams, and transactions.
+- **Added**: Built-in `OrmOpenTelemetryInterceptor` backed by
+  `dartastic_opentelemetry`, with SQL text excluded by default.
+- **Added**: Reactive `Query.watch()` / `watchRows()` snapshots with table-aware
+  invalidation and an opt-in driver change-feed contract.
+- **Added**: Reactive changes are held across managed and manually controlled
+  transactions until commit, with direct invalidation helpers for integrations.
+- **Added**: Optional `DriverLifecycle` support lets external executor adapters
+  open their backend during `DataSource` initialization.
+
 ## 0.3.0
 
 - **Breaking**: Requires Dart 3.12 or newer.

@@ -6,25 +6,6 @@ sidebar_position: 4
 
 Soft deletes allow you to "delete" records by setting a timestamp rather than removing them from the database. This is useful for maintaining audit trails or implementing trash/restore functionality.
 
-## Prerequisites
-
-- [Defining Models](./defining-models)
-- [Query Builder](../queries/query-builder)
-
-## What You’ll Learn
-
-- How to enable soft-delete behavior in generated models
-- How soft-delete scopes affect default query behavior
-- How to restore and force-delete records safely
-
-## Step Outcome
-
-By the end of this page, you should be able to:
-
-- Enable soft deletes in model + migration layers
-- Query active vs trashed records intentionally
-- Restore or permanently delete records based on policy
-
 ## Enabling Soft Deletes
 
 Add the `SoftDeletes` marker mixin to your model:

@@ -1,0 +1,109 @@
+---
+sidebar_position: 2
+title: Direct Database Access
+description: Start with Ormed without code generation, then add typed models when your domain is ready.
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# Start with the database
+
+Code generation is optional. If you are bootstrapping a service, exploring an
+existing schema, or writing a small worker, connect to a driver and use the
+database facade directly. You can add generated models later without changing
+the underlying connection or query pipeline.
+
+## Install only what you need
+
+For a local SQLite database:
+
+```yaml
+dependencies:
+  ormed: ^0.3.0
+  ormed_sqlite: ^0.4.0
+```
+
+No `build_runner`, generated registry, or `ormed_cli` is required for this
+path. See [Drivers](../drivers/overview) for PostgreSQL, MySQL/MariaDB, and D1
+connection helpers.
+
+## Connect
+
+Driver-specific helpers return the same `OrmDatabase` facade:
+
+```dart file=../../examples/lib/direct_database.dart#direct-connect
+```
+
+The facade owns the connection lifecycle. Close it when the process or request
+scope is finished:
+
+```dart
+final db = await SqliteDatabase.connect(path: 'database/app.sqlite');
+try {
+  // use db
+} finally {
+  await db.close();
+}
+```
+
+## Create a schema and run SQL
+
+Use `executeSchema` for an immediate schema plan and `executeRaw` / `queryRaw`
+when you already have SQL or need a database-specific statement:
+
+```dart file=../../examples/lib/direct_database.dart#direct-schema-and-sql
+```
+
+For changes that must be tracked and deployed repeatedly, use the migration
+runner instead of treating `executeSchema` as a durable migration. The same
+facade exposes `migrate(...)` when you want manually registered migration
+entries without a generated registry.
+
+## Query a table without a model
+
+`db.table('users')` returns `Query<AdHocRow>`. Rows are map-backed and support
+the normal fluent filters, ordering, pagination, and streaming APIs:
+
+```dart file=../../examples/lib/direct_database.dart#direct-table-query
+```
+
+You do not need to describe every column up front. Add `AdHocColumn` metadata
+only when you want explicit Dart type hints, a primary-key declaration, a
+custom codec, or a column alias:
+
+```dart file=../../examples/lib/direct_database.dart#direct-ad-hoc-columns
+```
+
+This keeps the common path lightweight while leaving a typed escape hatch for
+dynamic or legacy tables.
+
+## Transactions
+
+The same handle wraps raw and table-builder work in one transaction:
+
+```dart file=../../examples/lib/direct_database.dart#direct-transaction
+```
+
+Nested query-builder operations, raw SQL, schema plans, and migrations can all
+share the connection’s execution hooks and interceptors.
+
+## Add generated models later
+
+When a table becomes part of your domain, introduce a model and registry:
+
+1. Add `ormed_cli` and `build_runner` as development dependencies.
+2. Define an annotated model and run `dart run build_runner build`.
+3. Pass the generated registry to `OrmDatabase.connect`, or move to the
+   generated `DataSource` scaffold.
+
+The driver-first facade remains useful for raw SQL, ad-hoc tables, migrations,
+and database-specific maintenance even after code generation is enabled.
+
+## Next steps
+
+- [Query Builder](../queries/query-builder) for generated model queries and
+  ad-hoc tables
+- [DataSource](../queries/data-source) for lower-level lifecycle and routing
+- [Observability](../guides/observability) for query middleware and tracing
+- [Code Generation](./code-generation) when your schema deserves domain types

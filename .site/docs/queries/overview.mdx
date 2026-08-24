@@ -1,39 +1,38 @@
 ---
 sidebar_position: 1
+description: Choose the right Ormed query API for reads, writes, connection lifecycle, and specialized data access.
 ---
 
-# Queries Overview
+# Queries
 
-Ormed gives you three layers for data access: query builder, repositories, and DataSource orchestration.
+Ormed has a few ways to reach the database because a list screen, a model mutation, and a transaction have different responsibilities. Pick the smallest layer that matches the job, then move to a lower layer when you need more control.
 
-## Prerequisites
+## Pick an API by the job
 
-- [Models Overview](../models/overview)
-- [Migrations Overview](../migrations/overview)
+| If you need to... | Use | Why |
+| --- | --- | --- |
+| Compose filters, joins, projections, or aggregates | [Query Builder](./query-builder) | Controls the shape of a typed read or write without hiding the SQL work |
+| Insert, update, delete, or upsert a model | [Repository](./repository) | Keeps model-centric mutations and persistence rules together |
+| Initialize connections, run transactions, or route databases | [DataSource](./data-source) | Owns connection lifecycle and the boundary around multiple operations |
+| Explore a table or run SQL before you have a model | [Direct Database Access](../getting-started/direct-database) | Lets you start with the schema and add generated models when they become useful |
 
-## What You’ll Learn
+## A common request flow
 
-- When to use query builder vs repository vs DataSource APIs
-- A practical order for learning query features
-- How to scale from simple CRUD to multi-connection workflows
+This example shows the usual split: the query builder reads a shaped result, while a repository handles a model write. The generated model and query definitions come from the model setup described in [Defining Models](../models/defining-models).
 
-## Step Outcome
+```dart file=../../examples/lib/queries.dart#intro-query
+```
 
-By the end of this page, you should know which API layer to use first for your current task.
+For a multi-step change, put the read and write operations inside a [transaction](./data-source#transactions) so they succeed or fail together. Keep connection setup in the `DataSource`; keep filtering and projections close to the query that needs them.
 
-## Query Layers
+## Choose a starting path
 
-- `Query Builder`: fluent typed reads and writes, joins, filters, projections.
-- `Repository`: model-oriented create/update/delete workflows.
-- `DataSource`: connection lifecycle, transactions, and multi-database routing.
+- **Listing, searching, or reporting:** start with the [Query Builder](./query-builder). Add joins, predicates, ordering, pagination, or projections as the screen requires.
+- **CRUD around a model:** start with the [Repository](./repository). It is the clearest home for create, update, delete, and model-oriented workflows.
+- **Boot, transactions, or multiple databases:** start with [DataSource](./data-source), then call the query or repository API inside that lifecycle boundary.
+- **No stable model yet:** use [Direct Database Access](../getting-started/direct-database) while you learn the schema. Introduce a generated model when repeated access benefits from types and shared behavior.
 
-## Quick Decision Guide
-
-- Need custom filtering/joining/projections: start with `Query Builder`.
-- Need model-centric write flows (insert/update/delete): use `Repository`.
-- Need lifecycle/transactions/connection routing: use `DataSource`.
-
-## Recommended Reading Order
+## Learn in this order
 
 1. [Query Builder](./query-builder): core read/write fluency.
 2. [Repository](./repository): structured model mutations.
@@ -41,8 +40,12 @@ By the end of this page, you should know which API layer to use first for your c
 4. [DataSource](./data-source): boot, connection control, transactions.
 5. [JSON Queries](./json) + [Caching](./caching): specialized tuning.
 
-## Read This Next
+## Keep the boundaries clear
+
+The query builder controls SQL shape. The repository controls model workflow. The `DataSource` controls connection lifecycle and transaction scope. Keeping those responsibilities separate makes it easier to test a query, change persistence behavior, or add another database without rewriting every call site.
+
+## Start here
 
 - [Query Builder](./query-builder)
 - [Repository](./repository)
-- [Multi-Database Guide](../guides/multi-database)
+- [DataSource](./data-source)

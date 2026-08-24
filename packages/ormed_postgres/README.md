@@ -26,6 +26,29 @@ dependencies:
 
 ## Quick Start
 
+For direct database access, code generation is optional:
+
+```dart
+import 'package:ormed_postgres/ormed_postgres.dart';
+
+Future<void> main() async {
+  final db = await PostgresDatabase.connect(
+    database: 'mydb',
+    username: 'postgres',
+    password: 'postgres',
+  );
+  final rows = await db.queryRaw('SELECT 1 AS ok');
+  print(rows.first['ok']);
+  await db.close();
+}
+```
+
+To use generated models, pass `registry: buildOrmRegistry()` to
+`PostgresDatabase.connect`.
+
+The lower-level `DataSource` API remains available when an application needs
+full control over initialization and connection registration:
+
 ```dart
 import 'package:your_app/src/database/datasource.dart';
 

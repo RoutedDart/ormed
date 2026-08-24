@@ -145,31 +145,37 @@ class SqliteDriverAdapter extends SqliteRemoteAdapterBase
   Future<R> transaction<R>(Future<R> Function() action) async {
     final database = await _database();
     if (_transactionDepth == 0) {
-      _transactionDepth++;
       database.execute('BEGIN');
+      _transactionDepth++;
+      beginExternalChangeScope();
       try {
         final result = await action();
         database.execute('COMMIT');
+        _transactionDepth--;
+        commitExternalChangeScope();
         return result;
       } catch (_) {
         database.execute('ROLLBACK');
-        rethrow;
-      } finally {
         _transactionDepth--;
+        rollbackExternalChangeScope();
+        rethrow;
       }
     } else {
       final savepoint = 'sp_${_transactionDepth + 1}';
-      _transactionDepth++;
       database.execute('SAVEPOINT $savepoint');
+      _transactionDepth++;
+      beginExternalChangeScope();
       try {
         final result = await action();
         database.execute('RELEASE SAVEPOINT $savepoint');
+        _transactionDepth--;
+        commitExternalChangeScope();
         return result;
       } catch (_) {
         database.execute('ROLLBACK TO SAVEPOINT $savepoint');
-        rethrow;
-      } finally {
         _transactionDepth--;
+        rollbackExternalChangeScope();
+        rethrow;
       }
     }
   }
@@ -180,10 +186,12 @@ class SqliteDriverAdapter extends SqliteRemoteAdapterBase
     if (_transactionDepth == 0) {
       database.execute('BEGIN');
       _transactionDepth++;
+      beginExternalChangeScope();
     } else {
       final savepoint = 'sp_${_transactionDepth + 1}';
       database.execute('SAVEPOINT $savepoint');
       _transactionDepth++;
+      beginExternalChangeScope();
     }
   }
 
@@ -197,10 +205,12 @@ class SqliteDriverAdapter extends SqliteRemoteAdapterBase
     if (_transactionDepth == 1) {
       database.execute('COMMIT');
       _transactionDepth--;
+      commitExternalChangeScope();
     } else {
       final savepoint = 'sp_$_transactionDepth';
       database.execute('RELEASE SAVEPOINT $savepoint');
       _transactionDepth--;
+      commitExternalChangeScope();
     }
   }
 
@@ -214,10 +224,12 @@ class SqliteDriverAdapter extends SqliteRemoteAdapterBase
     if (_transactionDepth == 1) {
       database.execute('ROLLBACK');
       _transactionDepth--;
+      rollbackExternalChangeScope();
     } else {
       final savepoint = 'sp_$_transactionDepth';
       database.execute('ROLLBACK TO SAVEPOINT $savepoint');
       _transactionDepth--;
+      rollbackExternalChangeScope();
     }
   }
 
@@ -226,6 +238,7 @@ class SqliteDriverAdapter extends SqliteRemoteAdapterBase
     final database = await _database();
     database.execute('DELETE FROM $tableName');
     database.execute("DELETE FROM sqlite_sequence WHERE name = ?", [tableName]);
+    recordExternalTablesChanged([tableName]);
   }
 
   @override

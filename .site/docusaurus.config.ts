@@ -7,8 +7,8 @@ import remarkCodeRegion from './plugins/remark-code-region.mjs';
 
 const config: Config = {
   title: 'Ormed',
-  tagline: 'A strongly-typed ORM for Dart',
-  favicon: 'img/favicon.ico',
+  tagline: 'The typed database path for Dart — generated or not.',
+  favicon: 'img/ormed-mark.svg',
 
   // Future flags, see https://docusaurus.io/docs/api/docusaurus-config#future
   future: {
@@ -23,7 +23,7 @@ const config: Config = {
 
   // GitHub pages deployment config.
   // If you aren't using GitHub pages, you don't need these.
-  organizationName: 'kingwill101', // Usually your GitHub org/user name.
+  organizationName: 'RoutedDart', // Usually your GitHub org/user name.
   projectName: 'ormed', // Usually your repo name.
 
   onBrokenLinks: 'throw',
@@ -42,10 +42,9 @@ const config: Config = {
       {
         docs: {
           sidebarPath: './sidebars.ts',
-          // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
           editUrl:
-            'https://github.com/kingwill101/ormed/tree/main/.site/',
+            'https://github.com/RoutedDart/ormed/tree/master/.site/',
           remarkPlugins: [
             [remarkCodeRegion, { rootDir: __dirname }],
           ],
@@ -74,15 +73,16 @@ const config: Config = {
 
   themeConfig: {
     // Replace with your project's social card
-    image: 'img/ormed-social-card.jpg',
+    image: 'img/ormed-social-card.svg',
     colorMode: {
-      respectPrefersColorScheme: true,
+      defaultMode: 'dark',
+      respectPrefersColorScheme: false,
     },
     navbar: {
       title: 'Ormed',
       logo: {
         alt: 'Ormed Logo',
-        src: 'img/logo.svg',
+        src: 'img/ormed-mark.svg',
       },
       items: [
         {
@@ -90,6 +90,11 @@ const config: Config = {
           sidebarId: 'docsSidebar',
           position: 'left',
           label: 'Documentation',
+        },
+        {
+          to: '/docs/getting-started/direct-database',
+          label: 'Start direct',
+          position: 'left',
         },
         {
           href: 'https://ormed.vercel.app/llms.txt',
@@ -102,7 +107,7 @@ const config: Config = {
           position: 'right',
         },
         {
-          href: 'https://github.com/kingwill101/ormed',
+          href: 'https://github.com/RoutedDart/ormed',
           label: 'GitHub',
           position: 'right',
         },
@@ -146,11 +151,11 @@ const config: Config = {
           items: [
             {
               label: 'GitHub',
-              href: 'https://github.com/kingwill101/ormed',
+              href: 'https://github.com/RoutedDart/ormed',
             },
             {
               label: 'Issues',
-              href: 'https://github.com/kingwill101/ormed/issues',
+              href: 'https://github.com/RoutedDart/ormed/issues',
             },
           ],
         },

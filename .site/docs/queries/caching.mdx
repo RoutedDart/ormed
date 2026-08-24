@@ -6,21 +6,6 @@ sidebar_position: 5
 
 Query caching stores query results in memory so repeated reads can skip database round-trips.
 
-## Prerequisites
-
-- [Query Builder](./query-builder)
-- [Repository](./repository)
-
-## What You’ll Learn
-
-- How to enable and tune query-level caching
-- How cache invalidation and bypass options work
-- When to use memory caching vs direct DB reads
-
-## Step Outcome
-
-By the end of this page, you should be able to cache read-heavy queries safely, inspect cache behavior, and invalidate cache on write boundaries.
-
 ## 1. Start with `remember`
 
 Cache query results for a specified TTL:

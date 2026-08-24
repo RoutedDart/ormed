@@ -1,5 +1,5 @@
 ---
-sidebar_position: 2
+sidebar_position: 3
 ---
 
 import Tabs from '@theme/Tabs';
@@ -7,28 +7,12 @@ import TabItem from '@theme/TabItem';
 
 # Quick Start
 
-This guide will walk you through creating a simple Ormed application with a User model.
+This guide walks through the generated-model path: a User model, migration,
+seeder, and typed queries. If you want to connect first and decide on models
+later, start with [Direct Database Access](./direct-database).
 If you are integrating into an existing app, use [Adopt Ormed In An Existing Project](./adopt-existing-project) instead.
 
-## Prerequisites
-
-- You completed [Installation](./installation)
-- You can run `dart pub get` and `dart run build_runner build` in your app
-
-## What You’ll Learn
-
-- How to scaffold runtime config with `ormed init`
-- How models, migrations, seeders, and generated code connect
-- How to boot `DataSource` and run basic CRUD
-
-## Step Outcome
-
-By the end of this page, you should have:
-
-- A generated runtime datasource scaffold
-- A `User` model with generated ORM artifacts
-- A migration + seeder applied locally
-- A runnable app that performs create/read/update/delete
+Before you start: You completed [Installation](./installation); You completed the [Code Generation](./code-generation) tooling setup; You can run `dart run ormed_cli:ormed` as described in [CLI Overview](../cli/overview).
 
 ## Command Flow (One Pass)
 
@@ -141,10 +125,12 @@ Create `lib/src/models/user.dart`:
 Run the build runner:
 
 ```bash
-dart run build_runner build
+dart run build_runner build --delete-conflicting-outputs
 ```
 
-This creates `user.orm.dart` with the generated `$User` class and helpers.
+This creates `user.orm.dart` with the generated `$User` class and helpers. For
+watch mode, builder configuration, generated registry details, and verification
+guidance, see [Code Generation](./code-generation).
 
 ## Create a Migration
 

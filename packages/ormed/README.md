@@ -27,7 +27,7 @@ dependencies:
 
 dev_dependencies:
   ormed_cli: ^0.3.0
-  build_runner: ^2.16.0
+  build_runner: ^2.10.5
 ```
 
 ## Model Factories
@@ -446,6 +446,57 @@ void main() async {
   await ds.init();
 }
 ```
+
+#### Execution interceptors
+
+Direct and generated connections can install ordered middleware around database
+execution. Interceptors receive SQL, bindings, operation type, affected table,
+and a transaction identifier when applicable. They can observe, reject, or
+short-circuit an operation by deciding whether to call `next`:
+
+```dart
+class TraceQueries extends QueryInterceptor {
+  @override
+  Future<T> intercept<T>(
+    QueryExecutionContext context,
+    Future<T> Function() next,
+  ) async {
+    print('${context.operationName}: ${context.sql}');
+    return next();
+  }
+}
+
+final ds = DataSource(DataSourceOptions(
+  driver: myDriver,
+  registry: ModelRegistry(),
+  interceptors: [TraceQueries()],
+));
+await ds.init();
+```
+
+The same `QueryInterceptor` list is accepted by `OrmDatabase.connect` and the
+driver-specific `SqliteDatabase`, `PostgresDatabase`, `MySqlDatabase`, and
+`D1Database` helpers. Use those facades for raw SQL if it should pass through
+the pipeline; direct calls on the underlying driver intentionally remain a
+low-level escape hatch.
+
+Ormed also includes an OpenTelemetry interceptor in the core package, so a
+separate Ormed telemetry package is not required:
+
+```dart
+import 'package:dartastic_opentelemetry/dartastic_opentelemetry.dart' as dotel;
+import 'package:ormed/ormed.dart';
+
+await dotel.OTel.initialize(serviceName: 'catalog-api');
+final db = await OrmDatabase.connect(
+  driver: myDriver,
+  interceptors: [OrmOpenTelemetryInterceptor()],
+);
+```
+
+Database spans include driver, operation, connection, collection, and
+transaction metadata. SQL text can be enabled explicitly with
+`OrmOpenTelemetryInterceptor(includeSql: true)`.
 
 #### Environment Helpers
 

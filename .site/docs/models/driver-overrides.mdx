@@ -9,17 +9,6 @@ import TabItem from '@theme/TabItem';
 
 Some databases differ in their **best column types** (and sometimes their **best codecs**) for the same Dart field. Ormed supports expressing those differences on a per-field basis with `@OrmField(driverOverrides: ...)`.
 
-## Prerequisites
-
-- [Defining Models](./defining-models)
-- [Drivers Overview](../drivers/overview)
-
-## What You’ll Learn
-
-- How to define per-driver field overrides
-- How override keys map to driver metadata names
-- When to use driver overrides vs generic casts
-
 This is useful when:
 - A field should be `jsonb` on PostgreSQL, but `TEXT` on SQLite.
 - One driver returns JSON values as a `Map`, while another returns a JSON string (and needs a different codec).

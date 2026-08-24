@@ -35,6 +35,7 @@ class DataSourceOptions {
     this.defaultSchema,
     this.codecs = const {},
     this.driverExtensions = const [],
+    this.interceptors = const [],
     this.logging = false,
     this.logFilePath,
     this.logger,
@@ -86,6 +87,9 @@ class DataSourceOptions {
   /// Driver extension modules registered for this data source.
   final List<DriverExtension> driverExtensions;
 
+  /// Middleware applied to query-builder, raw SQL, and transaction execution.
+  final List<QueryInterceptor> interceptors;
+
   /// Whether to enable query logging and default contextual query logs.
   final bool logging;
 
@@ -125,6 +129,7 @@ class DataSourceOptions {
     String? defaultSchema,
     Map<String, ValueCodec<dynamic>>? codecs,
     List<DriverExtension>? driverExtensions,
+    List<QueryInterceptor>? interceptors,
     bool? logging,
     String? logFilePath,
     contextual.Logger? logger,
@@ -142,6 +147,7 @@ class DataSourceOptions {
     defaultSchema: defaultSchema ?? this.defaultSchema,
     codecs: codecs ?? this.codecs,
     driverExtensions: driverExtensions ?? this.driverExtensions,
+    interceptors: interceptors ?? this.interceptors,
     logging: logging ?? this.logging,
     logFilePath: logFilePath ?? this.logFilePath,
     logger: logger ?? this.logger,
@@ -248,6 +254,13 @@ class DataSource {
 
   final ModelRegistry _registry;
   final ValueCodecRegistry _codecRegistry;
+  late final QueryInterceptorPipeline interceptorPipeline =
+      QueryInterceptorPipeline(
+        driverName: options.driver.metadata.name,
+        connectionName: options.name,
+        database: options.database,
+        interceptors: options.interceptors,
+      );
   OrmConnection? _connection;
   bool _initialized = false;
 
@@ -344,6 +357,11 @@ class DataSource {
       }
     }
 
+    final lifecycle = options.driver;
+    if (lifecycle is DriverLifecycle) {
+      await (lifecycle as DriverLifecycle).open();
+    }
+
     // Create the connection configuration
     final config = ConnectionConfig(
       name: options.name,
@@ -359,6 +377,7 @@ class DataSource {
       registry: _registry,
       codecRegistry: _codecRegistry,
       scopeRegistry: options.scopeRegistry,
+      interceptorPipeline: interceptorPipeline,
     );
 
     // Enable logging if requested
@@ -501,19 +520,19 @@ class DataSource {
   /// ```
   Future<void> beginTransaction() {
     _ensureInitialized();
-    return _connection!.driver.beginTransaction();
+    return _connection!.context.beginManualTransaction();
   }
 
   /// Commits the active database transaction.
   Future<void> commit() {
     _ensureInitialized();
-    return _connection!.driver.commitTransaction();
+    return _connection!.context.commitManualTransaction();
   }
 
   /// Rolls back the active database transaction.
   Future<void> rollback() {
     _ensureInitialized();
-    return _connection!.driver.rollbackTransaction();
+    return _connection!.context.rollbackManualTransaction();
   }
 
   /// Builds a query against an arbitrary table name.
@@ -541,6 +560,33 @@ class DataSource {
       schema: schema,
       scopes: scopes,
       columns: columns,
+    );
+  }
+
+  /// Executes raw SQL through the configured interceptor pipeline.
+  Future<void> executeRaw(String sql, [List<Object?> parameters = const []]) {
+    _ensureInitialized();
+    if (!interceptorPipeline.isActive) {
+      return options.driver.executeRaw(sql, parameters);
+    }
+    return interceptorPipeline.run(
+      _rawExecutionContext(sql, parameters),
+      () => options.driver.executeRaw(sql, parameters),
+    );
+  }
+
+  /// Executes a raw SQL query through the configured interceptor pipeline.
+  Future<List<Map<String, Object?>>> queryRaw(
+    String sql, [
+    List<Object?> parameters = const [],
+  ]) {
+    _ensureInitialized();
+    if (!interceptorPipeline.isActive) {
+      return options.driver.queryRaw(sql, parameters);
+    }
+    return interceptorPipeline.run(
+      _rawExecutionContext(sql, parameters),
+      () => options.driver.queryRaw(sql, parameters),
     );
   }
 
@@ -685,8 +731,10 @@ class DataSource {
     }
 
     if (manager.isRegistered(options.name)) {
+      await _connection!.context.changeBus.close();
       await manager.unregister(options.name);
     } else {
+      await _connection!.context.changeBus.close();
       await _connection!.driver.close();
     }
     _connection = null;
@@ -700,6 +748,19 @@ class DataSource {
       );
     }
   }
+
+  QueryExecutionContext _rawExecutionContext(
+    String sql,
+    List<Object?> parameters,
+  ) => QueryExecutionContext(
+    driverName: interceptorPipeline.driverName,
+    database: options.database,
+    sql: sql,
+    parameters: parameters,
+    operationName: 'RAW',
+    querySummary: 'RAW SQL',
+    transactionId: context.currentTransactionId,
+  );
 }
 
 /// Extension to add data source registration to [ConnectionManager].

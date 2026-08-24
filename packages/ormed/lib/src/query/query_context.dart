@@ -50,6 +50,8 @@ class QueryContext implements ConnectionResolver {
     this.connectionName,
     this.connectionDatabase,
     this.connectionTablePrefix,
+    QueryInterceptorPipeline? interceptorPipeline,
+    QueryChangeBus? changeBus,
     this.cacheInvalidationPolicy = QueryCacheInvalidationPolicy.none,
     this._beforeQueryHook,
     this._beforeMutationHook,
@@ -64,7 +66,20 @@ class QueryContext implements ConnectionResolver {
        ),
        scopeRegistry = scopeRegistry ?? ScopeRegistry(),
        events = events ?? EventBus.instance,
-       queryCache = QueryCache() {
+       queryCache = QueryCache(),
+       interceptorPipeline =
+           interceptorPipeline ??
+           QueryInterceptorPipeline(
+             driverName: driver.metadata.name,
+             connectionName: connectionName,
+             database: connectionDatabase,
+           ),
+       changeBus =
+           changeBus ??
+           (driver is DriverChangeFeed
+               ? (driver as DriverChangeFeed).changeBus
+               : null) ??
+           QueryChangeBus() {
     _registerSoftDeleteScopes();
     registry.addOnRegisteredCallback(_handleLateRegistration);
   }
@@ -89,6 +104,17 @@ class QueryContext implements ConnectionResolver {
 
   /// The query result cache.
   final QueryCache queryCache;
+
+  /// Middleware applied to database execution from this context.
+  final QueryInterceptorPipeline interceptorPipeline;
+
+  /// Change feed used by reactive queries on this context.
+  final QueryChangeBus changeBus;
+
+  /// The transaction identifier active for the current asynchronous query
+  /// execution, if one was created by [transaction].
+  String? get currentTransactionId =>
+      _transactionIds.isEmpty ? null : _transactionIds.last;
 
   /// Policy for invalidating cached results after mutations.
   final QueryCacheInvalidationPolicy cacheInvalidationPolicy;
@@ -115,7 +141,10 @@ class QueryContext implements ConnectionResolver {
   final List<void Function(QueryWarning)> _warningListeners = [];
   final List<ExecutingStatementCallback> _beforeExecutingCallbacks = [];
   final List<_LongQuerySubscription> _longQuerySubscriptions = [];
+  final List<_PendingChangeScope> _pendingChangeScopes = [];
+  final List<_PendingChangeScope> _manualChangeScopes = [];
   int _transactionDepth = 0;
+  final List<String> _transactionIds = [];
 
   /// Returns a [Query] bound to the registered [ModelDefinition] for [T].
   ///
@@ -403,6 +432,76 @@ class QueryContext implements ConnectionResolver {
   void onMutation(void Function(MutationEvent event) listener) =>
       _mutationListeners.add(listener);
 
+  /// Publishes a committed change for the supplied tables.
+  ///
+  /// Changes published while inside [transaction] are held until the outer
+  /// transaction commits. This method is useful for driver integrations that
+  /// observe writes made outside Ormed, such as a reactive SQLite backend.
+  void notifyTablesChanged(Iterable<String> tables) {
+    final normalized = tables
+        .map(normalizeDatabaseTableName)
+        .where((table) => table.isNotEmpty)
+        .toSet();
+    if (normalized.isEmpty) return;
+
+    final scope = _activeChangeScope;
+    if (scope != null) {
+      scope.tables.addAll(normalized);
+      return;
+    }
+    changeBus.publish(DatabaseChange(tables: normalized));
+  }
+
+  /// Publishes a change that may affect every query on this context.
+  void notifyAllTablesChanged() {
+    final scope = _activeChangeScope;
+    if (scope != null) {
+      scope.allTables = true;
+      return;
+    }
+    changeBus.publish(DatabaseChange.all());
+  }
+
+  /// Begins a manually controlled transaction and its reactive change scope.
+  ///
+  /// [commitManualTransaction] or [rollbackManualTransaction] must be called
+  /// after this method succeeds. Structured mutations performed between those
+  /// calls do not notify watchers until the transaction commits.
+  Future<void> beginManualTransaction() async {
+    await driver.beginTransaction();
+    _manualChangeScopes.add(_PendingChangeScope());
+  }
+
+  /// Commits a manually controlled transaction and publishes its changes.
+  Future<void> commitManualTransaction() async {
+    if (_manualChangeScopes.isEmpty) {
+      throw StateError('No active manual transaction to commit.');
+    }
+    await driver.commitTransaction();
+    final pending = _manualChangeScopes.removeLast();
+    if (_manualChangeScopes.isNotEmpty) {
+      _manualChangeScopes.last.absorb(pending);
+    } else {
+      _publishChangeScope(pending);
+    }
+  }
+
+  /// Rolls back a manually controlled transaction and discards its changes.
+  Future<void> rollbackManualTransaction() async {
+    if (_manualChangeScopes.isEmpty) {
+      throw StateError('No active manual transaction to roll back.');
+    }
+    try {
+      await driver.rollbackTransaction();
+    } finally {
+      _manualChangeScopes.removeLast();
+    }
+  }
+
+  _PendingChangeScope? get _activeChangeScope => _pendingChangeScopes.isNotEmpty
+      ? _pendingChangeScopes.last
+      : (_manualChangeScopes.isNotEmpty ? _manualChangeScopes.last : null);
+
   /// Registers a listener that receives [QueryWarning] payloads.
   ///
   /// [listener] is a callback function that will be invoked when a query-layer
@@ -481,7 +580,23 @@ class QueryContext implements ConnectionResolver {
   @override
   Future<List<Map<String, Object?>>> runSelect(QueryPlan plan) async {
     final preview = describeQuery(plan);
+    return interceptorPipeline.run(
+      _queryExecutionContext(
+        sql: preview.sql,
+        parameters: preview.parameters,
+        operationName: 'SELECT',
+        querySummary: 'SELECT ${plan.definition.tableName}',
+        collectionName: plan.definition.tableName,
+        queryPlan: plan,
+      ),
+      () => _runSelect(plan, preview),
+    );
+  }
 
+  Future<List<Map<String, Object?>>> _runSelect(
+    QueryPlan plan,
+    StatementPreview preview,
+  ) async {
     // Check cache if enabled
     if (plan.cacheTtl != null && !plan.disableCache) {
       final cached = queryCache.get<List<Map<String, Object?>>>(
@@ -596,6 +711,106 @@ class QueryContext implements ConnectionResolver {
     }
   }
 
+  /// Watches [plan] and reruns it after relevant committed changes.
+  ///
+  /// Each refresh uses [runSelect], so normal query interceptors, logging, and
+  /// query events apply to the initial snapshot and every subsequent refresh.
+  Stream<List<Map<String, Object?>>> watchSelect(
+    QueryPlan plan, {
+    Iterable<String> readsFrom = const [],
+  }) {
+    final executionPlan = plan.copyWith(disableCache: true);
+    final dependencies = QueryDependencies.fromPlan(
+      executionPlan,
+      additionalTables: readsFrom,
+    );
+    final preview = describeQuery(executionPlan);
+    return interceptorPipeline.runStream(
+      _queryExecutionContext(
+        sql: preview.sql,
+        parameters: preview.parameters,
+        operationName: 'WATCH',
+        querySummary: 'WATCH ${executionPlan.definition.tableName}',
+        collectionName: executionPlan.definition.tableName,
+        queryPlan: executionPlan,
+      ),
+      () => _watchSelect(executionPlan, dependencies),
+    );
+  }
+
+  Stream<List<Map<String, Object?>>> _watchSelect(
+    QueryPlan plan,
+    QueryDependencies dependencies,
+  ) {
+    late final StreamController<List<Map<String, Object?>>> controller;
+    StreamSubscription<DatabaseChange>? changeSubscription;
+    var cancelled = false;
+    var refreshRunning = false;
+    var refreshScheduled = false;
+    var refreshAgain = false;
+    late Future<void> Function() refresh;
+
+    void scheduleRefresh() {
+      if (cancelled || refreshScheduled) return;
+      if (refreshRunning) {
+        refreshAgain = true;
+        return;
+      }
+      refreshScheduled = true;
+      scheduleMicrotask(() {
+        refreshScheduled = false;
+        refresh();
+      });
+    }
+
+    refresh = () async {
+      if (cancelled) return;
+      if (refreshRunning) {
+        refreshAgain = true;
+        return;
+      }
+      refreshRunning = true;
+      try {
+        final rows = await runSelect(plan);
+        if (!cancelled && !controller.isClosed) {
+          controller.add(rows);
+        }
+      } catch (error, stackTrace) {
+        if (!cancelled && !controller.isClosed) {
+          controller.addError(error, stackTrace);
+        }
+      } finally {
+        refreshRunning = false;
+        if (refreshAgain) {
+          refreshAgain = false;
+          scheduleRefresh();
+        }
+      }
+    };
+
+    controller = StreamController<List<Map<String, Object?>>>(
+      onListen: () {
+        changeSubscription = changeBus.changes
+            .where(dependencies.isAffectedBy)
+            .listen(
+              (_) => scheduleRefresh(),
+              onDone: () {
+                if (!cancelled && !controller.isClosed) {
+                  cancelled = true;
+                  controller.close();
+                }
+              },
+            );
+        refresh();
+      },
+      onCancel: () async {
+        cancelled = true;
+        await changeSubscription?.cancel();
+      },
+    );
+    return controller.stream;
+  }
+
   /// Streams rows for [plan] while emitting a [QueryEvent].
   ///
   /// This method is typically used internally by the [QueryBuilder].
@@ -603,6 +818,23 @@ class QueryContext implements ConnectionResolver {
   /// [plan] is the [QueryPlan] to execute.
   Stream<Map<String, Object?>> streamSelect(QueryPlan plan) {
     final preview = describeQuery(plan);
+    return interceptorPipeline.runStream(
+      _queryExecutionContext(
+        sql: preview.sql,
+        parameters: preview.parameters,
+        operationName: 'SELECT',
+        querySummary: 'SELECT ${plan.definition.tableName}',
+        collectionName: plan.definition.tableName,
+        queryPlan: plan,
+      ),
+      () => _streamSelect(plan, preview),
+    );
+  }
+
+  Stream<Map<String, Object?>> _streamSelect(
+    QueryPlan plan,
+    StatementPreview preview,
+  ) {
     final timer = Stopwatch()..start();
     _beforeQueryHook?.call(plan);
     final pretending = _pretendResolver?.call() ?? false;
@@ -755,6 +987,16 @@ class QueryContext implements ConnectionResolver {
   @override
   Future<MutationResult> runMutation(MutationPlan plan) async {
     final preview = describeMutation(plan);
+    return interceptorPipeline.run(
+      _mutationExecutionContext(plan, preview),
+      () => _runMutation(plan, preview),
+    );
+  }
+
+  Future<MutationResult> _runMutation(
+    MutationPlan plan,
+    StatementPreview preview,
+  ) async {
     final timer = Stopwatch()..start();
     _beforeMutationHook?.call(plan);
     final pretending = _pretendResolver?.call() ?? false;
@@ -820,6 +1062,7 @@ class QueryContext implements ConnectionResolver {
           QueryCacheInvalidationPolicy.flushOnWrite) {
         queryCache.flush();
       }
+      _recordMutationChange(plan);
       return result;
     } catch (error, stackTrace) {
       timer.stop();
@@ -863,7 +1106,7 @@ class QueryContext implements ConnectionResolver {
   ///   await context.query<Log>().create({'message': 'User updated'});
   /// });
   /// ```
-  Future<R> transaction<R>(Future<R> Function() callback) {
+  Future<R> transaction<R>(Future<R> Function() callback) async {
     final before = _beforeTransactionHook;
     final after = _afterTransactionHook;
     final outcomeHook = _afterTransactionOutcomeHook;
@@ -872,6 +1115,7 @@ class QueryContext implements ConnectionResolver {
         ? TransactionScope.root
         : TransactionScope.savepoint;
     _transactionDepth = depthBefore + 1;
+    _pendingChangeScopes.add(_PendingChangeScope());
     Future<R> runTransaction() {
       if (before == null && after == null) {
         return driver.transaction(() async {
@@ -952,14 +1196,117 @@ class QueryContext implements ConnectionResolver {
       });
     }
 
+    final transactionId = interceptorPipeline.nextTransactionId();
+    _transactionIds.add(transactionId);
+    final transactionContext = QueryExecutionContext(
+      driverName: interceptorPipeline.driverName,
+      connectionName: interceptorPipeline.connectionName,
+      database: connectionDatabase,
+      sql: scope == TransactionScope.root
+          ? 'BEGIN'
+          : _savepointSql(depthBefore + 1),
+      operationName: 'TRANSACTION',
+      querySummary: scope == TransactionScope.root
+          ? 'TRANSACTION'
+          : 'SAVEPOINT ${depthBefore + 1}',
+      transactionId: transactionId,
+    );
+
     try {
-      return runTransaction().whenComplete(() {
-        _transactionDepth = depthBefore;
-      });
+      final result = await interceptorPipeline.run(
+        transactionContext,
+        runTransaction,
+      );
+      _finishChangeScope(depthBefore, committed: true);
+      return result;
     } catch (error) {
-      _transactionDepth = depthBefore;
+      _finishChangeScope(depthBefore, committed: false);
       rethrow;
+    } finally {
+      _transactionIds.removeLast();
+      _transactionDepth = depthBefore;
     }
+  }
+
+  void _recordMutationChange(MutationPlan plan) {
+    final tables = <String>{plan.definition.tableName};
+    final queryPlan = plan.queryPlan;
+    if (queryPlan != null) {
+      tables.addAll(queryPlan.readTables);
+    }
+    notifyTablesChanged(tables);
+  }
+
+  void _finishChangeScope(int depthBefore, {required bool committed}) {
+    final pending = _pendingChangeScopes.removeLast();
+    if (!committed) return;
+
+    if (depthBefore > 0 && _pendingChangeScopes.isNotEmpty) {
+      final parent = _pendingChangeScopes.last;
+      parent.tables.addAll(pending.tables);
+      parent.allTables = parent.allTables || pending.allTables;
+      return;
+    }
+
+    if (_manualChangeScopes.isNotEmpty) {
+      _manualChangeScopes.last.absorb(pending);
+    } else {
+      _publishChangeScope(pending);
+    }
+  }
+
+  void _publishChangeScope(_PendingChangeScope pending) {
+    if (pending.allTables) {
+      changeBus.publish(DatabaseChange.all());
+    } else if (pending.tables.isNotEmpty) {
+      changeBus.publish(DatabaseChange(tables: pending.tables));
+    }
+  }
+
+  QueryExecutionContext _queryExecutionContext({
+    required String sql,
+    required List<Object?> parameters,
+    required String operationName,
+    required String querySummary,
+    String? collectionName,
+    QueryPlan? queryPlan,
+    MutationPlan? mutationPlan,
+  }) => QueryExecutionContext(
+    driverName: interceptorPipeline.driverName,
+    connectionName: interceptorPipeline.connectionName,
+    database: connectionDatabase,
+    sql: sql,
+    parameters: parameters,
+    operationName: operationName,
+    querySummary: querySummary,
+    collectionName: collectionName,
+    transactionId: _transactionIds.isEmpty ? null : _transactionIds.last,
+    queryPlan: queryPlan,
+    mutationPlan: mutationPlan,
+  );
+
+  QueryExecutionContext _mutationExecutionContext(
+    MutationPlan plan,
+    StatementPreview preview,
+  ) {
+    final operationName = switch (plan.operation) {
+      MutationOperation.insert => 'INSERT',
+      MutationOperation.insertUsing => 'INSERT',
+      MutationOperation.update => 'UPDATE',
+      MutationOperation.delete => 'DELETE',
+      MutationOperation.upsert => 'UPSERT',
+      MutationOperation.queryDelete => 'DELETE',
+      MutationOperation.queryUpdate => 'UPDATE',
+    };
+    return _queryExecutionContext(
+      sql: preview.sql,
+      parameters: preview.parameters,
+      operationName: operationName,
+      querySummary: '$operationName ${plan.definition.tableName}',
+      collectionName: plan.definition.tableName,
+      queryPlan: plan.queryPlan,
+      mutationPlan: plan,
+    );
   }
 
   void _emitQuery(QueryEvent event) {
@@ -1223,6 +1570,16 @@ class QueryWarning {
 
   /// Driver name associated with the warning.
   final String? driverName;
+}
+
+class _PendingChangeScope {
+  final Set<String> tables = <String>{};
+  bool allTables = false;
+
+  void absorb(_PendingChangeScope other) {
+    tables.addAll(other.tables);
+    allTables = allTables || other.allTables;
+  }
 }
 
 class _LongQuerySubscription {

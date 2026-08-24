@@ -59,8 +59,38 @@ dependencies:
   ormed_sqlite: ^0.4.0  # or your preferred driver
 
 dev_dependencies:
-  build_runner: ^2.4.0
+  build_runner: ^2.10.5
 ```
+
+### Alternative: connect without code generation
+
+Code generation is optional when you want direct database access, schema
+operations, raw SQL, or ad-hoc table queries:
+
+```dart
+import 'package:ormed/ormed.dart';
+import 'package:ormed_sqlite/ormed_sqlite.dart';
+
+Future<void> main() async {
+  final db = await SqliteDatabase.connect(path: 'database/app.sqlite');
+
+  await db.executeSchema((schema) {
+    schema.create('users', (table) {
+      table.increments('id');
+      table.string('name');
+    });
+  });
+
+  await db.executeRaw('INSERT INTO users (name) VALUES (?)', ['Alice']);
+  final users = await db.queryRaw('SELECT * FROM users');
+  print(users);
+
+  await db.close();
+}
+```
+
+Pass a generated `ModelRegistry` when you want typed model queries and
+repositories; it is not required for direct driver usage.
 
 ### 3. Scaffold runtime files
 

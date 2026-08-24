@@ -1,50 +1,41 @@
 ---
 sidebar_position: 1
+description: Choose the right Ormed guide for testing, production operations, and real application workflows.
 ---
 
-# Guides Overview
+# Guides
 
-Guides focus on operating Ormed in real applications: testing, multi-database setups, observability, and production guardrails.
+The guides cover the work that starts after your first successful query: building a complete application, testing database behavior, operating more than one database, and adding the guardrails that make a team’s setup predictable.
 
-## Prerequisites
+Use the API pages beginning with [Models](../models/overview) when you need a method or option. Use these guides when you need to decide how several pieces fit together.
 
-- [Quick Start](../getting-started/quick-start)
-- [Queries Overview](../queries/overview)
+## Choose by the job
 
-## What You’ll Learn
+| If you need to... | Start here | What you will get |
+| --- | --- | --- |
+| Build a complete application | [Fullstack Tutorial](./fullstack/ormed-shelf-tutorial) | A realistic path from schema to routes, migrations, seeds, and tests |
+| See a focused end-to-end recipe | [Examples](./examples) | Small application patterns you can adapt without reading every API page |
+| Test database behavior with confidence | [Testing](./testing) | A test setup, isolation guidance, and checks for queries and persistence |
+| Catch model mistakes while you code | [Analyzer Plugin](./analyzer-plugin) | Static feedback for common Ormed model and query issues |
+| Store and compare dates correctly | [Date and Time](./date-time) | Practical rules for UTC, local display, and database boundaries |
+| Support more than one database | [Multi-Database Support](./multi-database) | Connection routing and tenant-aware patterns |
+| Add logs, traces, or query visibility | [Observability](./observability) | Instrumentation points for understanding production behavior |
+| Set conventions for a team | [Best Practices](./best-practices) | A checklist for maintainable models, queries, and application structure |
 
-- Which guide to use for your immediate goal
-- How to progress from one service to production-scale patterns
-- Where the fullstack tutorial fits in the learning path
+## A practical path
 
-## Step Outcome
+1. Start with the [Fullstack Tutorial](./fullstack/ormed-shelf-tutorial) if you want to see the whole application shape. Choose [Examples](./examples) when you only need a focused pattern.
+2. Add [Testing](./testing) before the data layer becomes difficult to change. Make query behavior and persistence rules executable examples.
+3. Apply [Best Practices](./best-practices) and the [Analyzer Plugin](./analyzer-plugin) as your model count grows. These are most valuable when several people touch the same schema.
+4. Add [Multi-Database Support](./multi-database), [Observability](./observability), or [Date and Time](./date-time) when the application has that operational need.
 
-By the end of this page, you should know exactly which guide to open next for your current problem.
+## How to use the guides
 
-## Choose by Goal
+The guides are intentionally scenario-led. They should help you make a change safely and point you to the API reference only when a detail needs more depth. If you are still deciding whether to use a generated model, a repository, or direct database access, start with [Adopt Ormed in an Existing Project](../getting-started/adopt-existing-project).
 
-- Build a complete app walkthrough: start with [Fullstack Tutorial](./fullstack/ormed-shelf-tutorial).
-- Add reliable quality gates: use [Testing](./testing).
-- Run multiple databases cleanly: use [Multi-Database Support](./multi-database).
-- Add runtime visibility: use [Observability](./observability).
-- Harden conventions: use [Best Practices](./best-practices).
-
-## Suggested Order
-
-1. [Fullstack Tutorial](./fullstack/ormed-shelf-tutorial)
-2. [Testing](./testing)
-3. [Multi-Database Support](./multi-database)
-4. [Observability](./observability)
-5. [Best Practices](./best-practices)
-
-## If You’re In A Hurry
-
-- Need confidence in behavior: go to [Testing](./testing).
-- Need multiple connections/tenancy: go to [Multi-Database Support](./multi-database).
-- Need logs/metrics/traces: go to [Observability](./observability).
-
-## Read This Next
+## Start here
 
 - [Fullstack Tutorial](./fullstack/ormed-shelf-tutorial)
-- [CLI Overview](../cli/overview)
-- [Reference Examples](../reference/code-examples)
+- [Testing](./testing)
+- [Observability](./observability)
+- [Examples](./examples)

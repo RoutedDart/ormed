@@ -56,10 +56,15 @@ bool resolveSqliteLikeSupportsReturning(Map<String, Object?> options) {
 /// - statement querying (`queryStatement`)
 /// - backend close (`closeBackend`)
 abstract class SqliteRemoteAdapterBase
-    implements DriverAdapter, DriverExtensionHost, SchemaDriver {
+    implements
+        DriverAdapter,
+        DriverChangeFeed,
+        DriverExtensionHost,
+        SchemaDriver {
   SqliteRemoteAdapterBase({
     required String driverName,
     required Map<String, Object?> options,
+    QueryChangeBus? changeBus,
     required Set<DriverCapability> capabilities,
     required bool supportsQueryDeletes,
     required bool requiresPrimaryKeyForQueryUpdate,
@@ -71,6 +76,7 @@ abstract class SqliteRemoteAdapterBase
          driverName: driverName,
          extensions: extensions,
        ),
+       _changeBus = changeBus ?? QueryChangeBus(),
        _codecs = ValueCodecRegistry.instance.forDriver(driverName) {
     registerSqliteLikeDriverCodecs(driverName);
 
@@ -105,7 +111,9 @@ abstract class SqliteRemoteAdapterBase
   final String _driverName;
   final Map<String, Object?> _options;
   final DriverExtensionRegistry _extensions;
+  final QueryChangeBus _changeBus;
   final ValueCodecRegistry _codecs;
+  final List<_SqliteChangeScope> _changeScopes = [];
 
   late final DriverMetadata _metadata;
   late final SqliteQueryGrammar _grammar;
@@ -145,6 +153,16 @@ abstract class SqliteRemoteAdapterBase
   /// Name of the current driver instance.
   String get driverName => _driverName;
 
+  /// Change feed shared by this adapter and reactive Ormed queries.
+  @override
+  QueryChangeBus get changeBus => _changeBus;
+
+  /// Whether [executeRaw] should publish the SQL write it executes.
+  ///
+  /// Adapters that wrap another executor and maintain their own transaction
+  /// change scopes can override this and publish from their wrapper instead.
+  bool get recordsRawChanges => true;
+
   @override
   void registerExtensions(Iterable<DriverExtension> extensions) {
     _extensions.registerAll(extensions);
@@ -163,7 +181,11 @@ abstract class SqliteRemoteAdapterBase
     List<Object?> parameters = const [],
   ]) async {
     _ensureOpen();
-    await executeStatement(sql, normalizeSqliteParameters(parameters));
+    final normalized = normalizeSqliteParameters(parameters);
+    await executeStatement(sql, normalized);
+    if (recordsRawChanges) {
+      recordExternalSqlChange(sql);
+    }
   }
 
   @override
@@ -269,6 +291,72 @@ abstract class SqliteRemoteAdapterBase
 
   @override
   Future<R> transaction<R>(Future<R> Function() action) async => action();
+
+  /// Starts tracking changes for an adapter-level transaction or savepoint.
+  ///
+  /// Concrete adapters should call this after their database transaction has
+  /// successfully started.
+  void beginExternalChangeScope() {
+    _changeScopes.add(_SqliteChangeScope());
+  }
+
+  /// Publishes the current adapter-level change scope after commit.
+  ///
+  /// Nested scopes merge into their parent so only the outer commit emits a
+  /// change event.
+  void commitExternalChangeScope() {
+    if (_changeScopes.isEmpty) {
+      throw StateError('No active external change scope to commit.');
+    }
+    final scope = _changeScopes.removeLast();
+    if (_changeScopes.isNotEmpty) {
+      _changeScopes.last.absorbScope(scope);
+      return;
+    }
+    _publishExternalChange(scope);
+  }
+
+  /// Discards the current adapter-level change scope after rollback.
+  void rollbackExternalChangeScope() {
+    if (_changeScopes.isEmpty) {
+      throw StateError('No active external change scope to roll back.');
+    }
+    _changeScopes.removeLast();
+  }
+
+  /// Records a table change for a write performed by an adapter integration.
+  void recordExternalTablesChanged(Iterable<String> tables) {
+    _recordExternalChange(DatabaseChange(tables: tables));
+  }
+
+  /// Records an opaque change for a write performed by an adapter integration.
+  void recordExternalAllTablesChanged() {
+    _recordExternalChange(DatabaseChange.all());
+  }
+
+  /// Records a SQLite-like SQL statement against the reactive change feed.
+  void recordExternalSqlChange(String sql) {
+    final change = sqliteDatabaseChangeForSql(sql);
+    if (change != null) {
+      _recordExternalChange(change);
+    }
+  }
+
+  void _recordExternalChange(DatabaseChange change) {
+    if (_changeScopes.isNotEmpty) {
+      _changeScopes.last.absorb(change);
+    } else {
+      _changeBus.publish(change);
+    }
+  }
+
+  void _publishExternalChange(_SqliteChangeScope scope) {
+    if (scope.allTables) {
+      _changeBus.publish(DatabaseChange.all());
+    } else if (scope.tables.isNotEmpty) {
+      _changeBus.publish(DatabaseChange(tables: scope.tables));
+    }
+  }
 
   @override
   Future<void> beginTransaction() async {
@@ -1532,6 +1620,80 @@ abstract class SqliteRemoteAdapterBase
       throw StateError('$driverName adapter has already been closed.');
     }
   }
+}
+
+class _SqliteChangeScope {
+  final Set<String> tables = <String>{};
+  bool allTables = false;
+
+  void absorb(DatabaseChange change) {
+    tables.addAll(change.tables);
+    allTables = allTables || change.allTables;
+  }
+
+  void absorbScope(_SqliteChangeScope other) {
+    tables.addAll(other.tables);
+    allTables = allTables || other.allTables;
+  }
+}
+
+/// Returns the tables affected by a SQLite-like write statement.
+DatabaseChange? sqliteDatabaseChangeForSql(String sql) {
+  final operation = _leadingSqlVerb(sql);
+  const writeOperations = {
+    'INSERT',
+    'REPLACE',
+    'UPDATE',
+    'DELETE',
+    'WITH',
+    'CREATE',
+    'ALTER',
+    'DROP',
+    'REINDEX',
+    'VACUUM',
+  };
+  if (!writeOperations.contains(operation)) return null;
+
+  final table = switch (operation) {
+    'INSERT' || 'REPLACE' => _captureSqlTable(
+      sql,
+      RegExp(r'\bINTO\s+([^\s(]+)', caseSensitive: false),
+    ),
+    'UPDATE' => _captureSqlTable(
+      sql,
+      RegExp(r'^\s*UPDATE(?:\s+OR\s+\w+)?\s+([^\s(]+)', caseSensitive: false),
+    ),
+    'DELETE' => _captureSqlTable(
+      sql,
+      RegExp(r'\bFROM\s+([^\s(]+)', caseSensitive: false),
+    ),
+    'CREATE' || 'ALTER' || 'DROP' => _captureSqlTable(
+      sql,
+      RegExp(
+        r'\bTABLE(?:\s+IF\s+(?:NOT\s+)?EXISTS)?\s+([^\s(]+)',
+        caseSensitive: false,
+      ),
+    ),
+    'REINDEX' => _captureSqlTable(
+      sql,
+      RegExp(r'^\s*REINDEX(?:\s+[^\s]+)?\s+([^\s;]+)', caseSensitive: false),
+    ),
+    'VACUUM' => null,
+    _ => null,
+  };
+
+  if (table == null || table.isEmpty) {
+    return DatabaseChange.all();
+  }
+  return DatabaseChange(tables: [table]);
+}
+
+String? _captureSqlTable(String sql, RegExp pattern) =>
+    pattern.firstMatch(sql)?.group(1);
+
+String _leadingSqlVerb(String sql) {
+  final match = RegExp(r'^\s*([A-Za-z]+)').firstMatch(sql);
+  return match?.group(1)?.toUpperCase() ?? '';
 }
 
 class _SqliteLikeMutationShape {

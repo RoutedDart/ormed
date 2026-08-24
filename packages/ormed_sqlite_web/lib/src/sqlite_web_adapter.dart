@@ -127,6 +127,7 @@ class SqliteWebDriverAdapter extends SqliteRemoteAdapterBase
         final transport = await _transport;
         await transport.execute('BEGIN', const [], _activeLock, false);
         _transactionDepth = 1;
+        beginExternalChangeScope();
       } catch (_) {
         await _releaseExclusiveLock();
         rethrow;
@@ -143,6 +144,7 @@ class SqliteWebDriverAdapter extends SqliteRemoteAdapterBase
       true,
     );
     _transactionDepth = nextDepth;
+    beginExternalChangeScope();
   }
 
   @override
@@ -155,6 +157,7 @@ class SqliteWebDriverAdapter extends SqliteRemoteAdapterBase
     if (_transactionDepth == 1) {
       await transport.execute('COMMIT', const [], _activeLock, true);
       _transactionDepth = 0;
+      commitExternalChangeScope();
       await _releaseExclusiveLock();
       return;
     }
@@ -166,6 +169,7 @@ class SqliteWebDriverAdapter extends SqliteRemoteAdapterBase
       true,
     );
     _transactionDepth--;
+    commitExternalChangeScope();
   }
 
   @override
@@ -180,6 +184,7 @@ class SqliteWebDriverAdapter extends SqliteRemoteAdapterBase
         await transport.execute('ROLLBACK', const [], _activeLock, true);
       } finally {
         _transactionDepth = 0;
+        rollbackExternalChangeScope();
         await _releaseExclusiveLock();
       }
       return;
@@ -192,6 +197,7 @@ class SqliteWebDriverAdapter extends SqliteRemoteAdapterBase
       true,
     );
     _transactionDepth--;
+    rollbackExternalChangeScope();
   }
 
   Future<void> _acquireExclusiveLock() async {

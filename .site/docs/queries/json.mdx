@@ -9,27 +9,6 @@ import TabItem from '@theme/TabItem';
 
 Ormed has first-class JSON support across models and query builder APIs.
 
-## Prerequisites
-
-- [Query Builder](./query-builder)
-- [Casting](../models/casting)
-
-## What You’ll Learn
-
-- How to query JSON fields with helper and selector syntax
-- How JSON indexing and path semantics behave
-- How to update JSON payloads through query and model workflows
-
-## Step Outcome
-
-By the end of this page, you should be able to map JSON columns, filter by JSON paths, and apply partial JSON updates without replacing full documents.
-
-Ormed supports:
-- JSON fields on models via casts/codecs
-- JSON path filters via `whereJson*` helpers
-- JSON selector syntax with `->` / `->>`
-- JSON path/patch updates from query and tracked-model APIs
-
 :::note
 These examples focus on JSON operations only. They assume you already have a working `DataSource`.
 :::

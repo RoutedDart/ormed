@@ -27,6 +27,26 @@ dependencies:
 
 ## Quick Start
 
+For direct database access, code generation is optional:
+
+```dart
+import 'package:ormed_sqlite/ormed_sqlite.dart';
+
+Future<void> main() async {
+  final db = await SqliteDatabase.connect(path: 'app.db');
+  await db.executeRaw('CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT)');
+  final rows = await db.queryRaw('SELECT * FROM users');
+  print(rows);
+  await db.close();
+}
+```
+
+To use generated models, pass `registry: buildOrmRegistry()` to
+`SqliteDatabase.connect`.
+
+The lower-level `DataSource` API remains available when an application needs
+full control over initialization and connection registration:
+
 ```dart
 import 'package:your_app/src/database/datasource.dart';
 

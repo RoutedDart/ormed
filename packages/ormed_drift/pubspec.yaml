@@ -1,0 +1,27 @@
+name: ormed_drift
+description: Drift executor adapter and reactive integration for Ormed.
+version: 0.1.0
+repository: https://github.com/RoutedDart/ormed
+issue_tracker: https://github.com/RoutedDart/ormed/issues
+documentation: https://ormed.vercel.app/
+funding:
+  - https://www.buymeacoffee.com/kingwill101
+topics:
+  - orm
+  - database
+  - drift
+  - sqlite
+
+resolution: workspace
+
+environment:
+  sdk: ">=3.12.0 <4.0.0"
+
+dependencies:
+  drift: ^2.34.0
+  ormed: ">=0.2.0 <1.0.0"
+  ormed_sqlite_core: ">=0.2.0 <1.0.0"
+
+dev_dependencies:
+  lints: ^6.0.0
+  test: ^1.28.0

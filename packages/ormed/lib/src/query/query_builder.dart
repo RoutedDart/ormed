@@ -49,6 +49,8 @@ part 'builder/order.dart';
 
 part 'builder/paginate.dart';
 
+part 'builder/reactive.dart';
+
 part 'builder/predicate.dart';
 
 part 'builder/predicate_field.dart';
@@ -490,6 +492,27 @@ class Query<T extends OrmEntity> {
     final relationJoinClauses = _relationJoinRequests.isEmpty
         ? const <JoinDefinition>[]
         : _buildRelationJoinClauses(relationJoinEntries);
+    final readTables = <String>{definition.tableName};
+    for (final path in _relationPaths.values) {
+      for (final segment in path.segments) {
+        readTables.add(segment.targetDefinition.tableName);
+        if (segment.throughDefinition != null) {
+          readTables.add(segment.throughDefinition!.tableName);
+        }
+        if (segment.pivotTable != null) {
+          readTables.add(segment.pivotTable!);
+        }
+      }
+    }
+    for (final join in [..._joins, ...relationJoinClauses]) {
+      final table = join.target.table;
+      if (table != null) {
+        readTables.add(table);
+      }
+    }
+    for (final union in _unions) {
+      readTables.addAll(union.plan.readTables);
+    }
 
     return QueryPlan(
       definition: definition,
@@ -520,6 +543,7 @@ class Query<T extends OrmEntity> {
       having: _having,
       relationAggregates: _relationAggregates,
       relationOrders: _relationOrders,
+      readTables: readTables,
       relationJoins: relationJoinEntries,
       joins: [..._joins, ...relationJoinClauses],
       tableAlias: _tableAlias,

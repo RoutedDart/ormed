@@ -6,21 +6,6 @@ sidebar_position: 3
 
 Ormed supports eager loading, lazy loading, and aggregate relation loading so you can control query count and response shape explicitly.
 
-## Prerequisites
-
-- [Relationships](../models/relationships)
-- [Query Builder](./query-builder)
-
-## What You’ll Learn
-
-- How to eager-load and lazy-load relation graphs
-- How to avoid N+1 query patterns
-- How nested relations and constraints are expressed
-
-## Step Outcome
-
-By the end of this page, you should be able to load relation trees intentionally, detect accidental lazy loads, and use aggregate relation helpers.
-
 :::note Snippet context
 - Snippets focus on relation APIs and omit full setup.
 - Unless shown otherwise, assume you already have a `DataSource` named `dataSource` and your relations were generated via `build_runner`.

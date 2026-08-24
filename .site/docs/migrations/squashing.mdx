@@ -6,25 +6,6 @@ sidebar_position: 4
 
 As your application grows, you may accumulate hundreds of migration files. Squashing compresses all migrations into a single SQL schema file, speeding up test database creation and simplifying your migrations directory.
 
-## Prerequisites
-
-- [Migrations Overview](./overview)
-- [Schema tooling (CLI)](../cli/schema)
-
-## What You’ll Learn
-
-- How schema dumps accelerate fresh environment setup
-- How and when to prune migration files safely
-- How squashing interacts with existing migration ledgers
-
-## Step Outcome
-
-By the end of this page, you should be able to:
-
-- Create schema dumps intentionally for faster bootstrap
-- Decide when pruning is safe for your team/release process
-- Understand how dump loading interacts with migration ledger state
-
 ## Creating a Schema Dump
 
 ```bash

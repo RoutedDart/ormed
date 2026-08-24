@@ -9,25 +9,6 @@ import TabItem from '@theme/TabItem';
 
 Casting lets you map a model field to a **codec key** (a string) so Ormed can consistently:
 
-## Prerequisites
-
-- [Defining Models](./defining-models)
-- [Model Attributes](./attributes)
-
-## What You’ll Learn
-
-- Built-in cast keys and when to use each
-- How field-level and model-level casts interact
-- How casting affects read, write, and serialization pipelines
-
-## Step Outcome
-
-By the end of this page, you should be able to:
-
-- Choose the correct cast key for each field type
-- Understand where casts run in the model lifecycle
-- Add custom cast handlers/codecs safely
-
 Ormed applies cast mappings consistently to:
 - Normalize values when assigning (`fill`, `setAttribute`)
 - Decode values when hydrating from queries

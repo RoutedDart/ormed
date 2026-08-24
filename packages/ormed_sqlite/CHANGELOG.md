@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- **Added**: `SqliteDatabase.connect` for direct SQLite access without a
+  generated model registry.
+- **Added**: Interceptor support on `SqliteDatabase.connect` for tracing,
+  policy checks, and query instrumentation.
+- **Added**: Direct SQLite adapter writes participate in Ormed reactive watchers,
+  including commit-aware manual transactions and opaque SQL changes.
+
 ## 0.4.0
 
 - **Breaking**: Requires Dart 3.12 or newer.

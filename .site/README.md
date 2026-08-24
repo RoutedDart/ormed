@@ -20,6 +20,14 @@ npm run build
 
 Build output is in the `build/` directory.
 
+Before opening a docs change, run the focused checks as well:
+
+```bash
+npm run typecheck
+npm run check:snippets
+npm run build
+```
+
 ## Deployment
 
 ### GitHub Pages (Production)
@@ -67,9 +75,9 @@ No GitHub secrets needed - Vercel handles everything via its GitHub integration.
 │   ├── guides/
 │   └── reference/
 ├── src/
-│   ├── components/       # React components
-│   ├── css/              # Custom styles
-│   └── pages/            # Custom pages
+│   ├── css/              # Shared theme and layout styles
+│   └── pages/            # Custom landing page
+├── scripts/              # Documentation maintenance checks
 ├── static/               # Static assets
 ├── docusaurus.config.ts  # Site configuration
 └── sidebars.ts           # Sidebar navigation

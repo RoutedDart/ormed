@@ -1,0 +1,124 @@
+---
+sidebar_position: 3
+description: Keep Ormed query snapshots synchronized with committed database changes.
+---
+
+# Reactive Queries
+
+Use `watch()` when a screen, service, or cache needs a query result that stays
+up to date. A watcher emits one complete snapshot when it is listened to, then
+emits another snapshot after a committed change can affect the query.
+
+```dart
+final db = await SqliteDatabase.connect();
+await db.executeRaw('''
+  CREATE TABLE todos (
+    id INTEGER PRIMARY KEY,
+    title TEXT NOT NULL,
+    completed INTEGER NOT NULL DEFAULT 0
+  )
+''');
+
+final subscription = db
+    .table('todos')
+    .whereEquals('completed', 0)
+    .orderBy('id')
+    .watch()
+    .listen((todos) {
+      // Replace the current screen snapshot.
+      print(todos);
+    });
+
+await db.executeRaw(
+  'INSERT INTO todos (id, title, completed) VALUES (?, ?, ?)',
+  [1, 'Ship the feature', 0],
+);
+
+await subscription.cancel();
+await db.close();
+```
+
+## Snapshot versus finite streams
+
+`watch()` and `watchRows()` are live snapshot streams. Each event contains the
+full current result, so a consumer can replace its state without calculating a
+diff. `watch()` returns hydrated models; `watchRows()` returns `QueryRow<T>`
+values when row metadata or relation state is needed.
+
+The existing `stream()` and `streamModels()` APIs remain finite row streams for
+processing a query result. They do not subscribe to later database changes.
+
+## What causes a refresh?
+
+Ormed records the tables read by the query, including structured joins,
+relations, aggregates, unions, and nested subqueries. A watcher refreshes only
+when a committed change overlaps those dependencies. Opaque raw or custom SQL
+is treated conservatively and can refresh for any change.
+
+Generated models are optional:
+
+```dart
+final pending = db.table('todos').whereEquals('completed', 0).watch();
+```
+
+The same API works with a registered model:
+
+```dart
+final pending = dataSource
+    .query<Todo>()
+    .whereEquals('completed', false)
+    .orderBy('id')
+    .watch();
+```
+
+## Transactions
+
+Changes made inside `transaction()` or a manually controlled transaction are
+published after commit. A rollback does not produce a new snapshot.
+
+```dart
+await db.beginTransaction();
+try {
+  await db.table('todos').create({
+    'id': 2,
+    'title': 'Review the release',
+    'completed': 0,
+  });
+  await db.commit();
+} catch (_) {
+  await db.rollback();
+  rethrow;
+}
+```
+
+Drivers that can observe writes made outside the Ormed query context can expose
+the optional `DriverChangeFeed` contract. SQLite adapters do this for direct
+adapter writes. The `ormed_drift` package uses the same approach: construct one
+`DriftDriverAdapter`, pass it to Ormed, and pass `driver.driftExecutor` to
+Drift's `DatabaseConnection`.
+
+Adapters around synchronized backends can provide a synchronization callback:
+
+```dart
+final driver = DriftDriverAdapter(
+  libsql,
+  closeDelegate: true,
+  synchronize: libsql.sync,
+);
+final db = await OrmDatabase.connect(driver: driver);
+
+await driver.sync(); // Pulls remote changes and refreshes Ormed watchers.
+```
+
+The adapter opens the wrapped Drift executor during `OrmDatabase.connect()`,
+so applications do not need a separate `ensureOpen()` call. The callback is
+conservatively treated as affecting every table because a synchronization
+backend may not expose its changed-table set.
+
+Always use the same adapter/executor pair. Writes made through an unrelated
+database connection cannot be observed by that adapter's watcher.
+
+## Lifecycle
+
+Cancel subscriptions when the owning screen or service is disposed. Closing an
+`OrmDatabase` closes its change feed and completes active watchers.

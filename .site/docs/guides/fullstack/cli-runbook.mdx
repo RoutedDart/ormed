@@ -10,25 +10,6 @@ import TabItem from '@theme/TabItem';
 
 A professional application often needs a command-line interface (CLI) for administrative tasks like starting the server, running migrations, or seeding the database. We use **Artisanal** to build a Laravel-style CLI for our movie catalog.
 
-## Prerequisites
-
-- [Migrations & Seed Data](./migrations-seeds)
-- [Server & Web Routes](./server-routes)
-
-## What You’ll Learn
-
-- How operational tasks map to CLI commands
-- How to structure a runbook for repeatable environments
-- How to keep app runtime and migration runtime in sync
-
-## Step Outcome
-
-By the end of this page, you should have:
-
-- A consistent command surface for serve/migrate/seed
-- A repeatable local workflow for daily development
-- A single checklist you can run before opening a PR
-
 ## Artisanal CLI
 
 The CLI is defined in `bin/cli.dart`. It uses a command-based structure where each task is a separate command.

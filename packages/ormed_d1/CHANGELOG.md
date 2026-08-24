@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- **Added**: `D1Database.connect` for direct Cloudflare D1 access without a
+  generated model registry.
+- **Added**: Interceptor support on `D1Database.connect` for direct execution
+  tracing and policy checks.
+
 ## 0.2.0
 
 - **Breaking**: Requires Dart 3.12 or newer.

@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- **Added**: `PostgresDatabase.connect` and `connectFromEnv` for direct
+  PostgreSQL access without a generated model registry.
+- **Added**: Interceptor support on PostgreSQL direct connection helpers.
+
 ## 0.3.0
 
 - **Breaking**: Requires Dart 3.12 or newer.

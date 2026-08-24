@@ -165,12 +165,12 @@ Future<void> loggingExamples(DataSource ds) async {
   // Review the log
   for (final entry in ds.queryLog) {
     print('SQL: ${entry.sql}');
-    print('Bindings: ${entry.bindings}');
+    print('Parameters: ${entry.parameters}');
     print('Duration: ${entry.duration}');
   }
 
   // Clear when done
-  ds.clearQueryLog();
+  ds.flushQueryLog();
   ds.disableQueryLog();
 }
 // #endregion datasource-logging
@@ -211,11 +211,11 @@ DataSource createDataSourceWithLogger(DriverAdapter driver) {
 void accessQueryLog(DataSource ds) {
   for (final entry in ds.queryLog) {
     print('SQL: ${entry.sql}');
-    print('Bindings: ${entry.bindings}');
+    print('Parameters: ${entry.parameters}');
     print('Duration: ${entry.duration}');
   }
 
-  ds.clearQueryLog();
+  ds.flushQueryLog();
 }
 // #endregion datasource-query-log-access
 

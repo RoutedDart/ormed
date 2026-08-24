@@ -1,55 +1,96 @@
 ---
 sidebar_position: 1
+description: Decide when a generated model is useful and build one that earns its place in your Dart application.
 ---
 
-# Models Overview
+# Models
 
-Models are the source of truth for your domain: fields, relationships, casts, lifecycle behavior, and helper methods.
+Models are where database rows become application concepts. In Ormed, a model
+is a Dart class mapped to a table; code generation adds the tracked types,
+metadata, DTOs, relations, and query helpers that keep that class useful in an
+application.
 
-## Prerequisites
+## Should this be a model?
 
-- [Quick Start](../getting-started/quick-start)
-- [Code Generation](../getting-started/code-generation)
+Create a model when the data has a stable role in your application and you want
+to use it in more than one place:
 
-## What You’ll Learn
+- The fields should be checked by the Dart compiler.
+- The entity has relationships, lifecycle rules, or reusable behavior.
+- Multiple reads and writes should share the same mapping and input rules.
 
-- How to move from plain Dart classes to production model design
-- Which model features to adopt first versus later
-- A practical reading order for the model docs
+Stay with [direct database access](../getting-started/direct-database) when you
+are exploring a schema, running a one-off report, or querying a table where a
+domain model would only add ceremony. You can introduce a model later without
+changing the underlying database.
 
-## Step Outcome
+## The smallest useful model
 
-By the end of this page, you should know:
+Start with the table mapping and the fields your application actually uses:
 
-- Which model features to implement first for a new project
-- Which features to delay until core reads/writes are stable
-- What to read next for your current implementation phase
+```dart file=../../examples/lib/models/user.dart#intro-model
+```
 
-## Recommended Reading Order
+Run the generator after creating or changing the model:
 
-1. [Defining Models](./defining-models): shape entities and table mapping.
-2. [Attributes](./attributes) + [Casting](./casting): field behavior and serialization.
-3. [Relationships](./relationships): connect models with associations.
-4. [Timestamps](./timestamps) + [Soft Deletes](./soft-deletes): lifecycle conventions.
-5. [Scopes](./scopes) + [Model Methods](./model-methods): reusable query and domain behavior.
-6. [Events](./events) + [Driver Overrides](./driver-overrides): advanced hooks and per-driver tuning.
+```bash
+dart run build_runner build --delete-conflicting-outputs
+```
 
-## Day-1 vs Advanced
+The source model stays readable and intentional. Generated files hold the
+repetitive runtime machinery.
 
-- Day-1: defining models, attributes/casts, relationships.
-- Once stable: scopes, methods, events.
-- Driver-specific behavior: add overrides only where needed.
+## What gets generated
 
-## Minimal Model Rollout
+For a `User` model, the generated API gives you distinct types for distinct
+jobs:
 
-1. Define model shape + table mapping.
-2. Add attributes/casts.
-3. Add required relationships.
-4. Run codegen and use generated DTOs in writes.
-5. Add scopes/events only after query/write paths are stable.
+| Generated API | Use it for |
+| --- | --- |
+| `$User` | Tracked model instances returned from queries and used in updates |
+| `UserOrmDefinition` | Metadata, codecs, and lower-level model registration |
+| `UserInsertDto` / `UserUpdateDto` | Explicit data passed into create and update operations |
+| `UserPartial` | Queries that select only part of a model |
+| `Users.query()` / `Users.where(...)` | Typed static query entry points |
 
-## Read This Next
+You do not need to use every generated type directly. Start with the query and
+repository APIs, then reach for a DTO or partial projection when the workflow
+benefits from being explicit.
 
-- [Defining Models](./defining-models)
-- [Querying Data](../queries/overview)
-- [Migrations Overview](../migrations/overview)
+## Add model behavior when the problem appears
+
+| If you need to… | Read… |
+| --- | --- |
+| Map a class, key, table, or column | [Defining Models](./defining-models) |
+| Control input and serialized output | [Attributes](./attributes) |
+| Convert database values to Dart types | [Casting](./casting) |
+| Connect entities and load related data | [Relationships](./relationships) |
+| Manage `createdAt`, `updatedAt`, or `deletedAt` | [Timestamps](./timestamps) and [Soft Deletes](./soft-deletes) |
+| Reuse query constraints or model helpers | [Scopes](./scopes) and [Model Methods](./model-methods) |
+| Observe or guard lifecycle changes | [Events](./events) |
+| Handle a database-specific type or column | [Driver Overrides](./driver-overrides) |
+
+This keeps a model focused: add a capability because the application needs it,
+not because every model has to demonstrate every feature.
+
+## A practical rollout
+
+1. **Map the stable shape.** Define the primary key, persisted fields, and any
+   table or column overrides.
+2. **Generate and verify.** Run the builder, then make one read and one write
+   through the generated API.
+3. **Add boundaries deliberately.** Introduce casts, fill rules, relations,
+   timestamps, or soft deletes only when their behavior is part of the domain.
+4. **Keep queries readable.** Use a repository for model-oriented CRUD and the
+   [Query Builder](../queries/query-builder) for filtering, joins, projections,
+   and aggregates.
+5. **Test the behavior that can surprise you.** Check generated mappings,
+   relation loading, serialization, and lifecycle hooks at the edges of the
+   application.
+
+## Continue from here
+
+- [Defining Models](./defining-models) — create the first annotated model.
+- [Querying Data](../queries/overview) — use generated models in reads and writes.
+- [Migrations Overview](../migrations/overview) — keep the database schema aligned.
+- [Code Generation](../getting-started/code-generation) — configure and verify the builder.

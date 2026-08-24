@@ -25,6 +25,26 @@ dependencies:
 
 ## Quick Start
 
+For direct database access, code generation is optional:
+
+```dart
+import 'package:ormed_mysql/ormed_mysql.dart';
+
+Future<void> main() async {
+  final db = await MySqlDatabase.connect(
+    database: 'mydb',
+    username: 'root',
+    password: 'secret',
+  );
+  final rows = await db.queryRaw('SELECT 1 AS ok');
+  print(rows.first['ok']);
+  await db.close();
+}
+```
+
+To use generated models, pass `registry: buildOrmRegistry()` to
+`MySqlDatabase.connect`.
+
 ```dart
 import 'package:your_app/src/database/datasource.dart';
 
