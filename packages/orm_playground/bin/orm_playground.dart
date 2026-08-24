@@ -224,7 +224,7 @@ Future<void> _printPostSummaries(DataSource ds, {bool animate = true}) async {
   );
 
   if (rows.isEmpty) {
-    io.warning('No posts found. Create one via the ORM CLI to continue.');
+    io.warn('No posts found. Create one via the ORM CLI to continue.');
     return;
   }
 

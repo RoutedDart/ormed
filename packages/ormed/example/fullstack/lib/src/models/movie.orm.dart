@@ -161,6 +161,11 @@ final ModelDefinition<$Movie> _$MovieDefinition = ModelDefinition(
   codec: _$MovieCodec(),
 );
 
+// ignore: unused_element
+final movieModelDefinitionRegistration = ModelFactoryRegistry.register<$Movie>(
+  _$MovieDefinition,
+);
+
 extension MovieOrmDefinition on Movie {
   static ModelDefinition<$Movie> get definition => _$MovieDefinition;
 }

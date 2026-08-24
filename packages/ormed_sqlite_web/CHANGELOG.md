@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.0
+
+- **Breaking**: Requires Dart 3.12 or newer.
+- **Fixed**: Update the web transport for `sqlite3_web 0.9.x` worker URL and OPFS implementation APIs.
+- **Updated**: Widened the Ormed and SQLite-core support ranges to `<1.0.0`.
+
 ## 0.1.0
 
 - Initial browser SQLite package release.

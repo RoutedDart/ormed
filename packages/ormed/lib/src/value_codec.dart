@@ -296,13 +296,10 @@ class ValueCodecRegistry {
   ValueCodecRegistry._(
     this._codecs,
     this._driverCodecs, {
-    String? activeDriver,
+    this._activeDriver,
     _EncrypterRef? encrypterRef,
-    Map<String, AttributeCastHandler> castHandlers =
-        const <String, AttributeCastHandler>{},
-  }) : _activeDriver = activeDriver,
-       _encrypterRef = encrypterRef ?? _EncrypterRef(),
-       _castHandlers = castHandlers;
+    this._castHandlers = const <String, AttributeCastHandler>{},
+  }) : _encrypterRef = encrypterRef ?? _EncrypterRef();
 
   static final ValueCodecRegistry _instance = ValueCodecRegistry._(
     Map<String, ValueCodec<dynamic>>.from(_defaultCodecs),

@@ -153,8 +153,8 @@ class ConnectionHandle<TClient> {
   ConnectionHandle({
     required this.client,
     required this.metadata,
-    Future<void> Function()? onClose,
-  }) : _onClose = onClose;
+    this._onClose,
+  });
 
   final TClient client;
   final ConnectionMetadata metadata;

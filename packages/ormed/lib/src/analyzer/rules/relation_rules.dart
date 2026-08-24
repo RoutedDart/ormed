@@ -143,7 +143,9 @@ class _UnknownNestedVisitor extends SimpleAstVisitor<void> {
     final args = node.argumentList.arguments;
     if (args.isEmpty) return;
 
-    final relationPath = simpleStringLiteralValue(args.first);
+    final relationPath = simpleStringLiteralValue(
+      argumentExpression(args.first),
+    );
     if (relationPath == null) return;
     if (!relationPath.contains('.')) return;
 
@@ -153,7 +155,7 @@ class _UnknownNestedVisitor extends SimpleAstVisitor<void> {
       final relation = currentModel.relationFor(segment);
       if (relation == null) {
         rule.reportAtNode(
-          args.first,
+          argumentExpression(args.first),
           arguments: [segment, currentModel.modelName],
         );
         return;
@@ -196,13 +198,15 @@ class _InvalidWhereHasVisitor extends SimpleAstVisitor<void> {
     final args = node.argumentList.arguments;
     if (args.isEmpty) return;
 
-    final relationName = simpleStringLiteralValue(args.first);
+    final relationName = simpleStringLiteralValue(
+      argumentExpression(args.first),
+    );
     if (relationName == null) return;
     if (relationName.contains('.')) return;
 
     if (modelInfo.relationFor(relationName) == null) {
       rule.reportAtNode(
-        args.first,
+        argumentExpression(args.first),
         arguments: [relationName, modelInfo.modelName],
       );
     }
@@ -238,7 +242,9 @@ class _RelationFieldVisitor extends SimpleAstVisitor<void> {
     final args = node.argumentList.arguments;
     if (args.length < 2) return;
 
-    final relationName = simpleStringLiteralValue(args.first);
+    final relationName = simpleStringLiteralValue(
+      argumentExpression(args.first),
+    );
     if (relationName == null) return;
     if (relationName.contains('.')) return;
 
@@ -248,7 +254,7 @@ class _RelationFieldVisitor extends SimpleAstVisitor<void> {
     final relatedModel = index.modelForType(relation.targetModel);
     if (relatedModel == null) return;
 
-    final callback = args[1];
+    final callback = argumentExpression(args[1]);
     if (callback is! FunctionExpression) return;
 
     final paramName = _firstParamName(callback.parameters);
@@ -311,15 +317,15 @@ class _RelationDetails {
   final String? pivotModel;
 }
 
-_RelationDetails? _parseRelationDetails(NodeList<Expression> arguments) {
+_RelationDetails? _parseRelationDetails(NodeList<Argument> arguments) {
   String? name;
   String? pivotModel;
   List<_LiteralEntry> pivotColumns = const [];
 
   for (final argument in arguments) {
-    if (argument is! NamedExpression) continue;
-    final argName = argument.name.label.name;
-    final value = argument.expression;
+    final argName = namedArgumentName(argument);
+    if (argName == null) continue;
+    final value = argumentExpression(argument);
     if (argName == 'name') {
       name = simpleStringLiteralValue(value);
     } else if (argName == 'pivotColumns') {
@@ -413,16 +419,16 @@ class _RelationCallbackVisitor extends RecursiveAstVisitor<void> {
     super.visitCascadeExpression(node);
   }
 
-  void _checkArguments(NodeList<Expression> args, {required bool isDouble}) {
+  void _checkArguments(NodeList<Argument> args, {required bool isDouble}) {
     if (args.isEmpty) return;
     if (isDouble) {
       if (args.length >= 2) {
-        _checkFieldArg(args[0]);
-        _checkFieldArg(args[1]);
+        _checkFieldArg(argumentExpression(args[0]));
+        _checkFieldArg(argumentExpression(args[1]));
       }
       return;
     }
-    _checkFieldArg(args[0]);
+    _checkFieldArg(argumentExpression(args[0]));
   }
 
   void _checkFieldArg(Expression expression) {
@@ -445,16 +451,7 @@ String? _firstParamName(FormalParameterList? parameters) {
   if (parameters == null) return null;
   if (parameters.parameters.isEmpty) return null;
   final param = parameters.parameters.first;
-  if (param is SimpleFormalParameter) {
-    return param.name?.lexeme;
-  }
-  if (param is DefaultFormalParameter) {
-    final inner = param.parameter;
-    if (inner is SimpleFormalParameter) {
-      return inner.name?.lexeme;
-    }
-  }
-  return null;
+  return param.name?.lexeme;
 }
 
 class _LiteralEntry {

@@ -20,12 +20,10 @@ class StorageService {
   Future<void> init() async {
     Directory(uploadsRoot).createSync(recursive: true);
 
-    Storage.initialize({
-      'default': 'uploads',
-      'disks': {
-        'uploads': {'driver': 'local', 'root': uploadsRoot},
-      },
-    });
+    Storage.initialize(
+      defaultDisk: 'uploads',
+      disks: [LocalDisk(name: 'uploads', root: uploadsRoot)],
+    );
 
     _cloud = _initCloudFromEnv();
     if (_cloud != null) {

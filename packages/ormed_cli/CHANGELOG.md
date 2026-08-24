@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.3.0
+
+- **Breaking**: Requires Dart 3.12 or newer.
+- **Updated**: Migrated the CLI dependency graph to the latest Dart 3.12-compatible releases, including `artisanal ^0.5.0`.
+- **Updated**: Widened driver package support ranges to `<1.0.0`.
+
+## 0.2.1
+
+- **Fixed**: Depend on the stable `ormed_sqlite ^0.3.0` release, including unified web and Flutter web SQLite support.
+
 ## 0.2.0
 - **Added**: `makemigrations` now generates a migration from generated model metadata (`orm_registry.g.dart`) against the current schema, then syncs migration registry entries.
 - **Added**: `makemigrations --sync-only` to skip model-diff generation and run registry sync only.

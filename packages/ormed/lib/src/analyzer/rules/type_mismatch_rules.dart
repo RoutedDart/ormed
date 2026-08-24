@@ -119,7 +119,7 @@ class _TypeMismatchEqualsVisitor extends SimpleAstVisitor<void> {
     final args = node.argumentList.arguments;
     if (args.length < 2) return;
 
-    final fieldName = simpleStringLiteralValue(args.first);
+    final fieldName = simpleStringLiteralValue(argumentExpression(args.first));
     if (fieldName == null) return;
 
     final field = modelInfo.fieldFor(fieldName);
@@ -128,10 +128,11 @@ class _TypeMismatchEqualsVisitor extends SimpleAstVisitor<void> {
     final fieldCategory = _categoryForField(field);
     if (fieldCategory == null) return;
 
-    final valueCategory = _categoryForValue(args[1]);
+    final value = argumentExpression(args[1]);
+    final valueCategory = _categoryForValue(value);
     if (valueCategory == null) return;
     if (fieldCategory != valueCategory) {
-      rule.reportAtNode(args[1], arguments: [field.name, modelInfo.modelName]);
+      rule.reportAtNode(value, arguments: [field.name, modelInfo.modelName]);
     }
   }
 }
@@ -163,7 +164,7 @@ class _WhereInMismatchVisitor extends SimpleAstVisitor<void> {
     final args = node.argumentList.arguments;
     if (args.length < 2) return;
 
-    final fieldName = simpleStringLiteralValue(args.first);
+    final fieldName = simpleStringLiteralValue(argumentExpression(args.first));
     if (fieldName == null) return;
 
     final field = modelInfo.fieldFor(fieldName);
@@ -172,7 +173,7 @@ class _WhereInMismatchVisitor extends SimpleAstVisitor<void> {
     final fieldCategory = _categoryForField(field);
     if (fieldCategory == null) return;
 
-    final values = args[1];
+    final values = argumentExpression(args[1]);
     if (values is! ListLiteral) return;
 
     bool sawLiteral = false;
@@ -220,7 +221,7 @@ class _WhereBetweenMismatchVisitor extends SimpleAstVisitor<void> {
     final args = node.argumentList.arguments;
     if (args.length < 3) return;
 
-    final fieldName = simpleStringLiteralValue(args.first);
+    final fieldName = simpleStringLiteralValue(argumentExpression(args.first));
     if (fieldName == null) return;
 
     final field = modelInfo.fieldFor(fieldName);
@@ -229,12 +230,14 @@ class _WhereBetweenMismatchVisitor extends SimpleAstVisitor<void> {
     final fieldCategory = _categoryForField(field);
     if (fieldCategory == null) return;
 
-    final lowerCategory = _categoryForValue(args[1]);
-    final upperCategory = _categoryForValue(args[2]);
+    final lower = argumentExpression(args[1]);
+    final upper = argumentExpression(args[2]);
+    final lowerCategory = _categoryForValue(lower);
+    final upperCategory = _categoryForValue(upper);
     if (lowerCategory == null || upperCategory == null) return;
 
     if (lowerCategory != fieldCategory || upperCategory != fieldCategory) {
-      rule.reportAtNode(args[1], arguments: [field.name, modelInfo.modelName]);
+      rule.reportAtNode(lower, arguments: [field.name, modelInfo.modelName]);
     }
   }
 }

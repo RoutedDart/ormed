@@ -30,16 +30,13 @@ import '../seeding/seeder_runner.dart';
 /// ```
 class TestSchemaManager {
   TestSchemaManager({
-    required SchemaDriver schemaDriver,
+    required this._schemaDriver,
     List<ModelDefinition>? modelDefinitions,
     List<MigrationDescriptor>? migrations,
-    String ledgerTable = 'orm_migrations',
-    String? tablePrefix,
-  }) : _schemaDriver = schemaDriver,
-       _modelDefinitions = modelDefinitions ?? [],
-       _migrations = migrations ?? [],
-       _ledgerTable = ledgerTable,
-       _tablePrefix = tablePrefix;
+    this._ledgerTable = 'orm_migrations',
+    this._tablePrefix,
+  }) : _modelDefinitions = modelDefinitions ?? [],
+       _migrations = migrations ?? [];
 
   final SchemaDriver _schemaDriver;
   final List<ModelDefinition> _modelDefinitions;

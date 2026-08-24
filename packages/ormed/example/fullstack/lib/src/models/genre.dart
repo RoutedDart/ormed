@@ -3,6 +3,7 @@ import 'package:ormed/ormed.dart';
 part 'genre.orm.dart';
 
 // #region model-genre
+@hasFactory
 @OrmModel(table: 'genres')
 class Genre extends Model<Genre> {
   const Genre({

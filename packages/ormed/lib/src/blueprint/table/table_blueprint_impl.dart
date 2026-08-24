@@ -1363,12 +1363,7 @@ class ColumnBuilder {
 }
 
 class _ColumnEntry {
-  _ColumnEntry({
-    required this.name,
-    required ColumnCommandKind kind,
-    ColumnDefinition? definition,
-  }) : _kind = kind,
-       _definition = definition;
+  _ColumnEntry({required this.name, required this._kind, this._definition});
 
   factory _ColumnEntry.drop(String name) =>
       _ColumnEntry(name: name, kind: ColumnCommandKind.drop);

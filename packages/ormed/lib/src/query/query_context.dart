@@ -33,14 +33,14 @@ class QueryContext implements ConnectionResolver {
   /// [connectionName] is an optional name for the database connection.
   /// [connectionDatabase] is an optional name for the database.
   /// [connectionTablePrefix] is an optional prefix for table names.
-  /// [beforeQueryHook] is a callback executed before each query.
-  /// [beforeMutationHook] is a callback executed before each mutation.
-  /// [beforeTransactionHook] is a callback executed before each transaction.
-  /// [afterTransactionHook] is a callback executed after each transaction.
-  /// [afterTransactionOutcomeHook] is a callback executed after each transaction
+  /// [_beforeQueryHook] is a callback executed before each query.
+  /// [_beforeMutationHook] is a callback executed before each mutation.
+  /// [_beforeTransactionHook] is a callback executed before each transaction.
+  /// [_afterTransactionHook] is a callback executed after each transaction.
+  /// [_afterTransactionOutcomeHook] is a callback executed after each transaction
   /// outcome, with commit/rollback and scope details.
-  /// [queryLogHook] is a callback for logging query events.
-  /// [pretendResolver] is a function to determine if queries should be pretended.
+  /// [_queryLogHook] is a callback for logging query events.
+  /// [_pretendResolver] is a function to determine if queries should be pretended.
   QueryContext({
     required this.registry,
     required this.driver,
@@ -51,28 +51,20 @@ class QueryContext implements ConnectionResolver {
     this.connectionDatabase,
     this.connectionTablePrefix,
     this.cacheInvalidationPolicy = QueryCacheInvalidationPolicy.none,
-    QueryHook? beforeQueryHook,
-    MutationHook? beforeMutationHook,
-    TransactionHook? beforeTransactionHook,
-    TransactionHook? afterTransactionHook,
-    TransactionOutcomeHook? afterTransactionOutcomeHook,
-    QueryLogHook? queryLogHook,
-    void Function(QueryWarning warning)? warningHook,
-    bool Function()? pretendResolver,
+    this._beforeQueryHook,
+    this._beforeMutationHook,
+    this._beforeTransactionHook,
+    this._afterTransactionHook,
+    this._afterTransactionOutcomeHook,
+    this._queryLogHook,
+    this._warningHook,
+    this._pretendResolver,
   }) : codecRegistry = (codecRegistry ?? ValueCodecRegistry.instance).forDriver(
          driver.metadata.name,
        ),
        scopeRegistry = scopeRegistry ?? ScopeRegistry(),
        events = events ?? EventBus.instance,
-       queryCache = QueryCache(),
-       _beforeQueryHook = beforeQueryHook,
-       _beforeMutationHook = beforeMutationHook,
-       _beforeTransactionHook = beforeTransactionHook,
-       _afterTransactionHook = afterTransactionHook,
-       _afterTransactionOutcomeHook = afterTransactionOutcomeHook,
-       _queryLogHook = queryLogHook,
-       _warningHook = warningHook,
-       _pretendResolver = pretendResolver {
+       queryCache = QueryCache() {
     _registerSoftDeleteScopes();
     registry.addOnRegisteredCallback(_handleLateRegistration);
   }

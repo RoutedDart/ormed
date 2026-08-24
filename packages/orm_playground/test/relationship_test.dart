@@ -9,6 +9,7 @@ import 'package:driver_tests/driver_tests.dart'
         UserOrmDefinition;
 import 'package:orm_playground/src/models/user.dart';
 import 'package:orm_playground/src/models/post.dart';
+import 'package:orm_playground/orm_registry.g.dart' as playground_registry;
 import 'package:test/test.dart';
 
 void main() {
@@ -19,9 +20,7 @@ void main() {
 
     setUp(() {
       driver = InMemoryQueryExecutor();
-      registry = ModelRegistry()
-        ..register(UserOrmDefinition.definition)
-        ..register(PostOrmDefinition.definition);
+      registry = playground_registry.buildOrmRegistry();
       context = QueryContext(registry: registry, driver: driver);
 
       Model.bindConnectionResolver(

@@ -9,13 +9,12 @@ import 'query.dart';
 /// Serializes query + mutation events into structured log entries.
 class StructuredQueryLogger {
   StructuredQueryLogger({
-    required void Function(Map<String, Object?> entry) onLog,
+    required this._onLog,
     this.includeParameters = true,
     this.includeStackTrace = false,
     Map<String, Object?>? attributes,
     DateTime Function()? clock,
-  }) : _onLog = onLog,
-       _attributes = attributes ?? const {},
+  }) : _attributes = attributes ?? const {},
        _clock = clock ?? DateTime.now;
 
   /// Convenience helper that prints JSON to stdout.
@@ -112,7 +111,7 @@ class StructuredQueryLogger {
       'sql': preview.sql,
       'statement_payload': preview.payload.toJson(),
       'duration_ms': duration.inMicroseconds / 1000,
-      if (rowCount != null) 'row_count': rowCount,
+      'row_count': ?rowCount,
       if (includeParameters && preview.parameters.isNotEmpty)
         'parameters': preview.parameters,
       if (includeParameters && preview.parameterSets.isNotEmpty)

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.0
+
+- **Breaking**: Requires Dart 3.12 or newer.
+- **Updated**: Bumped `artisanal` to `^0.5.0` and refreshed the workspace dependencies.
+
 ## 0.2.0
 - **Changed**: Playground DB bootstrap now uses `OrmedEnvironment` helpers for env lookup and interpolation.
 - **Updated**: Bumped `artisanal` to the latest compatible `^0.2.0`.

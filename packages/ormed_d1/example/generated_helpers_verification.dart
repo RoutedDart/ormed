@@ -26,7 +26,7 @@ Future<void> main() async {
     'accountId': accountId,
     'databaseId': databaseId,
     'apiToken': apiToken,
-    if (baseUrl != null) 'baseUrl': baseUrl,
+    'baseUrl': ?baseUrl,
     'debugLog': env.boolValue('D1_DEBUG_LOG', fallback: false),
     'maxAttempts': env.intValue('D1_RETRY_ATTEMPTS', fallback: 4),
     'requestTimeoutMs': env.intValue('D1_REQUEST_TIMEOUT_MS', fallback: 30000),

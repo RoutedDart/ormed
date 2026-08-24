@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.0
+
+- **Breaking**: Requires Dart 3.12 or newer.
+- **Updated**: Widened the Ormed support range to `>=0.2.0 <1.0.0`.
+- **Updated**: Synced the shared driver test harness with the Analyzer 14 workspace release.
+
 ## 0.2.0
 
 - **Release**: Version alignment for the 0.2.0 workspace release.

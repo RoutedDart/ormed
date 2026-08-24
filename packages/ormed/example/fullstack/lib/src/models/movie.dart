@@ -5,6 +5,7 @@ import 'genre.dart';
 part 'movie.orm.dart';
 
 // #region model-movie
+@hasFactory
 @OrmModel(table: 'movies')
 class Movie extends Model<Movie> {
   // #region model-movie-constructor-fields

@@ -4,6 +4,8 @@ import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/file_system/file_system.dart';
 import 'package:path/path.dart' as p;
 
+import 'type_utils.dart';
+
 class OrmFieldInfo {
   OrmFieldInfo({
     required this.name,
@@ -260,7 +262,7 @@ class _InvocationInfo {
   _InvocationInfo(this.typeName, this.arguments);
 
   final String typeName;
-  final NodeList<Expression> arguments;
+  final NodeList<Argument> arguments;
 }
 
 class _ModelMetadata {
@@ -294,7 +296,7 @@ _InvocationInfo? _invocationInfo(Expression? initializer) {
   return null;
 }
 
-OrmFieldInfo? _parseFieldDefinition(NodeList<Expression> arguments) {
+OrmFieldInfo? _parseFieldDefinition(NodeList<Argument> arguments) {
   String? name;
   String? columnName;
   String? dartType;
@@ -305,9 +307,9 @@ OrmFieldInfo? _parseFieldDefinition(NodeList<Expression> arguments) {
   String? defaultValueSql;
 
   for (final argument in arguments) {
-    if (argument is! NamedExpression) continue;
-    final argName = argument.name.label.name;
-    final valueExpr = argument.expression;
+    final argName = namedArgumentName(argument);
+    if (argName == null) continue;
+    final valueExpr = argumentExpression(argument);
     if (argName == 'name') {
       name = _stringLiteralValue(valueExpr);
     } else if (argName == 'columnName') {
@@ -350,16 +352,16 @@ OrmFieldInfo? _parseFieldDefinition(NodeList<Expression> arguments) {
   );
 }
 
-OrmRelationInfo? _parseRelationDefinition(NodeList<Expression> arguments) {
+OrmRelationInfo? _parseRelationDefinition(NodeList<Argument> arguments) {
   String? name;
   String? targetModel;
   List<String> pivotColumns = const [];
   String? pivotModel;
 
   for (final argument in arguments) {
-    if (argument is! NamedExpression) continue;
-    final argName = argument.name.label.name;
-    final valueExpr = argument.expression;
+    final argName = namedArgumentName(argument);
+    if (argName == null) continue;
+    final valueExpr = argumentExpression(argument);
     if (argName == 'name') {
       name = _stringLiteralValue(valueExpr);
     } else if (argName == 'targetModel') {
@@ -382,7 +384,7 @@ OrmRelationInfo? _parseRelationDefinition(NodeList<Expression> arguments) {
 }
 
 _PendingModelDef? _parseModelDefinition(
-  NodeList<Expression> arguments,
+  NodeList<Argument> arguments,
   TypeAnnotation? typeAnnotation,
 ) {
   String? modelName;
@@ -392,9 +394,9 @@ _PendingModelDef? _parseModelDefinition(
   String? softDeleteColumnOverride;
 
   for (final argument in arguments) {
-    if (argument is! NamedExpression) continue;
-    final argName = argument.name.label.name;
-    final expression = argument.expression;
+    final argName = namedArgumentName(argument);
+    if (argName == null) continue;
+    final expression = argumentExpression(argument);
     if (argName == 'modelName') {
       modelName = _stringLiteralValue(expression);
     } else if (argName == 'fields') {
@@ -436,9 +438,9 @@ _ModelMetadata? _parseModelAttributesMetadata(Expression expression) {
   var softDeleteColumn = _ModelMetadata.defaults.softDeleteColumn;
 
   for (final argument in invocation.arguments) {
-    if (argument is! NamedExpression) continue;
-    final argName = argument.name.label.name;
-    final valueExpr = argument.expression;
+    final argName = namedArgumentName(argument);
+    if (argName == null) continue;
+    final valueExpr = argumentExpression(argument);
     if (argName == 'timestamps') {
       final value = _boolLiteralValue(valueExpr);
       if (value != null) {

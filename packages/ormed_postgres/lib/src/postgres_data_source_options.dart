@@ -89,7 +89,7 @@ extension PostgresDataSourceRegistryExtensions on ModelRegistry {
               'url': url,
               'sslmode': env.string('DB_SSLMODE', fallback: 'disable'),
               'timezone': env.string('DB_TIMEZONE', fallback: 'UTC'),
-              if (applicationName != null) 'applicationName': applicationName,
+              'applicationName': ?applicationName,
             },
           ),
           extensions: driverExtensions,

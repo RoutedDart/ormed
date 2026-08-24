@@ -100,13 +100,13 @@ class _Visitor extends SimpleAstVisitor<void> {
 
     if (_doubleFieldMethods.contains(methodName)) {
       if (args.length >= 2) {
-        _checkFieldArg(args[0], modelInfo);
-        _checkFieldArg(args[1], modelInfo);
+        _checkFieldArg(argumentExpression(args[0]), modelInfo);
+        _checkFieldArg(argumentExpression(args[1]), modelInfo);
       }
       return;
     }
 
-    _checkFieldArg(args[0], modelInfo);
+    _checkFieldArg(argumentExpression(args[0]), modelInfo);
   }
 
   void _checkFieldArg(Expression expression, OrmModelInfo modelInfo) {

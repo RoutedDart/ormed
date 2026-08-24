@@ -30,9 +30,8 @@ class SeedingReport {
 
 /// Runs seeders and emits lifecycle events.
 class SeederRunner {
-  SeederRunner({EventBus? events, bool emitEvents = true})
-    : _events = events ?? EventBus.instance,
-      _emitEvents = emitEvents;
+  SeederRunner({EventBus? events, this._emitEvents = true})
+    : _events = events ?? EventBus.instance;
 
   final EventBus _events;
   final bool _emitEvents;

@@ -4,7 +4,7 @@ import 'package:sqlite3_web/sqlite3_web.dart';
 import 'sqlite_web_transport.dart';
 
 final class Sqlite3WebTransport implements SqliteWebTransport {
-  Sqlite3WebTransport._({required Database database}) : _database = database;
+  Sqlite3WebTransport._({required this._database});
 
   final Database _database;
 
@@ -36,8 +36,8 @@ final class Sqlite3WebTransport implements SqliteWebTransport {
     );
 
     final sqlite = WebSqlite.open(
-      workers: WorkerConnector.defaultWorkers(Uri.parse(workerUri)),
-      wasmModule: Uri.parse(wasmUri),
+      workers: WorkerConnector.defaultWorkers(workerUri),
+      wasmModule: wasmUri,
     );
 
     final implementationName = _firstString(options, const [
@@ -183,7 +183,7 @@ DatabaseImplementation _parseImplementation(String value) {
     'opfs-with-external-locks' => DatabaseImplementation.opfsWithExternalLocks,
     'opfsatomics' ||
     'opfs_atomics' ||
-    'opfs-atomics' => DatabaseImplementation.opfsAtomics,
+    'opfs-atomics' => DatabaseImplementation.opfsWithExternalLocksWorkaround,
     'opfsshared' ||
     'opfs_shared' ||
     'opfs-shared' => DatabaseImplementation.opfsShared,

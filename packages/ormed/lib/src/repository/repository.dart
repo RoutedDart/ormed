@@ -94,22 +94,17 @@ class Repository<T extends OrmEntity> extends RepositoryBase<T>
         RepositoryPreviewMixin<T>,
         RepositoryReadMixin<T> {
   Repository({
-    required ModelDefinition<T> definition,
-    required String driverName,
-    required Future<MutationResult> Function(MutationPlan plan) runMutation,
-    required StatementPreview Function(MutationPlan plan) describeMutation,
-    required void Function(Object? model) attachRuntimeMetadata,
+    required this._definition,
+    required this._driverName,
+    required this._runMutation,
+    required this._describeMutation,
+    required this._attachRuntimeMetadata,
     QueryContext? context,
   }) : assert(
          context != null,
          'Repository now delegates entirely to the query builder and requires a QueryContext. '
          'Construct via QueryContext.repository() or Model.repository(connection: ...).',
        ),
-       _definition = definition,
-       _driverName = driverName,
-       _runMutation = runMutation,
-       _describeMutation = describeMutation,
-       _attachRuntimeMetadata = attachRuntimeMetadata,
        _queryContext = context;
 
   final ModelDefinition<T> _definition;

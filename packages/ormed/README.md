@@ -22,12 +22,12 @@ A strongly-typed ORM (Object-Relational Mapping) core for Dart, inspired by Eloq
 
 ```yaml
 dependencies:
-  ormed: ^0.2.0
-  ormed_sqlite: ^0.3.0 # Or ormed_postgres, ormed_mysql
+  ormed: ^0.3.0
+  ormed_sqlite: ^0.4.0 # Or ormed_postgres, ormed_mysql
 
 dev_dependencies:
-  ormed_cli: ^0.2.0
-  build_runner: ^2.4.0
+  ormed_cli: ^0.3.0
+  build_runner: ^2.16.0
 ```
 
 ## Model Factories
@@ -751,7 +751,7 @@ Best for: Local development, mobile apps, embedded databases, testing.
 
 ```yaml
 dependencies:
-  ormed_sqlite: ^0.3.0
+  ormed_sqlite: ^0.4.0
 ```
 
 ```dart
@@ -774,7 +774,7 @@ Best for: Production applications, complex queries, advanced data types.
 
 ```yaml
 dependencies:
-  ormed_postgres: ^0.2.0
+  ormed_postgres: ^0.3.0
 ```
 
 ```dart
@@ -795,7 +795,7 @@ Best for: Existing MySQL infrastructure, WordPress/Laravel migrations, web hosti
 
 ```yaml
 dependencies:
-  ormed_mysql: ^0.2.0
+  ormed_mysql: ^0.3.0
 ```
 
 ```dart

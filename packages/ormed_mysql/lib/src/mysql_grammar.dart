@@ -6,9 +6,9 @@ import 'package:ormed/ormed.dart';
 class MySqlQueryGrammar extends QueryGrammar {
   MySqlQueryGrammar({
     this.supportsWindowFunctions = true,
-    bool supportsLateralJoins = true,
+    this._supportsLateralJoins = true,
     super.extensions,
-  }) : _supportsLateralJoins = supportsLateralJoins;
+  });
 
   final bool supportsWindowFunctions;
   final bool _supportsLateralJoins;

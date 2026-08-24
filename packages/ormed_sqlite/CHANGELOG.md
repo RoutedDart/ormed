@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.0
+
+- **Breaking**: Requires Dart 3.12 or newer.
+- **Updated**: Widened the Ormed, SQLite-core, SQLite-web, and driver-test support ranges to `<1.0.0`.
+- **Updated**: Refreshed SQLite dependencies and synchronized the driver with the Analyzer 14 workspace release.
+
 ## 0.3.0
 - **Added**: Web and Flutter web support through the unified `ormed_sqlite` API backed by `ormed_sqlite_web`.
 - **Added**: Browser worker helper export and `example/web` setup for testing the web runtime.

@@ -221,7 +221,7 @@ class ModelContext {
 
     void collectFrom(InterfaceElement source) {
       for (final field in source.fields) {
-        if (field.isStatic || field.isSynthetic || field.isPrivate) {
+        if (field.isStatic || !field.isOriginDeclaration || field.isPrivate) {
           continue;
         }
         if (!field.isFinal) {
@@ -338,7 +338,7 @@ class ModelContext {
 
     void collectFrom(InterfaceElement source) {
       for (final field in source.fields) {
-        if (field.isStatic || field.isSynthetic || field.isPrivate) {
+        if (field.isStatic || !field.isOriginDeclaration || field.isPrivate) {
           continue;
         }
         if (!seen.add(field.displayName)) {
@@ -480,7 +480,7 @@ class ModelContext {
   List<RelationDescriptor> _collectRelations() {
     final relations = <RelationDescriptor>[];
     for (final field in element.fields) {
-      if (field.isStatic || field.isSynthetic || field.isPrivate) {
+      if (field.isStatic || !field.isOriginDeclaration || field.isPrivate) {
         continue;
       }
       final annotation = readAnnotation(field, 'OrmRelation');
@@ -595,7 +595,7 @@ class ModelContext {
     }
 
     for (final accessor in element.getters) {
-      if (accessor.isSynthetic || accessor.isPrivate) {
+      if (!accessor.isOriginDeclaration || accessor.isPrivate) {
         continue;
       }
       if (readAnnotation(accessor, 'OrmAccessor') != null) {
@@ -604,7 +604,7 @@ class ModelContext {
     }
 
     for (final method in element.methods) {
-      if (method.isSynthetic || method.isPrivate) {
+      if (!method.isOriginDeclaration || method.isPrivate) {
         continue;
       }
       if (readAnnotation(method, 'OrmAccessor') != null) {
@@ -613,7 +613,7 @@ class ModelContext {
     }
 
     for (final accessor in element.setters) {
-      if (accessor.isSynthetic || accessor.isPrivate) {
+      if (!accessor.isOriginDeclaration || accessor.isPrivate) {
         continue;
       }
       if (readAnnotation(accessor, 'OrmAccessor') != null) {
@@ -678,7 +678,7 @@ class ModelContext {
     }
 
     for (final accessor in element.setters) {
-      if (accessor.isSynthetic || accessor.isPrivate) {
+      if (!accessor.isOriginDeclaration || accessor.isPrivate) {
         continue;
       }
       if (readAnnotation(accessor, 'OrmMutator') != null) {
@@ -690,7 +690,7 @@ class ModelContext {
     }
 
     for (final method in element.methods) {
-      if (method.isSynthetic || method.isPrivate) {
+      if (!method.isOriginDeclaration || method.isPrivate) {
         continue;
       }
       if (readAnnotation(method, 'OrmMutator') != null) {

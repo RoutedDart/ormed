@@ -37,7 +37,7 @@ class PostgresDriverAdapter
   }
 
   PostgresDriverAdapter.custom({
-    required DatabaseConfig config,
+    required this._config,
     ConnectionFactory? connections,
     List<DriverExtension> extensions = const [],
   }) : _metadata = const DriverMetadata(
@@ -82,7 +82,6 @@ class PostgresDriverAdapter
            ConnectionFactory(
              connectors: {'postgres': () => PostgresConnector()},
            ),
-       _config = config,
        _codecs = ValueCodecRegistry.instance.forDriver('postgres') {
     // Auto-register PostgreSQL codecs on first instantiation
     registerPostgresCodecs();
@@ -119,7 +118,7 @@ class PostgresDriverAdapter
         'port': 5432,
         'database': database,
         'username': username,
-        if (password != null) 'password': password,
+        'password': ?password,
       },
     ),
     connections: connections,

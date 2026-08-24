@@ -9,12 +9,11 @@ class D1DriverAdapter extends SqliteRemoteAdapterBase {
   D1DriverAdapter.custom({
     required DatabaseConfig config,
     D1Transport? transport,
-    List<DriverExtension> extensions = const [],
+    super.extensions,
   }) : _transport = transport ?? D1HttpTransport.fromOptions(config.options),
        super(
          driverName: 'd1',
          options: config.options,
-         extensions: extensions,
          supportsQueryDeletes: true,
          requiresPrimaryKeyForQueryUpdate: true,
          queryUpdateRowIdentifier: QueryRowIdentifier(

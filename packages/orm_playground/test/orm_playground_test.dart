@@ -6,10 +6,10 @@ import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
 void main() {
-  test('defaults to database.sqlite under current directory', () {
+  test('uses the configured default database path', () {
     final database = PlaygroundDatabase();
     final expected = p.normalize(
-      p.join(Directory.current.path, 'database.sqlite'),
+      p.join(Directory.current.path, 'database/orm_playground.sqlite'),
     );
     expect(database.databasePath, expected);
   });

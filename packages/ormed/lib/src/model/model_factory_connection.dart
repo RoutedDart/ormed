@@ -24,10 +24,9 @@ import 'model.dart';
 /// ```
 class ModelFactoryConnection<T extends OrmEntity> {
   const ModelFactoryConnection({
-    required ModelDefinition<T> definition,
-    required QueryContext context,
-  }) : _definition = definition,
-       _context = context;
+    required this._definition,
+    required this._context,
+  });
 
   final ModelDefinition<T> _definition;
   final QueryContext _context;

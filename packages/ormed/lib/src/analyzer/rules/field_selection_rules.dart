@@ -168,7 +168,7 @@ class _SelectFieldVisitor extends SimpleAstVisitor<void> {
     final args = node.argumentList.arguments;
     if (args.isEmpty) return;
 
-    final columns = _stringLiteralsFromList(args.first);
+    final columns = _stringLiteralsFromList(argumentExpression(args.first));
     if (columns.isEmpty) return;
 
     for (final column in columns) {
@@ -206,7 +206,7 @@ class _DuplicateSelectVisitor extends SimpleAstVisitor<void> {
     final args = node.argumentList.arguments;
     if (args.isEmpty) return;
 
-    final columns = _stringLiteralsFromList(args.first);
+    final columns = _stringLiteralsFromList(argumentExpression(args.first));
     if (columns.isEmpty) return;
 
     final seen = <String>{};
@@ -245,14 +245,17 @@ class _OrderFieldVisitor extends SimpleAstVisitor<void> {
     final args = node.argumentList.arguments;
     if (args.isEmpty) return;
 
-    final value = simpleStringLiteralValue(args.first);
+    final value = simpleStringLiteralValue(argumentExpression(args.first));
     if (value == null) return;
 
     final normalized = _normalizeFieldName(value);
     if (normalized == null) return;
     if (modelInfo.allFieldNames.contains(normalized)) return;
 
-    rule.reportAtNode(args.first, arguments: [normalized, modelInfo.modelName]);
+    rule.reportAtNode(
+      argumentExpression(args.first),
+      arguments: [normalized, modelInfo.modelName],
+    );
   }
 }
 
@@ -278,7 +281,7 @@ class _GroupFieldVisitor extends SimpleAstVisitor<void> {
     final args = node.argumentList.arguments;
     if (args.isEmpty) return;
 
-    final columns = _stringLiteralsFromList(args.first);
+    final columns = _stringLiteralsFromList(argumentExpression(args.first));
     if (columns.isEmpty) return;
 
     for (final column in columns) {
@@ -316,14 +319,17 @@ class _HavingFieldVisitor extends SimpleAstVisitor<void> {
     final args = node.argumentList.arguments;
     if (args.isEmpty) return;
 
-    final value = simpleStringLiteralValue(args.first);
+    final value = simpleStringLiteralValue(argumentExpression(args.first));
     if (value == null) return;
 
     final normalized = _normalizeFieldName(value);
     if (normalized == null) return;
     if (modelInfo.allFieldNames.contains(normalized)) return;
 
-    rule.reportAtNode(args.first, arguments: [normalized, modelInfo.modelName]);
+    rule.reportAtNode(
+      argumentExpression(args.first),
+      arguments: [normalized, modelInfo.modelName],
+    );
   }
 }
 

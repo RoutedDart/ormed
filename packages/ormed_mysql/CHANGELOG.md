@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.0
+
+- **Breaking**: Requires Dart 3.12 or newer.
+- **Updated**: Widened the Ormed and driver-test support ranges to `<1.0.0`.
+- **Updated**: Refreshed the MySQL and workspace dependencies.
+
 ## 0.2.0
 - **Added**: `DataSourceOptions.mysql(...)` and `ModelRegistry.mySqlDataSource(...)` extension helpers for code-first MySQL setup.
 - **Docs**: Added usage guidance for the new MySQL datasource helpers.

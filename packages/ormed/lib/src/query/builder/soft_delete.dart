@@ -107,7 +107,7 @@ extension SoftDeleteExtension<T extends OrmEntity> on Query<T> {
         context.emitWarning(
           QueryWarning(
             message:
-                'forceDelete uses fallback row identifier "${identifier}" '
+                'forceDelete uses fallback row identifier "$identifier" '
                 'for ${definition.modelName}; ensure the identifier is stable.',
             definition: definition,
             feature: 'forceDelete',

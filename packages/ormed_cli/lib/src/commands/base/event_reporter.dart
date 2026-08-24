@@ -3,9 +3,8 @@ import 'package:ormed/ormed.dart';
 
 /// Subscribes to core events and mirrors them to CLI output.
 class CliEventReporter {
-  CliEventReporter({required Console io, EventBus? events})
-    : _io = io,
-      _events = events ?? EventBus.instance;
+  CliEventReporter({required this._io, EventBus? events})
+    : _events = events ?? EventBus.instance;
 
   final Console _io;
   final EventBus _events;

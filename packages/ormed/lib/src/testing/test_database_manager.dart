@@ -49,25 +49,17 @@ class TestDatabaseManager {
   final List<DataSource> _createdDataSources = [];
 
   TestDatabaseManager({
-    required DataSource baseDataSource,
-    Future<void> Function(DataSource)? runMigrations,
-    List<Migration>? migrations,
-    List<MigrationDescriptor>? migrationDescriptors,
-    List<DatabaseSeeder Function(OrmConnection)>? seeders,
-    DatabaseIsolationStrategy strategy =
-        DatabaseIsolationStrategy.migrateWithTransactions,
-    DriverAdapter Function(String testDbName)? adapterFactory,
-    String? baseSchema,
+    required this._baseDataSource,
+    this._runMigrations,
+    this._migrations,
+    this._migrationDescriptors,
+    this._seeders,
+    this._strategy = DatabaseIsolationStrategy.migrateWithTransactions,
+    this._adapterFactory,
+    this._baseSchema,
     // Deprecated/Removed parameters
     bool parallel = false,
-  }) : _baseDataSource = baseDataSource,
-       _runMigrations = runMigrations,
-       _migrations = migrations,
-       _migrationDescriptors = migrationDescriptors,
-       _seeders = seeders,
-       _strategy = strategy,
-       _adapterFactory = adapterFactory,
-       _baseSchema = baseSchema;
+  });
 
   DatabaseIsolationStrategy get strategy => _strategy;
 

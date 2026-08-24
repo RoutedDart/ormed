@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.0
+
+- **Breaking**: Requires Dart 3.12 or newer.
+- **Updated**: Widened the Ormed and PostgreSQL support ranges to `<1.0.0`.
+- **Updated**: Synced the extension package with the Analyzer 14 workspace release.
+
 ## 0.2.0
 - **Updated**: Integration tests now use `OrmedEnvironment` helpers for env var lookups.
 

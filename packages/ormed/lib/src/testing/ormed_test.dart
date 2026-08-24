@@ -32,8 +32,8 @@ class OrmedTestConfig {
   OrmedTestConfig._({
     required this.configKey,
     required this.dataSourceName,
-    required String configHash,
-  }) : _configHash = configHash;
+    required this._configHash,
+  });
 
   /// Hash of the configuration used to create this test environment.
   String get configHash => _configHash;

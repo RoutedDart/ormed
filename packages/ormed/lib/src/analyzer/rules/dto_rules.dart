@@ -96,7 +96,7 @@ class _InsertMissingRequiredVisitor extends SimpleAstVisitor<void> {
     final args = node.argumentList.arguments;
     if (args.isEmpty) return;
 
-    final inputs = _expandInputs(args.first);
+    final inputs = _expandInputs(argumentExpression(args.first));
     if (inputs.isEmpty) return;
 
     for (final input in inputs) {
@@ -152,7 +152,7 @@ class _UpdateMissingPkVisitor extends SimpleAstVisitor<void> {
     final args = node.argumentList.arguments;
     if (args.isEmpty) return;
 
-    final inputs = _expandInputs(args.first);
+    final inputs = _expandInputs(argumentExpression(args.first));
     if (inputs.isEmpty) return;
 
     for (final input in inputs) {
@@ -265,11 +265,12 @@ String? _modelNameFromDto(String typeName, String suffix) {
   return base;
 }
 
-Set<String> _namedArguments(NodeList<Expression> args) {
+Set<String> _namedArguments(NodeList<Argument> args) {
   final names = <String>{};
   for (final arg in args) {
-    if (arg is NamedExpression) {
-      names.add(arg.name.label.name);
+    final name = namedArgumentName(arg);
+    if (name != null) {
+      names.add(name);
     }
   }
   return names;
@@ -309,7 +310,7 @@ bool _missingFromMapKeys(List<OrmFieldInfo> required, Set<String> keys) {
 
 bool _hasNamedArgument(ArgumentList args, String name) {
   for (final arg in args.arguments) {
-    if (arg is NamedExpression && arg.name.label.name == name) {
+    if (namedArgumentName(arg) == name) {
       return true;
     }
   }

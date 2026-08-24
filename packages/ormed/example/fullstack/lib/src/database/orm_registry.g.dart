@@ -28,7 +28,10 @@ extension GeneratedOrmModels on ModelRegistry {
 
 /// Registers factory definitions for all models that have factory support.
 /// Call this before using [Model.factory<T>()] to ensure definitions are available.
-void registerOrmFactories() {}
+void registerOrmFactories() {
+  ModelFactoryRegistry.registerIfAbsent<Genre>(GenreOrmDefinition.definition);
+  ModelFactoryRegistry.registerIfAbsent<Movie>(MovieOrmDefinition.definition);
+}
 
 /// Combined setup: registers both model registry and factories.
 /// Returns a ModelRegistry with all generated models registered.

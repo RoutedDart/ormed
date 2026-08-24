@@ -3,3 +3,6 @@ include: package:lints/recommended.yaml
 analyzer:
   exclude:
     - packages/orm_playground/**
+    # This is a standalone fixture package; analyze it from its own package
+    # root so its package-specific dependencies are resolved correctly.
+    - orm_bootstrap_test/**

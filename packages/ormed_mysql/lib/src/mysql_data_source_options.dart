@@ -151,7 +151,7 @@ extension MySqlDataSourceRegistryExtensions on ModelRegistry {
               'ssl': _sslFromEnv(env, fallback: false),
               'timezone': env.string('DB_TIMEZONE', fallback: '+00:00'),
               'charset': env.string('DB_CHARSET', fallback: 'utf8mb4'),
-              if (collation != null) 'collation': collation,
+              'collation': ?collation,
             },
           ),
           extensions: driverExtensions,

@@ -3,7 +3,7 @@ description: Runnable code examples for Ormed documentation
 publish_to: none
 resolution: workspace
 environment:
-  sdk: '>=3.9.0 <4.0.0'
+  sdk: '>=3.12.0 <4.0.0'
 
 dependencies:
   ormed:

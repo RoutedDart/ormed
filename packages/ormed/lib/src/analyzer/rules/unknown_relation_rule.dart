@@ -64,12 +64,15 @@ class _Visitor extends SimpleAstVisitor<void> {
     final args = node.argumentList.arguments;
     if (args.isEmpty) return;
 
-    final relation = simpleStringLiteralValue(args.first);
+    final relation = simpleStringLiteralValue(argumentExpression(args.first));
     if (relation == null) return;
     if (relation.contains('.')) return;
 
     if (!modelInfo.relationNames.contains(relation)) {
-      rule.reportAtNode(args.first, arguments: [relation, modelInfo.modelName]);
+      rule.reportAtNode(
+        argumentExpression(args.first),
+        arguments: [relation, modelInfo.modelName],
+      );
     }
   }
 }

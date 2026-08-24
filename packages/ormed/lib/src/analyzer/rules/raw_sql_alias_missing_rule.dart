@@ -51,19 +51,19 @@ class _RawAliasVisitor extends SimpleAstVisitor<void> {
     final args = node.argumentList.arguments;
     if (args.isEmpty) return;
 
-    final sqlValue = simpleStringLiteralValue(args.first);
+    final sqlValue = simpleStringLiteralValue(argumentExpression(args.first));
     if (sqlValue == null) return;
 
     if (_hasAliasArgument(args)) return;
     if (_sqlHasAlias(sqlValue)) return;
 
-    rule.reportAtNode(args.first);
+    rule.reportAtNode(argumentExpression(args.first));
   }
 
-  bool _hasAliasArgument(NodeList<Expression> args) {
+  bool _hasAliasArgument(NodeList<Argument> args) {
     for (final arg in args) {
-      if (arg is NamedExpression && arg.name.label.name == 'alias') {
-        final value = arg.expression;
+      if (namedArgumentName(arg) == 'alias') {
+        final value = argumentExpression(arg);
         if (value is NullLiteral) return false;
         return true;
       }

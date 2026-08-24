@@ -5,13 +5,7 @@ import 'table_blueprint.dart';
 
 /// Fluent builder that collects schema commands for a migration direction.
 class SchemaBuilder {
-  SchemaBuilder({
-    SchemaSnapshot? snapshot,
-    String? defaultSchema,
-    String? tablePrefix,
-  }) : _snapshot = snapshot,
-       _defaultSchema = defaultSchema,
-       _tablePrefix = tablePrefix;
+  SchemaBuilder({this._snapshot, this._defaultSchema, this._tablePrefix});
 
   final SchemaSnapshot? _snapshot;
   final String? _defaultSchema;

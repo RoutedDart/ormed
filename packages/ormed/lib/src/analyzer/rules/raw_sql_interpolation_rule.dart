@@ -10,6 +10,8 @@ import 'package:analyzer/error/error.dart';
 import 'package:path/path.dart' as p;
 import 'package:yaml/yaml.dart';
 
+import '../type_utils.dart';
+
 class RawSqlInterpolationRule extends AnalysisRule {
   static const String _codeName = 'ormed_raw_sql_interpolation';
   static const String _message =
@@ -142,14 +144,12 @@ class _Visitor extends SimpleAstVisitor<void> {
     final args = node.argumentList.arguments;
     if (args.isEmpty) return;
 
-    final sqlArg = args.first;
+    final sqlArg = argumentExpression(args.first);
     if (!_containsInterpolation(sqlArg)) return;
 
     final hasBindings =
         args.length > 1 ||
-        args.any(
-          (arg) => arg is NamedExpression && arg.name.label.name == 'bindings',
-        );
+        args.any((arg) => namedArgumentName(arg) == 'bindings');
 
     if (!hasBindings) {
       rule.reportAtNode(sqlArg);

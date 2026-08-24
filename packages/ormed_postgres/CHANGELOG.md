@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.0
+
+- **Breaking**: Requires Dart 3.12 or newer.
+- **Updated**: Widened the Ormed and driver-test support ranges to `<1.0.0`.
+- **Updated**: Refreshed the PostgreSQL and workspace dependencies.
+
 ## 0.2.0
 - **Added**: `DataSourceOptions.postgres(...)` and `ModelRegistry.postgresDataSource(...)` extension helpers for code-first PostgreSQL setup.
 - **Docs**: Added usage guidance for the new Postgres datasource helpers.

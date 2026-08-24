@@ -53,6 +53,15 @@ String? simpleStringLiteralValue(Expression expression) {
   return null;
 }
 
+Expression argumentExpression(Argument argument) => argument.argumentExpression;
+
+String? namedArgumentName(Argument argument) {
+  if (argument is NamedArgument) {
+    return argument.name.lexeme;
+  }
+  return null;
+}
+
 String? stringLiteralValue(Expression expression) {
   if (expression is SimpleStringLiteral) {
     return expression.value;

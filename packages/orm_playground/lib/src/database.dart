@@ -48,9 +48,9 @@ class PlaygroundDatabase {
 
   PlaygroundDatabase._({
     required this.root,
-    required OrmProjectConfig config,
+    required this._config,
     required this.databasePath,
-  }) : _config = config;
+  });
 
   /// Directory that contains `orm.yaml`.
   final Directory root;

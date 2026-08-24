@@ -43,7 +43,7 @@ class SchemaMutation {
     Map<String, Object?>? options,
   }) => SchemaMutation._(
     operation: SchemaMutationOperation.createDatabase,
-    documentPayload: {'name': name, if (options != null) 'options': options},
+    documentPayload: {'name': name, 'options': ?options},
   );
 
   factory SchemaMutation.dropDatabase({
@@ -62,8 +62,8 @@ class SchemaMutation {
     operation: SchemaMutationOperation.createCollection,
     documentPayload: {
       'collection': collection,
-      if (validator != null) 'validator': validator,
-      if (options != null) 'options': options,
+      'validator': ?validator,
+      'options': ?options,
     },
   );
 
@@ -82,7 +82,7 @@ class SchemaMutation {
     documentPayload: {
       'collection': collection,
       'keys': keys,
-      if (options != null) 'options': options,
+      'options': ?options,
     },
   );
 

@@ -149,7 +149,7 @@ Future<void> _demonstrateTenantIsolation(
   final analyticsDs = dataSources['analytics'];
 
   if (defaultDs == null || analyticsDs == null) {
-    io.warning('Not all tenants available for isolation demo.');
+    io.warn('Not all tenants available for isolation demo.');
     return;
   }
 

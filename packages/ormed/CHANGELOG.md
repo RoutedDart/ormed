@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.0
+
+- **Breaking**: Requires Dart 3.12 or newer.
+- **Breaking**: Migrated the analyzer integration to Analyzer 14, including the new argument and formal-parameter AST APIs.
+- **Updated**: Refreshed build, source generation, testing, and analyzer tooling dependencies to their latest Dart 3.12-compatible releases.
+- **Updated**: Internal driver and test-package constraints now support the full `0.x` release range.
+
 ## 0.2.0
 - **Added**: `OrmedEnvironment` with `.env` loading, variable interpolation support (`${VAR}` / `${VAR:-default}`), and typed helpers for required values.
 - **Added**: `MigrationEntry.named(...)` helper for easier manual migration registration.

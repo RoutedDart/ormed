@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.0
+
+- **Breaking**: Requires Dart 3.12 or newer.
+- **Updated**: Widened the Ormed and SQLite-core support ranges to `<1.0.0`.
+- **Updated**: Synced the D1 driver with the Analyzer 14 workspace release.
+
 ## 0.1.0
 
 - Initial D1 package release.

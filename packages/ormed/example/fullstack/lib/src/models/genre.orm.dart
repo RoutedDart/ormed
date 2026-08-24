@@ -109,6 +109,11 @@ final ModelDefinition<$Genre> _$GenreDefinition = ModelDefinition(
   codec: _$GenreCodec(),
 );
 
+// ignore: unused_element
+final genreModelDefinitionRegistration = ModelFactoryRegistry.register<$Genre>(
+  _$GenreDefinition,
+);
+
 extension GenreOrmDefinition on Genre {
   static ModelDefinition<$Genre> get definition => _$GenreDefinition;
 }

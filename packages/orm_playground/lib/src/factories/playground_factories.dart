@@ -1,7 +1,6 @@
 import 'package:ormed/ormed.dart';
 
 import '../models/user.dart';
-import '../models/user.orm.dart';
 
 const _userFactory = PlaygroundUserFactory();
 

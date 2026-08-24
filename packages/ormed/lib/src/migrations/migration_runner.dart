@@ -13,16 +13,14 @@ typedef MigrationPlanResolver =
 
 class MigrationRunner {
   MigrationRunner({
-    required SchemaDriver schemaDriver,
-    required MigrationLedger ledger,
+    required this._schemaDriver,
+    required this._ledger,
     required List<MigrationDescriptor> migrations,
     MigrationPlanResolver? planResolver,
-    String? defaultSchema,
-    bool emitEvents = true,
+    this._defaultSchema,
+    this._emitEvents = true,
     EventBus? events,
-  }) : _schemaDriver = schemaDriver,
-       _ledger = ledger,
-       _migrations = List.unmodifiable(
+  }) : _migrations = List.unmodifiable(
          (List<MigrationDescriptor>.from(migrations)..sort(_byMigrationId)),
        ),
        _descriptorById = {
@@ -30,8 +28,6 @@ class MigrationRunner {
            descriptor.id.toString(): descriptor,
        },
        _planResolver = planResolver ?? _defaultPlanResolver,
-       _defaultSchema = defaultSchema,
-       _emitEvents = emitEvents,
        _events = events ?? EventBus.instance;
 
   final SchemaDriver _schemaDriver;
