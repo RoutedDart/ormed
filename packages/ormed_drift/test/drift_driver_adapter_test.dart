@@ -143,6 +143,32 @@ void main() {
 
     await iterator.cancel();
   });
+
+  test(
+    'exposes a PostgreSQL Drift profile without changing SQLite defaults',
+    () {
+      final postgres = DriftDriverAdapter.postgres(
+        NativeDatabase.memory(),
+        closeDelegate: true,
+      );
+      addTearDown(postgres.close);
+
+      expect(postgres.metadata.name, 'postgres');
+      expect(
+        postgres.metadata.supportsCapability(DriverCapability.distinctOn),
+        isTrue,
+      );
+      expect(
+        postgres.profile.prepareSql("SELECT '?' AS literal, ? AS value"),
+        r"SELECT '?' AS literal, $1 AS value",
+      );
+      expect(postgres.profile.insertPrefix(true), 'INSERT');
+      expect(
+        postgres.profile.insertConflictSuffix(true),
+        ' ON CONFLICT DO NOTHING',
+      );
+    },
+  );
 }
 
 class _TestQueryExecutorUser implements drift.QueryExecutorUser {

@@ -4,31 +4,14 @@ import 'dart:convert';
 
 import 'package:ormed/ormed.dart';
 
-import 'sqlite_codecs.dart';
-import 'sqlite_grammar.dart';
-import 'sqlite_schema_dialect.dart';
 import 'sqlite_type_mapper.dart';
+import 'sql_remote_adapter_profile.dart';
 
 /// Registers SQLite-like codecs and type mapper under a custom driver name.
 void registerSqliteLikeDriverCodecs(String driverName) {
   final mapper = SqliteTypeMapper();
+  registerDriverCodecs(driverName, mapper);
   TypeMapperRegistry.register(driverName, mapper);
-
-  final codecs = <String, ValueCodec<dynamic>>{};
-  for (final mapping in mapper.typeMappings) {
-    final codec = mapping.codec;
-    if (codec == null) continue;
-    final typeKey = mapping.dartType.toString();
-    codecs[typeKey] = codec;
-    codecs['$typeKey?'] = codec;
-    if (mapping.dartType == Map) {
-      codecs['Map<String, Object?>'] = codec;
-      codecs['Map<String, Object?>?'] = codec;
-      codecs['Map<String, dynamic>'] = codec;
-      codecs['Map<String, dynamic>?'] = codec;
-    }
-  }
-  ValueCodecRegistry.instance.registerDriver(driverName, codecs);
 }
 
 /// Resolves whether SQLite window-function SQL should be emitted.
@@ -65,43 +48,47 @@ abstract class SqliteRemoteAdapterBase
     required String driverName,
     required Map<String, Object?> options,
     QueryChangeBus? changeBus,
-    required Set<DriverCapability> capabilities,
-    required bool supportsQueryDeletes,
-    required bool requiresPrimaryKeyForQueryUpdate,
-    required QueryRowIdentifier queryUpdateRowIdentifier,
+    Set<DriverCapability>? capabilities,
+    bool? supportsQueryDeletes,
+    bool? requiresPrimaryKeyForQueryUpdate,
+    QueryRowIdentifier? queryUpdateRowIdentifier,
     List<DriverExtension> extensions = const [],
+    SqlRemoteAdapterProfile? profile,
   }) : _driverName = driverName,
        _options = options,
+       _profile = profile ?? SqlRemoteAdapterProfile.sqlite(),
        _extensions = DriverExtensionRegistry(
          driverName: driverName,
          extensions: extensions,
        ),
        _changeBus = changeBus ?? QueryChangeBus(),
        _codecs = ValueCodecRegistry.instance.forDriver(driverName) {
-    registerSqliteLikeDriverCodecs(driverName);
+    _profile.registerCodecs(driverName, _profile.typeMapper);
+    TypeMapperRegistry.register(driverName, _profile.typeMapper);
 
     final supportsReturning = resolveSqliteLikeSupportsReturning(options);
     _metadata = DriverMetadata(
       name: driverName,
       supportsReturning: supportsReturning,
-      supportsQueryDeletes: supportsQueryDeletes,
-      requiresPrimaryKeyForQueryUpdate: requiresPrimaryKeyForQueryUpdate,
-      queryUpdateRowIdentifier: queryUpdateRowIdentifier,
+      supportsQueryDeletes:
+          supportsQueryDeletes ?? _profile.supportsQueryDeletes,
+      requiresPrimaryKeyForQueryUpdate:
+          requiresPrimaryKeyForQueryUpdate ??
+          _profile.requiresPrimaryKeyForQueryUpdate,
+      queryUpdateRowIdentifier:
+          queryUpdateRowIdentifier ?? _profile.queryUpdateRowIdentifier,
       identifierQuote: '"',
       capabilities: {
-        ...capabilities,
+        ..._profile.capabilities,
+        ...(capabilities ?? const <DriverCapability>{}),
         if (supportsReturning) DriverCapability.returning,
       },
     );
 
-    _grammar = SqliteQueryGrammar(
-      supportsWindowFunctions: resolveSqliteLikeSupportsWindowFunctions(
-        options,
-      ),
-      extensions: _extensions,
-    );
+    _grammar = _profile.createGrammar(options, _extensions);
 
-    _schemaCompiler = SchemaPlanCompiler(const SqliteSchemaDialect());
+    _schemaCompiler = SchemaPlanCompiler(_profile.schemaDialect);
+    _currentSchema = _profile.defaultSchema;
     _planCompiler = ClosurePlanCompiler(
       compileSelect: _compileSelectPreview,
       compileMutation: _compileMutationPreview,
@@ -110,13 +97,14 @@ abstract class SqliteRemoteAdapterBase
 
   final String _driverName;
   final Map<String, Object?> _options;
+  final SqlRemoteAdapterProfile _profile;
   final DriverExtensionRegistry _extensions;
   final QueryChangeBus _changeBus;
   final ValueCodecRegistry _codecs;
   final List<_SqliteChangeScope> _changeScopes = [];
 
   late final DriverMetadata _metadata;
-  late final SqliteQueryGrammar _grammar;
+  late final QueryGrammar _grammar;
   late final SchemaPlanCompiler _schemaCompiler;
   late final PlanCompiler _planCompiler;
 
@@ -153,6 +141,15 @@ abstract class SqliteRemoteAdapterBase
   /// Name of the current driver instance.
   String get driverName => _driverName;
 
+  /// SQL profile used by this adapter.
+  SqlRemoteAdapterProfile get profile => _profile;
+
+  /// Query grammar used to compile ORM plans.
+  QueryGrammar get grammar => _grammar;
+
+  /// Schema compiler used by the adapter.
+  SchemaPlanCompiler get schemaCompiler => _schemaCompiler;
+
   /// Change feed shared by this adapter and reactive Ormed queries.
   @override
   QueryChangeBus get changeBus => _changeBus;
@@ -181,7 +178,7 @@ abstract class SqliteRemoteAdapterBase
     List<Object?> parameters = const [],
   ]) async {
     _ensureOpen();
-    final normalized = normalizeSqliteParameters(parameters);
+    final normalized = _profile.normalizeParameters(parameters);
     await executeStatement(sql, normalized);
     if (recordsRawChanges) {
       recordExternalSqlChange(sql);
@@ -194,7 +191,7 @@ abstract class SqliteRemoteAdapterBase
     List<Object?> parameters = const [],
   ]) async {
     _ensureOpen();
-    return queryStatement(sql, normalizeSqliteParameters(parameters));
+    return queryStatement(sql, _profile.normalizeParameters(parameters));
   }
 
   @override
@@ -203,7 +200,7 @@ abstract class SqliteRemoteAdapterBase
     final compilation = _grammar.compileSelect(plan);
     final rows = await queryStatement(
       compilation.sql,
-      normalizeSqliteParameters(compilation.bindings),
+      _profile.normalizeParameters(compilation.bindings),
     );
     return rows
         .map((row) => _decodeRowValues(plan.definition, row))
@@ -216,7 +213,7 @@ abstract class SqliteRemoteAdapterBase
     final compilation = _grammar.compileSelect(plan);
     final rows = await queryStatement(
       compilation.sql,
-      normalizeSqliteParameters(compilation.bindings),
+      _profile.normalizeParameters(compilation.bindings),
     );
     for (final row in rows) {
       yield _decodeRowValues(plan.definition, row);
@@ -233,14 +230,14 @@ abstract class SqliteRemoteAdapterBase
 
   StatementPreview _compileSelectPreview(QueryPlan plan) {
     final compilation = _grammar.compileSelect(plan);
-    final normalized = normalizeSqliteParameters(compilation.bindings);
+    final normalized = _profile.normalizeParameters(compilation.bindings);
     final resolved = _grammar.substituteBindingsIntoRawSql(
       compilation.sql,
       normalized.map(_codecs.encodeValue).toList(growable: false),
     );
     return StatementPreview(
       payload: SqlStatementPayload(
-        sql: compilation.sql,
+        sql: _profile.prepareSql(compilation.sql),
         parameters: normalized,
       ),
       resolvedText: resolved,
@@ -251,13 +248,16 @@ abstract class SqliteRemoteAdapterBase
     final shape = _shapeForPlan(plan);
     final first = shape.parameterSets.isEmpty
         ? const <Object?>[]
-        : normalizeSqliteParameters(shape.parameterSets.first);
+        : _profile.normalizeParameters(shape.parameterSets.first);
     final resolved = _grammar.substituteBindingsIntoRawSql(
       shape.sql,
       first.map(_codecs.encodeValue).toList(growable: false),
     );
     return StatementPreview(
-      payload: SqlStatementPayload(sql: shape.sql, parameters: first),
+      payload: SqlStatementPayload(
+        sql: _profile.prepareSql(shape.sql),
+        parameters: first,
+      ),
       parameterSets: shape.parameterSets,
       resolvedText: resolved,
     );
@@ -271,7 +271,7 @@ abstract class SqliteRemoteAdapterBase
     final returnedRows = <Map<String, Object?>>[];
 
     for (final parameterSet in shape.parameterSets) {
-      final normalized = normalizeSqliteParameters(parameterSet);
+      final normalized = _profile.normalizeParameters(parameterSet);
       if (shape.returning) {
         final rows = await queryStatement(shape.sql, normalized);
         returnedRows.addAll(
@@ -336,7 +336,7 @@ abstract class SqliteRemoteAdapterBase
 
   /// Records a SQLite-like SQL statement against the reactive change feed.
   void recordExternalSqlChange(String sql) {
-    final change = sqliteDatabaseChangeForSql(sql);
+    final change = _profile.changeForSql(sql);
     if (change != null) {
       _recordExternalChange(change);
     }
@@ -401,27 +401,30 @@ abstract class SqliteRemoteAdapterBase
   Future<List<SchemaNamespace>> listSchemas() async {
     final sql = _schemaCompiler.dialect.compileSchemas();
     if (sql == null) {
-      return const <SchemaNamespace>[
-        SchemaNamespace(name: 'main', isDefault: true),
+      return <SchemaNamespace>[
+        SchemaNamespace(name: _profile.defaultSchema, isDefault: true),
       ];
     }
 
-    final rows = await queryRaw(sql);
+    final rows = await queryRaw(
+      sql,
+      _profile.schemaQueryParameters('schemas', null, null),
+    );
     if (rows.isEmpty) {
-      return const <SchemaNamespace>[
-        SchemaNamespace(name: 'main', isDefault: true),
+      return <SchemaNamespace>[
+        SchemaNamespace(name: _profile.defaultSchema, isDefault: true),
       ];
     }
 
     return rows
         .map((row) {
           final name = (row['name'] as String?) ?? 'main';
-          final owner = (row['file'] ?? row['path']) as String?;
-          final defaultFlag = row['default'];
+          final owner = (row['file'] ?? row['path'] ?? row['owner']) as String?;
+          final defaultFlag = row['default'] ?? row['is_default'];
           final isDefault = switch (defaultFlag) {
             num value => value != 0,
             bool value => value,
-            _ => name.toLowerCase() == 'main',
+            _ => name.toLowerCase() == _profile.defaultSchema.toLowerCase(),
           };
           return SchemaNamespace(
             name: name,
@@ -440,18 +443,22 @@ abstract class SqliteRemoteAdapterBase
       throw UnsupportedError('$driverName should support table listing.');
     }
 
-    final rows = await queryRaw(sql);
+    final rows = await queryRaw(
+      sql,
+      _profile.schemaQueryParameters('tables', null, targetSchema),
+    );
     return rows
         .where((row) {
-          final name = row['name']?.toString() ?? '';
-          return !name.startsWith('sqlite_');
+          final name = (row['name'] ?? row['table_name'])?.toString() ?? '';
+          return !_profile.ignoreSystemTables || !name.startsWith('sqlite_');
         })
         .map((row) {
-          final resolvedSchema = row['schema'] as String? ?? targetSchema;
+          final resolvedSchema =
+              (row['schema'] ?? row['table_schema']) as String? ?? targetSchema;
           return SchemaTable(
-            name: row['name'] as String,
+            name: (row['name'] ?? row['table_name']) as String,
             schema: _exposedSchema(_schemaOrDefault(resolvedSchema)),
-            type: row['type'] as String?,
+            type: (row['type'] ?? row['table_type']) as String?,
           );
         })
         .toList(growable: false);
@@ -465,14 +472,20 @@ abstract class SqliteRemoteAdapterBase
       throw UnsupportedError('$driverName should support view listing.');
     }
 
-    final rows = await queryRaw(sql);
+    final rows = await queryRaw(
+      sql,
+      _profile.schemaQueryParameters('views', null, targetSchema),
+    );
     return rows
         .map((row) {
-          final resolvedSchema = row['schema'] as String? ?? targetSchema;
+          final resolvedSchema =
+              (row['schema'] ?? row['table_schema']) as String? ?? targetSchema;
           return SchemaView(
-            name: row['name'] as String,
+            name: (row['name'] ?? row['table_name']) as String,
             schema: _exposedSchema(_schemaOrDefault(resolvedSchema)),
-            definition: (row['definition'] as String?) ?? row['sql'] as String?,
+            definition:
+                (row['definition'] ?? row['view_definition'] ?? row['sql'])
+                    as String?,
           );
         })
         .toList(growable: false);
@@ -487,32 +500,43 @@ abstract class SqliteRemoteAdapterBase
 
     final rows = (await queryRaw(
       sql,
-    )).where((row) => (row['cid'] as int? ?? 0) >= 0);
+      _profile.schemaQueryParameters('columns', table, schema),
+    )).where((row) => (row['cid'] as int? ?? 0) >= 0 || row['cid'] == null);
     return rows
         .map((row) {
-          final nullableFlag = row['nullable'];
+          final nullableFlag = row['nullable'] ?? row['is_nullable'];
           final nullable = switch (nullableFlag) {
             num value => value != 0,
             bool value => value,
+            String value => value.toUpperCase() != 'NO',
             _ => (row['notnull'] as int? ?? 0) == 0,
           };
           final defaultValue = row.containsKey('default')
               ? row['default']
-              : row['dflt_value'];
+              : row['column_default'] ?? row['dflt_value'];
           final primaryFlag = row['primary'];
           final primary = switch (primaryFlag) {
             num value => value != 0,
             bool value => value,
+            String value => value.toUpperCase() == 'YES',
             _ => (row['pk'] as int? ?? 0) > 0,
           };
           return SchemaColumn(
-            name: row['name'] as String,
-            dataType: (row['type'] as String?) ?? 'TEXT',
-            schema: _exposedSchema(_schemaOrDefault(schema)),
-            tableName: table,
+            name: (row['name'] ?? row['column_name']) as String,
+            dataType:
+                (row['type'] as String?) ??
+                (row['data_type'] as String?) ??
+                'TEXT',
+            schema: _exposedSchema(
+              _schemaOrDefault((row['table_schema'] ?? schema) as String?),
+            ),
+            tableName: (row['table_name'] as String?) ?? table,
             nullable: nullable,
             defaultValue: _normalizeDefault(defaultValue),
-            autoIncrement: false,
+            autoIncrement:
+                row['is_identity'] == 'YES' ||
+                (row['column_default']?.toString().startsWith('nextval(') ??
+                    false),
             primaryKey: primary,
           );
         })
@@ -526,11 +550,14 @@ abstract class SqliteRemoteAdapterBase
       throw UnsupportedError('$driverName should support index listing.');
     }
 
-    final rows = await queryRaw(sql);
+    final rows = await queryRaw(
+      sql,
+      _profile.schemaQueryParameters('indexes', table, schema),
+    );
     final indexes = <SchemaIndex>[];
     for (final row in rows) {
-      final name = row['name'] as String;
-      if (name.startsWith('sqlite_')) {
+      final name = (row['name'] ?? row['index_name']) as String;
+      if (_profile.ignoreSystemTables && name.startsWith('sqlite_')) {
         continue;
       }
       final columns = _splitColumns(row['columns']).isNotEmpty
@@ -561,11 +588,14 @@ abstract class SqliteRemoteAdapterBase
         SchemaIndex(
           name: name,
           columns: columns,
-          schema: _exposedSchema(_schemaOrDefault(schema)),
-          tableName: table,
+          schema: _exposedSchema(
+            _schemaOrDefault((row['schema'] ?? schema) as String?),
+          ),
+          tableName: (row['table_name'] as String?) ?? table,
           unique: unique,
           primary: primary,
-          whereClause: whereClause,
+          whereClause: (row['where_clause'] as String?) ?? whereClause,
+          method: row['method'] as String?,
         ),
       );
     }
@@ -585,7 +615,13 @@ abstract class SqliteRemoteAdapterBase
       throw UnsupportedError('$driverName should support foreign key listing.');
     }
 
-    final rows = await queryRaw(sql);
+    final rows = await queryRaw(
+      sql,
+      _profile.schemaQueryParameters('foreignKeys', table, schema),
+    );
+    if (rows.any((row) => row['constraint_name'] != null)) {
+      return _postgresForeignKeys(rows, table, schema: schema);
+    }
     var counter = 0;
     return rows
         .map((row) {
@@ -608,47 +644,125 @@ abstract class SqliteRemoteAdapterBase
         .toList(growable: false);
   }
 
+  List<SchemaForeignKey> _postgresForeignKeys(
+    List<Map<String, Object?>> rows,
+    String table, {
+    String? schema,
+  }) {
+    final grouped = <String, List<Map<String, Object?>>>{};
+    for (final row in rows) {
+      final name = row['constraint_name'] as String;
+      grouped.putIfAbsent(name, () => <Map<String, Object?>>[]).add(row);
+    }
+    return grouped.entries
+        .map((entry) {
+          final constraintRows = [...entry.value]
+            ..sort(
+              (a, b) => ((a['ordinal_position'] as num?) ?? 0).compareTo(
+                (b['ordinal_position'] as num?) ?? 0,
+              ),
+            );
+          final first = constraintRows.first;
+          return SchemaForeignKey(
+            name: entry.key,
+            columns: constraintRows
+                .map((row) => row['column_name'] as String)
+                .toList(growable: false),
+            tableName: table,
+            referencedTable: first['referenced_table'] as String,
+            referencedColumns: constraintRows
+                .map((row) => row['referenced_column'] as String)
+                .toList(growable: false),
+            schema: _exposedSchema(
+              _schemaOrDefault((first['table_schema'] ?? schema) as String?),
+            ),
+            referencedSchema: _exposedSchema(
+              first['referenced_schema'] as String?,
+            ),
+            onUpdate: first['update_rule'] as String?,
+            onDelete: first['delete_rule'] as String?,
+          );
+        })
+        .toList(growable: false);
+  }
+
   @override
   Future<bool> createDatabase(
     String name, {
     Map<String, Object?>? options,
   }) async {
-    throw UnsupportedError('$driverName manages databases externally.');
+    final sql = _schemaCompiler.dialect.compileCreateDatabase(name, options);
+    if (sql == null) {
+      throw UnsupportedError('$driverName manages databases externally.');
+    }
+    await executeRaw(sql);
+    return true;
   }
 
   @override
   Future<bool> dropDatabase(String name) async {
-    throw UnsupportedError('$driverName manages databases externally.');
+    final sql = _schemaCompiler.dialect.compileMutation(
+      SchemaMutation.dropDatabase(name: name),
+    );
+    if (sql.isEmpty) {
+      throw UnsupportedError('$driverName manages databases externally.');
+    }
+    for (final statement in sql) {
+      await executeRaw(statement.sql, statement.parameters);
+    }
+    return true;
   }
 
   @override
   Future<bool> dropDatabaseIfExists(String name) async {
-    throw UnsupportedError('$driverName manages databases externally.');
+    final sql = _schemaCompiler.dialect.compileDropDatabaseIfExists(name);
+    if (sql == null) {
+      throw UnsupportedError('$driverName manages databases externally.');
+    }
+    await executeRaw(sql);
+    return true;
   }
 
   @override
   Future<List<String>> listDatabases() async {
-    throw UnsupportedError(
-      '$driverName does not expose database catalog listing here.',
-    );
+    final sql = _schemaCompiler.dialect.compileListDatabases();
+    if (sql == null) {
+      throw UnsupportedError(
+        '$driverName does not expose database catalog listing here.',
+      );
+    }
+    final rows = await queryRaw(sql);
+    return rows
+        .map((row) => (row['datname'] ?? row['name'])?.toString())
+        .whereType<String>()
+        .toList(growable: false);
   }
 
   @override
   Future<bool> createSchema(String name) async {
+    if (_profile.supportsRealSchemas) {
+      await executeRaw('CREATE SCHEMA IF NOT EXISTS ${_quote(name)}');
+    }
     _currentSchema = name;
     return true;
   }
 
   @override
   Future<bool> dropSchemaIfExists(String name) async {
-    if (_currentSchema == name) {
-      _currentSchema = 'main';
+    if (_profile.supportsRealSchemas) {
+      await executeRaw('DROP SCHEMA IF EXISTS ${_quote(name)} CASCADE');
     }
-    return false;
+    if (_currentSchema == name) {
+      _currentSchema = _profile.defaultSchema;
+    }
+    return true;
   }
 
   @override
   Future<void> setCurrentSchema(String name) async {
+    if (_profile.supportsRealSchemas) {
+      await executeRaw('SET search_path TO ${_quote(name)}, public');
+    }
     _currentSchema = name;
   }
 
@@ -659,9 +773,7 @@ abstract class SqliteRemoteAdapterBase
   Future<bool> enableForeignKeyConstraints() async {
     final sql = _schemaCompiler.dialect.compileEnableForeignKeyConstraints();
     if (sql == null) {
-      throw UnsupportedError(
-        '$driverName should support FK constraint management.',
-      );
+      return false;
     }
     await executeRaw(sql);
     return true;
@@ -671,9 +783,7 @@ abstract class SqliteRemoteAdapterBase
   Future<bool> disableForeignKeyConstraints() async {
     final sql = _schemaCompiler.dialect.compileDisableForeignKeyConstraints();
     if (sql == null) {
-      throw UnsupportedError(
-        '$driverName should support FK constraint management.',
-      );
+      return false;
     }
     await executeRaw(sql);
     return true;
@@ -698,7 +808,9 @@ abstract class SqliteRemoteAdapterBase
     await disableForeignKeyConstraints();
     try {
       for (final table in tables) {
-        await executeRaw('DROP TABLE IF EXISTS ${_quote(table.name)}');
+        final qualified = _qualifiedTable(table.name, table.schema);
+        final cascade = _profile.dropTablesWithCascade ? ' CASCADE' : '';
+        await executeRaw('DROP TABLE IF EXISTS $qualified$cascade');
       }
     } finally {
       await enableForeignKeyConstraints();
@@ -826,11 +938,12 @@ abstract class SqliteRemoteAdapterBase
       plan.definition.tableName,
       plan.definition.schema,
     );
-    final ignore = plan.ignoreConflicts ? ' OR IGNORE' : '';
+    final insertPrefix = _profile.insertPrefix(plan.ignoreConflicts);
+    final insertSuffix = _profile.insertConflictSuffix(plan.ignoreConflicts);
     final placeholders = List.filled(columns.length, '?').join(', ');
     final returning = plan.returning ? ' RETURNING *' : '';
     final sql =
-        'INSERT$ignore INTO $table (${columns.map(_quote).join(', ')}) VALUES ($placeholders)$returning';
+        '$insertPrefix INTO $table (${columns.map(_quote).join(', ')}) VALUES ($placeholders)$insertSuffix$returning';
 
     final parameterSets = plan.rows
         .map(
@@ -867,14 +980,18 @@ abstract class SqliteRemoteAdapterBase
       plan.definition.tableName,
       plan.definition.schema,
     );
-    final ignore = plan.ignoreConflicts ? ' OR IGNORE' : '';
+    final insertPrefix = _profile.insertPrefix(plan.ignoreConflicts);
+    final insertSuffix = _profile.insertConflictSuffix(plan.ignoreConflicts);
     final columns = plan.insertColumns.map(_quote).join(', ');
     final projectedColumns = plan.insertColumns.map(_quote).join(', ');
     final wrappedSelect =
         'SELECT $projectedColumns FROM (${compilation.sql}) AS __source__';
     final sql = StringBuffer()
-      ..write('INSERT$ignore INTO $table ($columns) ')
+      ..write('$insertPrefix INTO $table ($columns) ')
       ..write(wrappedSelect);
+    if (insertSuffix.isNotEmpty) {
+      sql.write(insertSuffix);
+    }
     return _SqliteLikeMutationShape(
       sql: sql.toString(),
       parameterSets: <List<Object?>>[
@@ -1532,10 +1649,10 @@ abstract class SqliteRemoteAdapterBase
   String _quote(String value) => '"${value.replaceAll('"', '""')}"';
 
   String _schemaOrDefault(String? schema) =>
-      schema == null || schema.isEmpty ? 'main' : schema;
+      schema == null || schema.isEmpty ? _profile.defaultSchema : schema;
 
   String? _exposedSchema(String? schema) {
-    if (schema == null || schema.isEmpty || schema == 'main') {
+    if (schema == null || schema.isEmpty || schema == _profile.defaultSchema) {
       return null;
     }
     return schema;
@@ -1574,8 +1691,17 @@ abstract class SqliteRemoteAdapterBase
 
   List<String> _splitColumns(Object? value) {
     if (value == null) return const [];
-    return value
-        .toString()
+    if (value is Iterable) {
+      return value
+          .map((column) => column.toString().trim())
+          .where((column) => column.isNotEmpty)
+          .toList(growable: false);
+    }
+    var text = value.toString().trim();
+    if (text.startsWith('[') && text.endsWith(']')) {
+      text = text.substring(1, text.length - 1);
+    }
+    return text
         .split(',')
         .map((c) => c.trim())
         .where((c) => c.isNotEmpty)
@@ -1635,65 +1761,6 @@ class _SqliteChangeScope {
     tables.addAll(other.tables);
     allTables = allTables || other.allTables;
   }
-}
-
-/// Returns the tables affected by a SQLite-like write statement.
-DatabaseChange? sqliteDatabaseChangeForSql(String sql) {
-  final operation = _leadingSqlVerb(sql);
-  const writeOperations = {
-    'INSERT',
-    'REPLACE',
-    'UPDATE',
-    'DELETE',
-    'WITH',
-    'CREATE',
-    'ALTER',
-    'DROP',
-    'REINDEX',
-    'VACUUM',
-  };
-  if (!writeOperations.contains(operation)) return null;
-
-  final table = switch (operation) {
-    'INSERT' || 'REPLACE' => _captureSqlTable(
-      sql,
-      RegExp(r'\bINTO\s+([^\s(]+)', caseSensitive: false),
-    ),
-    'UPDATE' => _captureSqlTable(
-      sql,
-      RegExp(r'^\s*UPDATE(?:\s+OR\s+\w+)?\s+([^\s(]+)', caseSensitive: false),
-    ),
-    'DELETE' => _captureSqlTable(
-      sql,
-      RegExp(r'\bFROM\s+([^\s(]+)', caseSensitive: false),
-    ),
-    'CREATE' || 'ALTER' || 'DROP' => _captureSqlTable(
-      sql,
-      RegExp(
-        r'\bTABLE(?:\s+IF\s+(?:NOT\s+)?EXISTS)?\s+([^\s(]+)',
-        caseSensitive: false,
-      ),
-    ),
-    'REINDEX' => _captureSqlTable(
-      sql,
-      RegExp(r'^\s*REINDEX(?:\s+[^\s]+)?\s+([^\s;]+)', caseSensitive: false),
-    ),
-    'VACUUM' => null,
-    _ => null,
-  };
-
-  if (table == null || table.isEmpty) {
-    return DatabaseChange.all();
-  }
-  return DatabaseChange(tables: [table]);
-}
-
-String? _captureSqlTable(String sql, RegExp pattern) =>
-    pattern.firstMatch(sql)?.group(1);
-
-String _leadingSqlVerb(String sql) {
-  final match = RegExp(r'^\s*([A-Za-z]+)').firstMatch(sql);
-  return match?.group(1)?.toUpperCase() ?? '';
 }
 
 class _SqliteLikeMutationShape {

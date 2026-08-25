@@ -2,6 +2,9 @@ import 'package:drift/drift.dart' as drift;
 import 'package:ormed/ormed.dart';
 import 'package:ormed_sqlite_core/ormed_sqlite_core.dart';
 
+import 'drift_postgres_profile_stub.dart'
+    if (dart.library.io) 'drift_postgres_profile.dart';
+
 /// A no-op Drift database user for applications whose schema is owned by
 /// Ormed migrations.
 class OrmedDriftExecutorUser implements drift.QueryExecutorUser {
@@ -36,6 +39,8 @@ class OrmedDriftExecutorUser implements drift.QueryExecutorUser {
 /// to direct Drift writes without requiring Drift-generated model classes.
 class DriftDriverAdapter extends SqliteRemoteAdapterBase
     implements DriverChangeFeed, DriverLifecycle {
+  static final _sqliteProfile = SqlRemoteAdapterProfile.sqlite();
+
   /// Creates an adapter around an existing Drift executor.
   DriftDriverAdapter(
     this._delegate, {
@@ -44,30 +49,44 @@ class DriftDriverAdapter extends SqliteRemoteAdapterBase
     drift.QueryExecutorUser? executorUser,
     this.synchronize,
     super.options = const {},
-  }) : executorUser = executorUser ?? const OrmedDriftExecutorUser(),
+  }) : _profile = _profileFor(_delegate),
+       executorUser = executorUser ?? const OrmedDriftExecutorUser(),
        super(
-         driverName: 'drift',
-         supportsQueryDeletes: true,
-         requiresPrimaryKeyForQueryUpdate: false,
-         queryUpdateRowIdentifier: const QueryRowIdentifier(
-           column: 'rowid',
-           expression: 'rowid',
-         ),
-         capabilities: const {
-           DriverCapability.joins,
-           DriverCapability.insertUsing,
-           DriverCapability.queryDeletes,
-           DriverCapability.schemaIntrospection,
-           DriverCapability.adHocQueryUpdates,
-           DriverCapability.rawSQL,
-           DriverCapability.increment,
-           DriverCapability.relationAggregates,
-           DriverCapability.caseInsensitiveLike,
-           DriverCapability.transactions,
-         },
+         driverName: _driverNameFor(_delegate),
+         profile: _profileFor(_delegate),
        );
 
+  /// Creates an adapter around Drift's PostgreSQL executor.
+  ///
+  /// The same Ormed API is used for SQLite and PostgreSQL. The PostgreSQL
+  /// profile is conditionally unavailable on browser/worker builds because
+  /// Drift's PostgreSQL transport depends on native server-side Dart.
+  DriftDriverAdapter.postgres(
+    this._delegate, {
+    super.changeBus,
+    this.closeDelegate = false,
+    drift.QueryExecutorUser? executorUser,
+    this.synchronize,
+    super.options = const {},
+  }) : _profile = createDriftPostgresProfile(),
+       executorUser = executorUser ?? const OrmedDriftExecutorUser(),
+       super(driverName: 'postgres', profile: createDriftPostgresProfile());
+
   final drift.QueryExecutor _delegate;
+  final SqlRemoteAdapterProfile _profile;
+
+  static SqlRemoteAdapterProfile _profileFor(drift.QueryExecutor executor) {
+    return switch (executor.dialect) {
+      drift.SqlDialect.sqlite => _sqliteProfile,
+      drift.SqlDialect.postgres => createDriftPostgresProfile(),
+      final dialect => throw UnsupportedError(
+        'No Ormed Drift profile is available for the ${dialect.name} dialect.',
+      ),
+    };
+  }
+
+  static String _driverNameFor(drift.QueryExecutor executor) =>
+      executor.dialect == drift.SqlDialect.postgres ? 'postgres' : 'drift';
 
   /// Drift executor facade that shares this driver's database and change bus.
   late final drift.QueryExecutor driftExecutor = _DriftExecutorProxy(
@@ -134,19 +153,27 @@ class DriftDriverAdapter extends SqliteRemoteAdapterBase
   Future<int> executeStatement(String sql, List<Object?> parameters) async {
     final executor = _activeExecutor;
     final operation = _leadingSqlVerb(sql);
+    final preparedSql = _profile.prepareSql(sql);
     switch (operation) {
       case 'INSERT':
       case 'REPLACE':
-        await executor.runInsert(sql, parameters);
+        if (_profile.insertUsesUpdate) {
+          return _recordAffectedWrite(
+            preparedSql,
+            parameters,
+            executor.runUpdate,
+          );
+        }
+        await executor.runInsert(preparedSql, parameters);
         _recordSqlChange(sql);
         return _sqliteChanges(executor);
       case 'UPDATE':
       case 'DELETE':
-        final affected = await executor.runUpdate(sql, parameters);
+        final affected = await executor.runUpdate(preparedSql, parameters);
         _recordSqlChange(sql);
         return affected;
       default:
-        await executor.runCustom(sql, parameters);
+        await executor.runCustom(preparedSql, parameters);
         _recordSqlChange(sql);
         return 0;
     }
@@ -156,7 +183,17 @@ class DriftDriverAdapter extends SqliteRemoteAdapterBase
   Future<List<Map<String, Object?>>> queryStatement(
     String sql,
     List<Object?> parameters,
-  ) => _activeExecutor.runSelect(sql, parameters);
+  ) => _activeExecutor.runSelect(_profile.prepareSql(sql), parameters);
+
+  Future<int> _recordAffectedWrite(
+    String sql,
+    List<Object?> parameters,
+    Future<int> Function(String, List<Object?>) execute,
+  ) async {
+    final affected = await execute(sql, parameters);
+    _recordSqlChange(sql);
+    return affected;
+  }
 
   Future<int> _sqliteChanges(drift.QueryExecutor executor) async {
     final rows = await executor.runSelect(
@@ -192,31 +229,42 @@ class DriftDriverAdapter extends SqliteRemoteAdapterBase
   }
 
   Future<void> runBatched(drift.BatchedStatements statements) async {
-    await _activeExecutor.runBatched(statements);
+    await _activeExecutor.runBatched(_prepareBatch(statements));
     for (final statement in statements.statements) {
       _recordSqlChange(statement);
     }
   }
 
   Future<void> runCustom(String statement, [List<Object?>? args]) async {
-    await _activeExecutor.runCustom(statement, args ?? const []);
+    await _activeExecutor.runCustom(
+      _profile.prepareSql(statement),
+      args ?? const [],
+    );
     _recordSqlChange(statement);
   }
 
   Future<int> runInsert(String statement, List<Object?> args) async {
-    final result = await _activeExecutor.runInsert(statement, args);
+    final result = _profile.insertUsesUpdate
+        ? await _activeExecutor.runUpdate(_profile.prepareSql(statement), args)
+        : await _activeExecutor.runInsert(_profile.prepareSql(statement), args);
     _recordSqlChange(statement);
     return result;
   }
 
   Future<int> runUpdate(String statement, List<Object?> args) async {
-    final result = await _activeExecutor.runUpdate(statement, args);
+    final result = await _activeExecutor.runUpdate(
+      _profile.prepareSql(statement),
+      args,
+    );
     _recordSqlChange(statement);
     return result;
   }
 
   Future<int> runDelete(String statement, List<Object?> args) async {
-    final result = await _activeExecutor.runDelete(statement, args);
+    final result = await _activeExecutor.runDelete(
+      _profile.prepareSql(statement),
+      args,
+    );
     _recordSqlChange(statement);
     return result;
   }
@@ -224,7 +272,13 @@ class DriftDriverAdapter extends SqliteRemoteAdapterBase
   Future<List<Map<String, Object?>>> runSelect(
     String statement,
     List<Object?> args,
-  ) => _activeExecutor.runSelect(statement, args);
+  ) => _activeExecutor.runSelect(_profile.prepareSql(statement), args);
+
+  drift.BatchedStatements _prepareBatch(drift.BatchedStatements statements) =>
+      drift.BatchedStatements(
+        statements.statements.map(_profile.prepareSql).toList(growable: false),
+        statements.arguments,
+      );
 
   void _recordSqlChange(String sql, {_PendingChangeScope? scope}) {
     final change = _changeForSql(sql);
@@ -250,7 +304,7 @@ class DriftDriverAdapter extends SqliteRemoteAdapterBase
     }
   }
 
-  DatabaseChange? _changeForSql(String sql) => sqliteDatabaseChangeForSql(sql);
+  DatabaseChange? _changeForSql(String sql) => _profile.changeForSql(sql);
 
   String _leadingSqlVerb(String sql) {
     final match = RegExp(r'^\s*([A-Za-z]+)').firstMatch(sql);
@@ -303,7 +357,7 @@ class _DriftTransactionExecutor implements drift.TransactionExecutor {
 
   @override
   Future<void> runBatched(drift.BatchedStatements statements) async {
-    await _inner.runBatched(statements);
+    await _inner.runBatched(_owner._prepareBatch(statements));
     for (final statement in statements.statements) {
       _owner._recordSqlChange(statement, scope: _scope);
     }
@@ -311,27 +365,38 @@ class _DriftTransactionExecutor implements drift.TransactionExecutor {
 
   @override
   Future<void> runCustom(String statement, [List<Object?>? args]) async {
-    await _inner.runCustom(statement, args ?? const []);
+    await _inner.runCustom(
+      _owner._profile.prepareSql(statement),
+      args ?? const [],
+    );
     _owner._recordSqlChange(statement, scope: _scope);
   }
 
   @override
   Future<int> runInsert(String statement, List<Object?> args) async {
-    final result = await _inner.runInsert(statement, args);
+    final result = _owner._profile.insertUsesUpdate
+        ? await _inner.runUpdate(_owner._profile.prepareSql(statement), args)
+        : await _inner.runInsert(_owner._profile.prepareSql(statement), args);
     _owner._recordSqlChange(statement, scope: _scope);
     return result;
   }
 
   @override
   Future<int> runUpdate(String statement, List<Object?> args) async {
-    final result = await _inner.runUpdate(statement, args);
+    final result = await _inner.runUpdate(
+      _owner._profile.prepareSql(statement),
+      args,
+    );
     _owner._recordSqlChange(statement, scope: _scope);
     return result;
   }
 
   @override
   Future<int> runDelete(String statement, List<Object?> args) async {
-    final result = await _inner.runDelete(statement, args);
+    final result = await _inner.runDelete(
+      _owner._profile.prepareSql(statement),
+      args,
+    );
     _owner._recordSqlChange(statement, scope: _scope);
     return result;
   }
@@ -340,7 +405,7 @@ class _DriftTransactionExecutor implements drift.TransactionExecutor {
   Future<List<Map<String, Object?>>> runSelect(
     String statement,
     List<Object?> args,
-  ) => _inner.runSelect(statement, args);
+  ) => _inner.runSelect(_owner._profile.prepareSql(statement), args);
 
   @override
   Future<void> send() async {
@@ -378,7 +443,7 @@ class _DriftExecutorProxy implements drift.QueryExecutor {
 
   @override
   Future<void> runBatched(drift.BatchedStatements statements) async {
-    await _inner.runBatched(statements);
+    await _inner.runBatched(_owner._prepareBatch(statements));
     for (final statement in statements.statements) {
       _owner._recordSqlChange(statement);
     }
@@ -386,27 +451,38 @@ class _DriftExecutorProxy implements drift.QueryExecutor {
 
   @override
   Future<void> runCustom(String statement, [List<Object?>? args]) async {
-    await _inner.runCustom(statement, args ?? const []);
+    await _inner.runCustom(
+      _owner._profile.prepareSql(statement),
+      args ?? const [],
+    );
     _owner._recordSqlChange(statement);
   }
 
   @override
   Future<int> runInsert(String statement, List<Object?> args) async {
-    final result = await _inner.runInsert(statement, args);
+    final result = _owner._profile.insertUsesUpdate
+        ? await _inner.runUpdate(_owner._profile.prepareSql(statement), args)
+        : await _inner.runInsert(_owner._profile.prepareSql(statement), args);
     _owner._recordSqlChange(statement);
     return result;
   }
 
   @override
   Future<int> runUpdate(String statement, List<Object?> args) async {
-    final result = await _inner.runUpdate(statement, args);
+    final result = await _inner.runUpdate(
+      _owner._profile.prepareSql(statement),
+      args,
+    );
     _owner._recordSqlChange(statement);
     return result;
   }
 
   @override
   Future<int> runDelete(String statement, List<Object?> args) async {
-    final result = await _inner.runDelete(statement, args);
+    final result = await _inner.runDelete(
+      _owner._profile.prepareSql(statement),
+      args,
+    );
     _owner._recordSqlChange(statement);
     return result;
   }
@@ -415,7 +491,7 @@ class _DriftExecutorProxy implements drift.QueryExecutor {
   Future<List<Map<String, Object?>>> runSelect(
     String statement,
     List<Object?> args,
-  ) => _inner.runSelect(statement, args);
+  ) => _inner.runSelect(_owner._profile.prepareSql(statement), args);
 
   @override
   Future<void> close() => _inner.close();

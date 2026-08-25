@@ -20,6 +20,40 @@ final ormed = await OrmDatabase.connect(driver: driver);
 final users = ormed.table('users').watch();
 ```
 
+## PostgreSQL
+
+Drift's PostgreSQL executor can use the same adapter. Add `drift_postgres` to
+the application, then pass its `PgDatabase` directly. The adapter detects the
+PostgreSQL dialect automatically; the named constructor is also available
+when the executor is wrapped or its dialect cannot be inferred at startup.
+
+```dart
+import 'package:drift_postgres/drift_postgres.dart';
+import 'package:ormed_drift/ormed_drift.dart';
+import 'package:postgres/postgres.dart';
+
+final driver = DriftDriverAdapter(
+  PgDatabase(
+    endpoint: Endpoint(
+      host: 'localhost',
+      database: 'catalog',
+      username: 'postgres',
+      password: 'postgres',
+    ),
+  ),
+  closeDelegate: true,
+);
+// Equivalent when an explicit profile is preferred:
+// final driver = DriftDriverAdapter.postgres(executor);
+final database = await OrmDatabase.connect(driver: driver);
+```
+
+The PostgreSQL profile supplies PostgreSQL query/schema grammar, `$1`
+placeholder conversion, affected-row handling, conflict-ignore SQL, schema
+introspection, and Ormed migration execution. PostgreSQL support is
+native/server-side; browser and Worker builds keep the SQLite/LibSQL path and
+do not import the PostgreSQL transport.
+
 For a backend with an explicit synchronization operation, pass it as the
 adapter callback. For example, with `drift_libsql`:
 
