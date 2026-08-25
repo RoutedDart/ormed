@@ -15,6 +15,7 @@ class D1DriverAdapter extends SqliteRemoteAdapterBase {
        super(
          driverName: 'd1',
          options: config.options,
+         supportsTransactions: false,
          supportsQueryDeletes: true,
          requiresPrimaryKeyForQueryUpdate: true,
          queryUpdateRowIdentifier: QueryRowIdentifier(

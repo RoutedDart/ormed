@@ -704,8 +704,9 @@ class MySqlDriverAdapter
 
     // Defensive: support both `db_name` (our alias), `database` (previous alias) and `Database` (SHOW DATABASES)
     final names = results.map((row) {
-      final database = row['db_name'] ?? row['database'] ?? row['Database'];
-      return database?.toString();
+      return _stringValue(row, 'db_name') ??
+          _stringValue(row, 'database') ??
+          _stringValue(row, 'Database');
     }).whereType<String>();
 
     return names.toList(growable: false);
@@ -2153,6 +2154,13 @@ class MySqlDriverAdapter
     final value = _valueForColumn(row, column);
     if (value == null) return null;
     if (value is String) return value;
+    if (value is Uint8List) {
+      try {
+        return utf8.decode(value);
+      } on FormatException {
+        // Preserve the old fallback for non-text values.
+      }
+    }
     return value.toString();
   }
 
