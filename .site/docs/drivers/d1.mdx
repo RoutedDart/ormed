@@ -17,6 +17,61 @@ dependencies:
   ormed_d1: ^0.2.0
 ```
 
+## Choose a connection mode
+
+Use the mode that matches where the D1 request runs:
+
+| Runtime | API | Credential boundary |
+| --- | --- | --- |
+| Server-side Dart with Cloudflare API access | `D1Database.connect(...)` | The Dart process holds the Cloudflare credentials |
+| Browser or Worker client calling your application | `D1Database.fromEndpoint(...)` | Your application endpoint authenticates the caller; no D1 token ships to the client |
+| Dart running inside a Cloudflare Worker with a native binding | `D1Database.fromBinding(...)` | The Worker runtime supplies the binding directly |
+
+## Direct database access
+
+Code generation is optional for D1. The direct facade is useful for raw SQL,
+ad-hoc tables, migrations, and small services:
+
+```dart
+import 'package:ormed_d1/ormed_d1.dart';
+
+Future<void> main() async {
+  final db = await D1Database.connect(
+    accountId: 'your-account-id',
+    databaseId: 'your-database-id',
+    apiToken: 'your-api-token',
+  );
+
+  final rows = await db.queryRaw('SELECT 1 AS ok');
+  print(rows.first['ok']);
+  await db.close();
+}
+```
+
+Do not put the Cloudflare API token in a browser bundle. Use an application-owned endpoint instead:
+
+```dart
+final db = await D1Database.fromEndpoint(
+  endpoint: Uri.parse('https://example.com/api/database/query'),
+  batchEndpoint: Uri.parse('https://example.com/api/database/batch'),
+);
+```
+
+The endpoint receives `{sql, params}`. It may return the D1 binding result
+shape or the Cloudflare API result shape. When present, `batchEndpoint`
+accepts `{statements: [{sql, params}, ...]}` for atomic batches.
+
+Inside a Cloudflare Worker, use the host-neutral binding contract without an
+HTTP hop:
+
+```dart
+final db = await D1Database.fromBinding(binding: env.d1('DB'));
+```
+
+The binding types are exported from `package:ormed_d1/d1_binding.dart` so a
+platform bridge can implement `D1DatabaseBinding` without importing a
+Cloudflare-specific runtime into the shared package.
+
 ## Use in code (DataSource)
 
 The recommended path is generated `config.dart` + `datasource.dart`.

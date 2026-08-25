@@ -1,0 +1,102 @@
+---
+sidebar_position: 6
+description: Share a Drift executor with Ormed while keeping Drift's typed API and Ormed's queries and watchers.
+---
+
+# Drift integration
+
+`ormed_drift` is an optional bridge between Ormed and [Drift](https://drift.simonbinder.eu/). It wraps one Drift `QueryExecutor` as an Ormed driver and exposes the same executor back to Drift. You can keep Drift's typed tables where they are useful and use Ormed for ad-hoc queries, generated models, migrations, or reactive watchers.
+
+This is an integration package, not a new `driver: drift` YAML backend. Drift remains responsible for opening and configuring the underlying database.
+
+## Install
+
+```yaml
+dependencies:
+  ormed: ^0.3.0
+  drift: ^2.34.0
+  ormed_drift: ^0.1.0
+```
+
+For Drift's PostgreSQL executor, also add `drift_postgres` and `postgres`. PostgreSQL support through this adapter is native/server-side; browser and Worker builds use Drift's SQLite/LibSQL path instead.
+
+## Share one executor
+
+Create one `DriftDriverAdapter`, pass it to Ormed, and pass its `driftExecutor` back to Drift. Using the same adapter is what connects direct Drift writes to Ormed's change feed.
+
+```dart
+import 'package:drift/drift.dart' as drift;
+import 'package:drift/native.dart';
+import 'package:ormed/ormed.dart';
+import 'package:ormed_drift/ormed_drift.dart';
+
+final driver = DriftDriverAdapter(
+  NativeDatabase.memory(),
+  closeDelegate: true,
+);
+final driftDatabase = drift.DatabaseConnection(driver.driftExecutor);
+final ormed = await OrmDatabase.connect(driver: driver);
+
+final users = ormed.table('users').watch();
+```
+
+The adapter opens the wrapped executor when Ormed connects. Set `closeDelegate: true` when the adapter owns the executor and should close it with the Ormed database.
+
+## Reactive queries
+
+An Ormed watcher emits a complete snapshot when it starts and after a committed change overlaps its query. Writes made through the shared Drift executor participate in that same change feed. Drift transactions publish to Ormed only after commit; rolled-back transactions do not produce a new snapshot.
+
+Read [Reactive Queries](../queries/reactive) for watcher lifecycle, dependency tracking, and transaction behavior.
+
+Always use the same adapter/executor pair. Writes made through an unrelated Drift connection cannot be observed by this adapter.
+
+## Drift PostgreSQL
+
+Drift's PostgreSQL executor can use the same adapter. The adapter detects the PostgreSQL dialect automatically; use `DriftDriverAdapter.postgres(executor)` when an explicit profile is clearer.
+
+```dart
+import 'package:drift_postgres/drift_postgres.dart';
+import 'package:ormed/ormed.dart';
+import 'package:ormed_drift/ormed_drift.dart';
+import 'package:postgres/postgres.dart';
+
+final driver = DriftDriverAdapter(
+  PgDatabase(
+    endpoint: Endpoint(
+      host: 'localhost',
+      database: 'catalog',
+      username: 'postgres',
+      password: 'postgres',
+    ),
+  ),
+  closeDelegate: true,
+);
+final database = await OrmDatabase.connect(driver: driver);
+```
+
+The PostgreSQL profile handles PostgreSQL placeholders, query and schema grammar, affected-row behavior, conflict-ignore SQL, introspection, and Ormed migrations.
+
+## Synchronized Drift backends
+
+If the Drift backend has an explicit synchronization operation, pass it to the adapter. A successful `sync()` conservatively refreshes every Ormed watcher because the backend may not report which tables changed.
+
+```dart
+final driver = DriftDriverAdapter(
+  libsql,
+  closeDelegate: true,
+  synchronize: libsql.sync,
+);
+final database = await OrmDatabase.connect(driver: driver);
+
+await driver.sync();
+```
+
+## Schema ownership
+
+Choose one migration owner for a shared database. If Ormed owns the schema, use Ormed migrations and give Drift an `OrmedDriftExecutorUser`. Drift-generated model classes remain optional; the two APIs can share the same executor without duplicating the domain model.
+
+## Read this next
+
+- [Reactive Queries](../queries/reactive)
+- [Direct Database Access](../getting-started/direct-database)
+- [PostgreSQL](./postgres)

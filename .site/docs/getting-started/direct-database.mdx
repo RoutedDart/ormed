@@ -26,7 +26,9 @@ dependencies:
 
 No `build_runner`, generated registry, or `ormed_cli` is required for this
 path. See [Drivers](../drivers/overview) for PostgreSQL, MySQL/MariaDB, and D1
-connection helpers.
+connection helpers. If the application already uses Drift, use the
+[Drift integration](../drivers/drift) to share its executor instead of opening
+a second database connection.
 
 ## Connect
 

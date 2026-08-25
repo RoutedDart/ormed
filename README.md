@@ -23,6 +23,7 @@ Part of the [Routed](https://github.com/RoutedDart) ecosystem.
 - **Relation mutations** — `associate()`, `attach()`, `detach()`, `sync()` for managing relationships
 - **Schema migrations** — CLI tooling for creating, applying, and rolling back migrations
 - **Multi-database support** — SQLite, PostgreSQL, MySQL/MariaDB, Cloudflare D1
+- **Drift integration** — Share a Drift executor with Ormed queries and reactive watchers
 - **Driver capabilities** — Runtime feature detection for cross-database compatibility
 - **Multi-tenant connections** — Manage multiple database connections with role-based routing
 - **Observability** — Structured logging, query instrumentation, and tracing hooks
@@ -39,7 +40,11 @@ Part of the [Routed](https://github.com/RoutedDart) ecosystem.
 | SQLite          | [ormed_sqlite](packages/ormed_sqlite)     | Via `package:sqlite3`          |
 | PostgreSQL      | [ormed_postgres](packages/ormed_postgres) | Via `package:postgres` (v3)    |
 | MySQL / MariaDB | [ormed_mysql](packages/ormed_mysql)       | Via `package:mysql_client_plus`|
-| Cloudflare D1   | [ormed_d1](packages/ormed_d1)             | Remote SQLite via D1 HTTP API  |
+| Cloudflare D1   | [ormed_d1](packages/ormed_d1)             | Remote SQLite via HTTP, endpoint, or native binding |
+
+Drift is an optional integration rather than a separate database backend:
+[`ormed_drift`](packages/ormed_drift) shares a Drift executor with Ormed while
+keeping Drift's typed API available.
 
 ---
 
@@ -225,6 +230,7 @@ in your tests and pass the configs into `ormedGroup` or call
 | [ormed_postgres](packages/ormed_postgres) | PostgreSQL driver with full type support (UUID, JSONB, arrays, ranges, FTS) |
 | [ormed_mysql](packages/ormed_mysql) | MySQL/MariaDB driver with JSON, spatial types, and SET support |
 | [ormed_d1](packages/ormed_d1) | Cloudflare D1 driver adapter using remote SQLite-compatible execution |
+| [ormed_drift](packages/ormed_drift) | Shared Drift executor adapter with reactive Ormed integration |
 | [ormed_cli](packages/ormed_cli) | CLI for migrations, seeding, schema operations, and project scaffolding |
 
 ### Development & Testing

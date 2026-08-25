@@ -75,6 +75,7 @@ const sidebars: SidebarsConfig = {
         'drivers/postgres',
         'drivers/mysql',
         'drivers/d1',
+        'drivers/drift',
         {
           type: 'category',
           label: 'Internals',

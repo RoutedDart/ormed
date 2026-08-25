@@ -93,9 +93,9 @@ try {
 
 Drivers that can observe writes made outside the Ormed query context can expose
 the optional `DriverChangeFeed` contract. SQLite adapters do this for direct
-adapter writes. The `ormed_drift` package uses the same approach: construct one
-`DriftDriverAdapter`, pass it to Ormed, and pass `driver.driftExecutor` to
-Drift's `DatabaseConnection`.
+adapter writes. The [Drift integration](../drivers/drift) uses the same
+approach: construct one `DriftDriverAdapter`, pass it to Ormed, and pass
+`driver.driftExecutor` to Drift's `DatabaseConnection`.
 
 Adapters around synchronized backends can provide a synchronization callback:
 

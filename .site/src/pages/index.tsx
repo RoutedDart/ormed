@@ -10,6 +10,7 @@ const drivers = [
   {name: 'PostgreSQL', packageName: 'ormed_postgres', detail: 'production SQL', slug: 'postgres'},
   {name: 'MySQL', packageName: 'ormed_mysql', detail: 'MySQL + MariaDB', slug: 'mysql'},
   {name: 'D1', packageName: 'ormed_d1', detail: 'edge SQLite', slug: 'd1'},
+  {name: 'Drift', packageName: 'ormed_drift', detail: 'shared executor', slug: 'drift'},
 ];
 
 function Hero() {
@@ -38,7 +39,7 @@ function Hero() {
           </div>
           <div className={styles.heroMeta}>
             <span>Dart 3.12+</span>
-            <span>SQLite · PostgreSQL · MySQL · D1</span>
+            <span>SQLite · PostgreSQL · MySQL · D1 · Drift</span>
             <span>MIT licensed</span>
           </div>
         </div>
@@ -79,7 +80,7 @@ function StartPaths() {
           <Link className={`${styles.pathCard} ${styles.pathCardFeatured}`} to="/docs/getting-started/direct-database">
             <span className={styles.cardIndex}>01</span>
             <h3>Use the database directly</h3>
-            <p>Connect to SQLite, PostgreSQL, MySQL, or D1. Run SQL, schema plans, migrations, transactions, and table queries without a generated registry.</p>
+            <p>Connect to SQLite, PostgreSQL, MySQL, or D1. Run SQL, schema plans, migrations, transactions, and table queries without a generated registry. Already using Drift? Share its executor with Ormed.</p>
             <span className={styles.cardLink}>Start direct <span aria-hidden="true">↗</span></span>
           </Link>
           <Link className={styles.pathCard} to="/docs/getting-started/quick-start">
@@ -123,8 +124,8 @@ function DriverStrip() {
     <section className={styles.drivers}>
       <div className="container">
         <div className={styles.driverIntro}>
-          <p className={styles.eyebrow}>SUPPORTED BACKENDS</p>
-          <Heading as="h2">One API across the databases you already use.</Heading>
+          <p className={styles.eyebrow}>SUPPORTED BACKENDS + INTEGRATIONS</p>
+          <Heading as="h2">One API across the databases and runtimes you already use.</Heading>
         </div>
         <div className={styles.driverGrid}>
           {drivers.map((driver, index) => (
