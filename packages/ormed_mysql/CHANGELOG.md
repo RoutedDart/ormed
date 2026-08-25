@@ -1,13 +1,10 @@
 # Changelog
 
-## Unreleased
+## 0.3.0
 
 - **Added**: `MySqlDatabase.connect` and `connectMariaDb` for direct MySQL and
   MariaDB access without a generated model registry.
 - **Added**: Interceptor support on MySQL and MariaDB direct connection helpers.
-
-## 0.3.0
-
 - **Breaking**: Requires Dart 3.12 or newer.
 - **Updated**: Widened the Ormed and driver-test support ranges to `<1.0.0`.
 - **Updated**: Refreshed the MySQL and workspace dependencies.

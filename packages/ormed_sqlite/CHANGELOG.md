@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.4.0
 
 - **Added**: `SqliteDatabase.connect` for direct SQLite access without a
   generated model registry.
@@ -8,9 +8,6 @@
   policy checks, and query instrumentation.
 - **Added**: Direct SQLite adapter writes participate in Ormed reactive watchers,
   including commit-aware manual transactions and opaque SQL changes.
-
-## 0.4.0
-
 - **Breaking**: Requires Dart 3.12 or newer.
 - **Updated**: Widened the Ormed, SQLite-core, SQLite-web, and driver-test support ranges to `<1.0.0`.
 - **Updated**: Refreshed SQLite dependencies and synchronized the driver with the Analyzer 14 workspace release.
