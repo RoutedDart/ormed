@@ -6,6 +6,13 @@
 
 Shared, driver-agnostic integration test suite for the ormed ORM. These test suites assert baseline query, mutation, and transaction behaviors that every database driver must satisfy.
 
+This package is an indirect development dependency for driver authors, not an
+application runtime package. Applications should use
+[`ormed`](https://pub.dev/packages/ormed) with a runtime driver such as
+[`ormed_sqlite`](https://pub.dev/packages/ormed_sqlite),
+[`ormed_postgres`](https://pub.dev/packages/ormed_postgres), or
+[`ormed_mysql`](https://pub.dev/packages/ormed_mysql).
+
 ## Purpose
 
 Individual driver packages (`ormed_sqlite`, `ormed_postgres`, `ormed_mysql`) include this package as a `dev_dependency`, supply their own test harness, and run the shared suites. This ensures consistent behavior across all supported databases.
@@ -166,3 +173,12 @@ lib/
         ├── all_tests.dart
         └── query_builder/ # 29 QB test files
 ```
+
+## Related packages
+
+| Package | Use it for |
+| --- | --- |
+| [`ormed`](https://pub.dev/packages/ormed) | Core runtime and application APIs |
+| [`ormed_sqlite`](https://pub.dev/packages/ormed_sqlite) | SQLite driver under test |
+| [`ormed_postgres`](https://pub.dev/packages/ormed_postgres) | PostgreSQL driver under test |
+| [`ormed_mysql`](https://pub.dev/packages/ormed_mysql) | MySQL/MariaDB driver under test |

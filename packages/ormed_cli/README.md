@@ -15,6 +15,41 @@ The CLI is available as the `ormed` executable:
 dart run ormed_cli:ormed <command>
 ```
 
+## How it fits into an Ormed app
+
+`ormed_cli` is the project and schema tool; the runtime database connection
+comes from `ormed` plus a driver package. It supports both application styles:
+
+- **Generated / model-backed**: run `init`, annotate models, run
+  `build_runner`, then use `makemigrations` to sync model changes.
+- **Direct / codegen-free**: run `init`, create Dart or SQL migrations with
+  `make:migration`, and apply them with `migrate`; runtime queries use the
+  driver package's direct database helper.
+
+Generated workflow:
+
+```bash
+dart run ormed_cli:ormed init
+dart run build_runner build
+dart run ormed_cli:ormed makemigrations
+dart run ormed_cli:ormed migrate
+```
+
+Codegen-free workflow:
+
+```bash
+dart run ormed_cli:ormed init
+dart run ormed_cli:ormed make:migration --name create_users_table
+dart run ormed_cli:ormed migrate
+```
+
+For runtime access, choose a driver such as
+[`ormed_sqlite`](https://pub.dev/packages/ormed_sqlite),
+[`ormed_postgres`](https://pub.dev/packages/ormed_postgres),
+[`ormed_mysql`](https://pub.dev/packages/ormed_mysql), or
+[`ormed_d1`](https://pub.dev/packages/ormed_d1). The common runtime APIs live in
+[`ormed`](https://pub.dev/packages/ormed).
+
 ## Commands
 
 ### Project Initialization
@@ -273,3 +308,13 @@ class UserSeeder extends DatabaseSeeder {
   }
 }
 ```
+
+## Related packages
+
+| Package | Use it for |
+| --- | --- |
+| [`ormed`](https://pub.dev/packages/ormed) | Runtime ORM, models, queries, and migrations |
+| [`ormed_sqlite`](https://pub.dev/packages/ormed_sqlite) | SQLite runtime |
+| [`ormed_postgres`](https://pub.dev/packages/ormed_postgres) | PostgreSQL runtime |
+| [`ormed_mysql`](https://pub.dev/packages/ormed_mysql) | MySQL and MariaDB runtime |
+| [`ormed_d1`](https://pub.dev/packages/ormed_d1) | Cloudflare D1 runtime |

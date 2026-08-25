@@ -91,6 +91,19 @@ void main() {
     );
   });
 
+  test('does not advertise transactions when the API cannot provide them', () {
+    final adapter = D1DriverAdapter.custom(
+      config: const DatabaseConfig(driver: 'd1'),
+      transport: _FakeTransport(),
+    );
+
+    expect(adapter.metadata.supportsTransactions, isFalse);
+    expect(
+      adapter.metadata.supportsCapability(DriverCapability.transactions),
+      isFalse,
+    );
+  });
+
   test('http transport option validation', () {
     expect(
       () => D1HttpTransport.fromOptions(const <String, Object?>{}),

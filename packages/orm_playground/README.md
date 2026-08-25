@@ -6,6 +6,11 @@
 
 A demonstration and sandbox package that exercises the ormed ORM end-to-end. Use it as a reference for ORM patterns and features.
 
+The playground shows both Ormed usage modes: generated model and repository
+queries, plus direct ad-hoc table queries through the same `DataSource`. For a
+minimal production setup, use a runtime driver package directly; this package
+is intentionally a larger reference application.
+
 ## Features
 
 - Pre-configured migrations and seeders
@@ -218,6 +223,6 @@ The main demo showcases:
 
 | Package | Description |
 |---------|-------------|
-| `ormed` | Core ORM library |
-| `ormed_sqlite` | SQLite driver |
-| `ormed_cli` | CLI tool for migrations |
+| [`ormed`](https://pub.dev/packages/ormed) | Core ORM library |
+| [`ormed_sqlite`](https://pub.dev/packages/ormed_sqlite) | SQLite driver |
+| [`ormed_cli`](https://pub.dev/packages/ormed_cli) | CLI tool for migrations |

@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.3.0
 
 - **Added**: `OrmDatabase` for direct, codegen-optional connections, raw SQL,
   schema plans, migrations, seeding, transactions, and lifecycle management.
@@ -14,9 +14,6 @@
   transactions until commit, with direct invalidation helpers for integrations.
 - **Added**: Optional `DriverLifecycle` support lets external executor adapters
   open their backend during `DataSource` initialization.
-
-## 0.3.0
-
 - **Breaking**: Requires Dart 3.12 or newer.
 - **Breaking**: Migrated the analyzer integration to Analyzer 14, including the new argument and formal-parameter AST APIs.
 - **Updated**: Refreshed build, source generation, testing, and analyzer tooling dependencies to their latest Dart 3.12-compatible releases.

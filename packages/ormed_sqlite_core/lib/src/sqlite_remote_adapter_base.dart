@@ -49,6 +49,7 @@ abstract class SqliteRemoteAdapterBase
     required Map<String, Object?> options,
     QueryChangeBus? changeBus,
     Set<DriverCapability>? capabilities,
+    bool? supportsTransactions,
     bool? supportsQueryDeletes,
     bool? requiresPrimaryKeyForQueryUpdate,
     QueryRowIdentifier? queryUpdateRowIdentifier,
@@ -67,9 +68,24 @@ abstract class SqliteRemoteAdapterBase
     TypeMapperRegistry.register(driverName, _profile.typeMapper);
 
     final supportsReturning = resolveSqliteLikeSupportsReturning(options);
+    final advertisedCapabilities = <DriverCapability>{
+      ..._profile.capabilities,
+      ...(capabilities ?? const <DriverCapability>{}),
+      if (supportsReturning) DriverCapability.returning,
+    };
+    final effectiveSupportsTransactions =
+        supportsTransactions ??
+        advertisedCapabilities.contains(DriverCapability.transactions);
+    if (effectiveSupportsTransactions) {
+      advertisedCapabilities.add(DriverCapability.transactions);
+    } else {
+      advertisedCapabilities.remove(DriverCapability.transactions);
+    }
+
     _metadata = DriverMetadata(
       name: driverName,
       supportsReturning: supportsReturning,
+      supportsTransactions: effectiveSupportsTransactions,
       supportsQueryDeletes:
           supportsQueryDeletes ?? _profile.supportsQueryDeletes,
       requiresPrimaryKeyForQueryUpdate:
@@ -78,11 +94,7 @@ abstract class SqliteRemoteAdapterBase
       queryUpdateRowIdentifier:
           queryUpdateRowIdentifier ?? _profile.queryUpdateRowIdentifier,
       identifierQuote: '"',
-      capabilities: {
-        ..._profile.capabilities,
-        ...(capabilities ?? const <DriverCapability>{}),
-        if (supportsReturning) DriverCapability.returning,
-      },
+      capabilities: advertisedCapabilities,
     );
 
     _grammar = _profile.createGrammar(options, _extensions);

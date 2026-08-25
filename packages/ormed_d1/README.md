@@ -13,7 +13,7 @@ dependencies:
   ormed_d1: ^0.2.0
 ```
 
-## Quick start without code generation
+## Direct / codegen-free usage
 
 Code generation is optional for direct database access:
 
@@ -65,7 +65,7 @@ final db = await D1Database.fromBinding(binding: env.d1('DB'));
 types are exported from `package:ormed_d1/d1_binding.dart` for platform
 bridges.
 
-## Quick start with the existing DataSource API
+## Generated / model-backed usage
 
 ```dart
 import 'package:your_app/src/database/datasource.dart';
@@ -83,6 +83,15 @@ Future<void> main() async {
 
 Generated apps should use `ormed init` scaffolding (`lib/src/database/config.dart` +
 `datasource.dart`) as the primary runtime entrypoint.
+
+## Related packages
+
+| Package | Use it for |
+| --- | --- |
+| [`ormed`](https://pub.dev/packages/ormed) | Core runtime, models, queries, and migrations |
+| [`ormed_cli`](https://pub.dev/packages/ormed_cli) | Scaffolding and migration commands |
+| [`ormed_sqlite`](https://pub.dev/packages/ormed_sqlite) | Native and browser SQLite |
+| [`ormed_sqlite_core`](https://pub.dev/packages/ormed_sqlite_core) | Shared SQLite compilation primitives used by D1 |
 
 ## Using `DataSource`
 
