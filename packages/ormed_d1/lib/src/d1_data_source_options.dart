@@ -3,10 +3,188 @@ library;
 import 'package:ormed/ormed.dart';
 
 import 'd1_adapter.dart';
+import 'd1_binding.dart';
 import 'd1_transport.dart';
 
 /// Ergonomic Cloudflare D1 helpers for bootstrapping [DataSource] instances.
 extension D1DataSourceRegistryExtensions on ModelRegistry {
+  /// Builds [DataSourceOptions] over a native Cloudflare D1 binding.
+  DataSourceOptions d1DataSourceOptionsFromBinding({
+    required D1DatabaseBinding binding,
+    String name = 'default',
+    ScopeRegistry? scopeRegistry,
+    Map<String, ValueCodec<dynamic>> codecs = const {},
+    bool logging = false,
+    String? database,
+    String tablePrefix = '',
+    String? defaultSchema,
+    String carbonTimezone = 'UTC',
+    String carbonLocale = 'en_US',
+    bool enableNamedTimezones = false,
+    List<DriverExtension> driverExtensions = const [],
+  }) {
+    return DataSourceOptions(
+      name: name,
+      driver: D1DriverAdapter.fromBinding(
+        config: DatabaseConfig(
+          driver: 'd1',
+          options: <String, Object?>{
+            ...?(database == null
+                ? null
+                : <String, Object?>{'database': database}),
+          },
+        ),
+        binding: binding,
+        extensions: driverExtensions,
+      ),
+      registry: this,
+      scopeRegistry: scopeRegistry,
+      codecs: codecs,
+      logging: logging,
+      database: database,
+      tablePrefix: tablePrefix,
+      defaultSchema: defaultSchema,
+      carbonTimezone: carbonTimezone,
+      carbonLocale: carbonLocale,
+      enableNamedTimezones: enableNamedTimezones,
+    );
+  }
+
+  /// Builds a [DataSource] over a native Cloudflare D1 binding.
+  DataSource d1DataSourceFromBinding({
+    required D1DatabaseBinding binding,
+    String name = 'default',
+    ScopeRegistry? scopeRegistry,
+    Map<String, ValueCodec<dynamic>> codecs = const {},
+    bool logging = false,
+    String? database,
+    String tablePrefix = '',
+    String? defaultSchema,
+    String carbonTimezone = 'UTC',
+    String carbonLocale = 'en_US',
+    bool enableNamedTimezones = false,
+    List<DriverExtension> driverExtensions = const [],
+  }) => DataSource(
+    d1DataSourceOptionsFromBinding(
+      binding: binding,
+      name: name,
+      scopeRegistry: scopeRegistry,
+      codecs: codecs,
+      logging: logging,
+      database: database,
+      tablePrefix: tablePrefix,
+      defaultSchema: defaultSchema,
+      carbonTimezone: carbonTimezone,
+      carbonLocale: carbonLocale,
+      enableNamedTimezones: enableNamedTimezones,
+      driverExtensions: driverExtensions,
+    ),
+  );
+
+  /// Builds [DataSourceOptions] over an application-owned D1 HTTP endpoint.
+  ///
+  /// The endpoint is suitable for browser and Worker clients. Authentication
+  /// belongs in [headers] or in the endpoint's session/cookie policy; this
+  /// helper never requires or embeds a Cloudflare API token.
+  DataSourceOptions d1DataSourceOptionsFromEndpoint({
+    required Uri endpoint,
+    Uri? batchEndpoint,
+    Map<String, String> headers = const <String, String>{},
+    String name = 'default',
+    ScopeRegistry? scopeRegistry,
+    Map<String, ValueCodec<dynamic>> codecs = const {},
+    bool logging = false,
+    String? database,
+    String tablePrefix = '',
+    String? defaultSchema,
+    String carbonTimezone = 'UTC',
+    String carbonLocale = 'en_US',
+    bool enableNamedTimezones = false,
+    List<DriverExtension> driverExtensions = const [],
+    int maxAttempts = 4,
+    int requestTimeoutMs = 30000,
+    int retryBaseDelayMs = 250,
+    int retryMaxDelayMs = 3000,
+    bool debugLog = false,
+    D1Transport? transport,
+  }) {
+    final options = <String, Object?>{
+      'endpoint': endpoint.toString(),
+      if (batchEndpoint != null) 'batchEndpoint': batchEndpoint.toString(),
+      if (headers.isNotEmpty) 'headers': headers,
+      'maxAttempts': maxAttempts,
+      'requestTimeoutMs': requestTimeoutMs,
+      'retryBaseDelayMs': retryBaseDelayMs,
+      'retryMaxDelayMs': retryMaxDelayMs,
+      'debugLog': debugLog,
+    };
+    return DataSourceOptions(
+      name: name,
+      driver: D1DriverAdapter.custom(
+        config: DatabaseConfig(driver: 'd1', options: options),
+        transport: transport,
+        extensions: driverExtensions,
+      ),
+      registry: this,
+      scopeRegistry: scopeRegistry,
+      codecs: codecs,
+      logging: logging,
+      database: database,
+      tablePrefix: tablePrefix,
+      defaultSchema: defaultSchema,
+      carbonTimezone: carbonTimezone,
+      carbonLocale: carbonLocale,
+      enableNamedTimezones: enableNamedTimezones,
+    );
+  }
+
+  /// Builds a [DataSource] over an application-owned D1 HTTP endpoint.
+  DataSource d1DataSourceFromEndpoint({
+    required Uri endpoint,
+    Uri? batchEndpoint,
+    Map<String, String> headers = const <String, String>{},
+    String name = 'default',
+    ScopeRegistry? scopeRegistry,
+    Map<String, ValueCodec<dynamic>> codecs = const {},
+    bool logging = false,
+    String? database,
+    String tablePrefix = '',
+    String? defaultSchema,
+    String carbonTimezone = 'UTC',
+    String carbonLocale = 'en_US',
+    bool enableNamedTimezones = false,
+    List<DriverExtension> driverExtensions = const [],
+    int maxAttempts = 4,
+    int requestTimeoutMs = 30000,
+    int retryBaseDelayMs = 250,
+    int retryMaxDelayMs = 3000,
+    bool debugLog = false,
+    D1Transport? transport,
+  }) => DataSource(
+    d1DataSourceOptionsFromEndpoint(
+      endpoint: endpoint,
+      batchEndpoint: batchEndpoint,
+      headers: headers,
+      name: name,
+      scopeRegistry: scopeRegistry,
+      codecs: codecs,
+      logging: logging,
+      database: database,
+      tablePrefix: tablePrefix,
+      defaultSchema: defaultSchema,
+      carbonTimezone: carbonTimezone,
+      carbonLocale: carbonLocale,
+      enableNamedTimezones: enableNamedTimezones,
+      driverExtensions: driverExtensions,
+      maxAttempts: maxAttempts,
+      requestTimeoutMs: requestTimeoutMs,
+      retryBaseDelayMs: retryBaseDelayMs,
+      retryMaxDelayMs: retryMaxDelayMs,
+      debugLog: debugLog,
+      transport: transport,
+    ),
+  );
+
   /// Builds [DataSourceOptions] for D1 using explicit credentials.
   DataSourceOptions d1DataSourceOptions({
     required String accountId,

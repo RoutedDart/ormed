@@ -3,6 +3,7 @@ library;
 import 'package:ormed/ormed.dart';
 import 'package:ormed_sqlite_core/ormed_sqlite_core.dart';
 
+import 'd1_binding.dart';
 import 'd1_transport.dart';
 
 class D1DriverAdapter extends SqliteRemoteAdapterBase {
@@ -34,7 +35,29 @@ class D1DriverAdapter extends SqliteRemoteAdapterBase {
          },
        );
 
+  /// Creates an adapter over a native Cloudflare D1 binding.
+  D1DriverAdapter.fromBinding({
+    required DatabaseConfig config,
+    required D1DatabaseBinding binding,
+    List<DriverExtension> extensions = const [],
+  }) : this.custom(
+         config: config,
+         transport: D1BindingTransport(binding),
+         extensions: extensions,
+       );
+
   final D1Transport _transport;
+
+  /// Executes an atomic D1 batch through a binding-capable transport.
+  Future<List<D1StatementResult>> batch(Iterable<D1Statement> statements) {
+    final transport = _transport;
+    if (transport is D1BatchTransport) {
+      return (transport as D1BatchTransport).batch(statements);
+    }
+    throw UnsupportedError(
+      'This D1 transport does not support atomic batches.',
+    );
+  }
 
   static void registerCodecs() {
     registerSqliteLikeDriverCodecs('d1');

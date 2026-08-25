@@ -35,6 +35,36 @@ Future<void> main() async {
 To use generated models, pass `registry: buildOrmRegistry()` to
 `D1Database.connect`.
 
+For a browser or Worker client, use an application-owned endpoint instead of
+shipping a Cloudflare API token to the client:
+
+```dart
+import 'package:ormed_d1/ormed_d1.dart';
+
+final db = await D1Database.fromEndpoint(
+  endpoint: Uri.parse('https://example.com/api/database/query'),
+  batchEndpoint: Uri.parse('https://example.com/api/database/batch'),
+);
+```
+
+The query endpoint receives `{sql, params}` and returns either the D1 binding
+shape (`success`, `results`, `meta`) or the Cloudflare API shape
+(`success`, `result: [{results, meta}]`). The optional batch endpoint receives
+`{statements: [{sql, params}, ...]}` and returns the result entries in
+`results` or `result`. Authentication is supplied through `headers` or by the
+endpoint's session/cookie policy.
+
+Inside a Cloudflare Worker, a native D1 binding can be used without an HTTP
+hop:
+
+```dart
+final db = await D1Database.fromBinding(binding: env.d1('DB'));
+```
+
+`D1DatabaseBinding`, `D1PreparedStatementBinding`, and the related result
+types are exported from `package:ormed_d1/d1_binding.dart` for platform
+bridges.
+
 ## Quick start with the existing DataSource API
 
 ```dart
