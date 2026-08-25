@@ -25,7 +25,9 @@ dependencies:
   ormed_sqlite: ^0.4.0
 ```
 
-## Quick Start
+## Usage modes
+
+### Direct / codegen-free usage
 
 For direct database access, code generation is optional:
 
@@ -40,6 +42,8 @@ Future<void> main() async {
   await db.close();
 }
 ```
+
+### Generated / model-backed usage
 
 To use generated models, pass `registry: buildOrmRegistry()` to
 `SqliteDatabase.connect`.
@@ -351,7 +355,10 @@ schema.create('articles', (table) {
 
 | Package | Description |
 |---------|-------------|
-| `ormed` | Core ORM library |
-| `ormed_postgres` | PostgreSQL driver |
-| `ormed_mysql` | MySQL/MariaDB driver |
-| `ormed_cli` | CLI tool for migrations |
+| [`ormed`](https://pub.dev/packages/ormed) | Core ORM library |
+| [`ormed_postgres`](https://pub.dev/packages/ormed_postgres) | PostgreSQL driver |
+| [`ormed_mysql`](https://pub.dev/packages/ormed_mysql) | MySQL/MariaDB driver |
+| [`ormed_d1`](https://pub.dev/packages/ormed_d1) | Cloudflare D1 driver |
+| [`ormed_drift`](https://github.com/RoutedDart/ormed/tree/master/packages/ormed_drift) | Drift executor integration |
+| [`ormed_cli`](https://pub.dev/packages/ormed_cli) | CLI tool for migrations |
+| [`ormed_sqlite_web`](https://pub.dev/packages/ormed_sqlite_web) | Browser SQLite adapter |

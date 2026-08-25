@@ -13,7 +13,14 @@ Use this package when implementing a SQLite-compatible runtime driver (for examp
 
 For the default local SQLite runtime adapter, use `package:ormed_sqlite/ormed_sqlite.dart`.
 
-## Recommended app usage
+## Usage modes
+
+### Indirect / application usage
+
+Application code should normally use a runtime package such as
+[`ormed_sqlite`](https://pub.dev/packages/ormed_sqlite) or
+[`ormed_d1`](https://pub.dev/packages/ormed_d1), which depends on this package
+indirectly. That keeps the adapter, transport, and platform choices together.
 
 Application code should use runtime package helpers (not `ormed_sqlite_core` directly):
 
@@ -34,6 +41,12 @@ DataSource createDataSource() {
 }
 ```
 
+### Direct / adapter-author usage
+
+Use `ormed_sqlite_core` directly when implementing a SQLite-compatible adapter
+or tool that needs shared grammar, schema, and codec behavior. Most
+applications should not construct these primitives themselves.
+
 ## Example
 
 `ormed_sqlite_core` is most useful when building adapters/tools around SQLite SQL
@@ -42,3 +55,12 @@ generation. Run the example to preview generated SQLite DDL:
 ```bash
 dart run example/main.dart
 ```
+
+## Related packages
+
+| Package | Use it for |
+| --- | --- |
+| [`ormed`](https://pub.dev/packages/ormed) | Core runtime and query APIs |
+| [`ormed_sqlite`](https://pub.dev/packages/ormed_sqlite) | Default native and web SQLite adapter |
+| [`ormed_sqlite_web`](https://pub.dev/packages/ormed_sqlite_web) | Browser SQLite transport |
+| [`ormed_d1`](https://pub.dev/packages/ormed_d1) | Cloudflare D1 adapter |

@@ -15,7 +15,7 @@ dependencies:
   ormed_sqlite_web: ^0.2.0
 ```
 
-## Quick start with Ormed
+## Direct / codegen-free usage
 
 ```dart
 import 'package:ormed/ormed.dart';
@@ -36,6 +36,33 @@ Future<void> main() async {
   final rows = await ds.connection.driver.queryRaw('SELECT 1 AS ok');
   print(rows.first['ok']);
   await ds.dispose();
+}
+```
+
+## Generated / model-backed usage
+
+Pass the generated registry to the same browser datasource helper when the
+application wants typed models and relations:
+
+```dart
+import 'package:ormed/ormed.dart';
+import 'package:ormed_sqlite_web/ormed_sqlite_web.dart';
+import 'package:your_app/src/models/user.orm.dart';
+
+Future<void> main() async {
+  final dataSource = DataSource(
+    buildOrmRegistry().sqliteWebDataSourceOptions(
+      name: 'web',
+      database: 'app.sqlite',
+      workerUri: 'worker.dart.js',
+      wasmUri: 'sqlite3.wasm',
+    ),
+  );
+
+  await dataSource.init();
+  final users = await dataSource.query<User>().get();
+  print(users);
+  await dataSource.dispose();
 }
 ```
 
@@ -141,3 +168,12 @@ Optional:
 - Transactions are implemented with `sqlite3_web` exclusive locks and SQLite
   `BEGIN` / `SAVEPOINT` statements.
 - Schema dump/load helpers are not exposed for browser storage backends.
+
+## Related packages
+
+| Package | Use it for |
+| --- | --- |
+| [`ormed`](https://pub.dev/packages/ormed) | Core runtime, models, queries, and migrations |
+| [`ormed_sqlite`](https://pub.dev/packages/ormed_sqlite) | Unified native and web SQLite API |
+| [`ormed_sqlite_core`](https://pub.dev/packages/ormed_sqlite_core) | Shared SQLite compilation primitives |
+| [`ormed_cli`](https://pub.dev/packages/ormed_cli) | Scaffolding and migration commands |

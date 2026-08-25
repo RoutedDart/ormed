@@ -2,9 +2,16 @@
 
 Postgres extension handlers for Ormed using the driver extension system.
 
-## Usage
+This is an internal integration package (`publish_to: none`). Install
+[`ormed_postgres`](https://pub.dev/packages/ormed_postgres) for the database
+driver, then add this package when the application uses PostGIS, pgvector, or
+another supported PostgreSQL extension.
 
-### Bootstrapping (generated helper style)
+## Usage modes
+
+### Generated / model-backed usage
+
+Use the generated registry when extension queries target typed models:
 
 ```dart
 import 'dart:io';
@@ -30,6 +37,44 @@ Future<DataSource> createDataSourceWithExtensions() async {
   return dataSource;
 }
 ```
+
+### Direct / codegen-free usage
+
+The same extensions work with an empty registry and an ad-hoc table query:
+
+```dart
+import 'package:ormed/ormed.dart';
+import 'package:ormed_postgres/ormed_postgres.dart';
+import 'package:ormed_postgres_extensions/ormed_postgres_extensions.dart';
+
+final database = await PostgresDatabase.connect(
+  database: 'catalog',
+  username: 'postgres',
+  password: 'postgres',
+  driverExtensions: const [PgvectorExtensions()],
+);
+
+final rows = await database
+    .table('documents')
+    .orderByPgvectorDistance(
+      const PgvectorDistancePayload(
+        column: 'embedding',
+        vector: [0.1, 0.2, 0.3],
+        metric: PgvectorDistanceMetric.l2,
+      ),
+    )
+    .limit(10)
+    .rows();
+await database.close();
+```
+
+## Related packages
+
+| Package | Use it for |
+| --- | --- |
+| [`ormed`](https://pub.dev/packages/ormed) | Core runtime and query APIs |
+| [`ormed_postgres`](https://pub.dev/packages/ormed_postgres) | PostgreSQL driver |
+| [`ormed_cli`](https://pub.dev/packages/ormed_cli) | Scaffolding and migrations |
 
 ### PostGIS
 

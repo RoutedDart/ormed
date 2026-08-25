@@ -6,6 +6,34 @@
 
 A strongly-typed ORM (Object-Relational Mapping) core for Dart, inspired by Eloquent (Laravel), GORM, SQLAlchemy, and ActiveRecord. Combines compile-time code generation with runtime flexibility for type-safe database operations.
 
+## Choose your usage mode
+
+Ormed supports both generated models and direct database access. Choose the
+mode that matches the application:
+
+- **Generated models**: annotate models, run `build_runner`, and use the
+  generated registry for typed queries, relations, and repositories.
+- **Direct / codegen-free**: connect through a driver package and use raw SQL,
+  schema plans, migrations, or ad-hoc table queries without generated files.
+
+The two modes can be mixed: pass a generated `ModelRegistry` to a direct
+connection when an application wants both typed models and low-level access.
+
+```dart
+import 'package:ormed_sqlite/ormed_sqlite.dart';
+
+Future<void> main() async {
+  final db = await SqliteDatabase.connect(path: 'app.sqlite');
+  await db.executeRaw(
+    'CREATE TABLE IF NOT EXISTS users '
+    '(id INTEGER PRIMARY KEY, email TEXT NOT NULL)',
+  );
+  final rows = await db.queryRaw('SELECT * FROM users');
+  print(rows);
+  await db.close();
+}
+```
+
 ## Features
 
 - **Annotations**: `@OrmModel`, `@OrmField`, `@OrmRelation`, `@OrmScope`, `@OrmEvent` to describe tables, columns, relationships, and behaviors
@@ -29,6 +57,23 @@ dev_dependencies:
   ormed_cli: ^0.3.0
   build_runner: ^2.10.5
 ```
+
+## Ormed packages
+
+| Package | Use it for |
+| --- | --- |
+| [`ormed`](https://pub.dev/packages/ormed) | Core runtime, models, queries, migrations, and interceptors |
+| [`ormed_cli`](https://pub.dev/packages/ormed_cli) | Project scaffolding, migration commands, and seeders |
+| [`ormed_sqlite`](https://pub.dev/packages/ormed_sqlite) | Native, Flutter, and web SQLite access |
+| [`ormed_postgres`](https://pub.dev/packages/ormed_postgres) | PostgreSQL access |
+| [`ormed_mysql`](https://pub.dev/packages/ormed_mysql) | MySQL and MariaDB access |
+| [`ormed_d1`](https://pub.dev/packages/ormed_d1) | Cloudflare D1 access from Workers or HTTP endpoints |
+| [`ormed_drift`](https://github.com/RoutedDart/ormed/tree/master/packages/ormed_drift) | Ormed queries and reactivity over a Drift executor |
+
+[`ormed_sqlite_core`](https://pub.dev/packages/ormed_sqlite_core),
+[`ormed_sqlite_web`](https://pub.dev/packages/ormed_sqlite_web), and
+[`ormed_postgres_extensions`](https://github.com/RoutedDart/ormed/tree/master/packages/ormed_postgres_extensions)
+are integration packages for adapter authors and specialized runtimes.
 
 ## Model Factories
 
@@ -292,7 +337,7 @@ run analysis with:
 dart analyze --no-use-aot-snapshot
 ```
 
-## Getting Started
+## Generated model workflow
 
 The recommended way to use Ormed is via the `ormed` CLI, which manages migrations, seeders, and project scaffolding.
 
@@ -344,7 +389,7 @@ class User extends Model<User> {
 }
 ```
 
-### 3. Generate ORM Code
+### 4. Generate ORM Code
 
 Run `build_runner` to generate model definitions and tracked classes:
 
@@ -352,7 +397,7 @@ Run `build_runner` to generate model definitions and tracked classes:
 dart run build_runner build
 ```
 
-### 4. Create and Run Migrations
+### 5. Create and Run Migrations
 
 Generate a migration for your model:
 
@@ -383,7 +428,7 @@ Apply the migration:
 dart run ormed_cli:ormed migrate
 ```
 
-### 5. Seed the Database
+### 6. Seed the Database
 
 Create a seeder:
 
@@ -407,7 +452,7 @@ Run the seeders:
 dart run ormed_cli:ormed seed
 ```
 
-### 6. Bootstrap and Use
+### 7. Bootstrap and Use
 
 The recommended way to initialize Ormed is using the generated `datasource.dart` entrypoint created by `ormed init`:
 
