@@ -451,7 +451,14 @@ void main() {
 
 Future<void> analyzeProject() async {
   print('Analyzing project...');
-  await run('dart', ['analyze'], workingDirectory: testDir);
+  // `init --with-analyzer` intentionally exercises Ormed's current legacy
+  // analyzer plugin integration. Dart 3.13 reports that integration as a
+  // deprecation warning, but the bootstrap fixture should still fail for
+  // analyzer errors.
+  await run('dart', [
+    'analyze',
+    '--no-fatal-warnings',
+  ], workingDirectory: testDir);
 }
 
 Future<void> verifyFiles() async {
