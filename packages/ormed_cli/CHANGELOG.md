@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.1
+
+- **Fixed**: `ormed init --with-analyzer` now scaffolds and migrates the
+  top-level `plugins: ormed: any` configuration required by the current
+  analyzer plugin API.
+
 ## 0.3.0
 
 - **Breaking**: Requires Dart 3.12 or newer.

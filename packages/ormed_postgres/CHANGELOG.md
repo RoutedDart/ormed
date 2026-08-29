@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.1
+
+- **Fixed**: Codegen-free inserts use inferred mutation fields for the write
+  shape while retaining `RETURNING *` for generated and defaulted columns.
+
 ## 0.3.0
 
 - **Added**: `PostgresDatabase.connect` and `connectFromEnv` for direct

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.1
+
+- **Fixed**: D1 HTTP mutations now retry transient `database is locked` and
+  `database is busy` responses.
+
 ## 0.2.0
 
 - **Added**: `D1Database.connect` for direct Cloudflare D1 access without a
