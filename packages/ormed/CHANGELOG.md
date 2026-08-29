@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.3.1
+
+- **Fixed**: Codegen-free map inserts now keep inferred mutation columns
+  separate from ad-hoc read and returning projections, preserving generated
+  columns and later `SELECT *` queries.
+- **Fixed**: Generated query helpers suppress the intentional unbounded-query
+  analyzer warning using the namespaced plugin diagnostic.
+- **Fixed**: Query safety analysis now handles generated sources without
+  reporting the companion `all` helper.
+
 ## 0.3.0
 
 - **Added**: `OrmDatabase` for direct, codegen-optional connections, raw SQL,

@@ -1,3 +1,8 @@
+## 0.2.1
+
+- **Fixed**: SQLite-like codegen-free inserts compile their write columns from
+  the mutation plan without changing the ad-hoc read projection.
+
 ## 0.2.0
 
 - **Breaking**: Requires Dart 3.12 or newer.

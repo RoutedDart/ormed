@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.1
+
+- **Fixed**: Require the Ormed and SQLite-core patch releases that keep
+  codegen-free mutation fields separate from read projections.
+
 ## 0.2.0
 
 - **Breaking**: Requires Dart 3.12 or newer.

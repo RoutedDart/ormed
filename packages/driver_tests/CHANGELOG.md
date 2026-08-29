@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.1
+
+- **Added**: Shared driver coverage for codegen-free inserts with generated
+  primary keys, mutation-only fields, and reusable `SELECT *` projections.
+
 ## 0.3.0
 
 - **Breaking**: Requires Dart 3.12 or newer.

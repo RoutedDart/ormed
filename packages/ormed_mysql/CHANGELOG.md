@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.1
+
+- **Fixed**: Codegen-free inserts now resolve the table primary key and return
+  the complete inserted row, including MySQL/MariaDB-generated IDs.
+
 ## 0.3.0
 
 - **Added**: `MySqlDatabase.connect` and `connectMariaDb` for direct MySQL and
