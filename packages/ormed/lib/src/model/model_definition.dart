@@ -580,19 +580,6 @@ class AdHocModelDefinition extends ModelDefinition<AdHocRow> {
     return definition;
   }
 
-  /// Returns a field definition for a column supplied to a mutation.
-  ///
-  /// Unlike fields discovered while building a read query, mutation fields
-  /// must be exposed through [fields] so driver compilers include them in the
-  /// generated statement.
-  FieldDefinition fieldForMutation(String name) {
-    final definition = fieldFor(name);
-    if (!_explicitFields.contains(definition)) {
-      _explicitFields.add(definition);
-    }
-    return definition;
-  }
-
   /// Registers a column definition for this ad-hoc model.
   void registerColumn(AdHocColumn column) {
     final definition = FieldDefinition(

@@ -914,7 +914,7 @@ abstract class SqliteRemoteAdapterBase
       );
     }
 
-    final columns = plan.definition.fields
+    final columns = plan.mutationFields
         .where((field) {
           var provided = false;
           var hasNonZeroAuto = false;

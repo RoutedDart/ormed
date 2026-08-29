@@ -3,6 +3,27 @@ import 'package:ormed_postgres/ormed_postgres.dart';
 import 'package:test/test.dart';
 
 void main() {
+  test('ad-hoc inserts keep write fields out of returning projection', () {
+    final adapter = PostgresDriverAdapter.custom(
+      config: const DatabaseConfig(driver: 'postgres'),
+    );
+    final definition = AdHocModelDefinition(tableName: 'users');
+    final plan = MutationPlan.insert(
+      definition: definition,
+      rows: const [
+        <String, Object?>{'name': 'Carol'},
+      ],
+      returning: true,
+    );
+
+    final preview = adapter.describeMutation(plan);
+    final payload = preview.payload as SqlStatementPayload;
+    expect(payload.sql, contains('INSERT INTO "users" ("name")'));
+    expect(payload.sql, contains('RETURNING *'));
+    expect(plan.mutationFields.map((field) => field.columnName), ['name']);
+    expect(definition.fields, isEmpty);
+  });
+
   test('preview SQL ignores placeholders inside string literals', () {
     final adapter = PostgresDriverAdapter.custom(
       config: const DatabaseConfig(driver: 'postgres'),

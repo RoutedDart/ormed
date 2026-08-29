@@ -36,18 +36,18 @@ void main() {
         driver: mutationDriver,
       );
 
-      await mutationContext.table('widgets').create({
-        'id': 1,
-        'display_name': 'Example',
-      });
+      final widgets = mutationContext.table('widgets');
+      await widgets.create({'id': 1, 'display_name': 'Example'});
 
       final plan = mutationDriver.lastMutation;
       expect(plan, isNotNull);
-      expect(plan!.definition.fields.map((field) => field.columnName), [
+      expect(plan!.definition.fields, isEmpty);
+      expect(plan.mutationFields.map((field) => field.columnName), [
         'id',
         'display_name',
       ]);
       expect(plan.rows.single.values, {'id': 1, 'display_name': 'Example'});
+      expect(widgets.debugPlan().definition.fields, isEmpty);
     });
 
     test('records alias in the query plan', () {

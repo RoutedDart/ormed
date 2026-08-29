@@ -1897,12 +1897,11 @@ extension CrudExtension<T extends OrmEntity> on Query<T> {
         continue;
       }
 
-      // Table queries without registered model metadata discover their write
-      // columns from map inputs. Mutation compilers use definition.fields to
-      // decide which columns belong in the statement, so register the key as a
-      // mutation field rather than leaving the ad-hoc definition empty.
+      // Table queries without registered model metadata discover codecs and
+      // write columns from map inputs. Keep these fields out of the explicit
+      // read projection; MutationPlan captures its write shape separately.
       if (definition case final AdHocModelDefinition adHocDefinition) {
-        final field = adHocDefinition.fieldForMutation(key);
+        final field = adHocDefinition.fieldFor(key);
         normalized[field.columnName] = value;
         continue;
       }
