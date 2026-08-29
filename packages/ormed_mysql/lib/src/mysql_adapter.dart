@@ -1309,6 +1309,14 @@ class MySqlDriverAdapter
     final connection = await _connection();
     var affected = 0;
     final returnedRows = <Map<String, Object?>>[];
+    final adHocInsertIds = <Object>[];
+    final adHocPrimaryKey =
+        shape.isInsert &&
+            shape.returning &&
+            shape.definition is AdHocModelDefinition &&
+            shape.definition!.fields.isEmpty
+        ? await _resolvePrimaryKeyColumn(shape.definition!, connection)
+        : null;
 
     final stmt = await connection.prepare(shape.sql);
     try {
@@ -1330,7 +1338,9 @@ class MySqlDriverAdapter
             );
             returnedRows.add({pkField.columnName: result.lastInsertID.toInt()});
           } catch (_) {
-            // No primary key found, skip
+            if (adHocPrimaryKey != null) {
+              adHocInsertIds.add(result.lastInsertID.toInt());
+            }
           }
         }
 
@@ -1357,6 +1367,18 @@ class MySqlDriverAdapter
       }
     } finally {
       await stmt.deallocate();
+    }
+
+    if (adHocPrimaryKey != null) {
+      for (final id in adHocInsertIds) {
+        final row = await _fetchRowByColumn(
+          shape.definition!,
+          adHocPrimaryKey,
+          id,
+          connection,
+        );
+        if (row != null) returnedRows.add(row);
+      }
     }
 
     return MutationResult(
@@ -2007,6 +2029,42 @@ class MySqlDriverAdapter
       return _decodeRow(result.rows.first, columns);
     } catch (_) {
       return null;
+    }
+  }
+
+  Future<String?> _resolvePrimaryKeyColumn(
+    ModelDefinition<OrmEntity> definition,
+    MySQLConnection connection,
+  ) async {
+    final result = await connection.execute(
+      "SHOW KEYS FROM ${_tableIdentifier(definition)} WHERE Key_name = 'PRIMARY'",
+    );
+    final rows = _collectRows(result);
+    if (rows.isEmpty) return null;
+    for (final entry in rows.first.entries) {
+      if (entry.key.toLowerCase() == 'column_name') {
+        return entry.value?.toString();
+      }
+    }
+    return null;
+  }
+
+  Future<Map<String, Object?>?> _fetchRowByColumn(
+    ModelDefinition<OrmEntity> definition,
+    String column,
+    Object value,
+    MySQLConnection connection,
+  ) async {
+    final sql =
+        'SELECT * FROM ${_tableIdentifier(definition)} '
+        'WHERE ${_quote(column)} = ? LIMIT 1';
+    final stmt = await connection.prepare(sql);
+    try {
+      final result = await stmt.execute(normalizeMySqlParameters([value]));
+      if (result.rows.isEmpty) return null;
+      return _decodeRow(result.rows.first, result.cols.toList(growable: false));
+    } finally {
+      await stmt.deallocate();
     }
   }
 

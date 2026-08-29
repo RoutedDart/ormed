@@ -50,6 +50,60 @@ void runDriverMutationTests() {
       expect(users, isEmpty);
     });
 
+    test(
+      'ad-hoc create keeps mutation fields separate from row projection',
+      () async {
+        final mutationEvents = <MutationEvent>[];
+        final queryEvents = <QueryEvent>[];
+        dataSource.context.onMutation(mutationEvents.add);
+        dataSource.context.onQuery(queryEvents.add);
+
+        final users = dataSource.context.table('adhoc_users');
+        final created = await users.create({
+          'email': 'adhoc-generated-id@example.com',
+          'active': true,
+          'name': 'Carol',
+        });
+
+        expect(created['id'], isA<int>());
+        expect(created['email'], 'adhoc-generated-id@example.com');
+        expect(created['active'], anyOf(isTrue, 1));
+        expect(created['name'], 'Carol');
+
+        final insert = mutationEvents.single;
+        final insertSql = insert.preview.normalized.command.toUpperCase();
+        expect(insert.plan.mutationFields.map((field) => field.columnName), [
+          'email',
+          'active',
+          'name',
+        ]);
+        expect(insert.plan.definition.fields, isEmpty);
+        expect(insertSql, contains('INSERT'));
+        expect(insertSql, contains('EMAIL'));
+        expect(insertSql, contains('ACTIVE'));
+        expect(insertSql, contains('NAME'));
+        expect(insertSql, isNot(contains('(ID')));
+
+        final rows = await users
+            .whereEquals('email', 'adhoc-generated-id@example.com')
+            .limit(1)
+            .get();
+
+        expect(rows, hasLength(1));
+        expect(rows.single['id'], created['id']);
+        expect(rows.single['email'], created['email']);
+        expect(rows.single['active'], anyOf(isTrue, 1));
+        expect(rows.single['name'], 'Carol');
+
+        final select = queryEvents.single;
+        expect(select.plan.definition.fields, isEmpty);
+        expect(
+          select.preview.normalized.command.toUpperCase(),
+          contains('SELECT *'),
+        );
+      },
+    );
+
     test('upsert inserts then updates', () async {
       final repo = dataSource.context.repository<$User>();
 

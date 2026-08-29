@@ -154,6 +154,13 @@ final List<MigrationEntry> driverTestMigrationEntries = [
     ),
     migration: const CreateJsonValueRecordsTable(),
   ),
+  MigrationEntry(
+    id: MigrationId(
+      DateTime.utc(2023, 1, 1, 0, 0, 25),
+      'create_adhoc_users_table',
+    ),
+    migration: const CreateAdHocUsersTable(),
+  ),
 ];
 
 /// Create a test schema manager for driver tests
