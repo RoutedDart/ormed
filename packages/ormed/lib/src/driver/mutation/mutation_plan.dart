@@ -11,6 +11,7 @@ class MutationPlan {
     required this.operation,
     required this.definition,
     required this.rows,
+    List<FieldDefinition>? mutationFields,
     this.driverName,
     this.returning = false,
     List<String>? uniqueByColumns,
@@ -22,7 +23,8 @@ class MutationPlan {
     List<JsonUpdateClause>? queryJsonUpdates,
     Map<String, num>? queryIncrementValues,
     List<String>? insertColumns,
-  }) : upsertUniqueColumns = List.unmodifiable(uniqueByColumns ?? const []),
+  }) : mutationFields = List.unmodifiable(mutationFields ?? definition.fields),
+       upsertUniqueColumns = List.unmodifiable(uniqueByColumns ?? const []),
        upsertUpdateColumns = List.unmodifiable(updateColumns ?? const []),
        queryUpdateValues = Map.unmodifiable(
          queryUpdateValues ?? const <String, Object?>{},
@@ -47,6 +49,7 @@ class MutationPlan {
     rows: rows
         .map((values) => MutationRow(values: values, keys: const {}))
         .toList(growable: false),
+    mutationFields: _mutationFieldsForValues(definition, rows),
     driverName: driverName,
     returning: returning,
     ignoreConflicts: ignoreConflicts,
@@ -77,6 +80,10 @@ class MutationPlan {
     operation: MutationOperation.update,
     definition: definition,
     rows: rows,
+    mutationFields: _mutationFieldsForValues(
+      definition,
+      rows.map((row) => row.values),
+    ),
     driverName: driverName,
     returning: returning,
   );
@@ -143,6 +150,10 @@ class MutationPlan {
     operation: MutationOperation.upsert,
     definition: definition,
     rows: rows,
+    mutationFields: _mutationFieldsForValues(
+      definition,
+      rows.map((row) => row.values),
+    ),
     driverName: driverName,
     returning: returning,
     uniqueByColumns: uniqueBy,
@@ -152,6 +163,10 @@ class MutationPlan {
   final MutationOperation operation;
   final ModelDefinition<OrmEntity> definition;
   final List<MutationRow> rows;
+
+  /// Fields used to compile write values, independently of the read and
+  /// returning projection in [definition].
+  final List<FieldDefinition> mutationFields;
   final String? driverName;
   final bool returning;
   final List<String> upsertUniqueColumns;
@@ -163,4 +178,23 @@ class MutationPlan {
   final Map<String, Object?> queryUpdateValues;
   final List<JsonUpdateClause> queryJsonUpdates;
   final Map<String, num> queryIncrementValues;
+}
+
+List<FieldDefinition> _mutationFieldsForValues(
+  ModelDefinition<OrmEntity> definition,
+  Iterable<Map<String, Object?>> rows,
+) {
+  if (definition is! AdHocModelDefinition) return definition.fields;
+
+  final fields = <FieldDefinition>[];
+  final seen = <String>{};
+  for (final row in rows) {
+    for (final column in row.keys) {
+      if (!seen.add(column)) continue;
+      fields.add(
+        definition.fieldByColumn(column) ?? definition.fieldFor(column),
+      );
+    }
+  }
+  return fields;
 }

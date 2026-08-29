@@ -29,6 +29,27 @@ void main() {
       expect(plan.filters.single.field, 'custom_column');
     });
 
+    test('registers map input columns on ad-hoc mutation plans', () async {
+      final mutationDriver = _MutationCapturingDriver();
+      final mutationContext = QueryContext(
+        registry: ModelRegistry(),
+        driver: mutationDriver,
+      );
+
+      final widgets = mutationContext.table('widgets');
+      await widgets.create({'id': 1, 'display_name': 'Example'});
+
+      final plan = mutationDriver.lastMutation;
+      expect(plan, isNotNull);
+      expect(plan!.definition.fields, isEmpty);
+      expect(plan.mutationFields.map((field) => field.columnName), [
+        'id',
+        'display_name',
+      ]);
+      expect(plan.rows.single.values, {'id': 1, 'display_name': 'Example'});
+      expect(widgets.debugPlan().definition.fields, isEmpty);
+    });
+
     test('records alias in the query plan', () {
       final plan = context.table('authors', as: 'a').debugPlan();
       expect(plan.tableAlias, 'a');
@@ -169,6 +190,16 @@ void main() {
       expect(plan.filters.single.field, 'occurred_at');
     });
   });
+}
+
+class _MutationCapturingDriver extends InMemoryQueryExecutor {
+  MutationPlan? lastMutation;
+
+  @override
+  Future<MutationResult> runMutation(MutationPlan plan) {
+    lastMutation = plan;
+    return super.runMutation(plan);
+  }
 }
 
 class _StreamingQueryDriver extends InMemoryQueryExecutor {

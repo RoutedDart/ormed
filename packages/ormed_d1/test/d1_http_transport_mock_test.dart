@@ -256,6 +256,59 @@ void main() {
       expect(server.requests, hasLength(2));
     });
 
+    test('retries when D1 reports a locked database', () async {
+      final server = await _MockD1Server.start([
+        const _PlannedResponse(
+          statusCode: 400,
+          body: <String, Object?>{
+            'success': false,
+            'errors': <Object?>[
+              <String, Object?>{
+                'code': 7500,
+                'message':
+                    'Bad state: Error: in prepare, database is locked (5)',
+              },
+            ],
+            'result': <Object?>[],
+          },
+        ),
+        const _PlannedResponse(
+          statusCode: 200,
+          body: <String, Object?>{
+            'success': true,
+            'result': <Object?>[
+              <String, Object?>{
+                'results': <Object?>[
+                  <String, Object?>{'ok': 1},
+                ],
+                'meta': <String, Object?>{},
+              },
+            ],
+          },
+        ),
+      ]);
+
+      final transport = D1HttpTransport(
+        accountId: 'acct-1',
+        databaseId: 'db-1',
+        apiToken: 'token-1',
+        baseUrl: server.baseUrl,
+        maxAttempts: 3,
+        retryBaseDelay: const Duration(milliseconds: 1),
+        retryMaxDelay: const Duration(milliseconds: 2),
+      );
+
+      try {
+        final result = await transport.query('INSERT INTO users VALUES (1)');
+        expect(result.rows.single['ok'], 1);
+      } finally {
+        await transport.close();
+        await server.close();
+      }
+
+      expect(server.requests, hasLength(2));
+    });
+
     test('throws without retry on non-retryable HTTP 400', () async {
       final server = await _MockD1Server.start([
         const _PlannedResponse(

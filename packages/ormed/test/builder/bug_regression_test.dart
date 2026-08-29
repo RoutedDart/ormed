@@ -3,6 +3,7 @@ import 'package:analyzer/dart/analysis/results.dart';
 import 'package:analyzer/dart/analysis/utilities.dart';
 import 'package:analyzer/dart/element/element.dart';
 import 'package:collection/collection.dart';
+import 'package:ormed/src/builder/emitters/companion_class_emitter.dart';
 import 'package:ormed/src/builder/emitters/model_codec_emitter.dart';
 import 'package:ormed/src/builder/emitters/model_subclass_emitter.dart';
 import 'package:ormed/src/builder/helpers.dart';
@@ -52,6 +53,20 @@ ConstantReader _readOrmModelAnnotation(ClassElement element) {
 }
 
 void main() {
+  test('generated all helper suppresses its intentional safety lint', () async {
+    final element = await _resolveClass('DefaultValueModel');
+    final context = ModelContext(element, _readOrmModelAnnotation(element));
+    final output = CompanionClassEmitter(context).emit();
+
+    expect(
+      output,
+      contains(
+        '// ignore: ormed/ormed_get_without_limit\n'
+        '      Model.all<\$DefaultValueModel>(connection: connection);',
+      ),
+    );
+  });
+
   test('codec defaults for non-nullable enum/map/list avoid null', () async {
     final element = await _resolveClass('DefaultValueModel');
     final context = ModelContext(element, _readOrmModelAnnotation(element));

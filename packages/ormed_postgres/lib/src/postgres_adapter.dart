@@ -1165,7 +1165,7 @@ class PostgresDriverAdapter
 
   _PostgresMutationShape _buildInsertShape(MutationPlan plan) {
     if (plan.rows.isEmpty) return _PostgresMutationShape.empty();
-    final insertFields = plan.definition.fields
+    final insertFields = plan.mutationFields
         .where((field) {
           if (_shouldUseDefaultForInsert(field, plan.rows)) {
             return false;

@@ -477,7 +477,7 @@ Future<void> verifyAnalyzerConfig() async {
     throw Exception('analysis_options.yaml was not created.');
   }
   final text = options.readAsStringSync();
-  if (!text.contains('- ormed')) {
+  if (!text.contains('plugins:\n  ormed:')) {
     throw Exception(
       'analysis_options.yaml is missing the Ormed analyzer plugin.',
     );

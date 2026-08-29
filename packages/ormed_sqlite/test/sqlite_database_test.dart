@@ -37,8 +37,8 @@ void main() {
       db.onQuery(queryEvents.add);
       db.listen(completed.add);
 
-      final matchingUsers = await db
-          .table('users')
+      final users = db.table('users');
+      final matchingUsers = await users
           .whereEquals('name', 'Alice')
           .orderBy('name')
           .limit(10)
@@ -51,6 +51,14 @@ void main() {
       expect(queryEvents.single.succeeded, isTrue);
       expect(completed, hasLength(1));
 
+      final created = await users.create({'name': 'Carol'});
+      expect(created['id'], isA<int>());
+      expect(created, containsPair('name', 'Carol'));
+
+      final createdRows = await users.whereEquals('name', 'Carol').get();
+      expect(createdRows, hasLength(1));
+      expect(createdRows.single['id'], created['id']);
+
       final selectContext = interceptor.contexts.last;
       expect(selectContext.operationName, 'SELECT');
       expect(selectContext.collectionName, 'users');
@@ -59,7 +67,7 @@ void main() {
       interceptor.clear();
       await db.transaction(() async {
         await db.executeRaw('INSERT INTO users (id, name) VALUES (?, ?)', [
-          2,
+          20,
           'Bob',
         ]);
       });

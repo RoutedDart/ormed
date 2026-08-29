@@ -739,8 +739,28 @@ dependency_overrides:
       final options = File(p.join(scratchDir.path, 'analysis_options.yaml'));
       expect(options.existsSync(), isTrue);
       final text = options.readAsStringSync();
-      expect(text, contains('plugins:'));
-      expect(text, contains('- ormed'));
+      expect(text, contains('plugins:\n  ormed: any'));
+      expect(text, isNot(contains('analyzer:\n  plugins:')));
+    });
+
+    test('--with-analyzer migrates the legacy plugin config', () async {
+      File(p.join(scratchDir.path, 'analysis_options.yaml')).writeAsStringSync(
+        'analyzer:\n  plugins:\n    - ormed\n  exclude:\n    - build/**\n',
+      );
+
+      await runInit([
+        'init',
+        '--no-interaction',
+        '--skip-build',
+        '--with-analyzer',
+      ]);
+
+      final text = File(
+        p.join(scratchDir.path, 'analysis_options.yaml'),
+      ).readAsStringSync();
+      expect(text, contains('plugins:\n  ormed: any'));
+      expect(text, isNot(contains('- ormed')));
+      expect(text, contains('  exclude:'));
     });
   });
 }

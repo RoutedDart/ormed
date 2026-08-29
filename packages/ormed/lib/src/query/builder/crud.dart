@@ -1897,6 +1897,15 @@ extension CrudExtension<T extends OrmEntity> on Query<T> {
         continue;
       }
 
+      // Table queries without registered model metadata discover codecs and
+      // write columns from map inputs. Keep these fields out of the explicit
+      // read projection; MutationPlan captures its write shape separately.
+      if (definition case final AdHocModelDefinition adHocDefinition) {
+        final field = adHocDefinition.fieldFor(key);
+        normalized[field.columnName] = value;
+        continue;
+      }
+
       // If no field found, keep the original key (might be a virtual field or attribute)
       normalized[key] = value;
     }

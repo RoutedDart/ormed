@@ -1,5 +1,6 @@
 library;
 
+export 'create_adhoc_users_table.dart';
 export 'create_users_table.dart';
 export 'create_accessor_users_table.dart';
 export 'create_cast_samples_table.dart';
