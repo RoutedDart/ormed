@@ -214,6 +214,8 @@ class _GetWithoutLimitVisitor extends SimpleAstVisitor<void> {
 
   @override
   void visitMethodInvocation(MethodInvocation node) {
+    if (_isGeneratedOrmNode(node)) return;
+
     final methodName = node.methodName.name;
     if (methodName == 'all') {
       if (_isAllInvocation(node)) {
@@ -239,6 +241,11 @@ class _GetWithoutLimitVisitor extends SimpleAstVisitor<void> {
 
     rule.reportAtNode(node.methodName);
   }
+}
+
+bool _isGeneratedOrmNode(AstNode node) {
+  final unit = node.thisOrAncestorOfType<CompilationUnit>();
+  return unit?.declaredFragment?.source.fullName.endsWith('.orm.dart') ?? false;
 }
 
 bool _isAllInvocation(MethodInvocation node) {

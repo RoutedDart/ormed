@@ -372,6 +372,24 @@ void build() {
     await assertDiagnostics(content, [lint(offset, 'all'.length)]);
   }
 
+  Future<void> test_generatedOrmSourceDoesNotWarn() async {
+    final generatedPath = '$testPackageLibPath/user.orm.dart';
+    newFile(generatedPath, r'''
+import 'package:ormed/ormed.dart';
+
+class User extends Model<User> with ModelFactoryCapable {
+  User();
+}
+
+class Users {
+  static Future<List<User>> all({String? connection}) =>
+      Model.all<User>(connection: connection);
+}
+''');
+
+    await assertNoDiagnosticsInFile(generatedPath);
+  }
+
   Future<void> testUnrelatedAllDoesNotWarn() async {
     const content = r'''
 import 'package:ormed/ormed.dart';
