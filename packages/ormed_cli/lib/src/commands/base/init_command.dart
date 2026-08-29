@@ -645,57 +645,46 @@ void _ensureAnalyzerPluginConfig({
   required _ArtifactTracker tracker,
 }) {
   final file = File(p.join(root.path, 'analysis_options.yaml'));
-  final pluginLine = '- ormed';
+  const pluginEntry = '  ormed: any';
   if (!file.existsSync()) {
-    file.writeAsStringSync('analyzer:\n  plugins:\n    $pluginLine\n');
+    file.writeAsStringSync('plugins:\n$pluginEntry\n');
     tracker.paths['analysis_options.yaml'] = file.path;
     return;
   }
 
   final lines = file.readAsLinesSync();
-  if (lines.any((line) => line.trim() == pluginLine)) {
-    return;
+
+  // Migrate the legacy `analyzer.plugins` entry when init is rerun in an
+  // existing project. Ormed already implements the new analysis_server_plugin
+  // API; only its generated configuration used the legacy location.
+  lines.removeWhere((line) => line.trim() == '- ormed');
+  for (var i = lines.length - 1; i >= 0; i--) {
+    if (lines[i] != '  plugins:') continue;
+    final hasNestedEntry =
+        i + 1 < lines.length &&
+        lines[i + 1].startsWith('    ') &&
+        lines[i + 1].trim().isNotEmpty;
+    if (!hasNestedEntry) lines.removeAt(i);
   }
 
-  int analyzerIndex = -1;
-  for (var i = 0; i < lines.length; i++) {
-    if (lines[i].trim() == 'analyzer:') {
-      analyzerIndex = i;
-      break;
-    }
-  }
-
-  if (analyzerIndex == -1) {
-    lines.add('');
-    lines.add('analyzer:');
-    lines.add('  plugins:');
-    lines.add('    $pluginLine');
-    file.writeAsStringSync(lines.join('\n'));
-    return;
-  }
-
-  int pluginsIndex = -1;
-  for (var i = analyzerIndex + 1; i < lines.length; i++) {
-    final trimmed = lines[i].trim();
-    if (trimmed.isEmpty) continue;
-    if (trimmed.endsWith(':') && !trimmed.startsWith('plugins:')) {
-      break;
-    }
-    if (trimmed == 'plugins:') {
-      pluginsIndex = i;
-      break;
-    }
-  }
-
+  final pluginsIndex = lines.indexWhere((line) => line == 'plugins:');
   if (pluginsIndex == -1) {
-    lines.insert(analyzerIndex + 1, '  plugins:');
-    lines.insert(analyzerIndex + 2, '    $pluginLine');
-    file.writeAsStringSync(lines.join('\n'));
-    return;
+    if (lines.isNotEmpty && lines.last.isNotEmpty) lines.add('');
+    lines.add('plugins:');
+    lines.add(pluginEntry);
+  } else {
+    var blockEnd = pluginsIndex + 1;
+    while (blockEnd < lines.length &&
+        (lines[blockEnd].startsWith(' ') || lines[blockEnd].isEmpty)) {
+      if (lines[blockEnd].trimLeft().startsWith('ormed:')) {
+        file.writeAsStringSync('${lines.join('\n')}\n');
+        return;
+      }
+      blockEnd++;
+    }
+    lines.insert(blockEnd, pluginEntry);
   }
-
-  lines.insert(pluginsIndex + 1, '    $pluginLine');
-  file.writeAsStringSync(lines.join('\n'));
+  file.writeAsStringSync('${lines.join('\n')}\n');
 }
 
 String _dataSourceTemplate({required OrmProjectConfig config}) {
