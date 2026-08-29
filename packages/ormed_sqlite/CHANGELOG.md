@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.1
+
+- **Fixed**: Require the Ormed and SQLite-core patch releases that preserve
+  generated columns and read projections for codegen-free inserts.
+
 ## 0.4.0
 
 - **Added**: `SqliteDatabase.connect` for direct SQLite access without a
