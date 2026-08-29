@@ -591,6 +591,8 @@ class D1HttpTransport implements D1Transport, D1BatchTransport {
       if (code == '429') return true;
       if (message.contains('rate limit') ||
           message.contains('too many requests') ||
+          message.contains('database is locked') ||
+          message.contains('database is busy') ||
           message.contains('overloaded') ||
           message.contains('temporar') ||
           message.contains('timeout') ||
@@ -605,6 +607,8 @@ class D1HttpTransport implements D1Transport, D1BatchTransport {
     final lower = body.toLowerCase();
     return lower.contains('rate limit') ||
         lower.contains('too many requests') ||
+        lower.contains('database is locked') ||
+        lower.contains('database is busy') ||
         lower.contains('overloaded') ||
         lower.contains('temporar') ||
         lower.contains('timeout') ||
