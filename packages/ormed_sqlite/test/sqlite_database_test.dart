@@ -51,6 +51,20 @@ void main() {
       expect(queryEvents.single.succeeded, isTrue);
       expect(completed, hasLength(1));
 
+      final created = await db.table('users').create({
+        'id': 3,
+        'name': 'Carol',
+      });
+      expect(created, containsPair('id', 3));
+      expect(created, containsPair('name', 'Carol'));
+
+      final createdRows = await db
+          .table('users')
+          .whereEquals('name', 'Carol')
+          .get();
+      expect(createdRows, hasLength(1));
+      expect(createdRows.single, containsPair('id', 3));
+
       final selectContext = interceptor.contexts.last;
       expect(selectContext.operationName, 'SELECT');
       expect(selectContext.collectionName, 'users');
