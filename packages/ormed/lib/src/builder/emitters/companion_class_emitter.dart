@@ -46,6 +46,7 @@ class CompanionClassEmitter {
     buffer.writeln(
       '  static Future<List<$generatedClassName>> all({String? connection}) =>',
     );
+    buffer.writeln('      // ignore: ormed/ormed_get_without_limit');
     buffer.writeln(
       '      Model.all<$generatedClassName>(connection: connection);',
     );

@@ -248,11 +248,17 @@ class _GetWithoutLimitVisitor extends SimpleAstVisitor<void> {
 }
 
 bool _isGeneratedOrmNode(AstNode node, RuleContext context) {
-  if (context.currentUnit?.file.path.endsWith('.orm.dart') ?? false) {
-    return true;
+  final astUnit = node.thisOrAncestorOfType<CompilationUnit>();
+  if (astUnit == null) return false;
+
+  for (final contextUnit in context.allUnits) {
+    if (identical(contextUnit.unit, astUnit)) {
+      return contextUnit.file.path.endsWith('.orm.dart');
+    }
   }
-  final unit = node.thisOrAncestorOfType<CompilationUnit>();
-  return unit?.declaredFragment?.source.fullName.endsWith('.orm.dart') ?? false;
+
+  return astUnit.declaredFragment?.source.fullName.endsWith('.orm.dart') ??
+      false;
 }
 
 bool _isAllInvocation(MethodInvocation node) {
