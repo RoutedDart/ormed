@@ -114,7 +114,10 @@ class GetWithoutLimitRule extends AnalysisRule {
     RuleContext context,
   ) {
     final tracker = _QueryChainTracker();
-    registry.addMethodInvocation(this, _GetWithoutLimitVisitor(this, tracker));
+    registry.addMethodInvocation(
+      this,
+      _GetWithoutLimitVisitor(this, tracker, context),
+    );
   }
 }
 
@@ -205,16 +208,17 @@ class _LimitVisitor extends SimpleAstVisitor<void> {
 }
 
 class _GetWithoutLimitVisitor extends SimpleAstVisitor<void> {
-  _GetWithoutLimitVisitor(this.rule, this.tracker);
+  _GetWithoutLimitVisitor(this.rule, this.tracker, this.context);
 
   final GetWithoutLimitRule rule;
   final _QueryChainTracker tracker;
+  final RuleContext context;
 
   static const Set<String> _queryMethods = {'get', 'rows', 'getPartial'};
 
   @override
   void visitMethodInvocation(MethodInvocation node) {
-    if (_isGeneratedOrmNode(node)) return;
+    if (_isGeneratedOrmNode(node, context)) return;
 
     final methodName = node.methodName.name;
     if (methodName == 'all') {
@@ -243,7 +247,10 @@ class _GetWithoutLimitVisitor extends SimpleAstVisitor<void> {
   }
 }
 
-bool _isGeneratedOrmNode(AstNode node) {
+bool _isGeneratedOrmNode(AstNode node, RuleContext context) {
+  if (context.currentUnit?.file.path.endsWith('.orm.dart') ?? false) {
+    return true;
+  }
   final unit = node.thisOrAncestorOfType<CompilationUnit>();
   return unit?.declaredFragment?.source.fullName.endsWith('.orm.dart') ?? false;
 }

@@ -372,14 +372,21 @@ void build() {
     await assertDiagnostics(content, [lint(offset, 'all'.length)]);
   }
 
+  // Reflective tests require the `test_` prefix.
+  // ignore: non_constant_identifier_names
   Future<void> test_generatedOrmSourceDoesNotWarn() async {
     final generatedPath = '$testPackageLibPath/user.orm.dart';
-    newFile(generatedPath, r'''
+    newFile('$testPackageLibPath/user.dart', r'''
 import 'package:ormed/ormed.dart';
+
+part 'user.orm.dart';
 
 class User extends Model<User> with ModelFactoryCapable {
   User();
 }
+''');
+    newFile(generatedPath, r'''
+part of 'user.dart';
 
 class Users {
   static Future<List<User>> all({String? connection}) =>
