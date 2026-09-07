@@ -93,16 +93,20 @@ class D1DriverAdapter extends SqliteRemoteAdapterBase
         case AtomicBatchQueryOperation(:final plan):
           final preview = describeQuery(plan);
           statements.add(
-            D1Statement(sql: preview.sql, parameters: preview.parameters),
+            D1Statement(
+              sql: preview.sql,
+              parameters: profile.normalizeParameters(preview.parameters),
+            ),
           );
         case AtomicBatchMutationOperation(:final plan):
           final preview = describeMutation(plan);
           if (preview.parameterSets.isEmpty) {
-            if (preview.parameters.isNotEmpty) {
-              statements.add(
-                D1Statement(sql: preview.sql, parameters: preview.parameters),
-              );
-            }
+            statements.add(
+              D1Statement(
+                sql: preview.sql,
+                parameters: profile.normalizeParameters(preview.parameters),
+              ),
+            );
           } else {
             for (final parameters in preview.parameterSets) {
               statements.add(
@@ -127,6 +131,12 @@ class D1DriverAdapter extends SqliteRemoteAdapterBase
       );
     }
 
+    for (final result in statementResults) {
+      if (!result.success) {
+        throw D1RequestException('D1 statement failed: ${result.error}');
+      }
+    }
+
     return List<AtomicBatchResult>.generate(operations.length, (index) {
       final operation = operations[index];
       final (start, length) = slices[index];
@@ -136,10 +146,32 @@ class D1DriverAdapter extends SqliteRemoteAdapterBase
         AtomicBatchMutationOperation(:final plan) => plan.definition,
       };
       final rows = <Map<String, Object?>>[];
+      final generatedIds = <Object?>[];
       var affectedRows = 0;
       for (final result in results) {
         affectedRows += result.affectedRows;
-        rows.addAll(result.rows.map((row) => decodeRowValues(definition, row)));
+        final decodedRows = result.rows
+            .map((row) => decodeRowValues(definition, row))
+            .toList(growable: false);
+        rows.addAll(decodedRows);
+        if (_isInsertLike(operation)) {
+          final primaryKey = definition.primaryKeyField?.columnName;
+          final returnedIds = primaryKey == null
+              ? const <Object?>[]
+              : decodedRows
+                    .where(
+                      (row) =>
+                          row.containsKey(primaryKey) &&
+                          row[primaryKey] != null,
+                    )
+                    .map((row) => row[primaryKey])
+                    .toList(growable: false);
+          if (returnedIds.isNotEmpty) {
+            generatedIds.addAll(returnedIds);
+          } else if (result.lastRowId != null) {
+            generatedIds.add(result.lastRowId);
+          }
+        }
       }
       return AtomicBatchResult(
         operation: operation,
@@ -147,6 +179,7 @@ class D1DriverAdapter extends SqliteRemoteAdapterBase
         affectedRows: operation is AtomicBatchMutationOperation
             ? affectedRows
             : 0,
+        generatedIds: List<Object?>.unmodifiable(generatedIds),
         statementMetadata: List<Map<String, Object?>>.unmodifiable(
           results.map((result) => result.meta),
         ),
@@ -204,6 +237,15 @@ class D1DriverAdapter extends SqliteRemoteAdapterBase
       'Cloudflare D1 HTTP API does not support ROLLBACK statements.',
     );
   }
+}
+
+bool _isInsertLike(AtomicBatchOperation operation) {
+  return switch (operation) {
+    AtomicBatchMutationOperation(:final plan) =>
+      plan.operation == MutationOperation.insert ||
+          plan.operation == MutationOperation.upsert,
+    AtomicBatchQueryOperation() => false,
+  };
 }
 
 bool _supportsAtomicBatches(D1Transport transport) {

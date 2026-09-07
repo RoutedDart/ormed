@@ -138,4 +138,28 @@ mixin RepositoryUpdateMixin<T extends OrmEntity>
       jsonUpdates: jsonUpdates,
     );
   }
+
+  /// Stages an update for [QueryContext.atomicBatch].
+  ///
+  /// [where] is applied before the update plan is created and may use the
+  /// same repository where inputs accepted by [update].
+  AtomicBatchOperation batchUpdate(
+    Object values, {
+    Object? where,
+    bool returning = false,
+  }) {
+    final resolvedWhere =
+        where ??
+        (values is T
+            ? values
+            : throw ArgumentError(
+                'batchUpdate requires where for map and DTO inputs.',
+              ));
+    final query = applyWhere(
+      _requireQuery('batchUpdate'),
+      resolvedWhere,
+      feature: 'batchUpdate',
+    );
+    return query.batchUpdate(updateInputToMap(values), returning: returning);
+  }
 }

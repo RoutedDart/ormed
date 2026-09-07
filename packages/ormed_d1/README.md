@@ -95,9 +95,11 @@ provided; that application endpoint receives
 `{statements: [{sql, params}, ...]}`.
 
 All operations are compiled and validated before D1 is called. Results retain
-input order and include decoded rows, affected-row counts, and each D1
-statement's metadata. A batch cannot branch on an earlier result; checks that
-guard later writes must be expressed in their query predicates.
+input order and include decoded rows, affected-row counts, generated IDs from
+D1 `last_row_id` metadata when available, and each D1 statement's metadata.
+If D1 reports a failed statement, the batch surfaces that error instead of
+returning partial success. A batch cannot branch on an earlier result; checks
+that guard later writes must be expressed in their query predicates.
 
 ## Generated / model-backed usage
 

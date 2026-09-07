@@ -125,6 +125,15 @@ void main() {
     expect(query.meta['rows_read'], 1);
     expect(execute.rows.single['parameter_count'], 1);
     expect(batch, hasLength(2));
+    expect(
+      batch.first.rows.single['sql'],
+      'INSERT INTO users (name) VALUES (?)',
+    );
+    expect(
+      batch.last.rows.single['sql'],
+      'INSERT INTO users (name) VALUES (?)',
+    );
+    expect(batch.first.rows.single['parameter_count'], 1);
     expect(database.preparedSql, hasLength(4));
   });
 
@@ -133,6 +142,18 @@ void main() {
 
     expect(transport.query('SELECT 1'), throwsA(isA<D1RequestException>()));
   });
+
+  test(
+    'binding transport exposes failed statements in atomic batches',
+    () async {
+      final transport = D1BindingTransport(_FailingDatabase());
+
+      await expectLater(
+        transport.batch(const [D1Statement(sql: 'SELECT 1')]),
+        throwsA(isA<D1RequestException>()),
+      );
+    },
+  );
 }
 
 final class _FailingDatabase implements D1DatabaseBinding {
@@ -140,7 +161,7 @@ final class _FailingDatabase implements D1DatabaseBinding {
   Future<List<D1Result<T>>> batch<T>(
     Iterable<D1PreparedStatementBinding> statements, {
     D1RowDecoder<T>? decode,
-  }) async => throw UnimplementedError();
+  }) async => [D1Result<T>(success: false, error: 'bad batch statement')];
 
   @override
   Future<Uint8List> dump() async => Uint8List(0);

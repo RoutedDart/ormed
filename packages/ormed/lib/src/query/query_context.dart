@@ -1116,6 +1116,12 @@ class QueryContext implements ConnectionResolver {
           'context uses "$driverName".',
         );
       }
+      final sourceContext = operation.sourceContext;
+      if (sourceContext != null && !identical(sourceContext, this)) {
+        throw StateError(
+          'Atomic batch operation was built for another QueryContext.',
+        );
+      }
     }
 
     if (driver case final AtomicBatchDriver batchDriver
@@ -1149,12 +1155,32 @@ class QueryContext implements ConnectionResolver {
                 operation: operation,
                 rows: result.returnedRows ?? const <Map<String, Object?>>[],
                 affectedRows: result.affectedRows,
+                generatedIds: _generatedIdsForMutation(plan, result),
               ),
             );
         }
       }
       return List<AtomicBatchResult>.unmodifiable(results);
     });
+  }
+
+  List<Object?> _generatedIdsForMutation(
+    MutationPlan plan,
+    MutationResult result,
+  ) {
+    if (plan.operation != MutationOperation.insert &&
+        plan.operation != MutationOperation.upsert) {
+      return const <Object?>[];
+    }
+    final primaryKey = plan.definition.primaryKeyField?.columnName;
+    final rows = result.returnedRows;
+    if (primaryKey == null || rows == null) {
+      return const <Object?>[];
+    }
+    return rows
+        .where((row) => row.containsKey(primaryKey) && row[primaryKey] != null)
+        .map((row) => row[primaryKey])
+        .toList(growable: false);
   }
 
   Future<List<AtomicBatchResult>> _runNativeAtomicBatch(

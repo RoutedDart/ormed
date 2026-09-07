@@ -88,49 +88,28 @@ class D1SqliteCliMockServer {
           throw const FormatException('Expected JSON object payload.');
         }
 
-        final sql = payload['sql']?.toString();
-        if (sql == null || sql.isEmpty) {
-          throw const FormatException('Missing SQL in payload.');
-        }
-
-        final rawParams = payload['params'];
-        final params = rawParams is List<Object?>
-            ? rawParams
-            : rawParams is List
-            ? rawParams.cast<Object?>()
-            : const <Object?>[];
-        final boundSql = _bindSqlParameters(sql, params);
-
-        List<Map<String, Object?>> rows = const <Map<String, Object?>>[];
-        Map<String, Object?> meta = const <String, Object?>{
-          'changes': 0,
-          'last_row_id': 0,
-        };
-
-        final hasReturning = _hasReturningClause(boundSql);
-        if (_isReadStatement(boundSql) || hasReturning) {
-          rows = await _runSqliteJson(dbPath, boundSql);
-          if (hasReturning) {
-            meta = <String, Object?>{'changes': rows.length, 'last_row_id': 0};
-          }
+        final rawBatch = payload['batch'] ?? payload['statements'];
+        if (rawBatch is List) {
+          final results = await _runBatch(dbPath, rawBatch);
+          responseBody = <String, Object?>{
+            'success': true,
+            'result': results,
+            'errors': const <Object?>[],
+            'messages': const <Object?>[],
+          };
         } else {
-          final metaRows = await _runSqliteJson(
+          final result = await _runStatement(
             dbPath,
-            '$boundSql; SELECT changes() AS changes, last_insert_rowid() AS last_row_id;',
+            sql: payload['sql']?.toString(),
+            rawParams: payload['params'],
           );
-          if (metaRows.isNotEmpty) {
-            meta = metaRows.first;
-          }
+          responseBody = <String, Object?>{
+            'success': true,
+            'result': <Object?>[result],
+            'errors': const <Object?>[],
+            'messages': const <Object?>[],
+          };
         }
-
-        responseBody = <String, Object?>{
-          'success': true,
-          'result': <Object?>[
-            <String, Object?>{'results': rows, 'meta': meta},
-          ],
-          'errors': const <Object?>[],
-          'messages': const <Object?>[],
-        };
       } catch (error) {
         statusCode = 400;
         responseBody = <String, Object?>{
@@ -150,6 +129,77 @@ class D1SqliteCliMockServer {
     });
 
     return D1SqliteCliMockServer._(server, subscription, tempDir, requests);
+  }
+
+  static Future<List<Map<String, Object?>>> _runBatch(
+    String dbPath,
+    List rawStatements,
+  ) async {
+    final stagedPath = '$dbPath.batch-${DateTime.now().microsecondsSinceEpoch}';
+    await File(dbPath).copy(stagedPath);
+    try {
+      final results = <Map<String, Object?>>[];
+      for (final rawStatement in rawStatements) {
+        if (rawStatement is! Map) {
+          throw const FormatException('Invalid batch statement payload.');
+        }
+        results.add(
+          await _runStatement(
+            stagedPath,
+            sql: rawStatement['sql']?.toString(),
+            rawParams: rawStatement['params'],
+          ),
+        );
+      }
+      await File(stagedPath).copy(dbPath);
+      return results;
+    } finally {
+      final stagedFile = File(stagedPath);
+      if (stagedFile.existsSync()) {
+        await stagedFile.delete();
+      }
+    }
+  }
+
+  static Future<Map<String, Object?>> _runStatement(
+    String dbPath, {
+    required String? sql,
+    required Object? rawParams,
+  }) async {
+    if (sql == null || sql.isEmpty) {
+      throw const FormatException('Missing SQL in payload.');
+    }
+
+    final params = rawParams is List<Object?>
+        ? rawParams
+        : rawParams is List
+        ? rawParams.cast<Object?>()
+        : const <Object?>[];
+    final boundSql = _bindSqlParameters(sql, params);
+
+    List<Map<String, Object?>> rows = const <Map<String, Object?>>[];
+    Map<String, Object?> meta = const <String, Object?>{
+      'changes': 0,
+      'last_row_id': 0,
+    };
+
+    final hasReturning = _hasReturningClause(boundSql);
+    if (_isReadStatement(boundSql) || hasReturning) {
+      rows = await _runSqliteJson(dbPath, boundSql);
+      if (hasReturning) {
+        meta = <String, Object?>{'changes': rows.length, 'last_row_id': 0};
+      }
+    } else {
+      final metaRows = await _runSqliteJson(
+        dbPath,
+        '$boundSql; SELECT changes() AS changes, last_insert_rowid() AS last_row_id;',
+      );
+      if (metaRows.isNotEmpty) {
+        meta = metaRows.first;
+      }
+    }
+
+    return <String, Object?>{'results': rows, 'meta': meta};
   }
 
   Future<void> close() async {

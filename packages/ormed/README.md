@@ -834,11 +834,33 @@ final results = await ds.atomicBatch([
 
 final consumedTokens = results[0].rows;
 final auditRowsWritten = results[1].affectedRows;
+final generatedAuditIds = results[1].generatedIds;
 ```
 
 Batch results are returned in operation order. Query and `RETURNING` results
 are available as decoded row maps, affected-row counts are available for
-mutations, and native drivers may include per-statement metadata.
+mutations, generated identity values are available when the driver exposes
+them, and native drivers may include per-statement metadata. Repositories can
+stage the same operations directly:
+
+```dart
+final tokenRepo = ds.repo<$Token>();
+final auditRepo = ds.repo<$AuditLog>();
+final results = await ds.atomicBatch([
+  tokenRepo.batchUpdate(
+    {'consumedAt': DateTime.now()},
+    where: {'id': tokenId},
+  ),
+  auditRepo.batchInsert([
+    {'action': 'token_consumed', 'tokenId': tokenId},
+  ]),
+]);
+```
+
+`updateBatch()` also stages its per-row updates into one atomic batch and
+requires every row to contain its `uniqueBy` key. `insertGetIds()` uses the
+same atomic path and reports integer primary keys when the driver returns
+them.
 
 An atomic batch is deliberately different from a transaction callback. The
 operation list is fixed before execution, so Dart code cannot inspect one

@@ -84,5 +84,20 @@ mixin RepositoryUpsertMixin<T extends OrmEntity>
     );
   }
 
+  /// Stages multiple upserts for [QueryContext.atomicBatch].
+  AtomicBatchOperation batchUpsert(
+    List<Object> inputs, {
+    List<String>? uniqueBy,
+    List<String>? updateColumns,
+    JsonUpdateBuilder<T>? jsonUpdates,
+    bool returning = false,
+  }) => _requireQuery('batchUpsert').batchUpsert(
+    inputs,
+    uniqueBy: uniqueBy,
+    updateColumns: updateColumns,
+    jsonUpdates: jsonUpdates,
+    returning: returning,
+  );
+
   /// Extracts upsert values and keys from a tracked model.
 }

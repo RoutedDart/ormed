@@ -5,6 +5,10 @@
 - **Added**: Host-neutral atomic query-builder batches with native-driver
   execution, transactional fallback, ordered results, and per-statement
   metadata.
+- **Added**: Repository batch staging plus generated identity results for
+  atomic inserts and upserts.
+- **Fixed**: `updateBatch()` now executes atomically and rejects rows missing
+  their configured unique key instead of broadening the update predicate.
 
 ## 0.3.1
 

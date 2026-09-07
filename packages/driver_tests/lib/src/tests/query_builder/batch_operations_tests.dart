@@ -13,10 +13,13 @@ void runBatchOperationsTests() {
           User(id: 3, email: 'user3@example.com', active: false),
         ];
 
-        // Note: insertGetIds is a placeholder - for now we'll test basic insert
-        await dataSource.repo<User>().insertMany(users);
+        final ids = await dataSource.context.query<User>().insertGetIds(users);
 
-        final allUsers = await dataSource.context.query<User>().get();
+        expect(ids, [1, 2, 3]);
+        final allUsers = await dataSource.context
+            .query<User>()
+            .whereIn('id', ids)
+            .get();
         expect(allUsers, hasLength(3));
       });
 

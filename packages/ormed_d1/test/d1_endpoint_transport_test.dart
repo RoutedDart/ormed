@@ -177,4 +177,35 @@ void main() {
     });
     expect(results.single.affectedRows, 1);
   });
+
+  test('HTTP batch surfaces an injected statement failure', () async {
+    final client = _ResponseClient([
+      _jsonResponse(const <String, Object?>{
+        'success': true,
+        'results': <Object?>[
+          <String, Object?>{
+            'success': true,
+            'results': <Object?>[],
+            'meta': <String, Object?>{'changes': 1},
+          },
+          <String, Object?>{'success': false, 'error': 'constraint failed'},
+        ],
+      }),
+    ]);
+    final transport = D1HttpTransport.endpoint(
+      endpoint: Uri.parse('https://app.example.test/api/db/query'),
+      batchEndpoint: Uri.parse('https://app.example.test/api/db/batch'),
+      client: client,
+      maxAttempts: 1,
+    );
+
+    await expectLater(
+      transport.batch(const [
+        D1Statement(sql: 'DELETE FROM users WHERE id = ?', parameters: [1]),
+        D1Statement(sql: 'DELETE FROM users WHERE id = ?', parameters: [2]),
+      ]),
+      throwsA(isA<D1RequestException>()),
+    );
+    await transport.close();
+  });
 }

@@ -100,4 +100,16 @@ mixin RepositoryDeleteMixin<T extends OrmEntity>
     final query = _requireQuery('deleteByKeys');
     return query.deleteWhereMany(keys);
   }
+
+  /// Stages a delete for [QueryContext.atomicBatch].
+  ///
+  /// A [where] clause is required to avoid an accidental table-wide delete.
+  AtomicBatchOperation batchDelete({Object? where, bool returning = false}) =>
+      where == null
+      ? throw ArgumentError('batchDelete requires a where clause.')
+      : applyWhere(
+          _requireQuery('batchDelete'),
+          where,
+          feature: 'batchDelete',
+        ).batchDelete(returning: returning);
 }

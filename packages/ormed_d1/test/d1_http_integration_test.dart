@@ -24,23 +24,65 @@ void main() {
     if (apiToken == null) 'D1_API_TOKEN/D1_SECRET',
   ];
 
+  test('D1 HTTP transport can execute a simple query', () async {
+    final transport = D1HttpTransport(
+      accountId: accountId!,
+      databaseId: databaseId!,
+      apiToken: apiToken!,
+      baseUrl: baseUrl,
+      debugLog: debugLog,
+    );
+
+    try {
+      final result = await transport.query('SELECT 1 AS ok');
+      expect(result.rows, isNotEmpty);
+      final value = result.rows.first['ok'];
+      expect(value, anyOf(1, '1'));
+    } finally {
+      await transport.close();
+    }
+  }, skip: missing.isEmpty ? false : 'Missing env vars: ${missing.join(', ')}');
+
   test(
-    'D1 HTTP transport can execute a simple query',
+    'D1 HTTP atomic batches roll back when a middle statement fails',
     () async {
       final transport = D1HttpTransport(
         accountId: accountId!,
         databaseId: databaseId!,
         apiToken: apiToken!,
         baseUrl: baseUrl,
-        debugLog: debugLog,
+        maxAttempts: 1,
       );
+      final table =
+          'ormed_atomic_batch_${DateTime.now().microsecondsSinceEpoch}';
 
       try {
-        final result = await transport.query('SELECT 1 AS ok');
-        expect(result.rows, isNotEmpty);
-        final value = result.rows.first['ok'];
-        expect(value, anyOf(1, '1'));
+        await transport.execute(
+          'CREATE TABLE "$table" ('
+          'id INTEGER PRIMARY KEY AUTOINCREMENT, '
+          'marker TEXT NOT NULL)',
+        );
+
+        await expectLater(
+          transport.batch([
+            D1Statement(
+              sql: 'INSERT INTO "$table" (marker) VALUES (?)',
+              parameters: const ['first'],
+            ),
+            D1Statement(
+              sql: 'INSERT INTO "$table" (marker) VALUES (?)',
+              parameters: const [null],
+            ),
+          ]),
+          throwsA(isA<D1RequestException>()),
+        );
+
+        final count = await transport.query(
+          'SELECT COUNT(*) AS count FROM "$table"',
+        );
+        expect(count.rows.single['count'], anyOf(0, '0'));
       } finally {
+        await transport.execute('DROP TABLE IF EXISTS "$table"');
         await transport.close();
       }
     },

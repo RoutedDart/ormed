@@ -7,7 +7,7 @@ extension AtomicBatchOperationsExtension<T extends OrmEntity> on Query<T> {
   /// Eager relation loading and model hydration are not performed because an
   /// atomic batch returns statement results only after every operation runs.
   AtomicBatchOperation batchSelect() {
-    return AtomicBatchOperation.query(_buildPlan());
+    return AtomicBatchOperation.query(_buildPlan(), sourceContext: context);
   }
 
   /// Stages an update of rows matching this query.
@@ -34,6 +34,7 @@ extension AtomicBatchOperationsExtension<T extends OrmEntity> on Query<T> {
         feature: 'batchUpdate',
         returning: returning,
       ),
+      sourceContext: context,
     );
   }
 
@@ -57,6 +58,7 @@ extension AtomicBatchOperationsExtension<T extends OrmEntity> on Query<T> {
           feature: 'batchDelete',
           returning: returning,
         ),
+        sourceContext: context,
       );
     }
 
@@ -83,6 +85,7 @@ extension AtomicBatchOperationsExtension<T extends OrmEntity> on Query<T> {
         driverName: metadata.name,
         returning: returning,
       ),
+      sourceContext: context,
     );
   }
 
@@ -92,12 +95,16 @@ extension AtomicBatchOperationsExtension<T extends OrmEntity> on Query<T> {
     bool ignoreConflicts = false,
     bool returning = false,
   }) {
+    if (inputs.isEmpty) {
+      throw ArgumentError.value(inputs, 'inputs', 'Must not be empty.');
+    }
     return AtomicBatchOperation.mutation(
       previewInsertPlan(
         inputs,
         ignoreConflicts: ignoreConflicts,
         returning: returning,
       ),
+      sourceContext: context,
     );
   }
 
@@ -109,6 +116,9 @@ extension AtomicBatchOperationsExtension<T extends OrmEntity> on Query<T> {
     JsonUpdateBuilder<T>? jsonUpdates,
     bool returning = false,
   }) {
+    if (inputs.isEmpty) {
+      throw ArgumentError.value(inputs, 'inputs', 'Must not be empty.');
+    }
     return AtomicBatchOperation.mutation(
       previewUpsertPlan(
         inputs,
@@ -117,6 +127,7 @@ extension AtomicBatchOperationsExtension<T extends OrmEntity> on Query<T> {
         jsonUpdates: jsonUpdates,
         returning: returning,
       ),
+      sourceContext: context,
     );
   }
 }

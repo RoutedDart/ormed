@@ -73,6 +73,13 @@ mixin RepositoryReadMixin<T extends OrmEntity>
     return q.count();
   }
 
+  /// Stages a select for [QueryContext.atomicBatch].
+  AtomicBatchOperation batchSelect({Object? where}) => applyWhere(
+    _scopedQuery('batchSelect'),
+    where,
+    feature: 'batchSelect',
+  ).batchSelect();
+
   /// Inserts or upserts [model], based on whether a primary key is present.
   ///
   /// If [model] has no primary key (or no primary key can be extracted), this

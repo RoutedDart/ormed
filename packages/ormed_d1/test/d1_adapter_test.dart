@@ -42,6 +42,7 @@ class _FakeBatchTransport extends _FakeTransport implements D1BatchTransport {
   ) async {
     final batch = List<D1Statement>.from(statements);
     batches.add(batch);
+    var mutationNumber = 0;
     return [
       for (final statement in batch)
         if (statement.sql.trimLeft().toUpperCase().startsWith('SELECT'))
@@ -55,7 +56,26 @@ class _FakeBatchTransport extends _FakeTransport implements D1BatchTransport {
             ],
           )
         else
-          const D1StatementResult(meta: <String, Object?>{'changes': 1}),
+          D1StatementResult(
+            meta: <String, Object?>{
+              'changes': 1,
+              'last_row_id': 100 + ++mutationNumber,
+            },
+          ),
+    ];
+  }
+}
+
+final class _FailingBatchTransport extends _FakeBatchTransport {
+  @override
+  Future<List<D1StatementResult>> batch(
+    Iterable<D1Statement> statements,
+  ) async {
+    final batch = List<D1Statement>.from(statements);
+    batches.add(batch);
+    return [
+      const D1StatementResult(meta: <String, Object?>{'changes': 1}),
+      const D1StatementResult(success: false, error: 'constraint failed'),
     ];
   }
 }
@@ -159,6 +179,67 @@ void main() {
     expect(results.last.rows.single['active'], isTrue);
     expect(results.first.statementMetadata.single['changes'], 1);
   });
+
+  test('expands multi-row inserts and exposes generated IDs', () async {
+    final transport = _FakeBatchTransport();
+    final adapter = D1DriverAdapter.custom(
+      config: const DatabaseConfig(driver: 'd1'),
+      transport: transport,
+    );
+    final registry = bootstrapOrm();
+    final context = QueryContext(registry: registry, driver: adapter);
+
+    final results = await context.atomicBatch([
+      context.query<User>().batchInsert([
+        <String, Object?>{'email': 'ada@example.test', 'active': true},
+        <String, Object?>{'email': 'grace@example.test', 'active': false},
+      ]),
+    ]);
+
+    expect(transport.batches.single, hasLength(2));
+    expect(transport.batches.single.first.parameters, contains(1));
+    expect(transport.batches.single.last.parameters, contains(0));
+    expect(results.single.affectedRows, 2);
+    expect(results.single.generatedIds, [101, 102]);
+    expect(results.single.statementMetadata, hasLength(2));
+  });
+
+  test('dispatches mutations that have no bound parameters', () async {
+    final transport = _FakeBatchTransport();
+    final adapter = D1DriverAdapter.custom(
+      config: const DatabaseConfig(driver: 'd1'),
+      transport: transport,
+    );
+    final registry = bootstrapOrm();
+    final context = QueryContext(registry: registry, driver: adapter);
+
+    final results = await context.atomicBatch([
+      context.query<User>().batchDelete(),
+    ]);
+
+    expect(transport.batches.single, hasLength(1));
+    expect(results.single.affectedRows, 1);
+  });
+
+  test(
+    'surfaces a failed native batch statement without returning success',
+    () async {
+      final adapter = D1DriverAdapter.custom(
+        config: const DatabaseConfig(driver: 'd1'),
+        transport: _FailingBatchTransport(),
+      );
+      final registry = bootstrapOrm();
+      final context = QueryContext(registry: registry, driver: adapter);
+
+      await expectLater(
+        context.atomicBatch([
+          context.query<User>().where('id', 1).batchDelete(),
+          context.query<User>().where('id', 2).batchDelete(),
+        ]),
+        throwsA(isA<D1RequestException>()),
+      );
+    },
+  );
 
   test('http transport option validation', () {
     expect(

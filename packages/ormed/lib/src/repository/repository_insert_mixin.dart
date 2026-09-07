@@ -109,4 +109,17 @@ mixin RepositoryInsertMixin<T extends OrmEntity>
     );
     return result.affectedRows;
   }
+
+  /// Stages multiple inserts for [QueryContext.atomicBatch].
+  ///
+  /// The returned operation does not dispatch until it is passed to an
+  /// atomic-batch entry point. Set [returning] to receive inserted rows and
+  /// generated identity values when the driver exposes them.
+  AtomicBatchOperation batchInsert(
+    List<Object> inputs, {
+    bool ignoreConflicts = false,
+    bool returning = false,
+  }) => _requireQuery(
+    'batchInsert',
+  ).batchInsert(inputs, ignoreConflicts: ignoreConflicts, returning: returning);
 }

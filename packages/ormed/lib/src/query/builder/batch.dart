@@ -2,7 +2,7 @@ part of '../query_builder.dart';
 
 /// Extension providing batch operation methods for efficient bulk queries.
 extension BatchOperationsExtension<T extends OrmEntity> on Query<T> {
-  /// Updates multiple rows with different values in a single batch operation.
+  /// Updates multiple rows with different values in one atomic batch.
   ///
   /// This method allows you to update multiple records with different values
   /// in a single efficient operation. Each item in [updates] should be a map
@@ -24,42 +24,46 @@ extension BatchOperationsExtension<T extends OrmEntity> on Query<T> {
       return 0;
     }
 
-    // For now, implement as sequential updates with proper filtering
-    // This ensures each update only affects the intended record(s)
-    int totalUpdated = 0;
+    final uniqueFields = _resolveBatchUniqueFields(uniqueBy);
+    final operations = <AtomicBatchOperation>[];
 
     for (final updateMap in updates) {
-      // Extract unique key values
-      final uniqueColumns = uniqueBy is String
-          ? [uniqueBy]
-          : (uniqueBy as List<String>);
-
-      // Create a fresh query for this update
+      final uniqueInputKeys = <String>{};
       var whereQuery = _copyWith();
-
-      // Build WHERE clause from unique columns - must match ALL unique columns
-      for (final column in uniqueColumns) {
-        if (updateMap.containsKey(column)) {
-          whereQuery = whereQuery.where(column, updateMap[column]);
+      for (final field in uniqueFields) {
+        final inputKey = _batchInputKey(updateMap, field);
+        if (inputKey == null) {
+          throw ArgumentError.value(
+            updateMap,
+            'updates',
+            'Each update must include unique key "${field.name}" '
+                '(${field.columnName}).',
+          );
         }
+        uniqueInputKeys
+          ..add(inputKey)
+          ..add(field.name)
+          ..add(field.columnName);
+        whereQuery = whereQuery.where(field.columnName, updateMap[inputKey]);
       }
 
       // Extract non-unique columns to update
       final updateFields = <String, Object?>{};
       for (final entry in updateMap.entries) {
-        if (!uniqueColumns.contains(entry.key)) {
+        if (!uniqueInputKeys.contains(entry.key)) {
           updateFields[entry.key] = entry.value;
         }
       }
 
       // Only update if there are fields to update
       if (updateFields.isNotEmpty) {
-        final updated = await whereQuery.update(updateFields);
-        totalUpdated += updated;
+        operations.add(whereQuery.batchUpdate(updateFields));
       }
     }
 
-    return totalUpdated;
+    if (operations.isEmpty) return 0;
+    final results = await context.atomicBatch(operations);
+    return results.fold<int>(0, (total, result) => total + result.affectedRows);
   }
 
   /// Inserts multiple records and returns all generated IDs.
@@ -77,25 +81,97 @@ extension BatchOperationsExtension<T extends OrmEntity> on Query<T> {
   /// print('Created user IDs: $ids'); // [1, 2, 3]
   /// ```
   ///
-  /// Returns: List of generated primary key values
+  /// Returns: List of generated primary key values.
   Future<List<int>> insertGetIds(List<T> records) async {
     if (records.isEmpty) {
       return [];
     }
 
-    // Convert records to attribute maps
-    final attributeMaps = records.map((record) {
-      // For now, just mark this as a placeholder
-      // In production, this would convert the model to attributes
-      return <String, dynamic>{};
-    }).toList();
+    final primaryKey = definition.primaryKeyField;
+    if (primaryKey == null) {
+      throw StateError(
+        'insertGetIds requires ${definition.modelName} to declare a primary key.',
+      );
+    }
 
-    // Create the records
-    await createMany(attributeMaps);
+    final result = (await context.atomicBatch([
+      batchInsert(records, returning: true),
+    ])).single;
+    final returnedIds = result.generatedIds.isNotEmpty
+        ? result.generatedIds
+        : result.rows
+              .map((row) => row[primaryKey.columnName])
+              .where((value) => value != null)
+              .toList(growable: false);
+    final ids = returnedIds.length == records.length
+        ? returnedIds
+        : records
+              .map(
+                (record) => definition.toMap(
+                  record,
+                  registry: context.codecRegistry,
+                )[primaryKey.columnName],
+              )
+              .toList(growable: false);
 
-    // Extract IDs from created records if possible
-    // This would require access to the model's primary key field
-    // For now, return empty list
-    return [];
+    if (ids.length != records.length || ids.any((id) => id == null)) {
+      throw UnsupportedError(
+        '${context.driver.metadata.name} did not return generated IDs for '
+        '${definition.modelName} inserts.',
+      );
+    }
+    return ids.map(_coerceGeneratedId).toList(growable: false);
+  }
+
+  List<FieldDefinition> _resolveBatchUniqueFields(Object uniqueBy) {
+    final values = switch (uniqueBy) {
+      String value => <Object?>[value],
+      List<Object?> values => values,
+      _ => throw ArgumentError.value(
+        uniqueBy,
+        'uniqueBy',
+        'Expected a column name or a list of column names.',
+      ),
+    };
+    if (values.isEmpty) {
+      throw ArgumentError.value(
+        uniqueBy,
+        'uniqueBy',
+        'Must include at least one column name.',
+      );
+    }
+    final fields = <FieldDefinition>[];
+    final seen = <String>{};
+    for (final value in values) {
+      if (value is! String || value.isEmpty) {
+        throw ArgumentError.value(
+          value,
+          'uniqueBy',
+          'Column names must be non-empty strings.',
+        );
+      }
+      final field = _ensureField(value);
+      if (seen.add(field.columnName)) fields.add(field);
+    }
+    return fields;
+  }
+
+  String? _batchInputKey(Map<String, Object?> values, FieldDefinition field) {
+    if (values.containsKey(field.columnName)) return field.columnName;
+    if (values.containsKey(field.name)) return field.name;
+    return null;
+  }
+
+  int _coerceGeneratedId(Object? value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) {
+      final parsed = int.tryParse(value);
+      if (parsed != null) return parsed;
+    }
+    throw StateError(
+      'insertGetIds expected integer primary keys but received '
+      '${value.runtimeType}.',
+    );
   }
 }

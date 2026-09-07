@@ -5,6 +5,10 @@
 - **Added**: Native execution of Ormed atomic query-builder batches through D1
   bindings, the Cloudflare REST API, and configured application batch
   endpoints.
+- **Added**: Generated identity extraction from D1 statement metadata and
+  explicit failure propagation for failed statements in a native batch.
+- **Fixed**: Atomic query batches normalize query parameters and preserve
+  valid zero-parameter statements.
 
 ## 0.2.1
 
