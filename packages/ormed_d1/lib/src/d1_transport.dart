@@ -356,6 +356,10 @@ class D1HttpTransport implements D1Transport, D1BatchTransport {
   final Map<String, String> _headers;
   final Random _random = Random();
 
+  /// Direct management API connections and explicitly configured application
+  /// batch endpoints support atomic batches.
+  bool get supportsAtomicBatches => _endpoint == null || _batchEndpoint != null;
+
   @override
   Future<D1StatementResult> query(
     String sql, [
@@ -372,16 +376,31 @@ class D1HttpTransport implements D1Transport, D1BatchTransport {
   Future<List<D1StatementResult>> batch(
     Iterable<D1Statement> statements,
   ) async {
-    final endpoint = _batchEndpoint;
+    final statementList = List<D1Statement>.unmodifiable(statements);
+    if (statementList.isEmpty) return const <D1StatementResult>[];
+
+    final endpoint =
+        _batchEndpoint ??
+        (_endpoint == null
+            ? Uri.parse(
+                '$baseUrl/accounts/$accountId/d1/database/$databaseId/query',
+              )
+            : null);
     if (endpoint == null) {
       throw UnsupportedError(
         'This D1 HTTP transport has no batch endpoint configured.',
       );
     }
 
-    final response = await _postJson(endpoint, <String, Object?>{
-      'statements': [for (final statement in statements) statement.toJson()],
-    });
+    final encodedStatements = [
+      for (final statement in statementList) statement.toJson(),
+    ];
+    final response = await _postJson(
+      endpoint,
+      _batchEndpoint == null
+          ? <String, Object?>{'batch': encodedStatements}
+          : <String, Object?>{'statements': encodedStatements},
+    );
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw D1RequestException(
         'D1 batch request failed (${response.statusCode}): ${response.body}',

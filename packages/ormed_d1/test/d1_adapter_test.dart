@@ -1,3 +1,4 @@
+import 'package:driver_tests/driver_tests.dart';
 import 'package:ormed/ormed.dart';
 import 'package:ormed_d1/ormed_d1.dart';
 import 'package:test/test.dart';
@@ -29,6 +30,33 @@ class _FakeTransport implements D1Transport {
         <String, Object?>{'ok': 1},
       ],
     );
+  }
+}
+
+class _FakeBatchTransport extends _FakeTransport implements D1BatchTransport {
+  final List<List<D1Statement>> batches = [];
+
+  @override
+  Future<List<D1StatementResult>> batch(
+    Iterable<D1Statement> statements,
+  ) async {
+    final batch = List<D1Statement>.from(statements);
+    batches.add(batch);
+    return [
+      for (final statement in batch)
+        if (statement.sql.trimLeft().toUpperCase().startsWith('SELECT'))
+          const D1StatementResult(
+            rows: [
+              <String, Object?>{
+                'id': 1,
+                'email': 'ada@example.test',
+                'active': 1,
+              },
+            ],
+          )
+        else
+          const D1StatementResult(meta: <String, Object?>{'changes': 1}),
+    ];
   }
 }
 
@@ -102,6 +130,34 @@ void main() {
       adapter.metadata.supportsCapability(DriverCapability.transactions),
       isFalse,
     );
+  });
+
+  test('executes query-builder operations through one native batch', () async {
+    final transport = _FakeBatchTransport();
+    final adapter = D1DriverAdapter.custom(
+      config: const DatabaseConfig(driver: 'd1'),
+      transport: transport,
+    );
+    final registry = bootstrapOrm();
+    final context = QueryContext(registry: registry, driver: adapter);
+
+    final results = await context.atomicBatch([
+      context.query<User>().where('id', 1).batchUpdate({'active': true}),
+      context.query<User>().where('id', 1).batchSelect(),
+    ]);
+
+    expect(
+      adapter.metadata.supportsCapability(DriverCapability.atomicBatches),
+      isTrue,
+    );
+    expect(transport.batches, hasLength(1));
+    expect(transport.batches.single, hasLength(2));
+    expect(transport.batches.single.first.parameters, contains(1));
+    expect(transport.executed, isEmpty);
+    expect(transport.queried, isEmpty);
+    expect(results.first.affectedRows, 1);
+    expect(results.last.rows.single['active'], isTrue);
+    expect(results.first.statementMetadata.single['changes'], 1);
   });
 
   test('http transport option validation', () {

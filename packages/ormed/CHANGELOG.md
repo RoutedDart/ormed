@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- **Added**: Host-neutral atomic query-builder batches with native-driver
+  execution, transactional fallback, ordered results, and per-statement
+  metadata.
+
 ## 0.3.1
 
 - **Fixed**: Codegen-free map inserts now keep inferred mutation columns

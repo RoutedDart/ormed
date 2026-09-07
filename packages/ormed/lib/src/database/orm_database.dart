@@ -199,6 +199,16 @@ class OrmDatabase {
     return dataSource.transaction(callback);
   }
 
+  /// Executes a fixed list of query-builder operations atomically.
+  ///
+  /// Native batch drivers, such as Cloudflare D1, dispatch one backend batch.
+  /// Transactional drivers execute the staged operations inside a transaction.
+  Future<List<AtomicBatchResult>> atomicBatch(
+    Iterable<AtomicBatchOperation> operations,
+  ) {
+    return dataSource.atomicBatch(operations);
+  }
+
   /// Begins a manually controlled transaction.
   ///
   /// Pair this with [commit] or [rollback]. Reactive watchers only refresh

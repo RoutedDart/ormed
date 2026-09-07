@@ -134,4 +134,47 @@ void main() {
       throwsA(isA<UnsupportedError>()),
     );
   });
+
+  test('management API transport uses the D1 batch request shape', () async {
+    final client = _ResponseClient([
+      _jsonResponse(const <String, Object?>{
+        'success': true,
+        'result': <Object?>[
+          <String, Object?>{
+            'success': true,
+            'results': <Object?>[],
+            'meta': <String, Object?>{'changes': 1},
+          },
+        ],
+      }),
+    ]);
+    final transport = D1HttpTransport(
+      accountId: 'account',
+      databaseId: 'database',
+      apiToken: 'token',
+      client: client,
+      maxAttempts: 1,
+    );
+
+    final results = await transport.batch(const [
+      D1Statement(sql: 'DELETE FROM users WHERE id = ?', parameters: [1]),
+    ]);
+    final request = client.requests.single as http.Request;
+
+    expect(transport.supportsAtomicBatches, isTrue);
+    expect(
+      request.url.path,
+      '/client/v4/accounts/account/d1/database/database/query',
+    );
+    expect(request.headers['authorization'], 'Bearer token');
+    expect(jsonDecode(request.body), <String, Object?>{
+      'batch': <Object?>[
+        <String, Object?>{
+          'sql': 'DELETE FROM users WHERE id = ?',
+          'params': <Object?>[1],
+        },
+      ],
+    });
+    expect(results.single.affectedRows, 1);
+  });
 }

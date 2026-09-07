@@ -434,6 +434,11 @@ class OrmConnection implements ConnectionResolver {
   Future<R> transaction<R>(Future<R> Function() callback) =>
       _context.transaction(callback);
 
+  /// Executes a fixed list of operations atomically.
+  Future<List<AtomicBatchResult>> atomicBatch(
+    Iterable<AtomicBatchOperation> operations,
+  ) => _context.atomicBatch(operations);
+
   /// Builds a query against an arbitrary table name.
   Query<AdHocRow> table(
     String table, {

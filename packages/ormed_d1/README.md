@@ -65,6 +65,40 @@ final db = await D1Database.fromBinding(binding: env.d1('DB'));
 types are exported from `package:ormed_d1/d1_binding.dart` for platform
 bridges.
 
+## Atomic query-builder batches
+
+Cloudflare D1 does not expose interactive `BEGIN`/`COMMIT` transactions, but
+Ormed can dispatch a fixed list of query-builder operations through D1's
+atomic batch API:
+
+```dart
+final results = await db.atomicBatch([
+  db
+      .query<$Token>()
+      .where('id', tokenId)
+      .whereNull('consumedAt')
+      .batchUpdate({'consumedAt': DateTime.now()}, returning: true),
+  db.query<$AuditLog>().batchInsert([
+    {'action': 'token_consumed', 'tokenId': tokenId},
+  ]),
+]);
+
+if (results.first.affectedRows != 1) {
+  // The token was already consumed or did not exist.
+}
+```
+
+`D1Database.fromBinding` always supports atomic batches.
+`D1Database.connect` sends the Cloudflare REST API's `{batch: [...]}` request
+shape. `D1Database.fromEndpoint` supports batches when `batchEndpoint` is
+provided; that application endpoint receives
+`{statements: [{sql, params}, ...]}`.
+
+All operations are compiled and validated before D1 is called. Results retain
+input order and include decoded rows, affected-row counts, and each D1
+statement's metadata. A batch cannot branch on an earlier result; checks that
+guard later writes must be expressed in their query predicates.
+
 ## Generated / model-backed usage
 
 ```dart

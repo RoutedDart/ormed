@@ -6,12 +6,27 @@ import 'package:ormed_sqlite_core/ormed_sqlite_core.dart';
 import 'd1_binding.dart';
 import 'd1_transport.dart';
 
-class D1DriverAdapter extends SqliteRemoteAdapterBase {
-  D1DriverAdapter.custom({
+class D1DriverAdapter extends SqliteRemoteAdapterBase
+    implements AtomicBatchDriver {
+  factory D1DriverAdapter.custom({
     required DatabaseConfig config,
     D1Transport? transport,
-    super.extensions,
-  }) : _transport = transport ?? D1HttpTransport.fromOptions(config.options),
+    List<DriverExtension> extensions = const [],
+  }) {
+    final resolvedTransport =
+        transport ?? D1HttpTransport.fromOptions(config.options);
+    return D1DriverAdapter._(
+      config: config,
+      transport: resolvedTransport,
+      extensions: extensions,
+    );
+  }
+
+  D1DriverAdapter._({
+    required DatabaseConfig config,
+    required D1Transport transport,
+    required List<DriverExtension> extensions,
+  }) : _transport = transport,
        super(
          driverName: 'd1',
          options: config.options,
@@ -33,31 +48,110 @@ class D1DriverAdapter extends SqliteRemoteAdapterBase {
            DriverCapability.relationAggregates,
            DriverCapability.caseInsensitiveLike,
            DriverCapability.foreignKeyConstraintControl,
+           if (_supportsAtomicBatches(transport))
+             DriverCapability.atomicBatches,
          },
+         extensions: extensions,
        );
 
   /// Creates an adapter over a native Cloudflare D1 binding.
-  D1DriverAdapter.fromBinding({
+  factory D1DriverAdapter.fromBinding({
     required DatabaseConfig config,
     required D1DatabaseBinding binding,
     List<DriverExtension> extensions = const [],
-  }) : this.custom(
-         config: config,
-         transport: D1BindingTransport(binding),
-         extensions: extensions,
-       );
+  }) {
+    return D1DriverAdapter.custom(
+      config: config,
+      transport: D1BindingTransport(binding),
+      extensions: extensions,
+    );
+  }
 
   final D1Transport _transport;
 
   /// Executes an atomic D1 batch through a binding-capable transport.
   Future<List<D1StatementResult>> batch(Iterable<D1Statement> statements) {
     final transport = _transport;
-    if (transport is D1BatchTransport) {
+    if (_supportsAtomicBatches(transport)) {
       return (transport as D1BatchTransport).batch(statements);
     }
     throw UnsupportedError(
       'This D1 transport does not support atomic batches.',
     );
+  }
+
+  @override
+  Future<List<AtomicBatchResult>> runAtomicBatch(
+    List<AtomicBatchOperation> operations,
+  ) async {
+    final statements = <D1Statement>[];
+    final slices = <(int, int)>[];
+
+    for (final operation in operations) {
+      final start = statements.length;
+      switch (operation) {
+        case AtomicBatchQueryOperation(:final plan):
+          final preview = describeQuery(plan);
+          statements.add(
+            D1Statement(sql: preview.sql, parameters: preview.parameters),
+          );
+        case AtomicBatchMutationOperation(:final plan):
+          final preview = describeMutation(plan);
+          if (preview.parameterSets.isEmpty) {
+            if (preview.parameters.isNotEmpty) {
+              statements.add(
+                D1Statement(sql: preview.sql, parameters: preview.parameters),
+              );
+            }
+          } else {
+            for (final parameters in preview.parameterSets) {
+              statements.add(
+                D1Statement(
+                  sql: preview.sql,
+                  parameters: profile.normalizeParameters(parameters),
+                ),
+              );
+            }
+          }
+      }
+      slices.add((start, statements.length - start));
+    }
+
+    final statementResults = statements.isEmpty
+        ? const <D1StatementResult>[]
+        : await batch(statements);
+    if (statementResults.length != statements.length) {
+      throw StateError(
+        'D1 returned ${statementResults.length} results for '
+        '${statements.length} statements.',
+      );
+    }
+
+    return List<AtomicBatchResult>.generate(operations.length, (index) {
+      final operation = operations[index];
+      final (start, length) = slices[index];
+      final results = statementResults.sublist(start, start + length);
+      final definition = switch (operation) {
+        AtomicBatchQueryOperation(:final plan) => plan.definition,
+        AtomicBatchMutationOperation(:final plan) => plan.definition,
+      };
+      final rows = <Map<String, Object?>>[];
+      var affectedRows = 0;
+      for (final result in results) {
+        affectedRows += result.affectedRows;
+        rows.addAll(result.rows.map((row) => decodeRowValues(definition, row)));
+      }
+      return AtomicBatchResult(
+        operation: operation,
+        rows: List<Map<String, Object?>>.unmodifiable(rows),
+        affectedRows: operation is AtomicBatchMutationOperation
+            ? affectedRows
+            : 0,
+        statementMetadata: List<Map<String, Object?>>.unmodifiable(
+          results.map((result) => result.meta),
+        ),
+      );
+    }, growable: false);
   }
 
   static void registerCodecs() {
@@ -110,4 +204,10 @@ class D1DriverAdapter extends SqliteRemoteAdapterBase {
       'Cloudflare D1 HTTP API does not support ROLLBACK statements.',
     );
   }
+}
+
+bool _supportsAtomicBatches(D1Transport transport) {
+  if (transport is! D1BatchTransport) return false;
+  if (transport is D1HttpTransport) return transport.supportsAtomicBatches;
+  return true;
 }

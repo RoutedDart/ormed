@@ -215,7 +215,7 @@ abstract class SqliteRemoteAdapterBase
       _profile.normalizeParameters(compilation.bindings),
     );
     return rows
-        .map((row) => _decodeRowValues(plan.definition, row))
+        .map((row) => decodeRowValues(plan.definition, row))
         .toList(growable: false);
   }
 
@@ -228,7 +228,7 @@ abstract class SqliteRemoteAdapterBase
       _profile.normalizeParameters(compilation.bindings),
     );
     for (final row in rows) {
-      yield _decodeRowValues(plan.definition, row);
+      yield decodeRowValues(plan.definition, row);
     }
   }
 
@@ -287,7 +287,7 @@ abstract class SqliteRemoteAdapterBase
       if (shape.returning) {
         final rows = await queryStatement(shape.sql, normalized);
         returnedRows.addAll(
-          rows.map((row) => _decodeRowValues(plan.definition, row)),
+          rows.map((row) => decodeRowValues(plan.definition, row)),
         );
         affectedRows += rows.length;
       } else {
@@ -1610,7 +1610,10 @@ abstract class SqliteRemoteAdapterBase
     return _codecs.encodeValue(value);
   }
 
-  Map<String, Object?> _decodeRowValues(
+  /// Decodes a backend row using the codecs for [definition].
+  ///
+  /// Exposed to subclasses that execute statements through a native batch API.
+  Map<String, Object?> decodeRowValues(
     ModelDefinition<OrmEntity> definition,
     Map<String, Object?> row,
   ) => row.map(

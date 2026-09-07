@@ -1093,6 +1093,258 @@ class QueryContext implements ConnectionResolver {
     }
   }
 
+  /// Executes a fixed list of query and mutation operations atomically.
+  ///
+  /// Drivers with a native [AtomicBatchDriver] implementation dispatch the
+  /// operations as one backend batch. Other transactional drivers execute the
+  /// operations sequentially inside one transaction.
+  ///
+  /// All operations are built before execution. An operation therefore cannot
+  /// depend on the Dart result of an earlier operation in the same batch.
+  Future<List<AtomicBatchResult>> atomicBatch(
+    Iterable<AtomicBatchOperation> operations,
+  ) async {
+    final batch = List<AtomicBatchOperation>.unmodifiable(operations);
+    if (batch.isEmpty) return const <AtomicBatchResult>[];
+
+    final driverName = driver.metadata.name;
+    for (final operation in batch) {
+      final operationDriver = operation.driverName;
+      if (operationDriver != null && operationDriver != driverName) {
+        throw StateError(
+          'Atomic batch operation was built for "$operationDriver", but this '
+          'context uses "$driverName".',
+        );
+      }
+    }
+
+    if (driver case final AtomicBatchDriver batchDriver
+        when driver.metadata.supportsCapability(
+          DriverCapability.atomicBatches,
+        )) {
+      return _runNativeAtomicBatch(batchDriver, batch);
+    }
+
+    if (!driver.metadata.supportsTransactions) {
+      throw UnsupportedError(
+        'The $driverName driver does not support atomic batches.',
+      );
+    }
+
+    return transaction(() async {
+      final results = <AtomicBatchResult>[];
+      for (final operation in batch) {
+        switch (operation) {
+          case AtomicBatchQueryOperation(:final plan):
+            results.add(
+              AtomicBatchResult(
+                operation: operation,
+                rows: await runSelect(plan),
+              ),
+            );
+          case AtomicBatchMutationOperation(:final plan):
+            final result = await runMutation(plan);
+            results.add(
+              AtomicBatchResult(
+                operation: operation,
+                rows: result.returnedRows ?? const <Map<String, Object?>>[],
+                affectedRows: result.affectedRows,
+              ),
+            );
+        }
+      }
+      return List<AtomicBatchResult>.unmodifiable(results);
+    });
+  }
+
+  Future<List<AtomicBatchResult>> _runNativeAtomicBatch(
+    AtomicBatchDriver batchDriver,
+    List<AtomicBatchOperation> batch,
+  ) async {
+    final previews = <StatementPreview>[
+      for (final operation in batch)
+        switch (operation) {
+          AtomicBatchQueryOperation(:final plan) => driver.describeQuery(plan),
+          AtomicBatchMutationOperation(:final plan) => driver.describeMutation(
+            plan,
+          ),
+        },
+    ];
+    final trackedStatements = <ExecutingStatement?>[];
+    final trackStatements = _shouldTrackStatements;
+    for (var index = 0; index < batch.length; index++) {
+      final operation = batch[index];
+      final preview = previews[index];
+      final statement = switch (operation) {
+        AtomicBatchQueryOperation(:final plan) => () {
+          _beforeQueryHook?.call(plan);
+          return trackStatements
+              ? _buildStatement(
+                  type: ExecutingStatementType.query,
+                  preview: preview,
+                  queryPlan: plan,
+                )
+              : null;
+        }(),
+        AtomicBatchMutationOperation(:final plan) => () {
+          _beforeMutationHook?.call(plan);
+          return trackStatements
+              ? _buildStatement(
+                  type: ExecutingStatementType.mutation,
+                  preview: preview,
+                  mutationPlan: plan,
+                )
+              : null;
+        }(),
+      };
+      trackedStatements.add(statement);
+      if (statement != null) {
+        _notifyBeforeExecuting(statement);
+      }
+    }
+
+    final executionContext = QueryExecutionContext(
+      driverName: interceptorPipeline.driverName,
+      connectionName: interceptorPipeline.connectionName,
+      database: connectionDatabase,
+      sql: previews.map((preview) => preview.sql).join(';\n'),
+      parameters: previews
+          .expand((preview) sync* {
+            if (preview.parameterSets.isNotEmpty) {
+              yield* preview.parameterSets.expand((parameters) => parameters);
+            } else {
+              yield* preview.parameters;
+            }
+          })
+          .toList(growable: false),
+      operationName: 'ATOMIC_BATCH',
+      querySummary: 'ATOMIC BATCH (${batch.length} operations)',
+    );
+    final timer = Stopwatch()..start();
+    final pretending = _pretendResolver?.call() ?? false;
+
+    try {
+      final results = await interceptorPipeline.run(
+        executionContext,
+        () => pretending
+            ? Future.value([
+                for (final operation in batch)
+                  AtomicBatchResult(operation: operation),
+              ])
+            : batchDriver.runAtomicBatch(batch),
+      );
+      timer.stop();
+      if (results.length != batch.length) {
+        throw StateError(
+          '${driver.metadata.name} atomic batch returned ${results.length} '
+          'results for '
+          '${batch.length} operations.',
+        );
+      }
+
+      for (var index = 0; index < batch.length; index++) {
+        final operation = batch[index];
+        final preview = previews[index];
+        final result = results[index];
+        final statement = trackedStatements[index];
+        if (statement != null && !pretending) {
+          _notifyLongRunning(statement, timer.elapsed);
+        }
+        switch (operation) {
+          case AtomicBatchQueryOperation(:final plan):
+            _emitQuery(
+              QueryEvent(
+                plan: plan,
+                preview: preview,
+                duration: timer.elapsed,
+                rows: result.rows.length,
+                connectionName: connectionName,
+                connectionDatabase: connectionDatabase,
+                connectionTablePrefix: connectionTablePrefix,
+              ),
+            );
+            _recordQueryLog(
+              type: 'query',
+              definition: plan.definition,
+              preview: preview,
+              duration: timer.elapsed,
+              rowCount: result.rows.length,
+              error: null,
+            );
+          case AtomicBatchMutationOperation(:final plan):
+            _emitMutation(
+              MutationEvent(
+                plan: plan,
+                preview: preview,
+                duration: timer.elapsed,
+                affectedRows: result.affectedRows,
+                connectionName: connectionName,
+                connectionDatabase: connectionDatabase,
+                connectionTablePrefix: connectionTablePrefix,
+              ),
+            );
+            _recordQueryLog(
+              type: 'mutation',
+              definition: plan.definition,
+              preview: preview,
+              duration: timer.elapsed,
+              rowCount: result.affectedRows,
+              error: null,
+            );
+            if (!pretending) {
+              _recordMutationChange(plan);
+            }
+        }
+      }
+      if (!pretending &&
+          batch.any((operation) => operation is AtomicBatchMutationOperation) &&
+          cacheInvalidationPolicy ==
+              QueryCacheInvalidationPolicy.flushOnWrite) {
+        queryCache.flush();
+      }
+      return List<AtomicBatchResult>.unmodifiable(results);
+    } catch (error, stackTrace) {
+      timer.stop();
+      for (var index = 0; index < batch.length; index++) {
+        final operation = batch[index];
+        final preview = previews[index];
+        final statement = trackedStatements[index];
+        if (statement != null) {
+          _notifyLongRunning(statement, timer.elapsed, error: error);
+        }
+        switch (operation) {
+          case AtomicBatchQueryOperation(:final plan):
+            _emitQuery(
+              QueryEvent(
+                plan: plan,
+                preview: preview,
+                duration: timer.elapsed,
+                error: error,
+                stackTrace: stackTrace,
+                connectionName: connectionName,
+                connectionDatabase: connectionDatabase,
+                connectionTablePrefix: connectionTablePrefix,
+              ),
+            );
+          case AtomicBatchMutationOperation(:final plan):
+            _emitMutation(
+              MutationEvent(
+                plan: plan,
+                preview: preview,
+                duration: timer.elapsed,
+                error: error,
+                stackTrace: stackTrace,
+                connectionName: connectionName,
+                connectionDatabase: connectionDatabase,
+                connectionTablePrefix: connectionTablePrefix,
+              ),
+            );
+        }
+      }
+      rethrow;
+    }
+  }
+
   /// Executes a database transaction.
   ///
   /// [callback] is an asynchronous function that receives a [Transaction] object.

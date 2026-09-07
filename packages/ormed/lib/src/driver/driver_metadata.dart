@@ -56,6 +56,9 @@ class DriverMetadata {
   final RelationHook? relationHook;
 
   bool supportsCapability(DriverCapability capability) {
+    if (capability == DriverCapability.atomicBatches && supportsTransactions) {
+      return true;
+    }
     return _capabilities.contains(capability);
   }
 }

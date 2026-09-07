@@ -1,3 +1,4 @@
+export 'atomic_batch.dart';
 export 'compiler/closure_plan_compiler.dart';
 export 'compiler/fallback_plan_compiler.dart';
 export 'compiler/plan_compiler.dart';

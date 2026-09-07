@@ -44,6 +44,8 @@ class DriverTestConfig {
   bool supportsCapability(DriverCapability capability) {
     if (_capabilities.contains(capability)) return true;
     switch (capability) {
+      case DriverCapability.atomicBatches:
+        return _capabilities.contains(DriverCapability.transactions);
       case DriverCapability.joins:
         return supportsJoins;
       case DriverCapability.insertUsing:

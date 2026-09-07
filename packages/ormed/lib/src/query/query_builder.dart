@@ -23,6 +23,8 @@ import 'query.dart';
 
 part 'builder/aggregate.dart';
 
+part 'builder/atomic_batch.dart';
+
 part 'builder/batch.dart';
 
 part 'builder/caching.dart';

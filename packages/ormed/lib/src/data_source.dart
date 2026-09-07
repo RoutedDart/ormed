@@ -503,6 +503,17 @@ class DataSource {
     return _connection!.transaction(callback);
   }
 
+  /// Executes a fixed list of query-builder operations atomically.
+  ///
+  /// Operations can be staged with `batchSelect`, `batchUpdate`,
+  /// `batchDelete`, `batchInsert`, and `batchUpsert`.
+  Future<List<AtomicBatchResult>> atomicBatch(
+    Iterable<AtomicBatchOperation> operations,
+  ) {
+    _ensureInitialized();
+    return _connection!.atomicBatch(operations);
+  }
+
   /// Begins a new database transaction.
   ///
   /// Use this for manual transaction control. Must be paired with

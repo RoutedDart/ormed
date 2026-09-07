@@ -1,4 +1,5 @@
 enum DriverCapability {
+  atomicBatches,
   joins,
   insertUsing,
   queryDeletes,

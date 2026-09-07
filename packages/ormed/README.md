@@ -814,6 +814,38 @@ await ds.transaction(() async {
 });
 ```
 
+## Atomic batches
+
+Use `atomicBatch` when every operation can be built up front and must succeed or
+fail as one unit. Drivers with a native batch API use it directly; other
+transactional drivers execute the operations inside a transaction.
+
+```dart
+final results = await ds.atomicBatch([
+  ds
+      .query<$Token>()
+      .where('id', tokenId)
+      .whereNull('consumedAt')
+      .batchUpdate({'consumedAt': DateTime.now()}, returning: true),
+  ds.query<$AuditLog>().batchInsert([
+    {'action': 'token_consumed', 'tokenId': tokenId},
+  ]),
+]);
+
+final consumedTokens = results[0].rows;
+final auditRowsWritten = results[1].affectedRows;
+```
+
+Batch results are returned in operation order. Query and `RETURNING` results
+are available as decoded row maps, affected-row counts are available for
+mutations, and native drivers may include per-statement metadata.
+
+An atomic batch is deliberately different from a transaction callback. The
+operation list is fixed before execution, so Dart code cannot inspect one
+result and use it to decide which later operation to run. Encode checks into
+the staged SQL predicates, or use `transaction` on drivers that support
+interactive transactions.
+
 ## Naming Conventions
 
 `ormed` follows a "convention over configuration" approach for database names:

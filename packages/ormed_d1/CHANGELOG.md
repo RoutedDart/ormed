@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- **Added**: Native execution of Ormed atomic query-builder batches through D1
+  bindings, the Cloudflare REST API, and configured application batch
+  endpoints.
+
 ## 0.2.1
 
 - **Fixed**: D1 HTTP mutations now retry transient `database is locked` and
