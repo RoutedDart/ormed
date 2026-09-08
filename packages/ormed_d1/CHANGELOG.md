@@ -9,6 +9,9 @@
   explicit failure propagation for failed statements in a native batch.
 - **Fixed**: Atomic query batches normalize query parameters and preserve
   valid zero-parameter statements.
+- **Fixed**: Native batches now honor adapter lifecycle state, avoid stale
+  generated IDs for skipped/conflict operations, and retry transient HTTP
+  failures using the configured transport policy.
 
 ## 0.2.1
 

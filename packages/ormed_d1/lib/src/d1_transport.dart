@@ -395,27 +395,109 @@ class D1HttpTransport implements D1Transport, D1BatchTransport {
     final encodedStatements = [
       for (final statement in statementList) statement.toJson(),
     ];
-    final response = await _postJson(
-      endpoint,
-      _batchEndpoint == null
-          ? <String, Object?>{'batch': encodedStatements}
-          : <String, Object?>{'statements': encodedStatements},
-    );
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw D1RequestException(
-        'D1 batch request failed (${response.statusCode}): ${response.body}',
+    final payload = _batchEndpoint == null
+        ? <String, Object?>{'batch': encodedStatements}
+        : <String, Object?>{'statements': encodedStatements};
+    D1RequestException? lastError;
+
+    for (var attempt = 1; attempt <= maxAttempts; attempt++) {
+      final startedAt = DateTime.now();
+      _log(
+        'batch attempt=$attempt/$maxAttempts statements=${statementList.length}',
       );
+
+      try {
+        final response = await _client
+            .post(endpoint, headers: _requestHeaders, body: jsonEncode(payload))
+            .timeout(requestTimeout);
+        final elapsedMs = DateTime.now().difference(startedAt).inMilliseconds;
+        _log(
+          'batch response status=${response.statusCode} elapsed=${elapsedMs}ms',
+        );
+
+        if (response.statusCode < 200 || response.statusCode >= 300) {
+          final retryable =
+              _isRetryableStatus(response.statusCode) ||
+              _bodyLooksRetryable(response.body);
+          final error = D1RequestException(
+            'D1 batch request failed (${response.statusCode}): ${response.body}',
+          );
+          if (retryable && attempt < maxAttempts) {
+            final delay = _computeRetryDelay(
+              attempt,
+              retryAfterHeader: response.headers['retry-after'],
+            );
+            _log(
+              'retrying batch after ${delay.inMilliseconds}ms due to HTTP ${response.statusCode}',
+            );
+            await Future<void>.delayed(delay);
+            lastError = error;
+            continue;
+          }
+          throw error;
+        }
+
+        final decoded = _decodeObject(response.body);
+        if (decoded['success'] == false) {
+          final retryable =
+              _decodedLooksRetryable(decoded) ||
+              _bodyLooksRetryable(response.body);
+          final error = D1RequestException(
+            'D1 batch unsuccessful: ${response.body}',
+          );
+          if (retryable && attempt < maxAttempts) {
+            final delay = _computeRetryDelay(
+              attempt,
+              retryAfterHeader: response.headers['retry-after'],
+            );
+            _log(
+              'retrying batch after ${delay.inMilliseconds}ms due to unsuccessful D1 response',
+            );
+            await Future<void>.delayed(delay);
+            lastError = error;
+            continue;
+          }
+          throw error;
+        }
+
+        final rawResults = decoded['result'] ?? decoded['results'];
+        if (rawResults is! List) {
+          throw const D1RequestException('Invalid D1 batch response payload.');
+        }
+        return rawResults.map(_statementResultFrom).toList(growable: false);
+      } on TimeoutException catch (e) {
+        final error = D1RequestException(
+          'D1 batch request timed out after ${requestTimeout.inMilliseconds}ms: $e',
+        );
+        if (attempt < maxAttempts) {
+          final delay = _computeRetryDelay(attempt);
+          _log(
+            'retrying batch after ${delay.inMilliseconds}ms due to timeout (${e.runtimeType})',
+          );
+          await Future<void>.delayed(delay);
+          lastError = error;
+          continue;
+        }
+        throw error;
+      } on http.ClientException catch (e) {
+        final error = D1RequestException('D1 batch client error: $e');
+        if (attempt < maxAttempts) {
+          final delay = _computeRetryDelay(attempt);
+          _log(
+            'retrying batch after ${delay.inMilliseconds}ms due to client error',
+          );
+          await Future<void>.delayed(delay);
+          lastError = error;
+          continue;
+        }
+        throw error;
+      }
     }
 
-    final decoded = _decodeObject(response.body);
-    if (decoded['success'] == false) {
-      throw D1RequestException('D1 batch unsuccessful: ${response.body}');
-    }
-    final rawResults = decoded['result'] ?? decoded['results'];
-    if (rawResults is! List) {
-      throw const D1RequestException('Invalid D1 batch response payload.');
-    }
-    return rawResults.map(_statementResultFrom).toList(growable: false);
+    throw lastError ??
+        const D1RequestException(
+          'D1 batch request failed without a specific error.',
+        );
   }
 
   Future<D1StatementResult> _sendSingle(D1Statement statement) async {
@@ -526,20 +608,6 @@ class D1HttpTransport implements D1Transport, D1BatchTransport {
     if (_endpoint == null) 'Authorization': 'Bearer $apiToken',
     ..._headers,
   };
-
-  Future<http.Response> _postJson(Uri uri, Object body) async {
-    try {
-      return await _client
-          .post(uri, headers: _requestHeaders, body: jsonEncode(body))
-          .timeout(requestTimeout);
-    } on TimeoutException catch (error) {
-      throw D1RequestException(
-        'D1 request timed out after ${requestTimeout.inMilliseconds}ms: $error',
-      );
-    } on http.ClientException catch (error) {
-      throw D1RequestException('D1 client error: $error');
-    }
-  }
 
   Map<String, Object?> _decodeObject(String body) {
     final decodedValue = jsonDecode(body);

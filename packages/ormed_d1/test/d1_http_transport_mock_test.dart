@@ -204,6 +204,55 @@ void main() {
       expect(server.requests, hasLength(2));
     });
 
+    test('retries transient HTTP failures for batch requests', () async {
+      final server = await _MockD1Server.start([
+        const _PlannedResponse(
+          statusCode: 429,
+          headers: <String, String>{'retry-after': '0'},
+          body: <String, Object?>{
+            'success': false,
+            'errors': <Object?>[
+              <String, Object?>{'code': 429, 'message': 'too many requests'},
+            ],
+          },
+        ),
+        const _PlannedResponse(
+          statusCode: 200,
+          body: <String, Object?>{
+            'success': true,
+            'result': <Object?>[
+              <String, Object?>{
+                'results': <Object?>[],
+                'meta': <String, Object?>{'changes': 1},
+              },
+            ],
+          },
+        ),
+      ]);
+
+      final transport = D1HttpTransport(
+        accountId: 'acct-1',
+        databaseId: 'db-1',
+        apiToken: 'token-1',
+        baseUrl: server.baseUrl,
+        maxAttempts: 3,
+        retryBaseDelay: const Duration(milliseconds: 1),
+        retryMaxDelay: const Duration(milliseconds: 2),
+      );
+
+      try {
+        final results = await transport.batch(const [
+          D1Statement(sql: 'DELETE FROM users WHERE id = ?', parameters: [1]),
+        ]);
+        expect(results.single.affectedRows, 1);
+      } finally {
+        await transport.close();
+        await server.close();
+      }
+
+      expect(server.requests, hasLength(2));
+    });
+
     test('retries on success=false retryable payload and succeeds', () async {
       final server = await _MockD1Server.start([
         const _PlannedResponse(

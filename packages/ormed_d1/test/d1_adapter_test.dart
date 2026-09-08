@@ -80,6 +80,25 @@ final class _FailingBatchTransport extends _FakeBatchTransport {
   }
 }
 
+final class _StaleIdBatchTransport extends _FakeBatchTransport {
+  @override
+  Future<List<D1StatementResult>> batch(
+    Iterable<D1Statement> statements,
+  ) async {
+    final batch = List<D1Statement>.from(statements);
+    batches.add(batch);
+    return [
+      for (var index = 0; index < batch.length; index++)
+        D1StatementResult(
+          meta: <String, Object?>{
+            'changes': index == 0 ? 0 : 1,
+            'last_row_id': 999,
+          },
+        ),
+    ];
+  }
+}
+
 void main() {
   test(
     'queryRaw/executeRaw delegates to transport with normalized params',
@@ -119,6 +138,14 @@ void main() {
     await adapter.close();
 
     expect(() => adapter.queryRaw('select 1'), throwsA(isA<StateError>()));
+    expect(
+      () => adapter.batch(const [D1Statement(sql: 'SELECT 1')]),
+      throwsA(isA<StateError>()),
+    );
+    await expectLater(
+      adapter.runAtomicBatch(const []),
+      throwsA(isA<StateError>()),
+    );
   });
 
   test('rejects transaction API because D1 cannot provide atomicity', () async {
@@ -202,6 +229,31 @@ void main() {
     expect(results.single.affectedRows, 2);
     expect(results.single.generatedIds, [101, 102]);
     expect(results.single.statementMetadata, hasLength(2));
+  });
+
+  test('does not report stale IDs for skipped inserts or upserts', () async {
+    final transport = _StaleIdBatchTransport();
+    final adapter = D1DriverAdapter.custom(
+      config: const DatabaseConfig(driver: 'd1'),
+      transport: transport,
+    );
+    final registry = bootstrapOrm();
+    final context = QueryContext(registry: registry, driver: adapter);
+
+    final results = await context.atomicBatch([
+      context.query<User>().batchInsert([
+        <String, Object?>{'email': 'duplicate@example.test'},
+      ], ignoreConflicts: true),
+      context.query<User>().batchUpsert(
+        [
+          <String, Object?>{'email': 'existing@example.test', 'active': true},
+        ],
+        uniqueBy: const ['email'],
+      ),
+    ]);
+
+    expect(results[0].generatedIds, isEmpty);
+    expect(results[1].generatedIds, isEmpty);
   });
 
   test('dispatches mutations that have no bound parameters', () async {

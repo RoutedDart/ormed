@@ -1352,6 +1352,14 @@ class QueryContext implements ConnectionResolver {
                 connectionTablePrefix: connectionTablePrefix,
               ),
             );
+            _recordQueryLog(
+              type: 'query',
+              definition: plan.definition,
+              preview: preview,
+              duration: timer.elapsed,
+              rowCount: null,
+              error: error,
+            );
           case AtomicBatchMutationOperation(:final plan):
             _emitMutation(
               MutationEvent(
@@ -1364,6 +1372,14 @@ class QueryContext implements ConnectionResolver {
                 connectionDatabase: connectionDatabase,
                 connectionTablePrefix: connectionTablePrefix,
               ),
+            );
+            _recordQueryLog(
+              type: 'mutation',
+              definition: plan.definition,
+              preview: preview,
+              duration: timer.elapsed,
+              rowCount: null,
+              error: error,
             );
         }
       }

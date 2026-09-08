@@ -68,9 +68,23 @@ class D1DriverAdapter extends SqliteRemoteAdapterBase
   }
 
   final D1Transport _transport;
+  bool _batchClosed = false;
+
+  @override
+  Future<void> close() async {
+    _batchClosed = true;
+    await super.close();
+  }
+
+  void _ensureBatchOpen() {
+    if (_batchClosed) {
+      throw StateError('$driverName adapter has already been closed.');
+    }
+  }
 
   /// Executes an atomic D1 batch through a binding-capable transport.
   Future<List<D1StatementResult>> batch(Iterable<D1Statement> statements) {
+    _ensureBatchOpen();
     final transport = _transport;
     if (_supportsAtomicBatches(transport)) {
       return (transport as D1BatchTransport).batch(statements);
@@ -84,6 +98,7 @@ class D1DriverAdapter extends SqliteRemoteAdapterBase
   Future<List<AtomicBatchResult>> runAtomicBatch(
     List<AtomicBatchOperation> operations,
   ) async {
+    _ensureBatchOpen();
     final statements = <D1Statement>[];
     final slices = <(int, int)>[];
 
@@ -168,7 +183,9 @@ class D1DriverAdapter extends SqliteRemoteAdapterBase
                     .toList(growable: false);
           if (returnedIds.isNotEmpty) {
             generatedIds.addAll(returnedIds);
-          } else if (result.lastRowId != null) {
+          } else if (_isPlainInsert(operation) &&
+              result.affectedRows > 0 &&
+              result.lastRowId != null) {
             generatedIds.add(result.lastRowId);
           }
         }
@@ -244,6 +261,14 @@ bool _isInsertLike(AtomicBatchOperation operation) {
     AtomicBatchMutationOperation(:final plan) =>
       plan.operation == MutationOperation.insert ||
           plan.operation == MutationOperation.upsert,
+    AtomicBatchQueryOperation() => false,
+  };
+}
+
+bool _isPlainInsert(AtomicBatchOperation operation) {
+  return switch (operation) {
+    AtomicBatchMutationOperation(:final plan) =>
+      plan.operation == MutationOperation.insert,
     AtomicBatchQueryOperation() => false,
   };
 }

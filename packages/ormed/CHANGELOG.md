@@ -9,6 +9,8 @@
   atomic inserts and upserts.
 - **Fixed**: `updateBatch()` now executes atomically and rejects rows missing
   their configured unique key instead of broadening the update predicate.
+- **Fixed**: Failed native atomic batches are now recorded in query logs and
+  connection events for every staged operation.
 
 ## 0.3.1
 

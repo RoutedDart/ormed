@@ -18,6 +18,23 @@ final class _NonAtomicDriver extends InMemoryQueryExecutor {
       const DriverMetadata(name: 'non_atomic', supportsTransactions: false);
 }
 
+final class _FailingNativeBatchDriver extends InMemoryQueryExecutor
+    implements AtomicBatchDriver {
+  @override
+  DriverMetadata get metadata => const DriverMetadata(
+    name: 'native_batch',
+    supportsTransactions: false,
+    capabilities: {DriverCapability.atomicBatches},
+  );
+
+  @override
+  Future<List<AtomicBatchResult>> runAtomicBatch(
+    List<AtomicBatchOperation> operations,
+  ) async {
+    throw StateError('native batch failed');
+  }
+}
+
 void main() {
   test('transactional drivers execute staged operations in order', () async {
     final registry = bootstrapOrm();
@@ -140,5 +157,34 @@ void main() {
       () => context.atomicBatch([context.query<User>().batchSelect()]),
       throwsA(isA<UnsupportedError>()),
     );
+  });
+
+  test('logs every operation when a native batch fails', () async {
+    final registry = bootstrapOrm();
+    final connection = OrmConnection(
+      config: ConnectionConfig(name: 'native-batch-test'),
+      driver: _FailingNativeBatchDriver(),
+      registry: registry,
+    );
+    final events = <QueryExecuted>[];
+    connection.listen(events.add);
+    connection.enableQueryLog();
+
+    await expectLater(
+      connection.atomicBatch([
+        connection.query<User>().batchSelect(),
+        connection.query<User>().where('id', 1).batchUpdate({'active': true}),
+      ]),
+      throwsA(isA<StateError>()),
+    );
+
+    expect(connection.queryLog, hasLength(2));
+    expect(connection.queryLog.map((entry) => entry.type), [
+      'query',
+      'mutation',
+    ]);
+    expect(connection.queryLog.every((entry) => !entry.success), isTrue);
+    expect(events, hasLength(2));
+    expect(events.every((event) => event.error is StateError), isTrue);
   });
 }
