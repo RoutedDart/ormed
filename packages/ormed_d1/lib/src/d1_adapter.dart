@@ -184,6 +184,7 @@ class D1DriverAdapter extends SqliteRemoteAdapterBase
           if (returnedIds.isNotEmpty) {
             generatedIds.addAll(returnedIds);
           } else if (_isPlainInsert(operation) &&
+              _hasRowidBackedGeneratedPrimaryKey(definition) &&
               result.affectedRows > 0 &&
               result.lastRowId != null) {
             generatedIds.add(result.lastRowId);
@@ -271,6 +272,12 @@ bool _isPlainInsert(AtomicBatchOperation operation) {
       plan.operation == MutationOperation.insert,
     AtomicBatchQueryOperation() => false,
   };
+}
+
+bool _hasRowidBackedGeneratedPrimaryKey(ModelDefinition<OrmEntity> definition) {
+  final primaryKey = definition.primaryKeyField;
+  if (primaryKey == null || !primaryKey.autoIncrement) return false;
+  return primaryKey.dartType.replaceAll('?', '').trim() == 'int';
 }
 
 bool _supportsAtomicBatches(D1Transport transport) {

@@ -1196,6 +1196,9 @@ class QueryContext implements ConnectionResolver {
           ),
         },
     ];
+    for (var index = 0; index < batch.length; index++) {
+      await _preflightAtomicBatchOperation(batch[index], previews[index]);
+    }
     final trackedStatements = <ExecutingStatement?>[];
     final trackStatements = _shouldTrackStatements;
     for (var index = 0; index < batch.length; index++) {
@@ -1384,6 +1387,37 @@ class QueryContext implements ConnectionResolver {
         }
       }
       rethrow;
+    }
+  }
+
+  Future<void> _preflightAtomicBatchOperation(
+    AtomicBatchOperation operation,
+    StatementPreview preview,
+  ) async {
+    final context = switch (operation) {
+      AtomicBatchQueryOperation(:final plan) => _queryExecutionContext(
+        sql: preview.sql,
+        parameters: preview.parameters,
+        operationName: 'SELECT',
+        querySummary: 'SELECT ${plan.definition.tableName}',
+        collectionName: plan.definition.tableName,
+        queryPlan: plan,
+      ),
+      AtomicBatchMutationOperation(:final plan) => _mutationExecutionContext(
+        plan,
+        preview,
+      ),
+    };
+    var reachedNext = false;
+    await interceptorPipeline.run<Object?>(context, () async {
+      reachedNext = true;
+      return null;
+    });
+    if (!reachedNext) {
+      throw StateError(
+        'An interceptor short-circuited an operation in an atomic batch. '
+        'Atomic batch operations must either continue or throw.',
+      );
     }
   }
 

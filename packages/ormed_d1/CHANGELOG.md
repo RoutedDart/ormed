@@ -12,6 +12,8 @@
 - **Fixed**: Native batches now honor adapter lifecycle state, avoid stale
   generated IDs for skipped/conflict operations, and retry transient HTTP
   failures using the configured transport policy.
+- **Fixed**: D1 `last_row_id` fallbacks are now limited to integer,
+  auto-increment primary keys backed by SQLite rowids.
 
 ## 0.2.1
 

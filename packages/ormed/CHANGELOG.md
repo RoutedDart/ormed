@@ -11,6 +11,10 @@
   their configured unique key instead of broadening the update predicate.
 - **Fixed**: Failed native atomic batches are now recorded in query logs and
   connection events for every staged operation.
+- **Fixed**: Native batch interceptors now receive each staged operation's
+  query or mutation plan for policy enforcement.
+- **Fixed**: Projected hard-delete batches retain the primary key required by
+  query-delete compilers, and ID fallbacks reject auto-increment sentinels.
 
 ## 0.3.1
 

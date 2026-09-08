@@ -35,6 +35,59 @@ final class _FailingNativeBatchDriver extends InMemoryQueryExecutor
   }
 }
 
+final class _RecordingNativeBatchDriver extends InMemoryQueryExecutor
+    implements AtomicBatchDriver {
+  var batchCalls = 0;
+
+  @override
+  DriverMetadata get metadata => const DriverMetadata(
+    name: 'native_batch',
+    supportsTransactions: false,
+    capabilities: {DriverCapability.atomicBatches},
+  );
+
+  @override
+  Future<List<AtomicBatchResult>> runAtomicBatch(
+    List<AtomicBatchOperation> operations,
+  ) async {
+    batchCalls++;
+    return [
+      for (final operation in operations)
+        AtomicBatchResult(operation: operation),
+    ];
+  }
+}
+
+final class _NoGeneratedIdsDriver extends InMemoryQueryExecutor {
+  @override
+  Future<MutationResult> runMutation(MutationPlan plan) {
+    if (plan.operation == MutationOperation.insert) {
+      return Future.value(MutationResult(affectedRows: plan.rows.length));
+    }
+    return super.runMutation(plan);
+  }
+}
+
+final class _QueryDeletePlanningDriver extends InMemoryQueryExecutor {
+  @override
+  DriverMetadata get metadata =>
+      const DriverMetadata(name: 'query_delete', supportsQueryDeletes: true);
+}
+
+final class _RejectUpdateInterceptor extends QueryInterceptor {
+  @override
+  Future<T> intercept<T>(
+    QueryExecutionContext context,
+    Future<T> Function() next,
+  ) {
+    if (context.mutationPlan?.operation == MutationOperation.update ||
+        context.mutationPlan?.operation == MutationOperation.queryUpdate) {
+      throw StateError('updates are not allowed in this batch');
+    }
+    return next();
+  }
+}
+
 void main() {
   test('transactional drivers execute staged operations in order', () async {
     final registry = bootstrapOrm();
@@ -158,6 +211,66 @@ void main() {
       throwsA(isA<UnsupportedError>()),
     );
   });
+
+  test('preflights native operations with their individual plans', () async {
+    final registry = bootstrapOrm();
+    final driver = _RecordingNativeBatchDriver();
+    final context = QueryContext(
+      registry: registry,
+      driver: driver,
+      interceptorPipeline: QueryInterceptorPipeline(
+        driverName: 'native_batch',
+        interceptors: [_RejectUpdateInterceptor()],
+      ),
+    );
+
+    await expectLater(
+      context.atomicBatch([
+        context.query<User>().batchSelect(),
+        context.query<User>().batchUpdate({'active': true}),
+      ]),
+      throwsA(isA<StateError>()),
+    );
+    expect(driver.batchCalls, 0);
+  });
+
+  test('hard-delete plans retain the primary key for projected queries', () {
+    final registry = bootstrapOrm();
+    final context = QueryContext(
+      registry: registry,
+      driver: _QueryDeletePlanningDriver(),
+    );
+
+    final operation = context
+        .query<User>()
+        .select(['email'])
+        .withoutAutoHydration()
+        .batchDelete();
+    final plan = (operation as AtomicBatchMutationOperation).plan;
+
+    expect(plan.queryPlan!.selects, ['id']);
+    expect(plan.queryPlan!.rawSelects, isEmpty);
+    expect(plan.queryPlan!.customSelects, isEmpty);
+  });
+
+  test(
+    'insertGetIds rejects auto-increment sentinels without driver IDs',
+    () async {
+      final registry = bootstrapOrm();
+      final context = QueryContext(
+        registry: registry,
+        driver: _NoGeneratedIdsDriver(),
+      );
+
+      await expectLater(
+        context.query<User>().insertGetIds(const [
+          User(id: 0, email: 'ada@example.test'),
+          User(id: -1, email: 'grace@example.test'),
+        ]),
+        throwsA(isA<UnsupportedError>()),
+      );
+    },
+  );
 
   test('logs every operation when a native batch fails', () async {
     final registry = bootstrapOrm();

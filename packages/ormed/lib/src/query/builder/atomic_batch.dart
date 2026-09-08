@@ -80,7 +80,10 @@ extension AtomicBatchOperationsExtension<T extends OrmEntity> on Query<T> {
     return AtomicBatchOperation.mutation(
       MutationPlan.queryDelete(
         definition: definition,
-        plan: _buildPlan(),
+        plan: _buildPrimarySelectionPlan(
+          _buildPlan(),
+          definition.primaryKeyField,
+        ),
         primaryKey: primaryKey,
         driverName: metadata.name,
         returning: returning,

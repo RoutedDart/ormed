@@ -256,6 +256,37 @@ void main() {
     expect(results[1].generatedIds, isEmpty);
   });
 
+  test('does not use last row ID for non-rowid primary keys', () async {
+    final transport = _FakeBatchTransport();
+    final adapter = D1DriverAdapter.custom(
+      config: const DatabaseConfig(driver: 'd1'),
+      transport: transport,
+    );
+    final registry = bootstrapOrm();
+    final context = QueryContext(registry: registry, driver: adapter);
+
+    final results = await context.atomicBatch([
+      context
+          .table(
+            'uuid_records',
+            columns: const [
+              AdHocColumn(
+                name: 'id',
+                dartType: 'String',
+                isNullable: false,
+                isPrimaryKey: true,
+              ),
+              AdHocColumn(name: 'name', dartType: 'String', isNullable: false),
+            ],
+          )
+          .batchInsert([
+            AdHocRow({'id': 'uuid-1', 'name': 'Ada'}),
+          ]),
+    ]);
+
+    expect(results.single.generatedIds, isEmpty);
+  });
+
   test('dispatches mutations that have no bound parameters', () async {
     final transport = _FakeBatchTransport();
     final adapter = D1DriverAdapter.custom(

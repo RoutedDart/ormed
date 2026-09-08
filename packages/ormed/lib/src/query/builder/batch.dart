@@ -114,7 +114,16 @@ extension BatchOperationsExtension<T extends OrmEntity> on Query<T> {
               )
               .toList(growable: false);
 
+    final fallbackIds = returnedIds.length != records.length;
     if (ids.length != records.length || ids.any((id) => id == null)) {
+      throw UnsupportedError(
+        '${context.driver.metadata.name} did not return generated IDs for '
+        '${definition.modelName} inserts.',
+      );
+    }
+    if (fallbackIds &&
+        primaryKey.autoIncrement &&
+        ids.any(_isUnsetAutoIncrementId)) {
       throw UnsupportedError(
         '${context.driver.metadata.name} did not return generated IDs for '
         '${definition.modelName} inserts.',
@@ -174,4 +183,7 @@ extension BatchOperationsExtension<T extends OrmEntity> on Query<T> {
       '${value.runtimeType}.',
     );
   }
+
+  bool _isUnsetAutoIncrementId(Object? value) =>
+      value == 0 || value == -1 || value == '0' || value == '-1';
 }
