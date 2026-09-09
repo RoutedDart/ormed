@@ -51,10 +51,10 @@ Future<void> main() async {
 ```yaml
 dependencies:
   ormed: ^0.3.0
-  ormed_sqlite: ^0.4.0 # Or ormed_postgres, ormed_mysql
+  ormed_sqlite: ^0.4.1 # Or ormed_postgres, ormed_mysql
 
 dev_dependencies:
-  ormed_cli: ^0.3.0
+  ormed_cli: ^0.3.1
   build_runner: ^2.10.5
 ```
 
@@ -901,7 +901,7 @@ Best for: Local development, mobile apps, embedded databases, testing.
 
 ```yaml
 dependencies:
-  ormed_sqlite: ^0.4.0
+  ormed_sqlite: ^0.4.1
 ```
 
 ```dart
@@ -924,7 +924,7 @@ Best for: Production applications, complex queries, advanced data types.
 
 ```yaml
 dependencies:
-  ormed_postgres: ^0.3.0
+  ormed_postgres: ^0.3.1
 ```
 
 ```dart
@@ -945,7 +945,7 @@ Best for: Existing MySQL infrastructure, WordPress/Laravel migrations, web hosti
 
 ```yaml
 dependencies:
-  ormed_mysql: ^0.3.0
+  ormed_mysql: ^0.3.1
 ```
 
 ```dart
