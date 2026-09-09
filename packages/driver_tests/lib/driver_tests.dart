@@ -12,6 +12,7 @@ export 'src/support/driver_schema.dart'
         dropDriverTestSchema;
 export 'seeders.dart';
 export 'src/tests/advanced_query_tests.dart' show runDriverAdvancedQueryTests;
+export 'src/tests/atomic_batch_tests.dart' show runDriverAtomicBatchTests;
 export 'src/tests/driver_override_tests.dart' show runDriverOverrideTests;
 export 'src/tests/factory_inheritance_tests.dart'
     show runDriverFactoryInheritanceTests;

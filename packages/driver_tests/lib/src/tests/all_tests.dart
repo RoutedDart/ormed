@@ -1,4 +1,5 @@
 import 'advanced_query_tests.dart';
+import 'atomic_batch_tests.dart';
 import 'attribute_accessor_tests.dart';
 import 'casting_tests.dart';
 import 'driver_override_tests.dart';
@@ -19,6 +20,7 @@ import 'model_map_codec_tests.dart';
 /// Runs all driver tests against the provided [dataSource].
 void runAllDriverTests() {
   runDriverQueryTests();
+  runDriverAtomicBatchTests();
   runDriverJoinTests();
   runDriverAdvancedQueryTests();
   runAttributeAccessorTests();

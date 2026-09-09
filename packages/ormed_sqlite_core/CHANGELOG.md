@@ -1,3 +1,8 @@
+## 0.3.0-dev+11
+
+- **Added**: Public row decoding support for SQLite-compatible adapters that
+  execute native atomic batches.
+
 ## 0.2.1
 
 - **Fixed**: SQLite-like codegen-free inserts compile their write columns from
