@@ -20,7 +20,7 @@ MySQL and MariaDB driver adapter for the ormed ORM. Implements the `DriverAdapte
 ```yaml
 dependencies:
   ormed: ^0.3.0
-  ormed_mysql: ^0.3.0
+  ormed_mysql: ^0.3.1
 ```
 
 ## Usage modes

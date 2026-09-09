@@ -12,7 +12,7 @@ overloading the native `ormed_sqlite` package.
 ```yaml
 dependencies:
   ormed: ^0.3.0
-  ormed_sqlite_web: ^0.2.0
+  ormed_sqlite_web: ^0.2.1
 ```
 
 ## Direct / codegen-free usage

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.0-dev+11
+
+- **Added**: Shared ordered-execution and rollback coverage for atomic batches
+  across transactional and native-batch drivers.
+
 ## 0.3.1
 
 - **Added**: Shared driver coverage for codegen-free inserts with generated
