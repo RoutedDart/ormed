@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.3.0-dev+11
+## 0.3.0
 
 - **Added**: Native execution of Ormed atomic query-builder batches through D1
   bindings, the Cloudflare REST API, and configured application batch

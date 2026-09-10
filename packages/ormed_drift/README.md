@@ -8,7 +8,7 @@ Drift continues to provide its own typed database API.
 
 ```yaml
 dependencies:
-  ormed: ^0.3.0
+  ormed: ^0.4.0
   ormed_drift: ^0.1.0
   drift: ^2.34.0
 ```

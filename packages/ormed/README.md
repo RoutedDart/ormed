@@ -50,7 +50,7 @@ Future<void> main() async {
 
 ```yaml
 dependencies:
-  ormed: ^0.3.0
+  ormed: ^0.4.0
   ormed_sqlite: ^0.4.1 # Or ormed_postgres, ormed_mysql
 
 dev_dependencies:
