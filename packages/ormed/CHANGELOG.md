@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.4.0-dev+11
+## 0.4.0
 
 - **Added**: Host-neutral atomic query-builder batches with native-driver
   execution, transactional fallback, ordered results, and per-statement

@@ -9,8 +9,8 @@ statements through the Cloudflare D1 HTTP API.
 
 ```yaml
 dependencies:
-  ormed: ^0.3.0
-  ormed_d1: ^0.2.0
+  ormed: ^0.4.0
+  ormed_d1: ^0.3.0
 ```
 
 ## Direct / codegen-free usage

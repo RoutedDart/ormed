@@ -1,4 +1,4 @@
-## 0.3.0-dev+11
+## 0.3.0
 
 - **Added**: Public row decoding support for SQLite-compatible adapters that
   execute native atomic batches.

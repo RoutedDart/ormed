@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.4.0-dev+11
+## 0.4.0
 
 - **Added**: Shared ordered-execution and rollback coverage for atomic batches
   across transactional and native-batch drivers.
